@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1LHTYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 14:24:47 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:64391 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab1LHTYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 14:24:45 -0500
-Date: Thu, 8 Dec 2011 14:24:35 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20111208192435.GR8971@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4EE10EFC.003E,ss=1,re=0.000,fgs=0
+	id S1752826Ab1LHT3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 14:29:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44930 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab1LHT3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 14:29:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="85103792"
+Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
+ when crossing cache domains
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Thu, 08 Dec 2011 11:34:18 -0800
+In-Reply-To: <1323336544.17673.3.camel@twins>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+	 <1322796864.4755.5.camel@marge.simson.net>
+	 <1323275027.32012.114.camel@twins>
+	 <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
+	 <1323336544.17673.3.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323372858.1984.119.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Thu, 2011-12-08 at 01:29 -0800, Peter Zijlstra wrote:
+> On Wed, 2011-12-07 at 11:20 -0800, Suresh Siddha wrote:
+> 
+> > > +DEFINE_PER_CPU(int, sd_top_spr_id);
+> > 
+> > pkg_srid (shared resource id)?
+> 
+> How about sd_llc{,_id} ?
 
-The for-linus branch of the btrfs repository:
+There is a reason why I didn't mention it ;)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+It is not always LLC. In power-savings mode, we group the cores sharing
+the power-domain (typically the whole package) irrespective of one more
+multiple LLC's etc.
 
-Has a few more fixes.  The most notable here are two more patches from
-Alexandre's batch of allocator fixes.  The other two fix corner cases in
-the state code and in the code to add devices.
+Anyways, it is just a name.
 
-Alexandre Oliva (2) commits (+49/-51):
-    Btrfs: try to allocate from cluster even at LOOP_NO_EMPTY_SIZE (+18/-8)
-    Btrfs: try cluster but don't advance in search list (+31/-43)
+thanks,
+suresh
 
-Liu Bo (1) commits (+16/-8):
-    Btrfs: drop spin lock when memory alloc fails
-
-Li Zefan (1) commits (+1/-1):
-    Btrfs: check if the to-be-added device is writable
-
-Total: (4) commits (+66/-60)
-
- fs/btrfs/extent-tree.c |  100 +++++++++++++++++++++++------------------------
- fs/btrfs/extent_io.c   |   24 ++++++++----
- fs/btrfs/volumes.c     |    2 +-
- 3 files changed, 66 insertions(+), 60 deletions(-)
