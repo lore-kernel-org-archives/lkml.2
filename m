@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1LHNEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 08:04:24 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45915 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab1LHNEX (ORCPT
+	id S1752585Ab1LHNFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 08:05:34 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53056 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab1LHNFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 08:04:23 -0500
-Message-ID: <1323349452.2823.1.camel@phoenix>
-Subject: [PATCH 1/2] hwmon: jz4740: fix signedness bug
+	Thu, 8 Dec 2011 08:05:32 -0500
+Message-ID: <1323349526.2823.2.camel@phoenix>
+Subject: [PATCH 2/2] jz4740-battery: fix signedness bug
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
-Date: Thu, 08 Dec 2011 21:04:12 +0800
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Date: Thu, 08 Dec 2011 21:05:26 +0800
+In-Reply-To: <1323349452.2823.1.camel@phoenix>
+References: <1323349452.2823.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
@@ -27,21 +29,21 @@ In this case, checking if (t > 0)  will return true if t is unsigned.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/hwmon/jz4740-hwmon.c |    2 +-
+ drivers/power/jz4740-battery.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
-index 7a48b1e..3d7e590 100644
---- a/drivers/hwmon/jz4740-hwmon.c
-+++ b/drivers/hwmon/jz4740-hwmon.c
-@@ -59,7 +59,7 @@ static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
+diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+index 763f894..5bb1ddd 100644
+--- a/drivers/power/jz4740-battery.c
++++ b/drivers/power/jz4740-battery.c
+@@ -67,7 +67,7 @@ static irqreturn_t jz_battery_irq_handler(int irq, void *devid)
+ 
+ static long jz_battery_read_voltage(struct jz_battery *battery)
  {
- 	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
- 	struct completion *completion = &hwmon->read_completion;
 -	unsigned long t;
 +	long t;
  	unsigned long val;
- 	int ret;
+ 	long voltage;
  
 -- 
 1.7.5.4
