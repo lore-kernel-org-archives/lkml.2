@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab1LHBCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:02:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44196 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481Ab1LHBCy (ORCPT
+	id S1757379Ab1LHBEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:04:23 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51141 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757238Ab1LHBEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:02:54 -0500
-Date: Thu, 8 Dec 2011 01:02:52 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC][patch series] vfsmount gutting
-Message-ID: <20111208010251.GF2203@ZenIV.linux.org.uk>
+	Wed, 7 Dec 2011 20:04:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com>
+References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com> <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Thu, 8 Dec 2011 10:03:38 +0900
+Message-ID: <CAGOxZ52w1nn8g4d_vuNAzjA9qYZ1=yEfihFvSOK+pBz=ZD=J7Q@mail.gmail.com>
+Subject: Re: [PATCH V2 0/1] dmaengine/amba-pl08x: Add support for s3c64xx DMAC
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	OK, that's something I wanted to do for a long time - struct vfsmount
-contains too much stuff that is strictily VFS-internal and not needed by
-anything outside of a very small subset of VFS, at that.  As the matter of
-fact, only 3 fields, 1 of them redundant, are used by code outside of that
-area - it's mnt_flags ("how it's mounted"), mnt_root ("what dentry tree
-is mounted here", assign-once thing) and mnt_sb (always equal to
-mnt_root->d_sb, also assign-once, might or might not be not needed).
+Hello Linus,
+sorry for the delay in submitting V3 of the pl080 patches for s3c64xx.
+I am very busy with my current assignment.
+I will come back to my patch series incorporating yours and Viresh
+suggestions in v3.
 
-	What I've done in vfs.git#vfsmount-guts is massive trimming of
-struct vfsmount.  It's a long massage session for fs/namespace.c and
-friends.  Here's what happens there:
+Thanks!!
 
-	* struct vfsmount is embedded into a VFS-private structure.  The
-best name I'd been able to come up with was struct mount and yes, it would
-be more natural the other way round.  Since all instances of struct vfsmount
-come from alloc_vfsmnt(), it's safe - they can't be static, they can't be
-on stack, they can't be embedded into other structures or arrays.
-	* said structure is defined in fs/mounts.h.  All fields of struct
-vfsmount except for these 3 had been moved to struct mount.  Very few files
-include that one.
-	* fs/namespace.c and fs/pnode.c internals are dealing with struct
-mount * instead of struct vfsmount *; the public API is unchanged and
-still gets struct vfsmount *, of course.  We use container_of() to get to
-the corresponding struct mount * (see real_mount() in fs/mounts.h).
-	* ->mnt_parent and ->mnt_master point to struct mount *; it's
-more convenient that way.
-	* struct mnt_namespace became opaque - its definition is in the
-same fs/mounts.h.  ->root points to struct mount * now (that, BTW, is
-what had lead to grep over the tree that found breakage in apparmor).
-	* proc/*/mounts-related code got moved to separate file -
-fs/proc_namespace.c; essentially it's a part of procfs, but its ties to
-fs/namespace.c are much stronger than those to the rest of fs/proc/*.
-Interface boundary shifted a bit, with IMO cleaner separation as the
-result.
+Regards,
+Alim
 
-	Filesystem code is unchanged; it still gets pointers to struct
-vfsmount *, it's just that this structure is less cluttered now and
-IMO it makes a lot more sense that way.
+On Thu, Dec 8, 2011 at 8:43 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Sep 28, 2011 at 7:50 AM, Alim Akhtar <alim.akhtar@samsung.com> wrote:
+>
+>> This patch modifies the amba-pl08x driver for s3c64xx.
+>> The DMA controller of S3C64XX is a variant of PrimeCell pl080 DMAC.
+>> S3C64xx contents extra register to hold the TransferSize.
+>
+> Alim what is happening with this patch series?
+>
+> I was really happy with the rate of progress we had and Viresh & I
+> have given most feedback needed to complete this I think.
+>
+> Yours,
+> Linus Walleij
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-	What is missing:
-1) Review.  As far as I can see on local testing, the thing works, but extra
-eyes would obviously be very welcome.
-2) Documentation of the vfsmount ex-guts.  This stuff is dealt with by
-very compact area now, so it really can be sanely documented.  In progress...
-3) layout optimizations wrt holes, cacheline boundaries, etc.  It's not
-too far from what we used to have before, but it'll need to be dealt with.
-4) *possibly* a removal of ->mnt_sb.  I'm not sure about that one; it
-is redundant (for all vfsmounts ->mnt_sb == ->mnt_root->d_sb and they are
-assigned at the same point, before anything can see that vfsmount) and
-it's not as if it had been used on a lot of hot paths, but...  Note, BTW,
-that in a lot of cases we have path->dentry->d_sb spelled as path->mnt->mnt_sb;
-these don't really need ->mnt_sb, of course.  Another class of users is
-something along the lines of configfs_mount->mnt_sb->s_root.  What it wants
-to be is configfs_mount->mnt_root - these internal vfsmounts have roots
-set to that fs in question, so that's a straightforward optimization.  Hell
-knows...  It's a separate series in any case.
 
-	I'm going to put that series into -next; if anybody sees problems
-with it, please yell.
 
-	I'm *NOT* mailbombing fsdevel with that - it's a long series and
-if somebody wants a private mailbomb, that can always be arranged.  Or you
-could grab git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git
-#vfsmount-guts and use git format-patch locally...
-
-Al, off to review Miklos' series now...
+-- 
+aLim akHtaR
+mAin hUn nA :-)
