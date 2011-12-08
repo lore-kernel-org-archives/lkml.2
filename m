@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab1LHPXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 10:23:14 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:47342 "EHLO mail.mgebm.net"
+	id S1751849Ab1LHPZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 10:25:23 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:47364 "EHLO mail.mgebm.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870Ab1LHPXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 10:23:11 -0500
-Date: Thu, 8 Dec 2011 10:23:10 -0500
+	id S1750870Ab1LHPZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 10:25:22 -0500
+Date: Thu, 8 Dec 2011 10:25:20 -0500
 From: Eric B Munson <emunson@mgebm.net>
 To: Avi Kivity <avi@redhat.com>
 Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
@@ -15,24 +15,23 @@ Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
         Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
         linux-arch@vger.kernel.org, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5 V5] Add functions to check if the host has stopped
- the vm
-Message-ID: <20111208152310.GB6301@mgebm.net>
+Subject: Re: [PATCH 3/5 V5] Add ioctl for KVMCLOCK_GUEST_STOPPED
+Message-ID: <20111208152520.GC6301@mgebm.net>
 References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
- <1323116344-17911-3-git-send-email-emunson@mgebm.net>
- <4EDF78C5.8060908@redhat.com>
+ <1323116344-17911-4-git-send-email-emunson@mgebm.net>
+ <4EDF7960.4080104@redhat.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
+	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
 Content-Disposition: inline
-In-Reply-To: <4EDF78C5.8060908@redhat.com>
+In-Reply-To: <4EDF7960.4080104@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Bn2rw/3z4jIqBvZU
+--5G06lTa6Jq83wMTw
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -40,76 +39,59 @@ Content-Transfer-Encoding: quoted-printable
 On Wed, 07 Dec 2011, Avi Kivity wrote:
 
 > On 12/05/2011 10:19 PM, Eric B Munson wrote:
-> > When a host stops or suspends a VM it will set a flag to show this.  The
-> > watchdog will use these functions to determine if a softlockup is real,=
- or the
-> > result of a suspended VM.
+> > Now that we have a flag that will tell the guest it was suspended, crea=
+te an
+> > interface for that communication using a KVM ioctl.
+> >
+> > @@ -3295,6 +3295,10 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
 > > =20
-> > +bool kvm_check_and_clear_guest_paused(int cpu)
-> > +{
-> > +	bool ret =3D false;
-> > +	struct pvclock_vcpu_time_info *src;
-> > +
-> > +	/*
-> > +	 * per_cpu() is safe here because this function is only called from
-> > +	 * timer functions where preemption is already disabled.
-> > +	 */
-> > +	WARN_ON(!in_atomic());
-> > +	src =3D &per_cpu(hv_clock, cpu);
->=20
-> __get_cpu_var(); drop the cpu argument
->=20
-
-Will change for V6.
-
-> > +	if ((src->flags & PVCLOCK_GUEST_STOPPED) !=3D 0) {
-> > +		src->flags =3D src->flags & (~PVCLOCK_GUEST_STOPPED);
->=20
-> Isn't this racy?  Between reading and writing src->flags, we can exit to
-> the hypervisor and add/remove new flags.  The write then overrides those
-> new flags.
->=20
-
-If I understand (please correct me if this is wrong) because this is only
-called from the watchdog, which disables preemption, we should be protected
-=66rom something else writing to these flags.
-
-> > +		ret =3D true;
+> >  		goto out;
+> >  	}
+> > +	case KVMCLOCK_GUEST_PAUSED: {
+> > +		r =3D kvm_set_guest_paused(vcpu);
+> > +		break;
 > > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-> > +
-> >  static struct clocksource kvm_clock =3D {
-> >  	.name =3D "kvm-clock",
-> >  	.read =3D kvm_clock_get_cycles,
+> >  	default:
+> >  		r =3D -EINVAL;
+> >  	}
+> >
 >=20
+> You could also do this purely from userspace by reading the kvmclock msr
+> and updating it.  However, it's better to do this in the kernel to avoid
+> distributing responsibility for kvmclock across too many cooks.
 >=20
 > --=20
 > error compiling committee.c: too many arguments to function
 >=20
 
---Bn2rw/3z4jIqBvZU
+As stated in the cover letter, per Marcelo's suggestion I already tried this
+method and it resulted in the guest wall clock skewing by the amount of time
+the guest was suspended.  This places a new burden on the guest to be runni=
+ng
+ntpd or equivslent to keep the wall clock correct.
+
+Eric
+
+--5G06lTa6Jq83wMTw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJO4NZeAAoJEKhG9nGc1bpJ0ncQAKH8Zc3Lu/kJ1AnQ4LnKs8/o
-xpPAbifL6fuJjFdlPAkd75oN4F9NToY7RetXxByHFrKsb+V5ut6F+2lMRKj2DMhK
-SohZUpjyRLJPf0taZD4tfK97XX407+oeR+NstgwI4PWXcZsiSIwY6FKfcziFrvyy
-LPVBbkpYSXEYxe1tsqdBeBjNy76tyJon+kmi9dRumZHG8/sei/jR0rdhou+oSZ/x
-0EcLaPX9zHDrizab0ipOiJf4ybGOPLobyaal/dLvSmz0vDPrftH32A5yqOfSSQad
-fWxICy1GR4G/p30uIO30QiSTHVI4eZOb2yr7EaasMskm15SJuiSpE1auByb4CQgg
-RYbPf0hSEvtrB54hEE0KbWwiRvva1C+Cyz7Pru6mTuBNunhUQublZ+AHBY9VVG6X
-y5jOawxv0nTF2dqjYCxuD7cSm7hbLHrO7XNDoTTn53WySgyP7x0452EOOz9PI+gv
-ije1tRd5IGhBm6AabftfzFg3HzyBxf23wuNkS80akmnL9RkpLRabL74Yt4o0pUb9
-aAbns5YMN9NVR0f22sX8KdgLE37hO+ssR3gENzOnvC6Qt5y2o2Q2phQKqTdpBv45
-u28P8FS0j5Cm+lPLSHt4hdAhOHbSiNHdHSnexQ9FOUY3M4cUou6xYzRZr9JJWQ5o
-wFL2MDiwQXVCH/24ELz4
-=Cbq2
+iQIcBAEBAgAGBQJO4NbgAAoJEKhG9nGc1bpJTdgP/j0p4hzJlJtn7ONEFj84g3Bk
+45Q1j4Q67OgXjC8HVXEqLcQrDJe2wCbLGtHpFa7sd5mYIbN0Ji+jdv4+OiwXgx8B
+TTfF80lu4THb1QR2O9Clg+XsC1MX6PN5/iCZ27kFRlTW5LFl0yL36+VbUctCVH6C
+qPM+tKHm6bic6f8NV98BSVHft1IB0dRrigxrq9ohRsLC4uDh6FDY1QPUOiO4Rc/S
+AUewspKIIdHpWdClWrWlVMytMVt9agjK4UDKsTxwjE95FG1ofUsm4xMxrWE8sN01
+uwF/9ApzEfilHQ+DD0AjcdWbICGbd6uMCz3PilY9aBRRfD8JxCXf2qrscOwK5Bkh
+izMzoloqsLlE++EUGmXvXRTTuFvUoVf7IDgqhQ7r4ZwhrpNNnv4XSUSsQ2JAoaCx
+jZFr6UEq4+52ivbdhITuk6qKZlQ/Pj1AIa3KcrqlvfnnABPYGvkLmTJDLOlrGAkT
+SPV2zGsXwekF9ks5/92xLnK2JdGQWNXwGouTsDv4lYIkdTNYGGgrzkZ1pV66bLDk
+CiTiuw2FxRI9fXmVKog1mt3rVEYfuIyjkX2MAH5IcwEX3b80uZ5QajyTUiS28Z0A
+JmcDzJ2H5eds93WSThuSb5hz5H34aKLW0So9B/WHOwBNAA0uLYtlPQfzH3VNpoBV
+AkkE5UHaCd+gmzyr6KD8
+=t7mf
 -----END PGP SIGNATURE-----
 
---Bn2rw/3z4jIqBvZU--
+--5G06lTa6Jq83wMTw--
