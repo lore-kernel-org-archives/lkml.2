@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab1LHQ6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:58:46 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50138 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752195Ab1LHQ6n (ORCPT
+	id S1752346Ab1LHRBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 12:01:25 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15658 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750763Ab1LHRBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:58:43 -0500
-X-Sasl-enc: cdsqrefuOpB8pX6DPdqs5CeIHWIdWnINOFBQMmO1kkfN 1323363522
-Subject: Re: chroot(2) and bind mounts as non-root
-From: Colin Walters <walters@verbum.org>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: LKML <linux-kernel@vger.kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, kzak <kzak@redhat.com>
-In-Reply-To: <4EDFC123.6070003@mit.edu>
-References: <1323280461.10724.13.camel@lenny> <4EDFC123.6070003@mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Dec 2011 11:58:13 -0500
-Message-ID: <1323363493.10724.58.camel@lenny>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 12:01:23 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/b3fTWySA+nJyARISCEdL/
+Date: Thu, 8 Dec 2011 09:01:14 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Greg KH <greg@kroah.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 4/7] amp/omap: add a remoteproc driver
+Message-ID: <20111208170114.GZ31337@atomide.com>
+References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
+ <1319536106-25802-5-git-send-email-ohad@wizery.com>
+ <CAK=WgbZvH3eiouryKDenC_x0LdDcHFuumhfoeY4ueiwT5r0cxA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK=WgbZvH3eiouryKDenC_x0LdDcHFuumhfoeY4ueiwT5r0cxA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-07 at 11:40 -0800, Andy Lutomirski wrote:
-
-> I will personally always be nervous until something like this happens:
+* Ohad Ben-Cohen <ohad@wizery.com> [111207 23:26]:
+> Hi Tony,
 > 
-> http://thread.gmane.org/gmane.linux.kernel.lsm/10659
+> On Tue, Oct 25, 2011 at 11:48 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> > Add a remoteproc driver for OMAP4, so we can boot the dual-M3 "Ducati"
+> > and DSP subsystems.
+> >
+> > Use the omap_device_* API to control the hardware state, and utilize
+> > the OMAP mailbox to interrupt the remote processor when a new message
+> > is pending (the mailbox payload is used to tell it which virtqueue was
+> > the message placed in).
+> >
+> > Conversely, when an inbound mailbox message arrives, tell the remoteproc
+> > core which virtqueue is triggered.
+> >
+> > Later we will also use the mailbox payload to signal omap-specific
+> > events like remote crashes (which will be used to trigger remoteproc
+> > recovery) and power management transitions. At that point we will also
+> > extend the remoteproc core to support this.
+> >
+> > Based on (but now quite far from) work done by Fernando Guzman Lugo
+> > <fernando.lugo@ti.com> and Hari Kanigeri <h-kanigeri2@ti.com>.
+> >
+> > Designed with Brian Swetland <swetland@google.com>.
+> >
+> > Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+> > Cc: Brian Swetland <swetland@google.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Greg KH <greg@kroah.com>
+> > Cc: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  arch/arm/plat-omap/include/plat/remoteproc.h |   56 ++++++
+> >  drivers/amp/remoteproc/Kconfig               |   21 +++
+> >  drivers/amp/remoteproc/Makefile              |    4 +-
+> >  drivers/amp/remoteproc/omap_remoteproc.c     |  248 ++++++++++++++++++++++++++
+> >  drivers/amp/remoteproc/omap_remoteproc.h     |   69 +++++++
+> >  5 files changed, 397 insertions(+), 1 deletions(-)
+> >  create mode 100644 arch/arm/plat-omap/include/plat/remoteproc.h
+> >  create mode 100644 drivers/amp/remoteproc/omap_remoteproc.c
+> >  create mode 100644 drivers/amp/remoteproc/omap_remoteproc.h
 > 
-> execve() is IMO scary.
+> I'm about to add this to linux-next (minus the 'amp' wording); can I
+> please have your Acked-by for this (at least for the plat-omap change) ?
 
-Yeah, this came up in the context of the seccomp filter stuff too.  
+The platform init code looks OK to me. Please also start considering
+how to do the DT bindings for it. For patches 4 & 5:
 
-So...it's worth noting that as far as SELinux goes, the beautiful thing
-is that setuid only changes uid - it doesn't (by default) change the
-domain.  So in this case for example, if the calling domain doesn't
-have:
-
-  self:capable { setpcap sys_chroot }
-
-The binary is just going to error out.  Very few domains in the
-reference policy have either of those, and only one non-unconfined
-domain has both - seunshare.  (At least via grep, I didn't try an
-analysis tool).
-
-Oh crap, speaking of seunshare:
-https://bugzilla.redhat.com/show_bug.cgi?id=633544
-
-They should clearly be using SECBIT_NOROOT too - that would have avoided
-the original hole.
-
-In fact, I now notice my program is a safer generalization of seunshare.
-I've added dwalsh to CC.
-
-As far as other LSMs go - honestly I'm in the camp that they're stupid,
-and SELinux is the only sane one.  That and opt-in application controls
-such as seccomp are where we should be headed.
-
-So instead of your execve_nosecurity, why don't we make SECBIT_NOROOT
-disable domain transitions too?  (And encourage the other LSMs to treat
-it similarly).
-
-Here's some further food for thought - what if we made certain system
-calls that were previously privileged suddenly start working if the
-process is SECBIT_NOROOT | SECBIT_NOROOT_LOCKED?  I'm specifically
-thinking of unshare(2) and chroot(2).  The tricky part is more allowing
-a subset of mount system calls (I need to be able to mount procfs, but
-clearly we don't want the user to be able to mount real devices).
-
-
+Acked-by: Tony Lindgren <tony@atomide.com>
