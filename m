@@ -1,55 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1LHSuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 13:50:00 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44864 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab1LHSt4 (ORCPT
+	id S1753913Ab1LHSyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 13:54:25 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41819 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab1LHSyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 13:49:56 -0500
-Date: Thu, 8 Dec 2011 10:49:52 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the memblock tree
-Message-ID: <20111208184952.GA12108@google.com>
-References: <20111206143808.3fa5f3785538a37c9686734d@canb.auug.org.au>
- <20111208075405.911cefd2ee3c2ed81cdc5f4b@canb.auug.org.au>
- <CAOS58YOSp6VOJ6WCOyYf3KEJ=_p9ZG4LXmK8YiDgn4Y7DbVHKA@mail.gmail.com>
+	Thu, 8 Dec 2011 13:54:22 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Remove deprecated hibernation snapshot ioctls
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, jirislaby@gmail.com, jslaby@suse.cz
+Date: Fri, 09 Dec 2011 00:24:09 +0530
+Message-ID: <20111208185318.19183.12112.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOS58YOSp6VOJ6WCOyYf3KEJ=_p9ZG4LXmK8YiDgn4Y7DbVHKA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120818-2000-0000-0000-000005A4FBE7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Several snapshot ioctls were marked for removal quite some time ago,
+since they were deprecated. Remove them.
 
-On Wed, Dec 07, 2011 at 01:30:44PM -0800, Tejun Heo wrote:
-> Still trying to restore my cross build setup. I think I will be able
-> to send update series later today.
+Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Made the following changes,
+ Documentation/feature-removal-schedule.txt |   11 ----
+ kernel/power/user.c                        |   87 ----------------------------
+ 2 files changed, 0 insertions(+), 98 deletions(-)
 
-* Fix the CONFIG_HAVE typo bug.
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 3d84912..9f51fc4 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -85,17 +85,6 @@ Who:	Robin Getz <rgetz@blackfin.uclinux.org> & Matt Mackall <mpm@selenic.com>
+ 
+ ---------------------------
+ 
+-What:	Deprecated snapshot ioctls
+-When:	2.6.36
+-
+-Why:	The ioctls in kernel/power/user.c were marked as deprecated long time
+-	ago. Now they notify users about that so that they need to replace
+-	their userspace. After some more time, remove them completely.
+-
+-Who:	Jiri Slaby <jirislaby@gmail.com>
+-
+----------------------------
+-
+ What:	The ieee80211_regdom module parameter
+ When:	March 2010 / desktop catchup
+ 
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index 98ade21..78bdb44 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -30,28 +30,6 @@
+ 
+ #include "power.h"
+ 
+-/*
+- * NOTE: The SNAPSHOT_SET_SWAP_FILE and SNAPSHOT_PMOPS ioctls are obsolete and
+- * will be removed in the future.  They are only preserved here for
+- * compatibility with existing userland utilities.
+- */
+-#define SNAPSHOT_SET_SWAP_FILE	_IOW(SNAPSHOT_IOC_MAGIC, 10, unsigned int)
+-#define SNAPSHOT_PMOPS		_IOW(SNAPSHOT_IOC_MAGIC, 12, unsigned int)
+-
+-#define PMOPS_PREPARE	1
+-#define PMOPS_ENTER	2
+-#define PMOPS_FINISH	3
+-
+-/*
+- * NOTE: The following ioctl definitions are wrong and have been replaced with
+- * correct ones.  They are only preserved here for compatibility with existing
+- * userland utilities and will be removed in the future.
+- */
+-#define SNAPSHOT_ATOMIC_SNAPSHOT	_IOW(SNAPSHOT_IOC_MAGIC, 3, void *)
+-#define SNAPSHOT_SET_IMAGE_SIZE		_IOW(SNAPSHOT_IOC_MAGIC, 6, unsigned long)
+-#define SNAPSHOT_AVAIL_SWAP		_IOR(SNAPSHOT_IOC_MAGIC, 7, void *)
+-#define SNAPSHOT_GET_SWAP_PAGE		_IOR(SNAPSHOT_IOC_MAGIC, 8, void *)
+-
+ 
+ #define SNAPSHOT_MINOR	231
+ 
+@@ -213,15 +191,6 @@ unlock:
+ 	return res;
+ }
+ 
+-static void snapshot_deprecated_ioctl(unsigned int cmd)
+-{
+-	if (printk_ratelimit())
+-		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
+-				"be removed soon, update your suspend-to-disk "
+-				"utilities\n",
+-				__builtin_return_address(0), cmd);
+-}
+-
+ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 							unsigned long arg)
+ {
+@@ -272,8 +241,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		data->frozen = 0;
+ 		break;
+ 
+-	case SNAPSHOT_ATOMIC_SNAPSHOT:
+-		snapshot_deprecated_ioctl(cmd);
+ 	case SNAPSHOT_CREATE_IMAGE:
+ 		if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
+ 			error = -EPERM;
+@@ -308,8 +275,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		data->ready = 0;
+ 		break;
+ 
+-	case SNAPSHOT_SET_IMAGE_SIZE:
+-		snapshot_deprecated_ioctl(cmd);
+ 	case SNAPSHOT_PREF_IMAGE_SIZE:
+ 		image_size = arg;
+ 		break;
+@@ -324,16 +289,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		error = put_user(size, (loff_t __user *)arg);
+ 		break;
+ 
+-	case SNAPSHOT_AVAIL_SWAP:
+-		snapshot_deprecated_ioctl(cmd);
+ 	case SNAPSHOT_AVAIL_SWAP_SIZE:
+ 		size = count_swap_pages(data->swap, 1);
+ 		size <<= PAGE_SHIFT;
+ 		error = put_user(size, (loff_t __user *)arg);
+ 		break;
+ 
+-	case SNAPSHOT_GET_SWAP_PAGE:
+-		snapshot_deprecated_ioctl(cmd);
+ 	case SNAPSHOT_ALLOC_SWAP_PAGE:
+ 		if (data->swap < 0 || data->swap >= MAX_SWAPFILES) {
+ 			error = -ENODEV;
+@@ -356,27 +317,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		free_all_swap_pages(data->swap);
+ 		break;
+ 
+-	case SNAPSHOT_SET_SWAP_FILE: /* This ioctl is deprecated */
+-		snapshot_deprecated_ioctl(cmd);
+-		if (!swsusp_swap_in_use()) {
+-			/*
+-			 * User space encodes device types as two-byte values,
+-			 * so we need to recode them
+-			 */
+-			if (old_decode_dev(arg)) {
+-				data->swap = swap_type_of(old_decode_dev(arg),
+-							0, NULL);
+-				if (data->swap < 0)
+-					error = -ENODEV;
+-			} else {
+-				data->swap = -1;
+-				error = -EINVAL;
+-			}
+-		} else {
+-			error = -EPERM;
+-		}
+-		break;
+-
+ 	case SNAPSHOT_S2RAM:
+ 		if (!data->frozen) {
+ 			error = -EPERM;
+@@ -399,33 +339,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 			error = hibernation_platform_enter();
+ 		break;
+ 
+-	case SNAPSHOT_PMOPS: /* This ioctl is deprecated */
+-		snapshot_deprecated_ioctl(cmd);
+-		error = -EINVAL;
+-
+-		switch (arg) {
+-
+-		case PMOPS_PREPARE:
+-			data->platform_support = 1;
+-			error = 0;
+-			break;
+-
+-		case PMOPS_ENTER:
+-			if (data->platform_support)
+-				error = hibernation_platform_enter();
+-			break;
+-
+-		case PMOPS_FINISH:
+-			if (data->platform_support)
+-				error = 0;
+-			break;
+-
+-		default:
+-			printk(KERN_ERR "SNAPSHOT_PMOPS: invalid argument %ld\n", arg);
+-
+-		}
+-		break;
+-
+ 	case SNAPSHOT_SET_SWAP_AREA:
+ 		if (swsusp_swap_in_use()) {
+ 			error = -EPERM;
 
-* Remove 7 space -> tab conversion in arch/score/Kconfig to ease
-  conflict resolution.
-
-* Merge resolution in arch/arm/mm/init.c was incorrect.  Both sort()
-  and memblock_init() calls should be removed.  Fixed.
-
-memblock-kill-early_node_map is now 7bd0b0f0da.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map
-
-Merge result can be verified against the following branch (d8b950f4c3)
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map-next
-
-Thanks.
-
--- 
-tejun
