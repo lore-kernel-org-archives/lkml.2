@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1LHMxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:53:30 -0500
+	id S1753456Ab1LHMxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:53:43 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1LHMxZ (ORCPT
+	with ESMTP id S1751215Ab1LHMxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:53:25 -0500
+	Thu, 8 Dec 2011 07:53:39 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 07/30] Staging: comedi: fix printk issue in cb_pcimdda.c
-Date: Thu,  8 Dec 2011 18:22:02 +0530
-Message-Id: <1323348745-31477-7-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 10/30] Staging: comedi: fix printk issue in pcmuio.c
+Date: Thu,  8 Dec 2011 18:22:05 +0530
+Message-Id: <1323348745-31477-10-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,79 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcimdda.c file that fixes up a
+This is a patch to the pcmuio.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
-Removed unnecessary printk statements.
-Included KERN_facility levels.
+Removed ifdef DAMMIT_ITS_BROKEN.
+Converted printks to pr_<levels>.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcimdda.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ drivers/staging/comedi/drivers/pcmuio.c |   13 +++----------
+ 1 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index 6521d61..d2f3c3b 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -298,7 +298,8 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		return err;
+diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
+index 1de663e..a005e2d 100644
+--- a/drivers/staging/comedi/drivers/pcmuio.c
++++ b/drivers/staging/comedi/drivers/pcmuio.c
+@@ -498,11 +498,8 @@ static int pcmuio_dio_insn_bits(struct comedi_device *dev,
+ 	/* The insn data is a mask in data[0] and the new data
+ 	 * in data[1], each channel cooresponding to a bit. */
  
- /* Output some info */
--	printk("comedi%d: %s: ", dev->minor, thisboard->name);
-+	printk(KERN_INFO "comedi%d: %s: attached\n", dev->minor,
-+	       thisboard->name);
- 
- /*
-  * Initialize dev->board_name.  Note that we can use the "thisboard"
-@@ -339,7 +340,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 			break;
- 		case DIO_INTERNAL:
- 		default:
--			printk("DIO_INTERNAL not implemented yet!\n");
-+			printk(KERN_WARNING "DIO_INTERNAL not implemented yet!\n");
- 			return -ENXIO;
- 			break;
- 		}
-@@ -349,8 +350,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	devpriv->attached_successfully = 1;
- 
--	printk("attached\n");
+-#ifdef DAMMIT_ITS_BROKEN
+ 	/* DEBUG */
+-	printk("write mask: %08x  data: %08x\n", data[0], data[1]);
+-#endif
 -
- 	return 1;
- }
++	pr_debug("write mask: %08x  data: %08x\n", data[0], data[1]);
+ 	s->state = 0;
  
-@@ -379,7 +378,7 @@ static int detach(struct comedi_device *dev)
+ 	for (byte_no = 0; byte_no < s->n_chan / CHANS_PER_PORT; ++byte_no) {
+@@ -534,10 +531,8 @@ static int pcmuio_dio_insn_bits(struct comedi_device *dev,
+ 			/* Write out the new digital output state */
+ 			outb(byte, ioaddr);
  		}
- 
- 		if (devpriv->attached_successfully && thisboard)
--			printk("comedi%d: %s: detached\n", dev->minor,
-+			printk(KERN_INFO "comedi%d: %s: detached\n", dev->minor,
- 			       thisboard->name);
- 
+-#ifdef DAMMIT_ITS_BROKEN
+ 		/* DEBUG */
+-		printk("data_out_byte %02x\n", (unsigned)byte);
+-#endif
++		pr_debug("data_out_byte %02x\n", (unsigned)byte);
+ 		/* save the digital input lines for this byte.. */
+ 		s->state |= ((unsigned int)byte) << offset;
  	}
-@@ -486,11 +485,8 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+@@ -545,10 +540,8 @@ static int pcmuio_dio_insn_bits(struct comedi_device *dev,
+ 	/* now return the DIO lines to data[1] - note they came inverted! */
+ 	data[1] = ~s->state;
  
- 			devpriv->pci_dev = pcidev;
- 			dev->board_ptr = boards + index;
--			if (comedi_pci_enable(pcidev, thisboard->name)) {
--				printk
--				    ("cb_pcimdda: Failed to enable PCI device and request regions\n");
-+			if (comedi_pci_enable(pcidev, thisboard->name))
- 				return -EIO;
--			}
- 			registers =
- 			    pci_resource_start(devpriv->pci_dev,
- 					       REGS_BADRINDEX);
-@@ -501,7 +497,6 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 		}
- 	}
+-#ifdef DAMMIT_ITS_BROKEN
+ 	/* DEBUG */
+-	printk("s->state %08x data_out %08x\n", s->state, data[1]);
+-#endif
++	pr_debug("s->state %08x data_out %08x\n", s->state, data[1]);
  
--	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
--	       "card found at the requested position\n");
-+	printk(KERN_ERR "cb_pcimdda: No supported ComputerBoards/MeasurementComputing card found at the requested position\n");
- 	return -ENODEV;
+ 	return 2;
  }
 -- 
 1.7.0.4
