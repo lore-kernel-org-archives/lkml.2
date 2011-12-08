@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab1LHHnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:43:13 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:21662 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1LHHnJ convert rfc822-to-8bit (ORCPT
+	id S1751861Ab1LHHnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:43:45 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:31716 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab1LHHnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:43:09 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-7e-4ee06a8b85e0
+	Thu, 8 Dec 2011 02:43:43 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-42-4ee06aabcd37
 From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Vinod Koul'" <vinod.koul@intel.com>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>,
-        "'Boojin Kim'" <boojin.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
+To: "'Tushar Behera'" <tushar.behera@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: vinod.koul@intel.com, linaro-dev@lists.linaro.org, patches@linaro.org
 References: <1323168355-2764-1-git-send-email-tushar.behera@linaro.org>
- <1323168355-2764-2-git-send-email-tushar.behera@linaro.org>
- <1323329702.1641.26.camel@vkoul-udesk3>
-In-reply-to: <1323329702.1641.26.camel@vkoul-udesk3>
-Subject: RE: [PATCH 1/2] DMA: PL330: Remove pm_runtime_xxx calls from pl330
- probe/remove
-Date: Thu, 08 Dec 2011 16:43:01 +0900
-Message-id: <002201ccb57d$056d2440$10476cc0$%kim@samsung.com>
+ <1323168355-2764-3-git-send-email-tushar.behera@linaro.org>
+In-reply-to: <1323168355-2764-3-git-send-email-tushar.behera@linaro.org>
+Subject: RE: [PATCH 2/2] ARM: EXYNOS: Add apb_pclk clkdev entry for mdma1
+Date: Thu, 08 Dec 2011 16:43:39 +0900
+Message-id: <002301ccb57d$19f09b40$4dd1d1c0$%kim@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acy1fBpg4M4fwuJyTt+q5TlvD1xPqgAAEtHQ
+Thread-index: Acy0BLssRER2yGtgQxOHB1SfS0vvcQBeFEew
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vinod Koul wrote:
+Tushar Behera wrote:
 > 
-> On Tue, 2011-12-06 at 16:15 +0530, Tushar Behera wrote:
-> > amba_probe() now calls pm_runtime_get_noresume() and pm_runtime_enable()
-> > for the devices before the device probe is called. Hence we don't need
-> > to call pm_runtime_get_xxx and pm_runtime_enable() in device probe again.
-> > In the same way, since amba_remove() calls the respective pm_runtime
-> > functions, those functions need not be called from device remove.
-> >
-> > This patch fixes following run time error with pl330 driver.
-> >
-> > dma-pl330 dma-pl330.0: Unbalanced pm_runtime_enable!
-> > dma-pl330 dma-pl330.0: failed to get runtime pm
-> >
-> > Signed-off-by: Giridhar Maruthy <giridhar.maruthy@linaro.org>
-> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> Looks fine to me. Do you want these to go thru slave-dma or samsung
-> tree.
+> Amba core assumes the pclk to be named as apb_pclk. During device probe,
+> it tries to get that clock and enable that. When PM_RUNTIME is enabled,
+> dma clock is not explicitly enabled in pl330_probe, which causes device
+> probe to fail. Adding a clkdev entry for apb_pclk for mdma1 fixes the
+> problem.
+> 
+> This patch fixes following runtime error.
+> 
+> dma-pl330 dma-pl330.2: PERIPH_ID 0x0, PCELL_ID 0x0 !
+> dma-pl330: probe of dma-pl330.2 failed with error -22
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  arch/arm/mach-exynos/clock.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/clock.c b/arch/arm/mach-exynos/clock.c
+> index 28e2842..eb33a7a 100644
+> --- a/arch/arm/mach-exynos/clock.c
+> +++ b/arch/arm/mach-exynos/clock.c
+> @@ -1326,6 +1326,7 @@ static struct clk_lookup exynos4_clk_lookup[] = {
+>  	CLKDEV_INIT("s3c-sdhci.3", "mmc_busclk.2", &clk_sclk_mmc3.clk),
+>  	CLKDEV_INIT("dma-pl330.0", "apb_pclk", &clk_pdma0),
+>  	CLKDEV_INIT("dma-pl330.1", "apb_pclk", &clk_pdma1),
+> +	CLKDEV_INIT("dma-pl330.2", "apb_pclk", &clk_mdma1),
+>  };
+> 
+>  static int xtal_rate;
+> --
+> 1.7.4.1
 
-Hi Vinod,
-
-I think, this patch can be sent to upstream via slave-dma tree and second one via Samsung tree separately and you can add my and Boojin Kim's ack(actually, she replied) on this when you apply.
-
+Looks ok to me, will apply.
 Thanks.
 
 Best regards,
@@ -63,51 +70,4 @@ Kgene.
 --
 Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
 SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-> For latter:
-> Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
-> 
-> > ---
-> >  drivers/dma/pl330.c |   17 ++---------------
-> >  1 files changed, 2 insertions(+), 15 deletions(-)
-> >
-> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> > index a626e15..cd07121 100644
-> > --- a/drivers/dma/pl330.c
-> > +++ b/drivers/dma/pl330.c
-> > @@ -834,17 +834,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
-> >
-> >  	amba_set_drvdata(adev, pdmac);
-> >
-> > -#ifdef CONFIG_PM_RUNTIME
-> > -	/* to use the runtime PM helper functions */
-> > -	pm_runtime_enable(&adev->dev);
-> > -
-> > -	/* enable the power domain */
-> > -	if (pm_runtime_get_sync(&adev->dev)) {
-> > -		dev_err(&adev->dev, "failed to get runtime pm\n");
-> > -		ret = -ENODEV;
-> > -		goto probe_err1;
-> > -	}
-> > -#else
-> > +#ifndef CONFIG_PM_RUNTIME
-> >  	/* enable dma clk */
-> >  	clk_enable(pdmac->clk);
-> >  #endif
-> > @@ -977,10 +967,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
-> >  	res = &adev->res;
-> >  	release_mem_region(res->start, resource_size(res));
-> >
-> > -#ifdef CONFIG_PM_RUNTIME
-> > -	pm_runtime_put(&adev->dev);
-> > -	pm_runtime_disable(&adev->dev);
-> > -#else
-> > +#ifndef CONFIG_PM_RUNTIME
-> >  	clk_disable(pdmac->clk);
-> >  #endif
-> >
-> 
-> 
-> --
-> ~Vinod
 
