@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab1LHQ0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:26:23 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:53210 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1LHQ0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:26:20 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-51-4ee0e52b0cb6
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 0/2] Add device tree support for MAX8997
-Date: Thu, 08 Dec 2011 21:57:37 +0530
-Message-id: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-X-Brightmail-Tracker: AAAAAA==
+	id S1752012Ab1LHQ2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 11:28:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab1LHQ2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 11:28:52 -0500
+Date: Thu, 8 Dec 2011 11:28:47 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+Message-ID: <20111208162847.GB9281@redhat.com>
+References: <cover.1322709471.git.psusi@cfl.rr.com>
+ <4ED6F320.5060709@cfl.rr.com>
+ <20111208123038.GA16493@nb.redhat.com>
+ <4EE0C814.2000807@cfl.rr.com>
+ <20111208151650.GB16934@nb.redhat.com>
+ <4EE0D6E6.9000807@cfl.rr.com>
+ <20111208155844.GA9281@redhat.com>
+ <4EE0E085.8000907@cfl.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE0E085.8000907@cfl.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997 is a multi-function device which includes support for regulators, rtc,
-battery charger and other sub-blocks. This patchset adds device tree support
-for the pmic (regulators) sub-block.
+On Thu, Dec 08, 2011 at 11:06:29AM -0500, Phillip Susi wrote:
+> On 12/8/2011 10:58 AM, Vivek Goyal wrote:
+> >So, if there is an IO in flight while partition shrinking is happening,
+> >then IO can end up happening outside the partition?
+> 
+> Yes.  Of course if there was an in flight IO at the time you
+> truncate the partition, then you did something wrong ( didn't shrink
+> the fs first ).
 
-The first patch adds irq domain support for the interrupts supported by max8997
-mainly for removing the need to pass a irq_base from the platform code. The
-irq_base could not anyway be passed in case of device tree based instantiation.
+Ok, so one needs to shrink filesystem. So if partition is part of a
+volume group one is supposed to first reduce the size using pvresize
+and then shrink actual partition?
 
-The second patch adds device tree support for max8997. This patch modifies both
-mfd and regulator portions of the max8997 code. So does this patch have to be
-split into two, one for mfd and one for regulator?
+> 
+> >part->nr_sects can be 64 bits on 32bit machines and update will be
+> >non-atomic. I had used sequence counter to make sure read is able
+> >to get to intermediate value. May be it is a good idea to address
+> >this concenrn.
+> 
+> Isn't that what the mutex is for?
 
-This patchset is based on the following tree.
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git  for-next
+I thought I have found couple of places where we don't take mutex. For
+example.
 
-and depends on the following patchs.
-[1] All the regulator device tree related patches from
-    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git topic/dt
-    (from commit 8f446e6fa1d506be2cb80f91c214f1705327c7f9).
-[2] Device tree support patches for wakeup interrupt sources on Exynos4.
-[3] [PATCH] irqdomain: export irq_domain._simple_op.s for !CONFIG_OF
+drive_stat_acct()
+ disk_map_sector_rcu()
+  sector_in_part()
+    --> read part->nr_sects without mutex.
 
-This patchset has been tested on Origen board.
+printk_all_partitions()
+   ---> read part->nr_sects without mutex.
 
-Thomas Abraham (2):
-  mfd: add irq domain support for max8997 interrupts
-  regulator: add device tree support for max8997
+show_partition()
+   ---> read part->nr_sects without mutex.
 
- .../devicetree/bindings/regulator/max8997-pmic.txt |  122 +++++++++++++++++
- arch/arm/mach-exynos/mach-nuri.c                   |    4 -
- arch/arm/mach-exynos/mach-origen.c                 |    1 -
- drivers/mfd/max8997-irq.c                          |   33 +++--
- drivers/mfd/max8997.c                              |   71 ++++++++++-
- drivers/regulator/max8997.c                        |  137 ++++++++++++++++++++
- include/linux/mfd/max8997-private.h                |    4 +-
- include/linux/mfd/max8997.h                        |    1 -
- 8 files changed, 350 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/max8997-pmic.txt
-
+Thanks
+Vivek
