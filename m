@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab1LIQtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:49:17 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17551 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab1LIQtQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:49:16 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 09 Dec 2011 08:49:01 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Dong Aisheng <dongas86@gmail.com>
-CC: Shawn Guo <shawn.guo@freescale.com>,
-        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
+	id S1751886Ab1LIQtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:49:31 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:4114
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750780Ab1LIQt3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:49:29 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: KY Srinivasan <kys@microsoft.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Date: Fri, 9 Dec 2011 08:49:01 -0800
-Subject: RE: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
- SoCs
-Thread-Topic: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
- SoCs
-Thread-Index: Acy2g7BHDuF0sde6Sp+Fnc7geb+47QADlUEQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17518604C3@HQMAIL01.nvidia.com>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
-	<20111209010147.GH7913@S2100-06.ap.freescale.net>
-	<4EE18403.30604@nvidia.com>
-	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
-	<4EE192DC.3080209@nvidia.com>
- <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
-In-Reply-To: <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Thread-Topic: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Thread-Index: AQHMsSx+2SVgzLNkXk+4T3Hv4pSSBZXTs8WwgACRBAD//305YA==
+Date: Fri, 9 Dec 2011 16:49:17 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD461C@TK5EX14MBXC227.redmond.corp.microsoft.com>
+References: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
+ <A1F3067C9B68744AA19F6802BAB8FFDC0CCD457B@TK5EX14MBXC227.redmond.corp.microsoft.com>
+ <20111209163508.GA19001@suse.de>
+In-Reply-To: <20111209163508.GA19001@suse.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dong Aisheng wrote at Friday, December 09, 2011 8:03 AM:
-...
-> I agree that parsing data from device tree increases much effort
-> because we can not using any help functions like microes in dts file and we have
-> to construct the structure we need in driver by parsing that data.
-> And it will increase dtsi file's size a lot when after adding all functions.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, December 09, 2011 11:35 AM
+> To: Haiyang Zhang
+> Cc: KY Srinivasan; davem@davemloft.net; linux-kernel@vger.kernel.org;
+> netdev@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
 > 
-> I wonder if we can define that data as a pdata in a .c file and only
-> get a pointer from dts file. That would make life much easier.
+> On Fri, Dec 09, 2011 at 04:00:59PM +0000, Haiyang Zhang wrote:
+> > > -----Original Message-----
+> > > From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
+> > >  drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
+> > >  drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
+> > >  2 files changed, 12 insertions(+), 26 deletions(-)
+> >
+> > Hi Greg,
+> >
+> > Since the netvsc haven't been merged into Dave's tree yet after out of
+> staging,
+> > could you consider this patch for your tree?
+> 
+> It's in my "to-apply" queue already.
 
-You can't get pointers themselves directly from a .dts file, since the
-.dts file author has no idea what the memory layout (or even which OS)
-is present on the running system.
+Thank you!
 
-An alternative is to key off the compatible flag in the device tree,
-and use that to index a table that points at the various structures you
-want pointers to.
-
-struct of_device_id's .data field, and the function of_match_device()
-are for exactly that purpose; see the way the Tegra pinctrl driver that
-I posted uses them for an example of mapping compatible flag to per-
-SoC initialization function pointers.
-
--- 
-nvpublic
+- Haiyang
 
