@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1LIVfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:35:31 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:53744 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750761Ab1LIVfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:35:30 -0500
-Message-ID: <1323466526.27746.29.camel@joe2Laptop>
-Subject: Re: [PATCH v2] mm: simplify find_vma_prev
-From: Joe Perches <joe@perches.com>
-To: kosaki.motohiro@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>
-Date: Fri, 09 Dec 2011 13:35:26 -0800
-In-Reply-To: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1752254Ab1LIVs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:48:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56429 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab1LIVsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 16:48:55 -0500
+Date: Fri, 9 Dec 2011 13:48:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v2] ipc: provide generic compat versions of IPC syscalls
+Message-Id: <20111209134852.f5b5bcbc.akpm@linux-foundation.org>
+In-Reply-To: <201112091903.pB9J39pd031553@farm-0002.internal.tilera.com>
+References: <201112091536.pB9Fa5f7002738@farm-0002.internal.tilera.com>
+	<201112091602.31325.arnd@arndb.de>
+	<201112091903.pB9J39pd031553@farm-0002.internal.tilera.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-09 at 16:23 -0500, kosaki.motohiro@gmail.com wrote:
-> commit 297c5eee37 (mm: make the vma list be doubly linked) added
-> vm_prev member into vm_area_struct. Therefore we can simplify
-> find_vma_prev() by using it. Also, this change help to improve
-> page fault performance because it has strong locality of reference.
+On Fri, 9 Dec 2011 10:29:07 -0500
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-trivia:
+> When using the "compat" APIs, architectures will generally want to
+> be able to make direct syscalls to msgsnd(), shmctl(), etc., and
+> in the kernel we would want them to be handled directly by
+> compat_sys_xxx() functions, as is true for other compat syscalls.
+> 
+> However, for historical reasons, several of the existing compat IPC
+> syscalls do not do this.  semctl() expects a pointer to the fourth
+> argument, instead of the fourth argument itself.  msgsnd(), msgrcv()
+> and shmat() expect arguments in different order.
+> 
+> This change adds an __ARCH_WANT_OLD_COMPAT_IPC define that can be
+> set in <asm/compat.h> to preserve this behavior for ports that use it
+> (x86, sparc, powerpc, s390, and mips).  No actual semantics are changed
+> for those architectures, and there is only a minimal amount of code
+> refactoring in ipc/compat.c.
+> 
+> Newer architectures like tile (and perhaps future architectures such
+> as arm64 and unicore64) should not supply this define, and thus can
+> avoid having any IPC-specific code at all in their architecture-specific
+> compat layer.  In the same vein, if this define is omitted, IPC_64 mode
+> is assumed, since that's what the <asm-generic> headers expect.
+> 
+> The workaround code in "tile" for msgsnd() and msgrcv() is removed
+> with this change; it also fixes the bug that shmat() and semctl() were
+> not being properly handled.
 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-[]
-> @@ -1603,39 +1603,21 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
->  
->  EXPORT_SYMBOL(find_vma);
->  
-> -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
-> +/*
-> + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
-> + * Note: pprev is set to NULL when return value is NULL.
-> + */
->  struct vm_area_struct *
-> -find_vma_prev(struct mm_struct *mm, unsigned long addr,
-> -			struct vm_area_struct **pprev)
+What would we need to do to get all architectures using the new
+interfaces, and remove __ARCH_WANT_OLD_COMPAT_IPC?
 
-> +find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
+Regarding the implementation: rather than patching the header
+files, it would be more conventional (and arguably better) to add
 
-eh.  This declaration change seems gratuitous and it exceeds 80 columns.
+	select ARCH_WANT_OLD_COMPAT_IPC
 
-> +	*pprev = NULL;
-> +	vma = find_vma(mm, addr);
-> +	if (vma)
-> +		*pprev = vma->vm_prev;
-
-There's no need to possibly set *pprev twice.
-
-Maybe
-{
-	struct vm_area_struct *vma = find_vma(mm, addr);
-
-	*pprev = vma ? vma->vm_prev : NULL;
-or
-	if (vma)
-		*pprev = vma->vm_prev;
-	else
-		*pprev = NULL;
-
-	return vma;
-}
- 
-> -out:
-> -	*pprev = prev;
-> -	return prev ? prev->vm_next : vma;
-> +	return vma;
->  }
->  
->  /*
-
-
-
+to arch/*/Kconfig, then use CONFIG_ARCH_WANT_OLD_COMPAT_IPC.
