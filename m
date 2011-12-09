@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab1LIJWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 04:22:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56727 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1LIJWt convert rfc822-to-8bit (ORCPT
+	id S1752803Ab1LIJXL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:23:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52863 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1LIJXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 04:22:49 -0500
-Message-ID: <1323422521.17673.47.camel@twins>
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Date: Fri, 09 Dec 2011 10:22:01 +0100
-In-Reply-To: <1323398616.30977.167.camel@frodo>
-References: <20111208193003.112037550@goodmis.org>
-	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
-	 <1323398616.30977.167.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 9 Dec 2011 04:23:10 -0500
+Date: Fri, 9 Dec 2011 10:23:00 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>, kernel@pengutronix.de,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+Message-ID: <20111209092300.GR4585@pengutronix.de>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <4693507.K6tP4YDUh2@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4693507.K6tP4YDUh2@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 21:43 -0500, Steven Rostedt wrote:
-> On Thu, 2011-12-08 at 14:36 -0500, Steven Rostedt wrote:
+On Thu, Dec 08, 2011 at 11:55:53PM +0100, Arnd Bergmann wrote:
+> On Thursday 08 December 2011 23:40:57 Uwe Kleine-König wrote:
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> > Note that there is no support yet for efm32 in mainline, so ARCH_EFM32
+> > isn't defined.
 > 
-> > I'm not sure how to handle this case. We could do something similar in
-> > the break point code to handle the same thing. But this just seems
-> > really ugly.
-> > 
-> > Anyone with any better ideas?
-> 
-> On IRC, Peter Zijlstra mentioned changing the IDT in NMI. I'm not sure
-> if he was joking or not. But I decided to try it out. It seems to
-> work :)
+> Since the platform is not yet part of the architecture, it will have
+> to use device tree based probing when it gets added. I would suggest
+> only merging drivers for it that can deal with this and do not rely
+> on platform_data.
+I feared you will say that. These machines have at most 4MiB of RAM.
+I'll have to evaluate if dt is too heavy for them.
 
-Its was definitely tongue in cheek, also I did say this'll be a massive
-pain with paravirt since I doubt paravirt calls are NMI safe. 
+Best regards
+Uwe
 
-But yeah, it might all be slightly less painful than trying to teach the
-INT3 handler about this recursion.
-
-This all started with wanting to do pagefaults from NMI context, those
-too will have this recursion, although for faults we'll end up in the
-double fault handler, which seems to allow a slightly saner way out.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
