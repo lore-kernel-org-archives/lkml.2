@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1LIAsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 19:48:06 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52948 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab1LIAsD (ORCPT
+	id S1753353Ab1LIAtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 19:49:00 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16255
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752880Ab1LIAs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 19:48:03 -0500
-Date: Fri, 9 Dec 2011 11:47:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the tegra tree with the arm tree
-Message-Id: <20111209114756.01851f07d9aac94a652320e5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Dec_2011_11_47_56_+1100_BoFh6fjbCBKtkf0t"
+	Thu, 8 Dec 2011 19:48:58 -0500
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 9 Dec 2011 09:01:48 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+Message-ID: <20111209010147.GH7913@S2100-06.ap.freescale.net>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Dec_2011_11_47_56_+1100_BoFh6fjbCBKtkf0t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 08, 2011 at 03:14:40PM -0800, Stephen Warren wrote:
+> Presumably, the set of pins, groups, and functions is determined by the
+> SoC HW. Platform data is usually board-specific rather than SoC specific.
+> You have two choices here: You could either parse this data from device
+> tree as Arnd suggested (and I think as the TI OMAP pinctrl driver will),
+> or do what I've done in the Tegra pinctrl driver, and simply put each
+> SoC's data into the driver and select which one to use based on the DT
+> compatible flag; I didn't see the point of putting data in to the DT that
+> was identical for every board using a given SoC.
+> 
+I'm not sure about tegra, but for imx, it's very difficult to enumerate
+all these data and list them in pinctrl driver.  Sascha gave a few
+examples when we discussed about it in another thread.  The TX and RX
+pin of UART has 4 options each.  SD could possibly have 1, 4, and 8
+data lines.  Display interface could have 16, 24, 32 data lines, etc.
+All these options are chosen by board design for given soc pinmux
+design.  So putting this data into device tree makes sense for imx too.
 
-Hi all,
+-- 
+Regards,
+Shawn
 
-Today's linux-next merge of the tegra tree got a conflict in
-arch/arm/mach-tegra/board-dt.c between commit afed2a261825 ("ARM: tegra2:
-convert to CONFIG_MULTI_IRQ_HANDLER") from the arm tree and commit
-0d4f74792e29 ("arm/tegra: convert tegra20 to GIC devicetree binding")
-from the tegra tree.
-
-I did the obvious fixup (see below) and can carry the fix as necessary.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-tegra/board-dt.c
-index e417a83,2fa599d..0000000
---- a/arch/arm/mach-tegra/board-dt.c
-+++ b/arch/arm/mach-tegra/board-dt.c
-@@@ -130,10 -150,8 +151,10 @@@ static const char * tegra_dt_board_comp
-  DT_MACHINE_START(TEGRA_DT, "nVidia Tegra (Flattened Device Tree)")
-  	.map_io		=3D tegra_map_common_io,
-  	.init_early	=3D tegra_init_early,
-- 	.init_irq	=3D tegra_init_irq,
-+ 	.init_irq	=3D tegra_dt_init_irq,
- +	.handle_irq	=3D gic_handle_irq,
-  	.timer		=3D &tegra_timer,
-  	.init_machine	=3D tegra_dt_init,
- +	.restart	=3D tegra_assert_system_reset,
-  	.dt_compat	=3D tegra_dt_board_compat,
-  MACHINE_END
-
---Signature=_Fri__9_Dec_2011_11_47_56_+1100_BoFh6fjbCBKtkf0t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4Vq8AAoJEECxmPOUX5FEYf8P/RYJ4kVgch6/yp8G4/R1Enlr
-F29wIaSq3la1mvs/1rrTCKl4zX0A1lbqhuYhkT3/s+cHZbH8kf0f06F07LEucuOx
-aRAlpKDZ79fYG7iBLbKDyxU08sUSJdOYd7NmRDgfa3lhiB+WpN27JvFjoI9rKkjH
-uiUAvr3Ie88mHKN7WAUCHqXhPWk5X/66qQpxjCOxmDzjjwo7yJor7zfReY9kKsPk
-rzoSOY6qRAEuGlPq+9mW9wZER9OQc0ILnKCZgfN5OyErTrOhuq1lzb3a8DMnC9kL
-a4bo1psP6mfvP4NQLdXScFNMGawiP6dc7+VyQKuzqt2V1RRvbgC1Oebuqy2p0yDf
-uFogyy1H39P10g8vvwehQiU/wiRtLnCXY7d9xBP+AUlFBik4dOuIMW1P4cVgbG/7
-aSmlMDtLtHwOz/hmWELuPfYGKonv3EfeGChQ5AdIhN8v5eqHBciDA8LX2GyWkGfl
-WnayZa7hfLbD2Sq4wqU2CkpfZve75S6o8LdGZpdgUwsx9T1UMArWVrt7w/LdGF9A
-ubQcKIUYfItdW4/02HpQ/bC4sJm6eaOm+L6WoeXmEpnS9rNyhBBKWXUeB5WjZTr+
-Odhh7DyYicLsLydu2viRr0+wf911R7xAKhzbzO5c9QQqbDfGkLHw9GlQ62lBo/sX
-EdP6ui7jkmx0YL2OKjbZ
-=rKDt
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Dec_2011_11_47_56_+1100_BoFh6fjbCBKtkf0t--
