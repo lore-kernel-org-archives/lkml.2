@@ -1,46 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab1LIDvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 22:51:05 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:65099 "EHLO
+	id S1752751Ab1LIDxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 22:53:43 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:33638 "EHLO
 	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab1LIDvD (ORCPT
+	with ESMTP id S1752423Ab1LIDxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 22:51:03 -0500
+	Thu, 8 Dec 2011 22:53:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <4EE17E5F.107@linaro.org>
-References: <1323168355-2764-1-git-send-email-tushar.behera@linaro.org>
-	<1323168355-2764-2-git-send-email-tushar.behera@linaro.org>
-	<1323329702.1641.26.camel@vkoul-udesk3>
-	<002201ccb57d$056d2440$10476cc0$%kim@samsung.com>
-	<1323332205.1641.29.camel@vkoul-udesk3>
-	<CAJe_Zhf5-x0+9nrjCyY1N60jyxYm1qoF3Agg0jb7Te-dP8z5gw@mail.gmail.com>
-	<4EE17E5F.107@linaro.org>
-Date: Fri, 9 Dec 2011 09:21:01 +0530
-Message-ID: <CAJe_Zhfwwqs4nCuM-nWXbj9mPZMQp4x1QS65BTa0tNTvNTnCLA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] DMA: PL330: Remove pm_runtime_xxx calls from pl330 probe/remove
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Boojin Kim <boojin.kim@samsung.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+8MBb+n_y=BGQihjGujAq7=cUwpdOTP0-7uRoftFeXouD=QHw@mail.gmail.com>
+References: <20111207170533.3dea865573c916e79d274eca@canb.auug.org.au>
+ <CAErSpo59CuEBbu4QWMkK23TyXafhMLOh1G7Z8YxojqiQmCM0Fw@mail.gmail.com>
+ <20111208072412.e9cf00f9bcdbc4450fe2d2d4@canb.auug.org.au> <CA+8MBb+n_y=BGQihjGujAq7=cUwpdOTP0-7uRoftFeXouD=QHw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 8 Dec 2011 20:53:17 -0700
+Message-ID: <CAErSpo4V4Nhga5q7wHSiLmr4LubV4Sy+8gMZuob+163ZOHr__Q@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (pci tree related)
+To: Tony Luck <tony.luck@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Content-Type: multipart/mixed; boundary=f46d040fa088e3dad804b3a0badf
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 December 2011 08:49, Tushar Behera <tushar.behera@linaro.org> wrote:
-> On 12/08/2011 07:02 PM, Jassi Brar wrote:
->>
->> Guys, any reason to keep me, the author of the driver, out of loop ?
->> I almost lost this patch, had it not for chance.
+--f46d040fa088e3dad804b3a0badf
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Dec 8, 2011 at 12:01 PM, Tony Luck <tony.luck@intel.com> wrote:
+> ia64 builds are failing to build next-20111208
 >
 >
-> Apologies. I didn't realize that I should be adding a cc to you.
+> arch/ia64/pci/pci.c: In function =91add_window=92:
+> arch/ia64/pci/pci.c:321: error: =91struct acpi_resource=92 has no member
+> named =91flags=92
+> arch/ia64/pci/pci.c:322: error: =91struct acpi_resource=92 has no member =
+named =91end=92
+> arch/ia64/pci/pci.c:322: error: =91struct acpi_resource=92 has no member
+> named =91start=92
 >
-> Would you please add a valid module author e-mail ID?
+> problem from this commit
 >
-I doubt if someone knows that my samsung id is invalid but doesn't know
-which is the valid one ;)
-Anyways, I shall update to my private email id.
+>
+> commit ab57d8e403c084bf5bacae31d6bc14bef9b75a22
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date: =A0 Fri Oct 28 16:26:31 2011 -0600
+>
+> =A0 =A0ia64/PCI: convert to pci_create_root_bus() for correct root bus re=
+sources
+>
+> -Tony
+
+Sigh, I'm sorry.  Attached are the incremental patch to fix this, and
+an updated version of the original patch.  I'm not git-smart enough to
+push it this time (the box where I normally do that is down at the
+moment, along with my notes).
+
+Bjorn
+
+--f46d040fa088e3dad804b3a0badf
+Content-Type: application/octet-stream; name="patch.ia64-incremental"
+Content-Disposition: attachment; filename="patch.ia64-incremental"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvynt2h80
+
+Y29tbWl0IGZhYzExZDRmOTY2ZmJmOTY1YjIwNDc1NzkwNzRjZjEwZWE1M2QyYjgKQXV0aG9yOiBC
+am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFRodSBEZWMgOCAyMDox
+NjoxMyAyMDExIC0wNzAwCgpkaWZmIC0tZ2l0IGEvYXJjaC9pYTY0L3BjaS9wY2kuYyBiL2FyY2gv
+aWE2NC9wY2kvcGNpLmMKaW5kZXggYTg0OGZhZC4uNWVlZDc0YyAxMDA2NDQKLS0tIGEvYXJjaC9p
+YTY0L3BjaS9wY2kuYworKysgYi9hcmNoL2lhNjQvcGNpL3BjaS5jCkBAIC0zMTgsOCArMzE4LDgg
+QEAgc3RhdGljIF9fZGV2aW5pdCBhY3BpX3N0YXR1cyBhZGRfd2luZG93KHN0cnVjdCBhY3BpX3Jl
+c291cmNlICpyZXMsIHZvaWQgKmRhdGEpCiAKIAkvKiBIUCdzIGZpcm13YXJlIGhhcyBhIGhhY2sg
+dG8gd29yayBhcm91bmQgYSBXaW5kb3dzIGJ1Zy4KIAkgKiBJZ25vcmUgdGhlc2UgdGlueSBtZW1v
+cnkgcmFuZ2VzICovCi0JaWYgKCEoKHJlcy0+ZmxhZ3MgJiBJT1JFU09VUkNFX01FTSkgJiYKLQkg
+ICAgICAocmVzLT5lbmQgLSByZXMtPnN0YXJ0IDwgMTYpKSkKKwlpZiAoISgod2luZG93LT5yZXNv
+dXJjZS5mbGFncyAmIElPUkVTT1VSQ0VfTUVNKSAmJgorCSAgICAgICh3aW5kb3ctPnJlc291cmNl
+LmVuZCAtIHdpbmRvdy0+cmVzb3VyY2Uuc3RhcnQgPCAxNikpKQogCQlwY2lfYWRkX3Jlc291cmNl
+KCZpbmZvLT5yZXNvdXJjZXMsICZ3aW5kb3ctPnJlc291cmNlKTsKIAogCXJldHVybiBBRV9PSzsK
+--f46d040fa088e3dad804b3a0badf
+Content-Type: application/octet-stream; 
+	name="patch.ia64-pci-convert-to-pci_create"
+Content-Disposition: attachment; 
+	filename="patch.ia64-pci-convert-to-pci_create"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvyntj771
+
+Y29tbWl0IDM2OWEzMTAzMmRjMTIwMDYwZWJiZmI1YjViOTVlMzdlMWRiNDQ4YTUKQXV0aG9yOiBC
+am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBPY3QgMTEgMTE6
+MjU6MzAgMjAxMSAtMDYwMAoKICAgIGlhNjQvUENJOiBjb252ZXJ0IHRvIHBjaV9jcmVhdGVfcm9v
+dF9idXMoKSBmb3IgY29ycmVjdCByb290IGJ1cyByZXNvdXJjZXMKICAgIAogICAgQ29udmVydCBm
+cm9tIHBjaV9jcmVhdGVfYnVzKCkgdG8gcGNpX2NyZWF0ZV9yb290X2J1cygpLiAgVGhpcyB3YXkg
+dGhlIHJvb3QKICAgIGJ1cyByZXNvdXJjZXMgYXJlIGNvcnJlY3QgaW1tZWRpYXRlbHkuICBUaGlz
+IGZpeGVzIHRoZSBwcm9ibGVtIG9mICJlYXJseSIKICAgIGFuZCAiaGVhZGVyIiBxdWlya3Mgc2Vl
+aW5nIGluY29ycmVjdCByb290IGJ1cyByZXNvdXJjZXMuCiAgICAKICAgIFdlIGNhbid0IHVzZSBw
+Y2lfc2Nhbl9yb290X2J1cygpIGJlY2F1c2UsIGxpa2UgeDg2LCBBQ1BJIGhvdHBsdWcgY3VycmVu
+dGx5CiAgICByZXF1aXJlcyBwY2lfYnVzX2FkZF9kZXZpY2VzKCkgaW4gYSBzZXBhcmF0ZSBob3N0
+IGJyaWRnZSAuc3RhcnQoKSBtZXRob2QuCiAgICAKICAgIENDOiBUb255IEx1Y2sgPHRvbnkubHVj
+a0BpbnRlbC5jb20+CiAgICBTaWduZWQtb2ZmLWJ5OiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bn
+b29nbGUuY29tPgoKZGlmZiAtLWdpdCBhL2FyY2gvaWE2NC9wY2kvcGNpLmMgYi9hcmNoL2lhNjQv
+cGNpL3BjaS5jCmluZGV4IDA0ZjJmZDkuLjVlZWQ3NGMgMTAwNjQ0Ci0tLSBhL2FyY2gvaWE2NC9w
+Y2kvcGNpLmMKKysrIGIvYXJjaC9pYTY0L3BjaS9wY2kuYwpAQCAtMTM0LDYgKzEzNCw3IEBAIGFs
+bG9jX3BjaV9jb250cm9sbGVyIChpbnQgc2VnKQogc3RydWN0IHBjaV9yb290X2luZm8gewogCXN0
+cnVjdCBhY3BpX2RldmljZSAqYnJpZGdlOwogCXN0cnVjdCBwY2lfY29udHJvbGxlciAqY29udHJv
+bGxlcjsKKwlzdHJ1Y3QgbGlzdF9oZWFkIHJlc291cmNlczsKIAljaGFyICpuYW1lOwogfTsKIApA
+QCAtMzE1LDI0ICszMTYsMTMgQEAgc3RhdGljIF9fZGV2aW5pdCBhY3BpX3N0YXR1cyBhZGRfd2lu
+ZG93KHN0cnVjdCBhY3BpX3Jlc291cmNlICpyZXMsIHZvaWQgKmRhdGEpCiAJCQkJICZ3aW5kb3ct
+PnJlc291cmNlKTsKIAl9CiAKLQlyZXR1cm4gQUVfT0s7Ci19CisJLyogSFAncyBmaXJtd2FyZSBo
+YXMgYSBoYWNrIHRvIHdvcmsgYXJvdW5kIGEgV2luZG93cyBidWcuCisJICogSWdub3JlIHRoZXNl
+IHRpbnkgbWVtb3J5IHJhbmdlcyAqLworCWlmICghKCh3aW5kb3ctPnJlc291cmNlLmZsYWdzICYg
+SU9SRVNPVVJDRV9NRU0pICYmCisJICAgICAgKHdpbmRvdy0+cmVzb3VyY2UuZW5kIC0gd2luZG93
+LT5yZXNvdXJjZS5zdGFydCA8IDE2KSkpCisJCXBjaV9hZGRfcmVzb3VyY2UoJmluZm8tPnJlc291
+cmNlcywgJndpbmRvdy0+cmVzb3VyY2UpOwogCi1zdGF0aWMgdm9pZCBfX2RldmluaXQKLXBjaWJp
+b3Nfc2V0dXBfcm9vdF93aW5kb3dzKHN0cnVjdCBwY2lfYnVzICpidXMsIHN0cnVjdCBwY2lfY29u
+dHJvbGxlciAqY3RybCkKLXsKLQlpbnQgaTsKLQotCXBjaV9idXNfcmVtb3ZlX3Jlc291cmNlcyhi
+dXMpOwotCWZvciAoaSA9IDA7IGkgPCBjdHJsLT53aW5kb3dzOyBpKyspIHsKLQkJc3RydWN0IHJl
+c291cmNlICpyZXMgPSAmY3RybC0+d2luZG93W2ldLnJlc291cmNlOwotCQkvKiBIUCdzIGZpcm13
+YXJlIGhhcyBhIGhhY2sgdG8gd29yayBhcm91bmQgYSBXaW5kb3dzIGJ1Zy4KLQkJICogSWdub3Jl
+IHRoZXNlIHRpbnkgbWVtb3J5IHJhbmdlcyAqLwotCQlpZiAoKHJlcy0+ZmxhZ3MgJiBJT1JFU09V
+UkNFX01FTSkgJiYKLQkJICAgIChyZXMtPmVuZCAtIHJlcy0+c3RhcnQgPCAxNikpCi0JCQljb250
+aW51ZTsKLQkJcGNpX2J1c19hZGRfcmVzb3VyY2UoYnVzLCByZXMsIDApOwotCX0KKwlyZXR1cm4g
+QUVfT0s7CiB9CiAKIHN0cnVjdCBwY2lfYnVzICogX19kZXZpbml0CkBAIC0zNDMsNiArMzMzLDcg
+QEAgcGNpX2FjcGlfc2Nhbl9yb290KHN0cnVjdCBhY3BpX3BjaV9yb290ICpyb290KQogCWludCBi
+dXMgPSByb290LT5zZWNvbmRhcnkuc3RhcnQ7CiAJc3RydWN0IHBjaV9jb250cm9sbGVyICpjb250
+cm9sbGVyOwogCXVuc2lnbmVkIGludCB3aW5kb3dzID0gMDsKKwlzdHJ1Y3QgcGNpX3Jvb3RfaW5m
+byBpbmZvOwogCXN0cnVjdCBwY2lfYnVzICpwYnVzOwogCWNoYXIgKm5hbWU7CiAJaW50IHB4bTsK
+QEAgLTM1OSwxMSArMzUwLDEwIEBAIHBjaV9hY3BpX3NjYW5fcm9vdChzdHJ1Y3QgYWNwaV9wY2lf
+cm9vdCAqcm9vdCkKIAkJY29udHJvbGxlci0+bm9kZSA9IHB4bV90b19ub2RlKHB4bSk7CiAjZW5k
+aWYKIAorCUlOSVRfTElTVF9IRUFEKCZpbmZvLnJlc291cmNlcyk7CiAJYWNwaV93YWxrX3Jlc291
+cmNlcyhkZXZpY2UtPmhhbmRsZSwgTUVUSE9EX05BTUVfX0NSUywgY291bnRfd2luZG93LAogCQkJ
+JndpbmRvd3MpOwogCWlmICh3aW5kb3dzKSB7Ci0JCXN0cnVjdCBwY2lfcm9vdF9pbmZvIGluZm87
+Ci0KIAkJY29udHJvbGxlci0+d2luZG93ID0KIAkJCWttYWxsb2Nfbm9kZShzaXplb2YoKmNvbnRy
+b2xsZXItPndpbmRvdykgKiB3aW5kb3dzLAogCQkJCSAgICAgR0ZQX0tFUk5FTCwgY29udHJvbGxl
+ci0+bm9kZSk7CkBAIC0zODcsOSArMzc3LDEyIEBAIHBjaV9hY3BpX3NjYW5fcm9vdChzdHJ1Y3Qg
+YWNwaV9wY2lfcm9vdCAqcm9vdCkKIAkgKiBzaG91bGQgaGFuZGxlIHRoZSBjYXNlIGhlcmUsIGJ1
+dCBpdCBhcHBlYXJzIHRoYXQgSUE2NCBoYXNuJ3QKIAkgKiBzdWNoIHF1aXJrLiBTbyB3ZSBqdXN0
+IGlnbm9yZSB0aGUgY2FzZSBub3cuCiAJICovCi0JcGJ1cyA9IHBjaV9jcmVhdGVfYnVzKE5VTEws
+IGJ1cywgJnBjaV9yb290X29wcywgY29udHJvbGxlcik7Ci0JaWYgKCFwYnVzKQorCXBidXMgPSBw
+Y2lfY3JlYXRlX3Jvb3RfYnVzKE5VTEwsIGJ1cywgJnBjaV9yb290X29wcywgY29udHJvbGxlciwK
+KwkJCQkgICAmaW5mby5yZXNvdXJjZXMpOworCWlmICghcGJ1cykgeworCQlwY2lfZnJlZV9yZXNv
+dXJjZV9saXN0KCZpbmZvLnJlc291cmNlcyk7CiAJCXJldHVybiBOVUxMOworCX0KIAogCXBidXMt
+PnN1Ym9yZGluYXRlID0gcGNpX3NjYW5fY2hpbGRfYnVzKHBidXMpOwogCXJldHVybiBwYnVzOwpA
+QCAtNTA3LDE0ICs1MDAsMTAgQEAgcGNpYmlvc19maXh1cF9idXMgKHN0cnVjdCBwY2lfYnVzICpi
+KQogCWlmIChiLT5zZWxmKSB7CiAJCXBjaV9yZWFkX2JyaWRnZV9iYXNlcyhiKTsKIAkJcGNpYmlv
+c19maXh1cF9icmlkZ2VfcmVzb3VyY2VzKGItPnNlbGYpOwotCX0gZWxzZSB7Ci0JCXBjaWJpb3Nf
+c2V0dXBfcm9vdF93aW5kb3dzKGIsIGItPnN5c2RhdGEpOwogCX0KIAlsaXN0X2Zvcl9lYWNoX2Vu
+dHJ5KGRldiwgJmItPmRldmljZXMsIGJ1c19saXN0KQogCQlwY2liaW9zX2ZpeHVwX2RldmljZV9y
+ZXNvdXJjZXMoZGV2KTsKIAlwbGF0Zm9ybV9wY2lfZml4dXBfYnVzKGIpOwotCi0JcmV0dXJuOwog
+fQogCiB2b2lkIF9fZGV2aW5pdAo=
+--f46d040fa088e3dad804b3a0badf--
