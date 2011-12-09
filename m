@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1LIKeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 05:34:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31998 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306Ab1LIKeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 05:34:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84654664"
-Message-ID: <4EE1E425.5090402@intel.com>
-Date: Fri, 09 Dec 2011 12:34:13 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753174Ab1LIKhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 05:37:12 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50641 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750844Ab1LIKhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 05:37:10 -0500
+Date: Fri, 9 Dec 2011 10:36:52 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-ID: <20111209103652.GA23753@arm.com>
+References: <20111208110059.1d88730db9358e079949b89c@canb.auug.org.au>
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/4] mmc: sdhci/sdhci-pci: prepare for wl12xx/SDIO
-References: <1320217041-2580-1-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1320217041-2580-1-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111208110059.1d88730db9358e079949b89c@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/11 08:57, Adrian Hunter wrote:
-> Hi
-> 
-> Here are some changes (V2) to allow wl12xx/SDIO to be set up for sdhci-pci.
-> There a a couple of fixes plus a method to get platform data.  The
-> changes to the platform files are not included in this patchset.
-> 
-> 
-> V2: change sdhci_pci_get_data() from a weak function to a function
-> pointer
-> 
-> 
-> Adrian Hunter (4):
->       mmc: sdhci: fix vmmc handling
->       mmc: sdhci: prevent card detection activity for non-removable cards
->       mmc: sdhci-pci: add platform data
->       mmc: sdhci-pci: get gpio numbers from platform data
-> 
->  drivers/Makefile                   |    2 +-
->  drivers/mmc/Makefile               |    3 +-
->  drivers/mmc/host/Makefile          |    1 +
->  drivers/mmc/host/sdhci-pci-data.c  |    5 ++
->  drivers/mmc/host/sdhci-pci.c       |  137 +++++++++++++++++-------------------
->  drivers/mmc/host/sdhci.c           |   50 ++++++-------
->  include/linux/mmc/sdhci-pci-data.h |   18 +++++
->  7 files changed, 116 insertions(+), 100 deletions(-)
->  create mode 100644 drivers/mmc/host/sdhci-pci-data.c
->  create mode 100644 include/linux/mmc/sdhci-pci-data.h
+Hi Stephen,
 
-Any comments?  Chris?
+On Thu, Dec 08, 2011 at 12:00:59AM +0000, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-lpae tree got a conflict in
+> arch/arm/mm/idmap.c between commits 8903826d0cd9 ("ARM: idmap: populate
+> identity map pgd at init time using .init.text") and 4e8ee7de227e ("ARM:
+> SMP: use idmap_pgd for mapping MMU enable during secondary booting") from
+> the arm tree and commit 1932aa1edc86 ("ARM: LPAE: Add identity mapping
+> support for the 3-level page table format") from the arm-lpae tree.
+> 
+> I tried to fix it up (see below) and can carry the fix as necessary.
+
+The fix looks correct but Russell merged the LPAE patches into his tree
+last night and sorted out the conflicts, so you can now drop my for-next
+branch from -next (I'll still keep the kmemleak one).
+
+Thanks.
+
+-- 
+Catalin
