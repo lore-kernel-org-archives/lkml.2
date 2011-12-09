@@ -1,50 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1LIB7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:59:00 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58671 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1LIB65 (ORCPT
+	id S1754186Ab1LICAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 21:00:06 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57439 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab1LICAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:58:57 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Dec 2011 10:57:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
-        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
-        hannes@cmpxchg.org, mhocko@suse.cz
-Subject: Re: [PATCH v8 9/9] Display maximum tcp memory allocation in kmem
- cgroup
-Message-Id: <20111209105742.205a6fd3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1323120903-2831-10-git-send-email-glommer@parallels.com>
-References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
-	<1323120903-2831-10-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 8 Dec 2011 21:00:04 -0500
+Message-ID: <1323395996.3740.6.camel@phoenix>
+Subject: [PATCH 2/3] video: omap: convert drivers/video/omap/* to use
+ module_platform_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan McDowell <noodles@earth.li>,
+        Cory Maccarrone <darkstar6262@gmail.com>,
+        Laurent Gonzalez <palmte.linux@free.fr>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
+Date: Fri, 09 Dec 2011 09:59:56 +0800
+In-Reply-To: <1323395873.3740.4.camel@phoenix>
+References: <1323395873.3740.4.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Dec 2011 19:35:03 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+This patch converts the drivers in drivers/video/omap/* to use the
+module_platform_driver() macro which makes the code smaller and a bit
+simpler.
 
-> This patch introduces kmem.tcp.max_usage_in_bytes file, living in the
-> kmem_cgroup filesystem. The root cgroup will display a value equal
-> to RESOURCE_MAX. This is to avoid introducing any locking schemes in
-> the network paths when cgroups are not being actively used.
-> 
-> All others, will see the maximum memory ever used by this cgroup.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Reviewed-by: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Jonathan McDowell <noodles@earth.li>
+Cc: Cory Maccarrone <darkstar6262@gmail.com>
+Cc: Laurent Gonzalez <palmte.linux@free.fr>
+Cc: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/omap/lcd_ams_delta.c |   13 +------------
+ drivers/video/omap/lcd_h3.c        |   14 +-------------
+ drivers/video/omap/lcd_htcherald.c |   14 +-------------
+ drivers/video/omap/lcd_inn1510.c   |   14 +-------------
+ drivers/video/omap/lcd_inn1610.c   |   14 +-------------
+ drivers/video/omap/lcd_osk.c       |   14 +-------------
+ drivers/video/omap/lcd_palmte.c    |   14 +-------------
+ drivers/video/omap/lcd_palmtt.c    |   13 +------------
+ drivers/video/omap/lcd_palmz71.c   |   13 +------------
+ 9 files changed, 9 insertions(+), 114 deletions(-)
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/drivers/video/omap/lcd_ams_delta.c b/drivers/video/omap/lcd_ams_delta.c
+index eb50a95..0fdd6f6 100644
+--- a/drivers/video/omap/lcd_ams_delta.c
++++ b/drivers/video/omap/lcd_ams_delta.c
+@@ -209,15 +209,4 @@ static struct platform_driver ams_delta_panel_driver = {
+ 	},
+ };
+ 
+-static int __init ams_delta_panel_drv_init(void)
+-{
+-	return platform_driver_register(&ams_delta_panel_driver);
+-}
+-
+-static void __exit ams_delta_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&ams_delta_panel_driver);
+-}
+-
+-module_init(ams_delta_panel_drv_init);
+-module_exit(ams_delta_panel_drv_cleanup);
++module_platform_driver(ams_delta_panel_driver);
+diff --git a/drivers/video/omap/lcd_h3.c b/drivers/video/omap/lcd_h3.c
+index baec34e..49bdeca 100644
+--- a/drivers/video/omap/lcd_h3.c
++++ b/drivers/video/omap/lcd_h3.c
+@@ -124,16 +124,4 @@ static struct platform_driver h3_panel_driver = {
+ 	},
+ };
+ 
+-static int __init h3_panel_drv_init(void)
+-{
+-	return platform_driver_register(&h3_panel_driver);
+-}
+-
+-static void __exit h3_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&h3_panel_driver);
+-}
+-
+-module_init(h3_panel_drv_init);
+-module_exit(h3_panel_drv_cleanup);
+-
++module_platform_driver(h3_panel_driver);
+diff --git a/drivers/video/omap/lcd_htcherald.c b/drivers/video/omap/lcd_htcherald.c
+index b1a022f..20f4778 100644
+--- a/drivers/video/omap/lcd_htcherald.c
++++ b/drivers/video/omap/lcd_htcherald.c
+@@ -115,16 +115,4 @@ static struct platform_driver htcherald_panel_driver = {
+ 	},
+ };
+ 
+-static int __init htcherald_panel_drv_init(void)
+-{
+-	return platform_driver_register(&htcherald_panel_driver);
+-}
+-
+-static void __exit htcherald_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&htcherald_panel_driver);
+-}
+-
+-module_init(htcherald_panel_drv_init);
+-module_exit(htcherald_panel_drv_cleanup);
+-
++module_platform_driver(htcherald_panel_driver);
+diff --git a/drivers/video/omap/lcd_inn1510.c b/drivers/video/omap/lcd_inn1510.c
+index d129946..b38b1dd 100644
+--- a/drivers/video/omap/lcd_inn1510.c
++++ b/drivers/video/omap/lcd_inn1510.c
+@@ -109,16 +109,4 @@ static struct platform_driver innovator1510_panel_driver = {
+ 	},
+ };
+ 
+-static int __init innovator1510_panel_drv_init(void)
+-{
+-	return platform_driver_register(&innovator1510_panel_driver);
+-}
+-
+-static void __exit innovator1510_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&innovator1510_panel_driver);
+-}
+-
+-module_init(innovator1510_panel_drv_init);
+-module_exit(innovator1510_panel_drv_cleanup);
+-
++module_platform_driver(innovator1510_panel_driver);
+diff --git a/drivers/video/omap/lcd_inn1610.c b/drivers/video/omap/lcd_inn1610.c
+index a95756b..7e8bd8e 100644
+--- a/drivers/video/omap/lcd_inn1610.c
++++ b/drivers/video/omap/lcd_inn1610.c
+@@ -133,16 +133,4 @@ static struct platform_driver innovator1610_panel_driver = {
+ 	},
+ };
+ 
+-static int __init innovator1610_panel_drv_init(void)
+-{
+-	return platform_driver_register(&innovator1610_panel_driver);
+-}
+-
+-static void __exit innovator1610_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&innovator1610_panel_driver);
+-}
+-
+-module_init(innovator1610_panel_drv_init);
+-module_exit(innovator1610_panel_drv_cleanup);
+-
++module_platform_driver(innovator1610_panel_driver);
+diff --git a/drivers/video/omap/lcd_osk.c b/drivers/video/omap/lcd_osk.c
+index b985997..5914220 100644
+--- a/drivers/video/omap/lcd_osk.c
++++ b/drivers/video/omap/lcd_osk.c
+@@ -127,16 +127,4 @@ static struct platform_driver osk_panel_driver = {
+ 	},
+ };
+ 
+-static int __init osk_panel_drv_init(void)
+-{
+-	return platform_driver_register(&osk_panel_driver);
+-}
+-
+-static void __exit osk_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&osk_panel_driver);
+-}
+-
+-module_init(osk_panel_drv_init);
+-module_exit(osk_panel_drv_cleanup);
+-
++module_platform_driver(osk_panel_driver);
+diff --git a/drivers/video/omap/lcd_palmte.c b/drivers/video/omap/lcd_palmte.c
+index d79f436..88c31eb 100644
+--- a/drivers/video/omap/lcd_palmte.c
++++ b/drivers/video/omap/lcd_palmte.c
+@@ -108,16 +108,4 @@ static struct platform_driver palmte_panel_driver = {
+ 	},
+ };
+ 
+-static int __init palmte_panel_drv_init(void)
+-{
+-	return platform_driver_register(&palmte_panel_driver);
+-}
+-
+-static void __exit palmte_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&palmte_panel_driver);
+-}
+-
+-module_init(palmte_panel_drv_init);
+-module_exit(palmte_panel_drv_cleanup);
+-
++module_platform_driver(palmte_panel_driver);
+diff --git a/drivers/video/omap/lcd_palmtt.c b/drivers/video/omap/lcd_palmtt.c
+index c2e96a7..aaf3c8b 100644
+--- a/drivers/video/omap/lcd_palmtt.c
++++ b/drivers/video/omap/lcd_palmtt.c
+@@ -113,15 +113,4 @@ static struct platform_driver palmtt_panel_driver = {
+ 	},
+ };
+ 
+-static int __init palmtt_panel_drv_init(void)
+-{
+-	return platform_driver_register(&palmtt_panel_driver);
+-}
+-
+-static void __exit palmtt_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&palmtt_panel_driver);
+-}
+-
+-module_init(palmtt_panel_drv_init);
+-module_exit(palmtt_panel_drv_cleanup);
++module_platform_driver(palmtt_panel_driver);
+diff --git a/drivers/video/omap/lcd_palmz71.c b/drivers/video/omap/lcd_palmz71.c
+index 1ab4847..3b7d8aa 100644
+--- a/drivers/video/omap/lcd_palmz71.c
++++ b/drivers/video/omap/lcd_palmz71.c
+@@ -109,15 +109,4 @@ static struct platform_driver palmz71_panel_driver = {
+ 	},
+ };
+ 
+-static int __init palmz71_panel_drv_init(void)
+-{
+-	return platform_driver_register(&palmz71_panel_driver);
+-}
+-
+-static void __exit palmz71_panel_drv_cleanup(void)
+-{
+-	platform_driver_unregister(&palmz71_panel_driver);
+-}
+-
+-module_init(palmz71_panel_drv_init);
+-module_exit(palmz71_panel_drv_cleanup);
++module_platform_driver(palmz71_panel_driver);
+-- 
+1.7.5.4
+
+
 
