@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1LIRHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:07:39 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49432 "EHLO
+	id S1752328Ab1LIRHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:07:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49424 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab1LIRHf (ORCPT
+	with ESMTP id S1752153Ab1LIRHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Dec 2011 12:07:35 -0500
 From: Wolfram Sang <w.sang@pengutronix.de>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
         Alan Cox <alan@linux.intel.com>,
         Claudio Scordino <claudio@evidence.eu.com>,
         Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH RESEND 5/8] serial: 8250: reject delaying RTS with RS485
-Date: Fri,  9 Dec 2011 18:07:17 +0100
-Message-Id: <1323450440-414-6-git-send-email-w.sang@pengutronix.de>
+Subject: [PATCH RESEND 1/8] serial: 8250: replace hardcoded 0xbf with #define
+Date: Fri,  9 Dec 2011 18:07:13 +0100
+Message-Id: <1323450440-414-2-git-send-email-w.sang@pengutronix.de>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
 References: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
@@ -27,28 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There might be chips capable of doing this, but for now nothing is implemented,
-so reject usage of this feature.
+Makes it easier to find all occurences requesting CONF_MODE_B.
 
 Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/tty/serial/8250.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/tty/serial/8250.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 6a2f47f..28b3608 100644
+index eeadf1b..f8f2320 100644
 --- a/drivers/tty/serial/8250.c
 +++ b/drivers/tty/serial/8250.c
-@@ -2735,6 +2735,9 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 				   sizeof(rs485ctrl)))
- 			return -EFAULT;
- 
-+		if (rs485ctrl.delay_rts_before_send || rs485ctrl.delay_rts_after_send)
-+			return -EOPNOTSUPP;
-+
- 		spin_lock_irqsave(&up->port.lock, flags);
- 		lcr = serial_inp(up, UART_LCR);
- 		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
+@@ -2000,7 +2000,7 @@ static int serial8250_startup(struct uart_port *port)
+ 		serial_outp(up, UART_IER, 0);
+ 		serial_outp(up, UART_LCR, 0);
+ 		serial_icr_write(up, UART_CSR, 0); /* Reset the UART */
+-		serial_outp(up, UART_LCR, 0xBF);
++		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
+ 		serial_outp(up, UART_EFR, UART_EFR_ECB);
+ 		serial_outp(up, UART_LCR, 0);
+ 	}
 -- 
 1.7.7.3
 
