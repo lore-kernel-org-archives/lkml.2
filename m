@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab1LIJje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 04:39:34 -0500
-Received: from ims-m12.mx.aol.com ([64.12.207.145]:51868 "EHLO
-	ims-m12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab1LIJjc (ORCPT
+	id S1752893Ab1LIJpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:45:07 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65415 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab1LIJpF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 04:39:32 -0500
-Message-Id: <201112090938.pB99c2T5026877@ims-m12.mx.aol.com>
-Reply-To: <genpeterolu100@skymail.mn>
-From: "Central Bank of Nigeria" <pajann@aol.com>
-Subject: DIPLOMATIC PAYMENT OPEN ATTACHED FOR MORE INFO
-Date: Fri, 9 Dec 2011 10:35:54 +0100
+	Fri, 9 Dec 2011 04:45:05 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0049_01C2A9A6.48212D20"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76762
-X-AOL-VSS-CODE: scan_error
-X-AOL-SCOLL-SCORE: 0:2:140195968:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/76762
-X-AOL-VSS-CODE: scan_error
-X-AOL-SCOLL-SCORE: 0:2:162790144:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33824ee1d6fa6421
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20111209084337.GJ26952@opensource.wolfsonmicro.com>
+References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
+	<20111202153401.GX8245@opensource.wolfsonmicro.com>
+	<CANKRQniyjT_2Ko=EYmffu3_NzDJQTMm9nY6rUp-DQ70e6AVQpA@mail.gmail.com>
+	<20111205183223.GB7467@opensource.wolfsonmicro.com>
+	<CANKRQnhEFvubv0b63z34=_xn4x4q=20enofqPrMsFetj1x7-NQ@mail.gmail.com>
+	<CANKRQnhbBNDjQw5MQGexZAEboC0oHB5QS1LfHo6pDeoeDSwByw@mail.gmail.com>
+	<20111207132322.GA18837@opensource.wolfsonmicro.com>
+	<CANKRQniJR+b1gUwZUUiPoNDKVqU7TCkThLaHL2DFXAF=cARrTA@mail.gmail.com>
+	<20111209084337.GJ26952@opensource.wolfsonmicro.com>
+Date: Fri, 9 Dec 2011 18:37:40 +0900
+Message-ID: <CANKRQnhNJaiQvzBBy10oBV_=TP+rxtPXE-cX=8uMsgXY6qrN+A@mail.gmail.com>
+Subject: Re: [PATCH v2] soc/lapis: add machine driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+2011/12/9 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Dec 09, 2011 at 05:38:57PM +0900, Tomoya MORINAGA wrote:
+>
+>> Firstly, the above "dai_link structure" means below ? If yes, there is
+>> no member "dai_fmt", right ?
+>> 697 struct snd_soc_dai_link {
+>
+> As previously advised you should work against current development
+> kernels.  dai_fmt is present in current development kernels (and Linus'
+> tree for that matter).
+>
+>> > +     ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+>> > +                             SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
+>
+>> At the above point, do you mean I shouldn't  set these formats(
+>> SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS)
+>> directly ?
+>
+> Yes.
 
-------=_NextPart_000_0049_01C2A9A6.48212D20
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Seeing linux-next tree, I could understand your saying.
+I saw linux tree(3.2-rc4).
 
-
-------=_NextPart_000_0049_01C2A9A6.48212D20
-Content-Type: application/octet-stream;
-	name="Letter From Gen. Peter Olu.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Letter From Gen. Peter Olu.txt"
-
-T0ZGSUNFIE9GIFRIRSBOQVRJT05BTCBTRUNVUklUWSBBRFZJU0VSIA0KVE8g
-VEhFIFBSRVNJREVOVCBGRURFUkFMIFJFUFVCTElDIE9GIE5JR0VSSUEgDQpH
-RVQgQkFDSyBUTyBNRSBBVCBZT1VSIEVBUkxJRVNUIENPTlZJTklFTkNFIA0K
-DQpBdHRlbnRpb24sIA0KDQpJIGFtIEx0LiBHZW4uIFBldGVyIE9sdSwgTmF0
-aW9uYWwgU2VjdXJpdHkgQWR2aXNlciB0byB0aGUgTmV3IFByZXNpZGVudCBE
-ciBHb29kbHVjayBFLiBKb25hdGhhbiBGZWRlcmFsIFJlcHVibGljIG9mIE5p
-Z2VyaWEuIEkgZGVjaWRlZCB0byBjb250YWN0IHlvdSBiZWNhdXNlIG9mIHRo
-ZSBwcmV2YWlsaW5nIHNlY3VyaXR5IHJlcG9ydCByZWFjaGluZyBteSBvZmZp
-Y2UgYW5kIHRoZSBpbnRlbnNlIG5hdHVyZSBvZiBwb2xpY3kgaW4gTmlnZXJp
-YS4gVGhpcyBpcyB0byBpbmZvcm0geW91IGFib3V0IG91ciBwbGFuIHRvIHNl
-bmQgeW91ciBmdW5kIHRvIHlvdSB2aWEgY2FzaCBkZWxpdmVyeS4gVGhpcyBz
-eXN0ZW0gd2lsbCBiZSBlYXNpZXIgZm9yIHlvdSBhbmQgZm9yIHVzLiBXZSBh
-cmUgZ29pbmcgdG8gc2VuZCB5b3VyIGNvbnRyYWN0IHBhcnQgcGF5bWVudCBv
-ZiBVUzEwLjEgTWlsbGlvbiB0byB5b3UgdmlhIGRpcGxvbWF0aWMgY291cmll
-ciBzZXJ2aWNlLiANCg0KTm90ZTogVGhlIG1vbmV5IGlzIGNvbWluZyBvbiB0
-d28gc2VjdXJpdHkgcHJvb2YgYm94ZXMuIFRoZSBib3hlcyBhcmUgc2VhbGVk
-IHdpdGggc3ludGhldGljIG55bG9uIHNlYWwgYW5kIHBhZGRlZCB3aXRoIG1h
-Y2hpbmUuIFRoaXMgZnVuZCB3YXMgYnJvdWdodCB0byB1cyBmcm9tIEFtZXJp
-Y2E7IGl0IHdhcyBtZWFudCBmb3Igb3VyIExvY2FsIEFGRU0gbWFya2V0LiBC
-dXQgc2luY2UgdGhlIG1vbmV5IHdhcyBub3QgdXNlZCwgSSB3aWxsIHVzZSBt
-eSBwb3NpdGlvbiBhcyB0aGUgTmF0aW9uYWwgU2VjdXJpdHkgQWR2aXNlciB0
-byB0aGUgUHJlc2lkZW50IHRvIHNlbmQgdGhpcyBmdW5kIHRvIHlvdS4gDQoN
-ClRoZSBib3hlcyBhcmUgY29taW5nIHdpdGggYSBEaXBsb21hdGljIGFnZW50
-IHdobyB3aWxsIGFjY29tcGFueSB0aGUgYm94ZXMgdG8geW91ciBob3VzZSBh
-ZGRyZXNzLiBBbGwgeW91IG5lZWQgdG8gZG8gbm93IGlzIHRvIHNlbmQgdG8g
-bWUgDQoNCllvdXIgZnVsbCBuYW1lIA0KWW91ciBob3VzZSBhZGRyZXNzIA0K
-WW91ciBhZ2UgDQpZb3VyIG1hcml0YWwgc3RhdHVlIA0KWW91ciBpZGVudGl0
-eSBzdWNoIGFzLCBpbnRlcm5hdGlvbmFsIHBhc3Nwb3J0IG9yIGRyaXZlciBs
-aWNlbnNlIA0KWW91ciBjb250YWN0IHBob25lIGFuZCBmYXggbnVtYmVycywg
-DQoNClRoZSBEaXBsb21hdGljIGF0dGFjaGVkIHdpbGwgdHJhdmVsIHdpdGgg
-aXQuIEhlIHdpbGwgY2FsbCB5b3UgaW1tZWRpYXRlbHkgaGUgYXJyaXZlcyB5
-b3VyIGFpcnBvcnQuIEkgaG9wZSB5b3UgdW5kZXJzdGFuZCBtZS4gDQpJIHdp
-bGwgbGV0IHlvdSBrbm93IGJ5IHRoZSBzcGVjaWFsIGdyYWNlIG9mIEdvZCB3
-aGVuIHRoZSBib3hlcyBhcmUgYWlybGlmdGVkLiANCg0KTm90ZTogVGhlIGRp
-cGxvbWF0aWMgZG9lcyBub3Qga25vdyB0aGUgb3JpZ2luYWwgY29udGVudHMg
-b2YgdGhlIGJveGVzLiBXaGF0IGwgZGVjbGFyZWQgdG8gdGhlbSBhcyB0aGUg
-Y29udGVudHMgaXMgU2Vuc2l0aXZlIFBob3RvZ3JhcGhpYyBGaWxtIE1hdGVy
-aWFsLiBJIGRpZCBub3QgZGVjbGFyZSBtb25leSB0byB0aGVtIHBsZWFzZS4g
-SWYgdGhleSBjYWxsIHlvdSBhbmQgYXNrIHlvdSB0aGUgY29udGVudHMgcGxl
-YXNlIHRlbGwgdGhlbSB0aGUgc2FtZSB0aGluZyBPaywgSSB3aWxsIGxldCB5
-b3Uga25vdyBob3cgZmFyIEkgaGF2ZSBnb25lIHdpdGggdGhlIGFycmFuZ2Vt
-ZW50LiBJIHdpbGwgc2VjdXJlIHRoZSBEaXBsb21hdGljIGltbXVuaXR5IGNs
-ZWFyYW5jZSBjZXJ0aWZpY2F0ZSB0aGF0IHdpbGwgYmUgdGFnZ2VkIG9uIHRo
-ZSBib3hlcyB0byBtYWtlIGl0IHN0YW5kIGFzIGEgZGlwbG9tYXRpYyBjb25z
-aWdubWVudC4gDQoNClRoaXMgY2xlYXJhbmNlIHdpbGwgbWFrZSBpdCBwYXNz
-IGV2ZXJ5IGN1c3RvbSBjaGVja3BvaW50IGFsbCBvdmVyIHRoZSB3b3JsZCB3
-aXRob3V0IGhpdGNoLiBDb25maXJtIHRoZSByZWNlaXB0IG9mIHRoaXMgbWVz
-c2FnZSBhbmQgc2VuZCB0aGUgcmVxdWlyZW1lbnRzIHRvIG1lIGltbWVkaWF0
-ZWx5IHlvdSByZWNlaXZlIHRoaXMgbWVzc2FnZS4gSWYgeW91IG5lZWQgbW9y
-ZSBpbmZvcm1hdGlvbiBhYm91dCB0aGlzLCBJIHdpbGwgZ2l2ZSB5b3UgdGhl
-IGRldGFpbHMgaG93IHRvIGNvbnRhY3QgdGhlIGRpcGxvbWF0IGZvciBtb3Jl
-IGluZm9ybWF0aW9uIG9uIGhvdyB0byBjYXJyeSBvdXQgdGhlIHBsYW4uIA0K
-DQpJIG5lZWQgeW91IHJlc3BvbnNlIGJlY2F1c2UgdGhlIGJveGVzIGFyZSBz
-Y2hlZHVsZSB0byBsZWF2ZSBhcyBzb29uIGFzIHdlIGhlYXIgZnJvbSB5b3Uu
-IFJlcGx5IG1lIGltbWVkaWF0ZWx5IHlvdSByZWNlaXZlIHRoaXMgbWVzc2Fn
-ZSB2aWEgRW1haWwgKHBldGVyb2x1bzE5NjBAeWFob28uY28uanAgKSBDYWxs
-IG1lIG9uIG15IGRpcmVjdCBQSC9GQVg6ICgyMzQtNzA5MjYxMjkyMSkgDQoN
-CkJlc3QgUmVnYXJkcywgDQpMdC4gR2VuLiBQZXRlciBPbHUNCkRJUExPTUFU
-SUMgUEFZTUVOVCBPUEVOIEFUVEFDSEVEIEZPUiBNT1JFIElORk8=
-
-------=_NextPart_000_0049_01C2A9A6.48212D20--
+thanks,
+tomoya
