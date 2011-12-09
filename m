@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1LIVNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:13:55 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:39143 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634Ab1LIVNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:13:54 -0500
-Date: Fri, 9 Dec 2011 13:13:46 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] unicore32: standardize /proc/iomem "Kernel code" name
-Message-ID: <20111209211346.GA2639@outflux.net>
+	id S1754691Ab1LIVWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:22:21 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:53996 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751278Ab1LIVWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 16:22:19 -0500
+Message-ID: <4EE289FE.90006@xenotime.net>
+Date: Fri, 09 Dec 2011 14:21:50 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Outflux
-X-HELO: www.outflux.net
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sjur Brendeland <sjur.brandeland@stericsson.com>
+Subject: [PATCH -next] xshm: fix build errors, depends on NET
+References: <20111209163247.1de15dcb5b735ca5e1ad030b@canb.auug.org.au>
+In-Reply-To: <20111209163247.1de15dcb5b735ca5e1ad030b@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All other ports use "Kernel code" to identify the Kernel text segment
-in /proc/iomem. Change the ARM resources to do the same.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Fix build errors in xshm.  xshm uses netlink, so it
+should depend on NET.
+
+ERROR: "genl_unregister_family" [drivers/xshm/xshm.ko] undefined!
+ERROR: "netlink_unicast" [drivers/xshm/xshm.ko] undefined!
+ERROR: "genl_register_family_with_ops" [drivers/xshm/xshm.ko] undefined!
+ERROR: "init_net" [drivers/xshm/xshm.ko] undefined!
+ERROR: "__alloc_skb" [drivers/xshm/xshm.ko] undefined!
+ERROR: "kfree_skb" [drivers/xshm/xshm.ko] undefined!
+ERROR: "skb_put" [drivers/xshm/xshm.ko] undefined!
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Sjur Brendeland <sjur.brandeland@stericsson.com>
 ---
- arch/unicore32/kernel/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/xshm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/unicore32/kernel/setup.c b/arch/unicore32/kernel/setup.c
-index 471b6bc..2a64061 100644
---- a/arch/unicore32/kernel/setup.c
-+++ b/arch/unicore32/kernel/setup.c
-@@ -64,7 +64,7 @@ static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
-  */
- static struct resource mem_res[] = {
- 	{
--		.name = "Kernel text",
-+		.name = "Kernel code",
- 		.start = 0,
- 		.end = 0,
- 		.flags = IORESOURCE_MEM
--- 
-1.7.5.4
-
-
--- 
-Kees Cook                                            @outflux.net
+--- linux-next-20111209.orig/drivers/xshm/Kconfig
++++ linux-next-20111209/drivers/xshm/Kconfig
+@@ -5,6 +5,7 @@ config XSHM
+ 
+ config XSHM_CHR
+ 	tristate "Character device for External Shared Memory (XSHM)"
++	depends on NET
+ 	select XSHM
+ 	default n
+ 	---help---
