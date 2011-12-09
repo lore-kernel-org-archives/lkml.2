@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab1LIS7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:59:45 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36271 "EHLO
-	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751361Ab1LIS7o (ORCPT
+	id S1754504Ab1LITAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:00:03 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45510 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752434Ab1LITAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:59:44 -0500
-Date: Fri, 9 Dec 2011 19:00:19 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Matthias Fuchs <mfuchs@ma-fu.de>
-Subject: Re: [PATCH RESEND 2/8] serial: 8250: Add ioctl to enable auto rs485
- mode with some Exar UARTs
-Message-ID: <20111209190019.0b983f48@pyramind.ukuu.org.uk>
-In-Reply-To: <1323450440-414-3-git-send-email-w.sang@pengutronix.de>
-References: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-	<1323450440-414-3-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
+	Fri, 9 Dec 2011 14:00:01 -0500
+Message-ID: <0b83a8b65ef53f7892e639c89667af1b.squirrel@xenotime.net>
+In-Reply-To: <4EE19DA0.5010705@goop.org>
+References: <20111209012746.GC20353@thor.bakeyournoodle.com>
+    <4EE19DA0.5010705@goop.org>
+Date: Fri, 9 Dec 2011 11:00:00 -0800
+Subject: Re: linux-next bad Kconfig for drivers/hid
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Jeremy Fitzhardinge" <jeremy@goop.org>
+Cc: "Jiri Kosina" <jkosina@suse.cz>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "LinuxPPC-dev" <linuxppc-dev@lists.ozlabs.org>,
+        "Linux Kernel ML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Identified-User: {:box742.bluehost.com:xenotime:box742.bluehost.com} {sentby:program running on server}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Dec 2011 18:07:14 +0100
-Wolfram Sang <w.sang@pengutronix.de> wrote:
 
-> From: Matthias Fuchs <mfuchs@ma-fu.de>
-> 
-> Some Exar UARTs support an auto rs485 mode. In this mode
-> the UART's RTS# pin is activated during transmitting and
-> can be used to enable a rs485 line driver. This has nothing
-> to do with attempts to do this by manually asserting/
-> deasserting handshake lines in software.
+On Thu, December 8, 2011 9:33 pm, Jeremy Fitzhardinge wrote:
+> On 12/08/2011 05:27 PM, Tony Breeds wrote:
+>> Commit 4f5ca836bef3 (HID: hid-input: add support for HID devices
+>> reporting Battery Strength) went into linux-next on Dec 1st since then a
+>> ppc6xx_defconfig has been failing with:
+>>
+>> ---
+>> drivers/built-in.o: In function `hidinput_cleanup_battery':
+>> /scratch/tony/working/drivers/hid/hid-input.c:351: undefined reference
+>> to `power_supply_unregister'
+>> drivers/built-in.o: In function `hidinput_setup_battery':
+>> /scratch/tony/working/drivers/hid/hid-input.c:338: undefined reference
+>> to `power_supply_register'
+>> make[1]: *** [.tmp_vmlinux1] Error 1
+>> ---
+>>
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/5012563/
+>> vs
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/5017366/
+>>
+>> The defconfig in question doens't mention either option
+>> (CONFIG_POWER_SUPPLY or CONFIG_HID_BATTERY_STRENGTH) and kbuild is
+>> genertaing
+>> CONFIG_HID_BATTERY_STRENGTH=y
+>> CONFIG_POWER_SUPPLY=m
+>> which clearly isn't going to work.
+>>
+>> The following change to HID_BATTERY_STRENGTH Kconfig "works" but seems a
+>> little gross.
+>>
+>> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+>> index 5ed64f6..d2a94e6 100644
+>> --- a/drivers/hid/Kconfig
+>> +++ b/drivers/hid/Kconfig
+>> @@ -33,7 +33,7 @@ config HID
+>>
+>>  config HID_BATTERY_STRENGTH
+>>         bool
+>> -       depends on POWER_SUPPLY
+>> +       depends on POWER_SUPPLY=y
+>>         default y
+>>
+>>  config HIDRAW
+>>
+>> Any chance we can get a fix into linux-next?
+>
+> Hm.  How about making it "depends on HID && POWER_SUPPLY"?  I think that
+> would needlessly disable it if HID is also modular, but I'm not sure how
+> to fix that.  "depends on HID && POWER_SUPPLY && HID == POWER_SUPPLY"?
 
-Please split this out so that the ioctl handler calls a pair of port->
-methods or errors if NULL. That'll future proof it and keep chip specific
-stuff out of the direct paths.
+The last suggestion looks good to me.
 
-Other than that I'm fine with it. Functionality, locking etc.
+-- 
+~Randy
 
-Alan
