@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab1LICB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 21:01:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47800 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1LICBV (ORCPT
+	id S1754000Ab1LICHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 21:07:13 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59641 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab1LICHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 21:01:21 -0500
-Message-ID: <1323396075.3740.8.camel@phoenix>
-Subject: [PATCH 3/3] video: pnx4008: convert drivers/video/pnx4008/* to use
- module_platform_driver()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Date: Fri, 09 Dec 2011 10:01:15 +0800
-In-Reply-To: <1323395873.3740.4.camel@phoenix>
-References: <1323395873.3740.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 21:07:11 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Dec 2011 11:05:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
+        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
+        hannes@cmpxchg.org, mhocko@suse.cz,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@fujtsu.com>
+Subject: Re: [PATCH v8 3/9] socket: initial cgroup code.
+Message-Id: <20111209110550.fc740b81.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1323120903-2831-4-git-send-email-glommer@parallels.com>
+References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
+	<1323120903-2831-4-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/video/pnx4008/* to use the
-module_platform_driver() macro which makes the code smaller and a bit
-simpler.
+On Mon,  5 Dec 2011 19:34:57 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Cc: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/pnx4008/pnxrgbfb.c |   13 +------------
- drivers/video/pnx4008/sdum.c     |   13 +------------
- 2 files changed, 2 insertions(+), 24 deletions(-)
+> The goal of this work is to move the memory pressure tcp
+> controls to a cgroup, instead of just relying on global
+> conditions.
+> 
+> To avoid excessive overhead in the network fast paths,
+> the code that accounts allocated memory to a cgroup is
+> hidden inside a static_branch(). This branch is patched out
+> until the first non-root cgroup is created. So when nobody
+> is using cgroups, even if it is mounted, no significant performance
+> penalty should be seen.
+> 
+> This patch handles the generic part of the code, and has nothing
+> tcp-specific.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Kirill A. Shutemov <kirill@shutemov.name>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtsu.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
 
-diff --git a/drivers/video/pnx4008/pnxrgbfb.c b/drivers/video/pnx4008/pnxrgbfb.c
-index b2252fe..6d30428 100644
---- a/drivers/video/pnx4008/pnxrgbfb.c
-+++ b/drivers/video/pnx4008/pnxrgbfb.c
-@@ -193,17 +193,6 @@ static struct platform_driver rgbfb_driver = {
- 	.remove = rgbfb_remove,
- };
- 
--static int __init rgbfb_init(void)
--{
--	return platform_driver_register(&rgbfb_driver);
--}
--
--static void __exit rgbfb_exit(void)
--{
--	platform_driver_unregister(&rgbfb_driver);
--}
--
--module_init(rgbfb_init);
--module_exit(rgbfb_exit);
-+module_platform_driver(rgbfb_driver);
- 
- MODULE_LICENSE("GPL");
-diff --git a/drivers/video/pnx4008/sdum.c b/drivers/video/pnx4008/sdum.c
-index 50e0039..c5c7414 100644
---- a/drivers/video/pnx4008/sdum.c
-+++ b/drivers/video/pnx4008/sdum.c
-@@ -856,17 +856,6 @@ static struct platform_driver sdum_driver = {
- 	.resume = sdum_resume,
- };
- 
--int __init sdum_init(void)
--{
--	return platform_driver_register(&sdum_driver);
--}
--
--static void __exit sdum_exit(void)
--{
--	platform_driver_unregister(&sdum_driver);
--};
--
--module_init(sdum_init);
--module_exit(sdum_exit);
-+module_platform_driver(sdum_driver);
- 
- MODULE_LICENSE("GPL");
--- 
-1.7.5.4
+I already replied Reviewed-by: but...
 
+
+> +/* Writing them here to avoid exposing memcg's inner layout */
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +#ifdef CONFIG_INET
+> +#include <net/sock.h>
+> +
+> +static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+> +void sock_update_memcg(struct sock *sk)
+> +{
+> +	/* A socket spends its whole life in the same cgroup */
+> +	if (sk->sk_cgrp) {
+> +		WARN_ON(1);
+> +		return;
+> +	}
+> +	if (static_branch(&memcg_socket_limit_enabled)) {
+> +		struct mem_cgroup *memcg;
+> +
+> +		BUG_ON(!sk->sk_prot->proto_cgroup);
+> +
+> +		rcu_read_lock();
+> +		memcg = mem_cgroup_from_task(current);
+> +		if (!mem_cgroup_is_root(memcg)) {
+> +			mem_cgroup_get(memcg);
+> +			sk->sk_cgrp = sk->sk_prot->proto_cgroup(memcg);
+> +		}
+> +		rcu_read_unlock();
+> +	}
+> +}
+
+Here, you do mem_cgroup_get() if !mem_cgroup_is_root().
+
+
+> +EXPORT_SYMBOL(sock_update_memcg);
+> +
+> +void sock_release_memcg(struct sock *sk)
+> +{
+> +	if (static_branch(&memcg_socket_limit_enabled) && sk->sk_cgrp) {
+> +		struct mem_cgroup *memcg;
+> +		WARN_ON(!sk->sk_cgrp->memcg);
+> +		memcg = sk->sk_cgrp->memcg;
+> +		mem_cgroup_put(memcg);
+> +	}
+> +}
+>
+
+You don't check !mem_cgroup_is_root(). Hm, root memcg will not be freed
+by this ?
+
+Thanks,
+-Kame
 
 
