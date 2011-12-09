@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab1LIFqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 00:46:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49626 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab1LIFpy (ORCPT
+	id S1751852Ab1LIGC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 01:02:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42268 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750941Ab1LIGC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 00:45:54 -0500
-Date: Thu, 8 Dec 2011 21:47:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20111208214744.19117662.akpm@linux-foundation.org>
-In-Reply-To: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
-References: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Dec 2011 01:02:56 -0500
+Date: Fri, 9 Dec 2011 14:02:50 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: add irq domain support for max8997 interrupts
+Message-ID: <20111209060249.GD26952@opensource.wolfsonmicro.com>
+References: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
+ <1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+ <20111209044109.GB26952@opensource.wolfsonmicro.com>
+ <CAJuYYwRicSWO=wCmBH5RWcBLX3uhpyxS2wojUS3ZAH9tN=R1Kg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJuYYwRicSWO=wCmBH5RWcBLX3uhpyxS2wojUS3ZAH9tN=R1Kg@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Dec 2011 16:08:56 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Fri, Dec 09, 2011 at 10:55:10AM +0530, Thomas Abraham wrote:
+> On 9 December 2011 10:11, Mark Brown
 
-> Hi Andrew,
-> 
-> After merging the akpm tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> In file included from kernel/fork.c:21:0:
-> include/linux/mempolicy.h: In function 'task_has_mempolicy':
-> include/linux/mempolicy.h:258:13: error: dereferencing pointer to incomplete type
-> 
-> And several more like that.
-> 
-> Caused by commit 9d15457f147d
-> ("cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2").
+> > Removing irq_base from platform data isn't going to be helpful for
+> > anyone using the driver on non-DT platforms as it's going to make it
+> > impossible to find the interrupts.
 
-I suppose this is a good enough fix for that:
+> All the consumers of the max8997 interrupts are the drivers for the
+> sub-blocks of max8997. These drivers have access to 'irq_domain'
+> member of 'struct max8997_dev', From irq_domain, the sub-block driver
+> can get the irq_base and add one of the 'enum max8997_irq' offset when
+> registering for interrupt notifications.
 
- include/linux/mempolicy.h |   10 ----------
- mm/mempolicy.c            |   12 ++++++++++++
- 2 files changed, 12 insertions(+), 10 deletions(-)
-
-diff -puN include/linux/mempolicy.h~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2 include/linux/mempolicy.h
---- a/include/linux/mempolicy.h~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2
-+++ a/include/linux/mempolicy.h
-@@ -253,11 +253,6 @@ static inline int vma_migratable(struct 
- 	return 1;
- }
- 
--static inline bool task_has_mempolicy(struct task_struct *task)
--{
--	return task->mempolicy;
--}
--
- #else
- 
- struct mempolicy {};
-@@ -384,11 +379,6 @@ static inline int mpol_to_str(char *buff
- 	return 0;
- }
- 
--static inline bool task_has_mempolicy(struct task_struct *task)
--{
--	return false;
--}
--
- #endif /* CONFIG_NUMA */
- #endif /* __KERNEL__ */
- 
-diff -puN mm/mempolicy.c~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2 mm/mempolicy.c
---- a/mm/mempolicy.c~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2
-+++ a/mm/mempolicy.c
-@@ -137,6 +137,18 @@ static const struct mempolicy_operations
- 			enum mpol_rebind_step step);
- } mpol_ops[MPOL_MAX];
- 
-+#ifdef CONFIG_NUMA
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return task->mempolicy;
-+}
-+#else
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return false;
-+}
-+#endif
-+
- /* Check that the nodemask contains at least one populated zone */
- static int is_valid_nodemask(const nodemask_t *nodemask)
- {
-_
-
-> I have reverted that patch for today (and the following trivial patch
-> "cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix").
-
-And I'll drop that one now.
+There's no GPIOs with interrupt support (even if they're not implemented
+yet)?
