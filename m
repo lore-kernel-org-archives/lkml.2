@@ -1,242 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1LIC6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 21:58:00 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45162 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab1LIC57 (ORCPT
+	id S1752193Ab1LIDCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 22:02:16 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43693 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab1LIDCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 21:57:59 -0500
-Date: Fri, 9 Dec 2011 13:38:19 +1100
+	Thu, 8 Dec 2011 22:02:15 -0500
+Date: Fri, 9 Dec 2011 14:00:34 +1100
 From: David Gibson <dwg@au1.ibm.com>
 To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, joerg.roedel@amd.com,
-        dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@au1.ibm.com,
+Cc: joerg.roedel@amd.com, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, aik@au1.ibm.com,
         linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com
+        scottwood@freescale.com, B08248@freescale.com,
+        benh@kernel.crashing.org
 Subject: Re: RFC: Device isolation infrastructure
-Message-ID: <20111209023819.GE5750@truffala.fritz.box>
+Message-ID: <20111209030034.GF5750@truffala.fritz.box>
 Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
-	Alex Williamson <alex.williamson@redhat.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	joerg.roedel@amd.com, dwmw2@infradead.org,
-	iommu@lists.linux-foundation.org, aik@au1.ibm.com,
-	linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-	scottwood@freescale.com, B08248@freescale.com
+	Alex Williamson <alex.williamson@redhat.com>, joerg.roedel@amd.com,
+	dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+	aik@au1.ibm.com, linux-kernel@vger.kernel.org, chrisw@redhat.com,
+	agraf@suse.de, scottwood@freescale.com, B08248@freescale.com,
+	benh@kernel.crashing.org
 References: <20111207035816.GC7631@truffala.fritz.box>
  <1323240402.2182.241.camel@bling.home>
  <20111207142201.GA5696@truffala.fritz.box>
  <1323287120.15059.63.camel@bling.home>
- <1323301293.12793.16.camel@pasglop>
- <1323323519.24340.64.camel@bling.home>
+ <20111208024357.GB5344@truffala.fritz.box>
+ <1323325390.24340.81.camel@bling.home>
+ <20111208065216.GA9107@truffala.fritz.box>
+ <1323354505.24340.111.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323323519.24340.64.camel@bling.home>
+In-Reply-To: <1323354505.24340.111.camel@bling.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11120816-0260-0000-0000-00000030823C
+x-cbid: 11120817-5140-0000-0000-000000654ECC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 10:51:59PM -0700, Alex Williamson wrote:
-> On Thu, 2011-12-08 at 10:41 +1100, Benjamin Herrenschmidt wrote:
-> > On Wed, 2011-12-07 at 12:45 -0700, Alex Williamson wrote:
-> > 
-> > > Ok, let's back up from the patch because I think its clouding the driver
-> > > model with a detached device state that might be detracting from the
-> > > useful bits.
+On Thu, Dec 08, 2011 at 07:28:25AM -0700, Alex Williamson wrote:
+> On Thu, 2011-12-08 at 17:52 +1100, David Gibson wrote:
+> > On Wed, Dec 07, 2011 at 11:23:10PM -0700, Alex Williamson wrote:
+> > > On Thu, 2011-12-08 at 13:43 +1100, David Gibson wrote:
+> > > > On Wed, Dec 07, 2011 at 12:45:20PM -0700, Alex Williamson wrote:
+> > > > > So the next problem is that while the group is the minimum granularity
+> > > > > for the iommu, it's not necessarily the desired granularity.  iommus
+> > > > > like VT-d have per PCI BDF context entries that can point to shared page
+> > > > > tables.  On such systems we also typically have singleton isolation
+> > > > > groups, so when multiple devices are used by a single user, we have a
+> > > > > lot of duplication in time and space.  VFIO handles this by allowing
+> > > > > groups to be "merged".  When this happens, the merged groups point to
+> > > > > the same iommu context.  I'm not sure what the plan is with isolation
+> > > > > groups, but we need some way to reduce that overhead.
+> > > > 
+> > > > Right.  So, again, I intend that mutiple groups can go into one
+> > > > domain.  Not entirely sure of the interface yet.  One I had in mind
+> > > > was to borrow the vfio1 interface, so you open a /dev/vfio (each open
+> > > > gives a new instance).  Then you do an "addgroup" ioctl which adds a
+> > > > group to the domain.  You can do that multiple times, then start using
+> > > > the domain.
 > > > 
-> > > An isolation group is a generic association of devices into a set based
-> > > on, well... isolation.  Presumably something like an iommu driver does a
-> > > bus_register_notifier() and bus_for_each_dev() and when a new device is
-> > > added we do isolation_group_new() and isolation_group_dev_add() as
-> > > necessary.  When the iommu driver needs to do a dma_ops call for a
-> > > device, it can traverse up to the isolation group and find something
-> > > that points it to the shared iommu context for that group.  While
-> > > dma_ops can share the iommu context among the drivers attached to the
-> > > various devices, iommu_ops wants a single meta-driver for the group
-> > > because it's predominantly designed for use when devices are exposed
-> > > directly to the user.  We trust native kernel drivers to share context
-> > > between each other, we do not trust user level drivers to share context
-> > > with anyone but themselves.  Ok so far?
-> > > 
-> > > The first question we run into is what does the iommu driver do if it
-> > > does not provide isolation?  If it's a translation-only iommu, maybe it
-> > > has a single context and can manage to maintain it internally and should
-> > > opt-out of isolation groups.  But we also have things like MSI isolation
-> > > where we have multiple contexts and the isolation strength is sufficient
-> > > for dma_ops, but not iommu_ops.  I don't know if we want to make that
-> > > determination via a strength bitmask at the group level or simply a bool
-> > > that the iommu driver sets when it registers a group.
+> > > This also revisits one of the primary problems of vfio1, the dependency
+> > > on a privileged uiommu domain creation interface.  Assigning a user
+> > > ownership of a group should be a privileged operation.  If a privileged
+> > > user needs to open /dev/vfio, add groups, then drop privileges and hand
+> > > the open file descriptor to an unprivileged user, the interface becomes
+> > > much harder to use.  "Hot merging" becomes impossible.
 > > 
-> >  .../...
-> > 
-> > I think we are trying to solve too many problems at once.
-> > 
-> > I don't believe we should have the normal dma ops path in the kernel be
-> > rewritten on top of some new iommu isolation layer or anything like that
-> > at this stage.
+> > No, I was assuming that "permission to detach" could be handed out to
+> > a user before this step.  uid/gid/mode attributes in sysfs would
+> > suffice, though there might be better ways.
 > 
-> I headed down this path because David seems to be suggesting, well
-> stating, that all this infrastructure is useful for providing simplicity
-> and efficiency of groups to the core, and not just for this niche vfio
-> usage.  "You don't get a choice about whether you use groups."  The only
-> way I can rationalize that is to give it some purpose which is used by
-> something other that just vfio.  If all of that is "some day", then why
-> don't we start with the group management in vfio as I have it today and
-> eventually push that down into the core?
+> Wow.  So you effectively get:
+> 
+> # chown user:user /sys/isolation/$GROUP
 
-So.. you misunderstand what I meant by that, but I just realised
-that's because I misunderstood what I said that in response to.
+I was thinking more /sys/isolation/$GROUP/{uid,gid,mode} properties,
+because I'm not sure you can implement chown simply in sysfs, but,
+whatever.
 
-My point was that if you're using vfio (or something like it), then
-the choice of whether groups are relevant is not the user's, but
-depends on the hardware setup.
+> $ fd = open(/dev/vfio)
+> $ ioctl(fd, addgroup, $GROUP)
+>   ^^^^ this is where the actual detach occurs?
+> 
+> And vfio has to find the $GROUP object,
 
-But I now realise that your point was that very few people will use
-vfio itself, or anything like it.  And therefore you're uncomfortable
-with the extent to which my patch impinges on the core driver model.
+That's easy.
 
-Which is a good point.  I still think this sufficiently solidifies the
-isolation model to be worth it.
+> figure out where /sys is mounted
+> on this system,
 
-> > Proceed step by step or we'll never be finished. What that means imho
-> > is:
-> > 
-> >  - Existing dma/iommu arch layers mostly remain as-is. It has its own
-> > internal representation of devices, domains and possibly grouping
-> > information, and things like the buggy RICOH devices are handled there
-> > (via a flag set in a generic header quirk)
-> 
-> But we're already being harassed to rework iommu_ops to operate based on
-> groups and to take grouping into account for things like the ricoh
-> device in dma_ops.  Mixed messages...
+a) /sys is always at /sys (see Documentation/sysfs-tules.txt
 
-Well, ok, maybe not so far in the future, but in any case this can be
-considered independently.
+b) we don't need that anyway.  vfio can use use an in-kernel interface
+to grab a handle on the group, it doesn't need to trawl through the
+filesystem.
 
-> >  - Isolation groups are a new high-level thing that is not used by the
-> > iommu/dma code for normal in-kernel operations at this stage. The
-> > platform iommu/dma code creates the isolation group objects and
-> > populates them, it doesn't initially -use- them.
-> 
-> The iommu_device_group() interface is a tiny extension to the IOMMU API
-> that basically lets vfio query the iommu driver for a group identifier
-> for a device.  vfio then uses that information to create and manage
-> groups itself.
-> 
-> This is simply reversing that, allowing the iommu driver to create
-> groups and add devices, which are centrally managed.  That sounds like a
-> good long term goal, especially when we start making use of the groups
-> for dma/iommu ops, but it does require that we define an API both for
-> group providers (iommu drivers) and the group users (vfio).  It's also
-> much more intrusive to the iommu drivers (note the trivial patches to
-> add iommu_device_group support to intel and amd iommu) and creates bloat
-> for a niche user if we're not going to get around to making groups more
-> pervasive anytime soon.
-> 
-> >  - We can then use that for the needs of exposing the groups to user
-> > space, perform driver level isolation, and provide the grouping
-> > information to vfio.
-> >
-> >  - In the -long- run, individual iommu/dma layers might be modified to
-> > instead use the isolation layer as their own building block if that
-> > makes sense, this can be looked at on a case by case basis but is not a
-> > pre-req.
-> > 
-> > That leaves us with what I think is the main disagreement between David
-> > and Alex approaches which is whether devices in a group are "detached"
-> > completely (in some kind of limbo) while they are used by vfio or
-> > something else vs. assigned to a different driver (vfio).
-> > 
-> > After much thinking, I believe that the driver ownership model is the
-> > right one. However, we could still use the work David did here. IE. I
-> > _do_ think that exposing groups as the individual unit of ownership to
-> > user space is the right thing to do.
-> 
-> So far we're only exposing the group structure here (which vfio also
-> does in sysfs), not providing a userspace or driver interface for taking
-> ownership of the group.  I'm still not clear how this ends up satisfying
-> David's complaints about the group ownership vs device access model in
-> vfio.
-> 
-> > That means that instead of that current detached flag alone, what we
-> > could do instead is have an in-kernel mechanism to request isolation
-> > which works by having the isolation group kernel code perform:
-> > 
-> >  - Rename the detached flag to "exclusive". This flag prevents automatic
-> > & user driven attachment of a driver by the generic code. Set that flag
-> > on all devices in the group (need a hook for hotplug).
-> 
-> This is a sysfs attribute on the group?  So step #1:
-> 
->         $ echo 1 > /sys/isolation/$GROUP/exclusive
-> 
-> >  - Detach existing drivers.
-> 
-> step #2:
-> 
->         $ for i in $(ls /sys/isolation/$GROUP/devices/); do	\
->         	echo $(basename $i) > $i/driver/unbind; done
 
-Right, but this version can be messed up if there's a hotplug after
-this but before vfio binds to the group.
+> construct a path to $SYS/isolation/$GROUP, and check the
+> file access before calling the isolation group detach API.
 
-> >  - Once everything is detached, attach the requested client driver (vfio
-> > being the one we initially provide, maybe uio could use that framework
-> > as well). This can be done using an explicit in-kernel attach API that
-> > can be used even when the exclusive flag is set.
-> 
-> step #3: A miracle occurs ;)
-> 
-> I'm not sure what this looks like.  Are we going to do a
-> isolation_group_register_meta_driver() that vfio calls with some defined
-> ops structure, so a user can:
-> 
->         $ echo "vfio" > /sys/isolation/$GROUP/driver
-> 
-> That triggers some list walk of the group devices, asking vfio to find
-> and force a driver attach to the bus driver for each device?  A model
-> something like that is the only way I can see that removing groups from
-> vfio doesn't also disassociate the group meta driver from the group
-> device drivers.
+Well, no, because the perms would just be in struct isolation_group,
+and we'd have a helper function that detaches iff current has the
+relevant permission.
 
-That's one way we could do it.  Another option is that the user
-explicitly just detaches the group, which puts it in limbo.  The
-asking to add the group from the vfio interface triggers attaching the
-vfio "meta-driver" to the group (via a call to something like
-isolation_group_claim(group, &vfio_isolation_user)).  I'm not sure
-what's best, I'll try to work something up and see how it looks in the
-next spin of my code.
-
-> If instead, we make vfio be the group manager (since nobody else uses it
-> anyway), all of the above becomes:
+> Then later...
 > 
->         $ for i in $(ls /sys/devices/virtual/vfio/pci:257/devices); do	\
->         	echo $(basename $i) > $i/driver/unbind;			\
->         	echo $(basename $i) > /sys/bus/pci/drivers/vfio/bind;	\
->         	done
->         
-> >  - Win
+> $ ioctl(fd, delgroup, $GROUP)
 > 
-> I wish, we still have to make it through how vfio then exposes the group
-> to userspace and how we don't end up with the same individual device
-> manipulation vs group access model that seems to be getting under
-> David's skin.
+> But a reattach can't occur here or we've just given the user the power
+> to cause the DoS, or at least system chaos, I described earlier.  So
+> then the admin later has to:
 
-I don't have a problem with individual device manipulation for things
-that pertain to an individual device - getting the resources, doing
-mmio, attaching irqs.  I just want thing pertaining to a group's
-ownership change to be explicitly group oriented.
+I think you overestimate this "chaos".  But this is why I'm
+considering an alternate approach where the group is detached, then
+"meta-bound" as separate steps.
 
->  Effectively what we've done above is:
 > 
->       * provide a group model that we'll "some day" make more pervasive
->       * make the binding of devices to group device drivers implicit in
->         some kind of meta driver attachment
+> # chown root:root /sys/isolation/$GROUP
+> # echo 0 > /sys/ioslation/$GROUP/detached
 
-That's not a bad summary.
+Well, if you want to give it back to normal drivers.  More usually, I
+expect you'd detach the group at boot, and when the first guest using
+it dies, it sits in limbo until the next guest (or more likely the
+same guest, restarted) claims it.
+
+> Under the covers, "addgroup" would require vfio to a) "detach" the
+> group,
+
+One function call.
+
+> b) put the devices in an iommu domain.  If we're dealing with
+> multiple group, 
+
+Well, it has to do that anyway.
+
+> b) can be rejected by the iommu driver, at which point
+> vfio then sends a "reattach" to the isolation API (but that can't
+> actually do much, as noted above),
+
+Yes.  Again, one function call.
+
+> the user then opens a new instance
+> of /dev/vfio and tries an "addgroup" there.
+> 
+> Also note that there was a request to make it possible to get multiple
+> file descriptors to the same group/device/iommu from different threads.
+> I don't see how that's possible here.
+
+dup(2)?  Although it depends exactly what the alternate handles are
+needed for.  I can't actually see why you would need them at all, at
+present.
+
+> And this is somehow better than the perceived dis-symmetry that annoys
+> you in vfio?  I'm getting a strong not-invented-here vibe and I'm not
+> sure you've internalized all the interactions that make vfio manage
+> groups the way it does.
+> 
+> Alex
+> 
 
 -- 
 David Gibson			| I'll have my music baroque, and my code
