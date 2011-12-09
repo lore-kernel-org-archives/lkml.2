@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab1LIXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:21:27 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51387 "EHLO ogre.sisk.pl"
+	id S1754963Ab1LIXVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:21:43 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51382 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754890Ab1LIXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754870Ab1LIXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Dec 2011 18:21:04 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 3/4] PM / Sleep: Remove forward-only callbacks from platform bus type
-Date: Sat, 10 Dec 2011 00:21:48 +0100
+Subject: [PATCH 2/4] PM: Run the driver callback directly if the subsystem one is not there
+Date: Sat, 10 Dec 2011 00:20:57 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
         Russell King <linux@arm.linux.org.uk>
@@ -19,258 +19,504 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112100021.48275.rjw@sisk.pl>
+Message-Id: <201112100020.58055.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The forward-only PM callbacks provided by the platform bus type are
-not necessary any more, because the PM core executes driver callbacks
-when the corresponding subsystem callbacks are not present, so drop
-them.
+Make the PM core execute driver PM callbacks directly if the
+corresponding subsystem callbacks are not present.
+
+There are three reasons for doing that.  First, it reflects the
+behavior of drivers/base/dd.c:really_probe() that runs the driver's
+.probe() callback directly if the bus type's one is not defined, so
+this change will remove one arbitrary difference between the PM core
+and the remaining parts of the driver core.  Second, it will allow
+some subsystems, whose PM callbacks don't do anything except for
+executing driver callbacks, to be simplified quite a bit by removing
+those "forward-only" callbacks.  Finally, it will allow us to remove
+one level of indirection in the system suspend and resume code paths
+where it is not necessary, which is going to lead to less debug noise
+with initcall_debug passed in the kernel command line (messages won't
+be printed for driverless devices whose subsystems don't provide
+PM callbacks among other things).
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/platform.c         |  115 ----------------------------------------
- include/linux/platform_device.h |   30 ----------
- 2 files changed, 1 insertion(+), 144 deletions(-)
+ Documentation/power/devices.txt    |   39 ++++++-----
+ Documentation/power/runtime_pm.txt |  128 +++++++++++++++++++------------------
+ drivers/base/power/main.c          |  109 ++++++++++++++++++++-----------
+ drivers/base/power/runtime.c       |    9 ++
+ 4 files changed, 170 insertions(+), 115 deletions(-)
 
-Index: linux/drivers/base/platform.c
+Index: linux/drivers/base/power/runtime.c
 ===================================================================
---- linux.orig/drivers/base/platform.c
-+++ linux/drivers/base/platform.c
-@@ -700,25 +700,6 @@ static int platform_legacy_resume(struct
- 	return ret;
- }
+--- linux.orig/drivers/base/power/runtime.c
++++ linux/drivers/base/power/runtime.c
+@@ -250,6 +250,9 @@ static int rpm_idle(struct device *dev,
+ 	else
+ 		callback = NULL;
  
--int platform_pm_prepare(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (drv && drv->pm && drv->pm->prepare)
--		ret = drv->pm->prepare(dev);
--
--	return ret;
--}
--
--void platform_pm_complete(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--
--	if (drv && drv->pm && drv->pm->complete)
--		drv->pm->complete(dev);
--}
--
- #endif /* CONFIG_PM_SLEEP */
++	if (!callback && dev->driver && dev->driver->pm)
++		callback = dev->driver->pm->runtime_idle;
++
+ 	if (callback)
+ 		__rpm_callback(callback, dev);
  
- #ifdef CONFIG_SUSPEND
-@@ -741,22 +722,6 @@ int platform_pm_suspend(struct device *d
- 	return ret;
- }
+@@ -713,6 +716,12 @@ static int rpm_resume(struct device *dev
+ 	else
+ 		callback = NULL;
  
--int platform_pm_suspend_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->suspend_noirq)
--			ret = drv->pm->suspend_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_resume(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -775,22 +740,6 @@ int platform_pm_resume(struct device *de
- 	return ret;
- }
++	if (!callback && dev->driver && dev->driver->pm)
++		callback = dev->driver->pm->runtime_suspend;
++
++	if (!callback && dev->driver && dev->driver->pm)
++		callback = dev->driver->pm->runtime_resume;
++
+ 	retval = rpm_callback(callback, dev);
+ 	if (retval) {
+ 		__update_runtime_status(dev, RPM_SUSPENDED);
+Index: linux/Documentation/power/devices.txt
+===================================================================
+--- linux.orig/Documentation/power/devices.txt
++++ linux/Documentation/power/devices.txt
+@@ -126,7 +126,9 @@ The core methods to suspend and resume d
+ pointed to by the ops member of struct dev_pm_domain, or by the pm member of
+ struct bus_type, struct device_type and struct class.  They are mostly of
+ interest to the people writing infrastructure for platforms and buses, like PCI
+-or USB, or device type and device class drivers.
++or USB, or device type and device class drivers.  They also are relevant to the
++writers of device drivers whose subsystems (PM domains, device types, device
++classes and bus types) don't provide all power management methods.
  
--int platform_pm_resume_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->resume_noirq)
--			ret = drv->pm->resume_noirq(dev);
--	}
--
--	return ret;
--}
--
- #endif /* CONFIG_SUSPEND */
+ Bus drivers implement these methods as appropriate for the hardware and the
+ drivers using it; PCI works differently from USB, and so on.  Not many people
+@@ -268,32 +270,35 @@ various phases always run after tasks ha
+ unfrozen.  Furthermore, the *_noirq phases run at a time when IRQ handlers have
+ been disabled (except for those marked with the IRQF_NO_SUSPEND flag).
  
- #ifdef CONFIG_HIBERNATE_CALLBACKS
-@@ -813,22 +762,6 @@ int platform_pm_freeze(struct device *de
- 	return ret;
- }
+-All phases use PM domain, bus, type, or class callbacks (that is, methods
+-defined in dev->pm_domain->ops, dev->bus->pm, dev->type->pm, or dev->class->pm).
+-These callbacks are regarded by the PM core as mutually exclusive.  Moreover,
+-PM domain callbacks always take precedence over bus, type and class callbacks,
+-while type callbacks take precedence over bus and class callbacks, and class
+-callbacks take precedence over bus callbacks.  To be precise, the following
+-rules are used to determine which callback to execute in the given phase:
+-
+-    1.	If dev->pm_domain is present, the PM core will attempt to execute the
+-	callback included in dev->pm_domain->ops.  If that callback is not
+-	present, no action will be carried out for the given device.
++All phases use PM domain, bus, type, class or driver callbacks (that is, methods
++defined in dev->pm_domain->ops, dev->bus->pm, dev->type->pm, dev->class->pm or
++dev->driver->pm).  These callbacks are regarded by the PM core as mutually
++exclusive.  Moreover, PM domain callbacks always take precedence over all of the
++other callbacks and, for example, type callbacks take precedence over bus, class
++and driver callbacks.  To be precise, the following rules are used to determine
++which callback to execute in the given phase:
++
++    1.	If dev->pm_domain is present, the PM core will choose the callback
++	included in dev->pm_domain->ops for execution
  
--int platform_pm_freeze_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->freeze_noirq)
--			ret = drv->pm->freeze_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_thaw(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -847,22 +780,6 @@ int platform_pm_thaw(struct device *dev)
- 	return ret;
- }
+     2.	Otherwise, if both dev->type and dev->type->pm are present, the callback
+-	included in dev->type->pm will be executed.
++	included in dev->type->pm will be chosen for execution.
  
--int platform_pm_thaw_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->thaw_noirq)
--			ret = drv->pm->thaw_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_poweroff(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -881,22 +798,6 @@ int platform_pm_poweroff(struct device *
- 	return ret;
- }
+     3.	Otherwise, if both dev->class and dev->class->pm are present, the
+-	callback included in dev->class->pm will be executed.
++	callback included in dev->class->pm will be chosen for execution.
  
--int platform_pm_poweroff_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
+     4.	Otherwise, if both dev->bus and dev->bus->pm are present, the callback
+-	included in dev->bus->pm will be executed.
++	included in dev->bus->pm will be chosen for execution.
+ 
+ This allows PM domains and device types to override callbacks provided by bus
+ types or device classes if necessary.
+ 
+-These callbacks may in turn invoke device- or driver-specific methods stored in
+-dev->driver->pm, but they don't have to.
++The PM domain, type, class and bus callbacks may in turn invoke device- or
++driver-specific methods stored in dev->driver->pm, but they don't have to do
++that.
++
++If the subsystem callback chosen for execution is not present, the PM core will
++execute the corresponding method from dev->driver->pm instead if there is one.
+ 
+ 
+ Entering System Suspend
+Index: linux/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux.orig/Documentation/power/runtime_pm.txt
++++ linux/Documentation/power/runtime_pm.txt
+@@ -57,6 +57,10 @@ the following:
+ 
+   4. Bus type of the device, if both dev->bus and dev->bus->pm are present.
+ 
++If the subsystem chosen by applying the above rules doesn't provide the relevant
++callback, the PM core will invoke the corresponding driver callback stored in
++dev->driver->pm directly (if present).
++
+ The PM core always checks which callback to use in the order given above, so the
+ priority order of callbacks from high to low is: PM domain, device type, class
+ and bus type.  Moreover, the high-priority one will always take precedence over
+@@ -64,86 +68,88 @@ a low-priority one.  The PM domain, bus
+ are referred to as subsystem-level callbacks in what follows.
+ 
+ By default, the callbacks are always invoked in process context with interrupts
+-enabled.  However, subsystems can use the pm_runtime_irq_safe() helper function
+-to tell the PM core that their ->runtime_suspend(), ->runtime_resume() and
+-->runtime_idle() callbacks may be invoked in atomic context with interrupts
+-disabled for a given device.  This implies that the callback routines in
+-question must not block or sleep, but it also means that the synchronous helper
+-functions listed at the end of Section 4 may be used for that device within an
+-interrupt handler or generally in an atomic context.
 -
--	if (!drv)
--		return 0;
+-The subsystem-level suspend callback is _entirely_ _responsible_ for handling
+-the suspend of the device as appropriate, which may, but need not include
+-executing the device driver's own ->runtime_suspend() callback (from the
++enabled.  However, the pm_runtime_irq_safe() helper function can be used to tell
++the PM core that it is safe to run the ->runtime_suspend(), ->runtime_resume()
++and ->runtime_idle() callbacks for the given device in atomic context with
++interrupts disabled.  This implies that the callback routines in question must
++not block or sleep, but it also means that the synchronous helper functions
++listed at the end of Section 4 may be used for that device within an interrupt
++handler or generally in an atomic context.
++
++The subsystem-level suspend callback, if present, is _entirely_ _responsible_
++for handling the suspend of the device as appropriate, which may, but need not
++include executing the device driver's own ->runtime_suspend() callback (from the
+ PM core's point of view it is not necessary to implement a ->runtime_suspend()
+ callback in a device driver as long as the subsystem-level suspend callback
+ knows what to do to handle the device).
+ 
+-  * Once the subsystem-level suspend callback has completed successfully
+-    for given device, the PM core regards the device as suspended, which need
+-    not mean that the device has been put into a low power state.  It is
+-    supposed to mean, however, that the device will not process data and will
+-    not communicate with the CPU(s) and RAM until the subsystem-level resume
+-    callback is executed for it.  The runtime PM status of a device after
+-    successful execution of the subsystem-level suspend callback is 'suspended'.
 -
--	if (drv->pm) {
--		if (drv->pm->poweroff_noirq)
--			ret = drv->pm->poweroff_noirq(dev);
--	}
+-  * If the subsystem-level suspend callback returns -EBUSY or -EAGAIN,
+-    the device's runtime PM status is 'active', which means that the device
+-    _must_ be fully operational afterwards.
 -
--	return ret;
--}
+-  * If the subsystem-level suspend callback returns an error code different
+-    from -EBUSY or -EAGAIN, the PM core regards this as a fatal error and will
+-    refuse to run the helper functions described in Section 4 for the device,
+-    until the status of it is directly set either to 'active', or to 'suspended'
+-    (the PM core provides special helper functions for this purpose).
++  * Once the subsystem-level suspend callback (or the driver suspend callback,
++    if invoked directly) has completed successfully for the given device, the PM
++    core regards the device as suspended, which need not mean that it has been
++    put into a low power state.  It is supposed to mean, however, that the
++    device will not process data and will not communicate with the CPU(s) and
++    RAM until the appropriate resume callback is executed for it.  The runtime
++    PM status of a device after successful execution of the suspend callback is
++    'suspended'.
++
++  * If the suspend callback returns -EBUSY or -EAGAIN, the device's runtime PM
++    status remains 'active', which means that the device _must_ be fully
++    operational afterwards.
++
++  * If the suspend callback returns an error code different from -EBUSY and
++    -EAGAIN, the PM core regards this as a fatal error and will refuse to run
++    the helper functions described in Section 4 for the device until its status
++    is directly set to  either'active', or 'suspended' (the PM core provides
++    special helper functions for this purpose).
+ 
+-In particular, if the driver requires remote wake-up capability (i.e. hardware
++In particular, if the driver requires remote wakeup capability (i.e. hardware
+ mechanism allowing the device to request a change of its power state, such as
+ PCI PME) for proper functioning and device_run_wake() returns 'false' for the
+ device, then ->runtime_suspend() should return -EBUSY.  On the other hand, if
+-device_run_wake() returns 'true' for the device and the device is put into a low
+-power state during the execution of the subsystem-level suspend callback, it is
+-expected that remote wake-up will be enabled for the device.  Generally, remote
+-wake-up should be enabled for all input devices put into a low power state at
+-run time.
 -
- int platform_pm_restore(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -913,22 +814,6 @@ int platform_pm_restore(struct device *d
+-The subsystem-level resume callback is _entirely_ _responsible_ for handling the
+-resume of the device as appropriate, which may, but need not include executing
+-the device driver's own ->runtime_resume() callback (from the PM core's point of
+-view it is not necessary to implement a ->runtime_resume() callback in a device
+-driver as long as the subsystem-level resume callback knows what to do to handle
+-the device).
+-
+-  * Once the subsystem-level resume callback has completed successfully, the PM
+-    core regards the device as fully operational, which means that the device
+-    _must_ be able to complete I/O operations as needed.  The runtime PM status
+-    of the device is then 'active'.
+-
+-  * If the subsystem-level resume callback returns an error code, the PM core
+-    regards this as a fatal error and will refuse to run the helper functions
+-    described in Section 4 for the device, until its status is directly set
+-    either to 'active' or to 'suspended' (the PM core provides special helper
+-    functions for this purpose).
+-
+-The subsystem-level idle callback is executed by the PM core whenever the device
+-appears to be idle, which is indicated to the PM core by two counters, the
+-device's usage counter and the counter of 'active' children of the device.
++device_run_wake() returns 'true' for the device and the device is put into a
++low-power state during the execution of the suspend callback, it is expected
++that remote wakeup will be enabled for the device.  Generally, remote wakeup
++should be enabled for all input devices put into low-power states at run time.
++
++The subsystem-level resume callback, if present, is _entirely_ _responsible_ for
++handling the resume of the device as appropriate, which may, but need not
++include executing the device driver's own ->runtime_resume() callback (from the
++PM core's point of view it is not necessary to implement a ->runtime_resume()
++callback in a device driver as long as the subsystem-level resume callback knows
++what to do to handle the device).
++
++  * Once the subsystem-level resume callback (or the driver resume callback, if
++    invoked directly) has completed successfully, the PM core regards the device
++    as fully operational, which means that the device _must_ be able to complete
++    I/O operations as needed.  The runtime PM status of the device is then
++    'active'.
++
++  * If the resume callback returns an error code, the PM core regards this as a
++    fatal error and will refuse to run the helper functions described in Section
++    4 for the device, until its status is directly set to either 'active', or
++    'suspended' (by means of special helper functions provided by the PM core
++    for this purpose).
++
++The idle callback (a subsystem-level one, if present, or the driver one) is
++executed by the PM core whenever the device appears to be idle, which is
++indicated to the PM core by two counters, the device's usage counter and the
++counter of 'active' children of the device.
+ 
+   * If any of these counters is decreased using a helper function provided by
+     the PM core and it turns out to be equal to zero, the other counter is
+     checked.  If that counter also is equal to zero, the PM core executes the
+-    subsystem-level idle callback with the device as an argument.
++    idle callback with the device as its argument.
+ 
+-The action performed by a subsystem-level idle callback is totally dependent on
+-the subsystem in question, but the expected and recommended action is to check
++The action performed by the idle callback is totally dependent on the subsystem
++(or driver) in question, but the expected and recommended action is to check
+ if the device can be suspended (i.e. if all of the conditions necessary for
+ suspending the device are satisfied) and to queue up a suspend request for the
+ device in that case.  The value returned by this callback is ignored by the PM
+ core.
+ 
+ The helper functions provided by the PM core, described in Section 4, guarantee
+-that the following constraints are met with respect to the bus type's runtime
+-PM callbacks:
++that the following constraints are met with respect to runtime PM callbacks for
++one device:
+ 
+ (1) The callbacks are mutually exclusive (e.g. it is forbidden to execute
+     ->runtime_suspend() in parallel with ->runtime_resume() or with another
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -381,10 +381,15 @@ static int device_resume_noirq(struct de
+ 		info = "EARLY class ";
+ 		callback = pm_noirq_op(dev->class->pm, state);
+ 	} else if (dev->bus && dev->bus->pm) {
+-		info = "EARLY ";
++		info = "EARLY bus ";
+ 		callback = pm_noirq_op(dev->bus->pm, state);
  	}
  
- 	return ret;
--}
--
--int platform_pm_restore_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->restore_noirq)
--			ret = drv->pm->restore_noirq(dev);
--	}
--
--	return ret;
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "EARLY driver ";
++		callback = pm_noirq_op(dev->driver->pm, state);
++	}
++
+ 	error = dpm_run_callback(callback, dev, state, info);
+ 
+ 	TRACE_RESUME(error);
+@@ -462,20 +467,20 @@ static int device_resume(struct device *
+ 	if (dev->pm_domain) {
+ 		info = "power domain ";
+ 		callback = pm_op(&dev->pm_domain->ops, state);
+-		goto End;
++		goto Driver;
+ 	}
+ 
+ 	if (dev->type && dev->type->pm) {
+ 		info = "type ";
+ 		callback = pm_op(dev->type->pm, state);
+-		goto End;
++		goto Driver;
+ 	}
+ 
+ 	if (dev->class) {
+ 		if (dev->class->pm) {
+ 			info = "class ";
+ 			callback = pm_op(dev->class->pm, state);
+-			goto End;
++			goto Driver;
+ 		} else if (dev->class->resume) {
+ 			info = "legacy class ";
+ 			callback = dev->class->resume;
+@@ -485,14 +490,21 @@ static int device_resume(struct device *
+ 
+ 	if (dev->bus) {
+ 		if (dev->bus->pm) {
+-			info = "";
++			info = "bus ";
+ 			callback = pm_op(dev->bus->pm, state);
+ 		} else if (dev->bus->resume) {
+-			info = "legacy ";
++			info = "legacy bus ";
+ 			callback = dev->bus->resume;
++			goto End;
+ 		}
+ 	}
+ 
++ Driver:
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "driver ";
++		callback = pm_op(dev->driver->pm, state);
++	}
++
+  End:
+ 	error = dpm_run_callback(callback, dev, state, info);
+ 	dev->power.is_suspended = false;
+@@ -586,24 +598,33 @@ void dpm_resume(pm_message_t state)
+  */
+ static void device_complete(struct device *dev, pm_message_t state)
+ {
++	void (*callback)(struct device *) = NULL;
++	char *info = NULL;
++
+ 	device_lock(dev);
+ 
+ 	if (dev->pm_domain) {
+-		pm_dev_dbg(dev, state, "completing power domain ");
+-		if (dev->pm_domain->ops.complete)
+-			dev->pm_domain->ops.complete(dev);
++		info = "completing power domain ";
++		callback = dev->pm_domain->ops.complete;
+ 	} else if (dev->type && dev->type->pm) {
+-		pm_dev_dbg(dev, state, "completing type ");
+-		if (dev->type->pm->complete)
+-			dev->type->pm->complete(dev);
++		info = "completing type ";
++		callback = dev->type->pm->complete;
+ 	} else if (dev->class && dev->class->pm) {
+-		pm_dev_dbg(dev, state, "completing class ");
+-		if (dev->class->pm->complete)
+-			dev->class->pm->complete(dev);
++		info = "completing class ";
++		callback = dev->class->pm->complete;
+ 	} else if (dev->bus && dev->bus->pm) {
+-		pm_dev_dbg(dev, state, "completing ");
+-		if (dev->bus->pm->complete)
+-			dev->bus->pm->complete(dev);
++		info = "completing bus ";
++		callback = dev->bus->pm->complete;
++	}
++
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "completing driver ";
++		callback = dev->driver->pm->complete;
++	}
++
++	if (callback) {
++		pm_dev_dbg(dev, state, info);
++		callback(dev);
+ 	}
+ 
+ 	device_unlock(dev);
+@@ -702,10 +723,15 @@ static int device_suspend_noirq(struct d
+ 		info = "LATE class ";
+ 		callback = pm_noirq_op(dev->class->pm, state);
+ 	} else if (dev->bus && dev->bus->pm) {
+-		info = "LATE ";
++		info = "LATE bus ";
+ 		callback = pm_noirq_op(dev->bus->pm, state);
+ 	}
+ 
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "LATE driver ";
++		callback = pm_noirq_op(dev->driver->pm, state);
++	}
++
+ 	return dpm_run_callback(callback, dev, state, info);
  }
  
- #endif /* CONFIG_HIBERNATE_CALLBACKS */
-Index: linux/include/linux/platform_device.h
-===================================================================
---- linux.orig/include/linux/platform_device.h
-+++ linux/include/linux/platform_device.h
-@@ -264,62 +264,34 @@ static inline char *early_platform_drive
- }
- #endif /* MODULE */
+@@ -830,16 +856,21 @@ static int __device_suspend(struct devic
  
--#ifdef CONFIG_PM_SLEEP
--extern int platform_pm_prepare(struct device *dev);
--extern void platform_pm_complete(struct device *dev);
--#else
--#define platform_pm_prepare	NULL
--#define platform_pm_complete	NULL
--#endif
--
- #ifdef CONFIG_SUSPEND
- extern int platform_pm_suspend(struct device *dev);
--extern int platform_pm_suspend_noirq(struct device *dev);
- extern int platform_pm_resume(struct device *dev);
--extern int platform_pm_resume_noirq(struct device *dev);
- #else
- #define platform_pm_suspend		NULL
- #define platform_pm_resume		NULL
--#define platform_pm_suspend_noirq	NULL
--#define platform_pm_resume_noirq	NULL
- #endif
+ 	if (dev->bus) {
+ 		if (dev->bus->pm) {
+-			info = "";
++			info = "bus ";
+ 			callback = pm_op(dev->bus->pm, state);
+ 		} else if (dev->bus->suspend) {
+-			pm_dev_dbg(dev, state, "legacy ");
++			pm_dev_dbg(dev, state, "legacy bus ");
+ 			error = legacy_suspend(dev, state, dev->bus->suspend);
+ 			goto End;
+ 		}
+ 	}
  
- #ifdef CONFIG_HIBERNATE_CALLBACKS
- extern int platform_pm_freeze(struct device *dev);
--extern int platform_pm_freeze_noirq(struct device *dev);
- extern int platform_pm_thaw(struct device *dev);
--extern int platform_pm_thaw_noirq(struct device *dev);
- extern int platform_pm_poweroff(struct device *dev);
--extern int platform_pm_poweroff_noirq(struct device *dev);
- extern int platform_pm_restore(struct device *dev);
--extern int platform_pm_restore_noirq(struct device *dev);
- #else
- #define platform_pm_freeze		NULL
- #define platform_pm_thaw		NULL
- #define platform_pm_poweroff		NULL
- #define platform_pm_restore		NULL
--#define platform_pm_freeze_noirq	NULL
--#define platform_pm_thaw_noirq		NULL
--#define platform_pm_poweroff_noirq	NULL
--#define platform_pm_restore_noirq	NULL
- #endif
+  Run:
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "driver ";
++		callback = pm_op(dev->driver->pm, state);
++	}
++
+ 	error = dpm_run_callback(callback, dev, state, info);
  
- #ifdef CONFIG_PM_SLEEP
- #define USE_PLATFORM_PM_SLEEP_OPS \
--	.prepare = platform_pm_prepare, \
--	.complete = platform_pm_complete, \
- 	.suspend = platform_pm_suspend, \
- 	.resume = platform_pm_resume, \
- 	.freeze = platform_pm_freeze, \
- 	.thaw = platform_pm_thaw, \
- 	.poweroff = platform_pm_poweroff, \
--	.restore = platform_pm_restore, \
--	.suspend_noirq = platform_pm_suspend_noirq, \
--	.resume_noirq = platform_pm_resume_noirq, \
--	.freeze_noirq = platform_pm_freeze_noirq, \
--	.thaw_noirq = platform_pm_thaw_noirq, \
--	.poweroff_noirq = platform_pm_poweroff_noirq, \
--	.restore_noirq = platform_pm_restore_noirq,
-+	.restore = platform_pm_restore,
- #else
- #define USE_PLATFORM_PM_SLEEP_OPS
- #endif
+  End:
+@@ -947,6 +978,8 @@ int dpm_suspend(pm_message_t state)
+  */
+ static int device_prepare(struct device *dev, pm_message_t state)
+ {
++	int (*callback)(struct device *) = NULL;
++	char *info = NULL;
+ 	int error = 0;
+ 
+ 	device_lock(dev);
+@@ -954,25 +987,27 @@ static int device_prepare(struct device
+ 	dev->power.wakeup_path = device_may_wakeup(dev);
+ 
+ 	if (dev->pm_domain) {
+-		pm_dev_dbg(dev, state, "preparing power domain ");
+-		if (dev->pm_domain->ops.prepare)
+-			error = dev->pm_domain->ops.prepare(dev);
+-		suspend_report_result(dev->pm_domain->ops.prepare, error);
++		info = "preparing power domain ";
++		callback = dev->pm_domain->ops.prepare;
+ 	} else if (dev->type && dev->type->pm) {
+-		pm_dev_dbg(dev, state, "preparing type ");
+-		if (dev->type->pm->prepare)
+-			error = dev->type->pm->prepare(dev);
+-		suspend_report_result(dev->type->pm->prepare, error);
++		info = "preparing type ";
++		callback = dev->type->pm->prepare;
+ 	} else if (dev->class && dev->class->pm) {
+-		pm_dev_dbg(dev, state, "preparing class ");
+-		if (dev->class->pm->prepare)
+-			error = dev->class->pm->prepare(dev);
+-		suspend_report_result(dev->class->pm->prepare, error);
++		info = "preparing class ";
++		callback = dev->class->pm->prepare;
+ 	} else if (dev->bus && dev->bus->pm) {
+-		pm_dev_dbg(dev, state, "preparing ");
+-		if (dev->bus->pm->prepare)
+-			error = dev->bus->pm->prepare(dev);
+-		suspend_report_result(dev->bus->pm->prepare, error);
++		info = "preparing bus ";
++		callback = dev->bus->pm->prepare;
++	}
++
++	if (!callback && dev->driver && dev->driver->pm) {
++		info = "preparing driver ";
++		callback = dev->driver->pm->prepare;
++	}
++
++	if (callback) {
++		error = callback(dev);
++		suspend_report_result(callback, error);
+ 	}
+ 
+ 	device_unlock(dev);
 
