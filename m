@@ -1,144 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949Ab1LIQAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:00:40 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36794 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab1LIQAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:00:39 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf: fix comm for processes with named threads
-Date: Fri,  9 Dec 2011 09:00:30 -0700
-Message-Id: <1323446430-1955-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1751497Ab1LIQBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:01:14 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:22650
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751149Ab1LIQBM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:01:12 -0500
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I542M1432N4015Lzz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Thread-Topic: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Thread-Index: AQHMsSx+2SVgzLNkXk+4T3Hv4pSSBZXTs8Ww
+Date: Fri, 9 Dec 2011 16:00:59 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD457B@TK5EX14MBXC227.redmond.corp.microsoft.com>
+References: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf does not properly handle monitoring of processes with named threads.
-For example:
+> -----Original Message-----
+> From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
+> Sent: Friday, December 02, 2011 2:56 PM
+> To: Haiyang Zhang; KY Srinivasan; davem@davemloft.net; gregkh@suse.de;
+> linux-kernel@vger.kernel.org; netdev@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+> 
+> The ring buffer is only used to pass meta data for outbound packets. The
+> actual payload is accessed by DMA from the host. So the stop/wake queue
+> mechanism based on counting and comparing number of pages sent v.s.
+> number
+> of pages in the ring buffer is wrong. Also, there is a race condition in
+> the stop/wake queue calls, which can stop xmit queue forever.
+> 
+> The new stop/wake queue mechanism is based on the actual bytes used by
+> outbound packets in the ring buffer. The check for number of outstanding
+> sends after stop queue prevents the race condition that can cause wake
+> queue happening earlier than stop queue.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reported-by: Long Li <longli@microsoft.com>
+> ---
+>  drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
+>  drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
+>  2 files changed, 12 insertions(+), 26 deletions(-)
 
-$ ps -C myapp -L
-  PID   LWP TTY          TIME CMD
-25118 25118 ?        00:00:00 myapp
-25118 25119 ?        00:00:00 myapp:worker
+Hi Greg,
 
-perf record -e cs -c 1 -fo /tmp/perf.data -p 25118 -- sleep 10
-perf report --stdio -i /tmp/perf.data
-   100.00%  myapp:worker  [kernel.kallsyms]  [k] perf_event_task_sched_out
+Since the netvsc haven't been merged into Dave's tree yet after out of staging,
+could you consider this patch for your tree?
 
-The process name is set to the name of the last thread it finds for the
-process.
+Thanks,
+-  Haiyang
 
-The Problem:
-perf-top and perf-record both create a thread_map of threads to be
-monitored. That map is used in perf_event__synthesize_thread_map which
-loops over the entries in thread_map and calls __event__synthesize_thread
-to generate COMM and MMAP events.
-
-__event__synthesize_thread calls perf_event__synthesize_comm which opens
-/proc/pid/status, reads the name of the task and its thread group id.
-That's all fine. The problem is that it then reads /proc/pid/task and
-generates COMM events for each task it finds - but using the name found
-in /proc/pid/status where pid is the thread of interest. This means the
-name of the last thread processed sets the name for all threads in the
-process - which is not good for multithreaded processes with named
-threads.
-
-The Fix:
-perf_event__synthesize_comm has an input argument (full) that decides
-whether to process task entries for each pid it is passed. It currently
-never set to 0 (perf_event__synthesize_comm has a single caller and it
-always passes the value 1). Let's fix that.
-
-Add the full input argument to __event__synthesize_thread which passes
-it to perf_event__synthesize_comm. For thread/process monitoring set full
-to 0 which means COMM and MMAP events are only generated for the pid
-passed to it. For system wide monitoring set full to 1 so that COMM events
-are generated for all threads in a process.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/event.c |   35 ++++++++++++++++++++++++++++++-----
- 1 files changed, 30 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 437f8ca..6085727 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -260,10 +260,10 @@ int perf_event__synthesize_modules(perf_event__handler_t process,
- 
- static int __event__synthesize_thread(union perf_event *comm_event,
- 				      union perf_event *mmap_event,
--				      pid_t pid, perf_event__handler_t process,
-+				      pid_t pid, int full, perf_event__handler_t process,
- 				      struct perf_session *session)
- {
--	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, 1, process,
-+	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, full, process,
- 					    session);
- 	if (tgid == -1)
- 		return -1;
-@@ -276,7 +276,7 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
- 				      struct perf_session *session)
- {
- 	union perf_event *comm_event, *mmap_event;
--	int err = -1, thread;
-+	int err = -1, thread, j;
- 
- 	comm_event = malloc(sizeof(comm_event->comm) + session->id_hdr_size);
- 	if (comm_event == NULL)
-@@ -289,11 +289,36 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
- 	err = 0;
- 	for (thread = 0; thread < threads->nr; ++thread) {
- 		if (__event__synthesize_thread(comm_event, mmap_event,
--					       threads->map[thread],
-+					       threads->map[thread], 0,
- 					       process, session)) {
- 			err = -1;
- 			break;
- 		}
-+
-+		/* 
-+		 * comm.pid is set to thread group id by
-+		 * perf_event__synthesize_comm
-+		 */
-+		if ((int) comm_event->comm.pid != threads->map[thread]) {
-+			bool need_leader = true;
-+
-+			/* is thread group leader in thread_map? */
-+			for (j = 0; j < threads->nr; ++j) {
-+				if ((int) comm_event->comm.pid == threads->map[j]) {
-+					need_leader = false;
-+					break;
-+				}
-+			}
-+
-+			/* if not, generate events for it */
-+			if (need_leader &&
-+			    __event__synthesize_thread(comm_event, mmap_event,
-+					       comm_event->comm.pid, 0,
-+					       process, session)) {
-+				err = -1;
-+				break;
-+			}
-+		}
- 	}
- 	free(mmap_event);
- out_free_comm:
-@@ -329,7 +354,7 @@ int perf_event__synthesize_threads(perf_event__handler_t process,
- 		if (*end) /* only interested in proper numerical dirents */
- 			continue;
- 
--		__event__synthesize_thread(comm_event, mmap_event, pid,
-+		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
- 					   process, session);
- 	}
- 
--- 
-1.7.7.3
 
