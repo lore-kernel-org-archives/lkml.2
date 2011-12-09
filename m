@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab1LIHYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 02:24:36 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55783 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab1LIHYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 02:24:34 -0500
-Date: Fri, 9 Dec 2011 08:22:44 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Steffen Persvold <sp@numascale.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        tglx@linutronix.de, daniel@numascale-asia.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86: Add NumaChip support
-Message-ID: <20111209072244.GG24537@elte.hu>
-References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
- <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org>
- <20111205203130.GA12364@elte.hu>
- <4EDD5D77.3030101@numascale.com>
- <20111206055023.GB1580@elte.hu>
- <CAELBVzBqNHsnRP=dt7nwFWoigfX4FF6nQio+P+Fz71xQY0qK4Q@mail.gmail.com>
+	id S1751764Ab1LIHZf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 02:25:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44941 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab1LIHZe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 02:25:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAELBVzBqNHsnRP=dt7nwFWoigfX4FF6nQio+P+Fz71xQY0qK4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <20111209061720.GF26952@opensource.wolfsonmicro.com>
+References: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
+	<1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+	<1323361659-11835-3-git-send-email-thomas.abraham@linaro.org>
+	<20111209061720.GF26952@opensource.wolfsonmicro.com>
+Date: Fri, 9 Dec 2011 12:55:33 +0530
+Message-ID: <CAJuYYwSS0-+=D3WbwYDowZQTrFq_s1XEM_gSkgXApstPeGNWkA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: add device tree support for max8997
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 December 2011 11:47, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Dec 08, 2011 at 09:57:39PM +0530, Thomas Abraham wrote:
+>
+>> +Required properties, if interrupts are delivered to host system:
+>
+> These are just optional properties, really.
 
-* Kevin Winchester <kjwinchester@gmail.com> wrote:
+Ok. Yeah, these can be classified as optional.
 
-> On 6 December 2011 01:50, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Steffen Persvold <sp@numascale.com> wrote:
-> >
-> >> On 12/5/2011 21:31, Ingo Molnar wrote:
-> >> []
-> >> > There's a new build failure caused by this commit:
-> >>
-> >> It's this commit actually :
-> >>
-> >> Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
-> >> Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
-> >> Author:     Daniel J Blueman <daniel@numascale-asia.com>
-> >> AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
-> >> Committer:  Ingo Molnar <mingo@elte.hu>
-> >> CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
-> >>
-> >> x86: Add x86_init platform override to fix up NUMA core numbering
-> >>
-> >> >
-> >> >   arch/x86/kernel/cpu/common.c:1149:2: error: ‘struct cpuinfo_x86’ has no member named ‘phys_proc_id’
-> >> >
-> >> > Note that the config is a !SMP one - that's probably the key
-> >> > detail.
-> >>
-> >> Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
-> >>
-> >> >
-> >> > Please send a delta fix that resolves this bug. You can find the
-> >> > current lineup in:
-> >> >
-> >> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-> >> >
-> >>
-> >> Will do, should be fairly simple. Something in the lines of the attached should work (tested).
-> >>
-> >> Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
-> >>
-> >> Cheers,
-> >> --
-> >> Steffen Persvold, Chief Architect NumaChip
-> >> Numascale AS - www.numascale.com
-> >> Tel: +47 92 49 25 54 Skype: spersvold
-> >
-> >> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> >> index ad4da45..a70bd5b 100644
-> >> --- a/arch/x86/kernel/cpu/common.c
-> >> +++ b/arch/x86/kernel/cpu/common.c
-> >> @@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
-> >>   */
-> >>  void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
-> >>  {
-> >> +#ifdef CONFIG_NUMA
-> >>       pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
-> >> +#endif
-> >>  }
-> >
-> > Yep, this should do the trick - i'll need a Signed-off-by line
-> > to apply it.
-> >
-> > Ideally i think c->phys_proc_id should should be available
-> > regardless of CONFIG_SMP or CONFIG_NUMA considerations - but
-> > that would be a wider change. (feel free to have a shot at it
-> > though, in addition to the fix above)
-> >
-> 
-> If Steffen does not plan to do this additional cleanup, I 
-> would give it a try.  You would likely prefer the changes 
-> against -tip, correct?
+>
+>> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
+>> + �the interrupts from max8997 are delivered to.
+>> +- interrupts: Interrupt specifiers for two interrupt sources.
+>> + �- First interrupt specifier is for 'irq1' interrupt.
+>> + �- Second interrupt specifier is for 'alert' interrupt.
+>
+> What if the two are connected to different interrupt controllers?
 
-On a second thought, the !SMP block in processor.h::cpuinfo_x86 
-is pretty self-contained and making it unconditional would 
-increase UP kernel size by 4x5==20 bytes.
-
-I have not checked how many further simplifications this allows 
-- if it's a really nice cleanup then i guess we could do it and 
-keep the all-zeroes-and-ones default value on UP.
-
-The fields *do* make sense on UP as well.
-
-So it's a "try and see how it ends up" thing.
+I have not thought of that. I will try to find out how to write a
+device tree node for a device that delivers interrupts to separate
+interrupt controllers.
 
 Thanks,
+Thomas.
 
-	Ingo
+>
+>> + � �For LDO's:
+>
+> Extra '.
