@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab1LIVs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:48:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56429 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1LIVsz (ORCPT
+	id S1754675Ab1LIWJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:09:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20401 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab1LIWJT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:48:55 -0500
-Date: Fri, 9 Dec 2011 13:48:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v2] ipc: provide generic compat versions of IPC syscalls
-Message-Id: <20111209134852.f5b5bcbc.akpm@linux-foundation.org>
-In-Reply-To: <201112091903.pB9J39pd031553@farm-0002.internal.tilera.com>
-References: <201112091536.pB9Fa5f7002738@farm-0002.internal.tilera.com>
-	<201112091602.31325.arnd@arndb.de>
-	<201112091903.pB9J39pd031553@farm-0002.internal.tilera.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Dec 2011 17:09:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="45746029"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        EDAC devel <linux-edac@vger.kernel.org>
+Date: Fri, 9 Dec 2011 14:08:59 -0800
+Subject: RE: [PATCH 2/2] x86, MCE: Drain mcelog buffer
+Thread-Topic: [PATCH 2/2] x86, MCE: Drain mcelog buffer
+Thread-Index: Acy2p1X2jtPHdg6HQa6tKjfBaFC9ogAFrRpA
+Message-ID: <0207C53569FE594381A4F2EB66570B2A018EFB7A7D@orsmsx508.amr.corp.intel.com>
+References: <1323353332-5671-1-git-send-email-bp@amd64.org>
+ <1323353332-5671-3-git-send-email-bp@amd64.org>
+ <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
+ <20111209182448.GA29629@gere.osrc.amd.com>
+ <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
+ <20111209191819.GA17086@aftab>
+In-Reply-To: <20111209191819.GA17086@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Dec 2011 10:29:07 -0500
-Chris Metcalf <cmetcalf@tilera.com> wrote:
+> Well, off the top of my head, we could probably _not_ delete the already
+> logged MCEs (bool keep arg, or similar) and when the last one registers,
+> it passes keep=false and cleans them up. And since we probably know
+> which one is the last - order is enforced by the initcalls order -
+> we're done.
 
-> When using the "compat" APIs, architectures will generally want to
-> be able to make direct syscalls to msgsnd(), shmctl(), etc., and
-> in the kernel we would want them to be handled directly by
-> compat_sys_xxx() functions, as is true for other compat syscalls.
-> 
-> However, for historical reasons, several of the existing compat IPC
-> syscalls do not do this.  semctl() expects a pointer to the fourth
-> argument, instead of the fourth argument itself.  msgsnd(), msgrcv()
-> and shmat() expect arguments in different order.
-> 
-> This change adds an __ARCH_WANT_OLD_COMPAT_IPC define that can be
-> set in <asm/compat.h> to preserve this behavior for ports that use it
-> (x86, sparc, powerpc, s390, and mips).  No actual semantics are changed
-> for those architectures, and there is only a minimal amount of code
-> refactoring in ipc/compat.c.
-> 
-> Newer architectures like tile (and perhaps future architectures such
-> as arm64 and unicore64) should not supply this define, and thus can
-> avoid having any IPC-specific code at all in their architecture-specific
-> compat layer.  In the same vein, if this define is omitted, IPC_64 mode
-> is assumed, since that's what the <asm-generic> headers expect.
-> 
-> The workaround code in "tile" for msgsnd() and msgrcv() is removed
-> with this change; it also fixes the bug that shmat() and semctl() were
-> not being properly handled.
+Knowing when the last one has come is hard if there are modules as well
+as built-in registrants.  We could save the whole list, and deliver a
+copy of the history of the world so far to each as they register (never
+deleting anything). But that sounds odd - why should a module loaded
+6 months after system boot expect to see everything.
 
-What would we need to do to get all architectures using the new
-interfaces, and remove __ARCH_WANT_OLD_COMPAT_IPC?
+> However, is the platform module using MCA at all or will it probably use
+> PCIe AER instead?
+Don't know - its hypothetical - but it is possible that MCA might be used
+for not-cpu stuff.
 
-Regarding the implementation: rather than patching the header
-files, it would be more conventional (and arguably better) to add
+> Also, at the time the platform module inits, we've already regged the
+> CPU decoders so we can go ahead and safely delete the logged MCEs.
 
-	select ARCH_WANT_OLD_COMPAT_IPC
+I think if we ensure that the cpu decoder gets first chance to register,
+we should be OK with giving it all the pended stuff. We can defer doing
+something more complicated until the point that someone has a real use
+case.
 
-to arch/*/Kconfig, then use CONFIG_ARCH_WANT_OLD_COMPAT_IPC.
+-Tony
