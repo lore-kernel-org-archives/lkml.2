@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab1LIWZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:25:40 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46700 "EHLO
+	id S1751642Ab1LIWfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:35:00 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36837 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750785Ab1LIWZi (ORCPT
+	by vger.kernel.org with ESMTP id S1750829Ab1LIWe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:25:38 -0500
-X-Sasl-enc: n4jjKykcZRe8dcL8hF8H7DK1YuE/HNOupvHVnNGvePXZ 1323469537
-Date: Fri, 9 Dec 2011 14:25:20 -0800
+	Fri, 9 Dec 2011 17:34:59 -0500
+X-Sasl-enc: ESvN2DnFNJDUx2QIBUSb7KZT4C3NTLrzADLuLETh0KM8 1323470098
+Date: Fri, 9 Dec 2011 14:34:54 -0800
 From: Greg KH <greg@kroah.com>
-To: Anand Kanaginhal <anand_dk@hotmail.com>
-Cc: mjg59@srcf.ucam.org, bhelgaas@google.com,
-        Linux PCI mailing <linux-pci@vger.kernel.org>,
-        linux kernel mailing <linux-kernel@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>
-Subject: Re: PCIe Hotplugging not working
-Message-ID: <20111209222520.GA24786@kroah.com>
-References: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
- <20111130154022.GA1411@srcf.ucam.org>
- <BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>
- <20111130182423.GA4831@srcf.ucam.org>
- <CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>
- <BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>
- <20111209124524.GA3488@srcf.ucam.org>
- <BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>
- <20111209180708.GA10768@kroah.com>
- <BAY163-W154A24444BB398F609767CFBB90@phx.gbl>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
+        davej@redhat.com
+Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
+ for CPU modaliases)
+Message-ID: <20111209223454.GA24987@kroah.com>
+References: <1323309517.979.8.camel@mop>
+ <20111209001145.GB9550@kroah.com>
+ <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
+ <1323444321.979.39.camel@mop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BAY163-W154A24444BB398F609767CFBB90@phx.gbl>
+In-Reply-To: <1323444321.979.39.camel@mop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 01:17:53PM -0800, Anand Kanaginhal wrote:
-> 
-> 
-> > Date: Fri, 9 Dec 2011 10:07:08 -0800
-> > From: greg@kroah.com
-> > To: anand_dk@hotmail.com
-> > CC: mjg59@srcf.ucam.org; bhelgaas@google.com; linux-pci@vger.kernel.org;
-> linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
-> > Subject: Re: PCIe Hotplugging not working
-> >
-> > On Fri, Dec 09, 2011 at 09:19:39AM -0800, Anand Kanaginhal wrote:
-> > > 1. With the above setup, If I hotplug card c1 and/or c2, will my driver
-> probe
-> > > get invoked.
-> >
-> > Stop right here. Please get your pci hotplug controller driver working
-> > first, for your platform. That seems to be the problem. After that,
-> > the rest of your questions should just resolve themselves.
-> Thank you Greg for your assistance, perhaps it would be little more helpful, if
-> you could tell me the basis on which you drew the conclusion. I am no kernel
-> expert :( 
+On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
+> Greg, would be nice, if you can take a quick look a the driver core (not
+> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
+> they look sane to you. I'll then split the driver core stuff out, so we
+> can merge that before we port the individual drivers over.
 
-As your driver's callbacks aren't being called, that's probably why this
-isn't working.
-
-Please make sure your pci hotplug driver is working first.  Try turning
-on and off the power to the card slot (in the sysfs directory for the
-slot) and see if that's working.
-
-You also have failed to say exactly what pci hotplug controller you have
-in your system, what is it?  You have to have one, and the driver loaded
-for it, for any of this to work at all.
+Yes, it looks sane to me, thanks again for doing this work.
 
 greg k-h
