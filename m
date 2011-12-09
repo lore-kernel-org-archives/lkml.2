@@ -1,246 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1LIOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:07:58 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40892 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab1LIOHw (ORCPT
+	id S1754027Ab1LIOHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:07:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52959 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab1LIOHr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:07:52 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv2 04/10] xshm: geni/geno driver interface.
-Date: Fri,  9 Dec 2011 15:07:22 +0100
-Message-Id: <1323439648-22697-5-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1323439648-22697-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1323439648-22697-1-git-send-email-sjur.brandeland@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 9 Dec 2011 09:07:47 -0500
+Message-ID: <1323439620.17673.67.camel@twins>
+Subject: Re: How to draw values for /proc/stat
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Zhu Yanhai <zhu.yanhai@gmail.com>
+Cc: Glauber Costa <glommer@parallels.com>, Paul Turner <pjt@google.com>,
+        cgroups@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        devel@openvz.org, Linux Containers <containers@lists.osdl.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        lxc-users@lists.sourceforge.net
+Date: Fri, 09 Dec 2011 15:07:00 +0100
+In-Reply-To: <CAC8teKX7xHK67AJ6pQuTSr4=21FoPkoDL7jfxx-TaGKx5_BFhQ@mail.gmail.com>
+References: <4EDC8FB1.60407@parallels.com>
+	 <CAC8teKX7xHK67AJ6pQuTSr4=21FoPkoDL7jfxx-TaGKx5_BFhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Shared Memory driver is using two paired registers called
-GENI and GENO in for triggering events/interrupts on modem and Linux host.
+On Wed, 2011-12-07 at 22:17 +0800, Zhu Yanhai wrote:
+> Let's include lxc-user mailing list for this topic.
 
-It's primary use is notification about read and write indexes changes
-on each channel. But GENI/GENO are also used for communicating the
-address of the shared memory upon modem boot and to notify about start-up
-event such as when IPC channels and CAIF is ready for use.
-
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- include/linux/c2c_genio.h |  195 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 195 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/c2c_genio.h
-
-diff --git a/include/linux/c2c_genio.h b/include/linux/c2c_genio.h
-new file mode 100644
-index 0000000..e7a846e
---- /dev/null
-+++ b/include/linux/c2c_genio.h
-@@ -0,0 +1,195 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2011
-+ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef __INC_GENIO_H
-+#define __INC_GENIO_H
-+#include <linux/types.h>
-+
-+/**
-+ * DOC: C2C GENI/GENO interface.
-+ *
-+ * This API defines the API for the C2C driver and the GENI/GENO registers.
-+ */
-+
-+/**
-+ * enum GENIO_BITS - Definition of special GENIO BITS.
-+ * @READY_FOR_IPC_BIT:  Remote side is ready for IPC.
-+ * This GENI/GENO bit is triggered when ring-buffer protocol
-+ * is enabled from the remote end (modem)
-+ *
-+ * @READY_FOR_CAIF_BIT: Remote side is ready for CAIF.
-+ * This GENI/GENO bit is triggered when CAIF protocol
-+ * is enabled from the remote end (modem)
-+ */
-+enum GENIO_BITS {
-+	READY_FOR_CAIF_BIT = 28,
-+	READY_FOR_IPC_BIT = 29
-+};
-+
-+/**
-+ * genio_subscribe - Subscribe for notifications on bit-change of GENI/O bits.
-+ *
-+ * @bit:	The GENI/O bit where we want to be called back when it changes.
-+ *
-+ * @bit_set_cb:	Callback function to be called when the requested GENI/O bit
-+ *		is set by the external device (modem).
-+ *
-+ * @data: Client data to be provided in the callback function.
-+ *
-+ * Install a callback function for a GENI/O bit. Returns negative upon error.
-+ *
-+ * The genio driver is expected to handle the 4-state handshake for geni/geno
-+ * update, for the bit this function subscribe to. This function may block,
-+ * and cannot be called from IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition: This function is called after genio_set_shm_addr() and
-+ * genio_bit_alloc(). @bit must be defined as as getter in genio_bit_alloc().
-+ *
-+ * Callback context:
-+ *		The "bit_set_cb" callback must be called from the
-+ *		IRQ context. The callback function is not allowed to block
-+ *		or spend much CPU time in the callback, It must defer
-+ *		work to soft-IRQ or work queues.
-+ */
-+int genio_subscribe(int bit, void (*bit_set_cb)(void *data), void *data);
-+
-+/**
-+ * genio_unsubscribe - Unsubscribe for callback  GENI/O bit.
-+ * @bit:       The GENI/O bit to we want release.
-+ *
-+ * This function may block. It returns zero on success, and negative upon error.
-+ *
-+ * Precondition: @bit must be defined as as getter in genio_bit_alloc().
-+ */
-+int genio_unsubscribe(int bit);
-+
-+/**
-+ * genio_bit_alloc - Allocate the usage of GENI/O bits.
-+ *
-+ * @setter_mask:	Bit-mask defining the bits that can be set by
-+ *			genio_set_bit()
-+ * @getter_mask:	Bit-mask defining the bits that can be subscribed by
-+ *			genio_subscribe().
-+ *
-+ * The @getter_mask defines the bit for RX direction, i.e. bits that can
-+ * be subscribed by the function genio_subscribe().
-+ * The @setter_mask defines the bit for TX direction, i.e. bits that can
-+ * be set by the function genio_set_bit().
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition:
-+ * This function cannot be called before ipc_ready_cb() has been called,
-+ * and must be called prior to any call on genio_subscribe() or genio_set_bit().
-+ *
-+ */
-+int genio_bit_alloc(u32 setter_mask, u32 getter_mask);
-+
-+/**
-+ * genio_set_shm_addr - Inform remote device about the shared memory address.
-+ * @addr:		The shared memory address.
-+ * @ipc_ready_cb:	The callback function indicating IPC is ready.
-+ *
-+ * Description:
-+ * Implements the setting of shared memory address involving the
-+ * READY_FOR_IPC GENIO bits, and READY_FOR_IPC handshaking.
-+ * When handshaking is done ipc_ready_cb is called.
-+ * The usage of this bit is during start/restart.
-+ * This function may block.
-+ *
-+ * When the ipc_ready_cb() with @ready=%true, Stream channels can be opened.
-+ *
-+ * Sequence:
-+ * (1) Write the address to the GENO register,
-+ *
-+ * (2) wait for interrupt on IPC_READY (set to one in GENI register)
-+ *
-+ * (3) write zero to the GENO register
-+ *
-+ * (4) wait for interrupt on IPC_READY (set to zero)
-+ *
-+ * (5) call the callback function for IPC_READY
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition:
-+ * This function must be called initially upon start, or after remote device
-+ * has been reset.
-+ */
-+int genio_set_shm_addr(u32 addr, void (*ipc_ready_cb) (void));
-+
-+/**
-+ * genio_subscribe_caif_ready - Notify that CAIF channels can be
-+ * opened.
-+ *
-+ * @caif_ready_cb: is called with @ready = %true in the start up sequence,
-+ * when the remote side is ready for CAIF enumeration. Upon reset,
-+ * caif_ready_cb() will be called with @ready = %false.
-+ *
-+ * The %READY_FOR_CAIF_BIT is set to %one as long as the
-+ * modem is able to run CAIF traffic. Upon modem restart/crash it will
-+ * be set back to %zero.
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_subscribe_caif_ready(void (*caif_ready_cb) (bool ready));
-+
-+/**
-+ * genio_register_errhandler - Register an error handler.
-+ *
-+ * @errhandler: error handler called from driver upon severe errors
-+ *		that requires reset of the remote device.
-+ */
-+void genio_register_errhandler(void (*errhandler)(int errno));
-+
-+/**
-+ * genio_reset() - Reset the C2C driver
-+ *
-+ * Reset the C2C Driver due to remote device restart.
-+ * This shall reset state back to initial state, and should only
-+ * be used when remote device (modem) has reset.
-+ *
-+ * All settings, subscriptions and state information in the driver must
-+ * be reset. GENIO client must do all subscriptions again.
-+ * This function may block.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_reset(void);
-+
-+/**
-+ * genio_set_bit() -	Set a single GENI/O bit.
-+ *
-+ * @bit:	The GENI/O bit to set
-+ *
-+ * This function is used to signal over GENI/GENO the driver must
-+ * perform the 4-state protocol to signal the change to remote device.
-+ * This function is non-blocking, and can be called from Soft-IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ *
-+ * Precondition: @bit must be defined as as setter in genio_bit_alloc().
-+ */
-+int genio_set_bit(int bit);
-+
-+/**
-+ * genio_power_req() -	Request power on on remote C2C block.
-+ *
-+ * @state:	1 - power-on request , 0 - power-off request
-+ *
-+ * This function will request power on of remote C2C block.
-+ * This function is non-blocking, and can be called from Soft-IRQ context.
-+ *
-+ * Returns zero on success, and negative upon error.
-+ */
-+int genio_power_req(int state);
-+
-+#endif /*INC_GENIO_H*/
--- 
-1.7.0.4
+How many rotten cgroup related lists are there, it already had cgroups@
+and containers@, which IMO is 1 too many already.
 
