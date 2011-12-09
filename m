@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1LIB4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:56:37 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49573 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1LIB4f (ORCPT
+	id S1754128Ab1LIB6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 20:58:03 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47365 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab1LIB6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:56:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Dec 2011 10:55:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
-        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
-        hannes@cmpxchg.org, mhocko@suse.cz
-Subject: Re: [PATCH v8 6/9] tcp buffer limitation: per-cgroup limit
-Message-Id: <20111209105519.c4d885c9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1323120903-2831-7-git-send-email-glommer@parallels.com>
-References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
-	<1323120903-2831-7-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 8 Dec 2011 20:58:00 -0500
+Message-ID: <1323395873.3740.4.camel@phoenix>
+Subject: [PATCH 1/3] video: convert mbxfb to use module_platform_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Rapoport <mike@compulab.co.il>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Date: Fri, 09 Dec 2011 09:57:53 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Dec 2011 19:35:00 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+This patch converts mbxfb to use the module_platform_driver() macro
+which makes the code smaller and a bit simpler.
 
-> This patch uses the "tcp.limit_in_bytes" field of the kmem_cgroup to
-> effectively control the amount of kernel memory pinned by a cgroup.
-> 
-> This value is ignored in the root cgroup, and in all others,
-> caps the value specified by the admin in the net namespaces'
-> view of tcp_sysctl_mem.
-> 
-> If namespaces are being used, the admin is allowed to set a
-> value bigger than cgroup's maximum, the same way it is allowed
-> to set pretty much unlimited values in a real box.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Mike Rapoport <mike@compulab.co.il>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/mbx/mbxfb.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
+index 6ce3416..55bf619 100644
+--- a/drivers/video/mbx/mbxfb.c
++++ b/drivers/video/mbx/mbxfb.c
+@@ -1053,18 +1053,7 @@ static struct platform_driver mbxfb_driver = {
+ 	},
+ };
+ 
+-int __devinit mbxfb_init(void)
+-{
+-	return platform_driver_register(&mbxfb_driver);
+-}
+-
+-static void __devexit mbxfb_exit(void)
+-{
+-	platform_driver_unregister(&mbxfb_driver);
+-}
+-
+-module_init(mbxfb_init);
+-module_exit(mbxfb_exit);
++module_platform_driver(mbxfb_driver);
+ 
+ MODULE_DESCRIPTION("loadable framebuffer driver for Marathon device");
+ MODULE_AUTHOR("Mike Rapoport, Compulab");
+-- 
+1.7.5.4
+
+
 
