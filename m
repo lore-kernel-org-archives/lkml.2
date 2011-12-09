@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab1LIAuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 19:50:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38386 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab1LIAuH (ORCPT
+	id S1753800Ab1LIA4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 19:56:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:35711 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab1LIA41 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 19:50:07 -0500
-Message-ID: <4EE15B39.9050302@canonical.com>
-Date: Thu, 08 Dec 2011 16:50:01 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] apparmor: add missing rcu_dereference()
-References: <20111209002548.GA30520@www.outflux.net>
-In-Reply-To: <20111209002548.GA30520@www.outflux.net>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 19:56:27 -0500
+Date: Thu, 08 Dec 2011 19:54:39 -0500 (EST)
+Message-Id: <20111208.195439.1316777589309191623.davem@davemloft.net>
+To: LW@KARO-electronics.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, shawn.guo@linaro.org
+Subject: Re: [PATCH v3 0/8] net/fec: several cleanups and bugfixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1323326019.git.LW@KARO-electronics.de>
+References: <cover.1323326019.git.LW@KARO-electronics.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 08 Dec 2011 16:54:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2011 04:25 PM, Kees Cook wrote:
-> Adds a missed rcu_dereference() around real_parent.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  security/apparmor/audit.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/security/apparmor/audit.c b/security/apparmor/audit.c
-> index 96502b2..f3fafed 100644
-> --- a/security/apparmor/audit.c
-> +++ b/security/apparmor/audit.c
-> @@ -133,7 +133,7 @@ static void audit_pre(struct audit_buffer *ab, void *ca)
->  		struct aa_profile *profile = sa->aad.profile;
->  		pid_t pid;
->  		rcu_read_lock();
-> -		pid = tsk->real_parent->pid;
-> +		pid = rcu_dereference(tsk->real_parent)->pid;
->  		rcu_read_unlock();
->  		audit_log_format(ab, " parent=%d", pid);
->  		if (profile->ns != root_ns) {
-yep.
+From: Lothar Waﬂmann <LW@KARO-electronics.de>
+Date: Thu,  8 Dec 2011 08:59:24 +0100
 
-Acked-by: John Johansen <john.johansen@canonical.com>
+> The following set of patches provides some cleanup and bugfixes for
+> drivers/net/ethernet/freescale/fec.c and makes the driver buildable as
+> a module.
+> 
+> Changes wrt v2:
+>  - subject prefix changed to be in sync with existing commits
+>  - added Acked-by:
 
+All applied.
