@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab1LIFp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 00:45:56 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:44364 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1LIFpw (ORCPT
+	id S1751928Ab1LIFqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 00:46:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49626 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab1LIFpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 00:45:52 -0500
-Date: Fri, 9 Dec 2011 16:45:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the tegra tree with the  tree
-Message-Id: <20111209164537.8739df79c3a1733dea4295af@canb.auug.org.au>
-In-Reply-To: <4EE1907F.5000003@nvidia.com>
-References: <20111209114736.d418deb7228f2b544434b77b@canb.auug.org.au>
-	<4EE1907F.5000003@nvidia.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Fri, 9 Dec 2011 00:45:54 -0500
+Date: Thu, 8 Dec 2011 21:47:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20111208214744.19117662.akpm@linux-foundation.org>
+In-Reply-To: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
+References: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Dec_2011_16_45_37_+1100_J4PICFsug201Z90i"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Dec_2011_16_45_37_+1100_J4PICFsug201Z90i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 9 Dec 2011 16:08:56 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Hi Stephen,
+> Hi Andrew,
+> 
+> After merging the akpm tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> In file included from kernel/fork.c:21:0:
+> include/linux/mempolicy.h: In function 'task_has_mempolicy':
+> include/linux/mempolicy.h:258:13: error: dereferencing pointer to incomplete type
+> 
+> And several more like that.
+> 
+> Caused by commit 9d15457f147d
+> ("cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2").
 
-On Thu, 08 Dec 2011 21:37:19 -0700 Stephen Warren <swarren@nvidia.com> wrot=
-e:
->
-> I'm not very familiar with git diff for merge conflicts, so I might be
-> wrong here, but I did reproduce this conflict to investigate, and I
-> think your fixup isn't quite correct.
->=20
-> I think you're left with two separate copies of the macro
-> arch_ret_to_user, and your conflict resolution diff should be more like
-> that below:
+I suppose this is a good enough fix for that:
 
-Good catch!  I have fixed it up for next time.
+ include/linux/mempolicy.h |   10 ----------
+ mm/mempolicy.c            |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diff -puN include/linux/mempolicy.h~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2 include/linux/mempolicy.h
+--- a/include/linux/mempolicy.h~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2
++++ a/include/linux/mempolicy.h
+@@ -253,11 +253,6 @@ static inline int vma_migratable(struct 
+ 	return 1;
+ }
+ 
+-static inline bool task_has_mempolicy(struct task_struct *task)
+-{
+-	return task->mempolicy;
+-}
+-
+ #else
+ 
+ struct mempolicy {};
+@@ -384,11 +379,6 @@ static inline int mpol_to_str(char *buff
+ 	return 0;
+ }
+ 
+-static inline bool task_has_mempolicy(struct task_struct *task)
+-{
+-	return false;
+-}
+-
+ #endif /* CONFIG_NUMA */
+ #endif /* __KERNEL__ */
+ 
+diff -puN mm/mempolicy.c~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2 mm/mempolicy.c
+--- a/mm/mempolicy.c~cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix-2
++++ a/mm/mempolicy.c
+@@ -137,6 +137,18 @@ static const struct mempolicy_operations
+ 			enum mpol_rebind_step step);
+ } mpol_ops[MPOL_MAX];
+ 
++#ifdef CONFIG_NUMA
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return task->mempolicy;
++}
++#else
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return false;
++}
++#endif
++
+ /* Check that the nodemask contains at least one populated zone */
+ static int is_valid_nodemask(const nodemask_t *nodemask)
+ {
+_
 
---Signature=_Fri__9_Dec_2011_16_45_37_+1100_J4PICFsug201Z90i
-Content-Type: application/pgp-signature
+> I have reverted that patch for today (and the following trivial patch
+> "cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemask-fix-2-fix").
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4aCBAAoJEECxmPOUX5FEUdsP/244dnYXEGOukfulpoe1MRaZ
-fihZMqSpWg70NTMoe/cMMdFOt9gcsqRIoRuxSnnNOmyw+No2vN3g3mQHGgovd41x
-WK5/CbkaBuGuI6R4A8JDkizUFQeQ6zuviV9HTOntteFPJpX7fR18l9gMiZsmnZIK
-yvfNs3ZFgzrzx1rYputak05v5m21MebyEQLhN9gS33mcT4mQ7+0rDyZFS4wdIfmP
-8hdLrC5djN8V8Pzi8Qv5zc4a2nfIKHvn8rtGRFXf5YdFtAB0VGJ5WYykDqBF6tfy
-Cz5PNL7I7uioFKR23ThhlnDLM2pB6110V3VsjhdTdCtDyNA5Ek1QoEWDF1GXlzSX
-HaXV1DgRLOAEki7kYmQrDxkXx7N9yvbhJFCL/8a/IEehBzqP/NiWhrokjeZ6sOYa
-WQkfGDI9kNKKnL0pW9zPs+6Mu18YxeTAHq0cGcAsvV5D7CYaF3QKNR3T6hAkUapN
-tHk65XPjcxzdvsLK7oaxFD5Jj68Q7Xtvm0djl1OUFwU82Yze5jJLBGy/tozvCGBw
-JQhOX0KlQF39/DCgX5/TH2aTJagGPakSNZmzuP5SSjAmpdgAilRrxGigdZ7SWNgj
-NAzHAhsDNkxw0rek01CqNmuXcHxvUJard20NMu7pCISHx944KWJJEX/OzqRVQ4Xn
-iZCogz80ek1mrncUAThE
-=wO2S
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Dec_2011_16_45_37_+1100_J4PICFsug201Z90i--
+And I'll drop that one now.
