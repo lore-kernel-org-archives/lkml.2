@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab1LIKEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 05:04:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15813 "EHLO mx1.redhat.com"
+	id S1751131Ab1LIKJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 05:09:56 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:56608 "EHLO d1.icnet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab1LIKE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 05:04:29 -0500
-Message-ID: <4EE1DD23.9050403@redhat.com>
-Date: Fri, 09 Dec 2011 08:04:19 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1750758Ab1LIKJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 05:09:55 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 5/5 v2] ARM: OMAP1: recalculate loops per jiffy after dpll1 reprogram
+Date: Fri, 9 Dec 2011 11:09:13 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1322364751-29980-6-git-send-email-jkrzyszt@tis.icnet.pl> <20111209084245.GB14547@n2100.arm.linux.org.uk> <201112091100.01690.jkrzyszt@tis.icnet.pl>
+In-Reply-To: <201112091100.01690.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v3.2 05/10] MAINTAINERS: Update marvell ccic F: patterns
-References: <cover.1323401278.git.joe@perches.com> <1d1251f2213424a52340275e411fcff2ff4b2385.1323401278.git.joe@perches.com>
-In-Reply-To: <1d1251f2213424a52340275e411fcff2ff4b2385.1323401278.git.joe@perches.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Message-Id: <201112091109.13729.jkrzyszt@tis.icnet.pl>
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09-12-2011 02:21, Joe Perches wrote:
-> Commit f8fc729870ee
-> ("[media] marvell-cam: Move cafe-ccic into its own directory")
-> moved the files, update the pattern.
->
-> CC: Jonathan Corbet<corbet@lwn.net>
-> CC: Mauro Carvalho Chehab<mchehab@redhat.com>
+On Friday 09 of December 2011 at 11:00:01, Janusz Krzysztofik wrote:
+> On Friday 09 of December 2011 at 09:42:45, Russell King - ARM Linux wrote:
+> > On Tue, Nov 29, 2011 at 01:25:32AM +0100, Janusz Krzysztofik wrote:
+> > > However, the result of cpufreq_scale() differs from that of
+> > > (re)calibrate_delay() by ca. 6%, i.e., 70.40 vs. 74.54. Please advise if
+> > > this approximation is acceptable.
+> > 
+> > You don't say which figure is what.
+> 
+> Hi,
+> Those were BogoMIPS, which you were talking about in your comment 
+> (http://www.spinics.net/lists/linux-omap/msg60811.html).
 
-As you sent to akpm, c/c me, I'm assuming that Andrew will apply it. So:
+Should also mention that I was getting the lower number as a result of 
+cpufreq_scale(), and the higher when doing recalibrate_delay().
 
-Acked-by: Mauro Carvalho Chehab<mchehab@redhat.com>
+Janusz
 
-Andrew,
-Please let me know if you prefer to have this on my tree. It won't conflict
-to any patch there anyway, so there's no difference on having it coming from
-my tree or from yours.
-
-Regards,
-Mauro
->
-> Signed-off-by: Joe Perches<joe@perches.com>
-> ---
->   MAINTAINERS |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index df2bef0..6d98e5e 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1671,7 +1671,7 @@ L:	linux-media@vger.kernel.org
->   T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
->   S:	Maintained
->   F:	Documentation/video4linux/cafe_ccic
-> -F:	drivers/media/video/cafe_ccic*
-> +F:	drivers/media/video/marvell-ccic/
->
->   CAIF NETWORK LAYER
->   M:	Sjur Braendeland<sjur.brandeland@stericsson.com>
-
+> > 
+> > Note that calibrate_delay() is itself inaccurate - the loops_per_jiffy
+> > is the number of loops which can be executed between two timer ticks
+> > _minus_ the time to process the timer interrupt itself.  So, it's
+> > actually always a little less than the theoretical number of loops
+> > within that time period.
+> 
+> I see. Then, in case of a machine always booting at, let's say, 12 and then reprogrammed to 150 MHz, we actually scale up that less then the theoretical number, with a side effect of scaling up its error as well. Perhaps in this case, when the machine is going to run at that target rate until rebooted, we should rather decide to recalibrate to keep that error proportionally small compared to the target loops per jiffy value, like it worked in my initial proposal? I think that your argument about unnecessarily wasting 10s of milliseconds has marginal importance here because we will be redoing that calibration only once, at boot time, and never later until next reboot.
+> 
+> Thanks,
+> Janusz
+> 
