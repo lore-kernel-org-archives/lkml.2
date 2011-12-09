@@ -1,158 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab1LIRaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:30:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1LIRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:30:51 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/4] perf, tool: Centralize the memory maps handling
-Date: Fri,  9 Dec 2011 18:30:35 +0100
-Message-Id: <1323451838-23081-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
-References: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
+	id S1752770Ab1LIRjB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:39:01 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:10930 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab1LIRjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:39:00 -0500
+X-IronPort-AV: E=Sophos;i="4.71,327,1320624000"; 
+   d="scan'208";a="9391073"
+Subject: Re: [PATCH V3 1/2] xen/granttable: Support sub-page grants
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "annie.li@oracle.com" <annie.li@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Date: Fri, 9 Dec 2011 17:38:59 +0000
+In-Reply-To: <1323430372-5503-1-git-send-email-annie.li@oracle.com>
+References: <1323430321-5465-1-git-send-email-annie.li@oracle.com>
+	 <1323430372-5503-1-git-send-email-annie.li@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323452339.20077.92.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving handling of all memory maps properties into __perf_evlist__mmap
-function. This way calculating the memory maps' properties and the
-creation of the map itself are in a single place.
+On Fri, 2011-12-09 at 11:32 +0000, annie.li@oracle.com wrote:
+> -- They can't be used to map the page (so can only be used in a GNTTABOP_copy
+>        hypercall).
+>     -- It's possible to grant access with a finer granularity than whole pages.
+>     -- Xen guarantees that they can be revoked quickly (a normal map grant can
+>        only be revoked with the cooperation of the domain which has been granted
+>        access).
+> 
+> Signed-off-by: Annie Li <annie.li@oracle.com>
+> ---
+>  drivers/xen/grant-table.c |   71 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/xen/grant_table.h |   13 ++++++++
+>  2 files changed, 84 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index bd325fd..0ac16fa 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -120,6 +120,16 @@ struct gnttab_ops {
+>  	 * by bit operations.
+>  	 */
+>  	int (*query_foreign_access)(grant_ref_t);
+> +	/*
+> +	 * Grant a domain to access a range of bytes within the page referred by
+> +	 * an available grant entry. First parameter is grant entry reference
+> +	 * number, second one is id of grantee domain, third one is frame
+> +	 * address of subpage grant, forth one is grant type and flag
+> +	 * information, fifth one is offset of the range of bytes, and last one
+> +	 * is length of bytes to be accessed.
+> +	 */
+> +	void (*update_subpage_entry)(grant_ref_t, domid_t, unsigned long, int,
+> +				     unsigned, unsigned);
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/evlist.c |   47 ++++++++++++++++++++++++---------------------
- tools/perf/util/evlist.h |    1 +
- 2 files changed, 26 insertions(+), 22 deletions(-)
+Please can you name the arguments here and then refer to them by name in
+the comments instead of all this "First parameter", "second one" stuff.
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 8b19e7a..f3178bc 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -440,21 +440,29 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
- }
- 
--static int __perf_evlist__mmap(struct perf_evlist *evlist,
--			       int idx, int prot, int mask, int fd)
-+static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx, int fd)
- {
-+	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
-+	int mask, len, prot;
-+	void *base;
-+
-+	mask = evlist->pages * page_size - 1;
-+	len  = (evlist->pages + 1) * page_size;
-+	prot = PROT_READ | (evlist->overwrite ? 0 : PROT_WRITE);
-+
-+	base = mmap(NULL, len, prot, MAP_SHARED, fd, 0);
-+	if (base == MAP_FAILED)
-+		return -1;
-+
- 	evlist->mmap[idx].prev = 0;
- 	evlist->mmap[idx].mask = mask;
--	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
--				      MAP_SHARED, fd, 0);
--	if (evlist->mmap[idx].base == MAP_FAILED)
--		return -1;
-+	evlist->mmap[idx].base = base;
- 
- 	perf_evlist__add_pollfd(evlist, fd);
- 	return 0;
- }
- 
--static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel;
- 	int cpu, thread;
-@@ -469,7 +477,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 				if (output == -1) {
- 					output = fd;
- 					if (__perf_evlist__mmap(evlist, cpu,
--								prot, mask, output) < 0)
-+								output) < 0)
- 						goto out_unmap;
- 				} else {
- 					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
-@@ -495,7 +503,7 @@ out_unmap:
- 	return -1;
- }
- 
--static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, int mask)
-+static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel;
- 	int thread;
-@@ -509,7 +517,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 			if (output == -1) {
- 				output = fd;
- 				if (__perf_evlist__mmap(evlist, thread,
--							prot, mask, output) < 0)
-+							output) < 0)
- 					goto out_unmap;
- 			} else {
- 				if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
-@@ -552,17 +560,9 @@ out_unmap:
- int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 		      bool overwrite)
- {
--	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
- 	struct perf_evsel *evsel;
- 	const struct cpu_map *cpus = evlist->cpus;
- 	const struct thread_map *threads = evlist->threads;
--	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE), mask;
--
--        /* 512 kiB: default amount of unprivileged mlocked memory */
--        if (pages == UINT_MAX)
--                pages = (512 * 1024) / page_size;
--
--	mask = pages * page_size - 1;
- 
- 	if (evlist->mmap == NULL && perf_evlist__alloc_mmap(evlist) < 0)
- 		return -ENOMEM;
-@@ -570,8 +570,11 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	if (evlist->pollfd == NULL && perf_evlist__alloc_pollfd(evlist) < 0)
- 		return -ENOMEM;
- 
-+	if (pages == UINT_MAX)
-+		pages = (512 * 1024) / sysconf(_SC_PAGE_SIZE);
-+
-+	evlist->pages = pages;
- 	evlist->overwrite = overwrite;
--	evlist->mmap_len = (pages + 1) * page_size;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-@@ -580,10 +583,10 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 			return -ENOMEM;
- 	}
- 
--	if (evlist->cpus->map[0] == -1)
--		return perf_evlist__mmap_per_thread(evlist, prot, mask);
-+	if (cpus->map[0] == -1)
-+		return perf_evlist__mmap_per_thread(evlist);
- 
--	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
-+	return perf_evlist__mmap_per_cpu(evlist);
- }
- 
- int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 8922aee..87a4e32 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -28,6 +28,7 @@ struct perf_evlist {
- 		pid_t	pid;
- 	} workload;
- 	bool		 overwrite;
-+	unsigned int	 pages;
- 	union perf_event event_copy;
- 	struct perf_mmap *mmap;
- 	struct pollfd	 *pollfd;
--- 
-1.7.4
+Similarly for the existing comments sorry I didn't notice this in
+previous review.
+
+Ian.
+
 
