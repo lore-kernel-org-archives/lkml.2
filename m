@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab1LIIOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 03:14:19 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:60741 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751301Ab1LIIOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 03:14:15 -0500
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 8/8] MAINTAINERS: spi: Update F: patterns
-Date: Fri,  9 Dec 2011 00:12:54 -0800
-Message-Id: <86f4a9099c8ff7961190a540155356446dda2ade.1323418149.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1323418149.git.joe@perches.com>
-References: <cover.1323418149.git.joe@perches.com>
+	id S1751916Ab1LIIPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 03:15:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41529 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750903Ab1LIIPU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 03:15:20 -0500
+Date: Fri, 9 Dec 2011 16:15:04 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: add irq domain support for max8997 interrupts
+Message-ID: <20111209081502.GH26952@opensource.wolfsonmicro.com>
+References: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
+ <1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+ <20111209044109.GB26952@opensource.wolfsonmicro.com>
+ <CAJuYYwRicSWO=wCmBH5RWcBLX3uhpyxS2wojUS3ZAH9tN=R1Kg@mail.gmail.com>
+ <20111209060249.GD26952@opensource.wolfsonmicro.com>
+ <CAJuYYwSCuu8U2rF3RGAnczXgbh4Px7hMwUhHr=xrhPZ1jEs5DA@mail.gmail.com>
+ <20111209063912.GG26952@opensource.wolfsonmicro.com>
+ <CAJuYYwQ8B_EtuReRDJ8Tp-cCOV3jd_-y-9iLy0apRZV3zU6Jdw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJuYYwQ8B_EtuReRDJ8Tp-cCOV3jd_-y-9iLy0apRZV3zU6Jdw@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit ca632f55669 ("spi: reorganize drivers")
-renamed the files, update the F: patterns.
+On Fri, Dec 09, 2011 at 12:49:49PM +0530, Thomas Abraham wrote:
+> On 9 December 2011 12:09, Mark Brown
 
-CC: Grant Likely <grant.likely@secretlab.ca>
+> > How would you provide this interrupt to the device using it in a non-DT
+> > systemm without passing the irq_base into the device as platform data?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> In non-DT system, the linux irq number that is used to register the
+> gpio interrupt notifier would belong to the irq domain of the host
+> interrupt controller (gic). For Exynos, the linux irq numbers that
+> belong to the gic irq domain are statically assigned to specific
+> interrupt notifiers and known to the entire system.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 410f190..68d5147 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1151,7 +1151,7 @@ F:	drivers/watchdog/nuc900_wdt.c
- F:	drivers/net/ethernet/nuvoton/w90p910_ether.c
- F:	drivers/mtd/nand/nuc900_nand.c
- F:	drivers/rtc/rtc-nuc900.c
--F:	drivers/spi/spi_nuc900.c
-+F:	drivers/spi/spi-nuc900.c
- F:	drivers/usb/host/ehci-w90x900.c
- F:	drivers/video/nuc900fb.c
- 
-@@ -1355,7 +1355,7 @@ F:	drivers/net/ethernet/cadence/
- ATMEL SPI DRIVER
- M:	Nicolas Ferre <nicolas.ferre@atmel.com>
- S:	Supported
--F:	drivers/spi/atmel_spi.*
-+F:	drivers/spi/spi-atmel.*
- 
- ATMEL USBA UDC DRIVER
- M:	Nicolas Ferre <nicolas.ferre@atmel.com>
-@@ -5280,7 +5280,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- F:	arch/arm/mach-pxa/
- F:	drivers/pcmcia/pxa2xx*
--F:	drivers/spi/pxa2xx*
-+F:	drivers/spi/spi-pxa2xx*
- F:	drivers/usb/gadget/pxa2*
- F:	include/sound/pxa2xx-lib.h
- F:	sound/arm/pxa*
--- 
-1.7.8.111.gad25c.dirty
-
+This seems like it's going to be a bit of a usability issue at best as
+users will have to figure out the relevant domain and the offset we end
+up with within it, and you appear to be making assumptions about the
+system you're running on here.  The way this has been handled for other
+drivers is by using irq_alloc_descs with platform data to provide a
+default, preserving the old behaviour on non-OF systems.
