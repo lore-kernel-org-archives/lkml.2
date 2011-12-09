@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751103Ab1LIFJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 00:09:07 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:55183 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab1LIFJF (ORCPT
+	id S1751294Ab1LIFRI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 00:17:08 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43158 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab1LIFRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 00:09:05 -0500
-Date: Fri, 9 Dec 2011 16:08:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Dec_2011_16_08_56_+1100_O1VXmGpYeQUec7Kz"
+	Fri, 9 Dec 2011 00:17:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAH9JG2WhH27O6VLZWro_cZ9-TgV+=kjvOM6UiAY=-4eAO1sChA@mail.gmail.com>
+References: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
+	<1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+	<1323361659-11835-3-git-send-email-thomas.abraham@linaro.org>
+	<CAH9JG2WhH27O6VLZWro_cZ9-TgV+=kjvOM6UiAY=-4eAO1sChA@mail.gmail.com>
+Date: Fri, 9 Dec 2011 10:47:03 +0530
+Message-ID: <CAJuYYwT5xrtxL8eajYDqb8dYWKDpe6RG7_BSk-ku9ecP+dfFvw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: add device tree support for max8997
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Dec_2011_16_08_56_+1100_O1VXmGpYeQUec7Kz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dear Mr. Park,
 
-Hi Andrew,
+On 9 December 2011 08:00, Kyungmin Park <kyungmin.park@samsung.com> wrote:
+> On 12/9/11, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+>> Add device tree based discovery support for max8997.
+>>
+>> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 
-After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+[...]
 
-In file included from kernel/fork.c:21:0:
-include/linux/mempolicy.h: In function 'task_has_mempolicy':
-include/linux/mempolicy.h:258:13: error: dereferencing pointer to incomplet=
-e type
+>> +#else
+>> +static int *max8997_i2c_parse_dt_pdata(struct device *dev
+>> +                                     struct max8997_platform_data **pdata)
+> It should be 'int' instead of 'int *'
+>
+> It's helpful to compile without CONFIG_OF.
 
-And several more like that.
+I apologize for that. I compiled for exynos-dt first and then compiled
+for origen board (which does not select CONFIG_OF). When compiling for
+non-dt origen, I missed to notice that CONFIG_OF selection was left
+over from the previous exynos-dt compile.
 
-Caused by commit 9d15457f147d
-("cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodema=
-sk-fix-2").
+I have checked again without CONFIG_OF and found this issue as well as
+two other errors/warnings.
 
-I have reverted that patch for today (and the following trivial patch
-"cpusets-stall-when-updating-mems_allowed-for-mempolicy-or-disjoint-nodemas=
-k-fix-2-fix").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks. This was very helpful.
 
---Signature=_Fri__9_Dec_2011_16_08_56_+1100_O1VXmGpYeQUec7Kz
-Content-Type: application/pgp-signature
+Regards,
+Thomas.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4ZfoAAoJEECxmPOUX5FE48wP/iCzKJ3ssKteiJa2qRwbGkou
-iWMly3PMApPlneJkvI2YkJg+CSaU6QNfdHFiaqZPBM/aMVcRy+5wVeLKTrx7fzuz
-IqPeg+7T7xeBnX8meCJr7FP3vkk51odLFWCA4rF0SK+oBjVu5IwijBbXPTZIH+LK
-4dLoYJu5aL4XVpRaF+OtTAOfLT2AEZXdTvzR9QsRIGxbISjWMGPoMnV1+yK1QURk
-jGZuGsyi/fm/rID4XGRX2ti3qjG+b0HGIUcgYSkEePpAVQ9A5UUZEdpaZlS75z5s
-qAvSuuXPfpLRydpysfIrrRCRXfdn25nVBscRMvpDWsUWwdrboPg9WRKp5OtNEoae
-z9aDk6yw5YD40/cnz7iWXYmR+fZODIotYyaKjceU5p/M8zNzadwsgJmc/NJYxIMR
-Xluhy9C+hcivMg4ETUwRTTuijJ2t2pZmzAWaXEEXxo7FcdgXI9kKOh6BjBIr5Wv7
-L3TGWPaKPzSq1aV+Jx0H3ciJkdTQgEix0vc5WkLM/jI4xE38aRDu/epRnkSFRqzJ
-0biMN4O/4zpvPTSmy48YAVv62HzyyL3K3AQIK/ehIM7l/F9CWPZDhJATp2d+Y/uR
-viOjbStcb0hr5fxpS45vUDRMUoySL7QfCYi7aW+dzvUmb329izbshRpni7sxsCyF
-eXiKZl16+cou/q1s02a1
-=8cRa
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Dec_2011_16_08_56_+1100_O1VXmGpYeQUec7Kz--
+[...]
