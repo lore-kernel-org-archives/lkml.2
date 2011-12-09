@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab1LIAMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 19:12:00 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53061 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751156Ab1LIAL4 (ORCPT
+	id S1751917Ab1LIAPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 19:15:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34755 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1LIAPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 19:11:56 -0500
-X-Sasl-enc: 8+Fb/ZYaG2GVmtnw+BP2slzmxcWor6am2zAWOUIdX0i2 1323389512
-Date: Thu, 8 Dec 2011 16:11:45 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
-        davej@redhat.com
-Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
- for CPU modaliases)
-Message-ID: <20111209001145.GB9550@kroah.com>
-References: <1323309517.979.8.camel@mop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1323309517.979.8.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Dec 2011 19:15:04 -0500
+X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=bix7J2-88xUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Bb7kA678-z8URiFYjO0A:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 2/2] trace_event_filter: factorize filter creation
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20111208233206.GC12108@google.com>
+References: <20111123014603.GA19630@google.com>
+	 <20111123020016.GB19630@google.com> <20111128204932.GK18864@google.com>
+	 <1322518512.17003.34.camel@frodo>  <20111208233206.GC12108@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Dec 2011 19:15:00 -0500
+Message-ID: <1323389700.30977.157.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 02:58:37AM +0100, Kay Sievers wrote:
-> This patch is work-in-progress and just posted to coordinate with Andi
-> Kleen's current export of CPU modaliases. It boots my x86_64 workstation
-> fine, nothing else is tested.
+On Thu, 2011-12-08 at 15:32 -0800, Tejun Heo wrote:
+> On Mon, Nov 28, 2011 at 05:15:12PM -0500, Steven Rostedt wrote:
+> > On Mon, 2011-11-28 at 12:49 -0800, Tejun Heo wrote:
+> > > [OFFLIST]
+> > > 
+> > > Ping.
+> > > 
+> > 
+> > Thanks! I actually remembered, just a bit slow today :)
 > 
-> The CPU subsystem from a sysdev_class to a plain driver-core subsystem
-> (currently called 'bus').
-> 
-> With the CPUs as normal devices, userspace will pick the events up
-> properly and udev is able to coldplug the devices during bootup, which
-> will allow proper module autoloading based on MODALIAS.
-> 
->   $ tree /sys/bus/cpu/
->   /sys/bus/cpu/
->   ├── devices
->   │   ├── cpu0 -> ../../../devices/system/cpu/cpu0
->   │   ├── cpu1 -> ../../../devices/system/cpu/cpu1
->   │   ├── cpu2 -> ../../../devices/system/cpu/cpu2
->   │   └── cpu3 -> ../../../devices/system/cpu/cpu3
->   ...
->   └── uevent
-> 
-> The needed bits to easily convert the remaining sysdev class users to a
-> plain subsystem and plain devices have been added to the driver core.
-> Sysdev drivers have never been 'drivers' in the driver-core sense, and
-> they can be now ported-over to subsys_interfaces. The end goal is to
-> finally remove all of the ugly sysdev hack from the system.
-> 
-> Greg, I guess we need a bit of your time, to make a plan and get the
-> remaining things sorted out. We are planning and fiddling for years
-> already here, and we should finally get the stuff out. :)
+> Did you get around to it?
 
-I agree, I want this to get done finally.
+Ah, I did patch 1 (as it was urgent) but forgot about this one. Let me
+take a look at this too.
 
-> Greg, I think with the subsys_interfaces we do not need the
-> 'multi-driver-binding' anymore, seems we can get away with the
-> interfaces only. Classes which need to convert to buses because the
-> class interface is not extensible can be easily converted now. The only
-> missing piece is the 'glue directory'. We should be able to unify
-> classes and buses internally with all that stuff.
+-- Steve
 
-Ah, good, I was stalled on this because of the multi-driver-binding
-stuff.  If that's not needed, I'll gladly take any patches for this.
 
-So, what do I need to do here?  Your patch looks good at first glance,
-the interface logic looks sane, is that all that we really need to do to
-the core?
-
-thanks,
-
-greg k-h
