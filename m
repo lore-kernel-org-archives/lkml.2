@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab1LIRxe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:53:34 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45281 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751156Ab1LIRxd (ORCPT
+	id S1752854Ab1LIR7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:59:34 -0500
+Received: from mail.elliptictech.com ([209.217.122.41]:44022 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab1LIR7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:53:33 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19iy9uOFa2+yyMc7acgUchu
-Date: Fri, 9 Dec 2011 09:53:27 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng <dongas86@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
- SoCs
-Message-ID: <20111209175327.GQ31337@atomide.com>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
- <20111209010147.GH7913@S2100-06.ap.freescale.net>
- <4EE18403.30604@nvidia.com>
- <20111209043220.GJ7913@S2100-06.ap.freescale.net>
- <4EE192DC.3080209@nvidia.com>
- <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17518604C3@HQMAIL01.nvidia.com>
- <20111209172407.GP31337@atomide.com>
+	Fri, 9 Dec 2011 12:59:33 -0500
+Date: Fri, 9 Dec 2011 12:59:25 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: NFS kmemleak reports.
+Message-ID: <20111209175925.GA14635@elliptictech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111209172407.GP31337@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [111209 08:53]:
-> * Stephen Warren <swarren@nvidia.com> [111209 08:17]:
-> > Dong Aisheng wrote at Friday, December 09, 2011 8:03 AM:
-> > ...
-> > > I agree that parsing data from device tree increases much effort
-> > > because we can not using any help functions like microes in dts file and we have
-> > > to construct the structure we need in driver by parsing that data.
-> > > And it will increase dtsi file's size a lot when after adding all functions.
-> > > 
-> > > I wonder if we can define that data as a pdata in a .c file and only
-> > > get a pointer from dts file. That would make life much easier.
-> > 
-> > You can't get pointers themselves directly from a .dts file, since the
-> > .dts file author has no idea what the memory layout (or even which OS)
-> > is present on the running system.
-> > 
-> > An alternative is to key off the compatible flag in the device tree,
-> > and use that to index a table that points at the various structures you
-> > want pointers to.
-> > 
-> > struct of_device_id's .data field, and the function of_match_device()
-> > are for exactly that purpose; see the way the Tegra pinctrl driver that
-> > I posted uses them for an example of mapping compatible flag to per-
-> > SoC initialization function pointers.
-> 
-> For letting a device do it's pingroup in DT, I've played with the
-> following:
-> 
-> 	/*      mux func phandle mux func name    hw initial flags */
-> 	pins = <&uart3_rx_irrx>, "uart3_rx_irrx", <0xdeadbeef>,
-> 		<&uart3_tx_irtx>, "uart3_tx_irtx", <0xdeadbeef>;
-> 
-> But it seems that doing mixed-property arrays gets nasty as any
-> data after a string has a high likelihood of getting misaligned
-> since a mixed-property array is a string array with the string
-> embedded in it with the registers. That leads into nasty string
-> parsing that can be extremely flakey with buggy DT data. So it
-> seems that using a string there is only safe as the last element,
-> which means we can't use names for multiple pins.
-> 
-> So I've pretty much come to the conclusion that we would have to
-> use something like this instead:
-> 
-> 	/*      phandle        f hw specific initial flags */
-> 	pins = <&uart3_rx_irrx 0 0xdeadbeef
-> 		&uart3_tx_irtx 0 0xdeadbeef>;
-> 
-> This however has a problem for cases where we may not have a phandle
-> in DT for the mux function. For example, let's assume that we'll have
-> tens of thousands of lines of mux data for omaps (we already have
-> over 6k LOC) and just want to load that from /lib/firmware to avoid
-> bloating the kernel. In that case we won't have the phandle for the
-> mux function in DT.
-> 
-> It would be _really_nice_ to use DT in the missing phandle case also
-> for doing the device to mux function mapping based on a function name
-> when no phandle is available.
-> 
-> But so far I have not found a good way of doing both phandle and
-> optional name type thing. Anybody got some good ideas for that?
+Hi folks,
 
-Oh forgot to mention of course what Benoit came up which is reg-names.
-That of course is doable with both phandles and pin names:
+Lately, I've been seeing dozens of kmemleak reports pointing at NFS.
+They all appear to be referring to the same "name" value which gets
+stored in dentry->d_fsdata by nfs_get_root.  But at a first glance
+the code seems to be taking some care to free these properly (although
+it's quite tricky for me to follow), so I'm not sure what's up.  These
+are NFSv3 client mounts.
 
-So optionally either
+This is with Linus' master as of a couple days ago, but I've also seen
+this on some older kernels (on different networks).  The machine in
+question is using autofs (which may explain the fairly large number of
+kmemleak reports, due to semi-frequent mounting/unmounting).
 
-	pins = <&uart3_rx_irrx &uart3_tx_irtx>;
-or
+They all look essentially the same: one is quoted below.
 
-	pin-names = "uart3_rx_irrx",  "uart3_tx_irtx";
+  unreferenced object 0xf18fb820 (size 32):
+    comm "mount.nfs", pid 5688, jiffies 15473748 (age 73861.344s)
+    hex dump (first 32 bytes):
+      65 6c 70 66 73 31 3a 2f 65 78 70 6f 72 74 2f 74  elpfs1:/export/t
+      6f 6f 6c 73 2f 65 6c 70 73 6f 66 74 00 00 00 00  ools/elpsoft....
+    backtrace:
+      [<c125d7f6>] kmemleak_alloc+0x21/0x3f
+      [<c10a95c2>] __kmalloc_track_caller+0x128/0x14a
+      [<c1093db6>] kstrdup+0x29/0x39
+      [<f85a7543>] nfs_get_root+0x29/0x11e [nfs]
+      [<f85ac6ee>] nfs_fs_mount+0x6d6/0x75b [nfs]
+      [<c10ae861>] mount_fs+0xe/0x95
+      [<c10bf2cd>] vfs_kern_mount+0x4a/0x78
+      [<c10bff7c>] do_kern_mount+0x2f/0xad
+      [<c10c129e>] do_mount+0x581/0x5cf
+      [<c10c1521>] sys_mount+0x61/0x94
+      [<c12718d0>] sysenter_do_call+0x12/0x36
+      [<ffffffff>] 0xffffffff
 
-and both pins and pin-names could have optional hardware specific
-board default flags:
-
-	pin-flags = <0xdeadbeef 0xdeadbeef>;
-
-The pin-flags could end up being defines if dtc will at some point
-support preprocessing the .dtc files.
- 
-> BTW, this same problem applies also to clock framwork where we may
-> have multiple sources of clocks to register and map to devices.
-
-Regards,
-
-Tony
+Let me know if you need any more info,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
