@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab1LIHaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 02:30:13 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52982 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab1LIHaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 02:30:12 -0500
-Date: Fri, 9 Dec 2011 08:28:17 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Message-ID: <20111209072817.GI24537@elte.hu>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
- <20111206084230.GC30062@elte.hu>
- <43F901BD926A4E43B106BF17856F075501A23A3010@orsmsx508.amr.corp.intel.com>
+	id S1751229Ab1LIHpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 02:45:32 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36359 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab1LIHpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 02:45:31 -0500
+Message-ID: <4EE1BC7E.3060904@oracle.com>
+Date: Fri, 09 Dec 2011 15:45:02 +0800
+From: annie li <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <43F901BD926A4E43B106BF17856F075501A23A3010@orsmsx508.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Paul Durrant <Paul.Durrant@citrix.com>
+CC: annie li <annie.li@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
+References: <1323336940-5382-1-git-send-email-annie.li@oracle.com> <1323337048-5426-1-git-send-email-annie.li@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net> <4EE08B0D.80504@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net> <4EE19A4D.9030500@oracle.com>
+In-Reply-To: <4EE19A4D.9030500@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4EE1BC97.0018,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Yu, Fenghua <fenghua.yu@intel.com> wrote:
 
-> > 
-> > * Fenghua Yu <fenghua.yu@intel.com> wrote:
-> > Then if demand for this picks up some more intelligent method of
-> > cooperating with the firmware could be added: the firmware could
-> > actually signal to us whether it supports suspend/resume from
-> > other than the boot CPU.
-> 
-> We started to think how to handle the resume issue in 
-> firmware, e.g. the way you talked, or change boot CPU to 
-> another online CPU to execute resume procedure.
-> 
-> A firmware solution is a long run. Currently we don't 
-> suspend/hibernate when BSP is offline. If a firmware solution 
-> is available, we can change the sanity check to allow 
-> suspend/hibernate if CPU0 is offline for new firmware. But 
-> even when the solution is available in new firmware, we still 
-> need to do the same sanity check on legacy firmware.
+On 2011-12-9 13:19, annie li wrote:
+> Hi Paul,
+>
+>>>> #define get_free_entry()    get_free_entries(1)
+> Is this necessary? Maybe you defined this to keep consistence with 
+> put_free_entry(ref)?
+> But other functions such as gnttab_grant_foreign_transfer and 
+> gnttab_grant_foreign_access all call get_free_entries(1). Maybe it is 
+> better to keep initial get_free_entries(1) code?
+Another approach is doing those work in a separate patch -- changing 
+get_free_entries to get_free_entry in following 4 functions:
+gnttab_grant_foreign_access
+gnttab_grant_foreign_access_subpage
+gnttab_grant_foreign_access_trans
+gnttab_grant_foreign_transfer
 
-Right.
-
-You convinced me, if there's no objections i guess we could try 
-this feature carefully, if it's named in some more descriptive 
-manner such as:
-
-   x86: Arbitrary CPU hot(un)plug support
-
-Nobody outside x86 devs knows 'BSP' means and why they should 
-care.
-
-The minor usability/testability/self-test improvements i 
-suggested need to be added as well.
-
-Thanks,
-
-	Ingo
+Thanks
+Annie
