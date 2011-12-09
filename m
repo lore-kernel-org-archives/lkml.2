@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1LIXKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:10:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5224 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab1LIXKW convert rfc822-to-8bit (ORCPT
+	id S1754864Ab1LIXRo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:17:44 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60237 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1LIXRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:10:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="94542694"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Petr Tesarik <ptesarik@suse.cz>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 9 Dec 2011 15:10:20 -0800
-Subject: RE: Overlapping reserved regions at boot
-Thread-Topic: Overlapping reserved regions at boot
-Thread-Index: Acy066qv3STjH/2WS/W1cN2zsiAalAB26rRg
-Message-ID: <0207C53569FE594381A4F2EB66570B2A018EFB7B85@orsmsx508.amr.corp.intel.com>
-References: <201111291501.51657.ptesarik@suse.cz>
- <201112071522.34034.ptesarik@suse.cz>
-In-Reply-To: <201112071522.34034.ptesarik@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 18:17:43 -0500
+Date: Fri, 9 Dec 2011 18:17:40 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kees Cook <kees@outflux.net>
+cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: standardize /proc/iomem "Kernel code" name
+In-Reply-To: <20111209211157.GA2146@outflux.net>
+Message-ID: <alpine.LFD.2.02.1112091815400.2907@xanadu.home>
+References: <20111209211157.GA2146@outflux.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK guys, I take it that nobody is interested in ia64 any longer, but assuming 
-> that there will probably be no other fix to the issue, can you at least 
-> confirm that the fix is acceptable?
+On Fri, 9 Dec 2011, Kees Cook wrote:
 
-Sorry - way behind on my mail list reading.
+> All other ports use "Kernel code" to identify the Kernel text segment
+> in /proc/iomem. Change the ARM resources to do the same.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-It might be better to not make the overlap to begin with - but I can see
-that would have a rather larger code impact.  So this looks good.
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-Queued for 3.3 merge
+Please submit the patch here:
+http://www.arm.linux.org.uk/developer/patches/
 
--Tony
-
+> ---
+>  arch/arm/kernel/setup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 3448a3f..a34dbf6 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -158,7 +158,7 @@ static struct resource mem_res[] = {
+>  		.flags = IORESOURCE_MEM
+>  	},
+>  	{
+> -		.name = "Kernel text",
+> +		.name = "Kernel code",
+>  		.start = 0,
+>  		.end = 0,
+>  		.flags = IORESOURCE_MEM
+> -- 
+> 1.7.5.4
+> 
+> 
+> -- 
+> Kees Cook                                            @outflux.net
+> 
