@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1LIXRo (ORCPT <rfc822;w@1wt.eu>);
+	id S1754895Ab1LIXRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:17:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47449 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249Ab1LIXRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Dec 2011 18:17:44 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60237 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1LIXRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:17:43 -0500
-Date: Fri, 9 Dec 2011 18:17:40 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Kees Cook <kees@outflux.net>
-cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: standardize /proc/iomem "Kernel code" name
-In-Reply-To: <20111209211157.GA2146@outflux.net>
-Message-ID: <alpine.LFD.2.02.1112091815400.2907@xanadu.home>
-References: <20111209211157.GA2146@outflux.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Message-ID: <4EE296F0.3020100@zytor.com>
+Date: Fri, 09 Dec 2011 15:17:04 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Brian Gerst <brgerst@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Tim Blechmann <tim@klingt.org>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [20/80] ALSA: lx6464es - fix device communication via command
+ bus
+References: <20111207161256.GA7736@kroah.com> <20111207160824.268488820@clark.kroah.org> <CA+55aFwzdXwLJjUL_i247exawkzqdoCULXg81qzG4Ewn7ysn3A@mail.gmail.com> <4EDFA9D6.5050907@zytor.com> <CA+55aFxykes2Vk2YqGN=o=MkJukMBRcpQTN+tjmuTX_3xTstZA@mail.gmail.com>
+In-Reply-To: <CA+55aFxykes2Vk2YqGN=o=MkJukMBRcpQTN+tjmuTX_3xTstZA@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Dec 2011, Kees Cook wrote:
+Sorry for the late reply.  With baby prep and everything going on I'm a
+bit ADD.
 
-> All other ports use "Kernel code" to identify the Kernel text segment
-> in /proc/iomem. Change the ARM resources to do the same.
+On 12/07/2011 10:09 AM, Linus Torvalds wrote:
+> On Wed, Dec 7, 2011 at 10:00 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> I agree in principle, although I am really not happy about the idea of
+>> disallowing 64-bit writes from device drivers that haven't explicitly
+>> indicated they won't support it.
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> I'd really prefer going in the other direction. Especially since
+> 64-bit writes would be optional *anyway* (ie impossible on 32-bit
+> hosts). So a driver should explicitly say "I can do 64-bit stuff"
+> rather than having to say "I cannot do it".
+> 
+> And if a driver *has* to have 64-bit accesses, it had better do them
+> all by hand, using "writeq()" and being dependent on the architecture
+> actually having that support. No "memcpy_toio" and friends at all.
+> 
+> So adding a "memcpy_toio64()" that defaults to the normal 32-bit max
+> but *might* do 64-bit copies sounds fine to me. But we really should
+> default to something that is consistent across architectures, and that
+> is not 64-bit accesses.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+I feel a bit funny about memcpy_toio64() being able to *not* to 64-bit
+copies... it feels like it really violates the assumptions.
 
-Please submit the patch here:
-http://www.arm.linux.org.uk/developer/patches/
+What I would suggest, technically is:
 
-> ---
->  arch/arm/kernel/setup.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 3448a3f..a34dbf6 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -158,7 +158,7 @@ static struct resource mem_res[] = {
->  		.flags = IORESOURCE_MEM
->  	},
->  	{
-> -		.name = "Kernel text",
-> +		.name = "Kernel code",
->  		.start = 0,
->  		.end = 0,
->  		.flags = IORESOURCE_MEM
-> -- 
-> 1.7.5.4
-> 
-> 
-> -- 
-> Kees Cook                                            @outflux.net
-> 
+- memcpy_toio() becomes a legacy alias for memcpy_toio32().
+- memcpy_toio32() and memcpy_toio64() are defined to do exactly
+  those reference sizes.  If the platform can't do 64-bit I/O
+  then memcpy_toio64 is undefined (like readq/writeq).
+- we introduce memcpy_toio_fast() which is explicitly allowed to do any
+  kind of references, including larger than 64 bits if supported in
+  future CPUs.
+
+However, I *also* found that we have a metric boatload of partially
+overlapping redundant aliases:
+
+iowrite{8,16,32}_rep()
+	[but iowrite64_rep() is missing]
+
+__iowrite{32,64}_copy()
+
+memcpy_toio()
+
+What I have proposed to memcpy_toio{32,64}() pretty much matches
+__iowrite_{32,64}_copy() and those functions should probably be
+renamed... not sure what the sane thing to do with the iowrite functions
+is here.
+
+	-hpa
