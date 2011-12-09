@@ -1,126 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1LINBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:01:22 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34808 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab1LIM76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 07:59:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="83996289"
-Message-Id: <20111209124555.840337563@intel.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 09 Dec 2011 20:42:18 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-cc: Takashi Iwai <tiwai@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
-Cc: Sander Jansen <s.jansen@gmail.com>,
-        Christopher White <c.white@pulseforce.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Pierre-louis Bossart " <pierre-louis.bossart@intel.com>,
-        "Zhenyu Wang" <zhenyu.z.wang@intel.com>,
-        Jeremy Bush <contractfrombelow@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/5] drm/i915: rename audio ELD registers
-References: <20111209124216.701131933@intel.com>
-Content-Disposition: inline; filename=sandybridge-eld-reg-rename
+	id S1753847Ab1LINBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:01:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39169 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab1LINBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 08:01:18 -0500
+Date: Fri, 9 Dec 2011 14:01:09 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+Message-ID: <20111209130109.GT4585@pengutronix.de>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+ <20111209010147.GH7913@S2100-06.ap.freescale.net>
+ <4EE18403.30604@nvidia.com>
+ <20111209043220.GJ7913@S2100-06.ap.freescale.net>
+ <4EE192DC.3080209@nvidia.com>
+ <20111209051413.GK7913@S2100-06.ap.freescale.net>
+ <20111209110807.GG27267@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111209110807.GG27267@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the definitions from GEN5 to IBX as they aren't in the CPU and
-some SNB systems actually shipped with IBX chipsets (or, at least that's
-a supported configuration).
+On Fri, Dec 09, 2011 at 12:08:07PM +0100, Sascha Hauer wrote:
+> On Fri, Dec 09, 2011 at 01:14:14PM +0800, Shawn Guo wrote:
+> > On Thu, Dec 08, 2011 at 09:47:24PM -0700, Stephen Warren wrote:
+> > > 
+> > > pin X: function = UART A TX
+> > > pin Y: function = UART A RX
+> > > 
+> > 
+> > We really do not expect per pin function mapping but per block function
+> > mapping.  That said, the UART driver is going to tell pinctrl subsystem
+> > "I'm UARTA, please set all my pins up for me".
+> 
+> I still think it should be "I'm board Y, please set all my pins up for me"
+> 
+> Drivers should not be bothered with pin muxing *at all*. When we add
+> pinmux_request to drivers all SoCs using this driver are doomed to
+> implement pinmux support regardless if they have any pinmux support in
+> hardware or not.
+> Where this leads we can currently see in current next branch with the
+> smc91x driver where one single board has a regulator for.  Suddenly all
+> other boards using this driver stopped working because they have no
+> regulator provided for the driver.
+It's the same problem with clks. IMHO that's OK.
 
-The GEN7_* register addresses actually take effect since GEN6 and should
-be prefixed by CPT, the PCH code name.
+> There is this CONFIG_REGULATOR_DUMMY option which will cause *all*
+> regulator_request to succeed on all regulators in this binary which
+> disqualifies this option for multiboard/SoC Kernels.
+> A pin setup is board specific and not driver specific. There are only
+An upside of making drivers pinctrl-aware is that it might solve the
+hardware conflicts on development boards. And the way pinctrl works it's
+still the board that sets up the connection between device and how which
+pins are configured.
 
-Suggested-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- drivers/gpu/drm/i915/i915_reg.h      |   22 +++++++++++-----------
- drivers/gpu/drm/i915/intel_display.c |   22 +++++++++++-----------
- 2 files changed, 22 insertions(+), 22 deletions(-)
+Best regards
+Uwe
 
---- linux.orig/drivers/gpu/drm/i915/i915_reg.h	2011-11-29 19:50:27.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/i915_reg.h	2011-11-29 19:51:38.000000000 +0800
-@@ -3534,17 +3534,17 @@
- #define G4X_ELD_ACK			(1 << 4)
- #define G4X_HDMIW_HDMIEDID		0x6210C
- 
--#define GEN5_HDMIW_HDMIEDID_A		0xE2050
--#define GEN5_AUD_CNTL_ST_A		0xE20B4
--#define GEN5_ELD_BUFFER_SIZE		(0x1f << 10)
--#define GEN5_ELD_ADDRESS		(0x1f << 5)
--#define GEN5_ELD_ACK			(1 << 4)
--#define GEN5_AUD_CNTL_ST2		0xE20C0
--#define GEN5_ELD_VALIDB			(1 << 0)
--#define GEN5_CP_READYB			(1 << 1)
-+#define IBX_HDMIW_HDMIEDID_A		0xE2050
-+#define IBX_AUD_CNTL_ST_A		0xE20B4
-+#define IBX_ELD_BUFFER_SIZE		(0x1f << 10)
-+#define IBX_ELD_ADDRESS			(0x1f << 5)
-+#define IBX_ELD_ACK			(1 << 4)
-+#define IBX_AUD_CNTL_ST2		0xE20C0
-+#define IBX_ELD_VALIDB			(1 << 0)
-+#define IBX_CP_READYB			(1 << 1)
- 
--#define GEN7_HDMIW_HDMIEDID_A		0xE5050
--#define GEN7_AUD_CNTRL_ST_A		0xE50B4
--#define GEN7_AUD_CNTRL_ST2		0xE50C0
-+#define CPT_HDMIW_HDMIEDID_A		0xE5050
-+#define CPT_AUD_CNTL_ST_A		0xE50B4
-+#define CPT_AUD_CNTRL_ST2		0xE50C0
- 
- #endif /* _I915_REG_H_ */
---- linux.orig/drivers/gpu/drm/i915/intel_display.c	2011-11-29 19:51:28.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_display.c	2011-11-29 19:52:01.000000000 +0800
-@@ -5858,13 +5858,13 @@ static void ironlake_write_eld(struct dr
- 	int aud_cntrl_st2;
- 
- 	if (HAS_PCH_IBX(connector->dev)) {
--		hdmiw_hdmiedid = GEN5_HDMIW_HDMIEDID_A;
--		aud_cntl_st = GEN5_AUD_CNTL_ST_A;
--		aud_cntrl_st2 = GEN5_AUD_CNTL_ST2;
-+		hdmiw_hdmiedid = IBX_HDMIW_HDMIEDID_A;
-+		aud_cntl_st = IBX_AUD_CNTL_ST_A;
-+		aud_cntrl_st2 = IBX_AUD_CNTL_ST2;
- 	} else {
--		hdmiw_hdmiedid = GEN7_HDMIW_HDMIEDID_A;
--		aud_cntl_st = GEN7_AUD_CNTRL_ST_A;
--		aud_cntrl_st2 = GEN7_AUD_CNTRL_ST2;
-+		hdmiw_hdmiedid = CPT_HDMIW_HDMIEDID_A;
-+		aud_cntl_st = CPT_AUD_CNTL_ST_A;
-+		aud_cntrl_st2 = CPT_AUD_CNTRL_ST2;
- 	}
- 
- 	i = to_intel_crtc(crtc)->pipe;
-@@ -5878,12 +5878,12 @@ static void ironlake_write_eld(struct dr
- 	if (!i) {
- 		DRM_DEBUG_DRIVER("Audio directed to unknown port\n");
- 		/* operate blindly on all ports */
--		eldv = GEN5_ELD_VALIDB;
--		eldv |= GEN5_ELD_VALIDB << 4;
--		eldv |= GEN5_ELD_VALIDB << 8;
-+		eldv = IBX_ELD_VALIDB;
-+		eldv |= IBX_ELD_VALIDB << 4;
-+		eldv |= IBX_ELD_VALIDB << 8;
- 	} else {
- 		DRM_DEBUG_DRIVER("ELD on port %c\n", 'A' + i);
--		eldv = GEN5_ELD_VALIDB << ((i - 1) * 4);
-+		eldv = IBX_ELD_VALIDB << ((i - 1) * 4);
- 	}
- 
- 	i = I915_READ(aud_cntrl_st2);
-@@ -5899,7 +5899,7 @@ static void ironlake_write_eld(struct dr
- 	}
- 
- 	i = I915_READ(aud_cntl_st);
--	i &= ~GEN5_ELD_ADDRESS;
-+	i &= ~IBX_ELD_ADDRESS;
- 	I915_WRITE(aud_cntl_st, i);
- 
- 	len = min_t(uint8_t, eld[2], 21);	/* 84 bytes of hw ELD buffer */
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
