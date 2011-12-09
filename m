@@ -1,82 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1LINBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:01:21 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39169 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab1LINBS (ORCPT
+	id S1753664Ab1LINCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:02:20 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:45786 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751394Ab1LINCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 08:01:18 -0500
-Date: Fri, 9 Dec 2011 14:01:09 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-Message-ID: <20111209130109.GT4585@pengutronix.de>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
- <20111209010147.GH7913@S2100-06.ap.freescale.net>
- <4EE18403.30604@nvidia.com>
- <20111209043220.GJ7913@S2100-06.ap.freescale.net>
- <4EE192DC.3080209@nvidia.com>
- <20111209051413.GK7913@S2100-06.ap.freescale.net>
- <20111209110807.GG27267@pengutronix.de>
+	Fri, 9 Dec 2011 08:02:18 -0500
+Date: Fri, 9 Dec 2011 08:02:16 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+Message-ID: <20111209130216.GA14718@Krystal>
+References: <20111208193003.112037550@goodmis.org> <20111208193136.366941904@goodmis.org> <1323373012.30977.123.camel@frodo> <20111209124026.GB14470@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111209110807.GG27267@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20111209124026.GB14470@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 07:57:39 up 380 days, 18:00,  2 users,  load average: 0.28, 0.06,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 12:08:07PM +0100, Sascha Hauer wrote:
-> On Fri, Dec 09, 2011 at 01:14:14PM +0800, Shawn Guo wrote:
-> > On Thu, Dec 08, 2011 at 09:47:24PM -0700, Stephen Warren wrote:
-> > > 
-> > > pin X: function = UART A TX
-> > > pin Y: function = UART A RX
-> > > 
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> Hi Steven,
+> 
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Thu, 2011-12-08 at 14:30 -0500, Steven Rostedt wrote:
 > > 
-> > We really do not expect per pin function mapping but per block function
-> > mapping.  That said, the UART driver is going to tell pinctrl subsystem
-> > "I'm UARTA, please set all my pins up for me".
+> > > If the first NMI hits a breakpoint and loses NMI context, and then it
+> > > hits another breakpoint and while processing that breakpoint we get a
+> > > nested NMI. When processing a breakpoint, the stack changes to the
+> > > breakpoint stack. If another NMI comes in here we can't rely on the
+> > > interrupted stack to be the NMI stack. 
+> > 
+> > As I wrote this part of the change log, I thought of another nasty
+> > gotcha with breakpoints in NMIs.
+> > 
+> > If you have a breakpoint in both normal context and NMI context. When
+> > the breakpoint is being processed, if an NMI comes in and it too
+> > triggers a breakpoint, this processing of the breakpoint has the same
+> > problem as nested NMIs. The NMI breakpoint handler will corrupt the
+> > stack of the breakpoint that was being processed when the NMI triggered.
+> > 
+> > I'm not sure how to handle this case. We could do something similar in
+> > the break point code to handle the same thing. But this just seems
+> > really ugly.
+> > 
+> > Anyone with any better ideas?
 > 
-> I still think it should be "I'm board Y, please set all my pins up for me"
+> The nesting counters + code region address checks I proposed a few days
+> ago should handle this correctly. Here is a very slightly updated
+> version:
+
+after a quick IRC discussion with Peter Zijlstra, one thing seems to be
+missing here to handle the INT3->NMI->INT3 issue: this could be achieved
+by splitting the DEBUG stack in 2 sub-stacks, and letting the int3
+handler keep track of its nesting within its own stack with an extra
+"int3_nest_count". AFAIU, supporting 2 nested int3 should be enough.
+
+Thanks,
+
+Mathieu 
+
 > 
-> Drivers should not be bothered with pin muxing *at all*. When we add
-> pinmux_request to drivers all SoCs using this driver are doomed to
-> implement pinmux support regardless if they have any pinmux support in
-> hardware or not.
-> Where this leads we can currently see in current next branch with the
-> smc91x driver where one single board has a regulator for.  Suddenly all
-> other boards using this driver stopped working because they have no
-> regulator provided for the driver.
-It's the same problem with clks. IMHO that's OK.
-
-> There is this CONFIG_REGULATOR_DUMMY option which will cause *all*
-> regulator_request to succeed on all regulators in this binary which
-> disqualifies this option for multiboard/SoC Kernels.
-> A pin setup is board specific and not driver specific. There are only
-An upside of making drivers pinctrl-aware is that it might solve the
-hardware conflicts on development boards. And the way pinctrl works it's
-still the board that sets up the connection between device and how which
-pins are configured.
-
-Best regards
-Uwe
+> variables used:
+> 
+> cpu-local int nmi_nest_count;
+> cpu-local int nmi_latch;
+> __nmi_epilogue_begin (pointer to text)
+> __nmi_epilogue_end (pointer to text)
+> REAL_NMI_STACK: beginning of the stack used for real nmi handler
+> LATCHED_NMI_STACK: beginning of the stack used for latched nmi handler
+> 
+> int in_nmi_epilogue(void)
+> {
+>   return (instruction_pointer() >= __nmi_epilogue_begin
+> 		&& instruction_pointer() < __nmi_epilogue_end);
+> }
+> 
+> int in_nmi(void)
+> {
+>   return nmi_nest_count > 0;
+> }
+> 
+> /* Use REAL_NMI_STACK */
+> real_nmi_handler: /* always running with nmis disabled */
+>   /*
+>    * We disable interrupts to ensure we don't have to deal with IRQs
+>    * when NMIs get re-enabled due to an iret from a fault/exception.
+>    */
+>   local_irq_disable();
+>   if (in_nmi_epilogue()) {
+>     nmi_latch = 0;
+>     /* set stack pointer to start of LATCHED_NMI_STACK */
+>     /* populate start of LATCHED_NMI_STACK with values for iret */
+>     goto latched_nmi_handler;
+>   }
+>   if (in_nmi()) {
+>      nmi_latch = 1;
+>      iret
+>   }
+>   nmi_nest_count++;
+>   /* set stack pointer to start of LATCHED_NMI_STACK */
+>   /* populate start of LATCHED_NMI_STACK with values for iret */
+>   goto latched_nmi_handler;
+> 
+> 
+> /* Use LATCHED_NMI_STACK */
+> latched_nmi_handler:	/* Can fault and reenable NMIs. */
+> 
+>   [ execute actual system NMI handler, including faults, int3, ... ]
+> 
+>   /*
+>    * note: test nmi_latch and iret instruction are within the epilogue
+>    * range to deal with latch test vs iret non-atomicity.  If a real nmi
+>    * nests over this range, it clears the nmi_latch flag and just
+>    * restarts the latched nmi handler.  No faults/exceptions/interrupts
+>    * are permitted in this region, except for the real NMI and MCEs
+>    * (TODO).
+>    */
+> __nmi_epilogue_begin:
+>   /*
+>    * here we are restarting the latched nmi handler if an nmi happened
+>    * while nested within the nmi nest count.
+>    */
+>   if (nmi_latch) {
+>     nmi_latch = 0;
+>     goto latched_nmi_handler;
+>   }
+>   nmi_nest_count--;
+>   iret  /* restores interrupts */
+> __nmi_epilogue_end:
+> 
+> 
+> Best regards,
+> 
+> Mathieu
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
