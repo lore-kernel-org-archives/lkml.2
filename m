@@ -1,153 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1LIDxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 22:53:43 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33638 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab1LIDxk (ORCPT
+	id S1752504Ab1LIEAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 23:00:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62895 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab1LIEAg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 22:53:40 -0500
+	Thu, 8 Dec 2011 23:00:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+n_y=BGQihjGujAq7=cUwpdOTP0-7uRoftFeXouD=QHw@mail.gmail.com>
-References: <20111207170533.3dea865573c916e79d274eca@canb.auug.org.au>
- <CAErSpo59CuEBbu4QWMkK23TyXafhMLOh1G7Z8YxojqiQmCM0Fw@mail.gmail.com>
- <20111208072412.e9cf00f9bcdbc4450fe2d2d4@canb.auug.org.au> <CA+8MBb+n_y=BGQihjGujAq7=cUwpdOTP0-7uRoftFeXouD=QHw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 8 Dec 2011 20:53:17 -0700
-Message-ID: <CAErSpo4V4Nhga5q7wHSiLmr4LubV4Sy+8gMZuob+163ZOHr__Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (pci tree related)
-To: Tony Luck <tony.luck@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Content-Type: multipart/mixed; boundary=f46d040fa088e3dad804b3a0badf
-X-System-Of-Record: true
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+References: <1323361659-11835-1-git-send-email-thomas.abraham@linaro.org>
+	<1323361659-11835-2-git-send-email-thomas.abraham@linaro.org>
+Date: Fri, 9 Dec 2011 13:00:35 +0900
+X-Google-Sender-Auth: iDYSzdGwUbwH5IzqsbmBNPxpZE4
+Message-ID: <CAJ0PZbSYQrUQK_oYVGP7RwNFqPRB-FpXRtLm8+5++5By7H8tGw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: add irq domain support for max8997 interrupts
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d040fa088e3dad804b3a0badf
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 9, 2011 at 1:27 AM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
+> Add irq domain support for max8997 interrupts. All uses of irq_base in platform
+> data and max8997 driver private data are removed.
+>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 
-On Thu, Dec 8, 2011 at 12:01 PM, Tony Luck <tony.luck@intel.com> wrote:
-> ia64 builds are failing to build next-20111208
->
->
-> arch/ia64/pci/pci.c: In function =91add_window=92:
-> arch/ia64/pci/pci.c:321: error: =91struct acpi_resource=92 has no member
-> named =91flags=92
-> arch/ia64/pci/pci.c:322: error: =91struct acpi_resource=92 has no member =
-named =91end=92
-> arch/ia64/pci/pci.c:322: error: =91struct acpi_resource=92 has no member
-> named =91start=92
->
-> problem from this commit
->
->
-> commit ab57d8e403c084bf5bacae31d6bc14bef9b75a22
-> Author: Bjorn Helgaas <bhelgaas@google.com>
-> Date: =A0 Fri Oct 28 16:26:31 2011 -0600
->
-> =A0 =A0ia64/PCI: convert to pci_create_root_bus() for correct root bus re=
-sources
->
-> -Tony
+Looks good to me.
 
-Sigh, I'm sorry.  Attached are the incremental patch to fix this, and
-an updated version of the original patch.  I'm not git-smart enough to
-push it this time (the box where I normally do that is down at the
-moment, along with my notes).
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Bjorn
+> ---
+>  arch/arm/mach-exynos/mach-nuri.c    |    4 ----
+>  arch/arm/mach-exynos/mach-origen.c  |    1 -
+>  drivers/mfd/max8997-irq.c           |   33 +++++++++++++++++++--------------
+>  drivers/mfd/max8997.c               |    1 -
+>  include/linux/mfd/max8997-private.h |    4 +++-
+>  include/linux/mfd/max8997.h         |    1 -
+>  6 files changed, 22 insertions(+), 22 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+> index 236bbe1..ae333e5 100644
+> --- a/arch/arm/mach-exynos/mach-nuri.c
+> +++ b/arch/arm/mach-exynos/mach-nuri.c
+> @@ -1077,12 +1077,8 @@ static struct platform_device nuri_max8903_device = {
+>  static void __init nuri_power_init(void)
+>  {
+>        int gpio;
+> -       int irq_base = IRQ_GPIO_END + 1;
+>        int ta_en = 0;
+>
+> -       nuri_max8997_pdata.irq_base = irq_base;
+> -       irq_base += MAX8997_IRQ_NR;
+> -
+>        gpio = EXYNOS4_GPX0(7);
+>        gpio_request(gpio, "AP_PMIC_IRQ");
+>        s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
+> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+> index f56d027..588b0a8 100644
+> --- a/arch/arm/mach-exynos/mach-origen.c
+> +++ b/arch/arm/mach-exynos/mach-origen.c
+> @@ -421,7 +421,6 @@ struct max8997_platform_data __initdata origen_max8997_pdata = {
+>        .buck1_gpiodvs  = false,
+>        .buck2_gpiodvs  = false,
+>        .buck5_gpiodvs  = false,
+> -       .irq_base       = IRQ_GPIO_END + 1,
+>
+>        .ignore_gpiodvs_side_effect = true,
+>        .buck125_default_idx = 0x0,
+> diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
+> index 09274cf..eb9cad5 100644
+> --- a/drivers/mfd/max8997-irq.c
+> +++ b/drivers/mfd/max8997-irq.c
+> @@ -142,7 +142,8 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
+>  static const inline struct max8997_irq_data *
+>  irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
+>  {
+> -       return &max8997_irqs[irq - max8997->irq_base];
+> +       struct irq_data *data = irq_get_irq_data(irq);
+> +       return &max8997_irqs[data->hwirq];
+>  }
+>
+>  static void max8997_irq_mask(struct irq_data *data)
+> @@ -179,10 +180,11 @@ static struct irq_chip max8997_irq_chip = {
+>  static irqreturn_t max8997_irq_thread(int irq, void *data)
+>  {
+>        struct max8997_dev *max8997 = data;
+> +       struct irq_domain *domain = &max8997->irq_domain;
+>        u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
+>        u8 irq_src;
+>        int ret;
+> -       int i;
+> +       int i, cur_irq;
+>
+>        ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
+>        if (ret < 0) {
+> @@ -268,9 +270,9 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+>                irq_reg[i] &= ~max8997->irq_masks_cur[i];
+>
+>        /* Report */
+> -       for (i = 0; i < MAX8997_IRQ_NR; i++) {
+> +       irq_domain_for_each_irq(domain, i, cur_irq) {
+>                if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
+> -                       handle_nested_irq(max8997->irq_base + i);
+> +                       handle_nested_irq(cur_irq);
+>        }
+>
+>        return IRQ_HANDLED;
+> @@ -278,13 +280,14 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+>
+>  int max8997_irq_resume(struct max8997_dev *max8997)
+>  {
+> -       if (max8997->irq && max8997->irq_base)
+> -               max8997_irq_thread(max8997->irq_base, max8997);
+> +       if (max8997->irq && max8997->irq_domain.irq_base)
+> +               max8997_irq_thread(max8997->irq_domain.irq_base, max8997);
+>        return 0;
+>  }
+>
+>  int max8997_irq_init(struct max8997_dev *max8997)
+>  {
+> +       struct irq_domain *domain = &max8997->irq_domain;
+>        int i;
+>        int cur_irq;
+>        int ret;
+> @@ -292,12 +295,6 @@ int max8997_irq_init(struct max8997_dev *max8997)
+>
+>        if (!max8997->irq) {
+>                dev_warn(max8997->dev, "No interrupt specified.\n");
+> -               max8997->irq_base = 0;
+> -               return 0;
+> -       }
+> -
+> -       if (!max8997->irq_base) {
+> -               dev_err(max8997->dev, "No interrupt base specified.\n");
+>                return 0;
+>        }
+>
+> @@ -327,9 +324,17 @@ int max8997_irq_init(struct max8997_dev *max8997)
+>                                        true : false;
+>        }
+>
+> +       domain->irq_base = irq_alloc_descs(-1, 0, MAX8997_IRQ_NR, 0);
+> +       if (domain->irq_base < 0) {
+> +               dev_err(max8997->dev, "failed to alloc irq descs\n");
+> +               return 0;
+> +       }
+> +       domain->nr_irq = MAX8997_IRQ_NR;
+> +       domain->ops = &irq_domain_simple_ops;
+> +       irq_domain_add(domain);
+> +
+>        /* Register with genirq */
+> -       for (i = 0; i < MAX8997_IRQ_NR; i++) {
+> -               cur_irq = i + max8997->irq_base;
+> +       irq_domain_for_each_irq(domain, i, cur_irq) {
+>                irq_set_chip_data(cur_irq, max8997);
+>                irq_set_chip_and_handler(cur_irq, &max8997_irq_chip,
+>                                handle_edge_irq);
+> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+> index 5be53ae..b996c6e 100644
+> --- a/drivers/mfd/max8997.c
+> +++ b/drivers/mfd/max8997.c
+> @@ -142,7 +142,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+>        if (!pdata)
+>                goto err;
+>
+> -       max8997->irq_base = pdata->irq_base;
+>        max8997->ono = pdata->ono;
+>
+>        mutex_init(&max8997->iolock);
+> diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
+> index 3f4deb6..04c5779 100644
+> --- a/include/linux/mfd/max8997-private.h
+> +++ b/include/linux/mfd/max8997-private.h
+> @@ -23,6 +23,8 @@
+>  #define __LINUX_MFD_MAX8997_PRIV_H
+>
+>  #include <linux/i2c.h>
+> +#include <linux/export.h>
+> +#include <linux/irqdomain.h>
+>
+>  #define MAX8997_REG_INVALID    (0xff)
+>
+> @@ -325,7 +327,7 @@ struct max8997_dev {
+>
+>        int irq;
+>        int ono;
+> -       int irq_base;
+> +       struct irq_domain irq_domain;
+>        struct mutex irqlock;
+>        int irq_masks_cur[MAX8997_IRQ_GROUP_NR];
+>        int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
+> diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+> index 0bbd13d..1e0b9cc 100644
+> --- a/include/linux/mfd/max8997.h
+> +++ b/include/linux/mfd/max8997.h
+> @@ -79,7 +79,6 @@ struct max8997_regulator_data {
+>
+>  struct max8997_platform_data {
+>        /* IRQ */
+> -       int irq_base;
+>        int ono;
+>        int wakeup;
+>
+> --
+> 1.6.6.rc2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---f46d040fa088e3dad804b3a0badf
-Content-Type: application/octet-stream; name="patch.ia64-incremental"
-Content-Disposition: attachment; filename="patch.ia64-incremental"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvynt2h80
 
-Y29tbWl0IGZhYzExZDRmOTY2ZmJmOTY1YjIwNDc1NzkwNzRjZjEwZWE1M2QyYjgKQXV0aG9yOiBC
-am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFRodSBEZWMgOCAyMDox
-NjoxMyAyMDExIC0wNzAwCgpkaWZmIC0tZ2l0IGEvYXJjaC9pYTY0L3BjaS9wY2kuYyBiL2FyY2gv
-aWE2NC9wY2kvcGNpLmMKaW5kZXggYTg0OGZhZC4uNWVlZDc0YyAxMDA2NDQKLS0tIGEvYXJjaC9p
-YTY0L3BjaS9wY2kuYworKysgYi9hcmNoL2lhNjQvcGNpL3BjaS5jCkBAIC0zMTgsOCArMzE4LDgg
-QEAgc3RhdGljIF9fZGV2aW5pdCBhY3BpX3N0YXR1cyBhZGRfd2luZG93KHN0cnVjdCBhY3BpX3Jl
-c291cmNlICpyZXMsIHZvaWQgKmRhdGEpCiAKIAkvKiBIUCdzIGZpcm13YXJlIGhhcyBhIGhhY2sg
-dG8gd29yayBhcm91bmQgYSBXaW5kb3dzIGJ1Zy4KIAkgKiBJZ25vcmUgdGhlc2UgdGlueSBtZW1v
-cnkgcmFuZ2VzICovCi0JaWYgKCEoKHJlcy0+ZmxhZ3MgJiBJT1JFU09VUkNFX01FTSkgJiYKLQkg
-ICAgICAocmVzLT5lbmQgLSByZXMtPnN0YXJ0IDwgMTYpKSkKKwlpZiAoISgod2luZG93LT5yZXNv
-dXJjZS5mbGFncyAmIElPUkVTT1VSQ0VfTUVNKSAmJgorCSAgICAgICh3aW5kb3ctPnJlc291cmNl
-LmVuZCAtIHdpbmRvdy0+cmVzb3VyY2Uuc3RhcnQgPCAxNikpKQogCQlwY2lfYWRkX3Jlc291cmNl
-KCZpbmZvLT5yZXNvdXJjZXMsICZ3aW5kb3ctPnJlc291cmNlKTsKIAogCXJldHVybiBBRV9PSzsK
---f46d040fa088e3dad804b3a0badf
-Content-Type: application/octet-stream; 
-	name="patch.ia64-pci-convert-to-pci_create"
-Content-Disposition: attachment; 
-	filename="patch.ia64-pci-convert-to-pci_create"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvyntj771
 
-Y29tbWl0IDM2OWEzMTAzMmRjMTIwMDYwZWJiZmI1YjViOTVlMzdlMWRiNDQ4YTUKQXV0aG9yOiBC
-am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBPY3QgMTEgMTE6
-MjU6MzAgMjAxMSAtMDYwMAoKICAgIGlhNjQvUENJOiBjb252ZXJ0IHRvIHBjaV9jcmVhdGVfcm9v
-dF9idXMoKSBmb3IgY29ycmVjdCByb290IGJ1cyByZXNvdXJjZXMKICAgIAogICAgQ29udmVydCBm
-cm9tIHBjaV9jcmVhdGVfYnVzKCkgdG8gcGNpX2NyZWF0ZV9yb290X2J1cygpLiAgVGhpcyB3YXkg
-dGhlIHJvb3QKICAgIGJ1cyByZXNvdXJjZXMgYXJlIGNvcnJlY3QgaW1tZWRpYXRlbHkuICBUaGlz
-IGZpeGVzIHRoZSBwcm9ibGVtIG9mICJlYXJseSIKICAgIGFuZCAiaGVhZGVyIiBxdWlya3Mgc2Vl
-aW5nIGluY29ycmVjdCByb290IGJ1cyByZXNvdXJjZXMuCiAgICAKICAgIFdlIGNhbid0IHVzZSBw
-Y2lfc2Nhbl9yb290X2J1cygpIGJlY2F1c2UsIGxpa2UgeDg2LCBBQ1BJIGhvdHBsdWcgY3VycmVu
-dGx5CiAgICByZXF1aXJlcyBwY2lfYnVzX2FkZF9kZXZpY2VzKCkgaW4gYSBzZXBhcmF0ZSBob3N0
-IGJyaWRnZSAuc3RhcnQoKSBtZXRob2QuCiAgICAKICAgIENDOiBUb255IEx1Y2sgPHRvbnkubHVj
-a0BpbnRlbC5jb20+CiAgICBTaWduZWQtb2ZmLWJ5OiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bn
-b29nbGUuY29tPgoKZGlmZiAtLWdpdCBhL2FyY2gvaWE2NC9wY2kvcGNpLmMgYi9hcmNoL2lhNjQv
-cGNpL3BjaS5jCmluZGV4IDA0ZjJmZDkuLjVlZWQ3NGMgMTAwNjQ0Ci0tLSBhL2FyY2gvaWE2NC9w
-Y2kvcGNpLmMKKysrIGIvYXJjaC9pYTY0L3BjaS9wY2kuYwpAQCAtMTM0LDYgKzEzNCw3IEBAIGFs
-bG9jX3BjaV9jb250cm9sbGVyIChpbnQgc2VnKQogc3RydWN0IHBjaV9yb290X2luZm8gewogCXN0
-cnVjdCBhY3BpX2RldmljZSAqYnJpZGdlOwogCXN0cnVjdCBwY2lfY29udHJvbGxlciAqY29udHJv
-bGxlcjsKKwlzdHJ1Y3QgbGlzdF9oZWFkIHJlc291cmNlczsKIAljaGFyICpuYW1lOwogfTsKIApA
-QCAtMzE1LDI0ICszMTYsMTMgQEAgc3RhdGljIF9fZGV2aW5pdCBhY3BpX3N0YXR1cyBhZGRfd2lu
-ZG93KHN0cnVjdCBhY3BpX3Jlc291cmNlICpyZXMsIHZvaWQgKmRhdGEpCiAJCQkJICZ3aW5kb3ct
-PnJlc291cmNlKTsKIAl9CiAKLQlyZXR1cm4gQUVfT0s7Ci19CisJLyogSFAncyBmaXJtd2FyZSBo
-YXMgYSBoYWNrIHRvIHdvcmsgYXJvdW5kIGEgV2luZG93cyBidWcuCisJICogSWdub3JlIHRoZXNl
-IHRpbnkgbWVtb3J5IHJhbmdlcyAqLworCWlmICghKCh3aW5kb3ctPnJlc291cmNlLmZsYWdzICYg
-SU9SRVNPVVJDRV9NRU0pICYmCisJICAgICAgKHdpbmRvdy0+cmVzb3VyY2UuZW5kIC0gd2luZG93
-LT5yZXNvdXJjZS5zdGFydCA8IDE2KSkpCisJCXBjaV9hZGRfcmVzb3VyY2UoJmluZm8tPnJlc291
-cmNlcywgJndpbmRvdy0+cmVzb3VyY2UpOwogCi1zdGF0aWMgdm9pZCBfX2RldmluaXQKLXBjaWJp
-b3Nfc2V0dXBfcm9vdF93aW5kb3dzKHN0cnVjdCBwY2lfYnVzICpidXMsIHN0cnVjdCBwY2lfY29u
-dHJvbGxlciAqY3RybCkKLXsKLQlpbnQgaTsKLQotCXBjaV9idXNfcmVtb3ZlX3Jlc291cmNlcyhi
-dXMpOwotCWZvciAoaSA9IDA7IGkgPCBjdHJsLT53aW5kb3dzOyBpKyspIHsKLQkJc3RydWN0IHJl
-c291cmNlICpyZXMgPSAmY3RybC0+d2luZG93W2ldLnJlc291cmNlOwotCQkvKiBIUCdzIGZpcm13
-YXJlIGhhcyBhIGhhY2sgdG8gd29yayBhcm91bmQgYSBXaW5kb3dzIGJ1Zy4KLQkJICogSWdub3Jl
-IHRoZXNlIHRpbnkgbWVtb3J5IHJhbmdlcyAqLwotCQlpZiAoKHJlcy0+ZmxhZ3MgJiBJT1JFU09V
-UkNFX01FTSkgJiYKLQkJICAgIChyZXMtPmVuZCAtIHJlcy0+c3RhcnQgPCAxNikpCi0JCQljb250
-aW51ZTsKLQkJcGNpX2J1c19hZGRfcmVzb3VyY2UoYnVzLCByZXMsIDApOwotCX0KKwlyZXR1cm4g
-QUVfT0s7CiB9CiAKIHN0cnVjdCBwY2lfYnVzICogX19kZXZpbml0CkBAIC0zNDMsNiArMzMzLDcg
-QEAgcGNpX2FjcGlfc2Nhbl9yb290KHN0cnVjdCBhY3BpX3BjaV9yb290ICpyb290KQogCWludCBi
-dXMgPSByb290LT5zZWNvbmRhcnkuc3RhcnQ7CiAJc3RydWN0IHBjaV9jb250cm9sbGVyICpjb250
-cm9sbGVyOwogCXVuc2lnbmVkIGludCB3aW5kb3dzID0gMDsKKwlzdHJ1Y3QgcGNpX3Jvb3RfaW5m
-byBpbmZvOwogCXN0cnVjdCBwY2lfYnVzICpwYnVzOwogCWNoYXIgKm5hbWU7CiAJaW50IHB4bTsK
-QEAgLTM1OSwxMSArMzUwLDEwIEBAIHBjaV9hY3BpX3NjYW5fcm9vdChzdHJ1Y3QgYWNwaV9wY2lf
-cm9vdCAqcm9vdCkKIAkJY29udHJvbGxlci0+bm9kZSA9IHB4bV90b19ub2RlKHB4bSk7CiAjZW5k
-aWYKIAorCUlOSVRfTElTVF9IRUFEKCZpbmZvLnJlc291cmNlcyk7CiAJYWNwaV93YWxrX3Jlc291
-cmNlcyhkZXZpY2UtPmhhbmRsZSwgTUVUSE9EX05BTUVfX0NSUywgY291bnRfd2luZG93LAogCQkJ
-JndpbmRvd3MpOwogCWlmICh3aW5kb3dzKSB7Ci0JCXN0cnVjdCBwY2lfcm9vdF9pbmZvIGluZm87
-Ci0KIAkJY29udHJvbGxlci0+d2luZG93ID0KIAkJCWttYWxsb2Nfbm9kZShzaXplb2YoKmNvbnRy
-b2xsZXItPndpbmRvdykgKiB3aW5kb3dzLAogCQkJCSAgICAgR0ZQX0tFUk5FTCwgY29udHJvbGxl
-ci0+bm9kZSk7CkBAIC0zODcsOSArMzc3LDEyIEBAIHBjaV9hY3BpX3NjYW5fcm9vdChzdHJ1Y3Qg
-YWNwaV9wY2lfcm9vdCAqcm9vdCkKIAkgKiBzaG91bGQgaGFuZGxlIHRoZSBjYXNlIGhlcmUsIGJ1
-dCBpdCBhcHBlYXJzIHRoYXQgSUE2NCBoYXNuJ3QKIAkgKiBzdWNoIHF1aXJrLiBTbyB3ZSBqdXN0
-IGlnbm9yZSB0aGUgY2FzZSBub3cuCiAJICovCi0JcGJ1cyA9IHBjaV9jcmVhdGVfYnVzKE5VTEws
-IGJ1cywgJnBjaV9yb290X29wcywgY29udHJvbGxlcik7Ci0JaWYgKCFwYnVzKQorCXBidXMgPSBw
-Y2lfY3JlYXRlX3Jvb3RfYnVzKE5VTEwsIGJ1cywgJnBjaV9yb290X29wcywgY29udHJvbGxlciwK
-KwkJCQkgICAmaW5mby5yZXNvdXJjZXMpOworCWlmICghcGJ1cykgeworCQlwY2lfZnJlZV9yZXNv
-dXJjZV9saXN0KCZpbmZvLnJlc291cmNlcyk7CiAJCXJldHVybiBOVUxMOworCX0KIAogCXBidXMt
-PnN1Ym9yZGluYXRlID0gcGNpX3NjYW5fY2hpbGRfYnVzKHBidXMpOwogCXJldHVybiBwYnVzOwpA
-QCAtNTA3LDE0ICs1MDAsMTAgQEAgcGNpYmlvc19maXh1cF9idXMgKHN0cnVjdCBwY2lfYnVzICpi
-KQogCWlmIChiLT5zZWxmKSB7CiAJCXBjaV9yZWFkX2JyaWRnZV9iYXNlcyhiKTsKIAkJcGNpYmlv
-c19maXh1cF9icmlkZ2VfcmVzb3VyY2VzKGItPnNlbGYpOwotCX0gZWxzZSB7Ci0JCXBjaWJpb3Nf
-c2V0dXBfcm9vdF93aW5kb3dzKGIsIGItPnN5c2RhdGEpOwogCX0KIAlsaXN0X2Zvcl9lYWNoX2Vu
-dHJ5KGRldiwgJmItPmRldmljZXMsIGJ1c19saXN0KQogCQlwY2liaW9zX2ZpeHVwX2RldmljZV9y
-ZXNvdXJjZXMoZGV2KTsKIAlwbGF0Zm9ybV9wY2lfZml4dXBfYnVzKGIpOwotCi0JcmV0dXJuOwog
-fQogCiB2b2lkIF9fZGV2aW5pdAo=
---f46d040fa088e3dad804b3a0badf--
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
