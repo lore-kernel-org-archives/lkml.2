@@ -1,67 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1LIRuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:50:20 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:35190 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab1LIRuR convert rfc822-to-8bit (ORCPT
+	id S1752285Ab1LIRxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:53:34 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45281 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751156Ab1LIRxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:50:17 -0500
-Date: Fri, 9 Dec 2011 09:50:14 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: starlight@binnacle.cx, Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-Message-ID: <20111209095014.14a647cd@nehalam.linuxnetplumber.net>
-In-Reply-To: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
-References: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 12:53:33 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19iy9uOFa2+yyMc7acgUchu
+Date: Fri, 9 Dec 2011 09:53:27 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Dong Aisheng <dongas86@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
+ SoCs
+Message-ID: <20111209175327.GQ31337@atomide.com>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+ <20111209010147.GH7913@S2100-06.ap.freescale.net>
+ <4EE18403.30604@nvidia.com>
+ <20111209043220.GJ7913@S2100-06.ap.freescale.net>
+ <4EE192DC.3080209@nvidia.com>
+ <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17518604C3@HQMAIL01.nvidia.com>
+ <20111209172407.GP31337@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111209172407.GP31337@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Dec 2011 21:10:02 -0500
-starlight@binnacle.cx wrote:
+* Tony Lindgren <tony@atomide.com> [111209 08:53]:
+> * Stephen Warren <swarren@nvidia.com> [111209 08:17]:
+> > Dong Aisheng wrote at Friday, December 09, 2011 8:03 AM:
+> > ...
+> > > I agree that parsing data from device tree increases much effort
+> > > because we can not using any help functions like microes in dts file and we have
+> > > to construct the structure we need in driver by parsing that data.
+> > > And it will increase dtsi file's size a lot when after adding all functions.
+> > > 
+> > > I wonder if we can define that data as a pdata in a .c file and only
+> > > get a pointer from dts file. That would make life much easier.
+> > 
+> > You can't get pointers themselves directly from a .dts file, since the
+> > .dts file author has no idea what the memory layout (or even which OS)
+> > is present on the running system.
+> > 
+> > An alternative is to key off the compatible flag in the device tree,
+> > and use that to index a table that points at the various structures you
+> > want pointers to.
+> > 
+> > struct of_device_id's .data field, and the function of_match_device()
+> > are for exactly that purpose; see the way the Tegra pinctrl driver that
+> > I posted uses them for an example of mapping compatible flag to per-
+> > SoC initialization function pointers.
+> 
+> For letting a device do it's pingroup in DT, I've played with the
+> following:
+> 
+> 	/*      mux func phandle mux func name    hw initial flags */
+> 	pins = <&uart3_rx_irrx>, "uart3_rx_irrx", <0xdeadbeef>,
+> 		<&uart3_tx_irtx>, "uart3_tx_irtx", <0xdeadbeef>;
+> 
+> But it seems that doing mixed-property arrays gets nasty as any
+> data after a string has a high likelihood of getting misaligned
+> since a mixed-property array is a string array with the string
+> embedded in it with the registers. That leads into nasty string
+> parsing that can be extremely flakey with buggy DT data. So it
+> seems that using a string there is only safe as the last element,
+> which means we can't use names for multiple pins.
+> 
+> So I've pretty much come to the conclusion that we would have to
+> use something like this instead:
+> 
+> 	/*      phandle        f hw specific initial flags */
+> 	pins = <&uart3_rx_irrx 0 0xdeadbeef
+> 		&uart3_tx_irtx 0 0xdeadbeef>;
+> 
+> This however has a problem for cases where we may not have a phandle
+> in DT for the mux function. For example, let's assume that we'll have
+> tens of thousands of lines of mux data for omaps (we already have
+> over 6k LOC) and just want to load that from /lib/firmware to avoid
+> bloating the kernel. In that case we won't have the phandle for the
+> mux function in DT.
+> 
+> It would be _really_nice_ to use DT in the missing phandle case also
+> for doing the device to mux function mapping based on a function name
+> when no phandle is available.
+> 
+> But so far I have not found a good way of doing both phandle and
+> optional name type thing. Anybody got some good ideas for that?
 
-> Hello.
-> 
-> FYI saw several of these when running
-> multiple 'rcp' commands copying multi-gigabyte
-> files to/from system.
-> 
-> 'rcp' target files were all on an encrypted
-> mirrored USB3-attached pair of 3TB hard
-> drives.
-> 
-> One outgoing 'rcp' was to a system with
-> a much slower disk (due to a USB2 attachment)
-> and that transfer was putting back-pressure
-> on the connection.
-> 
-> Kernel is running on a CentOS 6.0
-> distribution.
-> 
-> Not subscribing to the lists, so please
-> CC me with any queries.  Please note that
-> email originating from most non-US MTAs
-> will bounce, but I will check the list
-> archives if I see any.
-> 
-> Can't spend a lot of time on this but am
-> willing to answer a few questions.  Hopefully
-> the call stack will tell the story well
-> enough.
+Oh forgot to mention of course what Benoit came up which is reg-names.
+That of course is doable with both phandles and pin names:
 
-You are seeing memory allocation failures because device
-is allocating a 16K (order 2) size socket buffer. You are using
-netxen device, and it looks like the problem.
+So optionally either
 
->From reading the netxen driver source. The LRO buffers in this device
-are very large (8060+skb overhead).
-Until the driver is fixed to use fragmented page size memory,
-I recommend turning off LRO.
+	pins = <&uart3_rx_irrx &uart3_tx_irtx>;
+or
+
+	pin-names = "uart3_rx_irrx",  "uart3_tx_irtx";
+
+and both pins and pin-names could have optional hardware specific
+board default flags:
+
+	pin-flags = <0xdeadbeef 0xdeadbeef>;
+
+The pin-flags could end up being defines if dtc will at some point
+support preprocessing the .dtc files.
+ 
+> BTW, this same problem applies also to clock framwork where we may
+> have multiple sources of clocks to register and map to devices.
+
+Regards,
+
+Tony
