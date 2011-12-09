@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab1LIV1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:27:32 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:63331 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1LIV1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:27:31 -0500
-Message-id: <4EE27D28.4040909@verizon.net>
-Date: Fri, 09 Dec 2011 16:27:04 -0500
-From: "David H. Durgee" <dhdurgee@verizon.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0.1) Gecko/20111122
- Firefox/8.0.1 SeaMonkey/2.5
-MIME-version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Request for assistance - excessive kworker CPU wakeups
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+	id S1754150Ab1LIVfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:35:31 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:53744 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750761Ab1LIVfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 16:35:30 -0500
+Message-ID: <1323466526.27746.29.camel@joe2Laptop>
+Subject: Re: [PATCH v2] mm: simplify find_vma_prev
+From: Joe Perches <joe@perches.com>
+To: kosaki.motohiro@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Shaohua Li <shaohua.li@intel.com>
+Date: Fri, 09 Dec 2011 13:35:26 -0800
+In-Reply-To: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
+References: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently purchased a Lenovo IdeaPad Z560, model 09143YU, and as I am 
-not a Windows fan I installed Linux Mint 11 Katya x64 to use instead of 
-the supplied W7.  I was encountering a known hang and had to upgrade to 
-a later kernel, so I am now using the 2.6.38-11-generic #50-Ubuntu SMP 
-Mon Sep 12 21:17:25 UTC 2011 x86_64 kernel.
+On Fri, 2011-12-09 at 16:23 -0500, kosaki.motohiro@gmail.com wrote:
+> commit 297c5eee37 (mm: make the vma list be doubly linked) added
+> vm_prev member into vm_area_struct. Therefore we can simplify
+> find_vma_prev() by using it. Also, this change help to improve
+> page fault performance because it has strong locality of reference.
 
-I had my first occasion to use the laptop for an extended period for the 
-first time over the Thanksgiving holiday and I found it needed to be 
-tuned.  I downloaded powertop and used it to discover where my problems 
-were.  After addressing excessive i915 interrupts due to DRI the next 
-most frequent cause of CPU wakeups is a kworker on the system.  A search 
-lead to a post by Tejun, indicating the need to trace such issues. 
-Running the trace showed that 1933 of 2748 events were of the form:
+trivia:
 
-<idle>-0     [000] 22005.355346: workqueue_queue_work: work 
-struct=ffff8800bb411188 function=do_dbs_timer workqueue=ffff88012b5d2c00 
-req_cpu=0 cpu=0
+> diff --git a/mm/mmap.c b/mm/mmap.c
+[]
+> @@ -1603,39 +1603,21 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+>  
+>  EXPORT_SYMBOL(find_vma);
+>  
+> -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
+> +/*
+> + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
+> + * Note: pprev is set to NULL when return value is NULL.
+> + */
+>  struct vm_area_struct *
+> -find_vma_prev(struct mm_struct *mm, unsigned long addr,
+> -			struct vm_area_struct **pprev)
 
-Tejun indicated that this is a workitem used by cpufreq and likely 
-caused by something else hitting the CPU frequently.  So how do I 
-diagnose this further and isolate the cause for correction?
+> +find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
 
-If you would like a summary of this, download this spreadsheet:
+eh.  This declaration change seems gratuitous and it exceeds 80 columns.
 
-http://home.comcast.net/%7Eddurgee/Tracelog.ods
+> +	*pprev = NULL;
+> +	vma = find_vma(mm, addr);
+> +	if (vma)
+> +		*pprev = vma->vm_prev;
 
-If you would like to inspect the trace log itself:
+There's no need to possibly set *pprev twice.
 
-http://home.comcast.net/%7Eddurgee/tracelog.zip
+Maybe
+{
+	struct vm_area_struct *vma = find_vma(mm, addr);
 
-Dave
+	*pprev = vma ? vma->vm_prev : NULL;
+or
+	if (vma)
+		*pprev = vma->vm_prev;
+	else
+		*pprev = NULL;
+
+	return vma;
+}
+ 
+> -out:
+> -	*pprev = prev;
+> -	return prev ? prev->vm_next : vma;
+> +	return vma;
+>  }
+>  
+>  /*
+
+
+
