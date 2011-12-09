@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1LIXoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:44:05 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51432 "EHLO ogre.sisk.pl"
+	id S1755057Ab1LIXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:44:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51446 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab1LIXoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:44:01 -0500
+	id S1752338Ab1LIXoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 18:44:03 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [RFC][PATCH 4/4] PM / input / touchscreen: Make st1232 use device PM QoS constraints
-Date: Sat, 10 Dec 2011 00:46:31 +0100
+Subject: [RFC][PATCH 1/4] PM / shmobile: Don't include SH7372's INTCS in syscore suspend/resume
+Date: Sat, 10 Dec 2011 00:43:52 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
@@ -21,114 +21,101 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112100046.32206.rjw@sisk.pl>
+Message-Id: <201112100043.53154.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the st1232 driver use dev_pm_qos_add_ancestor_request() to
-add a device PM QoS latency constraint for the I2C controller it
-depends on, so that the controller won't go into an overly deep
-low-power state when the touchscreen has to be particularly
-responsive (e.g. when the user moves his or her finger on it)
-and allow the A4R domain to be turned off if that doesn't violate
-the PM QoS latency constraints.
+Since the SH7372's INTCS in included into syscore suspend/resume,
+which causes the chip to be accessed when PM domains have been
+turned off during system suspend, the A4R domain containing the
+INTCS has to stay on during system sleep, which is suboptimal
+from the power consumption point of view.
 
+For this reason, add a new INTC flag, skip_syscore_suspend, to mark
+the INTCS for intc_suspend() and intc_resume(), so that they don't
+touch it.  This allows the A4R domain to be turned off during
+system suspend and the INTCS state is resrored during system
+resume by the A4R's "power on" code.
+
+Suggested-by: Magnus Damm <damm@opensource.se>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/pm-sh7372.c |   28 +++++++++++++++++++++++++++-
- drivers/input/touchscreen/st1232.c |   14 +++++++++++++-
- 2 files changed, 40 insertions(+), 2 deletions(-)
+ arch/arm/mach-shmobile/intc-sh7372.c |    1 +
+ drivers/sh/intc/core.c               |    8 ++++++++
+ drivers/sh/intc/internals.h          |    1 +
+ include/linux/sh_intc.h              |    1 +
+ 4 files changed, 11 insertions(+)
 
-Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
+Index: linux/include/linux/sh_intc.h
 ===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -239,7 +239,6 @@ struct sh7372_pm_domain sh7372_d4 = {
- struct sh7372_pm_domain sh7372_a4r = {
- 	.genpd.name = "A4R",
- 	.bit_shift = 5,
--	.gov = &pm_domain_always_on_gov,
- 	.suspend = sh7372_a4r_suspend,
- 	.resume = sh7372_intcs_resume,
+--- linux.orig/include/linux/sh_intc.h
++++ linux/include/linux/sh_intc.h
+@@ -95,6 +95,7 @@ struct intc_desc {
+ 	unsigned int num_resources;
+ 	intc_enum force_enable;
+ 	intc_enum force_disable;
++	bool skip_syscore_suspend;
+ 	struct intc_hw_desc hw;
  };
-@@ -496,9 +495,36 @@ static int sh7372_enter_suspend(suspend_
+ 
+Index: linux/arch/arm/mach-shmobile/intc-sh7372.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/intc-sh7372.c
++++ linux/arch/arm/mach-shmobile/intc-sh7372.c
+@@ -535,6 +535,7 @@ static struct resource intcs_resources[]
+ static struct intc_desc intcs_desc __initdata = {
+ 	.name = "sh7372-intcs",
+ 	.force_enable = ENABLED_INTCS,
++	.skip_syscore_suspend = true,
+ 	.resource = intcs_resources,
+ 	.num_resources = ARRAY_SIZE(intcs_resources),
+ 	.hw = INTC_HW_DESC(intcs_vectors, intcs_groups, intcs_mask_registers,
+Index: linux/drivers/sh/intc/core.c
+===================================================================
+--- linux.orig/drivers/sh/intc/core.c
++++ linux/drivers/sh/intc/core.c
+@@ -354,6 +354,8 @@ int __init register_intc_controller(stru
+ 	if (desc->force_enable)
+ 		intc_enable_disable_enum(desc, d, desc->force_enable, 1);
+ 
++	d->skip_suspend = desc->skip_syscore_suspend;
++
+ 	nr_intc_controllers++;
+ 
  	return 0;
- }
+@@ -386,6 +388,9 @@ static int intc_suspend(void)
+ 	list_for_each_entry(d, &intc_list, list) {
+ 		int irq;
  
-+/**
-+ * sh7372_pm_notifier_fn - SH7372 PM notifier routine.
-+ * @notifier: Unused.
-+ * @pm_event: Event being handled.
-+ * @unused: Unused.
-+ *
-+ * This is necessary, because the A4R domain has to be "on" when
-+ * suspend_device_irqs() and resume_device_irqs() are executed during system
-+ * suspend and resume, respectively, so that those functions don't crash
-+ * while accessing the INTCS.
-+ */
-+static int sh7372_pm_notifier_fn(struct notifier_block *notifier,
-+				 unsigned long pm_event, void *unused)
-+{
-+	switch (pm_event) {
-+	case PM_SUSPEND_PREPARE:
-+		pm_genpd_poweron(&sh7372_a4r.genpd);
-+		break;
-+	case PM_POST_SUSPEND:
-+		pm_genpd_poweroff_unused();
-+		break;
-+	}
++		if (d->skip_suspend)
++			continue;
 +
-+	return NOTIFY_DONE;
-+}
+ 		/* enable wakeup irqs belonging to this intc controller */
+ 		for_each_active_irq(irq) {
+ 			struct irq_data *data;
+@@ -409,6 +414,9 @@ static void intc_resume(void)
+ 	list_for_each_entry(d, &intc_list, list) {
+ 		int irq;
+ 
++		if (d->skip_suspend)
++			continue;
 +
- static void sh7372_suspend_init(void)
- {
- 	shmobile_suspend_ops.enter = sh7372_enter_suspend;
-+	pm_notifier(sh7372_pm_notifier_fn, 0);
- }
- #else
- static void sh7372_suspend_init(void) {}
-Index: linux/drivers/input/touchscreen/st1232.c
+ 		for_each_active_irq(irq) {
+ 			struct irq_data *data;
+ 			struct irq_chip *chip;
+Index: linux/drivers/sh/intc/internals.h
 ===================================================================
---- linux.orig/drivers/input/touchscreen/st1232.c
-+++ linux/drivers/input/touchscreen/st1232.c
-@@ -25,6 +25,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/types.h>
-+#include <linux/pm_qos.h>
- 
- #define ST1232_TS_NAME	"st1232-ts"
- 
-@@ -46,6 +47,8 @@ struct st1232_ts_data {
- 	struct i2c_client *client;
- 	struct input_dev *input_dev;
- 	struct st1232_ts_finger finger[MAX_FINGERS];
-+	struct dev_pm_qos_request low_latency_req;
-+	bool pen_down;
+--- linux.orig/drivers/sh/intc/internals.h
++++ linux/drivers/sh/intc/internals.h
+@@ -67,6 +67,7 @@ struct intc_desc_int {
+ 	struct intc_window *window;
+ 	unsigned int nr_windows;
+ 	struct irq_chip chip;
++	bool skip_suspend;
  };
  
- static int st1232_ts_read_data(struct st1232_ts_data *ts)
-@@ -118,8 +121,17 @@ static irqreturn_t st1232_ts_irq_handler
- 	}
  
- 	/* SYN_MT_REPORT only if no contact */
--	if (!count)
-+	if (!count) {
- 		input_mt_sync(input_dev);
-+		if (ts->pen_down) {
-+			dev_pm_qos_remove_request(&ts->low_latency_req);
-+			ts->pen_down = false;
-+		}
-+	} else if (!ts->pen_down) {
-+		/* First contact, request 100 mcs latency. */
-+		dev_pm_qos_add_ancestor_request(&ts->client->dev,
-+						&ts->low_latency_req, 100);
-+	}
- 
- 	/* SYN_REPORT */
- 	input_sync(input_dev);
 
