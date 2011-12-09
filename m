@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1LIWtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:49:51 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44363 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab1LIWtu convert rfc822-to-8bit (ORCPT
+	id S1754855Ab1LIWvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:51:12 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4827 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab1LIWvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:49:50 -0500
+	Fri, 9 Dec 2011 17:51:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 09 Dec 2011 14:50:56 -0800
+Date: Fri, 9 Dec 2011 14:50:56 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sumit Semwal <sumit.semwal@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jesse.barker@linaro.org" <jesse.barker@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "daniel@ffwll.ch" <daniel@ffwll.ch>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
+ sharing mechanism
+Message-ID: <20111209225056.GL7969@morell.nvidia.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+ <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+ <201112051718.48324.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <1323466526.27746.29.camel@joe2Laptop>
-References: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com> <1323466526.27746.29.camel@joe2Laptop>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 9 Dec 2011 17:49:27 -0500
-Message-ID: <CAHGf_=pWrM3ToRw0Hwb+mY3FVibmpvm2ShK+VspunQwWBCy9bA@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: simplify find_vma_prev
-To: Joe Perches <joe@perches.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112051718.48324.arnd@arndb.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/mm/mmap.c b/mm/mmap.c
-> []
->> @@ -1603,39 +1603,21 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
->>
->>  EXPORT_SYMBOL(find_vma);
->>
->> -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
->> +/*
->> + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
->> + * Note: pprev is set to NULL when return value is NULL.
->> + */
->>  struct vm_area_struct *
->> -find_vma_prev(struct mm_struct *mm, unsigned long addr,
->> -                     struct vm_area_struct **pprev)
->
->> +find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
->
-> eh.  This declaration change seems gratuitous and it exceeds 80 columns.
->
->> +     *pprev = NULL;
->> +     vma = find_vma(mm, addr);
->> +     if (vma)
->> +             *pprev = vma->vm_prev;
->
-> There's no need to possibly set *pprev twice.
->
-> Maybe
-> {
->        struct vm_area_struct *vma = find_vma(mm, addr);
->
->        *pprev = vma ? vma->vm_prev : NULL;
-> or
->        if (vma)
->                *pprev = vma->vm_prev;
->        else
->                *pprev = NULL;
->
->        return vma;
+On Mon, Dec 05, 2011 at 09:18:48AM -0800, Arnd Bergmann wrote:
+> On Friday 02 December 2011, Sumit Semwal wrote:
+> > This is the first step in defining a dma buffer sharing mechanism.
+> 
+[...]
+> 
+> > +	return dmabuf;
+> > +}
+> > +EXPORT_SYMBOL(dma_buf_export);
+> 
+> I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
+> because it's really a low-level function that I would expect
+> to get used by in-kernel subsystems providing the feature to
+> users and having back-end drivers, but it's not the kind of thing
+> we want out-of-tree drivers to mess with.
 
-Thank you for reviewing. Updated.
+Is this really necessary?  If this is intended to be a
+lowest-common-denominator between many drivers to allow buffer sharing,
+it seems like it needs to be able to be usable by all drivers.
+
+If the interface is not accessible then I fear many drivers will be
+forced to continue to roll their own buffer sharing mechanisms (which is
+exactly what we're trying to avoid here, needless to say).
+
+- Robert
