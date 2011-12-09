@@ -1,82 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab1LILsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 06:48:03 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57759
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab1LILsA (ORCPT
+	id S1753271Ab1LILtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 06:49:25 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46595 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab1LILtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 06:48:00 -0500
-Date: Fri, 9 Dec 2011 06:47:45 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Kamal Mostafa <kamal@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH 3/5 resend] VFS: Fix s_umount thaw/write deadlock
-Message-ID: <20111209114745.GA7543@infradead.org>
-References: <1323118489-16326-1-git-send-email-kamal@canonical.com>
- <1323118489-16326-4-git-send-email-kamal@canonical.com>
- <20111206113544.GA21589@infradead.org>
- <20111207231658.GQ4622@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207231658.GQ4622@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 9 Dec 2011 06:49:24 -0500
+From: Michal Simek <monstr@monstr.eu>
+To: robherring2@gmail.com
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        anton.vorontsov@linaro.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/5] microblaze: Change NO_IRQ to 0
+Date: Fri,  9 Dec 2011 12:45:20 +0100
+Message-Id: <1323431121-12780-4-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
+In-Reply-To: <1323431121-12780-3-git-send-email-monstr@monstr.eu>
+References: <1323431121-12780-1-git-send-email-monstr@monstr.eu>
+ <1323431121-12780-2-git-send-email-monstr@monstr.eu>
+ <1323431121-12780-3-git-send-email-monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 12:16:58AM +0100, Jan Kara wrote:
-> > We make sure to not dirty any new inodes after the first phase of the
-> > freeze, so this should be a BUG_ON/WARN_ON.
->   This is not really true in presence of mmaped writes. To block mmaped
-> writes on a frozen filesystem, we need some synchronization between
-> page_mkwrite() and freezing code. Currently, to avoid any additional
-> locking overhead, we set page dirty and *then* check for filesystem being
-> frozen. Only this order can make sure either the page is written (and
-> write-protected) or the frozen check triggers and we wait... (see the
-> comment in block_page_mkwrite()). The nasty sideeffect of this is that
-> there can be dirty pages & inodes on a frozen filesystem. We are blocked in
-> the page fault of these pages so user cannot write any data to these pages
-> but still they are marked dirty.
-> 
-> Alternatively we could have a different mechanism (rw semaphore?) to
-> synchronize page faults and freezing but I'd hate the overhead for the case
-> almost noone cares about...
+As has been discussed many times[1], Using NO_IRQ set to anything other
+than 0 is bug waiting to happen since many drivers follow the pattern
+"if (!irq)" for testing whether or not an irq has been set.
 
-I think the is the only sensible way to go forward.  Requiring hacks in
-lots of random places to work around the fact that a single place that
-might actually dirty pages despite supposedly blocking that from happen
-simply isn't maintainable over the long run.
+This patch changes the Microblaze NO_IRQ setting from -1 to 0 to bring
+it in line with most of the rest of the kernel.  It also prepares for
+Microblaze eventually supporting multiple interrupt controllers by
+breaking the assumption that hwirq# == Linux IRQ#.  The Linux IRQ
+number is just a cookie with no guarantee of a direct relationship
+with the hardware irq arrangement.
 
-> > > +	 */
-> > > +	if (vfs_is_frozen(sb)) {
-> > > +		ret = -EBUSY;
-> > > +		goto out_drop_super;
-> > > +	}
-> > 
-> > How about spending the three minutes to figure it out?
-> > Q_GETFMT/Q_GETINFO/Q_XGETQSTAT and Q_GETQUOTA are the obvious read-only
-> > candidates.
->   Q_GETQUOTA can actually cause filesystem modification (reservation of
-> space in quota file) but the others are read-only. Also after some thought
-> I'd prefer that quotactl(8) just blocks to be consistent with how other
-> syscalls behave...
+At this point, Microblaze interrupt handling only supports only one
+instance of one kind of interrupt controller (xilinx_intc).  This change
+shouldn't affect any architecture code outside of the interrupt
+controller driver and the irq_of mapping.
 
-How can a simple dqget cause modifications in the VFS quota code?
-Dirting anything for a simple read of the quota information is not
-only completely non-obvious but also doesn't make much sene.  We don't
-dirty metadata on stat() either..
+Updated to 3.2 and to use irq_data.hwirq by Rob Herring.
+
+[1] http://lkml.org/lkml/2005/11/21/221
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ arch/microblaze/include/asm/irq.h |    4 ++--
+ arch/microblaze/kernel/intc.c     |   31 ++++++++++++++++++-------------
+ arch/microblaze/kernel/irq.c      |   10 ++++++----
+ 3 files changed, 26 insertions(+), 19 deletions(-)
+
+diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
+index cc54187..b07c179 100644
+--- a/arch/microblaze/include/asm/irq.h
++++ b/arch/microblaze/include/asm/irq.h
+@@ -9,7 +9,7 @@
+ #ifndef _ASM_MICROBLAZE_IRQ_H
+ #define _ASM_MICROBLAZE_IRQ_H
+ 
+-#define NR_IRQS 32
++#define NR_IRQS (32 + 1)	/* Add 1 to skip over IRQ0 */
+ #include <asm-generic/irq.h>
+ 
+ /* This type is the placeholder for a hardware interrupt number. It has to
+@@ -20,7 +20,7 @@ typedef unsigned long irq_hw_number_t;
+ 
+ extern unsigned int nr_irq;
+ 
+-#define NO_IRQ (-1)
++#define NO_IRQ 0
+ 
+ struct pt_regs;
+ extern void do_IRQ(struct pt_regs *regs);
+diff --git a/arch/microblaze/kernel/intc.c b/arch/microblaze/kernel/intc.c
+index 1293098..c66fce9c 100644
+--- a/arch/microblaze/kernel/intc.c
++++ b/arch/microblaze/kernel/intc.c
+@@ -42,8 +42,9 @@ unsigned int nr_irq;
+ 
+ static void intc_enable_or_unmask(struct irq_data *d)
+ {
+-	unsigned long mask = 1 << d->irq;
+-	pr_debug("enable_or_unmask: %d\n", d->irq);
++	unsigned long mask = 1 << d->hwirq;
++
++	pr_debug("enable_or_unmask: %ld\n", d->hwirq);
+ 	out_be32(INTC_BASE + SIE, mask);
+ 
+ 	/* ack level irqs because they can't be acked during
+@@ -56,20 +57,21 @@ static void intc_enable_or_unmask(struct irq_data *d)
+ 
+ static void intc_disable_or_mask(struct irq_data *d)
+ {
+-	pr_debug("disable: %d\n", d->irq);
+-	out_be32(INTC_BASE + CIE, 1 << d->irq);
++	pr_debug("disable: %ld\n", d->hwirq);
++	out_be32(INTC_BASE + CIE, 1 << d->hwirq);
+ }
+ 
+ static void intc_ack(struct irq_data *d)
+ {
+-	pr_debug("ack: %d\n", d->irq);
+-	out_be32(INTC_BASE + IAR, 1 << d->irq);
++	pr_debug("ack: %ld\n", d->hwirq);
++	out_be32(INTC_BASE + IAR, 1 << d->hwirq);
+ }
+ 
+ static void intc_mask_ack(struct irq_data *d)
+ {
+-	unsigned long mask = 1 << d->irq;
+-	pr_debug("disable_and_ack: %d\n", d->irq);
++	unsigned long mask = 1 << d->hwirq;
++
++	pr_debug("disable_and_ack: %ld\n", d->hwirq);
+ 	out_be32(INTC_BASE + CIE, mask);
+ 	out_be32(INTC_BASE + IAR, mask);
+ }
+@@ -90,8 +92,11 @@ unsigned int get_irq(struct pt_regs *regs)
+ 	 * NOTE: This function is the one that needs to be improved in
+ 	 * order to handle multiple interrupt controllers. It currently
+ 	 * is hardcoded to check for interrupts only on the first INTC.
++	 *
++	 * Linux IRQ# is currently offset by one to map to the hardware
++	 * irq number.  So hardware IRQ0 maps to Linux irq 1.
+ 	 */
+-	irq = in_be32(INTC_BASE + IVR);
++	irq = in_be32(INTC_BASE + IVR) + 1;
+ 	pr_debug("get_irq: %d\n", irq);
+ 
+ 	return irq;
+@@ -116,8 +121,7 @@ void __init init_IRQ(void)
+ 	intc = of_find_compatible_node(NULL, NULL, "xlnx,xps-intc-1.00.a");
+ 	BUG_ON(!intc);
+ 
+-	intc_baseaddr = be32_to_cpup(of_get_property(intc,
+-								"reg", NULL));
++	intc_baseaddr = be32_to_cpup(of_get_property(intc, "reg", NULL));
+ 	intc_baseaddr = (unsigned long) ioremap(intc_baseaddr, PAGE_SIZE);
+ 	nr_irq = be32_to_cpup(of_get_property(intc,
+ 						"xlnx,num-intr-inputs", NULL));
+@@ -145,8 +149,8 @@ void __init init_IRQ(void)
+ 	/* Turn on the Master Enable. */
+ 	out_be32(intc_baseaddr + MER, MER_HIE | MER_ME);
+ 
+-	for (i = 0; i < nr_irq; ++i) {
+-		if (intr_mask & (0x00000001 << i)) {
++	for (i = 1; i <= nr_irq; ++i) {
++		if (intr_mask & (0x00000001 << (i - 1))) {
+ 			irq_set_chip_and_handler_name(i, &intc_dev,
+ 				handle_edge_irq, "edge");
+ 			irq_clear_status_flags(i, IRQ_LEVEL);
+@@ -155,5 +159,6 @@ void __init init_IRQ(void)
+ 				handle_level_irq, "level");
+ 			irq_set_status_flags(i, IRQ_LEVEL);
+ 		}
++		irq_get_irq_data(i)->hwirq = i - 1;
+ 	}
+ }
+diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
+index e5d63a8..ac1b463 100644
+--- a/arch/microblaze/kernel/irq.c
++++ b/arch/microblaze/kernel/irq.c
+@@ -33,11 +33,11 @@ void __irq_entry do_IRQ(struct pt_regs *regs)
+ 	irq_enter();
+ 	irq = get_irq(regs);
+ next_irq:
+-	BUG_ON(irq == -1U);
++	BUG_ON(!irq);
+ 	generic_handle_irq(irq);
+ 
+ 	irq = get_irq(regs);
+-	if (irq != -1U) {
++	if (irq) {
+ 		pr_debug("next irq: %d\n", irq);
+ 		++concurrent_irq;
+ 		goto next_irq;
+@@ -52,13 +52,15 @@ next_irq:
+   intc without any cascades or any connection that's why mapping is 1:1 */
+ unsigned int irq_create_mapping(struct irq_host *host, irq_hw_number_t hwirq)
+ {
+-	return hwirq;
++	return hwirq + 1;
+ }
+ EXPORT_SYMBOL_GPL(irq_create_mapping);
+ 
+ unsigned int irq_create_of_mapping(struct device_node *controller,
+ 				   const u32 *intspec, unsigned int intsize)
+ {
+-	return intspec[0];
++	/* Hardware irq is mapped to Linux IRQ# by a 1 offset. Linux irq
++	 * 0 means no IRQ. */
++	return intspec[0] + 1;
+ }
+ EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+-- 
+1.7.5.4
 
