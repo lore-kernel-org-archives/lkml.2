@@ -1,124 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab1LIOzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:55:51 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44695 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab1LIOzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:55:50 -0500
+	id S1754421Ab1LIO4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:56:47 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:40301 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab1LIO4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 09:56:46 -0500
+Message-ID: <4EE22179.5090106@parallels.com>
+Date: Fri, 9 Dec 2011 12:55:53 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-X-Originating-IP: [109.186.57.177]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 9 Dec 2011 16:55:27 +0200
-Message-ID: <CAK=WgbaU6vpiBGSgogYPjQNmrF-U0wk1rSXMX83DdgQa9hw5Mw@mail.gmail.com>
-Subject: Adding remoteproc/rpmsg to linux-next
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-next@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Brian Swetland <swetland@google.com>, akpm@linux-foundation.org,
-        Greg KH <greg@kroah.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Saravana Kannan <skannan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>, <cgroups@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        Linux Containers <containers@lists.osdl.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: How to draw values for /proc/stat
+References: <4EDC8FB1.60407@parallels.com> <1323439411.17673.65.camel@twins>
+In-Reply-To: <1323439411.17673.65.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 12/09/2011 12:03 PM, Peter Zijlstra wrote:
+> On Mon, 2011-12-05 at 07:32 -0200, Glauber Costa wrote:
+>> Hi,
+>>
+>> Specially Peter and Paul, but all the others:
+>>
+>> As you can see in https://lkml.org/lkml/2011/12/4/178, and in my answer
+>> to that, there is a question - one I've asked before but without that
+>> much of an audience - of whether /proc files read from process living on
+>> cgroups should display global or per-cgroup resources.
+>>
+>> In the past, I was arguing for a knob to control that, but I recently
+>> started to believe that a knob here will only overcomplicate matters:
+>> if you live in a cgroup, you should display only the resources you can
+>> possibly use. Global is for whoever is in the main cgroup.
+>>
+>> Now, it comes two questions:
+>> 1) Do you agree with that, for files like /proc/stat ? I think the most
+>> important part is to be consistent inside the system, regardless of what
+>> is done
+>
+> Personally I don't give a rats arse about (/proc vs) cgroups :-)
+> Currently /proc is unaffected by whatever cgroup you happen to be in and
+> that seems to make some sort of sense.
+>
+> Namespaces seem to be about limiting visibility, cgroups about
+> controlling resources.
+>
+> The two things are hopelessly disjoint atm, but I believe someone was
+> looking at this mess.
 
-Can you please add the following remoteproc tree to linux-next ?
+I did take a look at this (if anyone else was, I'd like to know so we 
+can share some ideas), but I am not convinced we should do anything to 
+join them anymore. We virtualization people are to the best of my 
+knowledge the only ones doing namespaces. Cgroups, OTOH, got a lot bigger.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
+What I am mostly concerned about now, is how consistent they will be.
+/proc always being always global indeed does make sense, but my question 
+still stands: if you live in a resource-controlled world, why should you 
+even see resources you will never own ?
 
-This branch includes the basic remoteproc/rpmsg functionality as
-posted in the mailing lists, with a few minor changes that were
-requested (namely, changes against virtio-spec.txt were removed and
-"amp" is no longer used).
 
-The motivation for having this in linux-next is twofold:
-1. Getting prepared for a 3.3 merger (knock on wood)
-2. Starting a linear development scheme, in order to make it easier
-for people to collaborate (and to reduce the review load of
-incremental changes)
+> IOW a /proc namespace coupled to cgroup scope would do what you want.
+> Now my head hurts..
 
-I suspect that once this basic functionality will be merged upstream,
-the development of remoteproc and rpmsg will become completely
-orthogonal, and it would then make sense to start queueing patches
-separately. At that point I'll send you the details for the rpmsg.git
-tree.
+Mine too. The idea is good, but too broad. Boils down to: How do you 
+couple them? And none of the methods I thought about seemed to make any 
+sense.
 
-Last note: the "ARM: OMAP: add remoteproc devices for OMAP4" patch is
-omitted from this branch, since it depends on CMA (which isn't merged
-yet). As soon as CMA will be added (at least to linux-next) that patch
-will be queued up too.
+If we really want to have the values in /proc being opted-in, I think 
+Kamezawa's idea of a mount option is the winner so far.
 
-Thanks,
-Ohad.
+>> 2) Will cpuacct stay?
+>
+> I really want to kill it. Balbir seems to want to retain a control-less
+> accounting capability, but I really don't see the point in that. Nor is
+> anybody selling it convincingly.
+>
+> So I think I'll simply deprecate it and schedule it for removal and
+> anybody wanting something like this is free to send patches to implement
+> what they want in the cpu controller and convince me its worth the pain.
+>
+>> I think if it does, that becomes almost mandatory
+>
+> You're referring to #1 here, right?
 
-The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+Yes. But that was before Kame suggested a mount option. That would do 
+just fine in this use case as well/
 
-  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+>> (at least the bind mount idea is pretty much over here), because drawing
+>> value for /proc/stat becomes quite complex.
+>> The cpuacct cgroup can provide user, sys, etc values. But we also have:
+>>
+>> * nr_context_switches,
+>> * jiffies since boot,
+>> * total_forks,
+>> * nr_running,
+>> * nr_iowait,
+>>
+>> Now I doubt any of us want to see /proc/stat extended to accommodate
+>> things like nr_context_switches, or even worse, nr_running. The way I
+>> see it, there are two options here:
+>
+> Why would we want to display all those anyway?
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
+Because we care about isolation. Our users (and more importantly, their 
+tools), need to feel they own the box. That's the whole point of it.
 
-Ohad Ben-Cohen (6):
-      remoteproc: add framework for controlling remote processors
-      remoteproc: add debugfs entries
-      remoteproc: create rpmsg virtio device
-      remoteproc/omap: add a remoteproc driver for OMAP4
-      rpmsg: add virtio-based remote processor messaging bus
-      samples/rpmsg: add an rpmsg driver sample
+Whatever is displayed to the users, need to be (with a switch/mount opt, 
+if my initial point is really defeated) related to the resources he is 
+entitled to, not to some global entity he'll never own.
+>
+>>    a) moving everything to cpu cgroup so we keep all values being drawn
+>>       from the same place
+>
+> This is /cgroup/$controller.stat, right?
 
- Documentation/ABI/testing/sysfs-bus-rpmsg    |   75 ++
- Documentation/remoteproc.txt                 |  324 ++++++
- Documentation/rpmsg.txt                      |  293 ++++++
- MAINTAINERS                                  |    7 +
- arch/arm/plat-omap/include/plat/remoteproc.h |   57 +
- drivers/Kconfig                              |    4 +
- drivers/Makefile                             |    2 +
- drivers/remoteproc/Kconfig                   |   24 +
- drivers/remoteproc/Makefile                  |    9 +
- drivers/remoteproc/omap_remoteproc.c         |  249 +++++
- drivers/remoteproc/omap_remoteproc.h         |   69 ++
- drivers/remoteproc/remoteproc_core.c         | 1410 ++++++++++++++++++++++++++
- drivers/remoteproc/remoteproc_debugfs.c      |  179 ++++
- drivers/remoteproc/remoteproc_internal.h     |   44 +
- drivers/remoteproc/remoteproc_rpmsg.c        |  295 ++++++
- drivers/rpmsg/Kconfig                        |    5 +
- drivers/rpmsg/Makefile                       |    1 +
- drivers/rpmsg/virtio_rpmsg_bus.c             | 1026 +++++++++++++++++++
- include/linux/mod_devicetable.h              |    9 +
- include/linux/remoteproc.h                   |  265 +++++
- include/linux/rpmsg.h                        |  326 ++++++
- include/linux/virtio_ids.h                   |    1 +
- samples/Kconfig                              |    8 +
- samples/Makefile                             |    2 +-
- samples/rpmsg/Makefile                       |    1 +
- samples/rpmsg/rpmsg_client_sample.c          |  100 ++
- 26 files changed, 4784 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-rpmsg
- create mode 100644 Documentation/remoteproc.txt
- create mode 100644 Documentation/rpmsg.txt
- create mode 100644 arch/arm/plat-omap/include/plat/remoteproc.h
- create mode 100644 drivers/remoteproc/Kconfig
- create mode 100644 drivers/remoteproc/Makefile
- create mode 100644 drivers/remoteproc/omap_remoteproc.c
- create mode 100644 drivers/remoteproc/omap_remoteproc.h
- create mode 100644 drivers/remoteproc/remoteproc_core.c
- create mode 100644 drivers/remoteproc/remoteproc_debugfs.c
- create mode 100644 drivers/remoteproc/remoteproc_internal.h
- create mode 100644 drivers/remoteproc/remoteproc_rpmsg.c
- create mode 100644 drivers/rpmsg/Kconfig
- create mode 100644 drivers/rpmsg/Makefile
- create mode 100644 drivers/rpmsg/virtio_rpmsg_bus.c
- create mode 100644 include/linux/remoteproc.h
- create mode 100644 include/linux/rpmsg.h
- create mode 100644 samples/rpmsg/Makefile
- create mode 100644 samples/rpmsg/rpmsg_client_sample.c
+Sorry?
+
+(I just noticed I wasn't that clear myself) I referred more to the act 
+of collecting values, and where from, than how to.
+
+>
+>>    b) Collect that info from multiple places in a transparent way. ctx,
+>>       nr_running and nr_iowait will probably come from cpu. jiffies can
+>>       come from wherever, and maybe we can even draw total_forks
+>>       from Frederic's and avoid counting it twice.
+>
+> trouble with that is 'drawing from someplace' is a total nightmare, what
+> happens if that fork muck from Frederic isn't co-mounted with the cpu
+> controller?
+
+If it is not co-mounted, we draw the global value. If you don't mount 
+it, I someone does not mount it, I can assure you he doesn't care about 
+it. We for sure will.
+
+
+
+
