@@ -1,65 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab1LIPwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 10:52:31 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11196 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1LIPw2 (ORCPT
+	id S1750949Ab1LIQAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:00:40 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36794 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab1LIQAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 10:52:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 09 Dec 2011 07:52:06 -0800
-Date: Fri, 9 Dec 2011 17:52:03 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v6 10/10] arm/tegra: add support for tegra30 based
- board cardhu
-Message-ID: <20111209155203.GM27578@tbergstrom-lnx.Nvidia.com>
-References: <1323348254-29072-1-git-send-email-pdeschrijver@nvidia.com>
- <1323348254-29072-11-git-send-email-pdeschrijver@nvidia.com>
- <4EE21B67.5040006@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4EE21B67.5040006@gmail.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 9 Dec 2011 11:00:39 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: fix comm for processes with named threads
+Date: Fri,  9 Dec 2011 09:00:30 -0700
+Message-Id: <1323446430-1955-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  choice
-> >          prompt "Low-level debug console UART"
-> >          default TEGRA_DEBUG_UART_NONE
-> > diff --git a/arch/arm/mach-tegra/Makefile.boot b/arch/arm/mach-tegra/Makefile.boot
-> > index cf51a00..7c1110f 100644
-> > --- a/arch/arm/mach-tegra/Makefile.boot
-> > +++ b/arch/arm/mach-tegra/Makefile.boot
-> > @@ -7,3 +7,4 @@ dtb-$(CONFIG_MACH_PAZ00) += tegra-paz00.dtb
-> >  dtb-$(CONFIG_MACH_SEABOARD) += tegra-seaboard.dtb
-> >  dtb-$(CONFIG_MACH_TRIMSLICE) += tegra-trimslice.dtb
-> >  dtb-$(CONFIG_MACH_VENTANA) += tegra-ventana.dtb
-> > +dtb-$(CONFIG_MACH_CARDHU) += tegra-cardhu.dtb
-> 
-> Likewise, this should be more like:
-> dtb-$(CONFIG_MACH_TEGRA_DT) += tegra-seaboard.dtb tegra-trimslice.dtb
-> tegra-ventana.dtb ...
-> 
+perf does not properly handle monitoring of processes with named threads.
+For example:
 
-I think is subject of a different patch.
+$ ps -C myapp -L
+  PID   LWP TTY          TIME CMD
+25118 25118 ?        00:00:00 myapp
+25118 25119 ?        00:00:00 myapp:worker
 
-Cheers,
+perf record -e cs -c 1 -fo /tmp/perf.data -p 25118 -- sleep 10
+perf report --stdio -i /tmp/perf.data
+   100.00%  myapp:worker  [kernel.kallsyms]  [k] perf_event_task_sched_out
 
-Peter.
+The process name is set to the name of the last thread it finds for the
+process.
+
+The Problem:
+perf-top and perf-record both create a thread_map of threads to be
+monitored. That map is used in perf_event__synthesize_thread_map which
+loops over the entries in thread_map and calls __event__synthesize_thread
+to generate COMM and MMAP events.
+
+__event__synthesize_thread calls perf_event__synthesize_comm which opens
+/proc/pid/status, reads the name of the task and its thread group id.
+That's all fine. The problem is that it then reads /proc/pid/task and
+generates COMM events for each task it finds - but using the name found
+in /proc/pid/status where pid is the thread of interest. This means the
+name of the last thread processed sets the name for all threads in the
+process - which is not good for multithreaded processes with named
+threads.
+
+The Fix:
+perf_event__synthesize_comm has an input argument (full) that decides
+whether to process task entries for each pid it is passed. It currently
+never set to 0 (perf_event__synthesize_comm has a single caller and it
+always passes the value 1). Let's fix that.
+
+Add the full input argument to __event__synthesize_thread which passes
+it to perf_event__synthesize_comm. For thread/process monitoring set full
+to 0 which means COMM and MMAP events are only generated for the pid
+passed to it. For system wide monitoring set full to 1 so that COMM events
+are generated for all threads in a process.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/event.c |   35 ++++++++++++++++++++++++++++++-----
+ 1 files changed, 30 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 437f8ca..6085727 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -260,10 +260,10 @@ int perf_event__synthesize_modules(perf_event__handler_t process,
+ 
+ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      union perf_event *mmap_event,
+-				      pid_t pid, perf_event__handler_t process,
++				      pid_t pid, int full, perf_event__handler_t process,
+ 				      struct perf_session *session)
+ {
+-	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, 1, process,
++	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, full, process,
+ 					    session);
+ 	if (tgid == -1)
+ 		return -1;
+@@ -276,7 +276,7 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
+ 				      struct perf_session *session)
+ {
+ 	union perf_event *comm_event, *mmap_event;
+-	int err = -1, thread;
++	int err = -1, thread, j;
+ 
+ 	comm_event = malloc(sizeof(comm_event->comm) + session->id_hdr_size);
+ 	if (comm_event == NULL)
+@@ -289,11 +289,36 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
+-					       threads->map[thread],
++					       threads->map[thread], 0,
+ 					       process, session)) {
+ 			err = -1;
+ 			break;
+ 		}
++
++		/* 
++		 * comm.pid is set to thread group id by
++		 * perf_event__synthesize_comm
++		 */
++		if ((int) comm_event->comm.pid != threads->map[thread]) {
++			bool need_leader = true;
++
++			/* is thread group leader in thread_map? */
++			for (j = 0; j < threads->nr; ++j) {
++				if ((int) comm_event->comm.pid == threads->map[j]) {
++					need_leader = false;
++					break;
++				}
++			}
++
++			/* if not, generate events for it */
++			if (need_leader &&
++			    __event__synthesize_thread(comm_event, mmap_event,
++					       comm_event->comm.pid, 0,
++					       process, session)) {
++				err = -1;
++				break;
++			}
++		}
+ 	}
+ 	free(mmap_event);
+ out_free_comm:
+@@ -329,7 +354,7 @@ int perf_event__synthesize_threads(perf_event__handler_t process,
+ 		if (*end) /* only interested in proper numerical dirents */
+ 			continue;
+ 
+-		__event__synthesize_thread(comm_event, mmap_event, pid,
++		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+ 					   process, session);
+ 	}
+ 
+-- 
+1.7.7.3
+
