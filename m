@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1LIOIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:08:31 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40892 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab1LIOIL (ORCPT
+	id S1754320Ab1LIOIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:08:54 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41606 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab1LIOIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:08:11 -0500
+	Fri, 9 Dec 2011 09:08:06 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         Paul Bolle <pebolle@tiscali.nl>,
         Dan Carpenter <dan.carpenter@oracle.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCHv2 10/10] caif-xshm: Add CAIF driver for Shared memory for M7400
-Date: Fri,  9 Dec 2011 15:07:28 +0100
-Message-Id: <1323439648-22697-11-git-send-email-sjur.brandeland@stericsson.com>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv2 08/10] xshm: Character device for XSHM channel access.
+Date: Fri,  9 Dec 2011 15:07:26 +0100
+Message-Id: <1323439648-22697-9-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323439648-22697-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1323439648-22697-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -27,951 +26,1227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a caif shared memory link layer driver
-for ST-Ericsson's Thor M7400 LTE modem.
+This patch introduces a character interface to the XSHM channels.
+A misc device is created, providing asynchronous IO and management.
 
-M7400 uses a ring-buffer in shared memory for transporting data from the modem.
-Each ring-buffer element contains an array of caif frames. caif_xshm calls
-napi_schedule() when receiving notification about incoming data.
-The napi-poll function copies data from the ring-buffer to SKBs until
-ring-buffer is empty, or quota is exceeded.
+The character device implements ring-buffer handling, copying
+data directly from the Shared Memory area into user buffers.
 
-If transmit ring-buffer is full, it also uses napi for scheduling transmission
-of queued transmit buffer.
-
-cc: David S. Miller <davem@davemloft.net>
-Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/net/caif/Kconfig     |   10 +
- drivers/net/caif/Makefile    |    1 +
- drivers/net/caif/caif_xshm.c |  930 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 941 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/caif/caif_xshm.c
+ drivers/xshm/xshm_chr.c | 1268 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1268 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/xshm/xshm_chr.c
 
-diff --git a/drivers/net/caif/Kconfig b/drivers/net/caif/Kconfig
-index abf4d7a..54364de 100644
---- a/drivers/net/caif/Kconfig
-+++ b/drivers/net/caif/Kconfig
-@@ -47,3 +47,13 @@ config CAIF_HSI
-        The caif low level driver for CAIF over HSI.
-        Be aware that if you enable this then you also need to
-        enable a low-level HSI driver.
-+
-+config CAIF_XSHM
-+	tristate "CAIF external memory protocol driver"
-+	depends on XSHM_BUS && CAIF
-+	default n
-+	---help---
-+	Say "Y" if you want to support CAIF over External Shared Memory (XSHM)
-+	IPC mechanism (e.g. over Chip to Chip). Only say M here if you want to
-+	test CAIF over XSHM and need to load and unload its module.
-+	If unsure say N.
-diff --git a/drivers/net/caif/Makefile b/drivers/net/caif/Makefile
-index 91dff86..9310b24 100644
---- a/drivers/net/caif/Makefile
-+++ b/drivers/net/caif/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_CAIF_SPI_SLAVE) += cfspi_slave.o
- # Shared memory
- caif_shm-objs := caif_shmcore.o caif_shm_u5500.o
- obj-$(CONFIG_CAIF_SHM) += caif_shm.o
-+obj-$(CONFIG_CAIF_XSHM) += caif_xshm.o
- 
- # HSI interface
- obj-$(CONFIG_CAIF_HSI) += caif_hsi.o
-diff --git a/drivers/net/caif/caif_xshm.c b/drivers/net/caif/caif_xshm.c
+diff --git a/drivers/xshm/xshm_chr.c b/drivers/xshm/xshm_chr.c
 new file mode 100644
-index 0000000..f1e4eae
+index 0000000..d929158
 --- /dev/null
-+++ b/drivers/net/caif/caif_xshm.c
-@@ -0,0 +1,930 @@
++++ b/drivers/xshm/xshm_chr.c
+@@ -0,0 +1,1268 @@
 +/*
-+ * Copyright (C) ST-Ericsson AB 2010
-+ * Contact: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ * Authors: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ *	   Daniel Martensson / daniel.martensson@stericsson.com
++ * Copyright (C) ST-Ericsson AB 2011
++ * Author:	Per Sigmond / Per.Sigmond@stericsson.com
++ * 		Sjur Brændeland / sjur.brandeland@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": %s() :" fmt, __func__
++#define pr_fmt(fmt) KBUILD_MODNAME ":%s :" fmt, __func__
 +#include <linux/kernel.h>
-+#include <linux/spinlock.h>
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/miscdevice.h>
 +#include <linux/sched.h>
++#include <linux/spinlock.h>
++#include <linux/mutex.h>
 +#include <linux/list.h>
-+#include <linux/netdevice.h>
-+#include <net/rtnetlink.h>
-+#include <linux/if_arp.h>
-+#include <net/caif/caif_device.h>
-+#include <net/caif/caif_layer.h>
++#include <linux/wait.h>
++#include <linux/poll.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/uaccess.h>
++#include <asm/uaccess.h>
++#include <asm/atomic.h>
 +#include <linux/xshm/xshm_dev.h>
 +#include <linux/xshm/xshm_ipctoc.h>
 +
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Daniel Martensson <daniel.martensson@stericsson.com>");
-+MODULE_AUTHOR("Sjur Brendeland <sjur.brandeland@stericsson.com>");
-+MODULE_DESCRIPTION("CAIF SHM driver");
++static LIST_HEAD(xshmchr_chrdev_list);
++static spinlock_t list_lock;
 +
-+#define CONNECT_TIMEOUT (3 * HZ)
-+#define CAIF_NEEDED_HEADROOM	32
-+#define CAIF_FLOW_ON		1
-+#define CAIF_FLOW_OFF		0
++#define xdev_dbg(dev, fmt, arg...) printk(KERN_DEBUG "%s: %s - " fmt, \
++			dev ? dev->misc.name : "?", __func__, ##arg)
++#define xdev_devl(dev, fmt, arg...) printk(KERN_DEBUG "%s: %s - " fmt, \
++			dev ? dev->misc.name : "?" , __func__, ##arg)
++#define pr_xchrstate(dev, str) \
++	xdev_devl(dev, "State: %s %s %s\n", str,	\
++		STATE_IS_PENDING(dev) ? "pending" : "", \
++		STATE_IS_OPEN(dev) ? "open" : "close")
 +
-+#define LOW_XOFF_WATERMARK	50
-+#define HIGH_XOFF_WATERMARK	70
-+#define STUFF_MARK		30
++#define OPEN_TOUT			(25 * HZ)
++#define CONN_STATE_OPEN_BIT		0
++#define CONN_STATE_PENDING_BIT		1
++#define CONN_REMOTE_TEARDOWN_BIT	2
++#define CONN_EOF_BIT			4
++
++#define STATE_IS_OPEN(dev) test_bit(CONN_STATE_OPEN_BIT, \
++					(void *) &(dev)->conn_state)
++#define STATE_IS_REMOTE_TEARDOWN(dev) test_bit(CONN_REMOTE_TEARDOWN_BIT, \
++					(void *) &(dev)->conn_state)
++#define STATE_IS_PENDING(dev) test_bit(CONN_STATE_PENDING_BIT, \
++					(void *) &(dev)->conn_state)
++#define SET_STATE_OPEN(dev) (set_bit(CONN_STATE_OPEN_BIT,	\
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_STATE_OPEN:%d\n", dev->conn_state))
++#define SET_STATE_CLOSED(dev) (clear_bit(CONN_STATE_OPEN_BIT,	\
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_STATE_CLOSED:%d\n", dev->conn_state))
++#define SET_PENDING_ON(dev) (set_bit(CONN_STATE_PENDING_BIT,	\
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_PENDING_ON:%d\n", dev->conn_state))
++#define SET_PENDING_OFF(dev) (clear_bit(CONN_STATE_PENDING_BIT, \
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_PENDING_OFF:%d\n", dev->conn_state))
++#define SET_REMOTE_TEARDOWN(dev) (set_bit(CONN_REMOTE_TEARDOWN_BIT,	\
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_REMOTE_TEARDOWN:%d\n", dev->conn_state))
++#define CLEAR_REMOTE_TEARDOWN(dev) (clear_bit(CONN_REMOTE_TEARDOWN_BIT, \
++			(void *) &(dev)->conn_state), \
++			pr_devel("CLEAR_REMOTE_TEARDOWN:%d\n", dev->conn_state))
++#define SET_EOF(dev) (set_bit(CONN_EOF_BIT,	\
++			(void *) &(dev)->conn_state), \
++			pr_devel("SET_EOF:%d\n", dev->conn_state))
++#define CLEAR_EOF(dev) (clear_bit(CONN_EOF_BIT, \
++			(void *) &(dev)->conn_state), \
++			pr_devel("CLEAR_EOF:%d\n", dev->conn_state))
++#define STATE_IS_EOF(dev) test_bit(CONN_EOF_BIT, \
++					(void *) &(dev)->conn_state)
++
++#define CHR_READ_FLAG 0x01
++#define CHR_WRITE_FLAG 0x02
++
++#ifdef CONFIG_DEBUG_FS
++static struct dentry *debugfsdir;
++#include <linux/debugfs.h>
++#define	dbfs_atomic_inc(a) atomic_inc(a)
++#define	dbfs_atomic_add(v, a) atomic_add_return(v, a)
++#else
++#define	dbfs_atomic_inc(a) 0
++#define	dbfs_atomic_add(v, a) 0
++#endif
 +
 +struct ringbuf {
-+	__le32	*rip;
-+	__le32	*wip;
-+	u32	size;
-+	__le32	*bufsize;
++	__le32 *ri;	/* Pointer to read-index in shared memory.*/
++	__le32 *wi;	/* Pointer to write-index in shared memory */
++	unsigned int size;/* Size of buffer */
++	void *data;	/* Buffer data in shared memory */
 +};
 +
-+struct shm_pck_desc {
-+	/* Offset from start of channel to CAIF frame. */
-+	u32 offset;
-+	u32 length;
-+} __packed;
-+
-+struct shm_caif_frm {
-+	/* Number of bytes of padding before the CAIF frame. */
-+	u8 hdr_ofs;
-+} __packed;
-+
-+#define SHM_HDR_LEN sizeof(struct shm_caif_frm)
-+
-+struct shmbuffer {
-+/* Static part: */
-+	u8 *addr;
-+	u32 index;
-+	u32 len;
-+/* Dynamic part: */
-+	u32 frames;
-+	/* Offset from start of buffer to CAIF frame. */
-+	u32 frm_ofs;
-+};
-+
-+enum CFSHM_STATE {
-+	CFSHM_CLOSED = 1,
-+	CFSHM_OPENING,
-+	CFSHM_OPEN
-+};
-+
-+struct cfshm {
-+	/* caif_dev_common must always be first in the structure*/
-+	struct caif_dev_common cfdev;
++struct xshmchr_char_dev {
 +	struct xshm_dev *xshm;
-+	struct napi_struct napi;
-+	struct ringbuf tx;
-+	struct sk_buff_head sk_qhead;
-+	spinlock_t lock;
-+	struct ringbuf rx;
-+	u8 *rx_ringbuf;
-+	u32 rx_frms_pr_buf;
-+	u32 rx_alignment;
-+	struct shmbuffer **rx_bufs;
-+	struct net_device *ndev;
++	struct kref kref;
++	struct ringbuf rx, tx;
++	u32 conn_state;
++	char name[256];
++	struct miscdevice misc;
++	int file_mode;
 +
-+	u32 tx_frms_pr_buf;
-+	u32 tx_alignment;
-+	struct shmbuffer **tx_bufs;
-+	u8 *tx_ringbuf;
-+	u32 tx_flow_on;
-+	u32 high_xoff_water;
-+	u32 low_xoff_water;
-+	u32 stuff_mark;
-+	atomic_t dbg_smp_rxactive;
-+	enum CFSHM_STATE state;
-+	struct list_head node;
-+	wait_queue_head_t netmgmt_wq;
++	/* Access to this struct and below layers */
++	struct mutex mutex;
++	wait_queue_head_t mgmt_wq;
++	/* List of misc test devices */
++	struct list_head list_field;
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *debugfs_device_dir;
++	atomic_t num_open;
++	atomic_t num_close;
++	atomic_t num_read;
++	atomic_t num_read_block;
++	atomic_t num_read_bytes;
++
++	atomic_t num_write;
++	atomic_t num_write_block;
++	atomic_t num_write_bytes;
++
++	atomic_t num_init;
++	atomic_t num_init_resp;
++	atomic_t num_deinit;
++	atomic_t num_deinit_resp;
++	atomic_t num_remote_teardown_ind;
++
++#endif
 +};
 +
-+static LIST_HEAD(cfshm_list);
-+static spinlock_t cfshm_list_lock;
-+
-+static unsigned int ringbuf_used(struct ringbuf *rb)
++static void xshm_release(struct kref *kref)
 +{
-+	if (le32_to_cpu(*rb->wip) >= le32_to_cpu(*rb->rip))
-+		return le32_to_cpu(*rb->wip) - le32_to_cpu(*rb->rip);
-+	else
-+		return rb->size - le32_to_cpu(*rb->rip) + le32_to_cpu(*rb->wip);
++	struct xshmchr_char_dev *dev;
++	dev = container_of(kref, struct xshmchr_char_dev, kref);
++	xdev_devl(dev, "Freeing device\n");
++	kfree(dev);
 +}
 +
-+static int ringbuf_get_writepos(struct ringbuf *rb)
++static void xshmchr_get(struct xshmchr_char_dev *dev)
 +{
-+	if ((le32_to_cpu(*rb->wip) + 1) % rb->size == le32_to_cpu(*rb->rip))
-+		return -1;
-+	else
-+		return le32_to_cpu(*rb->wip);
++	kref_get(&dev->kref);
 +}
 +
-+static int ringbuf_get_readpos(struct ringbuf *rb)
++static void xshmchr_put(struct xshmchr_char_dev *dev)
 +{
-+
-+	if (le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))
-+		return -1;
-+	else
-+		return le32_to_cpu(*rb->rip);
++	kref_put(&dev->kref, xshm_release);
 +}
 +
-+static int ringbuf_upd_writeptr(struct ringbuf *rb)
++static inline unsigned int ringbuf_empty(struct ringbuf *rb)
 +{
-+	if (!WARN_ON((le32_to_cpu(*rb->wip) + 1) % rb->size == le32_to_cpu(*rb->rip))) {
-+		*rb->wip = cpu_to_le32((le32_to_cpu(*rb->wip) + 1) % rb->size);
++	return *rb->wi == *rb->ri;
++}
++
++static inline unsigned int ringbuf_full(struct ringbuf *rb)
++{
++	return (le32_to_cpu(*rb->wi) + 1) % rb->size == le32_to_cpu(*rb->ri);
++}
++
++static int insert_ringbuf(struct ringbuf *rb, const char __user *from,
++		u32 len)
++{
++	u32 wi = le32_to_cpu(*rb->wi);
++	u32 ri = le32_to_cpu(*rb->ri);
++	u32 cpylen, cpylen2 = 0, notcpy;
++
++	pr_devel("insert: wi:%d ri:%d len:%d\n", wi, ri, len);
++	if (wi >= ri) {
++		len = min(len, rb->size - 1 - wi + ri);
++		cpylen = min(rb->size, wi + len) - wi;
++
++		/* Write is ahead of read, copy 'cpylen' data from 'wi' */
++		notcpy = copy_from_user(rb->data + wi, from, cpylen);
++		if (cpylen > 0 && notcpy == cpylen)
++			return -EIO;
++
++		if (cpylen < len && notcpy == 0) {
++			cpylen2 = min(ri - 1 , len - cpylen);
++
++			/* We have wrapped copy 'cpylen2' from start */
++			notcpy = copy_from_user(rb->data, from + cpylen,
++					cpylen2);
++		}
++	} else {
++		cpylen = min(ri - 1 - wi , len);
++
++		/* Read is ahead of write, copy from wi to (ri - 1) */
++		notcpy = copy_from_user(rb->data + wi, from, cpylen);
++		if (cpylen > 0 && notcpy == cpylen)
++			return -EIO;
++
++	}
++	/* Do write barrier before updating index */
++	smp_wmb();
++	*rb->wi = cpu_to_le32((wi + cpylen + cpylen2 - notcpy) % rb->size);
++	pr_devel("write ringbuf: wi: %d->%d l:%d\n",
++			wi, le32_to_cpu(*rb->wi), cpylen + cpylen2);
++	return cpylen + cpylen2 - notcpy;
++}
++
++static int extract_ringbuf(struct ringbuf *rb, void __user *to, u32 len)
++{
++	u32 wi = le32_to_cpu(*rb->wi);
++	u32 ri = le32_to_cpu(*rb->ri);
++	u32 cpylen = 0, cpylen2 = 0, notcpy;
++
++	pr_devel("extract: wi:%d ri:%d len:%d\n", wi, ri, len);
++	if (ri <= wi) {
++		len = min(wi - ri, len);
++
++		/* Read is ahead of write, copy 'len' data from 'ri' */
++		notcpy = copy_to_user(to, rb->data + ri, len);
++		if (len > 0 && notcpy == len)
++			return -EIO;
++
 +		/* Do write barrier before updating index */
 +		smp_wmb();
-+	}
-+	return le32_to_cpu(*rb->wip);
-+}
++		*rb->ri = cpu_to_le32(ri + len - notcpy);
++		pr_devel("read ringbuf: ri: %d->%d len:%d\n",
++			ri, le32_to_cpu(*rb->ri), len - notcpy);
 +
-+static void ringbuf_upd_readptr(struct ringbuf *rb)
-+{
-+	if (!WARN_ON(le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))) {
-+		*rb->rip = cpu_to_le32((le32_to_cpu(*rb->rip) + 1) % rb->size);
++		return len - notcpy;
++	} else {
++		/* wr >= ri */
++		cpylen = min(rb->size - ri, len);
++
++		/* Write is ahead, copy 'cpylen' data from ri until end */
++		notcpy = copy_to_user(to, rb->data + ri, cpylen);
++		if (cpylen > 0 && notcpy == cpylen)
++			return -EIO;
++		if (cpylen < len && notcpy == 0) {
++			cpylen2 = min(wi , len - cpylen);
++			/* we have wrapped copy from [0 .. cpylen2] */
++			notcpy = copy_to_user(to + cpylen, rb->data, cpylen2);
++		}
 +		/* Do write barrier before updating index */
 +		smp_wmb();
++
++		*rb->ri = cpu_to_le32((ri + cpylen + cpylen2 - notcpy)
++						% rb->size);
++		pr_devel("read ringbuf: ri: %d->%d cpylen:%d\n",
++			ri, le32_to_cpu(*rb->ri), cpylen + cpylen2 - notcpy);
++
++		return cpylen + cpylen2 - notcpy;
 +	}
 +}
 +
-+
-+
-+static struct shmbuffer *get_rx_buf(struct cfshm *cfshm)
++static void drain_ringbuf(struct xshmchr_char_dev *dev)
 +{
-+	struct shmbuffer *pbuf = NULL;
-+	int idx = ringbuf_get_readpos(&cfshm->rx);
-+
-+	if (idx < 0)
-+		goto out;
-+	pbuf = cfshm->rx_bufs[idx];
-+out:
-+	return pbuf;
-+}
-+
-+static struct shmbuffer *new_rx_buf(struct cfshm *cfshm)
-+{
-+	struct shmbuffer *pbuf = get_rx_buf(cfshm);
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (pbuf)
-+		pbuf->frames = 0;
-+
-+	return pbuf;
-+}
-+
-+static struct shmbuffer *get_tx_buf(struct cfshm *cfshm)
-+{
-+	int idx = ringbuf_get_writepos(&cfshm->tx);
-+
-+	if (idx < 0)
-+		return NULL;
-+	return cfshm->tx_bufs[idx];
-+}
-+
-+inline struct shmbuffer *tx_bump_buf(struct cfshm *cfshm,
-+			struct shmbuffer *pbuf)
-+{
-+	u32 desc_size;
-+	struct shmbuffer *newpbuf = pbuf;
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (pbuf) {
-+		cfshm->xshm->cfg.tx.buf_size[pbuf->index] =
-+			cpu_to_le32(pbuf->frm_ofs);
-+		ringbuf_upd_writeptr(&cfshm->tx);
-+		newpbuf = get_tx_buf(cfshm);
-+		/* Reset buffer parameters. */
-+		desc_size = (cfshm->tx_frms_pr_buf + 1) *
-+			sizeof(struct shm_pck_desc);
-+		pbuf->frm_ofs = desc_size + (desc_size % cfshm->rx_alignment);
-+		pbuf->frames = 0;
-+
-+	}
-+	return newpbuf;
-+}
-+
-+static struct shmbuffer *shm_rx_func(struct cfshm *cfshm, int quota)
-+{
-+	struct shmbuffer *pbuf;
-+	struct sk_buff *skb;
-+	int ret;
-+	unsigned long flags;
-+
-+	pbuf = get_rx_buf(cfshm);
-+	while (pbuf) {
-+		/* Retrieve pointer to start of the packet descriptor area. */
-+		struct shm_pck_desc *pck_desc =
-+			((struct shm_pck_desc *) pbuf->addr) + pbuf->frames;
-+		u32 offset;
-+
-+		/* Loop until descriptor contains zero offset */
-+		while ((offset = pck_desc->offset)) {
-+			unsigned int caif_len;
-+			struct shm_caif_frm *frm;
-+			u32 length = pck_desc->length;
-+			u8 hdr_ofs;
-+			frm = (struct shm_caif_frm *)(pbuf->addr + offset);
-+			hdr_ofs = frm->hdr_ofs;
-+			caif_len =
-+				length - SHM_HDR_LEN -
-+				hdr_ofs;
-+
-+			pr_devel("copy data buf:%d frm:%d offs:%d @%x len:%d\n",
-+					pbuf->index, pbuf->frames, offset,
-+					(u32) (SHM_HDR_LEN + hdr_ofs + offset +
-+						pbuf->addr - cfshm->rx_ringbuf),
-+					length);
-+
-+			/* Check whether number of frames is below limit */
-+			if (pbuf->frames > cfshm->rx_frms_pr_buf) {
-+				pr_warn("Too many frames in buffer.\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
-+
-+			/* Check whether offset is below low limits */
-+			if (pbuf->addr + offset
-+					<= (u8 *)(pck_desc + 1)) {
-+				pr_warn("Offset in desc. below buffer area.\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
-+
-+			/* Check whether offset above upper limit */
-+			if (offset + length > pbuf->len) {
-+				pr_warn("Offset outside buffer area:\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
-+
-+			skb = netdev_alloc_skb(cfshm->ndev,
-+							caif_len + 1);
-+			if (skb == NULL) {
-+				pr_debug("Couldn't allocate SKB\n");
-+				++cfshm->ndev->stats.rx_dropped;
-+				goto out;
-+			}
-+
-+			memcpy(skb_put(skb, caif_len),
-+					SHM_HDR_LEN + hdr_ofs +
-+					offset + pbuf->addr,
-+					caif_len);
-+
-+			skb->protocol = htons(ETH_P_CAIF);
-+			skb_reset_mac_header(skb);
-+			skb->dev = cfshm->ndev;
-+
-+			/* Push received packet up the stack. */
-+			ret = netif_receive_skb(skb);
-+
-+			if (!ret) {
-+				cfshm->ndev->stats.rx_packets++;
-+				cfshm->ndev->stats.rx_bytes +=
-+					length;
-+			} else
-+				++cfshm->ndev->stats.rx_dropped;
-+			/* Move to next packet descriptor. */
-+			pck_desc++;
-+
-+			pbuf->frames++;
-+			if (--quota <= 0) {
-+				pr_devel("Quota exeeded (pbuf:%p)\n", pbuf);
-+				goto out;
-+			}
-+		}
-+desc_err:
-+		pbuf->frames = 0;
-+
-+		spin_lock_irqsave(&cfshm->lock, flags);
-+		ringbuf_upd_readptr(&cfshm->rx);
-+		pbuf = new_rx_buf(cfshm);
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+
-+	}
-+	cfshm->xshm->ipc_rx_release(cfshm->xshm, false);
-+out:
-+	return pbuf;
-+}
-+
-+static int insert_skb_in_buf(struct cfshm *cfshm, struct sk_buff *skb,
-+					struct shmbuffer *pbuf)
-+{
-+	struct shm_pck_desc *pck_desc;
-+	unsigned int frmlen;
-+	struct shm_caif_frm *frm;
-+	u8 hdr_ofs;
-+	struct caif_payload_info *info = (struct caif_payload_info *)&skb->cb;
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+
-+	if (unlikely(pbuf->frames >= cfshm->tx_frms_pr_buf)) {
-+		pr_devel("-ENOSPC exeeded frames: %d >= %d\n",
-+				pbuf->frames, cfshm->tx_frms_pr_buf);
-+		return -ENOSPC;
-+	}
-+
-+	/*
-+	 * Align the address of the entire CAIF frame (incl padding),
-+	 * so the modem can do efficient DMA of this frame
-+	 * FIXME: Alignment is power of to, so it could use binary ops.
-+	 */
-+	pbuf->frm_ofs = roundup(pbuf->frm_ofs, cfshm->tx_alignment);
-+
-+
-+	/* Make the payload (IP packet) inside the frame aligned */
-+	hdr_ofs = (unsigned long) &pbuf->frm_ofs;
-+	hdr_ofs = roundup(hdr_ofs + SHM_HDR_LEN + info->hdr_len,
-+			cfshm->tx_alignment);
-+
-+	frm = (struct shm_caif_frm *)
-+		(pbuf->addr + pbuf->frm_ofs);
-+
-+	frmlen = SHM_HDR_LEN + hdr_ofs + skb->len;
-+
-+	/*
-+	 * Verify that packet, header and additional padding
-+	 * can fit within the buffer frame area.
-+	 */
-+	if (pbuf->len < pbuf->frm_ofs + frmlen) {
-+		pr_devel("-ENOSPC exeeded offset %d < %d\n",
-+				pbuf->len, pbuf->frm_ofs + frmlen);
-+		return -ENOSPC;
-+	}
-+
-+	/* Copy in CAIF frame. */
-+	frm->hdr_ofs = hdr_ofs;
-+	skb_copy_bits(skb, 0, pbuf->addr +
-+			pbuf->frm_ofs + SHM_HDR_LEN +
-+			hdr_ofs, skb->len);
-+
-+	pr_devel("copy data buf:%d frm:%d offs:%d @%d len:%d\n",
-+			pbuf->index, pbuf->frames,
-+			pbuf->frm_ofs,
-+			(u32) (pbuf->addr + pbuf->frm_ofs +
-+				SHM_HDR_LEN + hdr_ofs - cfshm->tx_ringbuf),
-+			skb->len);
-+
-+	cfshm->ndev->stats.tx_packets++;
-+	cfshm->ndev->stats.tx_bytes += frmlen;
-+	/* Fill in the shared memory packet descriptor area. */
-+	pck_desc = (struct shm_pck_desc *) (pbuf->addr);
-+	/* Forward to current frame. */
-+	pck_desc += pbuf->frames;
-+	pck_desc->offset = pbuf->frm_ofs;
-+	pck_desc->length = frmlen;
-+	/* Terminate packet descriptor area. */
-+	pck_desc++;
-+	pck_desc->offset = 0;
-+	pck_desc->length = 0;
-+	/* Update buffer parameters. */
-+	pbuf->frames++;
-+	pbuf->frm_ofs += frmlen;
-+
-+	return 0;
-+}
-+
-+static struct shmbuffer *queue_to_ringbuf(struct cfshm *cfshm, int *new_bufs)
-+{
-+	struct shmbuffer *pbuf;
-+	struct sk_buff *skb;
-+	int err;
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+
-+	pbuf = get_tx_buf(cfshm);
-+	while (pbuf != NULL) {
-+		skb = skb_peek(&cfshm->sk_qhead);
-+		if (skb == NULL)
-+			break;
-+		err = insert_skb_in_buf(cfshm, skb, pbuf);
-+		if (unlikely(err == -ENOSPC)) {
-+			pr_devel("No more space in buffer\n");
-+			++(*new_bufs);
-+			pbuf = tx_bump_buf(cfshm, pbuf);
-+			continue;
-+		}
-+		skb = skb_dequeue(&cfshm->sk_qhead);
-+		/* We're always in NET_*_SOFTIRQ */
-+		dev_kfree_skb(skb);
-+	}
-+	return pbuf;
-+}
-+
-+static int shm_netdev_open(struct net_device *netdev)
-+{
-+	struct cfshm *cfshm = netdev_priv(netdev);
-+	int ret, err = 0;
-+
-+	cfshm->state = CFSHM_OPENING;
-+	if (cfshm->xshm != NULL && cfshm->xshm->open != NULL)
-+		err = cfshm->xshm->open(cfshm->xshm);
-+	if (err)
-+		goto error;
-+
-+	rtnl_unlock();  /* Release RTNL lock during connect wait */
-+	ret = wait_event_interruptible_timeout(cfshm->netmgmt_wq,
-+			cfshm->state != CFSHM_OPENING,
-+			CONNECT_TIMEOUT);
-+	rtnl_lock();
-+
-+	if (ret == 0) {
-+		pr_debug("connect timeout\n");
-+		err = -ETIMEDOUT;
-+		goto error;
-+	}
-+
-+	if (cfshm->state !=  CFSHM_OPEN) {
-+		pr_debug("connect failed\n");
-+		err = -ECONNREFUSED;
-+		goto error;
-+	}
-+
-+	napi_enable(&cfshm->napi);
-+	return 0;
-+error:
-+	if (cfshm->xshm != NULL && cfshm->xshm->close != NULL)
-+		cfshm->xshm->close(cfshm->xshm);
-+	return err;
-+}
-+
-+static int shm_netdev_close(struct net_device *netdev)
-+{
-+	struct cfshm *cfshm = netdev_priv(netdev);
-+
-+	napi_disable(&cfshm->napi);
-+
-+	if (cfshm->xshm != NULL && cfshm->xshm->close != NULL)
-+		cfshm->xshm->close(cfshm->xshm);
-+
-+	return 0;
++	/* Empty the ringbuf. */
++	*dev->xshm->cfg.rx.read = *dev->xshm->cfg.rx.write;
++	*dev->xshm->cfg.tx.write = *dev->xshm->cfg.tx.read;
 +}
 +
 +static int open_cb(void *drv)
 +{
-+	struct cfshm *cfshm = drv;
++	struct xshmchr_char_dev *dev = drv;
 +
-+	cfshm->state = CFSHM_OPEN;
-+	netif_carrier_on(cfshm->ndev);
-+	wake_up_interruptible(&cfshm->netmgmt_wq);
++	pr_xchrstate(dev, "enter");
++	dbfs_atomic_inc(&dev->num_init_resp);
++	/* Signal reader that data is available. */
++	WARN_ON(!STATE_IS_OPEN(dev));
++	SET_PENDING_OFF(dev);
++	wake_up_interruptible_all(&dev->mgmt_wq);
++	pr_xchrstate(dev, "exit");
 +	return 0;
 +}
 +
 +static void close_cb(void *drv)
 +{
-+	struct cfshm *cfshm = drv;
++	struct xshmchr_char_dev *dev = drv;
 +
-+	cfshm->state = CFSHM_CLOSED;
-+	netif_carrier_off(cfshm->ndev);
-+	wake_up_interruptible(&cfshm->netmgmt_wq);
++	pr_xchrstate(dev, "enter");
++	dbfs_atomic_inc(&dev->num_remote_teardown_ind);
++	if (STATE_IS_PENDING(dev) && !STATE_IS_OPEN(dev)) {
++		/* Normal close sequence */
++		SET_PENDING_OFF(dev);
++		CLEAR_REMOTE_TEARDOWN(dev);
++		SET_EOF(dev);
++		drain_ringbuf(dev);
++		dev->file_mode = 0;
++	} else {
++		/* Remote teardown, close should be called from user-space */
++		SET_REMOTE_TEARDOWN(dev);
++		SET_PENDING_OFF(dev);
++	}
++
++	wake_up_interruptible_all(&dev->mgmt_wq);
++	pr_xchrstate(dev, "exit");
 +}
 +
-+static int caif_shmdrv_rx_cb(void *drv)
++static int ipc_rx_cb(void *drv)
 +{
-+	struct cfshm *cfshm = drv;
++	struct xshmchr_char_dev *dev = drv;
 +
-+	if (unlikely(*cfshm->xshm->cfg.rx.state == cpu_to_le32(XSHM_CLOSED)))
++	xdev_devl(dev, "Enter\n");
++
++	if (unlikely(*dev->xshm->cfg.rx.state == cpu_to_le32(XSHM_CLOSED)))
 +		return -ESHUTDOWN;
 +
-+	napi_schedule(&cfshm->napi);
-+	return 0;
-+}
-+
-+static int send_pending_txbufs(struct cfshm *cfshm, int usedbufs)
-+{
-+	unsigned long flags;
-+
-+	/* Send the started buffer if used buffers are low enough */
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (likely(usedbufs < cfshm->stuff_mark)) {
-+		struct shmbuffer *pbuf = get_tx_buf(cfshm);
-+		if (unlikely(pbuf->frames > 0)) {
-+			if (spin_trylock_irqsave(&cfshm->lock, flags)) {
-+				WARN_ON(!spin_is_locked(&cfshm->lock));
-+				pbuf = get_tx_buf(cfshm);
-+				tx_bump_buf(cfshm, pbuf);
-+				spin_unlock_irqrestore(&cfshm->lock, flags);
-+				cfshm->xshm->ipc_tx(cfshm->xshm);
-+				return 0;
-+			} else {
-+				return -EBUSY;
-+			}
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int caif_shmdrv_tx_release_cb(void *drv)
-+{
-+	struct cfshm *cfshm = drv;
-+	int usedbufs;
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	/* Send flow-on if we have sent flow-off and get below low-water */
-+	if (usedbufs <= cfshm->low_xoff_water && !cfshm->tx_flow_on) {
-+		pr_debug("Flow on\n");
-+		cfshm->tx_flow_on = true;
-+		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_ON);
-+	}
-+
-+	/* If ringbuf is full, schedule NAPI to start sending */
-+	if (skb_peek(&cfshm->sk_qhead) != NULL) {
-+		pr_debug("Schedule NAPI to empty queue\n");
-+		napi_schedule(&cfshm->napi);
-+		return 0;
-+	}
-+
-+	/* Send the started buffer if used buffers are low enough */
-+	if (usedbufs < cfshm->stuff_mark) {
-+		struct shmbuffer *pbuf = get_tx_buf(cfshm);
-+		if (pbuf != NULL && pbuf->frames > 0)
-+			napi_schedule(&cfshm->napi);
-+	}
-+	return 0;
-+}
-+
-+static int shm_rx_poll(struct napi_struct *napi, int quota)
-+{
-+	struct cfshm *cfshm = container_of(napi, struct cfshm, napi);
-+	int new_bufs;
-+	struct shmbuffer *pbuf;
-+	int usedbufs;
-+	unsigned long flags;
-+
-+	/* Simply return if rx_poll is already called on other CPU */
-+	if (atomic_read(&cfshm->dbg_smp_rxactive) > 0)
-+		return quota;
-+
-+	WARN_ON(atomic_inc_return(&cfshm->dbg_smp_rxactive) > 1);
-+
-+	pbuf = shm_rx_func(cfshm, quota);
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	if (spin_trylock_irqsave(&cfshm->lock, flags)) {
-+
-+		/* Check if we're below "Stuff" limit, and send pending data */
-+		send_pending_txbufs(cfshm, usedbufs);
-+
-+		/* Check if we have queued packets */
-+		if (unlikely(skb_peek(&cfshm->sk_qhead) != NULL)) {
-+			struct shmbuffer *txbuf;
-+			WARN_ON(!spin_is_locked(&cfshm->lock));
-+			pr_debug("Try to empty tx-queue\n");
-+			new_bufs = 0;
-+			txbuf = queue_to_ringbuf(cfshm, &new_bufs);
-+
-+			/* Bump out if we are configured with few buffers */
-+			if (txbuf && cfshm->xshm->cfg.tx.buffers < 3) {
-+				tx_bump_buf(cfshm, txbuf);
-+
-+				spin_unlock_irqrestore(&cfshm->lock, flags);
-+				cfshm->xshm->ipc_tx(cfshm->xshm);
-+				goto txdone;
-+			}
-+		}
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+	}
-+txdone:
-+
-+	if (pbuf == NULL)
-+		napi_complete(&cfshm->napi);
-+
-+	atomic_dec(&cfshm->dbg_smp_rxactive);
-+	return 0;
-+}
-+
-+static int shm_netdev_tx(struct sk_buff *skb, struct net_device *shm_netdev)
-+{
-+	struct shmbuffer *pbuf = NULL;
-+	int usedbufs;
-+	int new_bufs = 0;
-+	struct cfshm *cfshm = netdev_priv(shm_netdev);
-+	unsigned long flags;
-+
 +	/*
-+	 * If we have packets in queue, keep queueing to avoid
-+	 * out-of-order delivery
++	 * Performance could perhaps be improved by having a WAIT
++	 * flag, similar to SOCK_ASYNC_WAITDATA, and only do wake up
++	 * when it's actually needed.
 +	 */
-+	spin_lock_irqsave(&cfshm->lock, flags);
-+
-+	skb_queue_tail(&cfshm->sk_qhead, skb);
-+	pbuf = queue_to_ringbuf(cfshm, &new_bufs);
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	if (usedbufs > cfshm->high_xoff_water && cfshm->tx_flow_on) {
-+		pr_debug("Flow off\n");
-+		cfshm->tx_flow_on = false;
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_OFF);
-+		return 0;
-+	}
-+
-+	/* Check if we should accumulate more packets */
-+	if (new_bufs == 0 && usedbufs > cfshm->stuff_mark) {
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+		return 0;
-+	}
-+	tx_bump_buf(cfshm, pbuf);
-+	spin_unlock_irqrestore(&cfshm->lock, flags);
-+	cfshm->xshm->ipc_tx(cfshm->xshm);
++	wake_up_interruptible_all(&dev->mgmt_wq);
 +	return 0;
 +}
 +
-+static const struct net_device_ops netdev_ops = {
-+	.ndo_open = shm_netdev_open,
-+	.ndo_stop = shm_netdev_close,
-+	.ndo_start_xmit = shm_netdev_tx,
++static int ipc_tx_release_cb(void *drv)
++{
++	struct xshmchr_char_dev *dev = drv;
++
++	xdev_devl(dev, "Enter\n");
++	wake_up_interruptible_all(&dev->mgmt_wq);
++	return 0;
++}
++
++/* Device Read function called from Linux kernel */
++static ssize_t xshmchr_chrread(struct file *filp, char __user *buf,
++	 size_t count, loff_t *f_pos)
++{
++	unsigned int len = 0;
++	int result;
++	struct xshmchr_char_dev *dev = filp->private_data;
++	ssize_t ret = -EIO;
++
++	if (dev == NULL) {
++		xdev_dbg(dev, "private_data not set!\n");
++		return -EBADFD;
++	}
++
++	/* I want to be alone on dev (except status and queue) */
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		return -ERESTARTSYS;
++	}
++	xshmchr_get(dev);
++
++	if (!STATE_IS_OPEN(dev)) {
++		/* Device is closed or closing. */
++		if (!STATE_IS_PENDING(dev)) {
++			xdev_dbg(dev, "device is closed (by remote)\n");
++			ret = -ECONNRESET;
++		} else {
++			xdev_dbg(dev, "device is closing...\n");
++			ret = -EBADF;
++		}
++		goto read_error;
++	}
++
++	dbfs_atomic_inc(&dev->num_read);
++
++	/* Device is open or opening. */
++	if (STATE_IS_PENDING(dev)) {
++		xdev_devl(dev, "device is opening...\n");
++
++		dbfs_atomic_inc(&dev->num_read_block);
++		if (filp->f_flags & O_NONBLOCK) {
++			/* We can't block. */
++			xdev_dbg(dev, "exit: state pending and O_NONBLOCK\n");
++			ret = -EAGAIN;
++			goto read_error;
++		}
++
++		/*
++		 * To reach here client must do blocking open,
++		 * and start read() before open completes. This is
++		 * quite quirky, but let's handle it anyway.
++		 */
++		result =
++		    wait_event_interruptible(dev->mgmt_wq,
++					!STATE_IS_PENDING(dev) ||
++				    STATE_IS_REMOTE_TEARDOWN(dev));
++
++		if (result == -ERESTARTSYS) {
++			xdev_dbg(dev, "wait_event_interruptible"
++				 " woken by a signal (1)\n");
++			ret = -ERESTARTSYS;
++			goto read_error;
++		}
++		if (STATE_IS_REMOTE_TEARDOWN(dev)) {
++			xdev_dbg(dev, "received remote_shutdown indication (1)\n");
++			ret = -ESHUTDOWN;
++			goto read_error;
++		}
++	}
++
++	/* Block if we don't have any received buffers.
++	 * The queue has its own lock.
++	 */
++	while (ringbuf_empty(&dev->rx)) {
++
++		if (filp->f_flags & O_NONBLOCK) {
++			xdev_devl(dev, "exit: O_NONBLOCK\n");
++			ret = -EAGAIN;
++			goto read_error;
++		}
++
++		/* Let writers in. */
++		mutex_unlock(&dev->mutex);
++
++		xdev_devl(dev, "%s:wait for data\n", dev->name);
++		/* Block reader until data arrives or device is closed. */
++		if (wait_event_interruptible(dev->mgmt_wq,
++				!ringbuf_empty(&dev->rx)
++				|| STATE_IS_REMOTE_TEARDOWN(dev)
++				|| !STATE_IS_OPEN(dev)) == -ERESTARTSYS) {
++			xdev_devl(dev, "event_interruptible woken by "
++				 "a signal, signal_pending(current) = %d\n",
++				signal_pending(current));
++			return -ERESTARTSYS;
++		}
++
++		xdev_devl(dev, "%s:wakeup readq\n", dev->name);
++
++		if (STATE_IS_REMOTE_TEARDOWN(dev) && ringbuf_empty(&dev->rx)) {
++			if (!STATE_IS_EOF(dev)) {
++				xdev_dbg(dev, "First EOF OK\n");
++				SET_EOF(dev);
++				ret = 0;
++				goto error_nolock;
++			}
++			xdev_dbg(dev, "2'nd EOF - remote_shutdown\n");
++			ret = -ECONNRESET;
++			goto error_nolock;
++		}
++
++		/* I want to be alone on dev (except status and queue). */
++		if (mutex_lock_interruptible(&dev->mutex)) {
++			xdev_dbg(dev, "mutex_lock_interruptible"
++					" got signalled\n");
++			return -ERESTARTSYS;
++		}
++
++		if (!STATE_IS_OPEN(dev)) {
++			/* Someone closed the link, report error. */
++			xdev_dbg(dev, "remote end shutdown!\n");
++			ret = -EBADF;
++			goto read_error;
++		}
++	}
++
++	xdev_devl(dev, "%s:copy data\n", dev->name);
++	len = extract_ringbuf(&dev->rx, buf, count);
++	if (len <= 0) {
++		xdev_dbg(dev, "Extracting from ringbuf failed\n");
++		ret = -EINVAL;
++		goto read_error;
++	}
++
++	/* Signal to modem that data is read from ringbuf */
++
++	dev->xshm->ipc_rx_release(dev->xshm, false);
++
++	dbfs_atomic_add(len, &dev->num_read_bytes);
++	/* Let the others in. */
++	mutex_unlock(&dev->mutex);
++	xshmchr_put(dev);
++	return len;
++
++read_error:
++	mutex_unlock(&dev->mutex);
++error_nolock:
++	xshmchr_put(dev);
++	return ret;
++}
++
++/* Device write function called from Linux kernel (misc device) */
++static ssize_t xshmchr_chrwrite(struct file *filp, const char __user *buf,
++		      size_t count, loff_t *f_pos)
++{
++	struct xshmchr_char_dev *dev = filp->private_data;
++	ssize_t ret = -EIO;
++	int result;
++	uint len = 0;
++
++	if (dev == NULL) {
++		xdev_dbg(dev, "private_data not set!\n");
++		ret = -EBADFD;
++		goto write_error_no_unlock;
++	}
++
++	pr_xchrstate(dev, "Enter");
++
++	/* I want to be alone on dev (except status and queue). */
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		ret = -ERESTARTSYS;
++		goto write_error_no_unlock;
++	}
++	xshmchr_get(dev);
++
++	dbfs_atomic_inc(&dev->num_write);
++	if (!STATE_IS_OPEN(dev)) {
++		/* Device is closed or closing. */
++		if (!STATE_IS_PENDING(dev)) {
++			xdev_dbg(dev, "device is closed (by remote)\n");
++			ret = -EPIPE;
++		} else {
++			xdev_dbg(dev, "device is closing...\n");
++			ret = -EBADF;
++		}
++		goto write_error;
++	}
++
++	/* Device is open or opening. */
++	if (STATE_IS_PENDING(dev)) {
++		xdev_dbg(dev, "device is opening...\n");
++
++		dbfs_atomic_inc(&dev->num_write_block);
++		if (filp->f_flags & O_NONBLOCK) {
++			/* We can't block */
++			xdev_dbg(dev, "exit: state pending and O_NONBLOCK\n");
++			ret = -EAGAIN;
++			goto write_error;
++		}
++
++		/* Blocking mode; state is pending and we need to wait
++		 * for its conclusion. (Shutdown_ind set pending off.)
++		 */
++		result =
++		    wait_event_interruptible(dev->mgmt_wq,
++					!STATE_IS_PENDING(dev) ||
++					STATE_IS_REMOTE_TEARDOWN(dev));
++		if (result == -ERESTARTSYS) {
++			xdev_dbg(dev, "wait_event_interruptible"
++				 " woken by a signal (1)\n");
++			ret = -ERESTARTSYS;
++			goto write_error;
++		}
++	}
++	if (STATE_IS_REMOTE_TEARDOWN(dev)) {
++		xdev_dbg(dev, "received remote_shutdown indication\n");
++		ret = -EPIPE;
++		goto write_error;
++	}
++
++	while (ringbuf_full(&dev->tx)) {
++		/* Flow is off. Check non-block flag. */
++		if (filp->f_flags & O_NONBLOCK) {
++			xdev_dbg(dev, "exit: O_NONBLOCK and tx flow off");
++			ret = -EAGAIN;
++			goto write_error;
++		}
++
++		/* Let readers in. */
++		mutex_unlock(&dev->mutex);
++
++		xdev_devl(dev, "wait for write space\n");
++		/* Wait until flow is on or device is closed. */
++		if (wait_event_interruptible(dev->mgmt_wq,
++					!ringbuf_full(&dev->tx)
++					|| !STATE_IS_OPEN(dev)
++					|| STATE_IS_REMOTE_TEARDOWN(dev)
++					) == -ERESTARTSYS) {
++			xdev_dbg(dev, "wait_event_interruptible"
++				 " woken by a signal (1)\n");
++			ret = -ERESTARTSYS;
++			goto write_error_no_unlock;
++		}
++
++		/* I want to be alone on dev (except status and queue). */
++		if (mutex_lock_interruptible(&dev->mutex)) {
++			xdev_dbg(dev, "mutex_lock_interruptible "
++					"got signalled\n");
++			ret = -ERESTARTSYS;
++			goto write_error_no_unlock;
++		}
++
++		xdev_devl(dev, "wakeup got write space\n");
++		if (!STATE_IS_OPEN(dev)) {
++			/* Someone closed the link, report error. */
++			xdev_dbg(dev, "remote end shutdown!\n");
++			ret = -EPIPE;
++			goto write_error;
++		}
++		if (STATE_IS_REMOTE_TEARDOWN(dev)) {
++			xdev_dbg(dev, "received remote_shutdown indication\n");
++			ret = -ESHUTDOWN;
++			goto write_error;
++		}
++	}
++	len = insert_ringbuf(&dev->tx, buf, count);
++	xdev_devl(dev, "inserted %d bytes\n", len);
++	if (len <= 0) {
++		xdev_dbg(dev, "transmit failed, error = %d\n",
++				(int) ret);
++		goto write_error;
++	}
++
++	dbfs_atomic_add(len, &dev->num_write_bytes);
++
++	/* Signal to modem that data is put in ringbuf */
++	dev->xshm->ipc_tx(dev->xshm);
++
++	mutex_unlock(&dev->mutex);
++	xshmchr_put(dev);
++	return len;
++
++write_error:
++	mutex_unlock(&dev->mutex);
++write_error_no_unlock:
++	xshmchr_put(dev);
++	return ret;
++}
++
++static unsigned int xshmchr_chrpoll(struct file *filp, poll_table *waittab)
++{
++	struct xshmchr_char_dev *dev = filp->private_data;
++	unsigned int mask = 0;
++
++	if (dev == NULL) {
++		xdev_dbg(dev, "private_data not set!\n");
++		return -EBADFD;
++	}
++
++	/* I want to be alone on dev (except status and queue). */
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		mask |= POLLERR;
++		goto out_unlocked;
++	}
++	xshmchr_get(dev);
++
++	if (STATE_IS_REMOTE_TEARDOWN(dev)) {
++		xdev_dbg(dev, "not open\n");
++		mask |= POLLRDHUP | POLLHUP;
++		goto out;
++	}
++
++	xdev_devl(dev, "%s: poll wait\n", dev->name);
++	poll_wait(filp, &dev->mgmt_wq, waittab);
++
++	if (STATE_IS_OPEN(dev) && STATE_IS_PENDING(dev))
++		goto out;
++
++	if (!ringbuf_empty(&dev->rx))
++		mask |= (POLLIN | POLLRDNORM);
++
++	if (!ringbuf_full(&dev->tx))
++		mask |= (POLLOUT | POLLWRNORM);
++
++out:
++	mutex_unlock(&dev->mutex);
++out_unlocked:
++	xdev_devl(dev, "poll return mask=0x%04x\n", mask);
++	xshmchr_put(dev);
++	return mask;
++}
++
++/* Usage:
++ * minor >= 0 : find from minor
++ * minor < 0 and name == name : find from name
++ * minor < 0 and name == NULL : get first
++ */
++
++static struct xshmchr_char_dev *find_device(int minor, char *name,
++					 int remove_from_list)
++{
++	struct list_head *list_node;
++	struct list_head *n;
++	struct xshmchr_char_dev *dev = NULL;
++	struct xshmchr_char_dev *tmp;
++	spin_lock(&list_lock);
++	xdev_devl(dev, "start looping \n");
++	list_for_each_safe(list_node, n, &xshmchr_chrdev_list) {
++		tmp = list_entry(list_node, struct xshmchr_char_dev,
++				list_field);
++		if (minor >= 0) {	/* find from minor */
++			if (tmp->misc.minor == minor)
++				dev = tmp;
++
++		} else if (name) {	/* find from name */
++			if (!strncmp(tmp->name, name, sizeof(tmp->name)))
++				dev = tmp;
++		} else {	/* take first */
++			dev = tmp;
++		}
++
++		if (dev) {
++			xdev_devl(dev, "match %d, %s \n",
++				      minor, name);
++			if (remove_from_list)
++				list_del(list_node);
++			break;
++		}
++	}
++	spin_unlock(&list_lock);
++	return dev;
++}
++
++static int xshmchr_chropen(struct inode *inode, struct file *filp)
++{
++	struct xshmchr_char_dev *dev = NULL;
++	int result = -1;
++	int minor = iminor(inode);
++	int mode = 0;
++	int ret = -EIO;
++
++	dev = find_device(minor, NULL, 0);
++	pr_xchrstate(dev, "ENTER");
++
++	if (dev == NULL) {
++		xdev_dbg(dev, "Could not find device\n");
++		return -EBADF;
++	}
++
++	/* I want to be alone on dev (except status and queue). */
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		return -ERESTARTSYS;
++	}
++
++	xshmchr_get(dev);
++	dbfs_atomic_inc(&dev->num_open);
++	filp->private_data = dev;
++
++	switch (filp->f_flags & O_ACCMODE) {
++	case O_RDONLY:
++		mode = CHR_READ_FLAG;
++		break;
++	case O_WRONLY:
++		mode = CHR_WRITE_FLAG;
++		break;
++	case O_RDWR:
++		mode = CHR_READ_FLAG | CHR_WRITE_FLAG;
++		break;
++	}
++
++	/* If device is not open, make sure device is in fully closed state. */
++	if (!STATE_IS_OPEN(dev)) {
++		/* Has link close response been received
++		 * (if we ever sent it)?
++		 */
++		if (STATE_IS_PENDING(dev)) {
++			/* Still waiting for close response from remote.
++			 * If opened non-blocking, report "would block".
++			 */
++			if (filp->f_flags & O_NONBLOCK) {
++				xdev_devl(dev, "%s: exit: "
++						"O_NONBLOCK && close pending\n",
++						dev->name);
++				ret = -EAGAIN;
++				goto open_error;
++			}
++
++			xdev_devl(dev, "%s:WAIT for close response"
++					"from remote\n", dev->name);
++
++			/*
++			 * Blocking mode; close is pending and we need to wait
++			 * for its conclusion. However modem may be dead,
++			 * or resureccted and alive waiting for
++			 * an open ack.
++			 * It's hard to get this rigth - if state is
++			 * pending. We have missed a state update,
++			 * let's just wait for ack, and then proceede
++			 * with watever state we have.
++			 */
++			result =
++			    wait_event_interruptible_timeout(dev->mgmt_wq,
++					    !STATE_IS_PENDING(dev) ||
++					    STATE_IS_REMOTE_TEARDOWN(dev),
++					    OPEN_TOUT);
++
++			if (result == -ERESTARTSYS) {
++				xdev_dbg(dev, "%s:wait_event_interruptible"
++					" woken by a signal (1)\n", dev->name);
++				ret = -ERESTARTSYS;
++				goto open_error;
++			}
++
++			if (result == 0) {
++				SET_PENDING_OFF(dev);
++				pr_xchrstate(dev, "Timeout -pending close;"
++						"Clear pending");
++			} else
++				pr_xchrstate(dev, "wakeup (wait for close)");
++		}
++	}
++
++	/* Device is now either closed, pending open or open */
++	if (STATE_IS_OPEN(dev) && !STATE_IS_PENDING(dev)) {
++		/* Open */
++		xdev_devl(dev, "%s:Device is already opened (dev=%p) check"
++				"access f_flags = 0x%x file_mode = 0x%x\n",
++				dev->name, dev, mode, dev->file_mode);
++
++		if (mode & dev->file_mode) {
++			xdev_devl(dev, "%s:Access mode already in use 0x%x\n",
++					dev->name, mode);
++			ret = -EBUSY;
++			goto open_error;
++		}
++	} else {
++
++		/* We are closed or pending open.
++		 * If closed:	    send link setup
++		 * If pending open: link setup already sent (we could have been
++		 *		    interrupted by a signal last time)
++		 */
++		if (!STATE_IS_OPEN(dev)) {
++			/* First opening of file; do connect */
++
++			SET_STATE_OPEN(dev);
++			SET_PENDING_ON(dev);
++			CLEAR_EOF(dev);
++			/* Send "open" by resetting indexes */
++			result = dev->xshm->open(dev->xshm);
++
++			if (result < 0) {
++				xdev_dbg(dev, "%s:can't open channel\n",
++						dev->name);
++				ret = -EIO;
++				SET_STATE_CLOSED(dev);
++				SET_PENDING_OFF(dev);
++				goto open_error;
++			}
++			dbfs_atomic_inc(&dev->num_init);
++		}
++
++		/* If opened non-blocking, report "success".
++		 */
++		if (filp->f_flags & O_NONBLOCK) {
++			xdev_devl(dev, "%s: EXIT: O_NONBLOCK success\n",
++					dev->name);
++			ret = 0;
++			goto open_success;
++		}
++
++		xdev_devl(dev, "%s:WAIT for connect response\n", dev->name);
++		/*
++		 * misc_open holds a global mutex anyway so there is no
++		 * reason to release our own while waiting
++		 */
++		result =
++		    wait_event_interruptible_timeout(dev->mgmt_wq,
++				    !STATE_IS_PENDING(dev) ||
++				    STATE_IS_REMOTE_TEARDOWN(dev),
++				    OPEN_TOUT);
++		if (result == 0) {
++			xdev_dbg(dev, "%s:wait_event_interruptible "
++					"timed out (1)\n", dev->name);
++			ret = -ETIMEDOUT;
++			goto open_error;
++		}
++		if (result == -ERESTARTSYS) {
++			xdev_dbg(dev, "%s:wait_event_interruptible"
++					" woken by a signal (2)\n", dev->name);
++			ret = -ERESTARTSYS;
++			goto open_error;
++		}
++		if (STATE_IS_REMOTE_TEARDOWN(dev)) {
++			xdev_dbg(dev, "received remote_shutdown indication\n");
++			ret = -ESHUTDOWN;
++			goto open_error;
++		}
++
++		pr_xchrstate(dev, "wakeup (wait for open)");
++		if (!STATE_IS_OPEN(dev)) {
++			/* Lower layers said "no". */
++			xdev_dbg(dev, "%s:xshmchr_chropen: Closed received\n",
++					dev->name);
++			ret = -EPIPE;
++			goto open_error;
++		}
++
++		xdev_devl(dev, "%s: connect received\n", dev->name);
++	}
++open_success:
++	/* Open is OK. */
++	dev->file_mode |= mode;
++
++	xdev_devl(dev, "%s: file mode = %x\n",
++			dev->name, dev->file_mode);
++	pr_xchrstate(dev, "EXIT");
++
++	mutex_unlock(&dev->mutex);
++	xshmchr_put(dev);
++	return 0;
++
++open_error:
++	SET_STATE_CLOSED(dev);
++	SET_PENDING_OFF(dev);
++	mutex_unlock(&dev->mutex);
++	xshmchr_put(dev);
++	return ret;
++}
++
++static int xshmchr_chrrelease(struct inode *inode, struct file *filp)
++{
++	struct xshmchr_char_dev *dev = NULL;
++	int minor = iminor(inode);
++	int mode = 0;
++
++
++	dev = find_device(minor, NULL, 0);
++	if (dev == NULL) {
++		xdev_dbg(dev, "Could not find device\n");
++		return -EBADF;
++	}
++
++	pr_xchrstate(dev, "enter");
++
++	/* I want to be alone on dev (except status queue). */
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		return -ERESTARTSYS;
++	}
++
++	xshmchr_get(dev);
++	dbfs_atomic_inc(&dev->num_close);
++
++	/* Is the device open? */
++	if (!STATE_IS_OPEN(dev)) {
++		xdev_devl(dev, "Device not open (dev=%p) \n",
++			      dev);
++		mutex_unlock(&dev->mutex);
++		xshmchr_put(dev);
++		return 0;
++	}
++
++	switch (filp->f_flags & O_ACCMODE) {
++	case O_RDONLY:
++		mode = CHR_READ_FLAG;
++		break;
++	case O_WRONLY:
++		mode = CHR_WRITE_FLAG;
++		break;
++	case O_RDWR:
++		mode = CHR_READ_FLAG | CHR_WRITE_FLAG;
++		break;
++	}
++
++	dev->file_mode &= ~mode;
++	if (dev->file_mode) {
++		xdev_devl(dev, "Device is kept open by someone else, "
++			 " don't close. XSHMCHR connection - file_mode = %x\n",
++			 dev->file_mode);
++		mutex_unlock(&dev->mutex);
++		xshmchr_put(dev);
++		return 0;
++	}
++
++	/* IS_CLOSED have double meaning:
++	 * 1) Spontanous Remote Shutdown Request.
++	 * 2) Ack on a channel teardown(disconnect)
++	 * Must clear bit, in case we previously received
++	 * a remote shudown request.
++	 */
++
++	SET_STATE_CLOSED(dev);
++	SET_PENDING_ON(dev);
++	CLEAR_REMOTE_TEARDOWN(dev);
++	SET_EOF(dev);
++
++	dev->xshm->close(dev->xshm);
++
++	dbfs_atomic_inc(&dev->num_deinit);
++
++	/* Empty the ringbuf */
++	drain_ringbuf(dev);
++	dev->file_mode = 0;
++
++	mutex_unlock(&dev->mutex);
++	pr_xchrstate(dev, "exit");
++	xshmchr_put(dev);
++	return 0;
++}
++
++static const struct file_operations xshmchr_chrfops = {
++	.owner = THIS_MODULE,
++	.read = xshmchr_chrread,
++	.write = xshmchr_chrwrite,
++	.open = xshmchr_chropen,
++	.release = xshmchr_chrrelease,
++	.poll = xshmchr_chrpoll,
 +};
 +
-+static void shm_netdev_setup(struct net_device *pshm_netdev)
-+{
-+	struct cfshm *cfshm;
-+
-+	cfshm = netdev_priv(pshm_netdev);
-+	pshm_netdev->netdev_ops = &netdev_ops;
-+	pshm_netdev->type = ARPHRD_CAIF;
-+	pshm_netdev->hard_header_len = CAIF_NEEDED_HEADROOM;
-+	pshm_netdev->tx_queue_len = 0;
-+	pshm_netdev->destructor = free_netdev;
-+
-+	/* Initialize structures in a clean state. */
-+	memset(cfshm, 0, sizeof(struct cfshm));
-+}
-+
-+static void deinit_bufs(struct cfshm *cfshm)
-+{
-+	int j;
-+
-+	if (cfshm == NULL)
-+		return;
-+
-+	for (j = 0; j < cfshm->xshm->cfg.rx.buffers; j++)
-+		kfree(cfshm->rx_bufs[j]);
-+	kfree(cfshm->rx_bufs);
-+
-+	for (j = 0; j < cfshm->xshm->cfg.tx.buffers; j++)
-+		kfree(cfshm->tx_bufs[j]);
-+	kfree(cfshm->tx_bufs);
-+}
-+
 +static int cfshm_probe(struct xshm_dev *xshm)
++
 +{
-+	int err, j;
-+	struct cfshm *cfshm = NULL;
-+	struct net_device *netdev;
-+	u32 buf_size;
-+	unsigned long flags;
++	struct xshmchr_char_dev *dev = NULL;
++	int result;
++	xdev_devl(dev, "cfshm_probe called\n");
 +
 +	if (xshm == NULL)
++		return 0;
++
++	/* Allocate device */
++	dev = kmalloc(sizeof(*dev), GFP_KERNEL);
++
++	if (!dev) {
++		pr_err("kmalloc failed.\n");
++		return -ENOMEM;
++	}
++
++	memset(dev, 0, sizeof(*dev));
++	kref_init(&dev->kref);
++
++	dev->xshm = xshm;
++	mutex_init(&dev->mutex);
++	init_waitqueue_head(&dev->mgmt_wq);
++
++	/* Fill in some information concerning the misc device. */
++	dev->misc.minor = MISC_DYNAMIC_MINOR;
++	if (strlen(xshm->cfg.name) == 0) {
++		xdev_dbg(dev, "XSHM device does not have a name\n");
 +		return -EINVAL;
-+	if (xshm->cfg.tx.addr == NULL || xshm->cfg.rx.addr == NULL) {
-+		pr_debug("Shared Memory are not configured\n");
++	}
++	sprintf(dev->name, "%s", xshm->cfg.name);
++	dev->misc.name = dev->name;
++	dev->misc.fops = &xshmchr_chrfops;
++
++	dev->tx.ri = xshm->cfg.tx.read;
++	dev->tx.wi = xshm->cfg.tx.write;
++	dev->tx.data = xshm->cfg.tx.addr;
++	dev->tx.size = xshm->cfg.tx.ch_size - 1;
++
++	dev->rx.ri = xshm->cfg.rx.read;
++	dev->rx.wi = xshm->cfg.rx.write;
++	dev->rx.data = xshm->cfg.rx.addr;
++	dev->rx.size = xshm->cfg.rx.ch_size - 1;
++	if (dev->rx.size < 2 || dev->tx.size < 2) {
++		dev->rx.size = 0;
++		dev->tx.size = 0;
++		xdev_dbg(dev, "dev:%s error - channel size too small\n",
++				dev->name);
 +		return -EINVAL;
 +	}
++	dev->xshm->ipc_rx_cb = ipc_rx_cb;
++	dev->xshm->ipc_tx_release_cb = ipc_tx_release_cb;
++	dev->xshm->open_cb = open_cb;
++	dev->xshm->close_cb = close_cb;
++	dev->xshm->driver_data = dev;
 +
-+	if (xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers <
-+			xshm->cfg.tx.packets * sizeof(struct shm_pck_desc) +
-+				xshm->cfg.tx.mtu) {
-+		pr_warn("Bad packet TX-channel size");
-+		return -EINVAL;
++	xdev_devl(dev, "register dev:%s chr=%s(%s) dev=%p\n",
++			dev_name(&dev->xshm->dev),
++			dev->name, xshm->cfg.name, dev);
++
++	mutex_lock(&dev->mutex);
++
++	/* Register the device. */
++	dev->misc.parent = &xshm->dev;
++	result = misc_register(&dev->misc);
++
++	/* Lock in order to try to stop someone from opening the device
++	 * too early. The misc device has its own lock. We cannot take our
++	 * lock until misc_register() is finished, because in open() the
++	 * locks are taken in this order (misc first and then dev).
++	 * So anyone managing to open the device between the misc_register
++	 * and the mutex_lock will get a "device not found" error. Don't
++	 * think it can be avoided.
++	 */
++
++	if (result < 0) {
++		pr_warn("XSHMCHR: chnl_chr: error - %d, can't register misc.\n",
++			      result);
++		mutex_unlock(&dev->mutex);
++		goto err_failed;
 +	}
 +
-+	if (xshm->cfg.rx.ch_size / xshm->cfg.rx.buffers <
-+			sizeof(struct shm_pck_desc) + xshm->cfg.rx.mtu) {
-+		pr_warn("Bad packet RX-channel size");
-+		return -EINVAL;
++	xdev_devl(dev, "XSHMCHR: dev: "
++			"Registered dev with name=%s minor=%d, dev=%p\n",
++			dev->misc.name, dev->misc.minor, dev->misc.this_device);
++
++	SET_STATE_CLOSED(dev);
++	SET_PENDING_OFF(dev);
++	CLEAR_REMOTE_TEARDOWN(dev);
++	CLEAR_EOF(dev);
++
++	/* Add the device. */
++	spin_lock(&list_lock);
++	list_add(&dev->list_field, &xshmchr_chrdev_list);
++	spin_unlock(&list_lock);
++
++#ifdef CONFIG_DEBUG_FS
++	if (debugfsdir != NULL) {
++		dev->debugfs_device_dir =
++		    debugfs_create_dir(dev->misc.name, debugfsdir);
++		debugfs_create_u32("conn_state", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir, &dev->conn_state);
++		debugfs_create_u32("num_open", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_open);
++		debugfs_create_u32("num_close", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_close);
++		debugfs_create_u32("num_init", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_init);
++		debugfs_create_u32("num_init_resp", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_init_resp);
++		debugfs_create_u32("num_deinit", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_deinit);
++		debugfs_create_u32("num_deinit_resp", S_IRUSR | S_IWUSR,
++				   dev->debugfs_device_dir,
++				   (u32 *) &dev->num_deinit_resp);
++		debugfs_create_u32("num_remote_teardown_ind",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_remote_teardown_ind);
++		debugfs_create_u32("num_read",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_read);
++		debugfs_create_u32("num_read_block",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_read_block);
++		debugfs_create_u32("num_read_bytes",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_read_bytes);
++		debugfs_create_u32("num_write",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_write);
++		debugfs_create_u32("num_write_block",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_write_block);
++		debugfs_create_u32("num_write_bytes",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				   (u32 *) &dev->num_write_bytes);
++
++		debugfs_create_u32("rx_write_index",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.rx.write);
++		debugfs_create_u32("rx_read_index",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.rx.read);
++		debugfs_create_u32("rx_state",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.rx.state);
++		debugfs_create_u32("tx_write_index",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.tx.write);
++		debugfs_create_u32("tx_read_index",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.tx.read);
++		debugfs_create_u32("tx_state",
++				   S_IRUSR | S_IWUSR, dev->debugfs_device_dir,
++				(u32 *) dev->xshm->cfg.tx.state);
++
++	}
++#endif
++	mutex_unlock(&dev->mutex);
++	return 0;
++err_failed:
++	xshmchr_put(dev);
++	return result;
++}
++
++static int chrdev_remove(struct xshmchr_char_dev *dev)
++{
++	if (!dev)
++		return -EBADF;
++
++	if (STATE_IS_OPEN(dev)) {
++		xdev_dbg(dev, "Device is opened "
++			 "(dev=%p) file_mode = 0x%x\n",
++			 dev, dev->file_mode);
++		SET_STATE_CLOSED(dev);
++		SET_PENDING_OFF(dev);
++		wake_up_interruptible_all(&dev->mgmt_wq);
 +	}
 +
-+	if (xshm->cfg.rx.buffers < 2 || xshm->cfg.tx.buffers < 2) {
-+		pr_warn("Too few buffers in channel");
-+		return -EINVAL;
++	if (mutex_lock_interruptible(&dev->mutex)) {
++		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
++		xshmchr_put(dev);
++		return -ERESTARTSYS;
 +	}
 +
-+	err = -ENOMEM;
-+	netdev = alloc_netdev(sizeof(struct cfshm), xshm->cfg.name,
-+			shm_netdev_setup);
++	drain_ringbuf(dev);
 +
-+	if (netdev == NULL)
-+		goto error;
++	misc_deregister(&dev->misc);
 +
-+	cfshm = netdev_priv(netdev);
-+	cfshm->state = CFSHM_CLOSED;
-+	init_waitqueue_head(&cfshm->netmgmt_wq);
++	/* Remove from list. */
++	list_del(&dev->list_field);
 +
-+	cfshm->xshm = xshm;
-+	xshm->driver_data = cfshm;
-+	cfshm->ndev = netdev;
-+	netdev->mtu = xshm->cfg.tx.mtu;
-+	cfshm->high_xoff_water =
-+		(xshm->cfg.rx.buffers * HIGH_XOFF_WATERMARK) / 100;
-+	cfshm->low_xoff_water =
-+		(xshm->cfg.rx.buffers * LOW_XOFF_WATERMARK) / 100;
-+	cfshm->stuff_mark = (xshm->cfg.rx.buffers * STUFF_MARK) / 100;
++#ifdef CONFIG_DEBUG_FS
++	if (dev->debugfs_device_dir != NULL)
++		debugfs_remove_recursive(dev->debugfs_device_dir);
++#endif
 +
-+	cfshm->tx_frms_pr_buf = xshm->cfg.tx.packets;
-+	cfshm->rx_frms_pr_buf = xshm->cfg.rx.packets;
-+	cfshm->rx_alignment = xshm->cfg.rx.alignment;
-+	cfshm->tx_alignment = xshm->cfg.tx.alignment;
-+
-+	if (xshm->cfg.latency)
-+		cfshm->cfdev.link_select = CAIF_LINK_LOW_LATENCY;
-+	else
-+		cfshm->cfdev.link_select = CAIF_LINK_HIGH_BANDW;
-+
-+	cfshm->tx.rip = xshm->cfg.tx.read;
-+	cfshm->tx.wip = xshm->cfg.tx.write;
-+	cfshm->tx.bufsize = xshm->cfg.tx.buf_size;
-+	cfshm->tx.size = xshm->cfg.tx.buffers;
-+
-+	cfshm->rx.rip = xshm->cfg.rx.read;
-+	cfshm->rx.wip = xshm->cfg.rx.write;
-+	cfshm->rx.bufsize = xshm->cfg.rx.buf_size;
-+	cfshm->rx.size = xshm->cfg.rx.buffers;
-+	pr_devel("RX ri:%d wi:%d size:%d\n",
-+		le32_to_cpu(*cfshm->rx.rip),
-+			le32_to_cpu(*cfshm->rx.wip), cfshm->rx.size);
-+	pr_devel("TX ri:%d wi:%d size:%d\n",
-+		le32_to_cpu(*cfshm->tx.rip),
-+			le32_to_cpu(*cfshm->tx.wip), cfshm->rx.size);
-+	pr_devel("frms_pr_buf:%d %d\n", cfshm->rx_frms_pr_buf,
-+			cfshm->tx_frms_pr_buf);
-+
-+	spin_lock_init(&cfshm->lock);
-+	netif_carrier_off(netdev);
-+	skb_queue_head_init(&cfshm->sk_qhead);
-+
-+	pr_devel("SHM DEVICE[%p] PROBED BY DRIVER, NEW SHM DRIVER"
-+			" INSTANCE AT cfshm =0x%p\n",
-+			cfshm->xshm, cfshm);
-+
-+	cfshm->tx_ringbuf = xshm->cfg.tx.addr;
-+	cfshm->rx_ringbuf = xshm->cfg.rx.addr;
-+
-+	pr_devel("TX-BASE:%p RX-BASE:%p\n",
-+			cfshm->tx_ringbuf,
-+			cfshm->rx_ringbuf);
-+
-+	cfshm->tx_bufs = kzalloc(sizeof(struct shmbuffer *) *
-+			xshm->cfg.tx.buffers, GFP_KERNEL);
-+	if (cfshm->tx_bufs == NULL)
-+		goto error;
-+	buf_size = xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers;
-+
-+	pr_devel("TX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
-+			xshm->cfg.tx.buffers, buf_size,
-+			cfshm->tx_frms_pr_buf, netdev->mtu);
-+
-+	for (j = 0; j < xshm->cfg.tx.buffers; j++) {
-+		u32 desc_size;
-+		struct shmbuffer *tx_buf =
-+				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
-+
-+		if (tx_buf == NULL) {
-+			pr_warn("ERROR, Could not"
-+					" allocate dynamic mem. for tx_buf, "
-+					" Bailing out ...\n");
-+			goto error;
-+		}
-+
-+		tx_buf->index = j;
-+
-+		tx_buf->addr = cfshm->tx_ringbuf + (buf_size * j);
-+		tx_buf->len = buf_size;
-+		tx_buf->frames = 0;
-+		desc_size = (cfshm->tx_frms_pr_buf + 1) *
-+				sizeof(struct shm_pck_desc);
-+
-+		tx_buf->frm_ofs = desc_size + (desc_size % cfshm->tx_alignment);
-+
-+		cfshm->tx_bufs[j] = tx_buf;
-+
-+		pr_devel("tx_buf[%d] addr:%p len:%d\n",
-+				tx_buf->index,
-+				tx_buf->addr,
-+				tx_buf->len);
-+	}
-+
-+	cfshm->rx_bufs = kzalloc(sizeof(struct shmbuffer *) *
-+				xshm->cfg.rx.buffers, GFP_KERNEL);
-+	if (cfshm->rx_bufs == NULL)
-+		goto error;
-+	buf_size = xshm->cfg.tx.ch_size / xshm->cfg.tx.buffers;
-+	pr_devel("RX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
-+			xshm->cfg.rx.buffers, buf_size,
-+			cfshm->rx_frms_pr_buf, netdev->mtu);
-+
-+	for (j = 0; j < xshm->cfg.rx.buffers; j++) {
-+		struct shmbuffer *rx_buf =
-+				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
-+
-+		if (rx_buf == NULL) {
-+			pr_warn("ERROR, Could not"
-+					" allocate dynamic mem.for rx_buf, "
-+					" Bailing out ...\n");
-+			goto error;
-+		}
-+
-+		rx_buf->index = j;
-+
-+		rx_buf->addr = cfshm->rx_ringbuf + (buf_size * j);
-+		rx_buf->len = buf_size;
-+		cfshm->rx_bufs[j] = rx_buf;
-+		pr_devel("rx_buf[%d] addr:%p len:%d\n",
-+				rx_buf->index,
-+				rx_buf->addr,
-+				rx_buf->len);
-+	}
-+
-+	cfshm->tx_flow_on = 1;
-+	cfshm->xshm->ipc_rx_cb = caif_shmdrv_rx_cb;
-+	cfshm->xshm->ipc_tx_release_cb = caif_shmdrv_tx_release_cb;
-+	cfshm->xshm->open_cb = open_cb;
-+	cfshm->xshm->close_cb = close_cb;
-+
-+	spin_lock_irqsave(&cfshm->lock, flags);
-+	get_tx_buf(cfshm);
-+	new_rx_buf(cfshm);
-+	spin_unlock_irqrestore(&cfshm->lock, flags);
-+
-+	netif_napi_add(netdev, &cfshm->napi, shm_rx_poll,
-+			2 * cfshm->rx_frms_pr_buf);
-+
-+	err = register_netdev(netdev);
-+	if (err) {
-+		pr_warn("ERROR[%d], SHM could not, "
-+			"register with NW FRMWK Bailing out ...\n", err);
-+		goto error;
-+	}
-+
-+	/* Add CAIF SHM device to list. */
-+	spin_lock(&cfshm_list_lock);
-+	list_add_tail(&cfshm->node, &cfshm_list);
-+	spin_unlock(&cfshm_list_lock);
-+
-+	return err;
-+error:
-+	deinit_bufs(cfshm);
-+	free_netdev(netdev);
-+	return err;
++	mutex_unlock(&dev->mutex);
++	xshmchr_put(dev);
++	return 0;
 +}
 +
 +static void cfshm_remove(struct xshm_dev *xshm)
 +{
-+	struct cfshm *cfshm;
++	int err;
 +
-+	if (xshm == NULL || xshm->driver_data == NULL)
-+		return;
++	pr_devel("unregister pdev:%s chr=%s xshm=%p\n",
++			dev_name(&xshm->dev),
++			xshm->cfg.name, xshm);
 +
-+	cfshm = xshm->driver_data;
-+
-+	spin_lock(&cfshm_list_lock);
-+	list_del(&cfshm->node);
-+	spin_unlock(&cfshm_list_lock);
-+
-+	deinit_bufs(cfshm);
-+
-+	unregister_netdev(cfshm->ndev);
++	err = chrdev_remove(xshm->driver_data);
++	if (err)
++		pr_debug("removing char-dev:%s failed.%d\n",
++					xshm->cfg.name, err);
 +
 +	xshm->ipc_rx_cb = NULL;
 +	xshm->ipc_tx_release_cb = NULL;
@@ -981,7 +1256,7 @@ index 0000000..f1e4eae
 +}
 +
 +static struct xshm_driver cfshm_drv = {
-+	.mode = XSHM_PACKET_MODE,
++	.mode = XSHM_STREAM_MODE,
 +	.probe = cfshm_probe,
 +	.remove = cfshm_remove,
 +	.driver = {
@@ -990,31 +1265,53 @@ index 0000000..f1e4eae
 +	},
 +};
 +
-+static void __exit cfshm_exit_module(void)
-+{
-+	xshm_unregister_driver(&cfshm_drv);
-+}
 +
-+static int __init cfshm_init_module(void)
++static int __init xshmchr_chrinit_module(void)
 +{
 +	int err;
++	pr_devel("xshm init\n");
++	spin_lock_init(&list_lock);
 +
-+	spin_lock_init(&cfshm_list_lock);
-+
++	/* Register xshm driver. */
 +	err = xshm_register_driver(&cfshm_drv);
 +	if (err) {
-+		printk(KERN_ERR "Could not register XSHM driver: %d.\n",
++		printk(KERN_ERR "Could not register SHM driver: %d.\n",
 +			err);
 +		goto err_dev_register;
 +	}
-+	return err;
++
++#ifdef CONFIG_DEBUG_FS
++	debugfsdir = debugfs_create_dir("xshm_chr", NULL);
++#endif
 +
 + err_dev_register:
 +	return err;
++
 +}
 +
-+module_init(cfshm_init_module);
-+module_exit(cfshm_exit_module);
++static void __exit xshmchr_chrexit_module(void)
++{
++	int result;
++	struct xshmchr_char_dev *dev = NULL;
++
++	/* Unregister xshm driver. */
++	xshm_unregister_driver(&cfshm_drv);
++
++	do {
++		/* Remove any device (the first in the list). */
++		dev = find_device(-1, NULL, 0);
++		result = chrdev_remove(dev);
++	} while (result == 0);
++
++#ifdef CONFIG_DEBUG_FS
++	if (debugfsdir != NULL)
++		debugfs_remove_recursive(debugfsdir);
++#endif
++
++}
++
++module_init(xshmchr_chrinit_module);
++module_exit(xshmchr_chrexit_module);
 -- 
 1.7.0.4
 
