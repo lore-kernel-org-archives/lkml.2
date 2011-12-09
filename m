@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab1LIPCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 10:02:53 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:39962 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751693Ab1LIPCv (ORCPT
+	id S1754527Ab1LIPDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 10:03:21 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37581 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505Ab1LIPDS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 10:02:51 -0500
-Date: Fri, 9 Dec 2011 10:02:49 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-Message-ID: <20111209150249.GA15751@Krystal>
-References: <20111208193003.112037550@goodmis.org> <20111208193136.366941904@goodmis.org> <1323373012.30977.123.camel@frodo> <20111209124026.GB14470@Krystal> <20111209130216.GA14718@Krystal> <1323442162.1937.8.camel@frodo>
+	Fri, 9 Dec 2011 10:03:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323442162.1937.8.camel@frodo>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:02:14 up 380 days, 20:05,  6 users,  load average: 0.02, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EE192DC.3080209@nvidia.com>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+	<20111209010147.GH7913@S2100-06.ap.freescale.net>
+	<4EE18403.30604@nvidia.com>
+	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
+	<4EE192DC.3080209@nvidia.com>
+Date: Fri, 9 Dec 2011 23:03:17 +0800
+Message-ID: <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+From: Dong Aisheng <dongas86@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Fri, 2011-12-09 at 08:02 -0500, Mathieu Desnoyers wrote:
-> > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> 
-> > after a quick IRC discussion with Peter Zijlstra, one thing seems to be
-> > missing here to handle the INT3->NMI->INT3 issue: this could be achieved
-> > by splitting the DEBUG stack in 2 sub-stacks, and letting the int3
-> > handler keep track of its nesting within its own stack with an extra
-> > "int3_nest_count". AFAIU, supporting 2 nested int3 should be enough.
-> 
-> Here's the problem. When you take an int3, the hardware loads stuff onto
-> the stack for you. That's the SS, RSP, FLAGS, CS, RIP. If the NMI comes
-> in while we are processing a breakpoint, and the NMI hits an int3 too,
-> then the hardware will load the current SS, RSP, FLAGS, CS and RIP onto
-> the stack at the exact same place as the breakpoint processing that was
-> interrupted had it's interrupt frame. IOW, it just corrupted the stack.
-> 
-> To prevent this in the NMI code, I did ugly things like making copies of
-> the interrupt frame to keep a nested NMI from corrupting the first NMI.
-> Not only do I not want to do this ugly hack for debug exception, you
-> *can't* do it. It wont work!
-> 
-> The reason the NMI works is because while we are copying the stack
-> frame, NMIs are disabled because we are currently in an NMI.
-> 
-> But a normal int3, as it tries to do the copy and an NMI triggers, if
-> you don't update the IDT, any int3 that the NMI hits will corrupt the
-> previous int3 processing's stack. The hardware does it, there's nothing
-> a "split stack" will do to fix that.
+2011/12/9 Stephen Warren <swarren@nvidia.com>:
+> On 12/08/2011 09:32 PM, Shawn Guo wrote:
+>> On Thu, Dec 08, 2011 at 08:44:03PM -0700, Stephen Warren wrote:
+>>> On 12/08/2011 06:01 PM, Shawn Guo wrote:
+>>>> On Thu, Dec 08, 2011 at 03:14:40PM -0800, Stephen Warren wrote:
+>>>>> Presumably, the set of pins, groups, and functions is determined by the
+>>>>> SoC HW. Platform data is usually board-specific rather than SoC specific.
+>>>>> You have two choices here: You could either parse this data from device
+>>>>> tree as Arnd suggested (and I think as the TI OMAP pinctrl driver will),
+>>>>> or do what I've done in the Tegra pinctrl driver, and simply put each
+>>>>> SoC's data into the driver and select which one to use based on the DT
+>>>>> compatible flag; I didn't see the point of putting data in to the DT that
+>>>>> was identical for every board using a given SoC.
+>>>>>
+>>>> I'm not sure about tegra, but for imx, it's very difficult to enumerate
+>>>> all these data and list them in pinctrl driver.  Sascha gave a few
+>>>> examples when we discussed about it in another thread.  The TX and RX
+>>>> pin of UART has 4 options each.  SD could possibly have 1, 4, and 8
+>>>> data lines.  Display interface could have 16, 24, 32 data lines, etc.
+>>>> All these options are chosen by board design for given soc pinmux
+>>>> design.  So putting this data into device tree makes sense for imx too.
+>>>
+>>> The pinctrl driver should simply represent the raw options that the HW
+>>> supports on each individual pin. This table should be readily enumerable
+> ...
+>> The situation is there might be a few possible pin groups for each
+>> function of 16/24/32-bit display.   Let's think about the UART case
+>> I put above, to enumerate all the groups, we will have 16 groups for
+>> one UART instance.  And we have 5 UART ports on recent imx SoC.
+>
+> I'm not familiar with imx. For my education, which of the following is true:
+>
+> a)
+>
+> * UART TX signal can muxed onto 1 of 16 pins
+> * UART RX signal can muxed onto 1 of 16 pins
+>
+> In this case, you'd just list say "UART A TX" as a legal function for
+> each of those 16 pins. Yes, that's a lot of places, but still do-able.
+>
+Yes,  it's a way to fix the issue Sascha raised.
+But it will increase the code size heavily and using complexity.
+Passing table from pdata or devicetree has another benifit that it will make
+things simple since board knows which function uses which pin group,
+that means you do not have to define all possible pin groups for one function.
 
-yep, doing that in the "real" nmi handler (with NMIs disabled at that
-point) makes tons of sense.
+> (16 possible positions would be a lot, but I suppose it is possible in HW)
+>
+> b)
+>
+> * UART TX signal can muxed onto 1 of 4 pins
+> * UART RX signal can muxed onto 1 of 4 pins
+> * So, there are 16 (4*4) combinations of these two settings
+>
+> In this case, you'd just list say "UART A TX" for the 4 pins, and "UART
+> A RX" for the other 4 pins. The 16 combinations don't come into play at
+> all; the board-specific mapping table would pick 1 single combination,
+> and represent this as:
+>
+> pin X: function = UART A TX
+> pin Y: function = UART A RX
+>
+> Either way though, whether you put the data into tables in the driver or
+> in the SoC .dtsi file (included by each board's .dts file), the pinctrl
+> driver's table really should list all possible options, and the pinctrl
+> mapping table should select just one; that's kinda the whole point of
+> the tables. If you try to put just the used subset into device tree, you
+> won't be able to put it into the .dtsi file since it'll be
+> board-specific, and you'll end up forcing board .dts authors to recreate
+> that driver's complete configuration table every time, which seems like
+> a lot of wasted work. (and yes, this might bloat the .dtsi file, and
+> mean a lot of useless device tree parsing, which is why I personally
+> chose not to put the SoC tables into the device tree).
+>
+I agree that parsing data from device tree increases much effort
+because we can not using any help functions like microes in dts file and we have
+to construct the structure we need in driver by parsing that data.
+And it will increase dtsi file's size a lot when after adding all functions.
 
-Thanks,
+I wonder if we can define that data as a pdata in a .c file and only
+get a pointer
+from dts file. That would make life much easier.
 
-Mathieu
+Anyway, we're trying the way of parsing data from devicetree now for mx6q
+pinmux driver.
+I will send out patches soon when it's done for the discussion.
 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> Thanks.
+>
+> --
+> nvpublic
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
