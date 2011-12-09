@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab1LIO5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:57:13 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:59099 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754330Ab1LIO5J convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:57:09 -0500
-From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-scsi-owner@vger.kernel.org" <linux-scsi-owner@vger.kernel.org>,
-        "James Bottomley" <jejb@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 9 Dec 2011 20:26:57 +0530
-Subject: RE: mpt2sas regression: can not add disk...
-Thread-Topic: mpt2sas regression: can not add disk...
-Thread-Index: Acy17byRphK0xIxTQuCXmq8Yfm8csQAlOoBQ
-Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70D912FF9DE@inbmail01.lsi.com>
-References: <7863850E8C98C748980632D9D3B7C19911968B8AE5@inbmail02.lsi.com>
-	<A6888A6805518E4EA4AF7072A28264A604726F2824@inbmail02.lsi.com>
-	<CAE9FiQWY-jhtbCmdfBY1zg_d0nreTHbkVe3CmaPQMgojDAtLaw@mail.gmail.com>
-	<CAE9FiQXbu-O2exdhjziWCdiWWGNb8q7_RoECeKC5K80DEOobbw@mail.gmail.com>
-	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF83D@inbmail01.lsi.com>
-	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3@inbmail01.lsi.com>
- <CAE9FiQUBkjfOYrjxAVxG7F3GF11trkOnf0ZoKS4h5Db2gQJvbA@mail.gmail.com>
-In-Reply-To: <CAE9FiQUBkjfOYrjxAVxG7F3GF11trkOnf0ZoKS4h5Db2gQJvbA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753577Ab1LIPAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 10:00:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51101 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1LIPAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 10:00:31 -0500
+X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=lWGEjhAU5bKHkncPFsAA:9 a=7Kq-5wNRwYH6YWvhsVoA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+In-Reply-To: <1323422521.17673.47.camel@twins>
+References: <20111208193003.112037550@goodmis.org>
+	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
+	 <1323398616.30977.167.camel@frodo>  <1323422521.17673.47.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Dec 2011 10:00:28 -0500
+Message-ID: <1323442828.1937.17.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-12-09 at 10:22 +0100, Peter Zijlstra wrote:
 
+> Its was definitely tongue in cheek, also I did say this'll be a massive
+> pain with paravirt since I doubt paravirt calls are NMI safe. 
 
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
-> Yinghai Lu
-> Sent: Friday, December 09, 2011 2:40 AM
-> To: Desai, Kashyap
-> Cc: Nandigama, Nagalakshmi; James Bottomley; Rafael J. Wysocki; linux-
-> scsi-owner@vger.kernel.org; James Bottomley; linux-scsi@vger.kernel.org;
-> Linux Kernel Mailing List
-> Subject: Re: mpt2sas regression: can not add disk...
-> 
-> On Thu, Dec 8, 2011 at 5:30 AM, Desai, Kashyap <Kashyap.Desai@lsi.com>
-> wrote:
-> > Yinghai,
-> >
-> > Please try attached patch. This must be on top of latest upstream
-> code.
-> > When we have introduced fast load, scan of devices are happening from
-> thread context.
-> >
-> > But currently we have not removed " _scsih_probe_devices(ioc);" call
-> from actual probe and it is getting called from multiple places.
-> > As a result, we end-up into this issue.
-> >
-> > Please try the attached patch and provide your feedback. Based upon
-> your result, we will post this patch to upstream.
-> 
-> Yes.  The attaced patch fix the problem. the disk that is attached to
-> the mpt2sas card is showing up in OS.
-
-Thanks for the test report. LSI will post this patch to upstream. 
-
-` Kashyap
+But does paravirt simulate NMIs? Does a guest ever take an NMI? I can
+enable paravirt to see if it breaks.
 
 > 
-> Thanks
+> But yeah, it might all be slightly less painful than trying to teach the
+> INT3 handler about this recursion.
+
+That's my goal. Yes, I agree this is all just an ugly hack, but I'm
+trying hard to keep the ugly hack contained in the NMI handling. Once
+you start letting this hack spread, it will grow like a virus, and
+resistance will be futile. And we will end up with nasty dependencies
+that will become a horror show to maintain.
+
+Right now, I've quarantined the NMI code, and I'm keeping the infection
+at bay. The NMI code will grow warts and nasty appendages, but the NMI
+code was ugly to begin with, and maybe these mutations might even make
+it prettier. That's the nature of NMI. It's an ugly beast in all its
+incarnations.
+
+This is why I like my patches. It contains the damage to only the NMI
+code. If something breaks from this code, it will be easy to find it. If
+anything, a bisect should show exactly what caused change caused the
+problem. But if we add hacks in other places, it will be much more
+difficult to figure out.
+
 > 
-> Yinghai Lu
+> This all started with wanting to do pagefaults from NMI context, those
+> too will have this recursion, although for faults we'll end up in the
+> double fault handler, which seems to allow a slightly saner way out.
+
+It didn't start with the pagefaults. That discussion only brought the
+issue to LKML. This has been a pain in our side or breakpoints from day
+one.
+
+-- Steve
+
+
