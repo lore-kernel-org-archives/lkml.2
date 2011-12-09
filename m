@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab1LIOUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:20:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10137 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab1LIOUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:20:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84705901"
-Message-ID: <4EE2191E.8070107@linux.intel.com>
-Date: Fri, 09 Dec 2011 06:20:14 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754277Ab1LIOU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:20:57 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:33280 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1LIOU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 09:20:56 -0500
+X-SpamScore: 3
+X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [PATCH 04/06] GPIO: Moved some defines to a header file v1
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <grant@secretlab.ca>
+CC: <jic23@cam.ac.uk>, <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>, <paul.liu@linaro.org>,
+        <linaro-dev@lists.linaro.org>, <arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 9 Dec 2011 19:47:31 +0530
+Message-ID: <1323440251.23171.72.camel@dhruva>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [GIT PULL] Crypto keys and module signing
-References: <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org> <28442.1323269262@redhat.com> <2409.1323422253@redhat.com>
-In-Reply-To: <2409.1323422253@redhat.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+LED module has dependency on some gpio macros therefore they are moved to a 
+header file.
 
-On 12/9/2011 1:17 AM, David Howells wrote:
-> James Morris <jmorris@namei.org> wrote:
-> 
->>> Could you pull my module signing code into the security tree?
->>> The patches can be viewed here:
->> 
->> I'm getting this build error:
->> 
->> make[1]: *** No rule to make target `kernel.pub', needed by 
->> `kernel/modsign-pubkey.o'.  Stop.
-> 
-> If you turn module signing on, you have to supply keys for it to
-> sign things with and to later verify the signature...
-> 
-> I wonder what the best way to deal with that is...  I guess make
-> allyesconfig and make allmodconfig are going to break otherwise.
+This patch is functionally tested on Samsung SMDKV6410.
 
-the best way to deal is to have KBUILD generate a key on demand ;-)
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+ drivers/gpio/gpio-da9052.c      |   26 ++-------------------
+ include/linux/mfd/da9052/gpio.h |   46 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+), 23 deletions(-)
+ create mode 100644 include/linux/mfd/da9052/gpio.h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
+diff --git a/drivers/gpio/gpio-da9052.c b/drivers/gpio/gpio-da9052.c
+index 038f5eb..662f92e 100644
+--- a/drivers/gpio/gpio-da9052.c
++++ b/drivers/gpio/gpio-da9052.c
+@@ -24,26 +24,6 @@
+ #include <linux/mfd/da9052/pdata.h>
+ #include <linux/mfd/da9052/gpio.h>
+ 
+-#define DA9052_INPUT				1
+-#define DA9052_OUTPUT_OPENDRAIN		2
+-#define DA9052_OUTPUT_PUSHPULL			3
+-
+-#define DA9052_SUPPLY_VDD_IO1			0
+-
+-#define DA9052_DEBOUNCING_OFF			0
+-#define DA9052_DEBOUNCING_ON			1
+-
+-#define DA9052_OUTPUT_LOWLEVEL			0
+-
+-#define DA9052_ACTIVE_LOW			0
+-#define DA9052_ACTIVE_HIGH			1
+-
+-#define DA9052_GPIO_MAX_PORTS_PER_REGISTER	8
+-#define DA9052_GPIO_SHIFT_COUNT(no)		(no%8)
+-#define DA9052_GPIO_MASK_UPPER_NIBBLE		0xF0
+-#define DA9052_GPIO_MASK_LOWER_NIBBLE		0x0F
+-#define DA9052_GPIO_NIBBLE_SHIFT		4
+-
+ struct da9052_gpio {
+ 	struct da9052 *da9052;
+ 	struct gpio_chip gp;
+@@ -201,9 +181,9 @@ static struct gpio_chip reference_gp __devinitdata = {
+ 	.direction_input = da9052_gpio_direction_input,
+ 	.direction_output = da9052_gpio_direction_output,
+ 	.to_irq = da9052_gpio_to_irq,
+-	.can_sleep = 1;
+-	.ngpio = 16;
+-	.base = -1;
++	.can_sleep = 1,
++	.ngpio = 16,
++	.base = -1,
+ };
+ 
+ static int __devinit da9052_gpio_probe(struct platform_device *pdev)
+diff --git a/include/linux/mfd/da9052/gpio.h b/include/linux/mfd/da9052/gpio.h
+new file mode 100644
+index 0000000..8c8eda0
+--- /dev/null
++++ b/include/linux/mfd/da9052/gpio.h
+@@ -0,0 +1,46 @@
++/*
++ * GPIO module declarations for DA9052 PMICs.
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __LINUX_MFD_DA9052_GPIO_H
++#define __LINUX_MFD_DA9052_GPIO_H
++
++#define DA9052_INPUT				1
++#define DA9052_OUTPUT_OPENDRAIN		2
++#define DA9052_OUTPUT_PUSHPULL			3
++
++#define DA9052_SUPPLY_VDD_IO1			0
++
++#define DA9052_DEBOUNCING_OFF			0
++#define DA9052_DEBOUNCING_ON			1
++
++#define DA9052_OUTPUT_LOWLEVEL			0
++
++#define DA9052_ACTIVE_LOW			0
++#define DA9052_ACTIVE_HIGH			1
++
++#define DA9052_GPIO_MAX_PORTS_PER_REGISTER	8
++#define DA9052_GPIO_SHIFT_COUNT(no)		(no%8)
++#define DA9052_GPIO_MASK_UPPER_NIBBLE		0xF0
++#define DA9052_GPIO_MASK_LOWER_NIBBLE		0x0F
++#define DA9052_GPIO_NIBBLE_SHIFT		4
++#define DA9052_IRQ_GPI0			16
++
++#endif /* __LINUX_MFD_DA9052_GPIO_H */
+-- 
+1.7.1
 
-iQEcBAEBAgAGBQJO4hkeAAoJEEHdSxh4DVnEWZoIAIJ8MvXcW6B7MbO5V8J7RjDc
-h04/xt6UXdg/IZqOFNvVSxNHgfNR2PeRHpNH6kbi8ftX4rp18U7n1y6+WHoMPEHQ
-s7+NZQGzhh6TZeVzzAKIKLASnbDIysf8N6eKt0wRRygg3ipj891kMDCLKrkPY3sj
-9NL6xOp7uo6p0C9V70UXmO2tqwvtlKnIcD+DcCalnJN+9/pBbhnm13vGFIbTJYsr
-uB38DHG4klJceRX+S3CUjFIub1YzW72TevBsenSLdCLBXOHKI/YXqX5uDZyl9pal
-nguULAR4Blmv61xN7XJyIJLUmjjy4K7ppR1zxePGVGIalaDqs60PDKJ6ipHoL6o=
-=gfR7
------END PGP SIGNATURE-----
+
