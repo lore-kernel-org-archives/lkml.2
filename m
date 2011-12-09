@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab1LIUox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 15:44:53 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:56523 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1LIUow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 15:44:52 -0500
-Message-ID: <4EE27345.90003@gmail.com>
-Date: Fri, 09 Dec 2011 15:44:53 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754662Ab1LIVMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:12:35 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:55178 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab1LIVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 16:12:35 -0500
+Date: Fri, 9 Dec 2011 13:11:57 -0800
+From: Kees Cook <kees@outflux.net>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arm: standardize /proc/iomem "Kernel code" name
+Message-ID: <20111209211157.GA2146@outflux.net>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH] mm: simplify find_vma_prev
-References: <1323461345-12805-1-git-send-email-kosaki.motohiro@gmail.com> <20111209122406.11f9e31a.akpm@linux-foundation.org>
-In-Reply-To: <20111209122406.11f9e31a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This changes the (undocumented, naturally) interface in disturbing ways.
->
-> Currently, *pprev will always be written to.  With this change, *pprev
-> will only be written to if find_vma_prev() returns non-NULL.
->
-> Looking through the code, this is mostly benign.  But it will cause the
-> CONFIG_STACK_GROWSUP version of find_extend_vma() to use an
-> uninitialised stack slot in ways which surely will crash the kernel.
+All other ports use "Kernel code" to identify the Kernel text segment
+in /proc/iomem. Change the ARM resources to do the same.
 
-Weird.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/arm/kernel/setup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3448a3f..a34dbf6 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -158,7 +158,7 @@ static struct resource mem_res[] = {
+ 		.flags = IORESOURCE_MEM
+ 	},
+ 	{
+-		.name = "Kernel text",
++		.name = "Kernel code",
+ 		.start = 0,
+ 		.end = 0,
+ 		.flags = IORESOURCE_MEM
+-- 
+1.7.5.4
 
 
-> So please have a think about that and fix it up.  And please add
-> documentation for find_vma_prev()'s interface so we don't break it next
-> time.
-
-Sure thing. Thank you for good spotting!
-
-
+-- 
+Kees Cook                                            @outflux.net
