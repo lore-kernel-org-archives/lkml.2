@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1LIPtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 10:49:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53116 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1LIPtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 10:49:35 -0500
-Date: Fri, 9 Dec 2011 19:49:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111209154930.GT21678@moon>
-References: <20111206181026.GO29781@moon>
- <20111207185343.GA3209@redhat.com>
- <20111207190340.GP21678@moon>
- <20111208163535.GA25023@redhat.com>
- <20111208212853.GO21678@moon>
- <20111208135430.00730308.akpm@linux-foundation.org>
- <20111209153009.GA20865@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111209153009.GA20865@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754558Ab1LIPtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 10:49:55 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:41325 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754471Ab1LIPtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 10:49:53 -0500
+Message-ID: <1323445790.27746.10.camel@joe2Laptop>
+Subject: Re: [PATCH 2/8] MAINTAINERS: tm6000: Update F: patterns
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Dmitri Belimov <d.belimov@gmail.com>,
+        Stefan Ringel <linuxtv@stefanringel.de>
+Date: Fri, 09 Dec 2011 07:49:50 -0800
+In-Reply-To: <4EE1EC7F.4060909@redhat.com>
+References: <cover.1323418149.git.joe@perches.com>
+	 <c161ff9b75651d9da542fa657bc282ea25c508c5.1323418149.git.joe@perches.com>
+	 <4EE1EC7F.4060909@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 04:30:09PM +0100, Oleg Nesterov wrote:
-...
+On Fri, 2011-12-09 at 09:09 -0200, Mauro Carvalho Chehab wrote:
+> On 09-12-2011 06:12, Joe Perches wrote:
+> > commit be30497085080 ("[media] move tm6000 to drivers/media/video")
+> > move the files, update the F: pattern.
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> > @@ -6375,11 +6375,6 @@ M:	Omar Ramirez Luna<omar.ramirez@ti.com>
+> >   S:	Odd Fixes
+> >   F:	drivers/staging/tidspbridge/
 > >
-> > It is a potential problem, from the lock-hold point of view and
-> > also it can cause large scheduling latencies.  What's involved in
-> > making ->children an rcu-protected list?
+> > -STAGING - TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+> > -L:	linux-media@vger.kernel.org
+> > -S:	Odd Fixes
+> > -F:	drivers/staging/tm6000/
+> > -
+> >   STAGING - USB ENE SM/MS CARD READER DRIVER
+> >   M:	Al Cho<acho@novell.com>
+> >   S:	Odd Fixes
+> > @@ -6634,6 +6629,11 @@ F:	include/linux/trace*.h
+> >   F:	include/trace/
+> >   F:	kernel/trace/
+> >
+> > +TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+> > +L:	linux-media@vger.kernel.org
+> > +S:	Odd Fixes
+> > +F:	drivers/media/video/tm6000/
+> > +
+[]
+> I would either remove this entry or add a new one, cloning from the
+> media entry, like:
 > 
-> At first glance, this doesn't look trivial... forget_original_parent()
-> abuses ->sibling.
+> TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+> M:	Mauro Carvalho Chehab <mchehab@infradead.org>
+> P:	LinuxTV.org Project
+> L:	linux-media@vger.kernel.org
+
+trivial: I think this "P:" line isn't really correct.
+P: is meant for named individuals not collective projects.
+
+> W:	http://linuxtv.org
+> Q:	http://patchwork.kernel.org/project/linux-media/list/
+> T:	git git://linuxtv.org/media_tree.git
+> S:	Maintained
 > 
+> If we add a new entry, it probably makes sense to add Stefan
+> and/or Dmitri as co-maintainers there, if they're ok with that.
 
-But wait, forget_original_parent may move task out of the original
-list and put it in dead_children list, right? Then release_task
-may call delayed_put_task_struct under as call_rcu which should
-wait until we finish reading in our rcu section, isn't it?
+The more the merrier as far as I'm concerned.
 
-Even if we get inconsistent picture of children (ie we get pid
-of shildren which just getting dead) I think it's fine.
+Andrew, please ignore this one.
+Mauro/Dmitri/Stefan, please submit whatever is appropriate.
 
-> But yes, it is not really nice to hold tasklist_lock here. May be
-> we can change this code so that every iteration records the reported
-> task_struct and then tries to continue. This means we should verify
-> that ->real_parent is still the same under tasklist, but at least
-> this way we do not hold it throughout.
-> 
-
-And if real_parent is changed, I should simply skip such task and
-continue, right?
-
-> > If so, I guess the feature could/should be configurable.  Probably with
-> > a CONFIG_PROC_CHILDREN which is selected by CONFIG_CHECKPOINT_RESTORE.
-> > Which is all getting a bit over the top, but I suppose we must do it.
-> 
-> Heh. This is the rare case when I personally like the new feature ;)
-> I mean, it looks "obviously useful" to me. If nothing else, it can
-> help to debug the problems. Probably the tools like pstree can use it.
-> 
-
-Well, I'm personally fine with either approach. We could make it
-CONFIG_CHECKPOINT_RESTORE dependant and make CONFIG_CHECKPOINT_RESTORE
-being Y on default, then if someone not needed this facility he simply
-turn it off, no?
-
-> Personally I'd even prefer /proc/pid/children/ directory (like
-> /proc/pid/task), but I guess this needs much more complications.
-> 
-
-I fear so. Oleg, if it possible I would like to bring in as minimum
-code as I can ;)
-
-	Cyrill
