@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab1LIRtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:49:21 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50292 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab1LIRtU (ORCPT
+	id S1752199Ab1LIRuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:50:20 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:35190 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab1LIRuR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:49:20 -0500
-Date: Fri, 9 Dec 2011 18:49:11 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-Message-ID: <20111209174911.GD14900@aftab>
-References: <20111208193003.112037550@goodmis.org>
- <20111208193136.366941904@goodmis.org>
- <1323373012.30977.123.camel@frodo>
- <1323398616.30977.167.camel@frodo>
- <1323448478.1937.26.camel@frodo>
- <1323451171.1937.33.camel@frodo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323451171.1937.33.camel@frodo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Dec 2011 12:50:17 -0500
+Date: Fri, 9 Dec 2011 09:50:14 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: starlight@binnacle.cx, Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
+Message-ID: <20111209095014.14a647cd@nehalam.linuxnetplumber.net>
+In-Reply-To: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
+References: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Steve,
+On Thu, 08 Dec 2011 21:10:02 -0500
+starlight@binnacle.cx wrote:
 
-On Fri, Dec 09, 2011 at 12:19:31PM -0500, Steven Rostedt wrote:
-> Could you shed some light on this. Can an NMI interrupt an MCE in
-> progress?
+> Hello.
+> 
+> FYI saw several of these when running
+> multiple 'rcp' commands copying multi-gigabyte
+> files to/from system.
+> 
+> 'rcp' target files were all on an encrypted
+> mirrored USB3-attached pair of 3TB hard
+> drives.
+> 
+> One outgoing 'rcp' was to a system with
+> a much slower disk (due to a USB2 attachment)
+> and that transfer was putting back-pressure
+> on the connection.
+> 
+> Kernel is running on a CentOS 6.0
+> distribution.
+> 
+> Not subscribing to the lists, so please
+> CC me with any queries.  Please note that
+> email originating from most non-US MTAs
+> will bounce, but I will check the list
+> archives if I see any.
+> 
+> Can't spend a lot of time on this but am
+> willing to answer a few questions.  Hopefully
+> the call stack will tell the story well
+> enough.
 
-Easy, http://support.amd.com/us/Processor_TechDocs/APM_V2_24593.pdf,
-section 8.5.
+You are seeing memory allocation failures because device
+is allocating a 16K (order 2) size socket buffer. You are using
+netxen device, and it looks like the problem.
 
-On amd64 #MC is along with processor reset the highest prio. Judging
-from the text, an NMI occurring during an #MC is held until we return
-from the #MC handler:
-
-"When simultaneous interrupts occur, the processor transfers control
-to the highest-priority interrupt handler. Lower-priority interrupts
-from external sources are held pending by the processor, and they are
-handled after the higher-priority interrupt is handled. Lower-priority
-interrupts that result from internal sources are discarded. Those
-interrupts reoccur when the high-priority interrupt handler completes
-and transfers control back to the interrupted instruction."
-
-HTH.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+>From reading the netxen driver source. The LRO buffers in this device
+are very large (8060+skb overhead).
+Until the driver is fixed to use fragmented page size memory,
+I recommend turning off LRO.
