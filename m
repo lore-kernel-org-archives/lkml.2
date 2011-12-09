@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab1LIQtb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:49:31 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:4114
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750780Ab1LIQt3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:49:29 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: KY Srinivasan <kys@microsoft.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
-Thread-Topic: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
-Thread-Index: AQHMsSx+2SVgzLNkXk+4T3Hv4pSSBZXTs8WwgACRBAD//305YA==
-Date: Fri, 9 Dec 2011 16:49:17 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD461C@TK5EX14MBXC227.redmond.corp.microsoft.com>
-References: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
- <A1F3067C9B68744AA19F6802BAB8FFDC0CCD457B@TK5EX14MBXC227.redmond.corp.microsoft.com>
- <20111209163508.GA19001@suse.de>
-In-Reply-To: <20111209163508.GA19001@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752073Ab1LIQtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:49:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39849 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab1LIQtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:49:50 -0500
+Date: Fri, 9 Dec 2011 11:49:17 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+Message-ID: <20111209164917.GA2444@redhat.com>
+References: <20111208193003.112037550@goodmis.org>
+ <20111208193136.366941904@goodmis.org>
+ <1323373012.30977.123.camel@frodo>
+ <1323398616.30977.167.camel@frodo>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323398616.30977.167.camel@frodo>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Friday, December 09, 2011 11:35 AM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; davem@davemloft.net; linux-kernel@vger.kernel.org;
-> netdev@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+On Thu, Dec 08, 2011 at 09:43:36PM -0500, Steven Rostedt wrote:
+> On Thu, 2011-12-08 at 14:36 -0500, Steven Rostedt wrote:
 > 
-> On Fri, Dec 09, 2011 at 04:00:59PM +0000, Haiyang Zhang wrote:
-> > > -----Original Message-----
-> > > From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
-> > >  drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
-> > >  drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
-> > >  2 files changed, 12 insertions(+), 26 deletions(-)
-> >
-> > Hi Greg,
-> >
-> > Since the netvsc haven't been merged into Dave's tree yet after out of
-> staging,
-> > could you consider this patch for your tree?
+> > I'm not sure how to handle this case. We could do something similar in
+> > the break point code to handle the same thing. But this just seems
+> > really ugly.
+> > 
+> > Anyone with any better ideas?
 > 
-> It's in my "to-apply" queue already.
+> On IRC, Peter Zijlstra mentioned changing the IDT in NMI. I'm not sure
+> if he was joking or not. But I decided to try it out. It seems to
+> work :)
+> 
+> 
+> What's nice is that this change is in the C code, which makes things
+> much easier.
+> 
+> I check on nmi entry, if the nmi preempted code running with the debug
+> stack. If it has, then I load a special "nmi_idt_table" that has a zero
+> IST for the debug stack, which will make the debug interrupt in the NMI
+> not change the stack pointer. Then on exit, it returns it to the old IDT
+> table.
+> 
+> Just to see how bad this was, I made it make the change on every NMI. I
+> didn't notice any difference, but I wasn't doing any real benchmark,
+> except doing a perf top -c 1000.
+> 
+> But in practice, it should seldom hit, if ever. It only updates the IDT
+> if it interrupted debug processing.
+> 
 
-Thank you!
+Then, I'm wondering if the same technique can be used for the original
+nmi->int3->nmi case. That is, switch the IDT when the int3 comes in, so
+that the subsequent nmi will be handled on the debug stack. As you pointed out,
+these nesting and thus the IDT switching would be rare in
+practice. (I know you don't want to touch any code outside of nmi :))
 
-- Haiyang
+Thanks,
 
+-Jason
