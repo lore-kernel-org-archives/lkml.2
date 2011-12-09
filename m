@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab1LITS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 14:18:29 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33218 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1LITS2 (ORCPT
+	id S1754623Ab1LITXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:23:39 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:50693 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751342Ab1LITXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 14:18:28 -0500
-Date: Fri, 9 Dec 2011 20:18:19 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
-        X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Message-ID: <20111209191819.GA17086@aftab>
-References: <1323353332-5671-1-git-send-email-bp@amd64.org>
- <1323353332-5671-3-git-send-email-bp@amd64.org>
- <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
- <20111209182448.GA29629@gere.osrc.amd.com>
- <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
+	Fri, 9 Dec 2011 14:23:38 -0500
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4EE26035.60408@freescale.com>
+Date: Fri, 9 Dec 2011 13:23:33 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <shuo.liu@freescale.com>
+CC: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>,
+        <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>
+Subject: Re: [PATCH 1/2] mtd/nand : set Nand flash page address to FBAR and
+ FPAR correctly
+References: <1323423775-26951-1-git-send-email-shuo.liu@freescale.com>
+In-Reply-To: <1323423775-26951-1-git-send-email-shuo.liu@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 10:40:10AM -0800, Luck, Tony wrote:
-> > Do you see a usecase for multiple consumers?
+On 12/09/2011 03:42 AM, shuo.liu@freescale.com wrote:
+> From: Liu Shuo <b35362@freescale.com>
 > 
-> Only a theoretical one ... we might have a cpu model specific decoder
-> and an OEM supplied platform decoder - each as an independent module.
+> If we use the Nand flash chip whose number of pages in a block is greater
+> than 64(for large page), we must treat the low bit of FBAR as being the
+> high bit of the page address due to the limitation of FCM, it simply uses
+> the low 6-bits (for large page) of the combined block/page address as the
+> FPAR component, rather than considering the actual block size.
+> 
+> Signed-off-by: Liu Shuo <b35362@freescale.com>
+> Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
+> Signed-off-by: Tang Yuantian <b29983@freescale.com>
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> ---
+>  drivers/mtd/nand/fsl_elbc_nand.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
 
-Well, off the top of my head, we could probably _not_ delete the already
-logged MCEs (bool keep arg, or similar) and when the last one registers,
-it passes keep=false and cleans them up. And since we probably know
-which one is the last - order is enforced by the initcalls order -
-we're done.
+Acked-by: Scott Wood <scottwood@freescale.com>
 
-However, is the platform module using MCA at all or will it probably use
-PCIe AER instead?
+-Scott
 
-Also, at the time the platform module inits, we've already regged the
-CPU decoders so we can go ahead and safely delete the logged MCEs.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
