@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1LIJem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 04:34:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33791 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1LIJek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 04:34:40 -0500
-Date: Fri, 9 Dec 2011 10:34:36 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 8/8] MAINTAINERS: spi: Update F: patterns
-Message-ID: <20111209093436.GC3327@pengutronix.de>
-References: <cover.1323418149.git.joe@perches.com>
- <86f4a9099c8ff7961190a540155356446dda2ade.1323418149.git.joe@perches.com>
+	id S1752880Ab1LIJfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:35:44 -0500
+Received: from tundra.namei.org ([65.99.196.166]:34827 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab1LIJfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 04:35:42 -0500
+Date: Fri, 9 Dec 2011 20:35:26 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, arjan@linux.intel.com,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [GIT PULL] Crypto keys and module signing
+In-Reply-To: <2409.1323422253@redhat.com>
+Message-ID: <alpine.LRH.2.00.1112092034140.25197@tundra.namei.org>
+References: <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org> <28442.1323269262@redhat.com> <2409.1323422253@redhat.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
-Content-Disposition: inline
-In-Reply-To: <86f4a9099c8ff7961190a540155356446dda2ade.1323418149.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 9 Dec 2011, David Howells wrote:
 
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> James Morris <jmorris@namei.org> wrote:
+> 
+> > > Could you pull my module signing code into the security tree?  The patches can
+> > > be viewed here:
+> > 
+> > I'm getting this build error:
+> > 
+> > make[1]: *** No rule to make target `kernel.pub', needed by 
+> > `kernel/modsign-pubkey.o'.  Stop.
+> 
+> If you turn module signing on, you have to supply keys for it to sign things
+> with and to later verify the signature...
+> 
+> I wonder what the best way to deal with that is...  I guess make allyesconfig
+> and make allmodconfig are going to break otherwise.
 
-On Fri, Dec 09, 2011 at 12:12:54AM -0800, Joe Perches wrote:
-> commit ca632f55669 ("spi: reorganize drivers")
-> renamed the files, update the F: patterns.
->=20
-> CC: Grant Likely <grant.likely@secretlab.ca>
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
+Create a dummy key?
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
 
-(taking care of SPI while Grant is on sabbatical)
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk7h1iwACgkQD27XaX1/VRtJmgCfQrEhtvtusveApLaHRDTpNVhK
-XwYAoJTi3JbM5dc4Mpq4TlPQ+M7TxWRP
-=kidE
------END PGP SIGNATURE-----
-
---zCKi3GIZzVBPywwA--
+-- 
+James Morris
+<jmorris@namei.org>
