@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab1LISK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:10:59 -0500
+	id S1754191Ab1LISK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:10:57 -0500
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:48025 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab1LISK4 (ORCPT
+	with ESMTP id S1753466Ab1LISKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:10:56 -0500
+	Fri, 9 Dec 2011 13:10:55 -0500
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: cbouatmailru@gmail.com, dg77.kim@samsung.com, kyungmin.park@samsung.com,
         myungjoo.ham@samsung.com, Jason.Wortham@maxim-ic.com,
         Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH v2 4/6] max17042: Add support for signalling change in SOC
-Date: Fri,  9 Dec 2011 10:08:47 -0800
-Message-Id: <1323454129-7444-6-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH v2 4/6] max17042: Add SOC support for signalling change in SOC
+Date: Fri,  9 Dec 2011 10:08:46 -0800
+Message-Id: <1323454129-7444-5-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323454129-7444-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1323454129-7444-1-git-send-email-dirk.brandewie@gmail.com>
