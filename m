@@ -1,226 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1LIOT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:19:58 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21862 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753974Ab1LIOT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:19:56 -0500
-X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 03/06] MFD: DA9052/53 MFD core module v9 Added SPI support
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
-        <arnd@arndb.de>, <linaro-dev@lists.linaro.org>, <eric.miao@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 9 Dec 2011 19:46:33 +0530
-Message-ID: <1323440193.23171.71.camel@dhruva>
+	id S1754273Ab1LIOUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:20:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10137 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754078Ab1LIOUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 09:20:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="84705901"
+Message-ID: <4EE2191E.8070107@linux.intel.com>
+Date: Fri, 09 Dec 2011 06:20:14 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: David Howells <dhowells@redhat.com>
+CC: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [GIT PULL] Crypto keys and module signing
+References: <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org> <28442.1323269262@redhat.com> <2409.1323422253@redhat.com>
+In-Reply-To: <2409.1323422253@redhat.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DA9052/53 is a highly integrated PMIC subsystem with supply domain
-flexibility to support wide range of high performance application.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-control and other functionality.
+On 12/9/2011 1:17 AM, David Howells wrote:
+> James Morris <jmorris@namei.org> wrote:
+> 
+>>> Could you pull my module signing code into the security tree?
+>>> The patches can be viewed here:
+>> 
+>> I'm getting this build error:
+>> 
+>> make[1]: *** No rule to make target `kernel.pub', needed by 
+>> `kernel/modsign-pubkey.o'.  Stop.
+> 
+> If you turn module signing on, you have to supply keys for it to
+> sign things with and to later verify the signature...
+> 
+> I wonder what the best way to deal with that is...  I guess make
+> allyesconfig and make allmodconfig are going to break otherwise.
 
-This patch is functionally tested on Samsung SMDKV6410.
+the best way to deal is to have KBUILD generate a key on demand ;-)
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
----
- drivers/mfd/Kconfig               |   12 ++++
- drivers/mfd/Makefile              |    1 +
- drivers/mfd/da9052-spi.c          |  121 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/da9052/da9052.h |    1 +
- 4 files changed, 135 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/da9052-spi.c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index baced42..c8322ee 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -332,6 +332,18 @@ config PMIC_DA9052
- 	bool
- 	select MFD_CORE
- 
-+config MFD_DA9052_SPI
-+	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with SPI"
-+	select REGMAP_SPI
-+	select REGMAP_IRQ
-+	select PMIC_DA9052
-+	depends on SPI_MASTER=y
-+	help
-+	  Support for the Dialog Semiconductor DA9052 PMIC
-+	  when controlled using SPI. This driver provides common support
-+	  for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
-+
- config MFD_DA9052_I2C
- 	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with I2C"
- 	select REGMAP_I2C
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 484f209..d5f5743 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -69,6 +69,7 @@ obj-$(CONFIG_UCB1400_CORE)	+= ucb1400_core.o
- obj-$(CONFIG_PMIC_DA903X)	+= da903x.o
- 
- obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
-+obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
- obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
- 
- max8925-objs			:= max8925-core.o max8925-i2c.o
-diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
-new file mode 100644
-index 0000000..f74faa1
---- /dev/null
-+++ b/drivers/mfd/da9052-spi.c
-@@ -0,0 +1,121 @@
-+/*
-+ * SPI access for Dialog DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/input.h>
-+#include <linux/mfd/core.h>
-+#include <linux/spi/spi.h>
-+#include <linux/err.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+static struct regmap_config da9052_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.read_flag_mask = 1,
-+	.write_flag_mask = 0,
-+};
-+
-+static int da9052_spi_probe(struct spi_device *spi)
-+{
-+	int ret;
-+	const struct spi_device_id *id = spi_get_device_id(spi);
-+	struct da9052 *da9052 = kzalloc(sizeof(struct da9052), GFP_KERNEL);
-+
-+	if (!da9052)
-+		return -ENOMEM;
-+
-+	spi->mode = SPI_MODE_0 | SPI_CPOL;
-+	spi->bits_per_word = 8;
-+	spi_setup(spi);
-+
-+	da9052->dev = &spi->dev;
-+	da9052->spi_dev = spi;
-+	da9052->chip_irq = spi->irq;
-+
-+	dev_set_drvdata(&spi->dev, da9052);
-+
-+	da9052->regmap = regmap_init_spi(spi, &da9052_regmap_config);
-+	if (IS_ERR(da9052->regmap)) {
-+		ret = PTR_ERR(da9052->regmap);
-+		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		goto err;
-+	}
-+
-+	ret = da9052_device_init(da9052, id->driver_data);
-+	if (ret != 0)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	kfree(da9052);
-+	return ret;
-+}
-+
-+static int da9052_spi_remove(struct spi_device *spi)
-+{
-+	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
-+
-+	da9052_device_exit(da9052);
-+	kfree(da9052);
-+
-+	return 0;
-+}
-+
-+static struct spi_device_id da9052_spi_id[] = {
-+	{"da9052", DA9052},
-+	{"da9053-aa", DA9053_AA},
-+	{"da9053-ba", DA9053_BA},
-+	{"da9053-bb", DA9053_BB},
-+	{}
-+};
-+
-+static struct spi_driver da9052_spi_driver = {
-+	.probe = da9052_spi_probe,
-+	.remove = __devexit_p(da9052_spi_remove),
-+	.id_table = da9052_spi_id,
-+	.driver = {
-+		.name = "da9052",
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9052_spi_init(void)
-+{
-+	int ret;
-+
-+	ret = spi_register_driver(&da9052_spi_driver);
-+	if (ret != 0) {
-+		pr_err("Failed to register DA9052 SPI driver, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+subsys_initcall(da9052_spi_init);
-+
-+static void __exit da9052_spi_exit(void)
-+{
-+	spi_unregister_driver(&da9052_spi_driver);
-+}
-+module_exit(da9052_spi_exit);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("SPI driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
-index a4db9b8..a799655 100644
---- a/include/linux/mfd/da9052/da9052.h
-+++ b/include/linux/mfd/da9052/da9052.h
-@@ -94,6 +94,7 @@ struct da9052 {
- 	struct mutex auxadc_lock;
- 
- 	struct device *dev;
-+	struct spi_device *spi_dev;
- 	struct i2c_client *i2c_client;
- 	struct regmap *regmap;
- 
--- 
-1.7.1
-
-
+iQEcBAEBAgAGBQJO4hkeAAoJEEHdSxh4DVnEWZoIAIJ8MvXcW6B7MbO5V8J7RjDc
+h04/xt6UXdg/IZqOFNvVSxNHgfNR2PeRHpNH6kbi8ftX4rp18U7n1y6+WHoMPEHQ
+s7+NZQGzhh6TZeVzzAKIKLASnbDIysf8N6eKt0wRRygg3ipj891kMDCLKrkPY3sj
+9NL6xOp7uo6p0C9V70UXmO2tqwvtlKnIcD+DcCalnJN+9/pBbhnm13vGFIbTJYsr
+uB38DHG4klJceRX+S3CUjFIub1YzW72TevBsenSLdCLBXOHKI/YXqX5uDZyl9pal
+nguULAR4Blmv61xN7XJyIJLUmjjy4K7ppR1zxePGVGIalaDqs60PDKJ6ipHoL6o=
+=gfR7
+-----END PGP SIGNATURE-----
