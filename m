@@ -1,58 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1LIOzX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:55:23 -0500
-Received: from Mycroft.westnet.com ([216.187.52.7]:57658 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab1LIOzW (ORCPT
+	id S1754476Ab1LIOzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:55:51 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44695 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab1LIOzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:55:22 -0500
+	Fri, 9 Dec 2011 09:55:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20194.8535.854625.466329@quad.stoffel.home>
-Date: Fri, 9 Dec 2011 09:55:19 -0500
-From: "John Stoffel" <john@stoffel.org>
-To: Colin Walters <walters@verbum.org>
-Cc: John Stoffel <john@stoffel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: chroot(2) and bind mounts as non-root
-In-Reply-To: <1323368800.10724.73.camel@lenny>
-References: <1323280461.10724.13.camel@lenny>
-	<20191.49202.793643.397028@quad.stoffel.home>
-	<1323360655.10724.35.camel@lenny>
-	<20192.65168.140290.462594@quad.stoffel.home>
-	<1323368800.10724.73.camel@lenny>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+X-Originating-IP: [109.186.57.177]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 9 Dec 2011 16:55:27 +0200
+Message-ID: <CAK=WgbaU6vpiBGSgogYPjQNmrF-U0wk1rSXMX83DdgQa9hw5Mw@mail.gmail.com>
+Subject: Adding remoteproc/rpmsg to linux-next
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-next@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Brian Swetland <swetland@google.com>, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Saravana Kannan <skannan@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Colin" == Colin Walters <walters@verbum.org> writes:
+Hi Stephen,
 
-Colin> On Thu, 2011-12-08 at 13:14 -0500, John Stoffel wrote:
->> Or is it because you're trying to edit on one OS, such a fedora 14,
->> then build and debug inside an Debian 5.0 setup?  But without running
->> a completely seperate system, but just doing a chroot into a new
->> filesystem tree?  
+Can you please add the following remoteproc tree to linux-next ?
 
-Colin> Yes, something like that; basically it's about ensuring that
-Colin> the libfoo we're building binaries against is
-Colin> /home/walters/build/libfoo.so and not /usr/lib/libfoo.so.
+git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
 
-Colin> I'm actually intending for the core build system of my OS to
-Colin> work in *both* cross and native compilation.  That means it's
-Colin> important to keep them as close as possible.
+This branch includes the basic remoteproc/rpmsg functionality as
+posted in the mailing lists, with a few minor changes that were
+requested (namely, changes against virtio-spec.txt were removed and
+"amp" is no longer used).
 
-Colin> What you were talking about above (i.e. "just don't chroot") is
-Colin> what http://buildroot.net does (and others, I also
-Colin> semi-maintain GNOME's jhbuild).  It works if you're very
-Colin> careful in your build scripts, know and carefully propagate the
-Colin> large set of magic environment variables, etc., then yes, you
-Colin> can do it.
+The motivation for having this in linux-next is twofold:
+1. Getting prepared for a 3.3 merger (knock on wood)
+2. Starting a linear development scheme, in order to make it easier
+for people to collaborate (and to reduce the review load of
+incremental changes)
 
-Colin> But chroot is just so nice a hammer for this nail.
+I suspect that once this basic functionality will be merged upstream,
+the development of remoteproc and rpmsg will become completely
+orthogonal, and it would then make sense to start queueing patches
+separately. At that point I'll send you the details for the rpmsg.git
+tree.
 
-I can see that, but maybe you can still fix this in userspace using
-the schroot tool others have mentioned.  
+Last note: the "ARM: OMAP: add remoteproc devices for OMAP4" patch is
+omitted from this branch, since it depends on CMA (which isn't merged
+yet). As soon as CMA will be added (at least to linux-next) that patch
+will be queued up too.
 
-John
+Thanks,
+Ohad.
+
+The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+
+  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
+
+Ohad Ben-Cohen (6):
+      remoteproc: add framework for controlling remote processors
+      remoteproc: add debugfs entries
+      remoteproc: create rpmsg virtio device
+      remoteproc/omap: add a remoteproc driver for OMAP4
+      rpmsg: add virtio-based remote processor messaging bus
+      samples/rpmsg: add an rpmsg driver sample
+
+ Documentation/ABI/testing/sysfs-bus-rpmsg    |   75 ++
+ Documentation/remoteproc.txt                 |  324 ++++++
+ Documentation/rpmsg.txt                      |  293 ++++++
+ MAINTAINERS                                  |    7 +
+ arch/arm/plat-omap/include/plat/remoteproc.h |   57 +
+ drivers/Kconfig                              |    4 +
+ drivers/Makefile                             |    2 +
+ drivers/remoteproc/Kconfig                   |   24 +
+ drivers/remoteproc/Makefile                  |    9 +
+ drivers/remoteproc/omap_remoteproc.c         |  249 +++++
+ drivers/remoteproc/omap_remoteproc.h         |   69 ++
+ drivers/remoteproc/remoteproc_core.c         | 1410 ++++++++++++++++++++++++++
+ drivers/remoteproc/remoteproc_debugfs.c      |  179 ++++
+ drivers/remoteproc/remoteproc_internal.h     |   44 +
+ drivers/remoteproc/remoteproc_rpmsg.c        |  295 ++++++
+ drivers/rpmsg/Kconfig                        |    5 +
+ drivers/rpmsg/Makefile                       |    1 +
+ drivers/rpmsg/virtio_rpmsg_bus.c             | 1026 +++++++++++++++++++
+ include/linux/mod_devicetable.h              |    9 +
+ include/linux/remoteproc.h                   |  265 +++++
+ include/linux/rpmsg.h                        |  326 ++++++
+ include/linux/virtio_ids.h                   |    1 +
+ samples/Kconfig                              |    8 +
+ samples/Makefile                             |    2 +-
+ samples/rpmsg/Makefile                       |    1 +
+ samples/rpmsg/rpmsg_client_sample.c          |  100 ++
+ 26 files changed, 4784 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-rpmsg
+ create mode 100644 Documentation/remoteproc.txt
+ create mode 100644 Documentation/rpmsg.txt
+ create mode 100644 arch/arm/plat-omap/include/plat/remoteproc.h
+ create mode 100644 drivers/remoteproc/Kconfig
+ create mode 100644 drivers/remoteproc/Makefile
+ create mode 100644 drivers/remoteproc/omap_remoteproc.c
+ create mode 100644 drivers/remoteproc/omap_remoteproc.h
+ create mode 100644 drivers/remoteproc/remoteproc_core.c
+ create mode 100644 drivers/remoteproc/remoteproc_debugfs.c
+ create mode 100644 drivers/remoteproc/remoteproc_internal.h
+ create mode 100644 drivers/remoteproc/remoteproc_rpmsg.c
+ create mode 100644 drivers/rpmsg/Kconfig
+ create mode 100644 drivers/rpmsg/Makefile
+ create mode 100644 drivers/rpmsg/virtio_rpmsg_bus.c
+ create mode 100644 include/linux/remoteproc.h
+ create mode 100644 include/linux/rpmsg.h
+ create mode 100644 samples/rpmsg/Makefile
+ create mode 100644 samples/rpmsg/rpmsg_client_sample.c
