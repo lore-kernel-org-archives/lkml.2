@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab1LIQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:38:16 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38072 "EHLO e6.ny.us.ibm.com"
+	id S1751477Ab1LIQnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:43:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1LIQiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:38:14 -0500
-Message-ID: <4EE23967.9080404@linux.vnet.ibm.com>
-Date: Fri, 09 Dec 2011 09:37:59 -0700
-From: Allison Henderson <achender@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1750788Ab1LIQnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:43:21 -0500
+Date: Fri, 9 Dec 2011 08:35:08 -0800
+From: Greg KH <gregkh@suse.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Message-ID: <20111209163508.GA19001@suse.de>
+References: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
+ <A1F3067C9B68744AA19F6802BAB8FFDC0CCD457B@TK5EX14MBXC227.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-CC: Andy Whitcroft <apw@canonical.com>, Hugh Dickins <hughd@google.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
-        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-References: <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils> <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <4EDE85F4.4020503@linux.vnet.ibm.com> <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com> <4EDF9CAB.3050502@linux.vnet.ibm.com>	<4EE046C7.9030902@linux.vnet.ibm.com> <alpine.LSU.2.00.1112080909300.22300@sister.anvils> <20111208181235.GE2686@shadowen.org>	<20111209133343.GA434@shadowen.org> <CAGBYx2Y+pz7BN-V6xzac9AvvSqKodkos2+aK7AGBRyYs+mdMfg@mail.gmail.com>
-In-Reply-To: <CAGBYx2Y+pz7BN-V6xzac9AvvSqKodkos2+aK7AGBRyYs+mdMfg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120916-1976-0000-0000-0000086BA131
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD457B@TK5EX14MBXC227.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2011 06:44 AM, Yongqiang Yang wrote:
-> On Fri, Dec 9, 2011 at 9:33 PM, Andy Whitcroft<apw@canonical.com>  wrote:
->> On Thu, Dec 08, 2011 at 06:12:35PM +0000, Andy Whitcroft wrote:
->>> On Thu, Dec 08, 2011 at 09:39:55AM -0800, Hugh Dickins wrote:
->>>
->>> [...]
->>>>> [PATCH 1/2] ext4: let mpage_submit_io works well when blocksize<  pagesize
->>>>> [PATCH 2/2] ext4: let ext4_discard_partial_buffers handle pages without
->>>>>
->>>>> [PATCH 1/2] ext4: remove a wrong BUG_ON in ext4_ext_convert_to_initialized
->>>>> [PATCH 2/2] ext4: let ext4_bio_write_page handle EOF correctly
->>> [...]
->>>> Only once, before the fixes, did I ever see an unexplained EINVAL
->>>> (from cp), like Andy reports: I'm very hopeful his case is fixed too.
->>>
->>> Yes I have reverted my fix and applied all four of these patches (above).
->>> I have just completed a 100 iteration run of my test case without failure.
->>> This would typically fail in the first iteration 90% of the time and
->>> never survived more than two iterations.
->>>
->>> I am comfortable saying they resolve my issue.
->>
->> Are we likely to see these fixes in a 3.2-rcN or will they be going to
->> stable?
-> All patches will go to 3.2-rcN and the later 2 patches would go to
-> stable too, I think.
->
-> Yongqiang.
+On Fri, Dec 09, 2011 at 04:00:59PM +0000, Haiyang Zhang wrote:
+> > -----Original Message-----
+> > From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
+> > Sent: Friday, December 02, 2011 2:56 PM
+> > To: Haiyang Zhang; KY Srinivasan; davem@davemloft.net; gregkh@suse.de;
+> > linux-kernel@vger.kernel.org; netdev@vger.kernel.org;
+> > devel@linuxdriverproject.org
+> > Subject: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+> > 
+> > The ring buffer is only used to pass meta data for outbound packets. The
+> > actual payload is accessed by DMA from the host. So the stop/wake queue
+> > mechanism based on counting and comparing number of pages sent v.s.
+> > number
+> > of pages in the ring buffer is wrong. Also, there is a race condition in
+> > the stop/wake queue calls, which can stop xmit queue forever.
+> > 
+> > The new stop/wake queue mechanism is based on the actual bytes used by
+> > outbound packets in the ring buffer. The check for number of outstanding
+> > sends after stop queue prevents the race condition that can cause wake
+> > queue happening earlier than stop queue.
+> > 
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reported-by: Long Li <longli@microsoft.com>
+> > ---
+> >  drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
+> >  drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
+> >  2 files changed, 12 insertions(+), 26 deletions(-)
+> 
+> Hi Greg,
+> 
+> Since the netvsc haven't been merged into Dave's tree yet after out of staging,
+> could you consider this patch for your tree?
 
-Sounds good, its lasted 24hrs now for me so I think it's safe to stop 
-it.  Thx!
+It's in my "to-apply" queue already.
 
-Allison Henderson
+thanks,
 
->>
->> -apw
->
->
->
-
+greg k-h
