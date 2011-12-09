@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab1LIQen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:34:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:65389 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab1LIQem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:34:42 -0500
-X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OuxOXVFEkB8nHXOm0_YA:9 a=AfP_9zIVLT-n_2nyaFUA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-In-Reply-To: <1323398616.30977.167.camel@frodo>
-References: <20111208193003.112037550@goodmis.org>
-	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
-	 <1323398616.30977.167.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Dec 2011 11:34:38 -0500
-Message-ID: <1323448478.1937.26.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1751252Ab1LIQiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:38:16 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38072 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1LIQiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:38:14 -0500
+Message-ID: <4EE23967.9080404@linux.vnet.ibm.com>
+Date: Fri, 09 Dec 2011 09:37:59 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+CC: Andy Whitcroft <apw@canonical.com>, Hugh Dickins <hughd@google.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+References: <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils> <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <4EDE85F4.4020503@linux.vnet.ibm.com> <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com> <4EDF9CAB.3050502@linux.vnet.ibm.com>	<4EE046C7.9030902@linux.vnet.ibm.com> <alpine.LSU.2.00.1112080909300.22300@sister.anvils> <20111208181235.GE2686@shadowen.org>	<20111209133343.GA434@shadowen.org> <CAGBYx2Y+pz7BN-V6xzac9AvvSqKodkos2+aK7AGBRyYs+mdMfg@mail.gmail.com>
+In-Reply-To: <CAGBYx2Y+pz7BN-V6xzac9AvvSqKodkos2+aK7AGBRyYs+mdMfg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 11120916-1976-0000-0000-0000086BA131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 21:43 -0500, Steven Rostedt wrote:
+On 12/09/2011 06:44 AM, Yongqiang Yang wrote:
+> On Fri, Dec 9, 2011 at 9:33 PM, Andy Whitcroft<apw@canonical.com>  wrote:
+>> On Thu, Dec 08, 2011 at 06:12:35PM +0000, Andy Whitcroft wrote:
+>>> On Thu, Dec 08, 2011 at 09:39:55AM -0800, Hugh Dickins wrote:
+>>>
+>>> [...]
+>>>>> [PATCH 1/2] ext4: let mpage_submit_io works well when blocksize<  pagesize
+>>>>> [PATCH 2/2] ext4: let ext4_discard_partial_buffers handle pages without
+>>>>>
+>>>>> [PATCH 1/2] ext4: remove a wrong BUG_ON in ext4_ext_convert_to_initialized
+>>>>> [PATCH 2/2] ext4: let ext4_bio_write_page handle EOF correctly
+>>> [...]
+>>>> Only once, before the fixes, did I ever see an unexplained EINVAL
+>>>> (from cp), like Andy reports: I'm very hopeful his case is fixed too.
+>>>
+>>> Yes I have reverted my fix and applied all four of these patches (above).
+>>> I have just completed a 100 iteration run of my test case without failure.
+>>> This would typically fail in the first iteration 90% of the time and
+>>> never survived more than two iterations.
+>>>
+>>> I am comfortable saying they resolve my issue.
+>>
+>> Are we likely to see these fixes in a 3.2-rcN or will they be going to
+>> stable?
+> All patches will go to 3.2-rcN and the later 2 patches would go to
+> stable too, I think.
+>
+> Yongqiang.
 
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index a8e3eb8..906a02a 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -723,4 +723,9 @@ void __init trap_init(void)
->  	cpu_init();
->  
->  	x86_init.irqs.trap_init();
-> +
-> +#ifdef CONFIG_X86_64
-> +	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
-> +	set_nmi_gate(1, &debug);
+Sounds good, its lasted 24hrs now for me so I think it's safe to stop 
+it.  Thx!
 
-Frederic Weisbecker told me on IRC that int3 is 3 #bp, not 1 #db. I need
-to also add that:
+Allison Henderson
 
-	set_nmi_gate(3, &int3)
-
-Mathieu says we need to worry about MCEs, so maybe we can add that stack
-as well.
-
-	set_nmi_gate(18, &machine_check);
-
-
-If we make NMIs not modify any stack, then we can remove the "NMI
-executing variable" on the stack. As any nested NMIs will see that it
-preempted an NMI by just checking the stack. We have to check it anyway,
-and by removing another check, this may be good to do.
-
--- Steve
-
-> +#endif
->  }
-> 
-
+>>
+>> -apw
+>
+>
+>
 
