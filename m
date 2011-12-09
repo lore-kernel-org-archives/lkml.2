@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1LINdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:33:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56337 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab1LINds (ORCPT
+	id S1753708Ab1LINiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:38:23 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:64835 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709Ab1LINiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 08:33:48 -0500
-Date: Fri, 9 Dec 2011 13:33:44 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-Message-ID: <20111209133343.GA434@shadowen.org>
-References: <alpine.LSU.2.00.1111211331120.1879@sister.anvils>
- <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
- <4EDD729E.2060402@linux.vnet.ibm.com>
- <alpine.LSU.2.00.1112060030220.1615@sister.anvils>
- <4EDE85F4.4020503@linux.vnet.ibm.com>
- <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
- <4EDF9CAB.3050502@linux.vnet.ibm.com>
- <4EE046C7.9030902@linux.vnet.ibm.com>
- <alpine.LSU.2.00.1112080909300.22300@sister.anvils>
- <20111208181235.GE2686@shadowen.org>
+	Fri, 9 Dec 2011 08:38:18 -0500
+From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: alsa-devel@alsa-project.org
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCH 4/5] ASoC: mxs: Add missing MODULE_LICENSE("GPL")
+Date: Fri,  9 Dec 2011 14:38:11 +0100
+Message-Id: <a541450341a475b27ef603c5a4a67f113ba7fa0c.1323436034.git.LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <42d1579aefe3a3025f16fb4e38a4acf6b72756f7.1323436034.git.LW@KARO-electronics.de>
+References: <cover.1323436034.git.LW@KARO-electronics.de>
+ <992d017bd0214a67a836f2d0279b4edb6913da28.1323436034.git.LW@KARO-electronics.de>
+ <555be1750dd09586d5eede6457f72310890274b0.1323436034.git.LW@KARO-electronics.de>
+ <42d1579aefe3a3025f16fb4e38a4acf6b72756f7.1323436034.git.LW@KARO-electronics.de>
+In-Reply-To: <cover.1323436034.git.LW@KARO-electronics.de>
+References: <cover.1323436034.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111208181235.GE2686@shadowen.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 06:12:35PM +0000, Andy Whitcroft wrote:
-> On Thu, Dec 08, 2011 at 09:39:55AM -0800, Hugh Dickins wrote:
-> 
-> [...]
-> > > [PATCH 1/2] ext4: let mpage_submit_io works well when blocksize < pagesize
-> > > [PATCH 2/2] ext4: let ext4_discard_partial_buffers handle pages without
-> > > 
-> > > [PATCH 1/2] ext4: remove a wrong BUG_ON in ext4_ext_convert_to_initialized
-> > > [PATCH 2/2] ext4: let ext4_bio_write_page handle EOF correctly
-> [...]
-> > Only once, before the fixes, did I ever see an unexplained EINVAL
-> > (from cp), like Andy reports: I'm very hopeful his case is fixed too.
-> 
-> Yes I have reverted my fix and applied all four of these patches (above).
-> I have just completed a 100 iteration run of my test case without failure.
-> This would typically fail in the first iteration 90% of the time and
-> never survived more than two iterations.
-> 
-> I am comfortable saying they resolve my issue.
+The sound driver refuses to load as module, because of the missing
+MODULE_LICENSE("GPL").
+The file header indicates that the driver is indeed published under
+the GPL.
 
-Are we likely to see these fixes in a 3.2-rcN or will they be going to
-stable?
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ sound/soc/mxs/mxs-pcm.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
--apw
+diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
+index dea5aa4..8646913 100644
+--- a/sound/soc/mxs/mxs-pcm.c
++++ b/sound/soc/mxs/mxs-pcm.c
+@@ -357,3 +357,5 @@ static void __exit snd_mxs_pcm_exit(void)
+ 	platform_driver_unregister(&mxs_pcm_driver);
+ }
+ module_exit(snd_mxs_pcm_exit);
++
++MODULE_LICENSE("GPL");
+-- 
+1.5.6.5
+
