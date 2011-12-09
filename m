@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab1LIHZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 02:25:40 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55885 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab1LIHZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 02:25:37 -0500
-Date: Fri, 9 Dec 2011 08:23:54 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: andi.kleen@intel.com, linux-kernel@vger.kernel.org,
-        Chen Gong <gong.chen@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH-RESEND] x86: add IRQ context simulation in module
- mce-inject
-Message-ID: <20111209072354.GH24537@elte.hu>
-References: <4ec2fc2492784d824@agluck-desktop.sc.intel.com>
- <4edfa0a13094144086@agluck-desktop.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4edfa0a13094144086@agluck-desktop.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751945Ab1LIH0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 02:26:13 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18639 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab1LIH0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 02:26:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 08 Dec 2011 23:26:10 -0800
+From: Shridhar Rasal <srasal@nvidia.com>
+To: dmitry.torokhov@gmail.com
+Cc: rydberg@euromail.se, swarren@nvidia.com, riyer@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Shridhar Rasal <srasal@nvidia.com>
+Subject: [PATCH 1/1] input: keyboard: Set configuration registers
+Date: Fri,  9 Dec 2011 12:59:18 +0530
+Message-Id: <1323415758-16822-1-git-send-email-srasal@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-Set only REQUIRED row and column configuration register to
+PROPER values to avoid continuously generating KBC input events.
+-Use *en* field in pin_cfg, to check GPIO_x_ROW_EN register
+should be set or clear.
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
+---
+ arch/arm/mach-tegra/include/mach/kbc.h |    1 +
+ drivers/input/keyboard/tegra-kbc.c     |   13 ++++++++-----
+ 2 files changed, 9 insertions(+), 5 deletions(-)
 
-> mce-inject provides a mechanism to simulate errors so that test
-> scripts can check for correct operation of the kernel without
-> requiring any specialized hardware to create rare events.
-> 
-> The existing code can simulate events in normal process context
-> and also in NMI context - but not in IRQ context. This patch
-> fills that gap.
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> Acked-by: Tony Luck <tony.luck@intel.com>
+diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+index 4f3572a..2212284 100644
+--- a/arch/arm/mach-tegra/include/mach/kbc.h
++++ b/arch/arm/mach-tegra/include/mach/kbc.h
+@@ -38,6 +38,7 @@
+ 
+ struct tegra_kbc_pin_cfg {
+ 	bool is_row;
++	bool en;
+ 	unsigned char num;
+ };
+ 
+diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+index cf3228b..faf4f3e 100644
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@ -447,11 +447,14 @@ static void tegra_kbc_config_pins(struct tegra_kbc *kbc)
+ 		row_cfg &= ~r_mask;
+ 		col_cfg &= ~c_mask;
+ 
+-		if (pdata->pin_cfg[i].is_row)
+-			row_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << r_shft;
+-		else
+-			col_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << c_shft;
+-
++		if (pdata->pin_cfg[i].en) {
++			if (pdata->pin_cfg[i].is_row)
++				row_cfg |= ((pdata->pin_cfg[i].num << 1) | 1)
++						<< r_shft;
++			else
++				col_cfg |= ((pdata->pin_cfg[i].num << 1) | 1)
++						<< c_shft;
++		}
+ 		writel(row_cfg, kbc->mmio + r_offs);
+ 		writel(col_cfg, kbc->mmio + c_offs);
+ 	}
+-- 
+1.7.1
 
-Looks good to me. Will show up in the RAS tree i guess?
-
-Thanks,
-
-	Ingo
