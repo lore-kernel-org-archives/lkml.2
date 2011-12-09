@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1LIBvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:51:33 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44498 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab1LIBv0 (ORCPT
+	id S1754112Ab1LIBwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 20:52:32 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49406 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab1LIBw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:51:26 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX197APixN41UM/uou6eBKfd4
-Date: Thu, 8 Dec 2011 17:51:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: OMAP1: Set the omap1623 sram size to 16K
-Message-ID: <20111209015122.GM31337@atomide.com>
-References: <20111128174508.GO31337@atomide.com>
- <1322686675-26855-1-git-send-email-jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322686675-26855-1-git-send-email-jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 8 Dec 2011 20:52:29 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Dec 2011 10:51:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
+        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
+        hannes@cmpxchg.org, mhocko@suse.cz,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Subject: Re: [PATCH v8 4/9] tcp memory pressure controls
+Message-Id: <20111209105107.0e2296c1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1323120903-2831-5-git-send-email-glommer@parallels.com>
+References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
+	<1323120903-2831-5-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we're always reprogramming the core clock we must make
-sure SRAM works. It seems that neither omap1621 or omap1623
-has 256K of SRAM. Set the SRAM size to safe value of 16K.
+On Mon,  5 Dec 2011 19:34:58 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+> This patch introduces memory pressure controls for the tcp
+> protocol. It uses the generic socket memory pressure code
+> introduced in earlier patches, and fills in the
+> necessary data in cg_proto struct.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
 
---- a/arch/arm/plat-omap/sram.c
-+++ b/arch/arm/plat-omap/sram.c
-@@ -141,11 +141,9 @@ static void __init omap_detect_sram(void)
- 			omap_sram_size = 0x32000;	/* 200K */
- 		else if (cpu_is_omap15xx())
- 			omap_sram_size = 0x30000;	/* 192K */
--		else if (cpu_is_omap1610() || cpu_is_omap1621() ||
--		     cpu_is_omap1710())
-+		else if (cpu_is_omap1610() || cpu_is_omap1611() ||
-+				cpu_is_omap1621() || cpu_is_omap1710())
- 			omap_sram_size = 0x4000;	/* 16K */
--		else if (cpu_is_omap1611())
--			omap_sram_size = SZ_256K;
- 		else {
- 			pr_err("Could not detect SRAM size\n");
- 			omap_sram_size = 0x4000;
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
