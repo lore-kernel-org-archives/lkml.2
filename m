@@ -1,256 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab1LILC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 06:02:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57341 "EHLO
+	id S1752630Ab1LILFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 06:05:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62093 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1LILCy convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750850Ab1LILFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 06:02:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1750B77B9F@HQMAIL01.nvidia.com>
-	<1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Date: Fri, 9 Dec 2011 12:02:54 +0100
-Message-ID: <CACRpkdbAXmWkzzhBFndbivY4-FhJRpXh49XQ3--wPeO=X1Zafg@mail.gmail.com>
-Subject: Re: [PATCH v2] Documentation/pinctrl: various minor fixes
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Stephen Warren <swarren@nvidia.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 06:05:47 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH v3] sound/soc/lapis: add machine driver v3 updated
+Date: Fri,  9 Dec 2011 20:03:52 +0900
+Message-Id: <1323428632-29309-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+V3 Update Mark's comments
+ - Delete i2c_board_info data structure.
+ - Delete i2c_new_device/i2c_put_adapter.
+ - Delete .startup method.
+ - Add error processing for failure of snd_soc_unregister_card.
+ - Add MODULE_ALIAS
+ - Change platform_driver name
+ - Set to .dai_fmt of snd_soc_dai_link not use snd_soc_dai_set_fmt
+---
+ sound/soc/Kconfig                   |    1 +
+ sound/soc/Makefile                  |    1 +
+ sound/soc/lapis/Kconfig             |    5 +
+ sound/soc/lapis/Makefile            |    5 +
+ sound/soc/lapis/ml7213ioh-machine.c |  158 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 170 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/lapis/Kconfig
+ create mode 100644 sound/soc/lapis/Makefile
+ create mode 100644 sound/soc/lapis/ml7213ioh-machine.c
 
-> - add some consts
-> - don't use the group index alone to determine the value to write to
->  foo's mux register. For spi and i2c the group index is always 0.
->  Additionally using the function index makes much more sense as it
->  generates a different value for each function/group pair.
-> - fix a few syntax errors
->
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
-Some of these were fixed in earlier documentation patches in
-my tree, so I took out the pieces that were missing and squashed
-into that patch. The result now looks like this:
-
-commit 478781254aea577029c7872bab5578e98ef0cbad
-Author: Linus Walleij <linus.walleij@linaro.org>
-Date:   Thu Nov 10 09:27:41 2011 +0100
-
-    pinctrl: documentation update
-
-    Update the docs removing an obsolete __refdata tag and document
-    the mysterious return value of pin_free(). And fixes up some various
-    confusions in the pinctrl documentation.
-
-    Reported-by: Rajendra Nayak <rnayak@ti.com>
-    Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-    Reported-by: Thomas Abraham <thomas.abraham@linaro.org>
-    Reported-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-    Acked-by: Stephen Warren <swarren@nvidia.com>
-    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index b04cb7d..0a8b225 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -32,7 +32,7 @@ Definition of PIN:
-   be sparse - i.e. there may be gaps in the space with numbers where no
-   pin exists.
-
--When a PIN CONTROLLER is instatiated, it will register a descriptor to the
-+When a PIN CONTROLLER is instantiated, it will register a descriptor to the
- pin control framework, and this descriptor contains an array of pin descriptors
- describing the pins handled by this specific pin controller.
-
-@@ -61,14 +61,14 @@ this in our driver:
-
- #include <linux/pinctrl/pinctrl.h>
-
--const struct pinctrl_pin_desc __refdata foo_pins[] = {
--      PINCTRL_PIN(0, "A1"),
--      PINCTRL_PIN(1, "A2"),
--      PINCTRL_PIN(2, "A3"),
-+const struct pinctrl_pin_desc foo_pins[] = {
-+      PINCTRL_PIN(0, "A8"),
-+      PINCTRL_PIN(1, "B8"),
-+      PINCTRL_PIN(2, "C8"),
-       ...
--      PINCTRL_PIN(61, "H6"),
--      PINCTRL_PIN(62, "H7"),
--      PINCTRL_PIN(63, "H8"),
-+      PINCTRL_PIN(61, "F1"),
-+      PINCTRL_PIN(62, "G1"),
-+      PINCTRL_PIN(63, "H1"),
- };
-
- static struct pinctrl_desc foo_desc = {
-@@ -91,8 +91,8 @@ int __init foo_probe(void)
- Pins usually have fancier names than this. You can find these in the dataheet
- for your chip. Notice that the core pinctrl.h file provides a fancy macro
- called PINCTRL_PIN() to create the struct entries. As you can see I enumerated
--the pins from 0 in the upper left corner to 63 in the lower right corner,
--this enumeration was arbitrarily chosen, in practice you need to think
-+the pins from 0 in the upper left corner to 63 in the lower right corner.
-+This enumeration was arbitrarily chosen, in practice you need to think
- through your numbering system so that it matches the layout of registers
- and such things in your driver, or the code may become complicated. You must
- also consider matching of offsets to the GPIO ranges that may be handled by
-@@ -133,8 +133,8 @@ struct foo_group {
-        const unsigned num_pins;
- };
-
--static unsigned int spi0_pins[] = { 0, 8, 16, 24 };
--static unsigned int i2c0_pins[] = { 24, 25 };
-+static const unsigned int spi0_pins[] = { 0, 8, 16, 24 };
-+static const unsigned int i2c0_pins[] = { 24, 25 };
-
- static const struct foo_group foo_groups[] = {
-        {
-@@ -242,7 +242,7 @@ chip a: [32 .. 47]
- chip b: [48 .. 55]
-
- When GPIO-specific functions in the pin control subsystem are called, these
--ranges will be used to look up the apropriate pin controller by inspecting
-+ranges will be used to look up the appropriate pin controller by inspecting
- and matching the pin to the pin ranges across all controllers. When a
- pin controller handling the matching range is found, GPIO-specific functions
- will be called on that specific pin controller.
-@@ -438,7 +438,7 @@ you. Define enumerators only for the pins you can
-control if that makes sense.
-
- Assumptions:
-
--We assume that the number possible function maps to pin groups is limited by
-+We assume that the number of possible function maps to pin groups is limited by
- the hardware. I.e. we assume that there is no system where any function can be
- mapped to any pin, like in a phone exchange. So the available pins groups for
- a certain function will be limited to a few choices (say up to eight or so),
-@@ -585,7 +585,7 @@ int foo_list_funcs(struct pinctrl_dev *pctldev,
-unsigned selector)
-
- const char *foo_get_fname(struct pinctrl_dev *pctldev, unsigned selector)
- {
--       return myfuncs[selector].name;
-+       return foo_functions[selector].name;
- }
-
- static int foo_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
-@@ -600,16 +600,16 @@ static int foo_get_groups(struct pinctrl_dev
-*pctldev, unsigned selector,
- int foo_enable(struct pinctrl_dev *pctldev, unsigned selector,
-                unsigned group)
- {
--       u8 regbit = (1 << group);
-+       u8 regbit = (1 << selector + group);
-
-        writeb((readb(MUX)|regbit), MUX)
-        return 0;
- }
-
--int foo_disable(struct pinctrl_dev *pctldev, unsigned selector,
-+void foo_disable(struct pinctrl_dev *pctldev, unsigned selector,
-                unsigned group)
- {
--       u8 regbit = (1 << group);
-+       u8 regbit = (1 << selector + group);
-
-        writeb((readb(MUX) & ~(regbit)), MUX)
-        return 0;
-@@ -683,7 +683,7 @@ spi on the second function mapping:
-
- #include <linux/pinctrl/machine.h>
-
--static struct pinmux_map pmx_mapping[] = {
-+static const struct pinmux_map pmx_mapping[] = {
-        {
-                .ctrl_dev_name = "pinctrl.0",
-                .function = "spi0",
-@@ -714,7 +714,7 @@ for example if they are not yet instantiated or
-cumbersome to obtain.
-
- You register this pinmux mapping to the pinmux subsystem by simply:
-
--       ret = pinmux_register_mappings(&pmx_mapping, ARRAY_SIZE(pmx_mapping));
-+       ret = pinmux_register_mappings(pmx_mapping, ARRAY_SIZE(pmx_mapping));
-
- Since the above construct is pretty common there is a helper macro to make
- it even more compact which assumes you want to use pinctrl.0 and position
-@@ -762,42 +762,42 @@ case), we define a mapping like this:
-        .name "2bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_0_grp",
-+       .group = "mmc0_1_grp",
-        .dev_name = "foo-mmc.0",
- },
- {
-        .name "4bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_0_grp",
-+       .group = "mmc0_1_grp",
-        .dev_name = "foo-mmc.0",
- },
- {
-        .name "4bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_1_grp",
-+       .group = "mmc0_2_grp",
-        .dev_name = "foo-mmc.0",
- },
- {
-        .name "8bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_0_grp",
-+       .group = "mmc0_1_grp",
-        .dev_name = "foo-mmc.0",
- },
- {
-        .name "8bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_1_grp",
-+       .group = "mmc0_2_grp",
-        .dev_name = "foo-mmc.0",
- },
- {
-        .name "8bit"
-        .ctrl_dev_name = "pinctrl.0",
-        .function = "mmc0",
--       .group = "mmc0_2_grp",
-+       .group = "mmc0_3_grp",
-        .dev_name = "foo-mmc.0",
- },
- ...
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index c77aee5..0923824 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -174,6 +174,10 @@ out:
-  * @pin: the pin to free
-  * @gpio_range: the range matching the GPIO pin if this is a request for a
-  *     single GPIO pin
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index 35e662d..63f8582 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -34,6 +34,7 @@ source "sound/soc/ep93xx/Kconfig"
+ source "sound/soc/fsl/Kconfig"
+ source "sound/soc/imx/Kconfig"
+ source "sound/soc/jz4740/Kconfig"
++source "sound/soc/lapis/Kconfig"
+ source "sound/soc/nuc900/Kconfig"
+ source "sound/soc/omap/Kconfig"
+ source "sound/soc/kirkwood/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 9ea8ac8..002951f 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_SND_SOC)	+= ep93xx/
+ obj-$(CONFIG_SND_SOC)	+= fsl/
+ obj-$(CONFIG_SND_SOC)   += imx/
+ obj-$(CONFIG_SND_SOC)	+= jz4740/
++obj-$(CONFIG_SND_SOC)   += lapis/
+ obj-$(CONFIG_SND_SOC)	+= mid-x86/
+ obj-$(CONFIG_SND_SOC)	+= mxs/
+ obj-$(CONFIG_SND_SOC)	+= nuc900/
+diff --git a/sound/soc/lapis/Kconfig b/sound/soc/lapis/Kconfig
+new file mode 100644
+index 0000000..f6c2fe5
+--- /dev/null
++++ b/sound/soc/lapis/Kconfig
+@@ -0,0 +1,5 @@
++config SND_SOC_ML7213_MACHINE
++	tristate "ML7213 IOH ASoC machine driver"
++	select SND_SOC_ML7213_PLATFORM
++	help
++	  This is ASoC machine driver for ML7213 IOH
+diff --git a/sound/soc/lapis/Makefile b/sound/soc/lapis/Makefile
+new file mode 100644
+index 0000000..3560bd7
+--- /dev/null
++++ b/sound/soc/lapis/Makefile
+@@ -0,0 +1,5 @@
++# Platform
++snd-soc-ml7213-machine-objs := ml7213ioh-machine.o
++
++obj-$(CONFIG_SND_SOC_ML7213_PLATFORM) += snd-soc-ml7213-machine.o
++
+diff --git a/sound/soc/lapis/ml7213ioh-machine.c b/sound/soc/lapis/ml7213ioh-machine.c
+new file mode 100644
+index 0000000..28e7919
+--- /dev/null
++++ b/sound/soc/lapis/ml7213ioh-machine.c
+@@ -0,0 +1,158 @@
++/*
++ * ml7213ioh-machine.c -- SoC Audio for LAPIS Semiconductor ML7213 IOH CRB
 + *
-+ * This function returns a pointer to the function name in use. This is used
-+ * for callers that dynamically allocate a function name so it can be freed
-+ * once the pin is free. This is done for GPIO request functions.
-  */
- static const char *pin_free(struct pinctrl_dev *pctldev, int pin,
-                            struct pinctrl_gpio_range *gpio_range)
++ * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
++ */
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/soc.h>
++#include <linux/i2c.h>
++#include "../codecs/ml26124.h"
++
++static const struct snd_soc_dapm_widget ml7213_dapm_widgets[] = {
++	SND_SOC_DAPM_SPK("Speaker", NULL),
++	SND_SOC_DAPM_LINE("LINEOUT", NULL),
++	SND_SOC_DAPM_LINE("LINEIN", NULL),
++	SND_SOC_DAPM_MIC("AnalogMIC", NULL),
++	SND_SOC_DAPM_MIC("DigitalMIC", NULL),
++};
++
++static const struct snd_soc_dapm_route ml7213_routes[] = {
++	{"Speaker", NULL, "SPOUT"},
++	{"LINEOUT", NULL, "LOUT"},
++	{"MIN", NULL, "AnalogMIC"},
++	{"MDIN", NULL, "DigitalMIC"},
++	{"MIN", NULL, "LINEIN"},
++};
++
++static int ml7213_ioh_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_codec *codec = rtd->codec;
++	struct snd_soc_dapm_context *dapm = &codec->dapm;
++
++	snd_soc_dapm_new_controls(dapm, ml7213_dapm_widgets,
++				  ARRAY_SIZE(ml7213_dapm_widgets));
++
++	snd_soc_dapm_add_routes(dapm, ml7213_routes, ARRAY_SIZE(ml7213_routes));
++	snd_soc_dapm_sync(dapm);
++
++	return 0;
++}
++
++static int ml7213_hw_params(struct snd_pcm_substream *substream,
++			    struct snd_pcm_hw_params *params)
++{
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *codec_dai = rtd->codec_dai;
++	unsigned int clk = 0;
++	int ret = 0;
++
++	switch (params_rate(params)) {
++	case 16000:
++	case 32000:
++	case 48000:
++		clk = 12288800;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/* set the codec system clock for DAC and ADC */
++	ret = snd_soc_dai_set_sysclk(codec_dai, ML26124_USE_PLL, clk,
++				     SND_SOC_CLOCK_IN);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static struct snd_soc_ops ml7213_ops = {
++	.hw_params = ml7213_hw_params,
++};
++
++static struct snd_soc_dai_link ioh_i2s_dai = {
++	.name = "ML7213",
++	.stream_name = "I2S HiFi",
++	.cpu_dai_name = "ml7213-i2s",
++	.codec_dai_name = "ml26124-hifi",
++	.platform_name	= "ml7213-i2s-pcm-audio",
++	.codec_name	= "ml26124-00GD",
++	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
++					SND_SOC_DAIFMT_CBS_CFS,
++	.init = ml7213_ioh_init,
++	.ops = &ml7213_ops,
++};
++
++static struct snd_soc_card ioh_i2s_card = {
++	.name		= "ml7213",
++	.dai_link	= &ioh_i2s_dai,
++	.num_links	= 1,
++	.dapm_widgets	= ml7213_dapm_widgets,
++	.num_dapm_widgets	= ARRAY_SIZE(ml7213_dapm_widgets),
++	.dapm_routes	= ml7213_routes,
++	.num_dapm_routes	= ARRAY_SIZE(ml7213_routes),
++};
++
++static int __init ioh_i2s_probe(struct platform_device *pdev)
++{
++	ioh_i2s_card.dev = &pdev->dev;
++	snd_soc_register_card(&ioh_i2s_card);
++
++	return 0;
++}
++
++static int __exit ioh_i2s_remove(struct platform_device *pdev)
++{
++	int ret = snd_soc_unregister_card(&ioh_i2s_card);
++
++	if (ret) {
++		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
++		ioh_i2s_card.dev = NULL;
++		return ret;
++	}
++
++	return 0;
++}
++
++static struct platform_driver ioh_i2s_driver = {
++	.remove = ioh_i2s_remove,
++	.driver = {
++		.name = "ml7213ioh-i2s",
++		.owner = THIS_MODULE,
++	},
++	.probe	= ioh_i2s_probe,
++	.remove	= __devexit_p(ioh_i2s_remove),
++};
++
++static int __init ioh_i2s_init(void)
++{
++	return platform_driver_register(&ioh_i2s_driver);
++}
++
++static void __exit ioh_i2s_exit(void)
++{
++	return platform_driver_unregister(&ioh_i2s_driver);
++}
++
++module_init(ioh_i2s_init);
++module_exit(ioh_i2s_exit);
++
++MODULE_AUTHOR("Tomoya MORINAGA <tomoya.rohm@gmail.com>");
++MODULE_DESCRIPTION("LAPIS Semiconductor ML7213 IOH ALSA SoC machine driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:ml7213ioh-i2s");
+-- 
+1.7.4.4
 
-
-Hope this looks OK for you Uwe.
-
-Thanks,
-Linus Walleij
