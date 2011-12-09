@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1LIOX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:23:28 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:40096 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab1LIOXY (ORCPT
+	id S1754385Ab1LIOXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:23:51 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:38421 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab1LIOXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:23:24 -0500
+	Fri, 9 Dec 2011 09:23:49 -0500
 X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VPS3(zzc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h93fh)
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 05/06] Power: DA9052 Battery module V5
+Subject: [Patch 06/06] Regulator: DA9052/53 Regulator support v5
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: <cbouatmailru@gmail.com>
-CC: <linaro-dev@lists.linaro.org>, <dwmw2@infradead.org>,
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linaro-dev@lists.linaro.org>, <lrg@slimlogic.co.uk>,
         <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
-        <paul.liu@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
+        <paul.liu@linaro.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 9 Dec 2011 19:47:57 +0530
-Message-ID: <1323440277.23171.73.camel@dhruva>
+Date: Fri, 9 Dec 2011 19:48:20 +0530
+Message-ID: <1323440300.23171.74.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,686 +28,677 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for DA9052 battery charger. This driver depends on DA9052 MFD core dirver
-for definitions and methods.
+The Dialog PMIC has below featured regulators:-
+DA9052-BC - 4 DVS Buck converters 0.5V - 3.6V upto 1Amp.
+DA9053-AA/BX - 4 DVS Buck converters 0.5V - 2.5V upto 3Amp.
+DA9052/53 - 10 Programmable LDO's High PSSR, 1% accuracy.
 
-This patch is functionally tested on Samsung SMDKV6410.
+This patch support all the DA9052 and Da9053 regulators. The output voltages are
+fully programmable via I2C or SPI interface. The platform data with regulation
+constraints is passed down from the board to the regulator.
 
 Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Tested-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
 ---
+Changes since v5
+- Modify Kconfig to describe the config symbol
+- Change file permissions - remove execute permission
+- Line 43 - Adjust for 80 characters width
 Changes since v4
-- Remove unnecessary type cast
-- Improve code readability
+- Add support for DA9053
+- Correct the definition of macros DA9052_BUCK_ILIM_MASK
+- Get current limit to return current limit in microA
+- Correct the voltage selector value for Buck Peri above 3v
+- Set the struct member regualtor->da9052 in probe()
 Changes since v3
-- Included power_supply.h file
-- Corrected the definition of DA9052_BAT_THRESHOLD macro
-- Changed definition of charger_type_enum
-- Added API da9052_battery_read_end_current
-- Added API da9052_battery_check_status
-- Changed the way of handling the interrupts in da9052_bat_irq
+- Corrected verify_range function
 Changes since v2
-- Correct code styling for inline functions
-- Remove averaging algorithm
-- Set use_for_apm thru board specific parameter
+- Check for current min_uA < 700000
+- Corrected current conversions from mA to uA
 ---
- drivers/power/Kconfig          |    7 +
- drivers/power/Makefile         |    1 +
- drivers/power/da9052-battery.c |  615 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 623 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/da9052-battery.c
+ drivers/regulator/Kconfig            |    7 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9052-regulator.c |  600 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 608 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/da9052-regulator.c
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 9f88641..9696502 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -150,6 +150,13 @@ config BATTERY_DA9030
- 	  Say Y here to enable support for batteries charger integrated into
- 	  DA9030 PMIC.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 4e919b2..7a61b17 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -178,6 +178,13 @@ config REGULATOR_DA903X
+ 	  Say y here to support the BUCKs and LDOs regulators found on
+ 	  Dialog Semiconductor DA9030/DA9034 PMIC.
  
-+config BATTERY_DA9052
-+	tristate "Dialog DA9052 Battery"
++config REGULATOR_DA9052
++	tristate "Dialog DA9052/DA9053 regulators"
 +	depends on PMIC_DA9052
 +	help
-+	  Say Y here to enable support for batteries charger integrated into
-+	  DA9052 PMIC.
++	  This driver supports the voltage regulators of DA9052-BC and
++	  DA9053-AA/Bx PMIC.
 +
- config BATTERY_MAX17040
- 	tristate "Maxim MAX17040 Fuel Gauge"
- 	depends on I2C
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b4af13d..c570e20 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
- obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
- obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
- obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
-+obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
- obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
- obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
-diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+ config REGULATOR_PCF50633
+ 	tristate "PCF50633 regulator driver"
+         depends on MFD_PCF50633
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index c75a522..503bac8 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
+ obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6586X) += tps6586x-regulator.o
+ obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
++obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
+ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
 new file mode 100644
-index 0000000..70f33ad
+index 0000000..47481f0
 --- /dev/null
-+++ b/drivers/power/da9052-battery.c
-@@ -0,0 +1,615 @@
++++ b/drivers/regulator/da9052-regulator.c
+@@ -0,0 +1,600 @@
 +/*
-+ * Batttery Driver for Dialog DA9052 PMICs
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++* da9052-regulator.c: Regulator driver for DA9052
++*
++* Copyright(c) 2011 Dialog Semiconductor Ltd.
++*
++* Author: David Dajun Chen <dchen@diasemi.com>
++*
++* This program is free software; you can redistribute it and/or modify
++* it under the terms of the GNU General Public License as published by
++* the Free Software Foundation; either version 2 of the License, or
++* (at your option) any later version.
++*
++*/
 +
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/freezer.h>
-+#include <linux/fs.h>
-+#include <linux/jiffies.h>
 +#include <linux/module.h>
-+#include <linux/timer.h>
-+#include <linux/uaccess.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/err.h>
 +#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
 +
 +#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
 +#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/pdata.h>
 +
-+/* STATIC CONFIGURATION */
-+#define DA9052_BAT_CUTOFF_VOLT		2800
-+#define DA9052_BAT_TSH			62000
-+#define DA9052_BAT_LOW_CAP		4
-+#define DA9052_AVG_SZ			4
-+#define DA9052_VC_TBL_SZ		68
-+#define DA9052_VC_TBL_REF_SZ		3
++/* Buck step size */
++#define DA9052_BUCK_PERI_3uV_STEP		100000
++#define DA9052_BUCK_PERI_REG_MAP_UPTO_3uV	24
++#define DA9052_CONST_3uV			3000000
 +
-+#define DA9052_MEAN(x, y)		((x + y) / 2)
++#define DA9052_MIN_UA		0
++#define DA9052_MAX_UA		3
++#define DA9052_CURRENT_RANGE	4
 +
-+enum charger_type_enum {
-+	DA9052_NOCHARGER = 1,
-+	DA9052_CHARGER,
++/* Bit masks */
++#define DA9052_BUCK_ILIM_MASK_EVEN	0x0c
++#define DA9052_BUCK_ILIM_MASK_ODD	0xc0
++
++static const u32 da9052_current_limits[3][4] = {
++	{700000, 800000, 1000000, 1200000},	/* DA9052-BC BUCKs */
++	{1600000, 2000000, 2400000, 3000000},	/* DA9053-AA/Bx BUCK-CORE */
++	{800000, 1000000, 1200000, 1500000},	/* DA9053-AA/Bx BUCK-PRO,
++						 * BUCK-MEM and BUCK-PERI
++						*/
 +};
 +
-+static const u16 vc_tbl_ref[3] = {10, 25, 40};
-+/* Lookup table for voltage vs capacity */
-+static u32 const vc_tbl[3][68][2] = {
-+	/* For temperature 10 degree celisus*/
-+	{
-+	{4082, 100}, {4036, 98},
-+	{4020, 96}, {4008, 95},
-+	{3997, 93}, {3983, 91},
-+	{3964, 90}, {3943, 88},
-+	{3926, 87}, {3912, 85},
-+	{3900, 84}, {3890, 82},
-+	{3881, 80}, {3873, 79},
-+	{3865, 77}, {3857, 76},
-+	{3848, 74}, {3839, 73},
-+	{3829, 71}, {3820, 70},
-+	{3811, 68}, {3802, 67},
-+	{3794, 65}, {3785, 64},
-+	{3778, 62}, {3770, 61},
-+	{3763, 59}, {3756, 58},
-+	{3750, 56}, {3744, 55},
-+	{3738, 53}, {3732, 52},
-+	{3727, 50}, {3722, 49},
-+	{3717, 47}, {3712, 46},
-+	{3708, 44}, {3703, 43},
-+	{3700, 41}, {3696, 40},
-+	{3693, 38}, {3691, 37},
-+	{3688, 35}, {3686, 34},
-+	{3683, 32}, {3681, 31},
-+	{3678, 29}, {3675, 28},
-+	{3672, 26}, {3669, 25},
-+	{3665, 23}, {3661, 22},
-+	{3656, 21}, {3651, 19},
-+	{3645, 18}, {3639, 16},
-+	{3631, 15}, {3622, 13},
-+	{3611, 12}, {3600, 10},
-+	{3587, 9}, {3572, 7},
-+	{3548, 6}, {3503, 5},
-+	{3420, 3}, {3268, 2},
-+	{2992, 1}, {2746, 0}
-+	},
-+	/* For temperature 25 degree celisus */
-+	{
-+	{4102, 100}, {4065, 98},
-+	{4048, 96}, {4034, 95},
-+	{4021, 93}, {4011, 92},
-+	{4001, 90}, {3986, 88},
-+	{3968, 87}, {3952, 85},
-+	{3938, 84}, {3926, 82},
-+	{3916, 81}, {3908, 79},
-+	{3900, 77}, {3892, 76},
-+	{3883, 74}, {3874, 73},
-+	{3864, 71}, {3855, 70},
-+	{3846, 68}, {3836, 67},
-+	{3827, 65}, {3819, 64},
-+	{3810, 62}, {3801, 61},
-+	{3793, 59}, {3786, 58},
-+	{3778, 56}, {3772, 55},
-+	{3765, 53}, {3759, 52},
-+	{3754, 50}, {3748, 49},
-+	{3743, 47}, {3738, 46},
-+	{3733, 44}, {3728, 43},
-+	{3724, 41}, {3720, 40},
-+	{3716, 38}, {3712, 37},
-+	{3709, 35}, {3706, 34},
-+	{3703, 33}, {3701, 31},
-+	{3698, 30}, {3696, 28},
-+	{3693, 27}, {3690, 25},
-+	{3687, 24}, {3683, 22},
-+	{3680, 21}, {3675, 19},
-+	{3671, 18}, {3666, 17},
-+	{3660, 15}, {3654, 14},
-+	{3647, 12}, {3639, 11},
-+	{3630, 9}, {3621, 8},
-+	{3613, 6}, {3606, 5},
-+	{3597, 4}, {3582, 2},
-+	{3546, 1}, {2747, 0}
-+	},
-+	/* For temperature 40 degree celisus*/
-+	{
-+	{4114, 100}, {4081, 98},
-+	{4065, 96}, {4050, 95},
-+	{4036, 93}, {4024, 92},
-+	{4013, 90}, {4002, 88},
-+	{3990, 87}, {3976, 85},
-+	{3962, 84}, {3950, 82},
-+	{3939, 81}, {3930, 79},
-+	{3921, 77}, {3912, 76},
-+	{3902, 74}, {3893, 73},
-+	{3883, 71}, {3874, 70},
-+	{3865, 68}, {3856, 67},
-+	{3847, 65}, {3838, 64},
-+	{3829, 62}, {3820, 61},
-+	{3812, 59}, {3803, 58},
-+	{3795, 56}, {3787, 55},
-+	{3780, 53}, {3773, 52},
-+	{3767, 50}, {3761, 49},
-+	{3756, 47}, {3751, 46},
-+	{3746, 44}, {3741, 43},
-+	{3736, 41}, {3732, 40},
-+	{3728, 38}, {3724, 37},
-+	{3720, 35}, {3716, 34},
-+	{3713, 33}, {3710, 31},
-+	{3707, 30}, {3704, 28},
-+	{3701, 27}, {3698, 25},
-+	{3695, 24}, {3691, 22},
-+	{3686, 21}, {3681, 19},
-+	{3676, 18}, {3671, 17},
-+	{3666, 15}, {3661, 14},
-+	{3655, 12}, {3648, 11},
-+	{3640, 9}, {3632, 8},
-+	{3622, 6}, {3616, 5},
-+	{3611, 4}, {3604, 2},
-+	{3594, 1}, {2747, 0}
-+	}
++struct da9052_regulator_info {
++	struct regulator_desc reg_desc;
++	int step_uV;
++	int min_uV;
++	int max_uV;
++	unsigned char volt_shift;
++	unsigned char en_bit;
++	unsigned char activate_bit;
 +};
 +
-+struct da9052_battery {
++struct da9052_regulator {
 +	struct da9052 *da9052;
-+	struct power_supply psy;
-+	int charger_type;
-+	int status;
-+	int health;
++	struct da9052_regulator_info *info;
++	struct regulator_dev *rdev;
 +};
 +
-+static inline int volt_reg_to_mV(int value)
++static int verify_range(struct da9052_regulator_info *info,
++			 int min_uV, int max_uV)
 +{
-+	return ((value * 1000) / 512) + 2500;
-+}
-+
-+static inline int ichg_reg_to_mA(int value)
-+{
-+	return (value * 3900) / 1000;
-+}
-+
-+static int da9052_read_chgend_current(struct da9052_battery *bat,
-+				       int *current_mA)
-+{
-+	int ret;
-+
-+	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
++	if (min_uV > info->max_uV || max_uV < info->min_uV)
 +		return -EINVAL;
 +
-+	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_END_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGEND_ICHGEND);
-+
 +	return 0;
 +}
 +
-+static int da9052_read_chg_current(struct da9052_battery *bat, int *current_mA)
++static int da9052_regulator_enable(struct regulator_dev *rdev)
 +{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 1 << info->en_bit, 1 << info->en_bit);
++}
++
++static int da9052_regulator_disable(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 1 << info->en_bit, 0);
++}
++
++static int da9052_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
 +	int ret;
 +
-+	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
-+		return -EINVAL;
-+
-+	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_AV_REG);
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
 +	if (ret < 0)
 +		return ret;
 +
-+	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGAV_ICHGAV);
-+
-+	return 0;
++	return ret & (1 << info->en_bit);
 +}
 +
-+static int da9052_bat_check_status(struct da9052_battery *bat, int *status)
++static int da9052_dcdc_get_current_limit(struct regulator_dev *rdev)
 +{
-+	u8 v[2] = {0, 0};
-+	u8 bat_status;
-+	u8 chg_end;
-+	int ret;
-+	int chg_current;
-+	int chg_end_current;
-+	bool dcinsel;
-+	bool dcindet;
-+	bool vbussel;
-+	bool vbusdet;
-+	bool dc;
-+	bool vbus;
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	int offset = rdev_get_id(rdev);
++	int ret, row = 2;
 +
-+	ret = da9052_group_read(bat->da9052, DA9052_STATUS_A_REG, 2, v);
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKA_REG + offset/2);
 +	if (ret < 0)
 +		return ret;
 +
-+	bat_status = v[0];
-+	chg_end = v[1];
-+
-+	dcinsel = bat_status & DA9052_STATUSA_DCINSEL;
-+	dcindet = bat_status & DA9052_STATUSA_DCINDET;
-+	vbussel = bat_status & DA9052_STATUSA_VBUSSEL;
-+	vbusdet = bat_status & DA9052_STATUSA_VBUSDET;
-+	dc = dcinsel && dcindet;
-+	vbus = vbussel && vbusdet;
-+
-+	/* Preference to WALL(DCIN) charger unit */
-+	if (dc || vbus) {
-+		bat->charger_type = DA9052_CHARGER;
-+
-+		/* If charging end flag is set and Charging current is greater
-+		 * than charging end limit then battery is charging
-+		*/
-+		if ((chg_end & DA9052_STATUSB_CHGEND) != 0) {
-+			ret = da9052_read_chg_current(bat, &chg_current);
-+			if (ret < 0)
-+				return ret;
-+			ret = da9052_read_chgend_current(bat, &chg_end_current);
-+			if (ret < 0)
-+				return ret;
-+
-+			if (chg_current >= chg_end_current)
-+				bat->status = POWER_SUPPLY_STATUS_CHARGING;
-+			else
-+				bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+		} else {
-+			/* If Charging end flag is cleared then battery is
-+			 * charging
-+			*/
-+			bat->status = POWER_SUPPLY_STATUS_CHARGING;
-+		}
-+	} else if (dcindet || vbusdet) {
-+			bat->charger_type = DA9052_CHARGER;
-+			bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+	} else {
-+		bat->charger_type = DA9052_NOCHARGER;
-+		bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
-+	}
-+
-+	if (status != NULL)
-+		*status = bat->status;
-+	return 0;
-+}
-+
-+static int da9052_bat_read_volt(struct da9052_battery *bat, int *volt_mV)
-+{
-+	int volt;
-+
-+	volt = da9052_adc_manual_read(bat->da9052, DA9052_ADC_MAN_MUXSEL_VBAT);
-+	if (volt < 0)
-+		return volt;
-+
-+	*volt_mV = volt_reg_to_mV(volt);
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_check_presence(struct da9052_battery *bat, int *illegal)
-+{
-+	int bat_temp;
-+
-+	bat_temp = da9052_adc_read_temp(bat->da9052);
-+	if (bat_temp < 0)
-+		return bat_temp;
-+
-+	if (bat_temp > DA9052_BAT_TSH)
-+		*illegal = 1;
++	/* Determine the even or odd position of the buck current limit
++	 * register field
++	*/
++	if (offset % 2 == 0)
++		ret = (ret & DA9052_BUCK_ILIM_MASK_EVEN) >> 2;
 +	else
-+		*illegal = 0;
++		ret = (ret & DA9052_BUCK_ILIM_MASK_ODD) >> 6;
 +
-+	return 0;
++	/* Select the appropriate current limit range */
++	if (regulator->da9052->chip_id == DA9052)
++		row = 0;
++	else if (offset == 0)
++		row = 1;
++
++	return da9052_current_limits[row][ret];
 +}
 +
-+static int da9052_bat_interpolate(int vbat_lower, int  vbat_upper,
-+				   int level_lower, int level_upper,
-+				   int bat_voltage)
++static int da9052_dcdc_set_current_limit(struct regulator_dev *rdev, int min_uA,
++					  int max_uA)
 +{
-+	int tmp;
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	int offset = rdev_get_id(rdev);
++	int reg_val = 0;
++	int i, row = 2;
 +
-+	tmp = ((level_upper - level_lower) * 1000) / (vbat_upper - vbat_lower);
-+	tmp = level_lower + (((bat_voltage - vbat_lower) * tmp) / 1000);
++	/* Select the appropriate current limit range */
++	if (regulator->da9052->chip_id == DA9052)
++		row = 0;
++	else if (offset == 0)
++		row = 1;
 +
-+	return tmp;
-+}
++	if (min_uA > da9052_current_limits[row][DA9052_MAX_UA] ||
++	    max_uA < da9052_current_limits[row][DA9052_MIN_UA])
++		return -EINVAL;
 +
-+unsigned char da9052_determine_vc_tbl_index(unsigned char adc_temp)
-+{
-+	int i;
-+
-+	if (adc_temp <= vc_tbl_ref[0])
-+		return 0;
-+
-+	if (adc_temp > vc_tbl_ref[DA9052_VC_TBL_REF_SZ - 1])
-+		return DA9052_VC_TBL_REF_SZ - 1;
-+
-+	for (i = 0; i < DA9052_VC_TBL_REF_SZ; i++) {
-+		if ((adc_temp > vc_tbl_ref[i]) &&
-+		    (adc_temp <= DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1])))
-+				return i;
-+		if ((adc_temp > DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1]))
-+		     && (adc_temp <= vc_tbl_ref[i]))
-+				return i + 1;
-+	}
-+}
-+
-+static int da9052_bat_read_capacity(struct da9052_battery *bat, int *capacity)
-+{
-+	int adc_temp;
-+	int bat_voltage;
-+	int vbat_lower;
-+	int vbat_upper;
-+	int level_upper;
-+	int level_lower;
-+	int ret;
-+	int flag;
-+	int i = 0;
-+	int j;
-+
-+	ret = da9052_bat_read_volt(bat, &bat_voltage);
-+	if (ret < 0)
-+		return ret;
-+
-+	adc_temp = da9052_adc_read_temp(bat->da9052);
-+	if (adc_temp < 0)
-+		return adc_temp;
-+
-+	i = da9052_determine_vc_tbl_index(adc_temp);
-+
-+	if (bat_voltage >= vc_tbl[i][0][0]) {
-+		*capacity = 100;
-+		return 0;
-+	}
-+	if (bat_voltage <= vc_tbl[i][DA9052_VC_TBL_SZ - 1][0]) {
-+		*capacity = 0;
-+		return 0;
-+	}
-+	flag = 0;
-+
-+	for (j = 0; j < (DA9052_VC_TBL_SZ-1); j++) {
-+		if ((bat_voltage <= vc_tbl[i][j][0]) &&
-+		    (bat_voltage >= vc_tbl[i][j + 1][0])) {
-+			vbat_upper = vc_tbl[i][j][0];
-+			vbat_lower = vc_tbl[i][j + 1][0];
-+			level_upper = vc_tbl[i][j][1];
-+			level_lower = vc_tbl[i][j + 1][1];
-+			flag = 1;
++	for (i = 0; i < DA9052_CURRENT_RANGE; i++) {
++		if (min_uA <= da9052_current_limits[row][i]) {
++			reg_val = i;
 +			break;
 +		}
 +	}
-+	if (!flag)
-+		return -EIO;
 +
-+	*capacity = da9052_bat_interpolate(vbat_lower, vbat_upper, level_lower,
-+					   level_upper, bat_voltage);
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_check_health(struct da9052_battery *bat, int *health)
-+{
-+	int ret;
-+	int bat_illegal;
-+	int capacity;
-+
-+	ret = da9052_bat_check_presence(bat, &bat_illegal);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (bat_illegal) {
-+		bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		return 0;
-+	}
-+
-+	if (bat->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
-+		ret = da9052_bat_read_capacity(bat, &capacity);
-+		if (ret < 0)
-+			return ret;
-+		if (capacity < DA9052_BAT_LOW_CAP)
-+			bat->health = POWER_SUPPLY_HEALTH_DEAD;
-+		else
-+			bat->health = POWER_SUPPLY_HEALTH_GOOD;
-+	}
-+
-+	*health = bat->health;
-+
-+	return 0;
-+}
-+
-+static irqreturn_t da9052_bat_irq(int irq, void *data)
-+{
-+	struct da9052_battery *bat = data;
-+
-+	irq -= bat->da9052->irq_base;
-+
-+	if (irq == DA9052_IRQ_CHGEND)
-+		bat->status = POWER_SUPPLY_STATUS_FULL;
++	/* Determine the even or odd position of the buck current limit
++	 * register field
++	*/
++	if (offset % 2 == 0)
++		return da9052_reg_update(regulator->da9052,
++					 DA9052_BUCKA_REG + offset/2,
++					 DA9052_BUCK_ILIM_MASK_EVEN,
++					 reg_val << 2);
 +	else
-+		da9052_bat_check_status(bat, NULL);
-+
-+	if (irq == DA9052_IRQ_CHGEND || irq == DA9052_IRQ_DCIN ||
-+	    irq == DA9052_IRQ_VBUS || irq == DA9052_IRQ_TBAT) {
-+		power_supply_changed(&bat->psy);
-+	}
-+
-+	return IRQ_HANDLED;
++		return da9052_reg_update(regulator->da9052,
++					 DA9052_BUCKA_REG + offset/2,
++					 DA9052_BUCK_ILIM_MASK_ODD,
++					 reg_val << 6);
 +}
 +
-+static int da9052_bat_get_property(struct power_supply *psy,
-+				    enum power_supply_property psp,
-+				    union power_supply_propval *val)
++static int da9052_list_buckperi_voltage(struct regulator_dev *rdev,
++					 unsigned int selector)
 +{
-+	int ret;
-+	int illegal;
-+	struct da9052_battery *bat = container_of(psy, struct da9052_battery,
-+						  psy);
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int volt_uV;
 +
-+	ret = da9052_bat_check_presence(bat, &illegal);
++	if ((regulator->da9052->chip_id == DA9052) &&
++	    (selector >= DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)) {
++		volt_uV = ((DA9052_BUCK_PERI_REG_MAP_UPTO_3uV * info->step_uV)
++			    + info->min_uV);
++		volt_uV += (selector - DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)
++			    * (DA9052_BUCK_PERI_3uV_STEP);
++	} else
++			volt_uV = (selector * info->step_uV) + info->min_uV;
++
++	if (volt_uV > info->max_uV)
++		return -EINVAL;
++
++	return volt_uV;
++}
++
++static int da9052_list_voltage(struct regulator_dev *rdev,
++				unsigned int selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int volt_uV;
++
++	volt_uV = info->min_uV + info->step_uV * selector;
++
++	if (volt_uV > info->max_uV)
++		return -EINVAL;
++
++	return volt_uV;
++}
++
++static int da9052_regulator_set_voltage_int(struct regulator_dev *rdev,
++					     int min_uV, int max_uV,
++					     unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = verify_range(info, min_uV, max_uV);
 +	if (ret < 0)
 +		return ret;
 +
-+	if (illegal && psp != POWER_SUPPLY_PROP_PRESENT)
-+		return -ENODEV;
++	if (min_uV < info->min_uV)
++		min_uV = info->min_uV;
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		ret = da9052_bat_check_status(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval =
-+			(bat->charger_type == DA9052_NOCHARGER) ? 0 : 1;
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		ret = da9052_bat_check_presence(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		ret = da9052_bat_check_health(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-+		val->intval = DA9052_BAT_CUTOFF_VOLT * 1000;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		ret = da9052_bat_read_volt(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_CURRENT_AVG:
-+		ret = da9052_read_chg_current(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		ret = da9052_bat_read_capacity(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		val->intval = da9052_adc_read_temp(bat->da9052);
-+		ret = val->intval;
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
++	*selector = (min_uV - info->min_uV) / info->step_uV;
++
++	ret = da9052_list_voltage(rdev, *selector);
++	if (ret < 0)
++		return ret;
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 (1 << info->volt_shift) - 1, *selector);
++}
++
++static int da9052_set_ldo_voltage(struct regulator_dev *rdev,
++				   int min_uV, int max_uV,
++				   unsigned int *selector)
++{
++	return da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++}
++
++static int da9052_set_ldo5_6_voltage(struct regulator_dev *rdev,
++				      int min_uV, int max_uV,
++				      unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++	if (ret < 0)
++		return ret;
++
++	/* Some LDOs are DVC controlled which requires enabling of
++	 * the LDO activate bit to implment the changes on the
++	 * LDO output.
++	*/
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
++				 info->activate_bit);
++}
++
++static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
++				    int min_uV, int max_uV,
++				    unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++	if (ret < 0)
++		return ret;
++
++	/* Some DCDCs are DVC controlled which requires enabling of
++	 * the DCDC activate bit to implment the changes on the
++	 * DCDC output.
++	*/
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
++				 info->activate_bit);
++}
++
++static int da9052_get_regulator_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
++	if (ret < 0)
++		return ret;
++
++	ret &= ((1 << info->volt_shift) - 1);
++
 +	return ret;
 +}
 +
-+static enum power_supply_property da9052_bat_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_CURRENT_AVG,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+};
-+
-+static struct power_supply template_battery = {
-+	.name		= "da9052-bat",
-+	.type		= POWER_SUPPLY_TYPE_BATTERY,
-+	.properties	= da9052_bat_props,
-+	.num_properties	= ARRAY_SIZE(da9052_bat_props),
-+	.get_property	= da9052_bat_get_property,
-+};
-+
-+static const char *const da9052_bat_irqs[] = {
-+	"BATT TEMP",
-+	"DCIN DET",
-+	"DCIN REM",
-+	"VBUS DET",
-+	"VBUS REM",
-+	"CHG END",
-+};
-+
-+static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
++static int da9052_set_buckperi_voltage(struct regulator_dev *rdev, int min_uV,
++					int max_uV, unsigned int *selector)
 +{
-+	struct da9052_pdata *pdata;
-+	struct da9052_battery *bat;
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
 +	int ret;
-+	int irq;
++
++	ret = verify_range(info, min_uV, max_uV);
++	if (ret < 0)
++		return ret;
++
++	if (min_uV < info->min_uV)
++		min_uV = info->min_uV;
++
++	if ((regulator->da9052->chip_id == DA9052) &&
++	    (min_uV >= DA9052_CONST_3uV))
++		*selector = DA9052_BUCK_PERI_REG_MAP_UPTO_3uV +
++			    ((min_uV - DA9052_CONST_3uV) /
++			    (DA9052_BUCK_PERI_3uV_STEP));
++	else
++		*selector = (min_uV - info->min_uV) / info->step_uV;
++
++	ret = da9052_list_buckperi_voltage(rdev, *selector);
++	if (ret < 0)
++		return ret;
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 (1 << info->volt_shift) - 1, *selector);
++}
++
++static int da9052_get_buckperi_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
++	if (ret < 0)
++		return ret;
++
++	ret &= ((1 << info->volt_shift) - 1);
++
++	return ret;
++}
++
++static struct regulator_ops da9052_buckperi_ops = {
++	.list_voltage = da9052_list_buckperi_voltage,
++	.get_voltage_sel = da9052_get_buckperi_voltage_sel,
++	.set_voltage = da9052_set_buckperi_voltage,
++
++	.get_current_limit = da9052_dcdc_get_current_limit,
++	.set_current_limit = da9052_dcdc_set_current_limit,
++
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_dcdc_ops = {
++	.set_voltage = da9052_set_dcdc_voltage,
++	.get_current_limit = da9052_dcdc_get_current_limit,
++	.set_current_limit = da9052_dcdc_set_current_limit,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_ldo5_6_ops = {
++	.set_voltage = da9052_set_ldo5_6_voltage,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_ldo_ops = {
++	.set_voltage = da9052_set_ldo_voltage,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++#define DA9052_LDO5_6(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "LDO" #_id,\
++		.ops = &da9052_ldo5_6_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_LDO(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "LDO" #_id,\
++		.ops = &da9052_ldo_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_DCDC(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "BUCK" #_id,\
++		.ops = &da9052_dcdc_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_BUCKPERI(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "BUCK" #_id,\
++		.ops = &da9052_buckperi_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++struct da9052_regulator_info da9052_regulator_info[] = {
++	/* Buck1 - 4 */
++	DA9052_DCDC(0, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBCOREGO),
++	DA9052_DCDC(1, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBPROGO),
++	DA9052_DCDC(2, 25, 925, 2500, 6, 6, DA9052_SUPPLY_VBMEMGO),
++	DA9052_BUCKPERI(3, 50, 1800, 3600, 5, 6, 0),
++	/* LD01 - LDO10 */
++	DA9052_LDO(4, 50, 600, 1800, 5, 6, 0),
++	DA9052_LDO5_6(5, 25, 600, 1800, 6, 6, DA9052_SUPPLY_VLDO2GO),
++	DA9052_LDO5_6(6, 25, 1725, 3300, 6, 6, DA9052_SUPPLY_VLDO3GO),
++	DA9052_LDO(7, 25, 1725, 3300, 6, 6, 0),
++	DA9052_LDO(8, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(9, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(10, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(11, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(12, 50, 1250, 3650, 6, 6, 0),
++	DA9052_LDO(13, 50, 1200, 3600, 6, 6, 0),
++};
++
++struct da9052_regulator_info da9053_regulator_info[] = {
++	/* Buck1 - 4 */
++	DA9052_DCDC(0, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBCOREGO),
++	DA9052_DCDC(1, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBPROGO),
++	DA9052_DCDC(2, 25, 925, 2500, 6, 6, DA9052_SUPPLY_VBMEMGO),
++	DA9052_BUCKPERI(3, 25, 925, 2500, 6, 6, 0),
++	/* LD01 - LDO10 */
++	DA9052_LDO(4, 50, 600, 1800, 5, 6, 0),
++	DA9052_LDO5_6(5, 25, 600, 1800, 6, 6, DA9052_SUPPLY_VLDO2GO),
++	DA9052_LDO5_6(6, 25, 1725, 3300, 6, 6, DA9052_SUPPLY_VLDO3GO),
++	DA9052_LDO(7, 25, 1725, 3300, 6, 6, 0),
++	DA9052_LDO(8, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(9, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(10, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(11, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(12, 50, 1250, 3650, 6, 6, 0),
++	DA9052_LDO(13, 50, 1200, 3600, 6, 6, 0),
++};
++
++static inline struct da9052_regulator_info *find_regulator_info(u8 chip_id,
++								 int id)
++{
++	struct da9052_regulator_info *info;
 +	int i;
 +
-+	bat = kzalloc(sizeof(struct da9052_battery), GFP_KERNEL);
-+	if (!bat)
-+		return -ENOMEM;
-+
-+	bat->da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = bat->da9052->dev->platform_data;
-+
-+	bat->psy = template_battery;
-+	if (pdata != NULL && pdata->use_for_apm)
-+		bat->psy.use_for_apm = pdata->use_for_apm;
-+	bat->charger_type = DA9052_NOCHARGER;
-+	bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
-+	bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+
-+	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		ret = request_threaded_irq(bat->da9052->irq_base + irq,
-+					   NULL, da9052_bat_irq,
-+					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					   da9052_bat_irqs[i], bat);
-+		if (ret != 0) {
-+			dev_err(bat->da9052->dev,
-+				"DA9052 failed to request %s IRQ %d: %d\n",
-+				da9052_bat_irqs[i], irq, ret);
-+			goto err;
++	if (chip_id == DA9052) {
++		for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++) {
++			info = &da9052_regulator_info[i];
++			if (info->reg_desc.id == id)
++				return info;
++		}
++	} else {
++		for (i = 0; i < ARRAY_SIZE(da9053_regulator_info); i++) {
++			info = &da9053_regulator_info[i];
++			if (info->reg_desc.id == id)
++				return info;
 +		}
 +	}
 +
-+	ret = power_supply_register(&pdev->dev, &bat->psy);
-+	 if (ret)
++	return NULL;
++}
++
++static int __devinit da9052_regulator_probe(struct platform_device *pdev)
++{
++	struct da9052_regulator *regulator;
++	struct da9052 *da9052;
++	struct da9052_pdata *pdata;
++	int ret;
++
++	regulator = kzalloc(sizeof(struct da9052_regulator), GFP_KERNEL);
++	if (!regulator)
++		return -ENOMEM;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++	regulator->da9052 = da9052;
++
++	regulator->info = find_regulator_info(regulator->da9052->chip_id,
++					      pdev->id);
++	if (regulator->info == NULL) {
++		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++		ret = -EINVAL;
 +		goto err;
++	}
++	regulator->rdev = regulator_register(&regulator->info->reg_desc,
++					     &pdev->dev,
++					     pdata->regulators[pdev->id],
++					     regulator);
++	if (IS_ERR(regulator->rdev)) {
++		dev_err(&pdev->dev, "failed to register regulator %s\n",
++			regulator->info->reg_desc.name);
++		ret = PTR_ERR(regulator->rdev);
++		goto err;
++	}
++
++	platform_set_drvdata(pdev, regulator);
 +
 +	return 0;
-+
 +err:
-+	for (; i >= 0; i--) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		free_irq(bat->da9052->irq_base + irq, bat);
-+	}
-+	kfree(bat);
++	kfree(regulator);
 +	return ret;
 +}
-+static int __devexit da9052_bat_remove(struct platform_device *pdev)
-+{
-+	int i;
-+	int irq;
-+	struct da9052_battery *bat = platform_get_drvdata(pdev);
 +
-+	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		free_irq(bat->da9052->irq_base + irq, bat);
-+	}
-+	power_supply_unregister(&bat->psy);
++static int __devexit da9052_regulator_remove(struct platform_device *pdev)
++{
++	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
++
++	regulator_unregister(regulator->rdev);
++	kfree(regulator);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver da9052_bat_driver = {
-+	.probe = da9052_bat_probe,
-+	.remove = __devexit_p(da9052_bat_remove),
++static struct platform_driver da9052_regulator_driver = {
++	.probe = da9052_regulator_probe,
++	.remove = __devexit_p(da9052_regulator_remove),
 +	.driver = {
-+		.name = "da9052-bat",
++		.name = "da9052-regulator",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init da9052_bat_init(void)
++static int __init da9052_regulator_init(void)
 +{
-+	return platform_driver_register(&da9052_bat_driver);
++	return platform_driver_register(&da9052_regulator_driver);
 +}
-+module_init(da9052_bat_init);
++subsys_initcall(da9052_regulator_init);
 +
-+static void __exit da9052_bat_exit(void)
++static void __exit da9052_regulator_exit(void)
 +{
-+	platform_driver_unregister(&da9052_bat_driver);
++	platform_driver_unregister(&da9052_regulator_driver);
 +}
-+module_exit(da9052_bat_exit);
++module_exit(da9052_regulator_exit);
 +
-+MODULE_DESCRIPTION("DA9052 BAT Device Driver");
 +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9052 PMIC");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9052-bat");
++MODULE_ALIAS("platform:da9052-regulator");
 -- 
 1.7.1
 
