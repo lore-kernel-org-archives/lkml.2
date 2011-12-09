@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab1LIWfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:35:00 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36837 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750829Ab1LIWe7 (ORCPT
+	id S1752108Ab1LIWgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:36:35 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:56621 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab1LIWgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:34:59 -0500
-X-Sasl-enc: ESvN2DnFNJDUx2QIBUSb7KZT4C3NTLrzADLuLETh0KM8 1323470098
-Date: Fri, 9 Dec 2011 14:34:54 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
-        davej@redhat.com
-Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
- for CPU modaliases)
-Message-ID: <20111209223454.GA24987@kroah.com>
-References: <1323309517.979.8.camel@mop>
- <20111209001145.GB9550@kroah.com>
- <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
- <1323444321.979.39.camel@mop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323444321.979.39.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Dec 2011 17:36:33 -0500
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Doug Ledford <dledford@redhat.com> (commit_signer:5/9=56%),
+        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/9=22%),
+        Joe Korty <joe.korty@ccur.com> (commit_signer:2/9=22%),
+        David Howells <dhowells@redhat.com> (commit_signer:2/9=22%)
+Subject: [resend][PATCH 1/3] mqueue: revert bump up DFLT_*MAX
+Date: Fri,  9 Dec 2011 17:35:55 -0500
+Message-Id: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
-> Greg, would be nice, if you can take a quick look a the driver core (not
-> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
-> they look sane to you. I'll then split the driver core stuff out, so we
-> can merge that before we port the individual drivers over.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Yes, it looks sane to me, thanks again for doing this work.
+Mqueue limitation is slightly naieve parameter likes other ipcs
+because unprivileged user can consume kernel memory by using ipcs.
 
-greg k-h
+Thus, too aggressive raise bring us security issue. Example,
+current setting allow evil unprivileged user use 256GB (= 256
+* 1024 * 1024*1024) and it's enough large to system will belome
+unresponsive. Don't do that.
+
+Instead, every admin should adjust the knobs for their own systems.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Acked-by: Joe Korty <joe.korty@ccur.com>
+Cc: Amerigo Wang <amwang@redhat.com>
+Cc: Serge E. Hallyn <serue@us.ibm.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+---
+ include/linux/ipc_namespace.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index e2bac00..2488535 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -118,13 +118,13 @@ extern int mq_init_ns(struct ipc_namespace *ns);
+ #define DFLT_QUEUESMAX		      256
+ #define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+-#define DFLT_MSG		       64U
+-#define DFLT_MSGMAX		     1024
++#define DFLT_MSG		       10U
++#define DFLT_MSGMAX		       10
+ #define HARD_MSGMAX		    65536
+ #define MIN_MSGSIZEMAX		      128
+ #define DFLT_MSGSIZE		     8192U
+-#define DFLT_MSGSIZEMAX		(1024*1024)
+-#define HARD_MSGSIZEMAX	     (16*1024*1024)
++#define DFLT_MSGSIZEMAX		     8192
++#define HARD_MSGSIZEMAX	    (16*1024*1024)
+ #else
+ static inline int mq_init_ns(struct ipc_namespace *ns) { return 0; }
+ #endif
+-- 
+1.7.1
+
