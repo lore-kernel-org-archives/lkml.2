@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab1LISAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:00:45 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46336 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab1LISAo (ORCPT
+	id S1753149Ab1LISBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:01:21 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:43226 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab1LISBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:00:44 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/kswrd98kmlYeQ+IAlbkBF
-Date: Fri, 9 Dec 2011 10:00:40 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
-Message-ID: <20111209180039.GR31337@atomide.com>
-References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
- <1323382390-14892-2-git-send-email-swarren@nvidia.com>
- <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
+	Fri, 9 Dec 2011 13:01:19 -0500
+Date: Fri, 9 Dec 2011 19:00:05 +0100
+From: Nico Schottelius <nico-linux-20111201@schottelius.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Nico Schottelius <nico-linux-20111201@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
+Subject: Re: BCM43224 hanging [3.2.0-rc4-00248-gb835c0f]
+Message-ID: <20111209180005.GA5055@ethz.ch>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
+	Arend van Spriel <arend@broadcom.com>,
+	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+	b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
+References: <20111201224851.GB20536@ethz.ch>
+ <4ED8B610.2010703@broadcom.com>
+ <20111202150128.GC3096@schottelius.org>
+ <20111207190821.GA1775@schottelius.org>
+ <4EE0F50B.5040407@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EE0F50B.5040407@broadcom.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.2.0-rc4-00255-g77a7300 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@nvidia.com> [111209 08:56]:
-> Linus Walleij wrote at Friday, December 09, 2011 7:01 AM:
-> > 
-> > What we could worry about is the amount of hard-coded chip data
-> > which sort of correlates with the discussion with Tony on how to
-> > provide DT info for pin control drivers.
-> 
-> My thinking here is that irrespective of whether the data in future chips
-> is the same or different to the current chips, it's better in the driver.
-> 
-> For a given SoC, the data is static; it can never ever change.
-> 
-> Hence, there's no point parsing it from device tree; we end up with exactly
-> the same data in the driver, yet have spent a bunch of time parsing it out
-> from device tree instead of just embedding it into the kernel binary.
-> 
-> If parts of Tegra X and Tegra Y are similar, it should be possible to have
-> them co-ordinate together and share the common data, and do whatever it
-> takes to create the appropriate completed view before passing it back from
-> tegraX_pinctrl_init() to the core. You could perhaps do it using /include/
-> in the .dtsi file too, but I think allowing the SoC init code to unify the
-> tables gives more flexibility; in your example below of the same data with
-> different pin names, that'd be implementable with code without too much
-> difficulty, but probably impossible with dtc since it has no macro/define
-> support at present.
-> 
-> Also, the representation of the data in a .c file will likely be far
-> smaller than in the .dtsi file, so this way saves space. Admittedly with
-> a multi-SoC binary, you end up with all the large per-SoC data in the
-> binary initially, so the space-savings aren't exactly seen, but it's
-> all init data, so does get dumped soon after boot.
-> 
-> Another point here: I don't have to maintain a DT binding for the Tegra
-> pinctrl driver this way, so if the next Tegra's pinmux HW is different,
-> all I need to do is edit the driver, not be shackled by a need to keep
-> the DT binding for it backwards-compatible. Although that said, I
-> /think/ even an obvious DT binding derived from struct
-> tegra_pinctrl_soc_data would be flexible enough for most things, perhaps
-> with the addition of allowing config param field definitions for pins
-> as well as groups.
+Hey Arend,
 
-What you're describing should be supported for sure.
+Arend van Spriel [Thu, Dec 08, 2011 at 06:34:03PM +0100]:
+> On 12/07/2011 08:08 PM, Nico Schottelius wrote:
+> Could you try and see what happens when you kill wpa_supplicant.
 
-IMHO the key issue here from pinctrl fwk point of view is: We want to
-allow multiple data sources for describing the pinmux functions.
+I can't kill it, it's in D state :-/
 
-The data sources supported should be any combination of static platform_data,
-DT data, loadable modules, and /lib/firmware. Then it's just a question of
-using the most suitable method for each SoC.
+I was just browsing through
+drivers/net/wireless/brcm80211/brcmsmac/main.c and it seems that
+your patch from my last problem has already been applied.
 
-Regards,
+What may be different this time that the network being used
+is *not* on 5Ghz, but 2.4 Ghz (I'm not in the same environment anymore).
 
-Tony
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
