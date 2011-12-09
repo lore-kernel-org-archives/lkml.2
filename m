@@ -1,132 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab1LIPDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 10:03:21 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37581 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab1LIPDS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 10:03:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE192DC.3080209@nvidia.com>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
-	<20111209010147.GH7913@S2100-06.ap.freescale.net>
-	<4EE18403.30604@nvidia.com>
-	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
-	<4EE192DC.3080209@nvidia.com>
-Date: Fri, 9 Dec 2011 23:03:17 +0800
-Message-ID: <CAA+hA=Sx=tmnjsY_7EF8NciZO4PvgYOCgRNK9WsGpKmJ8X-r3g@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754539Ab1LIPDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 10:03:50 -0500
+Received: from bay0-omc2-s25.bay0.hotmail.com ([65.54.190.100]:21981 "EHLO
+	bay0-omc2-s25.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753849Ab1LIPDs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 10:03:48 -0500
+Message-ID: <BAY163-W58A0B068C3EEAC0D484E8EFBB90@phx.gbl>
+X-Originating-IP: [82.43.252.147]
+From: Anand Kanaginhal <anand_dk@hotmail.com>
+To: <mjg59@srcf.ucam.org>
+CC: <bhelgaas@google.com>, <greg@kroah.com>,
+        Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: RE: PCIe Hotplugging not working
+Date: Fri, 9 Dec 2011 07:03:48 -0800
+Importance: Normal
+In-Reply-To: <20111209124524.GA3488@srcf.ucam.org>
+References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>,<BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>,<20111130154022.GA1411@srcf.ucam.org>,<BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>,<20111130182423.GA4831@srcf.ucam.org>,<CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>,<BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>,<20111209124524.GA3488@srcf.ucam.org>
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 09 Dec 2011 15:03:48.0056 (UTC) FILETIME=[C0EBED80:01CCB683]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/9 Stephen Warren <swarren@nvidia.com>:
-> On 12/08/2011 09:32 PM, Shawn Guo wrote:
->> On Thu, Dec 08, 2011 at 08:44:03PM -0700, Stephen Warren wrote:
->>> On 12/08/2011 06:01 PM, Shawn Guo wrote:
->>>> On Thu, Dec 08, 2011 at 03:14:40PM -0800, Stephen Warren wrote:
->>>>> Presumably, the set of pins, groups, and functions is determined by the
->>>>> SoC HW. Platform data is usually board-specific rather than SoC specific.
->>>>> You have two choices here: You could either parse this data from device
->>>>> tree as Arnd suggested (and I think as the TI OMAP pinctrl driver will),
->>>>> or do what I've done in the Tegra pinctrl driver, and simply put each
->>>>> SoC's data into the driver and select which one to use based on the DT
->>>>> compatible flag; I didn't see the point of putting data in to the DT that
->>>>> was identical for every board using a given SoC.
->>>>>
->>>> I'm not sure about tegra, but for imx, it's very difficult to enumerate
->>>> all these data and list them in pinctrl driver.  Sascha gave a few
->>>> examples when we discussed about it in another thread.  The TX and RX
->>>> pin of UART has 4 options each.  SD could possibly have 1, 4, and 8
->>>> data lines.  Display interface could have 16, 24, 32 data lines, etc.
->>>> All these options are chosen by board design for given soc pinmux
->>>> design.  So putting this data into device tree makes sense for imx too.
->>>
->>> The pinctrl driver should simply represent the raw options that the HW
->>> supports on each individual pin. This table should be readily enumerable
-> ...
->> The situation is there might be a few possible pin groups for each
->> function of 16/24/32-bit display.   Let's think about the UART case
->> I put above, to enumerate all the groups, we will have 16 groups for
->> one UART instance.  And we have 5 UART ports on recent imx SoC.
->
-> I'm not familiar with imx. For my education, which of the following is true:
->
-> a)
->
-> * UART TX signal can muxed onto 1 of 16 pins
-> * UART RX signal can muxed onto 1 of 16 pins
->
-> In this case, you'd just list say "UART A TX" as a legal function for
-> each of those 16 pins. Yes, that's a lot of places, but still do-able.
->
-Yes,  it's a way to fix the issue Sascha raised.
-But it will increase the code size heavily and using complexity.
-Passing table from pdata or devicetree has another benifit that it will make
-things simple since board knows which function uses which pin group,
-that means you do not have to define all possible pin groups for one function.
 
-> (16 possible positions would be a lot, but I suppose it is possible in HW)
->
-> b)
->
-> * UART TX signal can muxed onto 1 of 4 pins
-> * UART RX signal can muxed onto 1 of 4 pins
-> * So, there are 16 (4*4) combinations of these two settings
->
-> In this case, you'd just list say "UART A TX" for the 4 pins, and "UART
-> A RX" for the other 4 pins. The 16 combinations don't come into play at
-> all; the board-specific mapping table would pick 1 single combination,
-> and represent this as:
->
-> pin X: function = UART A TX
-> pin Y: function = UART A RX
->
-> Either way though, whether you put the data into tables in the driver or
-> in the SoC .dtsi file (included by each board's .dts file), the pinctrl
-> driver's table really should list all possible options, and the pinctrl
-> mapping table should select just one; that's kinda the whole point of
-> the tables. If you try to put just the used subset into device tree, you
-> won't be able to put it into the .dtsi file since it'll be
-> board-specific, and you'll end up forcing board .dts authors to recreate
-> that driver's complete configuration table every time, which seems like
-> a lot of wasted work. (and yes, this might bloat the .dtsi file, and
-> mean a lot of useless device tree parsing, which is why I personally
-> chose not to put the SoC tables into the device tree).
->
-I agree that parsing data from device tree increases much effort
-because we can not using any help functions like microes in dts file and we have
-to construct the structure we need in driver by parsing that data.
-And it will increase dtsi file's size a lot when after adding all functions.
+$ ls /sys/class/pci_bus
+0000:00  0000:02  0000:04  0000:06  0000:08
+0000:01  0000:03  0000:05  0000:07  0000:09
 
-I wonder if we can define that data as a pdata in a .c file and only
-get a pointer
-from dts file. That would make life much easier.
+The card doesn't show up in lspci after hotplugging ( or doesnt disappear when pulled out), 
+However the card shows up if the card is plugged in while booting up the PC. 
 
-Anyway, we're trying the way of parsing data from devicetree now for mx6q
-pinmux driver.
-I will send out patches soon when it's done for the discussion.
+Below is the lspci output when the cards are connected at booting.
 
-> Thanks.
->
-> --
-> nvpublic
+$ lspci 
+...
+02:00.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:01.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:08.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:09.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+
+anand card c1>>>>>>>>04:00.0 Memory controller: Device 174a:0701  
+anand card c2>>>>>>>>05:00.0 Ethernet controller: Agere Systems ET-131x PCI-E Ethernet Controller (rev 02) 
+....
+$ 
+Also wanted to know if my assumptions below are correct ?
+--------------------------------------------------------------------------------
+Please correct me if any of my understanding below is incorrect:
+1. With the above setup, If I hotplug card c1 and/or c2, will my driver probe 
+get invoked. 
+2. I dont have to add any rules for in /etc/udev/rules.d/*.rules for my driver
+ to work. 
+3. The standard hotplug controller driver would get the hotplug event from the
+ switch and handle it. 
+4. The standard hotplug controller driver will be responsible for invoking 
+.probe and .remove functions of my driver.
+---
+
+
+Thanks
+Anand
+
+
+
+> Date: Fri, 9 Dec 2011 12:45:25 +0000
+> From: mjg59@srcf.ucam.org
+> To: anand_dk@hotmail.com
+> CC: bhelgaas@google.com; greg@kroah.com; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> Subject: Re: PCIe Hotplugging not working
+> 
+> Do you have anything in /sys/class/pci/slots ? Does your card show up in 
+> lspci when you hotplug it?
+> 
+> -- 
+> Matthew Garrett | mjg59@srcf.ucam.org
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+ 		 	   		  
