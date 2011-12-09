@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab1LISW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:22:27 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:60485 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab1LISW0 (ORCPT
+	id S1753161Ab1LISYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:24:55 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49020 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab1LISYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:22:26 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org
-Cc: arnaud.patard@rtp-net.org
-Subject: [PATCH] MAINTAINERS: update xgifb maintainer's e-mail address
-Date: Fri,  9 Dec 2011 20:22:04 +0200
-Message-Id: <1323454924-20453-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 9 Dec 2011 13:24:54 -0500
+Date: Fri, 9 Dec 2011 19:24:48 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
+        X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, MCE: Drain mcelog buffer
+Message-ID: <20111209182448.GA29629@gere.osrc.amd.com>
+References: <1323353332-5671-1-git-send-email-bp@amd64.org>
+ <1323353332-5671-3-git-send-email-bp@amd64.org>
+ <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All patches sent to the maintainer address bounce:
+On Fri, Dec 09, 2011 at 10:19:02AM -0800, Luck, Tony wrote:
+> void mce_register_decode_chain(struct notifier_block *nb)
+>  {
+>  	atomic_notifier_chain_register(&x86_mce_decoder_chain, nb);
+> +	drain_mcelog_buffer();
+>  }
+> 
+> Won't this dump all the pended stuff to the *first* guy to
+> register - but subsequent interested parties will still
+> miss out?
 
-   Diagnostic-Code: smtp; 550 5.1.1 <apatard@mandriva.com>: Recipient address
-       rejected: User unknown in virtual mailbox table
+Yeah,
 
-The address found in drivers/staging/xgifb/TODO seems to work better.
+this is currently assuming that we have one consumer per system. At
+least this is the case on AMD: MCE decoder registers and decodes the
+errors. It will pass a subset of the MCEs (DRAM ECCs) to amd64_edac for
+additional massaging.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: arnaud.patard@rtp-net.org
----
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Do you see a usecase for multiple consumers?
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 4475602..2385253 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6419,7 +6419,7 @@ S:	Odd Fixes
- F:	drivers/staging/winbond/
- 
- STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
--M:	Arnaud Patard <apatard@mandriva.com>
-+M:	Arnaud Patard <arnaud.patard@rtp-net.org>
- S:	Odd Fixes
- F:	drivers/staging/xgifb/
- 
 -- 
-1.7.2.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
