@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1LIINW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 03:13:22 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:48696 "EHLO
+	id S1752178Ab1LIINk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 03:13:40 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36352 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751710Ab1LIINT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 03:13:19 -0500
+	id S1751313Ab1LIINi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 03:13:38 -0500
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 2/8] MAINTAINERS: tm6000: Update F: patterns
-Date: Fri,  9 Dec 2011 00:12:48 -0800
-Message-Id: <c161ff9b75651d9da542fa657bc282ea25c508c5.1323418149.git.joe@perches.com>
+Cc: David Cross <odc@cypress.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 4/8] MAINTAINERS: staging: westbridge: Delete section
+Date: Fri,  9 Dec 2011 00:12:50 -0800
+Message-Id: <1a51e2ea56c1f2ffb06a75bb0876dd019458cac7.1323418149.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1323418149.git.joe@perches.com>
 References: <cover.1323418149.git.joe@perches.com>
@@ -19,44 +19,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit be30497085080 ("[media] move tm6000 to drivers/media/video")
-move the files, update the F: pattern.
+commit 78f23926dff9 ("Staging: delete westbridge code")
+deleted the files, delete the section.
 
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: David Cross <odc@cypress.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- MAINTAINERS |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ MAINTAINERS |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 04fb68c..149c676 100644
+index 8a889b7..e397c1f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6375,11 +6375,6 @@ M:	Omar Ramirez Luna <omar.ramirez@ti.com>
+@@ -6255,11 +6255,6 @@ M:	Manu Abraham <abraham.manu@gmail.com>
  S:	Odd Fixes
- F:	drivers/staging/tidspbridge/
+ F:	drivers/staging/crystalhd/
  
--STAGING - TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
--L:	linux-media@vger.kernel.org
+-STAGING - CYPRESS WESTBRIDGE SUPPORT
+-M:	David Cross <david.cross@cypress.com>
 -S:	Odd Fixes
--F:	drivers/staging/tm6000/
+-F:	drivers/staging/westbridge/
 -
- STAGING - USB ENE SM/MS CARD READER DRIVER
- M:	Al Cho <acho@novell.com>
- S:	Odd Fixes
-@@ -6634,6 +6629,11 @@ F:	include/linux/trace*.h
- F:	include/trace/
- F:	kernel/trace/
- 
-+TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
-+L:	linux-media@vger.kernel.org
-+S:	Odd Fixes
-+F:	drivers/media/video/tm6000/
-+
- TRIVIAL PATCHES
- M:	Jiri Kosina <trivial@kernel.org>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
+ STAGING - ECHO CANCELLER
+ M:	Steve Underwood <steveu@coppice.org>
+ M:	David Rowe <david@rowetel.com>
 -- 
 1.7.8.111.gad25c.dirty
 
