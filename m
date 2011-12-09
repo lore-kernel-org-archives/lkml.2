@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab1LIAhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 19:37:51 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22772 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750836Ab1LIAhs (ORCPT
+	id S1753153Ab1LIAlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 19:41:52 -0500
+Received: from mga03.intel.com ([143.182.124.21]:48779 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab1LIAls convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 19:37:48 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+TvaVl57e2ZugiQGZPklip
-Date: Thu, 8 Dec 2011 16:37:44 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Weber <weber@corscience.de>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] ARM: OMAP2+: Add chip_select to ads7846 init
-Message-ID: <20111209003744.GH31337@atomide.com>
-References: <1320358999-11016-1-git-send-email-weber@corscience.de>
+	Thu, 8 Dec 2011 19:41:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="83826474"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Date: Thu, 8 Dec 2011 16:41:30 -0800
+Subject: RE: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+Thread-Topic: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+Thread-Index: Acyz80FWSVwMVpHLRvmP5EOvAk1d4wCFa5bQ
+Message-ID: <43F901BD926A4E43B106BF17856F075501A23A3010@orsmsx508.amr.corp.intel.com>
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
+ <20111206084230.GC30062@elte.hu>
+In-Reply-To: <20111206084230.GC30062@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320358999-11016-1-git-send-email-weber@corscience.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Weber <weber@corscience.de> [111103 13:46]:
-> This patch adds the chip_select as parameter to
-> omap_ads7846_init.
-> All existing omap2-boards use chip select 0 on
-> different spi busses. I work on bringing a board
-> mainline where the ads7846 is connected to
-> chip select 1. This patch prepares the omap_ads7846_init
-> function for this board.
 > 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-> ---
->  arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
->  arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
->  arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
->  arch/arm/mach-omap2/board-ldp.c            |    2 +-
->  arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
->  arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
->  arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
->  arch/arm/mach-omap2/board-overo.c          |    2 +-
->  arch/arm/mach-omap2/common-board-devices.c |   13 ++++++++-----
->  arch/arm/mach-omap2/common-board-devices.h |    3 ++-
->  11 files changed, 19 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
-> index 77142c1..dec6407 100644
-> --- a/arch/arm/mach-omap2/board-3430sdp.c
-> +++ b/arch/arm/mach-omap2/board-3430sdp.c
-> @@ -710,7 +710,7 @@ static void __init omap_3430sdp_init(void)
->  		gpio_pendown = SDP3430_TS_GPIO_IRQ_SDPV2;
->  	else
->  		gpio_pendown = SDP3430_TS_GPIO_IRQ_SDPV1;
-> -	omap_ads7846_init(1, gpio_pendown, 310, NULL);
-> +	omap_ads7846_init(1, 0, gpio_pendown, 310, NULL);
->  	board_serial_init();
->  	omap_sdrc_init(hyb18m512160af6_sdrc_params, NULL);
->  	usb_musb_init(NULL);
+> * Fenghua Yu <fenghua.yu@intel.com> wrote:
+> Then if demand for this picks up some more intelligent method of
+> cooperating with the firmware could be added: the firmware could
+> actually signal to us whether it supports suspend/resume from
+> other than the boot CPU.
 
-This seems OK to me until we have device tree bindings for
-this.
+We started to think how to handle the resume issue in firmware,
+e.g. the way you talked, or change boot CPU to another online CPU
+to execute resume procedure.
 
-Regards,
+A firmware solution is a long run. Currently we don't suspend/hibernate
+when BSP is offline. If a firmware solution is available, we can
+change the sanity check to allow suspend/hibernate if CPU0 is offline
+for new firmware. But even when the solution is available in new
+firmware, we still need to do the same sanity check on legacy firmware.
 
-Tony
+Thanks.
+
+-Fenghua
