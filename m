@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab1LIRQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:16:59 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:37203 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab1LIRQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:16:57 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [uclinux-dist-devel] [PATCH 2/2] serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for hardware automatic CTS.
-Date: Fri, 9 Dec 2011 12:17:05 -0500
-User-Agent: KMail/1.13.7 (Linux/3.1.0-atsc; KDE/4.6.5; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Sonic Zhang <sonic.adi@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-References: <1323410421-10465-1-git-send-email-sonic.adi@gmail.com> <1323410421-10465-2-git-send-email-sonic.adi@gmail.com> <20111209111205.04780196@pyramind.ukuu.org.uk>
-In-Reply-To: <20111209111205.04780196@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart7932394.Jhr7JSu9ic";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1752567Ab1LIRTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:19:35 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63863 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab1LIRTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:19:34 -0500
+X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=sJHsf99JVXcf-4EybcAA:9 a=upQplXEDf3Dp7Tv9EHMA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>,
+        Borislav Petkov <bp@amd64.org>
+In-Reply-To: <1323448478.1937.26.camel@frodo>
+References: <20111208193003.112037550@goodmis.org>
+	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
+	 <1323398616.30977.167.camel@frodo>  <1323448478.1937.26.camel@frodo>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Dec 2011 12:19:31 -0500
+Message-ID: <1323451171.1937.33.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112091217.07781.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart7932394.Jhr7JSu9ic
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+[ added Boris as he's my AMD guy ]
 
-On Friday 09 December 2011 06:12:05 Alan Cox wrote:
-> > +#ifdef CONFIG_SERIAL_BFIN_CTSRTS
-> >=20
-> >  			uart->port.flags |=3D ASYNC_CTS_FLOW;
-> >=20
-> > +#endif
->=20
-> As an aside could the cts/hard cts etc be passed as properties to the
-> platform device rather than ifdeffed ?
+On Fri, 2011-12-09 at 11:34 -0500, Steven Rostedt wrote:
+> On Thu, 2011-12-08 at 21:43 -0500, Steven Rostedt wrote:
+> 
+> > diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> > index a8e3eb8..906a02a 100644
+> > --- a/arch/x86/kernel/traps.c
+> > +++ b/arch/x86/kernel/traps.c
+> > @@ -723,4 +723,9 @@ void __init trap_init(void)
+> >  	cpu_init();
+> >  
+> >  	x86_init.irqs.trap_init();
+> > +
+> > +#ifdef CONFIG_X86_64
+> > +	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
+> > +	set_nmi_gate(1, &debug);
+> 
+> Frederic Weisbecker told me on IRC that int3 is 3 #bp, not 1 #db. I need
+> to also add that:
+> 
+> 	set_nmi_gate(3, &int3)
+> 
+> Mathieu says we need to worry about MCEs, so maybe we can add that stack
+> as well.
+> 
+> 	set_nmi_gate(18, &machine_check);
 
-most platforms don't bother with flow control, so we made support in the dr=
-iver=20
-optional to keep things smaller.
-=2Dmike
+Looking at the documentation, I'm not sure NMIs can interrupt an MCE.
+The MCE is higher up on the exception priority chart (thanks Peter for
+pointing that out). But the documentation is vague at best.
 
---nextPart7932394.Jhr7JSu9ic
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Boris, H. Peter,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+Could you shed some light on this. Can an NMI interrupt an MCE in
+progress?
 
-iQIcBAABAgAGBQJO4kKTAAoJEEFjO5/oN/WBzYUQAMl7PfoQfpgop0CqEqMcFlod
-+b3hYpHew2RHmi5eX4QJ/6c4FHJiZdnDm/tFU3Ntm5Jr7KdGwRZpN5OK8b2wkFaq
-X2AhEWVUARckcJns0B9w7A9qtVtVbiJ23HIsv9AVBczJu9wxjZgfH1n0a9ppAG5N
-5Srp4usVxpOjdiZvqtm2p92vB8Txu4w9+9taCw5Tq/vTAUnylejvJQvn/Omk69m6
-cMjNwDu9F8kMIzo1t23Ro9qqt3hKX2yblMdCDtMhkO4dEF18AMMApkoso+4IfxZW
-Q6gMYKrDItiMA/Y25N/6PcFYKkVpSR1cBDpAEqoIMVieiwF/62uiNHsyiv3xxRTc
-GnoEabH70emJNaMhkZ3Hhlk1Gg20iY7Xy6AVRxvcV029nprQmWgxWS8jpPURTxWF
-qCOf+Mds5uEK26Z6ygXsFXtxQSFBA0KfdJu+cRGnO5C9LagUNDUcZ1h0QjsMglWw
-DwpZGORsvJ4weC+Sn1I7kvT+f9mAZuO2AOSetoRU6b4438KHFcDvubj0CfnSHDv2
-kzNaw/bsIVTusQdZWKUBEtB2WPnXouWd9gSNH0ALKWR0gsoc6sbBOTx+vOrqvwb7
-eXkq3RSa0WG0cVvzu6fE/F1sROtJTEn7aXOKkYsKqME8/INs4B/nRcCe1R1HAstZ
-vTaH63tyTrSFUR4YBroH
-=czfR
------END PGP SIGNATURE-----
+Of course if it can, we have the NMI->MCE->NMI that could happen too.
+And this problem exists today. Actually, just having an MCE happen
+inside an NMI can cause the NMI->NMI problem as well.
 
---nextPart7932394.Jhr7JSu9ic--
+-- Steve
+
+
+> 
+> 
+> If we make NMIs not modify any stack, then we can remove the "NMI
+> executing variable" on the stack. As any nested NMIs will see that it
+> preempted an NMI by just checking the stack. We have to check it anyway,
+> and by removing another check, this may be good to do.
+
+
+
