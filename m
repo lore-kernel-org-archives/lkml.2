@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1LIXo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:44:56 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51446 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab1LIXoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:44:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [RFC][PATCH 1/4] PM / shmobile: Don't include SH7372's INTCS in syscore suspend/resume
-Date: Sat, 10 Dec 2011 00:43:52 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201112100042.45168.rjw@sisk.pl>
-In-Reply-To: <201112100042.45168.rjw@sisk.pl>
+	id S1755001Ab1LIXp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:45:56 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54791 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751890Ab1LIXpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 18:45:53 -0500
+X-Sasl-enc: ibRmbiFdyKQB95hzQZypJesOsfiBWWyC4Rsn7r68ujF2 1323474352
+Date: Fri, 9 Dec 2011 15:45:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Anand Kanaginhal <anand_dk@hotmail.com>
+Cc: mjg59@srcf.ucam.org, bhelgaas@google.com,
+        Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: Re: PCIe Hotplugging not working
+Message-ID: <20111209234522.GA6413@kroah.com>
+References: <20111130182423.GA4831@srcf.ucam.org>
+ <CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>
+ <BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>
+ <20111209124524.GA3488@srcf.ucam.org>
+ <BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>
+ <20111209180708.GA10768@kroah.com>
+ <BAY163-W154A24444BB398F609767CFBB90@phx.gbl>
+ <20111209222520.GA24786@kroah.com>
+ <BAY163-W582FC4C5828B20E9487D3EFBB90@phx.gbl>
+ <BAY163-W61A8DF92159F5C3E26103FBB90@phx.gbl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112100043.53154.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BAY163-W61A8DF92159F5C3E26103FBB90@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, Dec 09, 2011 at 03:24:00PM -0800, Anand Kanaginhal wrote:
+> > Please make sure your pci hotplug driver is working first.  Try turning
+> > on and off the power to the card slot (in the sysfs directory for the
+> > slot) and see if that's working.
+> When I do this, my driver probe and remove gets invoked. 
 
-Since the SH7372's INTCS in included into syscore suspend/resume,
-which causes the chip to be accessed when PM domains have been
-turned off during system suspend, the A4R domain containing the
-INTCS has to stay on during system sleep, which is suboptimal
-from the power consumption point of view.
+Then part of the pci hotplug controller driver is working, good.
 
-For this reason, add a new INTC flag, skip_syscore_suspend, to mark
-the INTCS for intc_suspend() and intc_resume(), so that they don't
-touch it.  This allows the A4R domain to be turned off during
-system suspend and the INTCS state is resrored during system
-resume by the A4R's "power on" code.
+> > You also have failed to say exactly what pci hotplug controller you have
+> > in your system, what is it?  You have to have one, and the driver loaded
+> > for it, for any of this to work at all.
+> 
+> We are using plx 8533 in our system,
 
-Suggested-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/arm/mach-shmobile/intc-sh7372.c |    1 +
- drivers/sh/intc/core.c               |    8 ++++++++
- drivers/sh/intc/internals.h          |    1 +
- include/linux/sh_intc.h              |    1 +
- 4 files changed, 11 insertions(+)
+What exactly is that?
 
-Index: linux/include/linux/sh_intc.h
-===================================================================
---- linux.orig/include/linux/sh_intc.h
-+++ linux/include/linux/sh_intc.h
-@@ -95,6 +95,7 @@ struct intc_desc {
- 	unsigned int num_resources;
- 	intc_enum force_enable;
- 	intc_enum force_disable;
-+	bool skip_syscore_suspend;
- 	struct intc_hw_desc hw;
- };
- 
-Index: linux/arch/arm/mach-shmobile/intc-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/intc-sh7372.c
-+++ linux/arch/arm/mach-shmobile/intc-sh7372.c
-@@ -535,6 +535,7 @@ static struct resource intcs_resources[]
- static struct intc_desc intcs_desc __initdata = {
- 	.name = "sh7372-intcs",
- 	.force_enable = ENABLED_INTCS,
-+	.skip_syscore_suspend = true,
- 	.resource = intcs_resources,
- 	.num_resources = ARRAY_SIZE(intcs_resources),
- 	.hw = INTC_HW_DESC(intcs_vectors, intcs_groups, intcs_mask_registers,
-Index: linux/drivers/sh/intc/core.c
-===================================================================
---- linux.orig/drivers/sh/intc/core.c
-+++ linux/drivers/sh/intc/core.c
-@@ -354,6 +354,8 @@ int __init register_intc_controller(stru
- 	if (desc->force_enable)
- 		intc_enable_disable_enum(desc, d, desc->force_enable, 1);
- 
-+	d->skip_suspend = desc->skip_syscore_suspend;
-+
- 	nr_intc_controllers++;
- 
- 	return 0;
-@@ -386,6 +388,9 @@ static int intc_suspend(void)
- 	list_for_each_entry(d, &intc_list, list) {
- 		int irq;
- 
-+		if (d->skip_suspend)
-+			continue;
-+
- 		/* enable wakeup irqs belonging to this intc controller */
- 		for_each_active_irq(irq) {
- 			struct irq_data *data;
-@@ -409,6 +414,9 @@ static void intc_resume(void)
- 	list_for_each_entry(d, &intc_list, list) {
- 		int irq;
- 
-+		if (d->skip_suspend)
-+			continue;
-+
- 		for_each_active_irq(irq) {
- 			struct irq_data *data;
- 			struct irq_chip *chip;
-Index: linux/drivers/sh/intc/internals.h
-===================================================================
---- linux.orig/drivers/sh/intc/internals.h
-+++ linux/drivers/sh/intc/internals.h
-@@ -67,6 +67,7 @@ struct intc_desc_int {
- 	struct intc_window *window;
- 	unsigned int nr_windows;
- 	struct irq_chip chip;
-+	bool skip_suspend;
- };
- 
- 
+> it hasnt provided controller driver for linux, however the support
+> team insists that any hotplug controller driver which is compliant to
+> PCI SIG, should work fine.My assumption was shpc in linux would work
+> just fine. 
 
+The PCI Hotplug SIG said that ACPI would be the way forward for "PCI"
+hotplug capabilities.
+
+For PCI Express, the pciehp driver should work for you, as that follows
+the spec for PCI Express devices.
+
+So it depends on your hardware, what pci hotplug driver do you have
+loaded, and what does the kernel log messages say when you load it, and
+then what does it say when you remove your device?
+
+Remember, PCI devices are not supposed to be hot-removed, you have to
+tell the OS ahead of time it is going to go away.  PCI Express is a bit
+different, depending on the type of device (ExpressCard is allowed to be
+removed without notifying the OS ahead of time, some other PCI Express
+devices are not, see the spec for details.)
+
+greg k-h
