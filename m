@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1LISkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:40:14 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12377 "EHLO mga01.intel.com"
+	id S1753666Ab1LISnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:43:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab1LISkM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:40:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100570015"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        EDAC devel <linux-edac@vger.kernel.org>
-Date: Fri, 9 Dec 2011 10:40:10 -0800
-Subject: RE: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Thread-Topic: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Thread-Index: Acy2n9tTx9DBIZ4hQiaIXbhqItIcwgAAbEvA
-Message-ID: <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
-References: <1323353332-5671-1-git-send-email-bp@amd64.org>
- <1323353332-5671-3-git-send-email-bp@amd64.org>
- <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
- <20111209182448.GA29629@gere.osrc.amd.com>
-In-Reply-To: <20111209182448.GA29629@gere.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752613Ab1LISnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 13:43:46 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87boriouwa.fsf@rustcorp.com.au>
+References: <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@ozlabs.org>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan.van.de.ven@intel.com, alan.cox@intel.com
+Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
+Date: Fri, 09 Dec 2011 18:43:26 +0000
+Message-ID: <2657.1323456206@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you see a usecase for multiple consumers?
+Rusty Russell <rusty@ozlabs.org> wrote:
 
-Only a theoretical one ... we might have a cpu model specific decoder
-and an OEM supplied platform decoder - each as an independent module.
+> And adds a great deal of code in a supposedly security-sensitive path to
+> achieve it.
+> 
+> How about simply append a signature to the module?  That'd be about 20 lines
+> of code to carefully check the bounds of the module to figure out where the
+> signature is.  You could even allow multiple signatures, then have one for
+> stripped, and one for non-stripped versions.
 
--Tony
+A big chunk of the code is dealing with the cryptographic bits - and you need
+those anyway - and if it's done right it can be shared with other things
+(eCryptfs for example; maybe CIFS from what Steve French said) and auxiliary
+keys can be stored in places other than the kernel (the TPM for example).
+
+> Sure, you now need to re-append that after stripping, but that's not the
+> kernel's problem.
+
+You may also have to remove the signature before passing it to any binutils
+tool lest it malfunction on the trailer - and would you also have to modify
+insmod and modprobe?  I suspect they parse the ELF to find out about parameters
+and things.
+
+I've found that rpmbuild and mkinitrd alter the module files at various times,
+so you'd need a bunch of signatures, one for each (may just be two, but I can't
+guarantee that).  This means the kernel build process needs to know what
+transformations are going to be applied to a module - something that has
+changed occasionally within the distribution I use and may vary between
+distributions (or even just someone building for themselves).
+
+David
