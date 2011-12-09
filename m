@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab1LIPZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 10:25:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49735 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1LIPZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 10:25:42 -0500
-X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=FsArLiv59tlXlCEZN44A:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-In-Reply-To: <1323443432.16764.2.camel@twins>
-References: <20111208193003.112037550@goodmis.org>
-	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
-	 <1323398616.30977.167.camel@frodo>  <1323422521.17673.47.camel@twins>
-	 <1323442828.1937.17.camel@frodo>  <1323443432.16764.2.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Dec 2011 10:25:29 -0500
-Message-ID: <1323444329.1937.22.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754361Ab1LIPfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 10:35:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab1LIPfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 10:35:39 -0500
+Date: Fri, 9 Dec 2011 16:30:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
+Message-ID: <20111209153009.GA20865@redhat.com>
+References: <20111206181026.GO29781@moon> <20111207185343.GA3209@redhat.com> <20111207190340.GP21678@moon> <20111208163535.GA25023@redhat.com> <20111208212853.GO21678@moon> <20111208135430.00730308.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111208135430.00730308.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-09 at 16:10 +0100, Peter Zijlstra wrote:
+On 12/08, Andrew Morton wrote:
+>
+> On Fri, 9 Dec 2011 01:28:53 +0400
+> Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>
+> > On Thu, Dec 08, 2011 at 05:35:35PM +0100, Oleg Nesterov wrote:
+> > ...
+> > >
+> > > However, ->children list is not rcu-safe, this means that even
+> > > list_for_each() itself is not safe. Either you need tasklist or
+> > > we can probably make it rcu-safe...
+> > >
+> >
+> > Andrew, Oleg, does the below one look more less fine? Note the
+> > tasklist_lock is back and it worries me a bit since I imagine
+> > one could be endlessly reading some /proc/<pid>/children file
+> > increasing contention over this lock on the whole system
+> > (regardless the fact that it's take for read only).
+>
+> It is a potential problem, from the lock-hold point of view and
+> also it can cause large scheduling latencies.  What's involved in
+> making ->children an rcu-protected list?
 
-> KVM does NMIs, the write_idt thing is a paravirt call. Then again, a
-> vcpu is a single thread of execution, there can only ever be 1 hypercall
-> at the same time.
-> 
-> The only thing that remains is if the hypercall interface is NMI-safe,
-> what if the NMI comes in just as another context is also starting a
-> hypercall. I really don't know enough about all that crap to know.
+At first glance, this doesn't look trivial... forget_original_parent()
+abuses ->sibling.
 
-Hmm, well we can detect that we are a paravirt guest or not (that's the
-nature of paravirt). We can keep the current methods around, an for
-paravirt guests, it will fall back to the old stop_machine() method.
-Heck guests have issues with latencies anyway.
+But yes, it is not really nice to hold tasklist_lock here. May be
+we can change this code so that every iteration records the reported
+task_struct and then tries to continue. This means we should verify
+that ->real_parent is still the same under tasklist, but at least
+this way we do not hold it throughout.
 
-For running on bare-metal, we can switch to this method.
+> > From: Cyrill Gorcunov <gorcunov@openvz.org>
+> > Subject: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v4
+> >
+> > There is no easy way to make a reverse parent->children chain
+> > from arbitrary <pid> (while parent pid is provided in "PPid"
+> > field of /proc/<pid>/status).
+> >
+> > So instead of walking over all pids in the system to figure out which
+> > children a task have -- we add explicit /proc/<pid>/children entry,
+> > because kernel already has this kind of information but it is not
+> > yet exported. This is a first level children, not the whole process
+> > tree, neither the process threads are identified with this interface.
+>
+> The changelog doesn't explain why we want the patch, so there's no
+> reason to merge it!  Something to do with c/r, yes?
+>
+> If so, I guess the feature could/should be configurable.  Probably with
+> a CONFIG_PROC_CHILDREN which is selected by CONFIG_CHECKPOINT_RESTORE.
+> Which is all getting a bit over the top, but I suppose we must do it.
 
--- Steve
+Heh. This is the rare case when I personally like the new feature ;)
+I mean, it looks "obviously useful" to me. If nothing else, it can
+help to debug the problems. Probably the tools like pstree can use it.
 
+Personally I'd even prefer /proc/pid/children/ directory (like
+/proc/pid/task), but I guess this needs much more complications.
 
+Oleg.
 
