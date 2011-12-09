@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1LISKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:10:54 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63939 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab1LISKv (ORCPT
+	id S1754489Ab1LISK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:10:59 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48025 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab1LISK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:10:51 -0500
+	Fri, 9 Dec 2011 13:10:56 -0500
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: cbouatmailru@gmail.com, dg77.kim@samsung.com, kyungmin.park@samsung.com,
         myungjoo.ham@samsung.com, Jason.Wortham@maxim-ic.com,
         Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH v2 2/6] max17042: Align register definitions with data sheet and init appnote
-Date: Fri,  9 Dec 2011 10:08:44 -0800
-Message-Id: <1323454129-7444-3-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH v2 4/6] max17042: Add support for signalling change in SOC
+Date: Fri,  9 Dec 2011 10:08:47 -0800
+Message-Id: <1323454129-7444-6-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323454129-7444-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1323454129-7444-1-git-send-email-dirk.brandewie@gmail.com>
@@ -24,99 +24,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-align the register names with max17042 data sheet removing
-registers that are marked reserved that are not used.
-
-Add register definitions defined in the maxim initialization appnote
+If platform has the alert pin attached to an interrupt source have the
+driver signal a change in the SOC every 1 percent.
 
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 ---
- include/linux/power/max17042_battery.h |   37 ++++++++++++++++++++++++-------
- 1 files changed, 28 insertions(+), 9 deletions(-)
+ drivers/power/max17042_battery.c |   57 +++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 56 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
-index fe99211..67eeada 100644
---- a/include/linux/power/max17042_battery.h
-+++ b/include/linux/power/max17042_battery.h
-@@ -40,11 +40,11 @@ enum max17042_register {
- 	MAX17042_VCELL		= 0x09,
- 	MAX17042_Current	= 0x0A,
- 	MAX17042_AvgCurrent	= 0x0B,
--	MAX17042_Qresidual	= 0x0C,
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 87fef8a..001eca1 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -27,6 +27,7 @@
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/delay.h>
++#include <linux/interrupt.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/power_supply.h>
+ #include <linux/power/max17042_battery.h>
+@@ -43,6 +44,11 @@
+ #define STATUS_SMX_BIT         (1 << 14)
+ #define STATUS_BR_BIT          (1 << 15)
+ 
++/* Interrupt mask bits */
++#define CONFIG_ALRT_BIT_ENBL	(1 << 2)
++#define STATUS_INTR_SOC_BIT	(1 << 14)
++#define STATUS_INTR_LOW_SOC_BIT	(1 << 10)
 +
- 	MAX17042_SOC		= 0x0D,
- 	MAX17042_AvSOC		= 0x0E,
- 	MAX17042_RemCap		= 0x0F,
--	MAX17402_FullCAP	= 0x10,
-+	MAX17042_FullCAP	= 0x10,
- 	MAX17042_TTE		= 0x11,
- 	MAX17042_V_empty	= 0x12,
+ #define VFSOC0_LOCK		0x0000
+ #define VFSOC0_UNLOCK		0x0080
+ #define MODEL_UNLOCK1	0X0059
+@@ -528,6 +534,40 @@ static int max17042_init_chip(struct max17042_chip *chip)
+ 	return 0;
+ }
  
-@@ -62,14 +62,14 @@ enum max17042_register {
- 	MAX17042_AvCap		= 0x1F,
- 	MAX17042_ManName	= 0x20,
- 	MAX17042_DevName	= 0x21,
--	MAX17042_DevChem	= 0x22,
- 
-+	MAX17042_FullCAPNom	= 0x23,
- 	MAX17042_TempNom	= 0x24,
--	MAX17042_TempCold	= 0x25,
-+	MAX17042_TempLim	= 0x25,
- 	MAX17042_TempHot	= 0x26,
- 	MAX17042_AIN		= 0x27,
- 	MAX17042_LearnCFG	= 0x28,
--	MAX17042_SHFTCFG	= 0x29,
-+	MAX17042_FilterCFG	= 0x29,
- 	MAX17042_RelaxCFG	= 0x2A,
- 	MAX17042_MiscCFG	= 0x2B,
- 	MAX17042_TGAIN		= 0x2C,
-@@ -77,22 +77,41 @@ enum max17042_register {
- 	MAX17042_CGAIN		= 0x2E,
- 	MAX17042_COFF		= 0x2F,
- 
--	MAX17042_Q_empty	= 0x33,
-+	MAX17042_MaskSOC	= 0x32,
-+	MAX17042_SOC_empty	= 0x33,
- 	MAX17042_T_empty	= 0x34,
- 
-+	MAX17042_FullCAP0       = 0x35,
-+	MAX17042_LAvg_empty	= 0x36,
-+	MAX17042_FCTC		= 0x37,
- 	MAX17042_RCOMP0		= 0x38,
- 	MAX17042_TempCo		= 0x39,
--	MAX17042_Rx		= 0x3A,
--	MAX17042_T_empty0	= 0x3B,
-+	MAX17042_EmptyTempCo	= 0x3A,
-+	MAX17042_K_empty0	= 0x3B,
- 	MAX17042_TaskPeriod	= 0x3C,
- 	MAX17042_FSTAT		= 0x3D,
- 
- 	MAX17042_SHDNTIMER	= 0x3F,
- 
--	MAX17042_VFRemCap	= 0x4A,
-+	MAX17042_dQacc		= 0x45,
-+	MAX17042_dPacc		= 0x46,
++static void max17042_set_soc_threshold(struct max17042_chip *chip, u16 off)
++{
++	u16 soc, soc_tr;
 +
-+	MAX17042_VFSOC0		= 0x48,
++	/* program interrupt thesholds such that we should
++	 * get interrupt for every 'off' perc change in the soc
++	 */
++	soc = max17042_read_reg(chip->client, MAX17042_RepSOC) >> 8;
++	soc_tr = (soc + off) << 8;
++	soc_tr |= (soc - off);
++	max17042_write_reg(chip->client, MAX17042_SALRT_Th, soc_tr);
++}
++
++static irqreturn_t max17042_intr_handler(int id, void *dev)
++{
++	return IRQ_WAKE_THREAD;
++}
++
++static irqreturn_t max17042_thread_handler(int id, void *dev)
++{
++	struct max17042_chip *chip = dev;
++	u16 val;
++
++	val = max17042_read_reg(chip->client, MAX17042_STATUS);
++	if ((val & STATUS_INTR_SOC_BIT) ||
++		(val & STATUS_INTR_LOW_SOC_BIT)) {
++		printk(KERN_ERR "SOC threshold INTR\n");
++		dev_info(&chip->client->dev, "SOC threshold INTR\n");
++		max17042_set_soc_threshold(chip, 1);
++	}
++
++	power_supply_changed(&chip->battery);
++	return IRQ_HANDLED;
++}
  
- 	MAX17042_QH		= 0x4D,
- 	MAX17042_QL		= 0x4E,
-+
-+	MAX17042_VFSOC0Enable	= 0x60,
-+	MAX17042_MLOCKReg1	= 0x62,
-+	MAX17042_MLOCKReg2	= 0x63,
-+
-+	MAX17042_MODELChrTbl	= 0x80,
-+
-+	MAX17042_OCV		= 0xEE,
-+
-+	MAX17042_OCVInternal	= 0xFB,
-+
-+	MAX17042_VFSOC		= 0xFF,
- };
+ static void max17042_init_worker(struct work_struct *work)
+ {
+@@ -535,7 +575,7 @@ static void max17042_init_worker(struct work_struct *work)
+ 				struct max17042_chip, work);
+ 	struct i2c_client *client = chip->client;
+ 	int ret;
+-
++	u16 reg;
  
- /*
+ 	/* Initialize registers according to values from the platform data */
+ 	if (chip->pdata->init_data)
+@@ -557,6 +597,21 @@ static void max17042_init_worker(struct work_struct *work)
+ 			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
+ 	}
+ 
++	if (client->irq) {
++		ret = request_threaded_irq(client->irq, max17042_intr_handler,
++						max17042_thread_handler,
++						0, chip->battery.name, chip);
++		if (!ret) {
++			reg =  max17042_read_reg(client, MAX17042_CONFIG);
++			reg |= CONFIG_ALRT_BIT_ENBL;
++			max17042_write_reg(client, MAX17042_CONFIG, reg);
++			max17042_set_soc_threshold(chip, 1);
++		} else
++			dev_err(&client->dev, "%s(): cannot get IRQ\n",
++				__func__);
++
++	}
++
+ 	chip->init_complete = 1;
+ }
+ 
 -- 
 1.7.7.3
 
