@@ -1,112 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab1LIMb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 07:31:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59007 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab1LIMbZ (ORCPT
+	id S1753371Ab1LIMka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 07:40:30 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:56925 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751570Ab1LIMk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 07:31:25 -0500
-From: Sangwook Lee <sangwook.lee@linaro.org>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: nicolas.pitre@linaro.org, per.forlin@linaro.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        Sangwook Lee <sangwook.lee@linaro.org>
-Subject: [PATCH] mmc: sdio: optimization for process_sdio_pending_irq
-Date: Fri,  9 Dec 2011 12:29:17 +0000
-Message-Id: <1323433757-3811-1-git-send-email-sangwook.lee@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 9 Dec 2011 07:40:29 -0500
+Date: Fri, 9 Dec 2011 07:40:26 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+Message-ID: <20111209124026.GB14470@Krystal>
+References: <20111208193003.112037550@goodmis.org> <20111208193136.366941904@goodmis.org> <1323373012.30977.123.camel@frodo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323373012.30977.123.camel@frodo>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 07:32:07 up 380 days, 17:35,  2 users,  load average: 0.10, 0.05,
+	0.22
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Skip fillng in mmc_command struct for CCCR_INTx
-everytime sdio_irq_thread (process_sdio_pending_irqs)
-calls mmc_io_rw_direct.
+Hi Steven,
 
-Signed-off-by: Sangwook Lee <sangwook.lee@linaro.org>
----
- drivers/mmc/core/sdio_irq.c |    2 +-
- drivers/mmc/core/sdio_ops.c |   40 ++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/sdio_ops.h |    1 +
- 3 files changed, 42 insertions(+), 1 deletions(-)
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2011-12-08 at 14:30 -0500, Steven Rostedt wrote:
+> 
+> > If the first NMI hits a breakpoint and loses NMI context, and then it
+> > hits another breakpoint and while processing that breakpoint we get a
+> > nested NMI. When processing a breakpoint, the stack changes to the
+> > breakpoint stack. If another NMI comes in here we can't rely on the
+> > interrupted stack to be the NMI stack. 
+> 
+> As I wrote this part of the change log, I thought of another nasty
+> gotcha with breakpoints in NMIs.
+> 
+> If you have a breakpoint in both normal context and NMI context. When
+> the breakpoint is being processed, if an NMI comes in and it too
+> triggers a breakpoint, this processing of the breakpoint has the same
+> problem as nested NMIs. The NMI breakpoint handler will corrupt the
+> stack of the breakpoint that was being processed when the NMI triggered.
+> 
+> I'm not sure how to handle this case. We could do something similar in
+> the break point code to handle the same thing. But this just seems
+> really ugly.
+> 
+> Anyone with any better ideas?
 
-diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-index 68f81b9..67f782a 100644
---- a/drivers/mmc/core/sdio_irq.c
-+++ b/drivers/mmc/core/sdio_irq.c
-@@ -44,7 +44,7 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
- 		return 1;
- 	}
- 
--	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
-+	ret = mmc_io_rw_direct_irq(card, &pending);
- 	if (ret) {
- 		pr_debug("%s: error %d reading SDIO_CCCR_INTx\n",
- 		       mmc_card_id(card), ret);
-diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-index b0517cc..c80fc32 100644
---- a/drivers/mmc/core/sdio_ops.c
-+++ b/drivers/mmc/core/sdio_ops.c
-@@ -111,6 +111,46 @@ static int mmc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
- 	return 0;
- }
- 
-+static struct mmc_command sdio_intx_cmd = {
-+	.opcode = SD_IO_RW_DIRECT,
-+	.arg = SDIO_CCCR_INTx << 9,
-+	.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC,
-+};
-+
-+int mmc_io_rw_direct_irq(struct mmc_card *card, u8 *out)
-+{
-+	int err;
-+	struct mmc_host *host ;
-+
-+	BUG_ON(!card);
-+	host = card->host;
-+	BUG_ON(!host);
-+
-+	err = mmc_wait_for_cmd(host, &sdio_intx_cmd, 0);
-+	if (err)
-+		return err;
-+
-+	if (mmc_host_is_spi(host)) {
-+		/* host driver already reported errors */
-+	} else {
-+		if (sdio_intx_cmd.resp[0] & R5_ERROR)
-+			return -EIO;
-+		if (sdio_intx_cmd.resp[0] & R5_FUNCTION_NUMBER)
-+			return -EINVAL;
-+		if (sdio_intx_cmd.resp[0] & R5_OUT_OF_RANGE)
-+			return -ERANGE;
-+	}
-+
-+	if (out) {
-+		if (mmc_host_is_spi(host))
-+			*out = (sdio_intx_cmd.resp[0] >> 8) & 0xFF;
-+		else
-+			*out = sdio_intx_cmd.resp[0] & 0xFF;
-+	}
-+
-+	return 0;
-+}
-+
- int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
- 	unsigned addr, u8 in, u8 *out)
- {
-diff --git a/drivers/mmc/core/sdio_ops.h b/drivers/mmc/core/sdio_ops.h
-index 12a4d3a..5fe8ad6 100644
---- a/drivers/mmc/core/sdio_ops.h
-+++ b/drivers/mmc/core/sdio_ops.h
-@@ -15,6 +15,7 @@
- int mmc_send_io_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr);
- int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
- 	unsigned addr, u8 in, u8* out);
-+int mmc_io_rw_direct_irq(struct mmc_card *card, u8 *out);
- int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	unsigned addr, int incr_addr, u8 *buf, unsigned blocks, unsigned blksz);
- int sdio_reset(struct mmc_host *host);
+The nesting counters + code region address checks I proposed a few days
+ago should handle this correctly. Here is a very slightly updated
+version:
+
+variables used:
+
+cpu-local int nmi_nest_count;
+cpu-local int nmi_latch;
+__nmi_epilogue_begin (pointer to text)
+__nmi_epilogue_end (pointer to text)
+REAL_NMI_STACK: beginning of the stack used for real nmi handler
+LATCHED_NMI_STACK: beginning of the stack used for latched nmi handler
+
+int in_nmi_epilogue(void)
+{
+  return (instruction_pointer() >= __nmi_epilogue_begin
+		&& instruction_pointer() < __nmi_epilogue_end);
+}
+
+int in_nmi(void)
+{
+  return nmi_nest_count > 0;
+}
+
+/* Use REAL_NMI_STACK */
+real_nmi_handler: /* always running with nmis disabled */
+  /*
+   * We disable interrupts to ensure we don't have to deal with IRQs
+   * when NMIs get re-enabled due to an iret from a fault/exception.
+   */
+  local_irq_disable();
+  if (in_nmi_epilogue()) {
+    nmi_latch = 0;
+    /* set stack pointer to start of LATCHED_NMI_STACK */
+    /* populate start of LATCHED_NMI_STACK with values for iret */
+    goto latched_nmi_handler;
+  }
+  if (in_nmi()) {
+     nmi_latch = 1;
+     iret
+  }
+  nmi_nest_count++;
+  /* set stack pointer to start of LATCHED_NMI_STACK */
+  /* populate start of LATCHED_NMI_STACK with values for iret */
+  goto latched_nmi_handler;
+
+
+/* Use LATCHED_NMI_STACK */
+latched_nmi_handler:	/* Can fault and reenable NMIs. */
+
+  [ execute actual system NMI handler, including faults, int3, ... ]
+
+  /*
+   * note: test nmi_latch and iret instruction are within the epilogue
+   * range to deal with latch test vs iret non-atomicity.  If a real nmi
+   * nests over this range, it clears the nmi_latch flag and just
+   * restarts the latched nmi handler.  No faults/exceptions/interrupts
+   * are permitted in this region, except for the real NMI and MCEs
+   * (TODO).
+   */
+__nmi_epilogue_begin:
+  /*
+   * here we are restarting the latched nmi handler if an nmi happened
+   * while nested within the nmi nest count.
+   */
+  if (nmi_latch) {
+    nmi_latch = 0;
+    goto latched_nmi_handler;
+  }
+  nmi_nest_count--;
+  iret  /* restores interrupts */
+__nmi_epilogue_end:
+
+
+Best regards,
+
+Mathieu
+
 -- 
-1.7.4.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
