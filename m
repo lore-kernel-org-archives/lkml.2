@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab1LIOt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:49:27 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50349 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab1LIOt0 (ORCPT
+	id S1754335Ab1LIOzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:55:23 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:57658 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab1LIOzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:49:26 -0500
-X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=7d_E57ReAAAA:8 a=4RP4skqum6wKRA9EndcA:9 a=sAeC4PBXDAaqvGaaK3sA:7 a=QEXdDO2ut3YA:10 a=D6-X0JM3zdQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-In-Reply-To: <20111209130216.GA14718@Krystal>
-References: <20111208193003.112037550@goodmis.org>
-	 <20111208193136.366941904@goodmis.org> <1323373012.30977.123.camel@frodo>
-	 <20111209124026.GB14470@Krystal>  <20111209130216.GA14718@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Dec 2011 09:49:22 -0500
-Message-ID: <1323442162.1937.8.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Fri, 9 Dec 2011 09:55:22 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <20194.8535.854625.466329@quad.stoffel.home>
+Date: Fri, 9 Dec 2011 09:55:19 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Colin Walters <walters@verbum.org>
+Cc: John Stoffel <john@stoffel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: chroot(2) and bind mounts as non-root
+In-Reply-To: <1323368800.10724.73.camel@lenny>
+References: <1323280461.10724.13.camel@lenny>
+	<20191.49202.793643.397028@quad.stoffel.home>
+	<1323360655.10724.35.camel@lenny>
+	<20192.65168.140290.462594@quad.stoffel.home>
+	<1323368800.10724.73.camel@lenny>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-09 at 08:02 -0500, Mathieu Desnoyers wrote:
-> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+>>>>> "Colin" == Colin Walters <walters@verbum.org> writes:
 
-> after a quick IRC discussion with Peter Zijlstra, one thing seems to be
-> missing here to handle the INT3->NMI->INT3 issue: this could be achieved
-> by splitting the DEBUG stack in 2 sub-stacks, and letting the int3
-> handler keep track of its nesting within its own stack with an extra
-> "int3_nest_count". AFAIU, supporting 2 nested int3 should be enough.
+Colin> On Thu, 2011-12-08 at 13:14 -0500, John Stoffel wrote:
+>> Or is it because you're trying to edit on one OS, such a fedora 14,
+>> then build and debug inside an Debian 5.0 setup?  But without running
+>> a completely seperate system, but just doing a chroot into a new
+>> filesystem tree?  
 
-Here's the problem. When you take an int3, the hardware loads stuff onto
-the stack for you. That's the SS, RSP, FLAGS, CS, RIP. If the NMI comes
-in while we are processing a breakpoint, and the NMI hits an int3 too,
-then the hardware will load the current SS, RSP, FLAGS, CS and RIP onto
-the stack at the exact same place as the breakpoint processing that was
-interrupted had it's interrupt frame. IOW, it just corrupted the stack.
+Colin> Yes, something like that; basically it's about ensuring that
+Colin> the libfoo we're building binaries against is
+Colin> /home/walters/build/libfoo.so and not /usr/lib/libfoo.so.
 
-To prevent this in the NMI code, I did ugly things like making copies of
-the interrupt frame to keep a nested NMI from corrupting the first NMI.
-Not only do I not want to do this ugly hack for debug exception, you
-*can't* do it. It wont work!
+Colin> I'm actually intending for the core build system of my OS to
+Colin> work in *both* cross and native compilation.  That means it's
+Colin> important to keep them as close as possible.
 
-The reason the NMI works is because while we are copying the stack
-frame, NMIs are disabled because we are currently in an NMI.
+Colin> What you were talking about above (i.e. "just don't chroot") is
+Colin> what http://buildroot.net does (and others, I also
+Colin> semi-maintain GNOME's jhbuild).  It works if you're very
+Colin> careful in your build scripts, know and carefully propagate the
+Colin> large set of magic environment variables, etc., then yes, you
+Colin> can do it.
 
-But a normal int3, as it tries to do the copy and an NMI triggers, if
-you don't update the IDT, any int3 that the NMI hits will corrupt the
-previous int3 processing's stack. The hardware does it, there's nothing
-a "split stack" will do to fix that.
+Colin> But chroot is just so nice a hammer for this nail.
 
--- Steve
+I can see that, but maybe you can still fix this in userspace using
+the schroot tool others have mentioned.  
 
-
+John
