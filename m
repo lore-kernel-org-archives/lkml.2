@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab1LIJ7B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 04:59:01 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52381 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1LIJ7A (ORCPT
+	id S1752930Ab1LIJ7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:59:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36056 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab1LIJ7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 04:59:00 -0500
-Date: Fri, 9 Dec 2011 09:58:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Donggeun Kim <dg77.kim@samsung.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Message-ID: <20111209095855.GA1876@sirena.org.uk>
-References: <1323422140-31332-1-git-send-email-dg77.kim@samsung.com>
- <1323422140-31332-2-git-send-email-dg77.kim@samsung.com>
+	Fri, 9 Dec 2011 04:59:31 -0500
+Date: Fri, 9 Dec 2011 13:59:25 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
+        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
+Subject: Re: [GIT PULL] power_supply: add power supply scope
+Message-ID: <20111209095925.GA19883@oksana.dev.rtsoft.ru>
+References: <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
+ <4EDE4C7A.1010802@goop.org>
+ <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
+ <4EDFA192.7000602@goop.org>
+ <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
+ <4EE015D1.5070005@goop.org>
+ <20111208104127.GA1753@oksana.dev.rtsoft.ru>
+ <4EE0EB7B.6060807@goop.org>
+ <20111208233643.GA19022@oksana.dev.rtsoft.ru>
+ <4EE1C467.9050607@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1323422140-31332-2-git-send-email-dg77.kim@samsung.com>
-X-Cookie: This screen intentionally left blank.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4EE1C467.9050607@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 06:15:39PM +0900, Donggeun Kim wrote:
+On Fri, Dec 09, 2011 at 12:18:47AM -0800, Jeremy Fitzhardinge wrote:
+> On 12/08/2011 03:36 PM, Anton Vorontsov wrote:
+> >
+> > No different at all, I'm fine with either power_supply.scope or any
+> > other flag. :-)
+> 
+> So are you happy to pull that branch, or did you have some other
+> concerns with it?
 
-Overall this looks good - a few small nits below.
+I'm OK w/ the idea itself, but to actually pull that branch, the issue
+w/ needless patching of battery drivers has to be fixed (i.e. drop the
+changes in the drivers/acpi/).
 
-> +int max77693_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
-> +{
-> +	struct max77693_dev *max77693 = i2c_get_clientdata(i2c);
-> +	int ret;
-> +
-> +	mutex_lock(&max77693->iolock);
-> +	ret = i2c_smbus_read_byte_data(i2c, reg);
-> +	mutex_unlock(&max77693->iolock);
-> +	if (ret < 0)
-> +		return ret;
+Thanks,
 
-Might be worth considering regmap - should be a bit less code and the
-register cache is likely to make performance a bit better.
-
-> +	if (max77693_read_reg(i2c, MAX77693_PMIC_REG_PMIC_ID2, &reg_data) < 0) {
-> +		dev_err(max77693->dev,
-> +			"device not found on this channel\n");
-> +		ret = -ENODEV;
-> +		goto err;
-> +	}
-
-I'd suggest also verifying that the ID register has the expected value.
-If there's a chip reision register logging it can be helpful.
-
-> +	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-> +	i2c_set_clientdata(max77693->muic, max77693);
-> +
-> +	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-> +	i2c_set_clientdata(max77693->haptic, max77693);
-
-> +	pm_runtime_set_active(max77693->dev);
-
-
-> +	kfree(max77693);
-
-devm_kzalloc().
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
