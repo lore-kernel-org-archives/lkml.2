@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab1LIXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:22:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61076 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab1LIXWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:22:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v2] ipc: provide generic compat versions of IPC syscalls
-Date: Sat, 10 Dec 2011 00:21:35 +0100
-Message-ID: <1690400.7yOAjHVqTH@wuerfel>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <20111209134852.f5b5bcbc.akpm@linux-foundation.org>
-References: <201112091536.pB9Fa5f7002738@farm-0002.internal.tilera.com> <201112091903.pB9J39pd031553@farm-0002.internal.tilera.com> <20111209134852.f5b5bcbc.akpm@linux-foundation.org>
+	id S1754682Ab1LIXYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:24:04 -0500
+Received: from bay0-omc1-s28.bay0.hotmail.com ([65.54.190.39]:11157 "EHLO
+	bay0-omc1-s28.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751244Ab1LIXYB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 18:24:01 -0500
+Message-ID: <BAY163-W61A8DF92159F5C3E26103FBB90@phx.gbl>
+X-Originating-IP: [82.43.252.178]
+From: Anand Kanaginhal <anand_dk@hotmail.com>
+To: <greg@kroah.com>
+CC: <mjg59@srcf.ucam.org>, <bhelgaas@google.com>,
+        Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: RE: PCIe Hotplugging not working
+Date: Fri, 9 Dec 2011 15:24:00 -0800
+Importance: Normal
+In-Reply-To: <BAY163-W582FC4C5828B20E9487D3EFBB90@phx.gbl>
+References: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>,<20111130154022.GA1411@srcf.ucam.org>,<BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>,<20111130182423.GA4831@srcf.ucam.org>,<CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>,<BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>,<20111209124524.GA3488@srcf.ucam.org>,<BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>,<20111209180708.GA10768@kroah.com>,<BAY163-W154A24444BB398F609767CFBB90@phx.gbl>,<20111209222520.GA24786@kroah.com>,<BAY163-W582FC4C5828B20E9487D3EFBB90@phx.gbl>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:/15MQ54WxZ/BuawCVfAT2GidHxMZcpVi5BanFd0QBCc
- Zd45DWJOnZ6RritkMak2rkAPnsxFUHt18OrYd7I3dWSm5c+vYT
- EK2DRbdPqHzyex8Hya3ropKP72s2P74h2HyxRR7YGpm9MQcppr
- iG5zjpraZIS4yNsePCRHQ2s3WbDnMN2yBhaGpweC3WO0LomrxH
- +2eMs4mZsI7bo52wEEw7nnDqGclXQKPl1yuuG/89VLUfsQmcrL
- 9A/qXsUHnG2nPZCcan6apdxrtyMggzq7moOu8e6SsTISmVpszZ
- trS3YoI4kwCnxw32z5iyCEumVT8bG2LGPiHTxParLcaBf4QPIS
- iQTjBpKG6+wKBVFR8tJc=
+X-OriginalArrivalTime: 09 Dec 2011 23:24:00.0987 (UTC) FILETIME=[A205C2B0:01CCB6C9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 December 2011 13:48:52 Andrew Morton wrote:
-> What would we need to do to get all architectures using the new
-> interfaces, and remove __ARCH_WANT_OLD_COMPAT_IPC?
 
-We would change the various compat_sys_ipc functions (mips, powerpc,
-s390, sparc, x86) to call the new functions instead of the existing
-ones, and test each architecture. For parisc, we might not
-actually need the either version, but I'd have to take a closer look
-to be sure.
+Thanks for the feedback again Greg, MY Comments inline
 
-> Regarding the implementation: rather than patching the header
-> files, it would be more conventional (and arguably better) to add
+> Date: Fri, 9 Dec 2011 14:25:20 -0800
+> From: greg@kroah.com
+> To: anand_dk@hotmail.com
+> CC: mjg59@srcf.ucam.org; bhelgaas@google.com; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> Subject: Re: PCIe Hotplugging not working
 > 
->         select ARCH_WANT_OLD_COMPAT_IPC
+> On Fri, Dec 09, 2011 at 01:17:53PM -0800, Anand Kanaginhal wrote:
+> > 
+> > 
+> > > Date: Fri, 9 Dec 2011 10:07:08 -0800
+> > > From: greg@kroah.com
+> > > To: anand_dk@hotmail.com
+> > > CC: mjg59@srcf.ucam.org; bhelgaas@google.com; linux-pci@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> > > Subject: Re: PCIe Hotplugging not working
+> > >
+> > > On Fri, Dec 09, 2011 at 09:19:39AM -0800, Anand Kanaginhal wrote:
+> > > > 1. With the above setup, If I hotplug card c1 and/or c2, will my driver
+> > probe
+> > > > get invoked.
+> > >
+> > > Stop right here. Please get your pci hotplug controller driver working
+> > > first, for your platform. That seems to be the problem. After that,
+> > > the rest of your questions should just resolve themselves.
+> > Thank you Greg for your assistance, perhaps it would be little more helpful, if
+> > you could tell me the basis on which you drew the conclusion. I am no kernel
+> > expert :( 
 > 
-> to arch/*/Kconfig, then use CONFIG_ARCH_WANT_OLD_COMPAT_IPC.
+> As your driver's callbacks aren't being called, that's probably why this
+> isn't working.
+> 
+Right that makes sense
 
-Yes.
+> Please make sure your pci hotplug driver is working first.  Try turning
+> on and off the power to the card slot (in the sysfs directory for the
+> slot) and see if that's working.
+When I do this, my driver probe and remove gets invoked. 
 
-	Arnd
+> You also have failed to say exactly what pci hotplug controller you have
+> in your system, what is it?  You have to have one, and the driver loaded
+> for it, for any of this to work at all.
+
+We are using plx 8533 in our system, it hasnt provided controller driver for linux, however the support team insists that any hotplug controller driver which is compliant to PCI SIG, should work fine.My assumption was shpc in linux would work just fine. 
+
+ThanksAnand
+> greg k-h
+ 		 	   		   		 	   		  
