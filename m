@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1LIVXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:23:19 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:49622 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab1LIVXR (ORCPT
+	id S1754755Ab1LIVXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:23:35 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:49191 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab1LIVXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:23:17 -0500
-X-IronPort-AV: E=Sophos;i="4.71,328,1320624000"; 
-   d="scan'208";a="9393870"
-Subject: Re: [PATCH v3 REPOST] xen-netfront: delay gARP until backend
- switches to Connected
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Miller <davem@davemloft.net>
-CC: "lersek@redhat.com" <lersek@redhat.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111209.134514.2071890208094978847.davem@davemloft.net>
-References: <1323430738-3798-1-git-send-email-lersek@redhat.com>
-	 <20111209.134514.2071890208094978847.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Fri, 9 Dec 2011 21:23:00 +0000
-Message-ID: <1323465781.20936.49.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Dec 2011 16:23:34 -0500
+From: kosaki.motohiro@gmail.com
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org> (commit_signer:15/23=65%),
+        Hugh Dickins <hughd@google.com> (commit_signer:7/23=30%),
+        Peter Zijlstra <a.p.zijlstra@chello.nl> (commit_signer:4/23=17%),
+        Shaohua Li <shaohua.li@intel.com> (commit_signer:3/23=13%)
+Subject: [PATCH v2] mm: simplify find_vma_prev
+Date: Fri,  9 Dec 2011 16:23:00 -0500
+Message-Id: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-09 at 18:45 +0000, David Miller wrote:
-> From: Laszlo Ersek <lersek@redhat.com>
-> Date: Fri,  9 Dec 2011 12:38:58 +0100
-> 
-> > These two together provide complete ordering. Sub-condition (1) is
-> > satisfied by pvops commit 43223efd9bfd.
-> 
-> I don't see this commit in Linus's tree,
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-The referenced commit is in
-git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git#xen/next-2.6.32  some people call the "pvops tree" but there's no reason to expect someone outside the Xen world to know that...
+commit 297c5eee37 (mm: make the vma list be doubly linked) added
+vm_prev member into vm_area_struct. Therefore we can simplify
+find_vma_prev() by using it. Also, this change help to improve
+page fault performance because it has strong locality of reference.
 
-A better reference would have been 6b0b80ca7165 in
-git://xenbits.xen.org/people/ianc/linux-2.6.git#upstream/dom0/backend/netback-history which is the precise branch that was flattened to make f942dc2552b8, which is the upstream commit that added netback, so this change is already in upstream.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/mmap.c |   40 +++++++++++-----------------------------
+ 1 files changed, 11 insertions(+), 29 deletions(-)
 
-Ian.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index eae90af..a84539b 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1603,39 +1603,21 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 
+ EXPORT_SYMBOL(find_vma);
+ 
+-/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
++/*
++ * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
++ * Note: pprev is set to NULL when return value is NULL.
++ */
+ struct vm_area_struct *
+-find_vma_prev(struct mm_struct *mm, unsigned long addr,
+-			struct vm_area_struct **pprev)
++find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
+ {
+-	struct vm_area_struct *vma = NULL, *prev = NULL;
+-	struct rb_node *rb_node;
+-	if (!mm)
+-		goto out;
+-
+-	/* Guard against addr being lower than the first VMA */
+-	vma = mm->mmap;
+-
+-	/* Go through the RB tree quickly. */
+-	rb_node = mm->mm_rb.rb_node;
+-
+-	while (rb_node) {
+-		struct vm_area_struct *vma_tmp;
+-		vma_tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
++	struct vm_area_struct *vma;
+ 
+-		if (addr < vma_tmp->vm_end) {
+-			rb_node = rb_node->rb_left;
+-		} else {
+-			prev = vma_tmp;
+-			if (!prev->vm_next || (addr < prev->vm_next->vm_end))
+-				break;
+-			rb_node = rb_node->rb_right;
+-		}
+-	}
++	*pprev = NULL;
++	vma = find_vma(mm, addr);
++	if (vma)
++		*pprev = vma->vm_prev;
+ 
+-out:
+-	*pprev = prev;
+-	return prev ? prev->vm_next : vma;
++	return vma;
+ }
+ 
+ /*
+-- 
+1.7.1
 
