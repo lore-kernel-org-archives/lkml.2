@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1LIIZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 03:25:40 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:23210
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752087Ab1LIIZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 03:25:39 -0500
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-Message-ID: <4EE1C3F4.6020108@analog.com>
-Date: Fri, 9 Dec 2011 09:16:52 +0100
-From: Michael Hennerich <michael.hennerich@analog.com>
-Reply-To: <michael.hennerich@analog.com>
-Organization: Analog Devices Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
+	id S1752229Ab1LIIcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 03:32:32 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46725 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab1LIIcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 03:32:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100402542"
+Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Cc: "penberg@kernel.org" <penberg@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH v3.2 03/10] MAINTAINERS: Update adp gpio F: patterns
-References: <cover.1323401278.git.joe@perches.com> <752ff6829eee7b258b3fd7de0a07c9f035fcf1f4.1323401278.git.joe@perches.com>
-In-Reply-To: <752ff6829eee7b258b3fd7de0a07c9f035fcf1f4.1323401278.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1112020842280.10975@router.home>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+	 <alpine.DEB.2.00.1112020842280.10975@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Dec 2011 16:30:02 +0800
+Message-ID: <1323419402.16790.6105.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2011 05:21 AM, Joe Perches wrote:
-> Commit c103de240439df ("gpio: reorganize drivers") renamed
-> the files, update the patterns.
->
-> CC: Grant Likely<grant.likely@secretlab.ca>
-> CC: Michael Hennerich<michael.hennerich@analog.com>
->
-> Signed-off-by: Joe Perches<joe@perches.com>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->   MAINTAINERS |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 80167e7..bfa54c1 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -347,7 +347,7 @@ S:	Supported
->   F:	drivers/mfd/adp5520.c
->   F:	drivers/video/backlight/adp5520_bl.c
->   F:	drivers/leds/leds-adp5520.c
-> -F:	drivers/gpio/adp5520-gpio.c
-> +F:	drivers/gpio/gpio-adp5520.c
->   F:	drivers/input/keyboard/adp5520-keys.c
->
->   ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
-> @@ -356,7 +356,7 @@ L:	device-drivers-devel@blackfin.uclinux.org
->   W:	http://wiki.analog.com/ADP5588
->   S:	Supported
->   F:	drivers/input/keyboard/adp5588-keys.c
-> -F:	drivers/gpio/adp5588-gpio.c
-> +F:	drivers/gpio/gpio-adp5588.c
->
->   ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
->   M:	Michael Hennerich<michael.hennerich@analog.com>
+On Fri, 2011-12-02 at 22:43 +0800, Christoph Lameter wrote:
+> On Fri, 2 Dec 2011, Alex Shi wrote:
+> 
+> > From: Alex Shi <alexs@intel.com>
+> >
+> > Times performance regression were due to slub add to node partial head
+> > or tail. That inspired me to do tunning on the node partial adding, to
+> > set a criteria for head or tail position selection when do partial
+> > adding.
+> > My experiment show, when used objects is less than 1/4 total objects
+> > of slub performance will get about 1.5% improvement on netperf loopback
+> > testing with 2048 clients, wherever on our 4 or 2 sockets platforms,
+> > includes sandbridge or core2.
+> 
+> The number of free objects in a slab may have nothing to do with cache
+> hotness of all objects in the slab. You can only be sure that one object
+> (the one that was freed) is cache hot. Netperf may use them in sequence
+> and therefore you are likely to get series of frees on the same slab
+> page. How are other benchmarks affected by this change?
 
 
--- 
-Greetings,
-Michael
+I did some experiments on add_partial judgment against rc4, like to put
+the slub into node partial head or tail according to free objects, or
+like Eric's suggest to combine the external parameter, like below: 
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
-Margaret Seif
+        n->nr_partial++;
+-       if (tail == DEACTIVATE_TO_TAIL)
++       if (tail == DEACTIVATE_TO_TAIL || 
++               page->inuse > page->objects /2)
+                list_add_tail(&page->lru, &n->partial);
+        else
+                list_add(&page->lru, &n->partial);
+
+But the result is out of my expectation before. Now we set all of slub
+into the tail of node partial, we get the best performance, even it is
+just a slight improvement. 
+
+{
+        n->nr_partial++;
+-       if (tail == DEACTIVATE_TO_TAIL)
+-               list_add_tail(&page->lru, &n->partial);
+-       else
+-               list_add(&page->lru, &n->partial);
++       list_add_tail(&page->lru, &n->partial);
+ }
+ 
+This change can bring about 2% improvement on our WSM-ep machine, and 1%
+improvement on our SNB-ep and NHM-ex machine. and no clear effect for
+core2 machine. on hackbench process benchmark.
+
+ 	./hackbench 100 process 2000 
+ 
+For multiple clients loopback netperf, only a suspicious 1% improvement
+on our 2 sockets machine. and others have no clear effect. 
+
+But, when I check the deactivate_to_head/to_tail statistics on original
+code, the to_head is just hundreds or thousands times, while to_tail is
+called about teens millions times. 
+
+David, could you like to try above change? move all slub to partial
+tail. 
+
+add_partial statistics collection patch: 
+---
+commit 1ff731282acb521f3a7c2e3fb94d35ec4d0ff07e
+Author: Alex Shi <alex.shi@intel.com>
+Date:   Fri Dec 9 18:12:14 2011 +0800
+
+    slub: statistics collection for add_partial
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 5843846..a2b1143 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1904,10 +1904,11 @@ static void unfreeze_partials(struct kmem_cache *s)
+ 			if (l != m) {
+ 				if (l == M_PARTIAL)
+ 					remove_partial(n, page);
+-				else
++				else {
+ 					add_partial(n, page,
+ 						DEACTIVATE_TO_TAIL);
+-
++					stat(s, DEACTIVATE_TO_TAIL);
++				}
+ 				l = m;
+ 			}
+ 
+@@ -2480,6 +2481,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 			remove_full(s, page);
+ 			add_partial(n, page, DEACTIVATE_TO_TAIL);
+ 			stat(s, FREE_ADD_PARTIAL);
++			stat(s, DEACTIVATE_TO_TAIL);
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&n->list_lock, flags);
+
 
 
