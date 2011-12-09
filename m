@@ -1,146 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1LILii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 06:38:38 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37832 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab1LILih convert rfc822-to-8bit (ORCPT
+	id S1752829Ab1LILp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 06:45:26 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34437 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab1LILpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 06:38:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAArOQ2V7bAxnWq5Mp1ROJ4oEdVBhHFAsbO_zGfEh50bYQcwtSg@mail.gmail.com>
-References: <CAArOQ2UcC8P0xe6qwmf4FLitQs-tThtQLe7ZwS2J8FOwTXV=YQ@mail.gmail.com>
-	<CAArOQ2V7bAxnWq5Mp1ROJ4oEdVBhHFAsbO_zGfEh50bYQcwtSg@mail.gmail.com>
-Date: Fri, 9 Dec 2011 06:38:36 -0500
-Message-ID: <CAArOQ2VDBaTwf7ytdhPvHZJ9nDPwVqwv6GPKUksqMePfYWe_YQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix infinite recursion on unbind
- due to ilk vt-d w/a
-From: Bobby Powers <bobbypowers@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Ben Widawsky <ben@bwidawsk.net>, Dave Airlie <airlied@gmail.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 06:45:25 -0500
+From: Michal Simek <monstr@monstr.eu>
+To: robherring2@gmail.com
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        anton.vorontsov@linaro.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] microblaze: Use of_find_compatible_node for timer and
+Date: Fri,  9 Dec 2011 12:45:17 +0100
+Message-Id: <1323431121-12780-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 9, 2011 at 6:32 AM, Bobby Powers <bobbypowers@gmail.com> wrote:
-> On Thu, Dec 8, 2011 at 11:05 PM, Bobby Powers <bobbypowers@gmail.com> wrote:
->> On Tue, Dec 6, 2011 at 12:43 PM, Ben Widawsky <ben@bwidawsk.net> wrote:
->>> On Tue, Dec 06, 2011 at 12:12:33PM +0100, Daniel Vetter wrote:
->>>> The recursion loop goes retire_requests->unbind->gpu_idle->retire_reqeusts.
->>>>
->>>> Every time we go through this we need a
->>>> - active object that can be retired
->>>> - and there are no other references to that object than the one from
->>>>   the active list, so that it gets unbound and freed immediately.
->>>> Otherwise the recursion stops. So the recursion is only limited by the
->>>> number of objects that fit these requirements sitting in the active list
->>>> any time retire_request is called.
->>>>
->>>> Issue exercised by tests/gem_unref_active_buffers from i-g-t.
->>>>
->>>> There's been a decent bikeshed discussion whether it wouldn't be
->>>> better to pass around a flag, but imo this is o.k. for such a limited
->>>> case that only supports a w/a.
->>>>
->>>> Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>>> Reviewed-by: Chris Wilson <chris@chris-wilson> # we built better
->>>>       bikesheds, but this keeps the rain off for now
->>>> ---
->>>
->>> What about:
->>> http://lists.freedesktop.org/archives/intel-gfx/2011-October/012984.html
->>>
->>>
->>> Did someone prove that doesn't work?
->>
->> This patch caused hard lockups for me after ~35 minutes of casual use
->> (twice).  I've attached the oopses.  I'm running a Fedora 16 machine,
->> Lenovo T420 (i5-2540M w/ VT-d enabled), and at each time had a Windows
->> 7 KVM guest idling (not sure if that is relevant).  With this patch
->> reverted, I've had ~ 6 hours of oops free uptime.
->
-> To be clear, by 'this patch' I mean commit eb1711bb "[PATCH] drm/i915:
-> fix infinite recursion on unbind due to ilk vt-d w/a" on Linus's
-> branch, not the patch Ben linked to.
->
->> Let me know what additional information I can provide, or if there is
->> anything I can test to help narrow the issue down.
+Calling of_find_compatible_node instead of calling private code
+which does the same.
 
-Additionally I have i915.i915_enable_rc6=1 on the kernel command line.
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ arch/microblaze/kernel/intc.c  |   17 ++++-------------
+ arch/microblaze/kernel/timer.c |   17 ++++-------------
+ 2 files changed, 8 insertions(+), 26 deletions(-)
 
->>
->> yours,
->> Bobby
->>
->> ~~~
->>
->> [bpowers@fina linux]$ lspci
->> 00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor
->> Family DRAM Controller (rev 09)
->> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation
->> Core Processor Family Integrated Graphics Controller (rev 09)
->> 00:16.0 Communication controller: Intel Corporation 6 Series/C200
->> Series Chipset Family MEI Controller #1 (rev 04)
->> 00:19.0 Ethernet controller: Intel Corporation 82579LM Gigabit Network
->> Connection (rev 04)
->> 00:1a.0 USB Controller: Intel Corporation 6 Series/C200 Series Chipset
->> Family USB Enhanced Host Controller #2 (rev 04)
->> 00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset
->> Family High Definition Audio Controller (rev 04)
->> 00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
->> Family PCI Express Root Port 1 (rev b4)
->> 00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
->> Family PCI Express Root Port 2 (rev b4)
->> 00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
->> Family PCI Express Root Port 4 (rev b4)
->> 00:1c.4 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
->> Family PCI Express Root Port 5 (rev b4)
->> 00:1d.0 USB Controller: Intel Corporation 6 Series/C200 Series Chipset
->> Family USB Enhanced Host Controller #1 (rev 04)
->> 00:1f.0 ISA bridge: Intel Corporation QM67 Express Chipset Family LPC
->> Controller (rev 04)
->> 00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series
->> Chipset Family 6 port SATA AHCI Controller (rev 04)
->> 00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family
->> SMBus Controller (rev 04)
->> 03:00.0 Network controller: Intel Corporation Centrino Advanced-N 6205 (rev 34)
->> 0d:00.0 System peripheral: Ricoh Co Ltd Device e823 (rev 08)
->> 0d:00.3 FireWire (IEEE 1394): Ricoh Co Ltd FireWire Host Controller (rev 04)
->> [bpowers@fina linux]$ cat /proc/cpuinfo
->> processor       : 0
->> vendor_id       : GenuineIntel
->> cpu family      : 6
->> model           : 42
->> model name      : Intel(R) Core(TM) i5-2540M CPU @ 2.60GHz
->> stepping        : 7
->> microcode       : 0x18
->> cpu MHz         : 800.000
->> cache size      : 3072 KB
->> physical id     : 0
->> siblings        : 4
->> core id         : 0
->> cpu cores       : 2
->> apicid          : 0
->> initial apicid  : 0
->> fpu             : yes
->> fpu_exception   : yes
->> cpuid level     : 13
->> wp              : yes
->> flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
->> pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
->> rdtscp lm constant_tsc arch_perfmon pebs bts nopl xtopology
->> nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est
->> tm2 ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt
->> tsc_deadline_timer aes xsave avx lahf_lm ida arat epb xsaveopt pln pts
->> dts tpr_shadow vnmi flexpriority ept vpid
->> bogomips        : 5184.24
->> clflush size    : 64
->> cache_alignment : 64
->> address sizes   : 36 bits physical, 48 bits virtual
->> power management:
->>
->> [3 other processors omitted]
+diff --git a/arch/microblaze/kernel/intc.c b/arch/microblaze/kernel/intc.c
+index eb41441..da33e45 100644
+--- a/arch/microblaze/kernel/intc.c
++++ b/arch/microblaze/kernel/intc.c
+@@ -99,7 +99,7 @@ unsigned int get_irq(struct pt_regs *regs)
+ 
+ void __init init_IRQ(void)
+ {
+-	u32 i, j, intr_type;
++	u32 i, intr_type;
+ 	struct device_node *intc = NULL;
+ #ifdef CONFIG_SELFMOD_INTC
+ 	unsigned int intc_baseaddr = 0;
+@@ -113,16 +113,7 @@ void __init init_IRQ(void)
+ 				0
+ 			};
+ #endif
+-	const char * const intc_list[] = {
+-				"xlnx,xps-intc-1.00.a",
+-				NULL
+-			};
+-
+-	for (j = 0; intc_list[j] != NULL; j++) {
+-		intc = of_find_compatible_node(NULL, NULL, intc_list[j]);
+-		if (intc)
+-			break;
+-	}
++	intc = of_find_compatible_node(NULL, NULL, "xlnx,xps-intc-1.00.a");
+ 	BUG_ON(!intc);
+ 
+ 	intc_baseaddr = be32_to_cpup(of_get_property(intc,
+@@ -140,8 +131,8 @@ void __init init_IRQ(void)
+ #ifdef CONFIG_SELFMOD_INTC
+ 	selfmod_function((int *) arr_func, intc_baseaddr);
+ #endif
+-	printk(KERN_INFO "%s #0 at 0x%08x, num_irq=%d, edge=0x%x\n",
+-		intc_list[j], intc_baseaddr, nr_irq, intr_type);
++	printk(KERN_INFO "XPS intc #0 at 0x%08x, num_irq=%d, edge=0x%x\n",
++		intc_baseaddr, nr_irq, intr_mask);
+ 
+ 	/*
+ 	 * Disable all external interrupts until they are
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index af74b11..3ba1e1c 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -243,7 +243,7 @@ static int timer_initialized;
+ 
+ void __init time_init(void)
+ {
+-	u32 irq, i = 0;
++	u32 irq;
+ 	u32 timer_num = 1;
+ 	struct device_node *timer = NULL;
+ 	const void *prop;
+@@ -258,16 +258,7 @@ void __init time_init(void)
+ 				0
+ 			};
+ #endif
+-	const char * const timer_list[] = {
+-		"xlnx,xps-timer-1.00.a",
+-		NULL
+-	};
+-
+-	for (i = 0; timer_list[i] != NULL; i++) {
+-		timer = of_find_compatible_node(NULL, NULL, timer_list[i]);
+-		if (timer)
+-			break;
+-	}
++	timer = of_find_compatible_node(NULL, NULL, "xlnx,xps-timer-1.00.a");
+ 	BUG_ON(!timer);
+ 
+ 	timer_baseaddr = be32_to_cpup(of_get_property(timer, "reg", NULL));
+@@ -283,8 +274,8 @@ void __init time_init(void)
+ #ifdef CONFIG_SELFMOD_TIMER
+ 	selfmod_function((int *) arr_func, timer_baseaddr);
+ #endif
+-	printk(KERN_INFO "%s #0 at 0x%08x, irq=%d\n",
+-		timer_list[i], timer_baseaddr, irq);
++	printk(KERN_INFO "XPS timer #0 at 0x%08x, irq=%d\n",
++		timer_baseaddr, irq);
+ 
+ 	/* If there is clock-frequency property than use it */
+ 	prop = of_get_property(timer, "clock-frequency", NULL);
+-- 
+1.7.5.4
+
