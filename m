@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab1LIRBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:01:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab1LIRBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:01:08 -0500
-Date: Fri, 9 Dec 2011 17:55:36 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111209165536.GA25268@redhat.com>
-References: <20111206181026.GO29781@moon> <20111207185343.GA3209@redhat.com> <20111207190340.GP21678@moon> <20111208163535.GA25023@redhat.com> <20111208212853.GO21678@moon> <20111208135430.00730308.akpm@linux-foundation.org> <20111209153009.GA20865@redhat.com> <20111209154930.GT21678@moon>
+	id S1752097Ab1LIRH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:07:28 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14177 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751619Ab1LIRH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:07:27 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+D47kWAgiYskuh4Oue07Mu
+Date: Fri, 9 Dec 2011 09:07:22 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Subject: Re: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+Message-ID: <20111209170722.GO31337@atomide.com>
+References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
+ <1323382390-14892-2-git-send-email-swarren@nvidia.com>
+ <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111209154930.GT21678@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09, Cyrill Gorcunov wrote:
->
-> On Fri, Dec 09, 2011 at 04:30:09PM +0100, Oleg Nesterov wrote:
-> ...
-> > >
-> > > It is a potential problem, from the lock-hold point of view and
-> > > also it can cause large scheduling latencies.  What's involved in
-> > > making ->children an rcu-protected list?
+* Linus Walleij <linus.walleij@linaro.org> [111209 05:29]:
+> On Thu, Dec 8, 2011 at 11:13 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> > This adds a driver for the Tegra pinmux, and required parameterization
+> > data for Tegra20 and Tegra30.
 > >
-> > At first glance, this doesn't look trivial... forget_original_parent()
-> > abuses ->sibling.
-> >
->
-> But wait, forget_original_parent may move task out of the original
-> list and put it in dead_children list, right? Then release_task
-> may call delayed_put_task_struct under as call_rcu which should
-> wait until we finish reading in our rcu section, isn't it?
->
-> Even if we get inconsistent picture of children (ie we get pid
-> of shildren which just getting dead) I think it's fine.
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> 
+> This is looking good from a framework point of view (obviously,
+> since you've designed the framework with me you sure know what
+> you're doing).
+> 
+> What we could worry about is the amount of hard-coded chip data
+> which sort of correlates with the discussion with Tony on how to
+> provide DT info for pin control drivers.
+> 
+> If say this same controller appear in Tegra 4 with no changes but
+> different pin names, it makes sense to try to push this into the
+> DT as soon as possible, so as to avoid the situation Tony is
+> having with the OMAP muxes. If Tegra 4 will be all-new and not even
+> related, it doesn't.
+> 
+> So, just think a bit about it.
+> 
+> It will fit way better here than any place under
+> arch/arm/* in any case, so it's a great achievement!
 
-The problen is (one of the problems, in fact), list_move() changes
-->next.
+Sorry I still need some more time with pinmux-simple.c, will have
+to get pending omap patches merged first. Just want to recap the
+findings so far:
 
-To simplify, let's talk about children_seq_start() your patch adds.
-Suppose that we make ->children/sibling "rcu-safe" (we replace
-__unhash_process()->list_del_init() with list_del_rcu, and so on).
+- We can have automatically generated device to pinmux driver
+  mapping from DT, so that's nice
 
-Now, children_seq_start() does:
+- Describing pins for each driver in DT is still open.. And
+  using mixed-property arrays in DT won't nicely as the data
+  gets unaligned easily with string properties..
 
-	rcu_read_lock();
+- We currently have hard time supporting pin groups with pins
+  coming from multiple pinmux driver instances
 
-	list_for_each(child, task->children)
-		...;
+- Mixing pinmux data from various sources is still open; Some
+  pinmux data may need to be static, some come from DT, some
+  come from loadable modules or even /lib/firmware if the data
+  gets insanely big. Basically we may not always have a phandle
+  in DT data for the pinmux function, and should somehow allow
+  also using names there
 
-Suppose that this task exits and reparents the child we are looking at.
-Once reparent_leader() moves it into another list, list_for_each()
-can never stop.
+Regards,
 
-In short. forget_original_parent() changes the _head_ of the list,
-in some sense.
-
-> > But yes, it is not really nice to hold tasklist_lock here. May be
-> > we can change this code so that every iteration records the reported
-> > task_struct and then tries to continue. This means we should verify
-> > that ->real_parent is still the same under tasklist, but at least
-> > this way we do not hold it throughout.
-> >
->
-> And if real_parent is changed,
-
-... or if list_empty(->sibling) == T
-
-> I should simply skip such task and
-> continue, right?
-
-I think you should restart in this (hopefully unlikely) case. Yes, this
-means the potentional data loss, but I guess we can't avoid this in any
-case. For example, with the current patch children_seq_start() can miss
-the _live_ thread if the already reported process was reaped.
-
-> > Personally I'd even prefer /proc/pid/children/ directory (like
-> > /proc/pid/task), but I guess this needs much more complications.
-> >
->
-> I fear so. Oleg, if it possible I would like to bring in as minimum
-> code as I can ;)
-
-Yes, yes, I agree.
-
-Oleg.
-
+Tony
