@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1LINlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:41:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37916 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab1LINlH convert rfc822-to-8bit (ORCPT
+	id S1753647Ab1LINos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:44:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63292 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab1LINoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 08:41:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="94361203"
-From: "Shi, Alex" <alex.shi@intel.com>
-To: David Rientjes <rientjes@google.com>
-CC: Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 9 Dec 2011 21:40:39 +0800
-Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
-Thread-Topic: [PATCH 1/3] slub: set a criteria for slub node partial adding
-Thread-Index: Acy2WtpYBxu1ZE1KTbeFhuOQdOK8vwAGF8GA
-Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
- <alpine.DEB.2.00.1112020842280.10975@router.home>
- <1323419402.16790.6105.camel@debian>
- <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 08:44:46 -0500
 MIME-Version: 1.0
+In-Reply-To: <20111209133343.GA434@shadowen.org>
+References: <alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+	<4EDD729E.2060402@linux.vnet.ibm.com>
+	<alpine.LSU.2.00.1112060030220.1615@sister.anvils>
+	<4EDE85F4.4020503@linux.vnet.ibm.com>
+	<CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
+	<4EDF9CAB.3050502@linux.vnet.ibm.com>
+	<4EE046C7.9030902@linux.vnet.ibm.com>
+	<alpine.LSU.2.00.1112080909300.22300@sister.anvils>
+	<20111208181235.GE2686@shadowen.org>
+	<20111209133343.GA434@shadowen.org>
+Date: Fri, 9 Dec 2011 21:44:46 +0800
+Message-ID: <CAGBYx2Y+pz7BN-V6xzac9AvvSqKodkos2+aK7AGBRyYs+mdMfg@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Allison Henderson <achender@linux.vnet.ibm.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I did some experiments on add_partial judgment against rc4, like to put
-> > the slub into node partial head or tail according to free objects, or
-> > like Eric's suggest to combine the external parameter, like below:
-> >
-> >         n->nr_partial++;
-> > -       if (tail == DEACTIVATE_TO_TAIL)
-> > +       if (tail == DEACTIVATE_TO_TAIL ||
-> > +               page->inuse > page->objects /2)
-> >                 list_add_tail(&page->lru, &n->partial);
-> >         else
-> >                 list_add(&page->lru, &n->partial);
-> >
-> > But the result is out of my expectation before.
-> 
-> I don't think you'll get consistent results for all workloads with
-> something like this, some things may appear better and other things may
-> appear worse.  That's why I've always disagreed with determining whether
-> it should be added to the head or to the tail at the time of deactivation:
-> you know nothing about frees happening to that slab subsequent to the
-> decision you've made.  The only thing that's guaranteed is that you've
-> through cache hot objects out the window and potentially increased the
-> amount of internally fragmented slabs and/or unnecessarily long partial
-> lists.
+On Fri, Dec 9, 2011 at 9:33 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> On Thu, Dec 08, 2011 at 06:12:35PM +0000, Andy Whitcroft wrote:
+>> On Thu, Dec 08, 2011 at 09:39:55AM -0800, Hugh Dickins wrote:
+>>
+>> [...]
+>> > > [PATCH 1/2] ext4: let mpage_submit_io works well when blocksize < pagesize
+>> > > [PATCH 2/2] ext4: let ext4_discard_partial_buffers handle pages without
+>> > >
+>> > > [PATCH 1/2] ext4: remove a wrong BUG_ON in ext4_ext_convert_to_initialized
+>> > > [PATCH 2/2] ext4: let ext4_bio_write_page handle EOF correctly
+>> [...]
+>> > Only once, before the fixes, did I ever see an unexplained EINVAL
+>> > (from cp), like Andy reports: I'm very hopeful his case is fixed too.
+>>
+>> Yes I have reverted my fix and applied all four of these patches (above).
+>> I have just completed a 100 iteration run of my test case without failure.
+>> This would typically fail in the first iteration 90% of the time and
+>> never survived more than two iterations.
+>>
+>> I am comfortable saying they resolve my issue.
+>
+> Are we likely to see these fixes in a 3.2-rcN or will they be going to
+> stable?
+All patches will go to 3.2-rcN and the later 2 patches would go to
+stable too, I think.
 
-I said it not my original expectation doesn't mean my data has problem. :) 
-Of course any testing may have result variation. But it is benchmark accordingly, and there are lot technical to tuning your testing to make its stand division acceptable, like to sync your system in a clear status, to close unnecessary services, to use separate working disks for your testing etc. etc. For this data, like on my SNB-EP machine, (the following data is not stands for Intel, it is just my personal data). 
-4 times result of hackbench on this patch are 5.59, 5.475, 5.47833, 5.504
-And more results on original rc4 are from 5.54 to 5.61, the stand division of results show is stable and believable on my side. But since in our handreds benchmarks, only hackbench and loopback netperf is sensitive with slub change, and since it seems you did some testing on this. I thought you may like to do a double confirm with real data. 
+Yongqiang.
+>
+> -apw
 
-In fact, I also collected the 'perf stat' for cache missing or reference data, but that wave too much not stabled like hackbench itself.
- 
-> Not sure what you're asking me to test, you would like this:
-> 
-> 	{
-> 	        n->nr_partial++;
-> 	-       if (tail == DEACTIVATE_TO_TAIL)
-> 	-               list_add_tail(&page->lru, &n->partial);
-> 	-       else
-> 	-               list_add(&page->lru, &n->partial);
-> 	+       list_add_tail(&page->lru, &n->partial);
-> 	}
-> 
-> with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
-> disabled since it impacts performance so heavily and I'm not sure what
-> information you're looking for with regards to those stats.
 
-NO, when you collect data, please close SLUB_STAT in kernel config.  _to_head statistics collection patch just tell you, I collected the statistics not include add_partial in early_kmem_cache_node_alloc(). And other places of add_partial were covered. Of course, the kernel with statistic can not be used to measure performance. 
+
+-- 
+Best Wishes
+Yongqiang Yang
