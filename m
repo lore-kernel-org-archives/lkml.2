@@ -1,59 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1751736Ab1LFRDQ (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Tue, 6 Dec 2011 12:03:16 -0500
-Received: from [66.232.142.96] ([66.232.142.96]:42855 "EHLO sdnmall.co.kr"
-        rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-        id S1751507Ab1LFRDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 6 Dec 2011 12:03:15 -0500
-Reply-To: <jefflinarm@hotmail.com>
-Message-ID: <82D6D3E7138B68665408420E6F504CCE@ovhtdspp>
-From: "Jeff" <admin@sdnmall.co.kr>
-To: <lian.epc@gmail.com>
-Subject: cut the cost of gas detector ,your own design ----measurement software tech. group
-Date: Sun, 30 Dec 2012 00:44:08 +0800
+        id S1751441Ab1LIIGL (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Fri, 9 Dec 2011 03:06:11 -0500
+Received: from fallback1.registeredsite.com ([209.237.135.70]:22688 "EHLO
+        fallback1.registeredsite.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1750903Ab1LIIGK (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Fri, 9 Dec 2011 03:06:10 -0500
+X-Greylist: delayed 2472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Dec 2011 03:06:10 EST
+Message-ID: <79f82dd0c8eb033b3a6d2f8ad01c77d7.squirrel@webmail1.web.com>
+Date: Fri, 9 Dec 2011 02:15:25 -0500
+Subject: Hello
+From: "Judith Donson" <masaf@masaf.org>
+Reply-To: judithdonson11@yahoo.com
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: base64
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-RGVhciBmcmllbmQsDQogDQpNYXliZSB5b3UgYXJlIGNvbmZ1c2VkIGluIHRoZSBjb3N0IG9mIHlv
-dXIgcHJvZHVjdChnYXMgZGV0ZWN0b3IgIG9yIG90aGVyIG1lYXN1cmVtZW50KSwNCnRoZSBsYWNr
-IG9mIGNvcmUgZGVzaWduaW5nIHRlYW0sIGFuZCB0aGUgaW5jb252ZW5pZW5jZSBvZiB5b3VyIGNs
-aWVudHMnIGN1c3RvbWl6YXRpb24gPyAgDQogDQpJZiB5b3UgYXJlIGluIHRoaXMgcHJlZGljYW1l
-bnQgLCBJdCB3b3VsZCBiZSBsdWNreSBmb3IgeW91IHRvIHNlZSB0aGlzIGVtYWlsLCANCm9yIHBs
-ZWFzZSBqdXN0IGlnbm9yZSB0aGlzIGVtYWlsIGFuZCBJIHdvdWxkIGFwb2xvZ2l6ZSBmb3IgeW91
-ciB2YWx1YWJsZSB0aW1lLg0KIA0KDQo8dGhlIHBpY3R1cmUgaXMgb25seSBmb3IgaWxsdXN0cmF0
-aW9uLG5vdCB0aGUgcmVhbCBwcm9kdWN0IHdlIGRlc2lnbmVkPg0KIA0KVG8gb3duIGFuIGV4cHJp
-ZW5jZWQgcmVzZWFyY2ggZGVwYXJ0bWVudCB3aXRob3V0IHByZXNzdXJlIQ0KVG8gY3JlYXRlIHlv
-dSBvd24gcHJvZHVjdCBhdCB0aGUgbG93ZXN0IGNvc3QgYW5kIHRoZSBmYXN0ZXN0IHNwZWVkIQ0K
-IA0KV2UgYXJlIGEgZ3JvdXAgb2YgZXhwcmllbmNlZCBlbmdpbmVlcnMgY29tcG9zZWQgb2YgRWxl
-Y3RyaWMsIFNvZnR3YXJlLCBTdHJ1Y3R1cmUsIA0Kd2hvIHVzZWQgdG8gYmUgZW5nYWdlZCBpbiBn
-YXMgZGV0ZWN0b3IgZGVzaWduLg0KIA0KSXQgd291bGQgYmUgbXVjaCBtb3JlIGNvbnZpbmllbnQg
-aWYgeW91IGhhdmUgYSBzaW1pbGFyIHByb2R1Y3QgY3VycmVudGx5LCBhbmQgd2Ugd2lsbCBkZXNp
-Z24gdGhlIHNvZnR3YXJlIGZvciB5b3UuDQp0aGVuIHlvdSBjb3VsZCBwcm9kdWNlIHRoZSBtYWlu
-Ym9hcmQgYnkgeW91cnNlbGYsIGFuZCBvZiBjb3Vyc2UgY3VzdG9taXplIHlvdXIgZnVuY3Rpb24s
-IGxvZ28sIGFuZCBldGMuDQogIA0KRWFzeSBjby13b3JraW5nOiANClRoZSBkZXNpZ25lZCBzb2Z0
-d2FyZSB3aWxsIGJlIHNlbnQgdGhyb3VnaCB3ZWIgdG8geW91Lg0KYW5kIHdlIHdpbGwgYWlkIHlv
-dSB0byBidXJuIHRoZSBzb2Z0IGNvZGUgdG8geW91ciBtYWNoaW5lLiANCllvdSBjYW4gdGVzdCB0
-aGUgZGVzaWduZWQgbWFjaGluZSBmaXJzdCx0aGVuIHBheSBmb3IgaXQgaWYgeW91IGFyZSBzYXRp
-c2ZpZWQuDQpVc3VhbGx5IHlvdSBldmVuIGRvbid0IGhhdmUgdG8gc2VuZCB5b3VyIG1hY2hpbmUg
-dG8gdXMsIGhhaGFoLg0KIA0KSXQgd291bGQgZ2l2ZSBhIHNpZ25pZmljYW50IGNoYW5nZSB0byB5
-b3VyIGNvbXBhbnkhDQogDQpJIHdvdWxkIGJlIHZlcnkgYXBwcmljYXRlZCBmb3IgeW91ciByZXBs
-eSwgd2FpdGluZy4uLi4NCg0Kb3IgYWRkIG1lIG9udG8geW91ciBza3lwZSBvciBNU04gZm9yIGRp
-cmVjdCBjb250YWN0LCBUaGFua3MuIA0KIA0KIA0KVGhhbmtzJlJlZ2FyZHMsDQpKZWZmDQogDQpR
-VGVjaC4gRGVzaWduIEdyb3VwDQogDQpTa3lwZTogamVmZi5saW5hcm0NCk1TTjogICBqZWZmbGlu
-YXJtQGhvdG1haWwuY29tDQogDQogIA0KPElmIHlvdSBjYW5ub3QgbWFrZSBkZWNpc2lvbiBhYm91
-dCB0aGlzIGFmZmFpciwgd291bGQgeW91IHBsZWFzZSBraW5kbHkgdHJhbnNtaXQgaXQgdG8gIHRo
-ZSByaWdodCBwZXJzb24gPw0KDQpJJ2QgYmUgYXBwcmljYWl0ZWQgZm9yIGl0J3MgZXNzZW50aWFs
-IHRvIGJvdGggb2YgdXMuIA0KDQpJZiB5b3UgYXJlIGludGVyZXN0ZWQsIHBsZWFzZSBkb24ndCBo
-ZXNpdGF0ZSB0byBjb250YWN0IHdpdGggbWUgZm9yIG1vcmUgZGV0YWlscy4NCg0KIEkgYW0gc3Vy
-ZSB5b3Ugd29uJ3QgYmUgZGlzYXBwb2ludGVkIT4NCg==
+Hello dear, my name is Judith how our you today how thing over your
+country, please i want a help from you.thank you so much may God bless you
+more bye you can contact me through this email
+address(judithdonson11@yahoo.com)
+
+
+-- 
 
 
