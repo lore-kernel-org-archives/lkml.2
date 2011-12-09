@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab1LIR2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:28:06 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5513 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1LIR2E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:28:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 09 Dec 2011 09:28:02 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>
-Date: Fri, 9 Dec 2011 09:28:02 -0800
-Subject: RE: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
-Thread-Topic: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
-Thread-Index: Acy2ev5kzFm44qXaRIyTF0kfp8rlugAG1emw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
-References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
-	<1323382390-14892-2-git-send-email-swarren@nvidia.com>
- <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
-In-Reply-To: <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752693Ab1LIRax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:30:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab1LIRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:30:51 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] perf tool: Refactoring IO mmap/data files code
+Date: Fri,  9 Dec 2011 18:30:34 +0100
+Message-Id: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, December 09, 2011 7:01 AM:
-> On Thu, Dec 8, 2011 at 11:13 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> 
-> > This adds a driver for the Tegra pinmux, and required parameterization
-> > data for Tegra20 and Tegra30.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> 
-> This is looking good from a framework point of view (obviously,
-> since you've designed the framework with me you sure know what
-> you're doing).
-> 
-> What we could worry about is the amount of hard-coded chip data
-> which sort of correlates with the discussion with Tony on how to
-> provide DT info for pin control drivers.
+Hi,
+centralizing event mmaps and output file functionality.
 
-My thinking here is that irrespective of whether the data in future chips
-is the same or different to the current chips, it's better in the driver.
+Adding perf_mmap object to encapsulate  event's memory maps,
+and perf_data object to handle intput/output data file processing.
 
-For a given SoC, the data is static; it can never ever change.
+attached patches:
+ 1/4 perf, tool: Centralize the memory maps handling
+ 2/4 perf, tool: Factor evlist code to use global unmap function
+ 3/4 perf, tool: Introducing perf_mmap object
+ 4/4 perf, tool: Introducing perf_data object
 
-Hence, there's no point parsing it from device tree; we end up with exactly
-the same data in the driver, yet have spent a bunch of time parsing it out
-from device tree instead of just embedding it into the kernel binary.
-
-If parts of Tegra X and Tegra Y are similar, it should be possible to have
-them co-ordinate together and share the common data, and do whatever it
-takes to create the appropriate completed view before passing it back from
-tegraX_pinctrl_init() to the core. You could perhaps do it using /include/
-in the .dtsi file too, but I think allowing the SoC init code to unify the
-tables gives more flexibility; in your example below of the same data with
-different pin names, that'd be implementable with code without too much
-difficulty, but probably impossible with dtc since it has no macro/define
-support at present.
-
-Also, the representation of the data in a .c file will likely be far
-smaller than in the .dtsi file, so this way saves space. Admittedly with
-a multi-SoC binary, you end up with all the large per-SoC data in the
-binary initially, so the space-savings aren't exactly seen, but it's
-all init data, so does get dumped soon after boot.
-
-Another point here: I don't have to maintain a DT binding for the Tegra
-pinctrl driver this way, so if the next Tegra's pinmux HW is different,
-all I need to do is edit the driver, not be shackled by a need to keep
-the DT binding for it backwards-compatible. Although that said, I
-/think/ even an obvious DT binding derived from struct
-tegra_pinctrl_soc_data would be flexible enough for most things, perhaps
-with the addition of allowing config param field definitions for pins
-as well as groups.
-
-> If say this same controller appear in Tegra 4 with no changes but
-> different pin names, it makes sense to try to push this into the
-> DT as soon as possible, so as to avoid the situation Tony is
-> having with the OMAP muxes. If Tegra 4 will be all-new and not even
-> related, it doesn't.
-> 
-> So, just think a bit about it.
-
-Sorry if my replying quickly seems like I haven't thought about it; it's
-just that I already thought about this a while ago, and came to the
-conclusions above.
-
-> It will fit way better here than any place under
-> arch/arm/* in any case, so it's a great achievement!
-
--- 
-nvpublic
-
+wbr,
+jirka
+---
+ tools/perf/Makefile               |    5 +
+ tools/perf/builtin-annotate.c     |    2 +-
+ tools/perf/builtin-buildid-list.c |    4 +-
+ tools/perf/builtin-diff.c         |    6 +-
+ tools/perf/builtin-evlist.c       |    3 +-
+ tools/perf/builtin-inject.c       |    3 +-
+ tools/perf/builtin-kmem.c         |    3 +-
+ tools/perf/builtin-lock.c         |    3 +-
+ tools/perf/builtin-record.c       |  165 ++++++++----------------------
+ tools/perf/builtin-report.c       |    2 +-
+ tools/perf/builtin-sched.c        |    6 +-
+ tools/perf/builtin-script.c       |    3 +-
+ tools/perf/builtin-timechart.c    |    5 +-
+ tools/perf/builtin-top.c          |    8 +-
+ tools/perf/perf.h                 |   26 -----
+ tools/perf/util/data.c            |  201 +++++++++++++++++++++++++++++++++++++
+ tools/perf/util/data.h            |   64 ++++++++++++
+ tools/perf/util/evlist.c          |  131 +++++-------------------
+ tools/perf/util/evlist.h          |    1 +
+ tools/perf/util/header.c          |   28 +++---
+ tools/perf/util/header.h          |    4 +-
+ tools/perf/util/mmap.c            |  140 ++++++++++++++++++++++++++
+ tools/perf/util/mmap.h            |   49 +++++++++
+ tools/perf/util/session.c         |  111 +++++++-------------
+ tools/perf/util/session.h         |   21 +++-
+ tools/perf/util/setup.py          |    2 +-
+ 26 files changed, 633 insertions(+), 363 deletions(-)
