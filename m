@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1LIR7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:59:34 -0500
-Received: from mail.elliptictech.com ([209.217.122.41]:44022 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1LIR7d (ORCPT
+	id S1752730Ab1LISAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:00:45 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46336 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab1LISAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:59:33 -0500
-Date: Fri, 9 Dec 2011 12:59:25 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: NFS kmemleak reports.
-Message-ID: <20111209175925.GA14635@elliptictech.com>
+	Fri, 9 Dec 2011 13:00:44 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/kswrd98kmlYeQ+IAlbkBF
+Date: Fri, 9 Dec 2011 10:00:40 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+Message-ID: <20111209180039.GR31337@atomide.com>
+References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
+ <1323382390-14892-2-git-send-email-swarren@nvidia.com>
+ <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+* Stephen Warren <swarren@nvidia.com> [111209 08:56]:
+> Linus Walleij wrote at Friday, December 09, 2011 7:01 AM:
+> > 
+> > What we could worry about is the amount of hard-coded chip data
+> > which sort of correlates with the discussion with Tony on how to
+> > provide DT info for pin control drivers.
+> 
+> My thinking here is that irrespective of whether the data in future chips
+> is the same or different to the current chips, it's better in the driver.
+> 
+> For a given SoC, the data is static; it can never ever change.
+> 
+> Hence, there's no point parsing it from device tree; we end up with exactly
+> the same data in the driver, yet have spent a bunch of time parsing it out
+> from device tree instead of just embedding it into the kernel binary.
+> 
+> If parts of Tegra X and Tegra Y are similar, it should be possible to have
+> them co-ordinate together and share the common data, and do whatever it
+> takes to create the appropriate completed view before passing it back from
+> tegraX_pinctrl_init() to the core. You could perhaps do it using /include/
+> in the .dtsi file too, but I think allowing the SoC init code to unify the
+> tables gives more flexibility; in your example below of the same data with
+> different pin names, that'd be implementable with code without too much
+> difficulty, but probably impossible with dtc since it has no macro/define
+> support at present.
+> 
+> Also, the representation of the data in a .c file will likely be far
+> smaller than in the .dtsi file, so this way saves space. Admittedly with
+> a multi-SoC binary, you end up with all the large per-SoC data in the
+> binary initially, so the space-savings aren't exactly seen, but it's
+> all init data, so does get dumped soon after boot.
+> 
+> Another point here: I don't have to maintain a DT binding for the Tegra
+> pinctrl driver this way, so if the next Tegra's pinmux HW is different,
+> all I need to do is edit the driver, not be shackled by a need to keep
+> the DT binding for it backwards-compatible. Although that said, I
+> /think/ even an obvious DT binding derived from struct
+> tegra_pinctrl_soc_data would be flexible enough for most things, perhaps
+> with the addition of allowing config param field definitions for pins
+> as well as groups.
 
-Lately, I've been seeing dozens of kmemleak reports pointing at NFS.
-They all appear to be referring to the same "name" value which gets
-stored in dentry->d_fsdata by nfs_get_root.  But at a first glance
-the code seems to be taking some care to free these properly (although
-it's quite tricky for me to follow), so I'm not sure what's up.  These
-are NFSv3 client mounts.
+What you're describing should be supported for sure.
 
-This is with Linus' master as of a couple days ago, but I've also seen
-this on some older kernels (on different networks).  The machine in
-question is using autofs (which may explain the fairly large number of
-kmemleak reports, due to semi-frequent mounting/unmounting).
+IMHO the key issue here from pinctrl fwk point of view is: We want to
+allow multiple data sources for describing the pinmux functions.
 
-They all look essentially the same: one is quoted below.
+The data sources supported should be any combination of static platform_data,
+DT data, loadable modules, and /lib/firmware. Then it's just a question of
+using the most suitable method for each SoC.
 
-  unreferenced object 0xf18fb820 (size 32):
-    comm "mount.nfs", pid 5688, jiffies 15473748 (age 73861.344s)
-    hex dump (first 32 bytes):
-      65 6c 70 66 73 31 3a 2f 65 78 70 6f 72 74 2f 74  elpfs1:/export/t
-      6f 6f 6c 73 2f 65 6c 70 73 6f 66 74 00 00 00 00  ools/elpsoft....
-    backtrace:
-      [<c125d7f6>] kmemleak_alloc+0x21/0x3f
-      [<c10a95c2>] __kmalloc_track_caller+0x128/0x14a
-      [<c1093db6>] kstrdup+0x29/0x39
-      [<f85a7543>] nfs_get_root+0x29/0x11e [nfs]
-      [<f85ac6ee>] nfs_fs_mount+0x6d6/0x75b [nfs]
-      [<c10ae861>] mount_fs+0xe/0x95
-      [<c10bf2cd>] vfs_kern_mount+0x4a/0x78
-      [<c10bff7c>] do_kern_mount+0x2f/0xad
-      [<c10c129e>] do_mount+0x581/0x5cf
-      [<c10c1521>] sys_mount+0x61/0x94
-      [<c12718d0>] sysenter_do_call+0x12/0x36
-      [<ffffffff>] 0xffffffff
+Regards,
 
-Let me know if you need any more info,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Tony
