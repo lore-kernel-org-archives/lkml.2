@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab1LIRax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:30:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3552 "EHLO mx1.redhat.com"
+	id S1752899Ab1LIRa6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:30:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab1LIRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:30:51 -0500
+	id S1751961Ab1LIRa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:30:56 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] perf tool: Refactoring IO mmap/data files code
-Date: Fri,  9 Dec 2011 18:30:34 +0100
-Message-Id: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/4] perf, tool: Factor evlist code to use global unmap function
+Date: Fri,  9 Dec 2011 18:30:36 +0100
+Message-Id: <1323451838-23081-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
+References: <1323451838-23081-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-centralizing event mmaps and output file functionality.
+Using __perf_evlist__munmap in case of map failure rather
+than duplicate the unmap code.
 
-Adding perf_mmap object to encapsulate  event's memory maps,
-and perf_data object to handle intput/output data file processing.
-
-attached patches:
- 1/4 perf, tool: Centralize the memory maps handling
- 2/4 perf, tool: Factor evlist code to use global unmap function
- 3/4 perf, tool: Introducing perf_mmap object
- 4/4 perf, tool: Introducing perf_data object
-
-wbr,
-jirka
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile               |    5 +
- tools/perf/builtin-annotate.c     |    2 +-
- tools/perf/builtin-buildid-list.c |    4 +-
- tools/perf/builtin-diff.c         |    6 +-
- tools/perf/builtin-evlist.c       |    3 +-
- tools/perf/builtin-inject.c       |    3 +-
- tools/perf/builtin-kmem.c         |    3 +-
- tools/perf/builtin-lock.c         |    3 +-
- tools/perf/builtin-record.c       |  165 ++++++++----------------------
- tools/perf/builtin-report.c       |    2 +-
- tools/perf/builtin-sched.c        |    6 +-
- tools/perf/builtin-script.c       |    3 +-
- tools/perf/builtin-timechart.c    |    5 +-
- tools/perf/builtin-top.c          |    8 +-
- tools/perf/perf.h                 |   26 -----
- tools/perf/util/data.c            |  201 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/data.h            |   64 ++++++++++++
- tools/perf/util/evlist.c          |  131 +++++-------------------
- tools/perf/util/evlist.h          |    1 +
- tools/perf/util/header.c          |   28 +++---
- tools/perf/util/header.h          |    4 +-
- tools/perf/util/mmap.c            |  140 ++++++++++++++++++++++++++
- tools/perf/util/mmap.h            |   49 +++++++++
- tools/perf/util/session.c         |  111 +++++++-------------
- tools/perf/util/session.h         |   21 +++-
- tools/perf/util/setup.py          |    2 +-
- 26 files changed, 633 insertions(+), 363 deletions(-)
+ tools/perf/util/evlist.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
+
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f3178bc..56f1d34 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -416,7 +416,7 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+ 	return event;
+ }
+ 
+-void perf_evlist__munmap(struct perf_evlist *evlist)
++static void __perf_evlist__munmap(struct perf_evlist *evlist)
+ {
+ 	int i;
+ 
+@@ -426,7 +426,11 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
+ 			evlist->mmap[i].base = NULL;
+ 		}
+ 	}
++}
+ 
++void perf_evlist__munmap(struct perf_evlist *evlist)
++{
++	__perf_evlist__munmap(evlist);
+ 	free(evlist->mmap);
+ 	evlist->mmap = NULL;
+ }
+@@ -494,12 +498,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist)
+ 	return 0;
+ 
+ out_unmap:
+-	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
+-		if (evlist->mmap[cpu].base != NULL) {
+-			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
+-			evlist->mmap[cpu].base = NULL;
+-		}
+-	}
++	__perf_evlist__munmap(evlist);
+ 	return -1;
+ }
+ 
+@@ -533,12 +532,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist)
+ 	return 0;
+ 
+ out_unmap:
+-	for (thread = 0; thread < evlist->threads->nr; thread++) {
+-		if (evlist->mmap[thread].base != NULL) {
+-			munmap(evlist->mmap[thread].base, evlist->mmap_len);
+-			evlist->mmap[thread].base = NULL;
+-		}
+-	}
++	__perf_evlist__munmap(evlist);
+ 	return -1;
+ }
+ 
+-- 
+1.7.4
+
