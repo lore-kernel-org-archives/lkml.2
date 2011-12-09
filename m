@@ -1,88 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1LITAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 14:00:03 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45510 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752434Ab1LITAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 14:00:01 -0500
-Message-ID: <0b83a8b65ef53f7892e639c89667af1b.squirrel@xenotime.net>
-In-Reply-To: <4EE19DA0.5010705@goop.org>
-References: <20111209012746.GC20353@thor.bakeyournoodle.com>
-    <4EE19DA0.5010705@goop.org>
-Date: Fri, 9 Dec 2011 11:00:00 -0800
-Subject: Re: linux-next bad Kconfig for drivers/hid
-From: "Randy Dunlap" <rdunlap@xenotime.net>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Jiri Kosina" <jkosina@suse.cz>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "LinuxPPC-dev" <linuxppc-dev@lists.ozlabs.org>,
-        "Linux Kernel ML" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Identified-User: {:box742.bluehost.com:xenotime:box742.bluehost.com} {sentby:program running on server}
+	id S1754591Ab1LITAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:00:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153Ab1LITAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 14:00:12 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4EE2584D.5060803@linux.intel.com>
+References: <4EE2584D.5060803@linux.intel.com> <4EE250E0.6090104@linux.intel.com> <alpine.LRH.2.00.1112100128470.26387@tundra.namei.org> <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org> <28442.1323269262@redhat.com> <2409.1323422253@redhat.com> <4EE2191E.8070107@linux.intel.com> <11634.1323454017@redhat.com> <2762.1323456423@redhat.com> 
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, alan@lxorguk.ukuu.org.uk
+Subject: Re: [GIT PULL] Crypto keys and module signing
+Date: Fri, 09 Dec 2011 18:59:53 +0000
+Message-ID: <15055.1323457193@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-On Thu, December 8, 2011 9:33 pm, Jeremy Fitzhardinge wrote:
-> On 12/08/2011 05:27 PM, Tony Breeds wrote:
->> Commit 4f5ca836bef3 (HID: hid-input: add support for HID devices
->> reporting Battery Strength) went into linux-next on Dec 1st since then a
->> ppc6xx_defconfig has been failing with:
->>
->> ---
->> drivers/built-in.o: In function `hidinput_cleanup_battery':
->> /scratch/tony/working/drivers/hid/hid-input.c:351: undefined reference
->> to `power_supply_unregister'
->> drivers/built-in.o: In function `hidinput_setup_battery':
->> /scratch/tony/working/drivers/hid/hid-input.c:338: undefined reference
->> to `power_supply_register'
->> make[1]: *** [.tmp_vmlinux1] Error 1
->> ---
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/5012563/
->> vs
->> http://kisskb.ellerman.id.au/kisskb/buildresult/5017366/
->>
->> The defconfig in question doens't mention either option
->> (CONFIG_POWER_SUPPLY or CONFIG_HID_BATTERY_STRENGTH) and kbuild is
->> genertaing
->> CONFIG_HID_BATTERY_STRENGTH=y
->> CONFIG_POWER_SUPPLY=m
->> which clearly isn't going to work.
->>
->> The following change to HID_BATTERY_STRENGTH Kconfig "works" but seems a
->> little gross.
->>
->> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
->> index 5ed64f6..d2a94e6 100644
->> --- a/drivers/hid/Kconfig
->> +++ b/drivers/hid/Kconfig
->> @@ -33,7 +33,7 @@ config HID
->>
->>  config HID_BATTERY_STRENGTH
->>         bool
->> -       depends on POWER_SUPPLY
->> +       depends on POWER_SUPPLY=y
->>         default y
->>
->>  config HIDRAW
->>
->> Any chance we can get a fix into linux-next?
->
-> Hm.  How about making it "depends on HID && POWER_SUPPLY"?  I think that
-> would needlessly disable it if HID is also modular, but I'm not sure how
-> to fix that.  "depends on HID && POWER_SUPPLY && HID == POWER_SUPPLY"?
+> see
+> http://www.gnupg.org/documentation/manuals/gnupg-devel/Unattended-GPG-key-generation.html
 
-The last suggestion looks good to me.
+"%transient-key"?
 
--- 
-~Randy
-
+David
