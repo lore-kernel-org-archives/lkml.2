@@ -1,414 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1LIToR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 14:44:17 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44390 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab1LIToQ (ORCPT
+	id S1754655Ab1LITsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:48:03 -0500
+Received: from che.mayfirst.org ([209.234.253.108]:48242 "EHLO
+	che.mayfirst.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab1LITsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 14:44:16 -0500
-Date: Fri, 9 Dec 2011 11:43:59 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2 UPDATED] trace_event_filter: factorize filter creation
-Message-ID: <20111209194359.GG12108@google.com>
-References: <20111123014603.GA19630@google.com>
- <20111123020016.GB19630@google.com>
+	Fri, 9 Dec 2011 14:48:01 -0500
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Dec 2011 14:48:01 EST
+Message-ID: <4EE26486.8090904@fifthhorseman.net>
+Date: Fri, 09 Dec 2011 14:41:58 -0500
+From: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111120 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123020016.GB19630@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Howells <dhowells@redhat.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dmitry.kasatkin@intel.com, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Keyrings] [GIT PULL] Crypto keys and module signing
+References: <4EE250E0.6090104@linux.intel.com> <alpine.LRH.2.00.1112100128470.26387@tundra.namei.org> <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org> <28442.1323269262@redhat.com> <2409.1323422253@redhat.com> <4EE2191E.8070107@linux.intel.com> <11634.1323454017@redhat.com> <2762.1323456423@redhat.com>
+In-Reply-To: <2762.1323456423@redhat.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enigBA632495E12069A1A2E96895"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are four places where new filter for a given filter string is
-created, which involves several different steps.  This patch factors
-those steps into create_[system_]filter() functions which in turn make
-use of create_filter_{start|finish}() for common parts.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigBA632495E12069A1A2E96895
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-The only functional change is that if replace_filter_string() is
-requested and fails, creation fails without any side effect instead of
-being ignored.
+On 12/09/2011 01:47 PM, David Howells wrote:
+> Arjan van de Ven <arjan@linux.intel.com> wrote:
+>=20
+>> ... the temp key can use /dev/urandom.
+>> seriously, /dev/urandom for one time, temp keys is not bad
+>> (if you care about the difference, you better provide your own real ke=
+y)
+>=20
+> Can you tell gpg which random device to use?
 
-Note that system filter is now installed after the processing is
-complete which makes freeing before and then restoring filter string
-on error unncessary.
+Depending on the version of gpg, supplying either --quick-random or
+--debug-quick-random should use a cheaper PRNG.
 
--v2: Rebased to resolve conflict with 49aa29513e and updated both
-     create_filter() functions to always set *filterp instead of
-     requiring the caller to clear it to %NULL on entry.
+I think this is an undocumented feature, though.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/trace/trace_events_filter.c |  283 ++++++++++++++++++-------------------
- 1 file changed, 142 insertions(+), 141 deletions(-)
+hth,
 
-Index: work/kernel/trace/trace_events_filter.c
-===================================================================
---- work.orig/kernel/trace/trace_events_filter.c
-+++ work/kernel/trace/trace_events_filter.c
-@@ -1738,11 +1738,121 @@ static int replace_system_preds(struct e
- 	return -ENOMEM;
- }
- 
-+static int create_filter_start(char *filter_str, bool set_str,
-+			       struct filter_parse_state **psp,
-+			       struct event_filter **filterp)
-+{
-+	struct event_filter *filter;
-+	struct filter_parse_state *ps = NULL;
-+	int err = 0;
-+
-+	WARN_ON_ONCE(*psp || *filterp);
-+
-+	/* allocate everything, and if any fails, free all and fail */
-+	filter = __alloc_filter();
-+	if (filter && set_str)
-+		err = replace_filter_string(filter, filter_str);
-+
-+	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
-+
-+	if (!filter || !ps || err) {
-+		kfree(ps);
-+		__free_filter(filter);
-+		return -ENOMEM;
-+	}
-+
-+	/* we're committed to creating a new filter */
-+	*filterp = filter;
-+	*psp = ps;
-+
-+	parse_init(ps, filter_ops, filter_str);
-+	err = filter_parse(ps);
-+	if (err && set_str)
-+		append_filter_err(ps, filter);
-+	return err;
-+}
-+
-+static void create_filter_finish(struct filter_parse_state *ps)
-+{
-+	if (ps) {
-+		filter_opstack_clear(ps);
-+		postfix_clear(ps);
-+		kfree(ps);
-+	}
-+}
-+
-+/**
-+ * create_filter - create a filter for a ftrace_event_call
-+ * @call: ftrace_event_call to create a filter for
-+ * @filter_str: filter string
-+ * @set_str: remember @filter_str and enable detailed error in filter
-+ * @filterp: out param for created filter (always updated on return)
-+ *
-+ * Creates a filter for @call with @filter_str.  If @set_str is %true,
-+ * @filter_str is copied and recorded in the new filter.
-+ *
-+ * On success, returns 0 and *@filterp points to the new filter.  On
-+ * failure, returns -errno and *@filterp may point to %NULL or to a new
-+ * filter.  In the latter case, the returned filter contains error
-+ * information if @set_str is %true and the caller is responsible for
-+ * freeing it.
-+ */
-+static int create_filter(struct ftrace_event_call *call,
-+			 char *filter_str, bool set_str,
-+			 struct event_filter **filterp)
-+{
-+	struct event_filter *filter = NULL;
-+	struct filter_parse_state *ps = NULL;
-+	int err;
-+
-+	err = create_filter_start(filter_str, set_str, &ps, &filter);
-+	if (!err) {
-+		err = replace_preds(call, filter, ps, filter_str, false);
-+		if (err && set_str)
-+			append_filter_err(ps, filter);
-+	}
-+	create_filter_finish(ps);
-+
-+	*filterp = filter;
-+	return err;
-+}
-+
-+/**
-+ * create_system_filter - create a filter for an event_subsystem
-+ * @system: event_subsystem to create a filter for
-+ * @filter_str: filter string
-+ * @filterp: out param for created filter (always updated on return)
-+ *
-+ * Identical to create_filter() except that it creates a subsystem filter
-+ * and always remembers @filter_str.
-+ */
-+static int create_system_filter(struct event_subsystem *system,
-+				char *filter_str, struct event_filter **filterp)
-+{
-+	struct event_filter *filter = NULL;
-+	struct filter_parse_state *ps = NULL;
-+	int err;
-+
-+	err = create_filter_start(filter_str, true, &ps, &filter);
-+	if (!err) {
-+		err = replace_system_preds(system, ps, filter_str);
-+		if (!err) {
-+			/* System filters just show a default message */
-+			kfree(filter->filter_string);
-+			filter->filter_string = NULL;
-+		} else {
-+			append_filter_err(ps, filter);
-+		}
-+	}
-+	create_filter_finish(ps);
-+
-+	*filterp = filter;
-+	return err;
-+}
-+
- int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- {
--	struct filter_parse_state *ps;
- 	struct event_filter *filter;
--	struct event_filter *tmp;
- 	int err = 0;
- 
- 	mutex_lock(&event_mutex);
-@@ -1759,49 +1869,30 @@ int apply_event_filter(struct ftrace_eve
- 		goto out_unlock;
- 	}
- 
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto out_unlock;
-+	err = create_filter(call, filter_string, true, &filter);
- 
--	filter = __alloc_filter();
--	if (!filter) {
--		kfree(ps);
--		goto out_unlock;
--	}
--
--	replace_filter_string(filter, filter_string);
--
--	parse_init(ps, filter_ops, filter_string);
--	err = filter_parse(ps);
--	if (err) {
--		append_filter_err(ps, filter);
--		goto out;
--	}
--
--	err = replace_preds(call, filter, ps, filter_string, false);
--	if (err) {
--		filter_disable(call);
--		append_filter_err(ps, filter);
--	} else
--		call->flags |= TRACE_EVENT_FL_FILTERED;
--out:
- 	/*
- 	 * Always swap the call filter with the new filter
- 	 * even if there was an error. If there was an error
- 	 * in the filter, we disable the filter and show the error
- 	 * string
- 	 */
--	tmp = call->filter;
--	rcu_assign_pointer(call->filter, filter);
--	if (tmp) {
--		/* Make sure the call is done with the filter */
--		synchronize_sched();
--		__free_filter(tmp);
-+	if (filter) {
-+		struct event_filter *tmp = call->filter;
-+
-+		if (!err)
-+			call->flags |= TRACE_EVENT_FL_FILTERED;
-+		else
-+			filter_disable(call);
-+
-+		rcu_assign_pointer(call->filter, filter);
-+
-+		if (tmp) {
-+			/* Make sure the call is done with the filter */
-+			synchronize_sched();
-+			__free_filter(tmp);
-+		}
- 	}
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
- out_unlock:
- 	mutex_unlock(&event_mutex);
- 
-@@ -1811,7 +1902,6 @@ out_unlock:
- int apply_subsystem_event_filter(struct event_subsystem *system,
- 				 char *filter_string)
- {
--	struct filter_parse_state *ps;
- 	struct event_filter *filter;
- 	int err = 0;
- 
-@@ -1835,48 +1925,19 @@ int apply_subsystem_event_filter(struct 
- 		goto out_unlock;
- 	}
- 
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto out_unlock;
--
--	filter = __alloc_filter();
--	if (!filter)
--		goto out;
--
--	/* System filters just show a default message */
--	kfree(filter->filter_string);
--	filter->filter_string = NULL;
--
--	/*
--	 * No event actually uses the system filter
--	 * we can free it without synchronize_sched().
--	 */
--	__free_filter(system->filter);
--	system->filter = filter;
--
--	parse_init(ps, filter_ops, filter_string);
--	err = filter_parse(ps);
--	if (err)
--		goto err_filter;
--
--	err = replace_system_preds(system, ps, filter_string);
--	if (err)
--		goto err_filter;
--
--out:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
-+	err = create_system_filter(system, filter_string, &filter);
-+	if (filter) {
-+		/*
-+		 * No event actually uses the system filter
-+		 * we can free it without synchronize_sched().
-+		 */
-+		__free_filter(system->filter);
-+		system->filter = filter;
-+	}
- out_unlock:
- 	mutex_unlock(&event_mutex);
- 
- 	return err;
--
--err_filter:
--	replace_filter_string(filter, filter_string);
--	append_filter_err(ps, system->filter);
--	goto out;
- }
- 
- #ifdef CONFIG_PERF_EVENTS
-@@ -1894,7 +1955,6 @@ int ftrace_profile_set_filter(struct per
- {
- 	int err;
- 	struct event_filter *filter;
--	struct filter_parse_state *ps;
- 	struct ftrace_event_call *call;
- 
- 	mutex_lock(&event_mutex);
-@@ -1909,33 +1969,10 @@ int ftrace_profile_set_filter(struct per
- 	if (event->filter)
- 		goto out_unlock;
- 
--	filter = __alloc_filter();
--	if (!filter) {
--		err = PTR_ERR(filter);
--		goto out_unlock;
--	}
--
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto free_filter;
--
--	parse_init(ps, filter_ops, filter_str);
--	err = filter_parse(ps);
--	if (err)
--		goto free_ps;
--
--	err = replace_preds(call, filter, ps, filter_str, false);
-+	err = create_filter(call, filter_str, false, &filter);
- 	if (!err)
- 		event->filter = filter;
--
--free_ps:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
--
--free_filter:
--	if (err)
-+	else
- 		__free_filter(filter);
- 
- out_unlock:
-@@ -1954,43 +1991,6 @@ out_unlock:
- #define CREATE_TRACE_POINTS
- #include "trace_events_filter_test.h"
- 
--static int test_get_filter(char *filter_str, struct ftrace_event_call *call,
--			   struct event_filter **pfilter)
--{
--	struct event_filter *filter;
--	struct filter_parse_state *ps;
--	int err = -ENOMEM;
--
--	filter = __alloc_filter();
--	if (!filter)
--		goto out;
--
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto free_filter;
--
--	parse_init(ps, filter_ops, filter_str);
--	err = filter_parse(ps);
--	if (err)
--		goto free_ps;
--
--	err = replace_preds(call, filter, ps, filter_str, false);
--	if (!err)
--		*pfilter = filter;
--
-- free_ps:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
--
-- free_filter:
--	if (err)
--		__free_filter(filter);
--
-- out:
--	return err;
--}
--
- #define DATA_REC(m, va, vb, vc, vd, ve, vf, vg, vh, nvisit) \
- { \
- 	.filter = FILTER, \
-@@ -2109,12 +2109,13 @@ static __init int ftrace_test_event_filt
- 		struct test_filter_data_t *d = &test_filter_data[i];
- 		int err;
- 
--		err = test_get_filter(d->filter, &event_ftrace_test_filter,
--				      &filter);
-+		err = create_filter(&event_ftrace_test_filter, d->filter,
-+				    false, &filter);
- 		if (err) {
- 			printk(KERN_INFO
- 			       "Failed to get filter for '%s', err %d\n",
- 			       d->filter, err);
-+			__free_filter(filter);
- 			break;
- 		}
- 
+	--dkg
+
+
+--------------enigBA632495E12069A1A2E96895
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQJ8BAEBCgBmBQJO4mSGXxSAAAAAAC4AKGlzc3Vlci1mcHJAbm90YXRpb25zLm9w
+ZW5wZ3AuZmlmdGhob3JzZW1hbi5uZXQwRUU1QkU5NzkyODJEODBCOUY3NTQwRjFD
+Q0QyRUQ5NEQyMTczOUU5AAoJEMzS7ZTSFznpRdEP/1ZZj6eYDxUxN5et8YtWeUav
+cTU3JIXc+Gf+1SzBgeS9wnpzgIhctoPo6CzxDHm847IWyl8dn4CnqxeSgYs7N7jB
+vGYVHb0oqKL3jj6So2bEF1yzgVB8aAoWTc8Mdf+gkvadMxLUmhlL/GwL8CnbkkgN
+wq96PVPd+COgO2apzDz3t18yQb1+z7tQ4aA7jKuk7p6/kkGj8ITfr75qcks5jhel
+q6BY5FrAOh+3RbRdLLUe+mcLtHfi3PTof0wTrQbNJxjaRKop0NPfbYwcZ9O7eYOv
+gaZ2U2jvztxeNRqt1qzm7m9fmOiU6kHc94nx167ij3/vRaFF06VUAp/vpsyLfd+q
+atykIGepHxdJdK0NjPG3APZY6B8rmSJuHqAk4nOsrL3wiHtjzWESnhMWkmi5ENii
+9GZkB5bwYV+5Ua7WRht5+ctA+HDN6x1WNn1D/kJ8kvPSMsgqqsKISsNvuWG24pf5
+X8E9OUFh7fFrLnI5f1K55ciVDDLArXrI5YMz6hbOgREjhvzGp3/dTyIl6PEyg9+N
+n0ZY51j0zR2SfndAVNVaKd1WsK8sUyaMEgPuqi7WIpgmU/i2B7EraFHEOqRGh8bR
+7LLO8pl0ggktc27r2lV6fFeop2Ew12Wh6difgBlplD/CVF+cenhOa2nkALEPja/H
+SO8l8Q0b5fDibmjElDQ+
+=TPvt
+-----END PGP SIGNATURE-----
+
+--------------enigBA632495E12069A1A2E96895--
