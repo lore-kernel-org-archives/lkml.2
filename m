@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab1LIO4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:56:47 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:40301 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769Ab1LIO4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:56:46 -0500
-Message-ID: <4EE22179.5090106@parallels.com>
-Date: Fri, 9 Dec 2011 12:55:53 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754493Ab1LIO5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:57:13 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:59099 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754330Ab1LIO5J convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 09:57:09 -0500
+From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-scsi-owner@vger.kernel.org" <linux-scsi-owner@vger.kernel.org>,
+        "James Bottomley" <jejb@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 9 Dec 2011 20:26:57 +0530
+Subject: RE: mpt2sas regression: can not add disk...
+Thread-Topic: mpt2sas regression: can not add disk...
+Thread-Index: Acy17byRphK0xIxTQuCXmq8Yfm8csQAlOoBQ
+Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70D912FF9DE@inbmail01.lsi.com>
+References: <7863850E8C98C748980632D9D3B7C19911968B8AE5@inbmail02.lsi.com>
+	<A6888A6805518E4EA4AF7072A28264A604726F2824@inbmail02.lsi.com>
+	<CAE9FiQWY-jhtbCmdfBY1zg_d0nreTHbkVe3CmaPQMgojDAtLaw@mail.gmail.com>
+	<CAE9FiQXbu-O2exdhjziWCdiWWGNb8q7_RoECeKC5K80DEOobbw@mail.gmail.com>
+	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF83D@inbmail01.lsi.com>
+	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3@inbmail01.lsi.com>
+ <CAE9FiQUBkjfOYrjxAVxG7F3GF11trkOnf0ZoKS4h5Db2gQJvbA@mail.gmail.com>
+In-Reply-To: <CAE9FiQUBkjfOYrjxAVxG7F3GF11trkOnf0ZoKS4h5Db2gQJvbA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>, <cgroups@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: How to draw values for /proc/stat
-References: <4EDC8FB1.60407@parallels.com> <1323439411.17673.65.camel@twins>
-In-Reply-To: <1323439411.17673.65.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2011 12:03 PM, Peter Zijlstra wrote:
-> On Mon, 2011-12-05 at 07:32 -0200, Glauber Costa wrote:
->> Hi,
->>
->> Specially Peter and Paul, but all the others:
->>
->> As you can see in https://lkml.org/lkml/2011/12/4/178, and in my answer
->> to that, there is a question - one I've asked before but without that
->> much of an audience - of whether /proc files read from process living on
->> cgroups should display global or per-cgroup resources.
->>
->> In the past, I was arguing for a knob to control that, but I recently
->> started to believe that a knob here will only overcomplicate matters:
->> if you live in a cgroup, you should display only the resources you can
->> possibly use. Global is for whoever is in the main cgroup.
->>
->> Now, it comes two questions:
->> 1) Do you agree with that, for files like /proc/stat ? I think the most
->> important part is to be consistent inside the system, regardless of what
->> is done
->
-> Personally I don't give a rats arse about (/proc vs) cgroups :-)
-> Currently /proc is unaffected by whatever cgroup you happen to be in and
-> that seems to make some sort of sense.
->
-> Namespaces seem to be about limiting visibility, cgroups about
-> controlling resources.
->
-> The two things are hopelessly disjoint atm, but I believe someone was
-> looking at this mess.
-
-I did take a look at this (if anyone else was, I'd like to know so we 
-can share some ideas), but I am not convinced we should do anything to 
-join them anymore. We virtualization people are to the best of my 
-knowledge the only ones doing namespaces. Cgroups, OTOH, got a lot bigger.
-
-What I am mostly concerned about now, is how consistent they will be.
-/proc always being always global indeed does make sense, but my question 
-still stands: if you live in a resource-controlled world, why should you 
-even see resources you will never own ?
 
 
-> IOW a /proc namespace coupled to cgroup scope would do what you want.
-> Now my head hurts..
+> -----Original Message-----
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> Sent: Friday, December 09, 2011 2:40 AM
+> To: Desai, Kashyap
+> Cc: Nandigama, Nagalakshmi; James Bottomley; Rafael J. Wysocki; linux-
+> scsi-owner@vger.kernel.org; James Bottomley; linux-scsi@vger.kernel.org;
+> Linux Kernel Mailing List
+> Subject: Re: mpt2sas regression: can not add disk...
+> 
+> On Thu, Dec 8, 2011 at 5:30 AM, Desai, Kashyap <Kashyap.Desai@lsi.com>
+> wrote:
+> > Yinghai,
+> >
+> > Please try attached patch. This must be on top of latest upstream
+> code.
+> > When we have introduced fast load, scan of devices are happening from
+> thread context.
+> >
+> > But currently we have not removed " _scsih_probe_devices(ioc);" call
+> from actual probe and it is getting called from multiple places.
+> > As a result, we end-up into this issue.
+> >
+> > Please try the attached patch and provide your feedback. Based upon
+> your result, we will post this patch to upstream.
+> 
+> Yes.  The attaced patch fix the problem. the disk that is attached to
+> the mpt2sas card is showing up in OS.
 
-Mine too. The idea is good, but too broad. Boils down to: How do you 
-couple them? And none of the methods I thought about seemed to make any 
-sense.
+Thanks for the test report. LSI will post this patch to upstream. 
 
-If we really want to have the values in /proc being opted-in, I think 
-Kamezawa's idea of a mount option is the winner so far.
+` Kashyap
 
->> 2) Will cpuacct stay?
->
-> I really want to kill it. Balbir seems to want to retain a control-less
-> accounting capability, but I really don't see the point in that. Nor is
-> anybody selling it convincingly.
->
-> So I think I'll simply deprecate it and schedule it for removal and
-> anybody wanting something like this is free to send patches to implement
-> what they want in the cpu controller and convince me its worth the pain.
->
->> I think if it does, that becomes almost mandatory
->
-> You're referring to #1 here, right?
-
-Yes. But that was before Kame suggested a mount option. That would do 
-just fine in this use case as well/
-
->> (at least the bind mount idea is pretty much over here), because drawing
->> value for /proc/stat becomes quite complex.
->> The cpuacct cgroup can provide user, sys, etc values. But we also have:
->>
->> * nr_context_switches,
->> * jiffies since boot,
->> * total_forks,
->> * nr_running,
->> * nr_iowait,
->>
->> Now I doubt any of us want to see /proc/stat extended to accommodate
->> things like nr_context_switches, or even worse, nr_running. The way I
->> see it, there are two options here:
->
-> Why would we want to display all those anyway?
-
-Because we care about isolation. Our users (and more importantly, their 
-tools), need to feel they own the box. That's the whole point of it.
-
-Whatever is displayed to the users, need to be (with a switch/mount opt, 
-if my initial point is really defeated) related to the resources he is 
-entitled to, not to some global entity he'll never own.
->
->>    a) moving everything to cpu cgroup so we keep all values being drawn
->>       from the same place
->
-> This is /cgroup/$controller.stat, right?
-
-Sorry?
-
-(I just noticed I wasn't that clear myself) I referred more to the act 
-of collecting values, and where from, than how to.
-
->
->>    b) Collect that info from multiple places in a transparent way. ctx,
->>       nr_running and nr_iowait will probably come from cpu. jiffies can
->>       come from wherever, and maybe we can even draw total_forks
->>       from Frederic's and avoid counting it twice.
->
-> trouble with that is 'drawing from someplace' is a total nightmare, what
-> happens if that fork muck from Frederic isn't co-mounted with the cpu
-> controller?
-
-If it is not co-mounted, we draw the global value. If you don't mount 
-it, I someone does not mount it, I can assure you he doesn't care about 
-it. We for sure will.
-
-
-
-
+> 
+> Thanks
+> 
+> Yinghai Lu
