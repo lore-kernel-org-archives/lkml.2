@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab1LIXtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 18:49:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51494 "EHLO ogre.sisk.pl"
+	id S1755046Ab1LIXxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 18:53:16 -0500
+Received: from home.keithp.com ([63.227.221.253]:59599 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab1LIXtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 18:49:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH 0/4] PM: Make the PM core execute driver callbacks if subsystem ones are not present
-Date: Sat, 10 Dec 2011 00:52:10 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-References: <201112100018.38536.rjw@sisk.pl> <20111209234737.GA6519@suse.de>
-In-Reply-To: <20111209234737.GA6519@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112100052.10241.rjw@sisk.pl>
+	id S1752428Ab1LIXxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 18:53:14 -0500
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>
+Subject: drm/i915: Enabling RC6 where possible
+Date: Fri,  9 Dec 2011 15:53:47 -0800
+Message-Id: <1323474829-2501-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1321684889-18691-1-git-send-email-keithp@keithp.com>
+References: <1321684889-18691-1-git-send-email-keithp@keithp.com>
+References: <1322526298-2746-1-git-send-email-eugeni.dodonov@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 10, 2011, Greg KH wrote:
-> On Sat, Dec 10, 2011 at 12:18:38AM +0100, Rafael J. Wysocki wrote:
-> > Hi,
-> > 
-> > The following patchset changes the PM core so that driver callbacks
-> > are executed automatically when subsystem ones are not present and
-> > uses the new PM core's behavior to simplify the platform and AMBA bus
-> > types (there probably are many more bus types that may be simplified
-> > this way, but those two were the easiest targets for me).
-> > 
-> > The reasons why to do this are outlined in the changelog of the second patch.
-> > 
-> > Comments welcome!
-> 
-> Looks sane to me, nice work.
+Ok, here's a "final" patch set to enable RC6 where possible on SNB and IVB
+machines.
 
-Thanks!
+The first patch creates a new variable, intel_iommu_enabled, that is
+exported by the intel iommu code and set when that code has
+successfully initialized itself. The old plan of using no_iommu ||
+dmar_disabled would work -- those variables are set only by kernel
+parameters and don't reflect what the system is actually doing about
+virtualization.
 
-Rafael
+
+The second patch uses that value on SNB to tell whether RC6 can be
+enabled by default. On IVB, RC6 is always enabled.
+
+
+Of course, in all cases, you can override the RC6 setting with the
+i915 module parameter.
+
+For those of you who have experienced the delights of RC6 crashing
+your machines, please test as this will be heading to 3.2 unless you
+find something wrong with it.
+
+-keith
