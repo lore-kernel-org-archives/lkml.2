@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1LISVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 13:21:40 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8933 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab1LISVj convert rfc822-to-8bit (ORCPT
+	id S1753530Ab1LISW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 13:22:27 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:60485 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab1LISW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 13:21:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="84094463"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>
-CC: X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Date: Fri, 9 Dec 2011 10:19:02 -0800
-Subject: RE: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Thread-Topic: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Thread-Index: Acy1svaa/a28vz7sSRaovNJkt9mUwAA6we7A
-Message-ID: <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
-References: <1323353332-5671-1-git-send-email-bp@amd64.org>
- <1323353332-5671-3-git-send-email-bp@amd64.org>
-In-Reply-To: <1323353332-5671-3-git-send-email-bp@amd64.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 9 Dec 2011 13:22:26 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org
+Cc: arnaud.patard@rtp-net.org
+Subject: [PATCH] MAINTAINERS: update xgifb maintainer's e-mail address
+Date: Fri,  9 Dec 2011 20:22:04 +0200
+Message-Id: <1323454924-20453-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-void mce_register_decode_chain(struct notifier_block *nb)
- {
- 	atomic_notifier_chain_register(&x86_mce_decoder_chain, nb);
-+	drain_mcelog_buffer();
- }
+All patches sent to the maintainer address bounce:
 
-Won't this dump all the pended stuff to the *first* guy to
-register - but subsequent interested parties will still
-miss out?
+   Diagnostic-Code: smtp; 550 5.1.1 <apatard@mandriva.com>: Recipient address
+       rejected: User unknown in virtual mailbox table
 
-If so, then we might care who gets here first.
+The address found in drivers/staging/xgifb/TODO seems to work better.
 
--Tony
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: arnaud.patard@rtp-net.org
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 4475602..2385253 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6419,7 +6419,7 @@ S:	Odd Fixes
+ F:	drivers/staging/winbond/
+ 
+ STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
+-M:	Arnaud Patard <apatard@mandriva.com>
++M:	Arnaud Patard <arnaud.patard@rtp-net.org>
+ S:	Odd Fixes
+ F:	drivers/staging/xgifb/
+ 
+-- 
+1.7.2.5
+
