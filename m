@@ -1,579 +1,716 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab1LIOXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:23:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009Ab1LIOXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:23:16 -0500
-Date: Fri, 9 Dec 2011 16:23:03 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Liu Ping Fan <kernelfans@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        aliguori@us.ibm.com, jan.kiszka@web.de
-Subject: Re: [PATCH V2] kvm: make vcpu life cycle separated from kvm instance
-Message-ID: <20111209142303.GC31323@redhat.com>
-References: <1322807192-14147-1-git-send-email-kernelfans@gmail.com>
- <1323408198-9145-1-git-send-email-kernelfans@gmail.com>
+	id S1754189Ab1LIOX2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:23:28 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:40096 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab1LIOXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 09:23:24 -0500
+X-SpamScore: 3
+X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [PATCH 05/06] Power: DA9052 Battery module V5
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: <cbouatmailru@gmail.com>
+CC: <linaro-dev@lists.linaro.org>, <dwmw2@infradead.org>,
+        <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
+        <paul.liu@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 9 Dec 2011 19:47:57 +0530
+Message-ID: <1323440277.23171.73.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323408198-9145-1-git-send-email-kernelfans@gmail.com>
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 01:23:18PM +0800, Liu Ping Fan wrote:
-> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> 
-> Currently, vcpu can be destructed only when kvm instance destroyed.
-> Change this to vcpu's destruction taken when its refcnt is zero,
-> and then vcpu MUST and CAN be destroyed before kvm's destroy.
-> 
-Now refcount is completely unused. It's just set to 1 during vcpu
-creation and reset to 0 during destruction. Just drop it.
+Driver for DA9052 battery charger. This driver depends on DA9052 MFD core dirver
+for definitions and methods.
 
-> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/i8254.c     |   10 ++++--
->  arch/x86/kvm/i8259.c     |   12 ++++--
->  arch/x86/kvm/mmu.c       |    7 ++--
->  arch/x86/kvm/x86.c       |   54 ++++++++++++++++--------------
->  include/linux/kvm_host.h |   77 +++++++++++++++++++++++++++++++++++++++---
->  virt/kvm/irq_comm.c      |    7 +++-
->  virt/kvm/kvm_main.c      |   82 ++++++++++++++++++++++++++++++++++++++++------
->  7 files changed, 196 insertions(+), 53 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
-> index 76e3f1c..ac79598 100644
-> --- a/arch/x86/kvm/i8254.c
-> +++ b/arch/x86/kvm/i8254.c
-> @@ -289,7 +289,7 @@ static void pit_do_work(struct work_struct *work)
->  	struct kvm_pit *pit = container_of(work, struct kvm_pit, expired);
->  	struct kvm *kvm = pit->kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i;
-> +	struct kvm_iter it;
->  	struct kvm_kpit_state *ps = &pit->pit_state;
->  	int inject = 0;
->  
-> @@ -315,9 +315,13 @@ static void pit_do_work(struct work_struct *work)
->  		 * LVT0 to NMI delivery. Other PIC interrupts are just sent to
->  		 * VCPU0, and only if its LVT0 is in EXTINT mode.
->  		 */
-> -		if (kvm->arch.vapics_in_nmi_mode > 0)
-> -			kvm_for_each_vcpu(i, vcpu, kvm)
-> +		if (kvm->arch.vapics_in_nmi_mode > 0) {
-> +			rcu_read_lock();
-> +			kvm_for_each_vcpu(it, vcpu, kvm) {
->  				kvm_apic_nmi_wd_deliver(vcpu);
-> +			}
-> +			rcu_read_unlock();
-> +		}
->  	}
->  }
->  
-> diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-> index cac4746..2186b30 100644
-> --- a/arch/x86/kvm/i8259.c
-> +++ b/arch/x86/kvm/i8259.c
-> @@ -50,25 +50,29 @@ static void pic_unlock(struct kvm_pic *s)
->  {
->  	bool wakeup = s->wakeup_needed;
->  	struct kvm_vcpu *vcpu, *found = NULL;
-> -	int i;
-> +	struct kvm *kvm = s->kvm;
-> +	struct kvm_iter it;
->  
->  	s->wakeup_needed = false;
->  
->  	spin_unlock(&s->lock);
->  
->  	if (wakeup) {
-> -		kvm_for_each_vcpu(i, vcpu, s->kvm) {
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, vcpu, kvm)
->  			if (kvm_apic_accept_pic_intr(vcpu)) {
->  				found = vcpu;
->  				break;
->  			}
-> -		}
->  
-> -		if (!found)
-> +		if (!found) {
-> +			rcu_read_unlock();
->  			return;
-> +		}
->  
->  		kvm_make_request(KVM_REQ_EVENT, found);
->  		kvm_vcpu_kick(found);
-> +		rcu_read_unlock();
->  	}
->  }
->  
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index f1b36cf..c16887e 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1833,11 +1833,12 @@ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
->  
->  static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
->  {
-> -	int i;
-> +	struct kvm_iter it;
->  	struct kvm_vcpu *vcpu;
-> -
-> -	kvm_for_each_vcpu(i, vcpu, kvm)
-> +	rcu_read_lock();
-> +	kvm_for_each_vcpu(it, vcpu, kvm)
->  		vcpu->arch.last_pte_updated = NULL;
-> +	rcu_read_unlock();
->  }
->  
->  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c38efd7..a302470 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1831,10 +1831,15 @@ static int get_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
->  	switch (msr) {
->  	case HV_X64_MSR_VP_INDEX: {
->  		int r;
-> +		struct kvm_iter it;
->  		struct kvm_vcpu *v;
-> -		kvm_for_each_vcpu(r, v, vcpu->kvm)
-> +		struct kvm *kvm =  vcpu->kvm;
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, v, kvm) {
->  			if (v == vcpu)
->  				data = r;
-> +		}
-> +		rcu_read_unlock();
->  		break;
->  	}
->  	case HV_X64_MSR_EOI:
-> @@ -4966,7 +4971,8 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
->  	struct cpufreq_freqs *freq = data;
->  	struct kvm *kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i, send_ipi = 0;
-> +	int send_ipi = 0;
-> +	struct kvm_iter it;
->  
->  	/*
->  	 * We allow guests to temporarily run on slowing clocks,
-> @@ -5016,13 +5022,16 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
->  
->  	raw_spin_lock(&kvm_lock);
->  	list_for_each_entry(kvm, &vm_list, vm_list) {
-> -		kvm_for_each_vcpu(i, vcpu, kvm) {
-> +
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, vcpu, kvm) {
->  			if (vcpu->cpu != freq->cpu)
->  				continue;
->  			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->  			if (vcpu->cpu != smp_processor_id())
->  				send_ipi = 1;
->  		}
-> +		rcu_read_unlock();
->  	}
->  	raw_spin_unlock(&kvm_lock);
->  
-> @@ -6433,13 +6442,17 @@ int kvm_arch_hardware_enable(void *garbage)
->  {
->  	struct kvm *kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i;
-> +	struct kvm_iter it;
->  
->  	kvm_shared_msr_cpu_online();
-> -	list_for_each_entry(kvm, &vm_list, vm_list)
-> -		kvm_for_each_vcpu(i, vcpu, kvm)
-> +	list_for_each_entry(kvm, &vm_list, vm_list) {
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, vcpu, kvm) {
->  			if (vcpu->cpu == smp_processor_id())
->  				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +		}
-> +		rcu_read_unlock();
-> +	}
->  	return kvm_x86_ops->hardware_enable(garbage);
->  }
->  
-> @@ -6560,27 +6573,19 @@ static void kvm_unload_vcpu_mmu(struct kvm_vcpu *vcpu)
->  	vcpu_put(vcpu);
->  }
->  
-> -static void kvm_free_vcpus(struct kvm *kvm)
-> -{
-> -	unsigned int i;
-> -	struct kvm_vcpu *vcpu;
->  
-> -	/*
-> -	 * Unpin any mmu pages first.
-> -	 */
-> -	kvm_for_each_vcpu(i, vcpu, kvm) {
-> -		kvm_clear_async_pf_completion_queue(vcpu);
-> -		kvm_unload_vcpu_mmu(vcpu);
-> -	}
-> -	kvm_for_each_vcpu(i, vcpu, kvm)
-> -		kvm_arch_vcpu_free(vcpu);
->  
-> -	mutex_lock(&kvm->lock);
-> -	for (i = 0; i < atomic_read(&kvm->online_vcpus); i++)
-> -		kvm->vcpus[i] = NULL;
-> +void kvm_arch_vcpu_zap(struct work_struct *work)
-> +{
-> +	struct kvm_vcpu *vcpu = container_of(work, struct kvm_vcpu,
-> +			zap_work);
-> +	struct kvm *kvm = vcpu->kvm;
->  
-> -	atomic_set(&kvm->online_vcpus, 0);
-> -	mutex_unlock(&kvm->lock);
-> +	printk(KERN_INFO "%s, zap vcpu:0x%x\n", __func__, vcpu->vcpu_id);
-> +	kvm_clear_async_pf_completion_queue(vcpu);
-> +	kvm_unload_vcpu_mmu(vcpu);
-> +	kvm_arch_vcpu_free(vcpu);
-> +	kvm_put_kvm(kvm);
->  }
->  
->  void kvm_arch_sync_events(struct kvm *kvm)
-> @@ -6594,7 +6599,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
->  	kvm_iommu_unmap_guest(kvm);
->  	kfree(kvm->arch.vpic);
->  	kfree(kvm->arch.vioapic);
-> -	kvm_free_vcpus(kvm);
->  	if (kvm->arch.apic_access_page)
->  		put_page(kvm->arch.apic_access_page);
->  	if (kvm->arch.ept_identity_pagetable)
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index d526231..f16fd09 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -19,6 +19,7 @@
->  #include <linux/slab.h>
->  #include <linux/rcupdate.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/atomic.h>
->  #include <asm/signal.h>
->  
->  #include <linux/kvm.h>
-> @@ -113,6 +114,9 @@ enum {
->  
->  struct kvm_vcpu {
->  	struct kvm *kvm;
-> +	atomic_t refcount;
-> +	struct rcu_head head;
-> +	struct work_struct zap_work;
->  #ifdef CONFIG_PREEMPT_NOTIFIERS
->  	struct preempt_notifier preempt_notifier;
->  #endif
-> @@ -290,17 +294,78 @@ struct kvm {
->  #define kvm_printf(kvm, fmt ...) printk(KERN_DEBUG fmt)
->  #define vcpu_printf(vcpu, fmt...) kvm_printf(vcpu->kvm, fmt)
->  
-> +struct kvm_vcpu *kvm_vcpu_get(struct kvm_vcpu *vcpu);
-> +void kvm_vcpu_put(struct kvm_vcpu *vcpu);
-> +void kvm_arch_vcpu_zap(struct work_struct *work);
-> +
-> +/*search vcpu, must be protected by rcu_read_lock*/
->  static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
->  {
-> +	struct kvm_vcpu *vcpu;
->  	smp_rmb();
-> -	return kvm->vcpus[i];
-> +	vcpu = rcu_dereference(kvm->vcpus[i]);
-> +	if (vcpu != NULL && atomic_read(&vcpu->refcount) != 0)
-> +		return vcpu;
-> +
-> +	return NULL;
-> +}
-> +
-> +/*Must be protected by RCU*/
-> +struct kvm_iter {
-> +	struct kvm *kvm;
-> +	int idx;
-> +	int cnt;
-> +};
-> +
-> +static inline
-> +struct kvm_vcpu *kvm_fev_init(struct kvm *kvm, struct kvm_iter *it)
-> +{
-> +	int idx, cnt;
-> +	struct kvm_vcpu *vcpup;
-> +	vcpup = NULL;
-> +	for (idx = 0, cnt = 0;
-> +		cnt < atomic_read(&kvm->online_vcpus) && idx < KVM_MAX_VCPUS;
-> +		idx++) {
-> +			vcpup = kvm_get_vcpu(kvm, idx);
-> +			if (unlikely(vcpup == NULL))
-> +				continue;
-> +			cnt++;
-> +			break;
-> +	}
-> +
-> +	it->kvm = kvm;
-> +	it->idx = idx;
-> +	it->cnt = cnt;
-> +	return vcpup;
-> +}
-> +
-> +static inline
-> +struct kvm_vcpu *kvm_fev_next(struct kvm_iter *it)
-> +{
-> +	int idx, cnt;
-> +	struct kvm_vcpu *vcpup;
-> +	struct kvm *kvm = it->kvm;
-> +
-> +	vcpup = NULL;
-> +	for (idx = it->idx+1, cnt = it->cnt;
-> +		cnt < atomic_read(&kvm->online_vcpus) && idx < KVM_MAX_VCPUS;
-> +		idx++) {
-> +			vcpup = kvm_get_vcpu(kvm, idx);
-> +			if (unlikely(vcpup == NULL))
-> +				continue;
-> +			 cnt++;
-> +			 break;
-> +	}
-> +
-> +	it->idx = idx;
-> +	it->cnt = cnt;
-> +	return vcpup;
->  }
->  
-> -#define kvm_for_each_vcpu(idx, vcpup, kvm) \
-> -	for (idx = 0; \
-> -	     idx < atomic_read(&kvm->online_vcpus) && \
-> -	     (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
-> -	     idx++)
-> +#define kvm_for_each_vcpu(it, vcpu, kvm) \
-> +	for (vcpu = kvm_fev_init(kvm, &it); \
-> +		vcpu; \
-> +		vcpu = kvm_fev_next(&it))
->  
->  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
->  void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
-> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> index 9f614b4..87eae96 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/virt/kvm/irq_comm.c
-> @@ -81,14 +81,16 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
->  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  		struct kvm_lapic_irq *irq)
->  {
-> -	int i, r = -1;
-> +	int r = -1;
-> +	struct kvm_iter it;
->  	struct kvm_vcpu *vcpu, *lowest = NULL;
->  
->  	if (irq->dest_mode == 0 && irq->dest_id == 0xff &&
->  			kvm_is_dm_lowest_prio(irq))
->  		printk(KERN_INFO "kvm: apic: phys broadcast and lowest prio\n");
->  
-> -	kvm_for_each_vcpu(i, vcpu, kvm) {
-> +	rcu_read_lock();
-> +	kvm_for_each_vcpu(it, vcpu, kvm) {
->  		if (!kvm_apic_present(vcpu))
->  			continue;
->  
-> @@ -111,6 +113,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  	if (lowest)
->  		r = kvm_apic_set_irq(lowest, irq);
->  
-> +	rcu_read_unlock();
->  	return r;
->  }
->  
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index d9cfb78..929cfce 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -171,7 +171,8 @@ static void ack_flush(void *_completed)
->  
->  static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  {
-> -	int i, cpu, me;
-> +	int cpu, me;
-> +	struct kvm_iter it;
->  	cpumask_var_t cpus;
->  	bool called = true;
->  	struct kvm_vcpu *vcpu;
-> @@ -179,7 +180,9 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  	zalloc_cpumask_var(&cpus, GFP_ATOMIC);
->  
->  	me = get_cpu();
-> -	kvm_for_each_vcpu(i, vcpu, kvm) {
-> +
-> +	rcu_read_lock();
-> +	kvm_for_each_vcpu(it, vcpu, kvm) {
->  		kvm_make_request(req, vcpu);
->  		cpu = vcpu->cpu;
->  
-> @@ -190,12 +193,15 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  		      kvm_vcpu_exiting_guest_mode(vcpu) != OUTSIDE_GUEST_MODE)
->  			cpumask_set_cpu(cpu, cpus);
->  	}
-> +
->  	if (unlikely(cpus == NULL))
->  		smp_call_function_many(cpu_online_mask, ack_flush, NULL, 1);
->  	else if (!cpumask_empty(cpus))
->  		smp_call_function_many(cpus, ack_flush, NULL, 1);
->  	else
->  		called = false;
-> +	rcu_read_unlock();
-> +
->  	put_cpu();
->  	free_cpumask_var(cpus);
->  	return called;
-> @@ -580,6 +586,7 @@ static void kvm_destroy_vm(struct kvm *kvm)
->  	kvm_arch_free_vm(kvm);
->  	hardware_disable_all();
->  	mmdrop(mm);
-> +	printk(KERN_INFO "%s finished\n", __func__);
->  }
->  
->  void kvm_get_kvm(struct kvm *kvm)
-> @@ -1543,6 +1550,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
->  	int yielded = 0;
->  	int pass;
-> +	struct kvm_iter it;
->  	int i;
->  
->  	/*
-> @@ -1553,9 +1561,11 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  	 * We approximate round-robin by starting at the last boosted VCPU.
->  	 */
->  	for (pass = 0; pass < 2 && !yielded; pass++) {
-> -		kvm_for_each_vcpu(i, vcpu, kvm) {
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, vcpu, kvm) {
->  			struct task_struct *task = NULL;
->  			struct pid *pid;
-> +			i = it.idx;
->  			if (!pass && i < last_boosted_vcpu) {
->  				i = last_boosted_vcpu;
->  				continue;
-> @@ -1584,6 +1594,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  			}
->  			put_task_struct(task);
->  		}
-> +		rcu_read_unlock();
->  	}
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
-> @@ -1623,8 +1634,8 @@ static int kvm_vcpu_mmap(struct file *file, struct vm_area_struct *vma)
->  static int kvm_vcpu_release(struct inode *inode, struct file *filp)
->  {
->  	struct kvm_vcpu *vcpu = filp->private_data;
-> -
-> -	kvm_put_kvm(vcpu->kvm);
-> +	filp->private_data = NULL;
-> +	kvm_vcpu_put(vcpu);
->  	return 0;
->  }
->  
-> @@ -1646,6 +1657,48 @@ static int create_vcpu_fd(struct kvm_vcpu *vcpu)
->  	return anon_inode_getfd("kvm-vcpu", &kvm_vcpu_fops, vcpu, O_RDWR);
->  }
->  
-> +/*Can not block*/
-> +void kvm_vcpu_zap(struct rcu_head *rcu)
-> +{
-> +	struct kvm_vcpu *vcpu = container_of(rcu, struct kvm_vcpu, head);
-> +	schedule_work(&vcpu->zap_work);
-> +}
-> +
-> +/*increase refcnt*/
-> +struct kvm_vcpu *kvm_vcpu_get(struct kvm_vcpu *vcpu)
-> +{
-> +	if (vcpu == NULL)
-> +		return NULL;
-> +	if (atomic_add_unless(&vcpu->refcount, 1, 0))
-> +		return vcpu;
-> +	return NULL;
-> +}
-> +
-> +void kvm_vcpu_put(struct kvm_vcpu *vcpu)
-> +{
-> +	struct kvm *kvm;
-> +	if (atomic_dec_and_test(&vcpu->refcount)) {
-> +		kvm = vcpu->kvm;
-> +		mutex_lock(&kvm->lock);
-> +		rcu_assign_pointer(kvm->vcpus[vcpu->vcpu_id], NULL);
-> +		atomic_dec(&kvm->online_vcpus);
-> +		mutex_unlock(&kvm->lock);
-> +		call_rcu(&vcpu->head, kvm_vcpu_zap);
-> +	}
-> +}
-> +
-> +static struct kvm_vcpu *kvm_vcpu_create(struct kvm *kvm, u32 id)
-> +{
-> +	struct kvm_vcpu *vcpu;
-> +	vcpu = kvm_arch_vcpu_create(kvm, id);
-> +	if (IS_ERR(vcpu))
-> +		return vcpu;
-> +
-> +	atomic_set(&vcpu->refcount, 1);
-> +	INIT_WORK(&vcpu->zap_work, kvm_arch_vcpu_zap);
-> +	return vcpu;
-> +}
-> +
->  /*
->   * Creates some virtual cpus.  Good luck creating more than one.
->   */
-> @@ -1653,8 +1706,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
->  {
->  	int r;
->  	struct kvm_vcpu *vcpu, *v;
-> +	struct kvm_iter it;
->  
-> -	vcpu = kvm_arch_vcpu_create(kvm, id);
-> +	vcpu = kvm_vcpu_create(kvm, id);
->  	if (IS_ERR(vcpu))
->  		return PTR_ERR(vcpu);
->  
-> @@ -1670,11 +1724,15 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
->  		goto unlock_vcpu_destroy;
->  	}
->  
-> -	kvm_for_each_vcpu(r, v, kvm)
-> +	rcu_read_lock();
-> +	kvm_for_each_vcpu(it, v, kvm) {
->  		if (v->vcpu_id == id) {
-> +			rcu_read_unlock();
->  			r = -EEXIST;
->  			goto unlock_vcpu_destroy;
->  		}
-> +	}
-> +	rcu_read_unlock();
->  
->  	BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
->  
-> @@ -2593,13 +2651,17 @@ static int vcpu_stat_get(void *_offset, u64 *val)
->  	unsigned offset = (long)_offset;
->  	struct kvm *kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i;
-> +	struct kvm_iter it;
->  
->  	*val = 0;
->  	raw_spin_lock(&kvm_lock);
-> -	list_for_each_entry(kvm, &vm_list, vm_list)
-> -		kvm_for_each_vcpu(i, vcpu, kvm)
-> +	list_for_each_entry(kvm, &vm_list, vm_list) {
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(it, vcpu, kvm) {
->  			*val += *(u32 *)((void *)vcpu + offset);
-> +		}
-> +		rcu_read_unlock();
-> +	}
->  
->  	raw_spin_unlock(&kvm_lock);
->  	return 0;
-> -- 
-> 1.7.4.4
+This patch is functionally tested on Samsung SMDKV6410.
 
---
-			Gleb.
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+Changes since v4
+- Remove unnecessary type cast
+- Improve code readability
+Changes since v3
+- Included power_supply.h file
+- Corrected the definition of DA9052_BAT_THRESHOLD macro
+- Changed definition of charger_type_enum
+- Added API da9052_battery_read_end_current
+- Added API da9052_battery_check_status
+- Changed the way of handling the interrupts in da9052_bat_irq
+Changes since v2
+- Correct code styling for inline functions
+- Remove averaging algorithm
+- Set use_for_apm thru board specific parameter
+---
+ drivers/power/Kconfig          |    7 +
+ drivers/power/Makefile         |    1 +
+ drivers/power/da9052-battery.c |  615 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 623 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/da9052-battery.c
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 9f88641..9696502 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -150,6 +150,13 @@ config BATTERY_DA9030
+ 	  Say Y here to enable support for batteries charger integrated into
+ 	  DA9030 PMIC.
+ 
++config BATTERY_DA9052
++	tristate "Dialog DA9052 Battery"
++	depends on PMIC_DA9052
++	help
++	  Say Y here to enable support for batteries charger integrated into
++	  DA9052 PMIC.
++
+ config BATTERY_MAX17040
+ 	tristate "Maxim MAX17040 Fuel Gauge"
+ 	depends on I2C
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index b4af13d..c570e20 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
+ obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
+ obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
+ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
++obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
+ obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+ obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
+ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+new file mode 100644
+index 0000000..70f33ad
+--- /dev/null
++++ b/drivers/power/da9052-battery.c
+@@ -0,0 +1,615 @@
++/*
++ * Batttery Driver for Dialog DA9052 PMICs
++ *
++ * Copyright(c) 2011 Dialog Semiconductor Ltd.
++
++ * Author: David Dajun Chen <dchen@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/freezer.h>
++#include <linux/fs.h>
++#include <linux/jiffies.h>
++#include <linux/module.h>
++#include <linux/timer.h>
++#include <linux/uaccess.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/pdata.h>
++#include <linux/mfd/da9052/reg.h>
++
++/* STATIC CONFIGURATION */
++#define DA9052_BAT_CUTOFF_VOLT		2800
++#define DA9052_BAT_TSH			62000
++#define DA9052_BAT_LOW_CAP		4
++#define DA9052_AVG_SZ			4
++#define DA9052_VC_TBL_SZ		68
++#define DA9052_VC_TBL_REF_SZ		3
++
++#define DA9052_MEAN(x, y)		((x + y) / 2)
++
++enum charger_type_enum {
++	DA9052_NOCHARGER = 1,
++	DA9052_CHARGER,
++};
++
++static const u16 vc_tbl_ref[3] = {10, 25, 40};
++/* Lookup table for voltage vs capacity */
++static u32 const vc_tbl[3][68][2] = {
++	/* For temperature 10 degree celisus*/
++	{
++	{4082, 100}, {4036, 98},
++	{4020, 96}, {4008, 95},
++	{3997, 93}, {3983, 91},
++	{3964, 90}, {3943, 88},
++	{3926, 87}, {3912, 85},
++	{3900, 84}, {3890, 82},
++	{3881, 80}, {3873, 79},
++	{3865, 77}, {3857, 76},
++	{3848, 74}, {3839, 73},
++	{3829, 71}, {3820, 70},
++	{3811, 68}, {3802, 67},
++	{3794, 65}, {3785, 64},
++	{3778, 62}, {3770, 61},
++	{3763, 59}, {3756, 58},
++	{3750, 56}, {3744, 55},
++	{3738, 53}, {3732, 52},
++	{3727, 50}, {3722, 49},
++	{3717, 47}, {3712, 46},
++	{3708, 44}, {3703, 43},
++	{3700, 41}, {3696, 40},
++	{3693, 38}, {3691, 37},
++	{3688, 35}, {3686, 34},
++	{3683, 32}, {3681, 31},
++	{3678, 29}, {3675, 28},
++	{3672, 26}, {3669, 25},
++	{3665, 23}, {3661, 22},
++	{3656, 21}, {3651, 19},
++	{3645, 18}, {3639, 16},
++	{3631, 15}, {3622, 13},
++	{3611, 12}, {3600, 10},
++	{3587, 9}, {3572, 7},
++	{3548, 6}, {3503, 5},
++	{3420, 3}, {3268, 2},
++	{2992, 1}, {2746, 0}
++	},
++	/* For temperature 25 degree celisus */
++	{
++	{4102, 100}, {4065, 98},
++	{4048, 96}, {4034, 95},
++	{4021, 93}, {4011, 92},
++	{4001, 90}, {3986, 88},
++	{3968, 87}, {3952, 85},
++	{3938, 84}, {3926, 82},
++	{3916, 81}, {3908, 79},
++	{3900, 77}, {3892, 76},
++	{3883, 74}, {3874, 73},
++	{3864, 71}, {3855, 70},
++	{3846, 68}, {3836, 67},
++	{3827, 65}, {3819, 64},
++	{3810, 62}, {3801, 61},
++	{3793, 59}, {3786, 58},
++	{3778, 56}, {3772, 55},
++	{3765, 53}, {3759, 52},
++	{3754, 50}, {3748, 49},
++	{3743, 47}, {3738, 46},
++	{3733, 44}, {3728, 43},
++	{3724, 41}, {3720, 40},
++	{3716, 38}, {3712, 37},
++	{3709, 35}, {3706, 34},
++	{3703, 33}, {3701, 31},
++	{3698, 30}, {3696, 28},
++	{3693, 27}, {3690, 25},
++	{3687, 24}, {3683, 22},
++	{3680, 21}, {3675, 19},
++	{3671, 18}, {3666, 17},
++	{3660, 15}, {3654, 14},
++	{3647, 12}, {3639, 11},
++	{3630, 9}, {3621, 8},
++	{3613, 6}, {3606, 5},
++	{3597, 4}, {3582, 2},
++	{3546, 1}, {2747, 0}
++	},
++	/* For temperature 40 degree celisus*/
++	{
++	{4114, 100}, {4081, 98},
++	{4065, 96}, {4050, 95},
++	{4036, 93}, {4024, 92},
++	{4013, 90}, {4002, 88},
++	{3990, 87}, {3976, 85},
++	{3962, 84}, {3950, 82},
++	{3939, 81}, {3930, 79},
++	{3921, 77}, {3912, 76},
++	{3902, 74}, {3893, 73},
++	{3883, 71}, {3874, 70},
++	{3865, 68}, {3856, 67},
++	{3847, 65}, {3838, 64},
++	{3829, 62}, {3820, 61},
++	{3812, 59}, {3803, 58},
++	{3795, 56}, {3787, 55},
++	{3780, 53}, {3773, 52},
++	{3767, 50}, {3761, 49},
++	{3756, 47}, {3751, 46},
++	{3746, 44}, {3741, 43},
++	{3736, 41}, {3732, 40},
++	{3728, 38}, {3724, 37},
++	{3720, 35}, {3716, 34},
++	{3713, 33}, {3710, 31},
++	{3707, 30}, {3704, 28},
++	{3701, 27}, {3698, 25},
++	{3695, 24}, {3691, 22},
++	{3686, 21}, {3681, 19},
++	{3676, 18}, {3671, 17},
++	{3666, 15}, {3661, 14},
++	{3655, 12}, {3648, 11},
++	{3640, 9}, {3632, 8},
++	{3622, 6}, {3616, 5},
++	{3611, 4}, {3604, 2},
++	{3594, 1}, {2747, 0}
++	}
++};
++
++struct da9052_battery {
++	struct da9052 *da9052;
++	struct power_supply psy;
++	int charger_type;
++	int status;
++	int health;
++};
++
++static inline int volt_reg_to_mV(int value)
++{
++	return ((value * 1000) / 512) + 2500;
++}
++
++static inline int ichg_reg_to_mA(int value)
++{
++	return (value * 3900) / 1000;
++}
++
++static int da9052_read_chgend_current(struct da9052_battery *bat,
++				       int *current_mA)
++{
++	int ret;
++
++	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
++		return -EINVAL;
++
++	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_END_REG);
++	if (ret < 0)
++		return ret;
++
++	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGEND_ICHGEND);
++
++	return 0;
++}
++
++static int da9052_read_chg_current(struct da9052_battery *bat, int *current_mA)
++{
++	int ret;
++
++	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
++		return -EINVAL;
++
++	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_AV_REG);
++	if (ret < 0)
++		return ret;
++
++	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGAV_ICHGAV);
++
++	return 0;
++}
++
++static int da9052_bat_check_status(struct da9052_battery *bat, int *status)
++{
++	u8 v[2] = {0, 0};
++	u8 bat_status;
++	u8 chg_end;
++	int ret;
++	int chg_current;
++	int chg_end_current;
++	bool dcinsel;
++	bool dcindet;
++	bool vbussel;
++	bool vbusdet;
++	bool dc;
++	bool vbus;
++
++	ret = da9052_group_read(bat->da9052, DA9052_STATUS_A_REG, 2, v);
++	if (ret < 0)
++		return ret;
++
++	bat_status = v[0];
++	chg_end = v[1];
++
++	dcinsel = bat_status & DA9052_STATUSA_DCINSEL;
++	dcindet = bat_status & DA9052_STATUSA_DCINDET;
++	vbussel = bat_status & DA9052_STATUSA_VBUSSEL;
++	vbusdet = bat_status & DA9052_STATUSA_VBUSDET;
++	dc = dcinsel && dcindet;
++	vbus = vbussel && vbusdet;
++
++	/* Preference to WALL(DCIN) charger unit */
++	if (dc || vbus) {
++		bat->charger_type = DA9052_CHARGER;
++
++		/* If charging end flag is set and Charging current is greater
++		 * than charging end limit then battery is charging
++		*/
++		if ((chg_end & DA9052_STATUSB_CHGEND) != 0) {
++			ret = da9052_read_chg_current(bat, &chg_current);
++			if (ret < 0)
++				return ret;
++			ret = da9052_read_chgend_current(bat, &chg_end_current);
++			if (ret < 0)
++				return ret;
++
++			if (chg_current >= chg_end_current)
++				bat->status = POWER_SUPPLY_STATUS_CHARGING;
++			else
++				bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		} else {
++			/* If Charging end flag is cleared then battery is
++			 * charging
++			*/
++			bat->status = POWER_SUPPLY_STATUS_CHARGING;
++		}
++	} else if (dcindet || vbusdet) {
++			bat->charger_type = DA9052_CHARGER;
++			bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++	} else {
++		bat->charger_type = DA9052_NOCHARGER;
++		bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
++	}
++
++	if (status != NULL)
++		*status = bat->status;
++	return 0;
++}
++
++static int da9052_bat_read_volt(struct da9052_battery *bat, int *volt_mV)
++{
++	int volt;
++
++	volt = da9052_adc_manual_read(bat->da9052, DA9052_ADC_MAN_MUXSEL_VBAT);
++	if (volt < 0)
++		return volt;
++
++	*volt_mV = volt_reg_to_mV(volt);
++
++	return 0;
++}
++
++static int da9052_bat_check_presence(struct da9052_battery *bat, int *illegal)
++{
++	int bat_temp;
++
++	bat_temp = da9052_adc_read_temp(bat->da9052);
++	if (bat_temp < 0)
++		return bat_temp;
++
++	if (bat_temp > DA9052_BAT_TSH)
++		*illegal = 1;
++	else
++		*illegal = 0;
++
++	return 0;
++}
++
++static int da9052_bat_interpolate(int vbat_lower, int  vbat_upper,
++				   int level_lower, int level_upper,
++				   int bat_voltage)
++{
++	int tmp;
++
++	tmp = ((level_upper - level_lower) * 1000) / (vbat_upper - vbat_lower);
++	tmp = level_lower + (((bat_voltage - vbat_lower) * tmp) / 1000);
++
++	return tmp;
++}
++
++unsigned char da9052_determine_vc_tbl_index(unsigned char adc_temp)
++{
++	int i;
++
++	if (adc_temp <= vc_tbl_ref[0])
++		return 0;
++
++	if (adc_temp > vc_tbl_ref[DA9052_VC_TBL_REF_SZ - 1])
++		return DA9052_VC_TBL_REF_SZ - 1;
++
++	for (i = 0; i < DA9052_VC_TBL_REF_SZ; i++) {
++		if ((adc_temp > vc_tbl_ref[i]) &&
++		    (adc_temp <= DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1])))
++				return i;
++		if ((adc_temp > DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1]))
++		     && (adc_temp <= vc_tbl_ref[i]))
++				return i + 1;
++	}
++}
++
++static int da9052_bat_read_capacity(struct da9052_battery *bat, int *capacity)
++{
++	int adc_temp;
++	int bat_voltage;
++	int vbat_lower;
++	int vbat_upper;
++	int level_upper;
++	int level_lower;
++	int ret;
++	int flag;
++	int i = 0;
++	int j;
++
++	ret = da9052_bat_read_volt(bat, &bat_voltage);
++	if (ret < 0)
++		return ret;
++
++	adc_temp = da9052_adc_read_temp(bat->da9052);
++	if (adc_temp < 0)
++		return adc_temp;
++
++	i = da9052_determine_vc_tbl_index(adc_temp);
++
++	if (bat_voltage >= vc_tbl[i][0][0]) {
++		*capacity = 100;
++		return 0;
++	}
++	if (bat_voltage <= vc_tbl[i][DA9052_VC_TBL_SZ - 1][0]) {
++		*capacity = 0;
++		return 0;
++	}
++	flag = 0;
++
++	for (j = 0; j < (DA9052_VC_TBL_SZ-1); j++) {
++		if ((bat_voltage <= vc_tbl[i][j][0]) &&
++		    (bat_voltage >= vc_tbl[i][j + 1][0])) {
++			vbat_upper = vc_tbl[i][j][0];
++			vbat_lower = vc_tbl[i][j + 1][0];
++			level_upper = vc_tbl[i][j][1];
++			level_lower = vc_tbl[i][j + 1][1];
++			flag = 1;
++			break;
++		}
++	}
++	if (!flag)
++		return -EIO;
++
++	*capacity = da9052_bat_interpolate(vbat_lower, vbat_upper, level_lower,
++					   level_upper, bat_voltage);
++
++	return 0;
++}
++
++static int da9052_bat_check_health(struct da9052_battery *bat, int *health)
++{
++	int ret;
++	int bat_illegal;
++	int capacity;
++
++	ret = da9052_bat_check_presence(bat, &bat_illegal);
++	if (ret < 0)
++		return ret;
++
++	if (bat_illegal) {
++		bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++		return 0;
++	}
++
++	if (bat->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
++		ret = da9052_bat_read_capacity(bat, &capacity);
++		if (ret < 0)
++			return ret;
++		if (capacity < DA9052_BAT_LOW_CAP)
++			bat->health = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			bat->health = POWER_SUPPLY_HEALTH_GOOD;
++	}
++
++	*health = bat->health;
++
++	return 0;
++}
++
++static irqreturn_t da9052_bat_irq(int irq, void *data)
++{
++	struct da9052_battery *bat = data;
++
++	irq -= bat->da9052->irq_base;
++
++	if (irq == DA9052_IRQ_CHGEND)
++		bat->status = POWER_SUPPLY_STATUS_FULL;
++	else
++		da9052_bat_check_status(bat, NULL);
++
++	if (irq == DA9052_IRQ_CHGEND || irq == DA9052_IRQ_DCIN ||
++	    irq == DA9052_IRQ_VBUS || irq == DA9052_IRQ_TBAT) {
++		power_supply_changed(&bat->psy);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int da9052_bat_get_property(struct power_supply *psy,
++				    enum power_supply_property psp,
++				    union power_supply_propval *val)
++{
++	int ret;
++	int illegal;
++	struct da9052_battery *bat = container_of(psy, struct da9052_battery,
++						  psy);
++
++	ret = da9052_bat_check_presence(bat, &illegal);
++	if (ret < 0)
++		return ret;
++
++	if (illegal && psp != POWER_SUPPLY_PROP_PRESENT)
++		return -ENODEV;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		ret = da9052_bat_check_status(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval =
++			(bat->charger_type == DA9052_NOCHARGER) ? 0 : 1;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		ret = da9052_bat_check_presence(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		ret = da9052_bat_check_health(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = DA9052_BAT_CUTOFF_VOLT * 1000;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
++		ret = da9052_bat_read_volt(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_AVG:
++		ret = da9052_read_chg_current(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = da9052_bat_read_capacity(bat, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		val->intval = da9052_adc_read_temp(bat->da9052);
++		ret = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
++		break;
++	default:
++		return -EINVAL;
++	}
++	return ret;
++}
++
++static enum power_supply_property da9052_bat_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_AVG,
++	POWER_SUPPLY_PROP_CURRENT_AVG,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++};
++
++static struct power_supply template_battery = {
++	.name		= "da9052-bat",
++	.type		= POWER_SUPPLY_TYPE_BATTERY,
++	.properties	= da9052_bat_props,
++	.num_properties	= ARRAY_SIZE(da9052_bat_props),
++	.get_property	= da9052_bat_get_property,
++};
++
++static const char *const da9052_bat_irqs[] = {
++	"BATT TEMP",
++	"DCIN DET",
++	"DCIN REM",
++	"VBUS DET",
++	"VBUS REM",
++	"CHG END",
++};
++
++static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
++{
++	struct da9052_pdata *pdata;
++	struct da9052_battery *bat;
++	int ret;
++	int irq;
++	int i;
++
++	bat = kzalloc(sizeof(struct da9052_battery), GFP_KERNEL);
++	if (!bat)
++		return -ENOMEM;
++
++	bat->da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = bat->da9052->dev->platform_data;
++
++	bat->psy = template_battery;
++	if (pdata != NULL && pdata->use_for_apm)
++		bat->psy.use_for_apm = pdata->use_for_apm;
++	bat->charger_type = DA9052_NOCHARGER;
++	bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
++	bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
++
++	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		ret = request_threaded_irq(bat->da9052->irq_base + irq,
++					   NULL, da9052_bat_irq,
++					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					   da9052_bat_irqs[i], bat);
++		if (ret != 0) {
++			dev_err(bat->da9052->dev,
++				"DA9052 failed to request %s IRQ %d: %d\n",
++				da9052_bat_irqs[i], irq, ret);
++			goto err;
++		}
++	}
++
++	ret = power_supply_register(&pdev->dev, &bat->psy);
++	 if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	for (; i >= 0; i--) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		free_irq(bat->da9052->irq_base + irq, bat);
++	}
++	kfree(bat);
++	return ret;
++}
++static int __devexit da9052_bat_remove(struct platform_device *pdev)
++{
++	int i;
++	int irq;
++	struct da9052_battery *bat = platform_get_drvdata(pdev);
++
++	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
++		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
++		free_irq(bat->da9052->irq_base + irq, bat);
++	}
++	power_supply_unregister(&bat->psy);
++
++	return 0;
++}
++
++static struct platform_driver da9052_bat_driver = {
++	.probe = da9052_bat_probe,
++	.remove = __devexit_p(da9052_bat_remove),
++	.driver = {
++		.name = "da9052-bat",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9052_bat_init(void)
++{
++	return platform_driver_register(&da9052_bat_driver);
++}
++module_init(da9052_bat_init);
++
++static void __exit da9052_bat_exit(void)
++{
++	platform_driver_unregister(&da9052_bat_driver);
++}
++module_exit(da9052_bat_exit);
++
++MODULE_DESCRIPTION("DA9052 BAT Device Driver");
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:da9052-bat");
+-- 
+1.7.1
+
+
