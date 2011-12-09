@@ -1,130 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1LIIcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 03:32:32 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46725 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab1LIIcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 03:32:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100402542"
-Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Cc: "penberg@kernel.org" <penberg@kernel.org>,
+	id S1752325Ab1LIIhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 03:37:10 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:60652 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab1LIIhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 03:37:09 -0500
+X-IronPort-AV: E=Sophos;i="4.71,325,1320624000"; 
+   d="scan'208";a="9377047"
+Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: annie li <annie.li@oracle.com>
+CC: Paul Durrant <Paul.Durrant@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1112020842280.10975@router.home>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
-	 <alpine.DEB.2.00.1112020842280.10975@router.home>
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Date: Fri, 9 Dec 2011 08:37:04 +0000
+In-Reply-To: <4EE1BC7E.3060904@oracle.com>
+References: <1323336940-5382-1-git-send-email-annie.li@oracle.com>
+	 <1323337048-5426-1-git-send-email-annie.li@oracle.com>
+	 <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net>
+	 <4EE08B0D.80504@oracle.com>
+	 <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
+	 <4EE19A4D.9030500@oracle.com> <4EE1BC7E.3060904@oracle.com>
+Organization: Citrix Systems, Inc.
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Dec 2011 16:30:02 +0800
-Message-ID: <1323419402.16790.6105.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1323419827.20077.3.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 22:43 +0800, Christoph Lameter wrote:
-> On Fri, 2 Dec 2011, Alex Shi wrote:
+On Fri, 2011-12-09 at 07:45 +0000, annie li wrote:
 > 
-> > From: Alex Shi <alexs@intel.com>
+> On 2011-12-9 13:19, annie li wrote:
+> > Hi Paul,
 > >
-> > Times performance regression were due to slub add to node partial head
-> > or tail. That inspired me to do tunning on the node partial adding, to
-> > set a criteria for head or tail position selection when do partial
-> > adding.
-> > My experiment show, when used objects is less than 1/4 total objects
-> > of slub performance will get about 1.5% improvement on netperf loopback
-> > testing with 2048 clients, wherever on our 4 or 2 sockets platforms,
-> > includes sandbridge or core2.
+> >>>> #define get_free_entry()    get_free_entries(1)
+> > Is this necessary? Maybe you defined this to keep consistence with 
+> > put_free_entry(ref)?
+> > But other functions such as gnttab_grant_foreign_transfer and 
+> > gnttab_grant_foreign_access all call get_free_entries(1). Maybe it is 
+> > better to keep initial get_free_entries(1) code?
+> Another approach is doing those work in a separate patch -- changing 
+> get_free_entries to get_free_entry in following 4 functions:
+
+I think you shouldn't get too bogged down in get_free_entry() vs
+get_free_entries(1) for the purposes of this patch series.
+
+Ian.
+
+> gnttab_grant_foreign_access
+> gnttab_grant_foreign_access_subpage
+> gnttab_grant_foreign_access_trans
+> gnttab_grant_foreign_transfer
 > 
-> The number of free objects in a slab may have nothing to do with cache
-> hotness of all objects in the slab. You can only be sure that one object
-> (the one that was freed) is cache hot. Netperf may use them in sequence
-> and therefore you are likely to get series of frees on the same slab
-> page. How are other benchmarks affected by this change?
-
-
-I did some experiments on add_partial judgment against rc4, like to put
-the slub into node partial head or tail according to free objects, or
-like Eric's suggest to combine the external parameter, like below: 
-
-        n->nr_partial++;
--       if (tail == DEACTIVATE_TO_TAIL)
-+       if (tail == DEACTIVATE_TO_TAIL || 
-+               page->inuse > page->objects /2)
-                list_add_tail(&page->lru, &n->partial);
-        else
-                list_add(&page->lru, &n->partial);
-
-But the result is out of my expectation before. Now we set all of slub
-into the tail of node partial, we get the best performance, even it is
-just a slight improvement. 
-
-{
-        n->nr_partial++;
--       if (tail == DEACTIVATE_TO_TAIL)
--               list_add_tail(&page->lru, &n->partial);
--       else
--               list_add(&page->lru, &n->partial);
-+       list_add_tail(&page->lru, &n->partial);
- }
- 
-This change can bring about 2% improvement on our WSM-ep machine, and 1%
-improvement on our SNB-ep and NHM-ex machine. and no clear effect for
-core2 machine. on hackbench process benchmark.
-
- 	./hackbench 100 process 2000 
- 
-For multiple clients loopback netperf, only a suspicious 1% improvement
-on our 2 sockets machine. and others have no clear effect. 
-
-But, when I check the deactivate_to_head/to_tail statistics on original
-code, the to_head is just hundreds or thousands times, while to_tail is
-called about teens millions times. 
-
-David, could you like to try above change? move all slub to partial
-tail. 
-
-add_partial statistics collection patch: 
----
-commit 1ff731282acb521f3a7c2e3fb94d35ec4d0ff07e
-Author: Alex Shi <alex.shi@intel.com>
-Date:   Fri Dec 9 18:12:14 2011 +0800
-
-    slub: statistics collection for add_partial
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 5843846..a2b1143 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1904,10 +1904,11 @@ static void unfreeze_partials(struct kmem_cache *s)
- 			if (l != m) {
- 				if (l == M_PARTIAL)
- 					remove_partial(n, page);
--				else
-+				else {
- 					add_partial(n, page,
- 						DEACTIVATE_TO_TAIL);
--
-+					stat(s, DEACTIVATE_TO_TAIL);
-+				}
- 				l = m;
- 			}
- 
-@@ -2480,6 +2481,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 			remove_full(s, page);
- 			add_partial(n, page, DEACTIVATE_TO_TAIL);
- 			stat(s, FREE_ADD_PARTIAL);
-+			stat(s, DEACTIVATE_TO_TAIL);
- 		}
- 	}
- 	spin_unlock_irqrestore(&n->list_lock, flags);
-
+> Thanks
+> Annie
 
 
