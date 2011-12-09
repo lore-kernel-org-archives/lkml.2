@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1LIIs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 03:48:26 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:2515 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1LIIsZ (ORCPT
+	id S1752575Ab1LIJBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:01:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40704 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab1LIJBV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 03:48:25 -0500
-X-IronPort-AV: E=Sophos;i="4.71,325,1320624000"; 
-   d="scan'208";a="9377373"
-From: Paul Durrant <Paul.Durrant@citrix.com>
-To: annie li <annie.li@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Date: Fri, 9 Dec 2011 08:48:32 +0000
-Subject: RE: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-Thread-Topic: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-Thread-Index: Acy2Tbyz/Cu3TveaSASWwXUnags4QwAAV9Sw
-Message-ID: <291EDFCB1E9E224A99088639C4762022B5988E55CE@LONPMAILBOX01.citrite.net>
-References: <1323336940-5382-1-git-send-email-annie.li@oracle.com>
-	 <1323337048-5426-1-git-send-email-annie.li@oracle.com>
-	 <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net>
-	 <4EE08B0D.80504@oracle.com>
-	 <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
-	 <4EE19A4D.9030500@oracle.com> <4EE1BC7E.3060904@oracle.com>
- <1323419827.20077.3.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1323419827.20077.3.camel@zakaz.uk.xensource.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 9 Dec 2011 04:01:21 -0500
+Message-ID: <1323421218.17673.37.camel@twins>
+Subject: Re: [PATCH 09/12] perf_events: add hook to flush branch_stack on
+ context switch (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
+        ravitillo@lbl.gov, will.deacon@arm.com, paulus@samba.org,
+        benh@kernel.crashing.org, rth@twiddle.net, ralf@linux-mips.org,
+        davem@davemloft.net, lethal@linux-sh.org
+Date: Fri, 09 Dec 2011 10:00:18 +0100
+In-Reply-To: <CABPqkBTw2c=EXRzcnfmR9RjYXNcRVkOB1BzmsF==rd=mp-QXgA@mail.gmail.com>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+	 <1318595833-29984-10-git-send-email-eranian@google.com>
+	 <1323121074.32012.40.camel@twins>
+	 <CABPqkBT=XrbyLLzxUf7KKwk4MGcSVq-b0DtDQL1cgg1z1b0UpQ@mail.gmail.com>
+	 <1323341376.17673.10.camel@twins>
+	 <CABPqkBTJ1M0Hpm-VHXGSSOtLHFQWuuo7AnaJzwEQ9a4WD8YFbw@mail.gmail.com>
+	 <1323368035.17673.20.camel@twins>
+	 <CABPqkBTw2c=EXRzcnfmR9RjYXNcRVkOB1BzmsF==rd=mp-QXgA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB98mX92002957
 
-> -----Original Message-----
-> From: Ian Campbell
-> Sent: 09 December 2011 08:37
-> To: annie li
-> Cc: Paul Durrant; xen-devel@lists.xensource.com; linux-
-> kernel@vger.kernel.org; konrad.wilk@oracle.com; jeremy@goop.org;
-> kurt.hackel@oracle.com
-> Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-> 
-> On Fri, 2011-12-09 at 07:45 +0000, annie li wrote:
+On Thu, 2011-12-08 at 14:06 -0800, Stephane Eranian wrote:
+> > That's not regardless of the TOS. If the TOS was a full u64 you wouldn't
+> > need the TID (which would be good, since the hardware has no such
+> > concept).
 > >
-> > On 2011-12-9 13:19, annie li wrote:
-> > > Hi Paul,
-> > >
-> > >>>> #define get_free_entry()    get_free_entries(1)
-> > > Is this necessary? Maybe you defined this to keep consistence
-> with
-> > > put_free_entry(ref)?
-> > > But other functions such as gnttab_grant_foreign_transfer and
-> > > gnttab_grant_foreign_access all call get_free_entries(1). Maybe
-> it
-> > > is better to keep initial get_free_entries(1) code?
-> > Another approach is doing those work in a separate patch --
-> changing
-> > get_free_entries to get_free_entry in following 4 functions:
-> 
-> I think you shouldn't get too bogged down in get_free_entry() vs
-> get_free_entries(1) for the purposes of this patch series.
-> 
+> Maybe I missed the trick but I don't quite see how a 64-bit TOS would
+> solve the TID
+> problem. It's not about the wraparound issue, i.e., not like the
+> sampling buffer indexes.
+> Could you describe the trick again? 
 
-Annie,
+LBR 0
+.
+.
+.        <-- TOS % n
+.
+LBR n-1
 
-  Yes, don't worry about get_free_entry(). I only defined it for the sake of symmetry in the code I posted.
 
-  Paul
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+So the LBR is an array of n entries which is written to in a cyclic
+fashion. The Top-Of-Stack or TOS indicates the last written entry and we
+can read n entries backwards from there.
+
+Something like:
+
+  tos = rdmsr(lbr_tos);
+  for (i = 0; i < n; i++) {
+	idx = (tos - i) % n;
+
+	from = rdmsr(lbr_from + idx);
+	to   = rdmsr(lbr_to   + idx);
+  }
+
+Now the hardware keeps (TOS % n) by limiting the bits in the counter (n
+= 2^m etc..), if it wouldn't do that, we could sample the TOS on ctxsw
+and modify the read to:
+
+  tos = rdmsr(lbr_tos)
+  for (i = 0; i < n && (tos - i) > ctxsw_tos; i++) {
+	idx = (tos - i) % n;
+
+	...
+  }
+
+This would ensure we never read back past the context-switch. But we
+need the extra bits for this to work, since with the current limited
+(TOS % n) bits we get into trouble as soon as the ctxsw was more than n
+branches ago (which is something very likely).
+
+[ With 16 bits we'd get into trouble when the ctxsw was 65536 branch
+ago, which is still quite possible, at 32 bits we'd need 4G branches,
+which is rather unlikely, with 64 bits the sun will have died or so.. ]
+
+Also note we can make this extra condition conditional on the event
+being a task event, so that the cpu events always consume all n entries.
+
+
