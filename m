@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1LIUYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 15:24:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55885 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab1LIUYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 15:24:07 -0500
-Date: Fri, 9 Dec 2011 12:24:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: kosaki.motohiro@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH] mm: simplify find_vma_prev
-Message-Id: <20111209122406.11f9e31a.akpm@linux-foundation.org>
-In-Reply-To: <1323461345-12805-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1323461345-12805-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754794Ab1LIUYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 15:24:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18394 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754766Ab1LIUYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 15:24:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="85537859"
+Message-ID: <4EE26E8F.9010000@linux.intel.com>
+Date: Fri, 09 Dec 2011 12:24:47 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        kay.sievers@vrfy.org, trenn@suse.de, davej@redhat.com, axboe@kernel.dk,
+        hpa@zytor.com, herbert@gondor.hengli.com.au, ying.huang@intel.com,
+        lenb@kernel.org
+Subject: Re: [PATCH 01/10] Add driver auto probing for x86 features
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>	<1323304882-27953-2-git-send-email-andi@firstfloor.org>	<20111208103540.4778b896@endymion.delvare>	<20111208144516.GE24062@one.firstfloor.org> <20111209211601.08dabc88@endymion.delvare>
+In-Reply-To: <20111209211601.08dabc88@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Dec 2011 15:09:04 -0500
-kosaki.motohiro@gmail.com wrote:
 
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> commit 297c5eee37 (mm: make the vma list be doubly linked) added
-> vm_prev member into vm_area_struct. Therefore we can simplify
-> find_vma_prev() by using it. Also, this change help to imporove
-> page fault performance becuase it has strong locality of reference.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/mmap.c |   34 ++++++----------------------------
->  1 files changed, 6 insertions(+), 28 deletions(-)
-> 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index eae90af..955750c 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1605,37 +1605,15 @@ EXPORT_SYMBOL(find_vma);
->  
->  /* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
->  struct vm_area_struct *
-> -find_vma_prev(struct mm_struct *mm, unsigned long addr,
-> -			struct vm_area_struct **pprev)
-> +find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
->  {
-> -	struct vm_area_struct *vma = NULL, *prev = NULL;
-> -	struct rb_node *rb_node;
-> -	if (!mm)
-> -		goto out;
-> -
-> -	/* Guard against addr being lower than the first VMA */
-> -	vma = mm->mmap;
-> -
-> -	/* Go through the RB tree quickly. */
-> -	rb_node = mm->mm_rb.rb_node;
-> -
-> -	while (rb_node) {
-> -		struct vm_area_struct *vma_tmp;
-> -		vma_tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
-> +	struct vm_area_struct *vma;
->  
-> -		if (addr < vma_tmp->vm_end) {
-> -			rb_node = rb_node->rb_left;
-> -		} else {
-> -			prev = vma_tmp;
-> -			if (!prev->vm_next || (addr < prev->vm_next->vm_end))
-> -				break;
-> -			rb_node = rb_node->rb_right;
-> -		}
-> -	}
-> +	vma = find_vma(mm, addr);
-> +	if (vma)
-> +		*pprev = vma->vm_prev;
->  
-> -out:
-> -	*pprev = prev;
-> -	return prev ? prev->vm_next : vma;
-> +	return vma;
->  }
+> Can you guarantee that there is no asymmetric system already working
+> today?
 
-This changes the (undocumented, naturally) interface in disturbing ways.
+I used to have an asymmetric system myself, but we generally subset the 
+CPU feature
+flags to be the same everywhere and I didn't change any per CPU stepping 
+checks
+as they were there.
 
-Currently, *pprev will always be written to.  With this change, *pprev
-will only be written to if find_vma_prev() returns non-NULL.
+>   If you can't, then your approach could cause a regression. This
+> is why I am asking for an API change to let drivers pass a specific CPU
+> to x86_match_cpu(). There are at least two drivers who would take
+> benefit of this. Your patch set is supposed to only add driver
+> auto-loading, and while cleaning up the code in the process is nice, I
+> think you should avoid driver behavior changes, these are out of scope
+> for such a patch set.
 
-Looking through the code, this is mostly benign.  But it will cause the
-CONFIG_STACK_GROWSUP version of find_extend_vma() to use an
-uninitialised stack slot in ways which surely will crash the kernel.
+I undoed that change to the coretemp driver and there's no other AFAIK.
+Generally most drivers only check the boot cpu.
 
-So please have a think about that and fix it up.  And please add
-documentation for find_vma_prev()'s interface so we don't break it next
-time.
-
+-Andi
