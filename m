@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1LIWMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:12:07 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:43663 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751752Ab1LIWME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:12:04 -0500
-Message-ID: <1323468720.27746.42.camel@joe2Laptop>
-Subject: [PATCH] Documentation: Update stable address
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
-        Harry Wei <harryxiyou@gmail.com>,
-        xiyoulinuxkernelgroup@googlegroups.com,
-        Tsugikazu Shibata <tshibata@ab.jp.nec.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 09 Dec 2011 14:12:00 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751843Ab1LIWWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:22:19 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:33525
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750829Ab1LIWWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 17:22:15 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h66h)
+X-Spam-TCS-SCL: 5:0
+X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 9 Dec 2011 17:22:09 -0500
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: <eranian@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf_event self-monitoring overhead regression
+In-Reply-To: <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1112091717390.18889@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins> <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com> <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
+ <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com> <alpine.DEB.2.00.1112061604040.23414@cl320.eecs.utk.edu> <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Japanese/Korean/Chinese versions still need updating.
 
-Also, the stable kernel 2.6.x.y descriptions are out of date
-and should be updated as well.
+Here are the complete results, using official kernels.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/HOWTO                         |    4 ++--
- Documentation/development-process/5.Posting |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+   http://web.eecs.utk.edu/~vweaver1/projects/perf-events/benchmarks/rdtsc_overhead/
 
-diff --git a/Documentation/HOWTO b/Documentation/HOWTO
-index 81bc1a9..f7ade3b 100644
---- a/Documentation/HOWTO
-+++ b/Documentation/HOWTO
-@@ -275,8 +275,8 @@ versions.
- If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
- kernel is the current stable kernel.
- 
--2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
--released as needs dictate.  The normal release period is approximately 
-+2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
-+are released as needs dictate.  The normal release period is approximately
- two weeks, but it can be longer if there are no pressing problems.  A
- security-related problem, instead, can cause a release to happen almost
- instantly.
-diff --git a/Documentation/development-process/5.Posting b/Documentation/development-process/5.Posting
-index 903a254..8a48c9b 100644
---- a/Documentation/development-process/5.Posting
-+++ b/Documentation/development-process/5.Posting
-@@ -271,10 +271,10 @@ copies should go to:
-    the linux-kernel list.
- 
-  - If you are fixing a bug, think about whether the fix should go into the
--   next stable update.  If so, stable@kernel.org should get a copy of the
--   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
--   itself; that will cause the stable team to get a notification when your
--   fix goes into the mainline.
-+   next stable update.  If so, stable@vger.kernel.org should get a copy of
-+   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
-+   the patch itself; that will cause the stable team to get a notification
-+   when your fix goes into the mainline.
- 
- When selecting recipients for a patch, it is good to have an idea of who
- you think will eventually accept the patch and get it merged.  While it
+The overall overhead start/stop/read has been getting worse.  3.1.0 was 
+bad and the current 3.2.0-rc4-tip tree is even worse.
 
+I'm not sure if it's worth trying to track down the changes that cause 
+these regressions, as they might still be considered just noise, though 
+the best to worst performance degredation is ~ 15% when attempting to 
+self-monitor with 3 events on a core2 machine.
 
+Vince
 
