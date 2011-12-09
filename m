@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1LINjS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:39:18 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:64836 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab1LINiT (ORCPT
+	id S1753812Ab1LINlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:41:09 -0500
+Received: from mga01.intel.com ([192.55.52.88]:37916 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab1LINlH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 08:38:19 -0500
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: alsa-devel@alsa-project.org
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH 5/5] ASoC: mxs: Add appropriate MODULE_ALIAS()
-Date: Fri,  9 Dec 2011 14:38:12 +0100
-Message-Id: <e40fac1ef6f650a73034acfdad13e311aaa8e017.1323436034.git.LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <a541450341a475b27ef603c5a4a67f113ba7fa0c.1323436034.git.LW@KARO-electronics.de>
-References: <cover.1323436034.git.LW@KARO-electronics.de>
- <992d017bd0214a67a836f2d0279b4edb6913da28.1323436034.git.LW@KARO-electronics.de>
- <555be1750dd09586d5eede6457f72310890274b0.1323436034.git.LW@KARO-electronics.de>
- <42d1579aefe3a3025f16fb4e38a4acf6b72756f7.1323436034.git.LW@KARO-electronics.de>
- <a541450341a475b27ef603c5a4a67f113ba7fa0c.1323436034.git.LW@KARO-electronics.de>
-In-Reply-To: <cover.1323436034.git.LW@KARO-electronics.de>
-References: <cover.1323436034.git.LW@KARO-electronics.de>
+	Fri, 9 Dec 2011 08:41:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="94361203"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 9 Dec 2011 21:40:39 +0800
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+Thread-Topic: [PATCH 1/3] slub: set a criteria for slub node partial adding
+Thread-Index: Acy2WtpYBxu1ZE1KTbeFhuOQdOK8vwAGF8GA
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+ <alpine.DEB.2.00.1112020842280.10975@router.home>
+ <1323419402.16790.6105.camel@debian>
+ <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > I did some experiments on add_partial judgment against rc4, like to put
+> > the slub into node partial head or tail according to free objects, or
+> > like Eric's suggest to combine the external parameter, like below:
+> >
+> >         n->nr_partial++;
+> > -       if (tail == DEACTIVATE_TO_TAIL)
+> > +       if (tail == DEACTIVATE_TO_TAIL ||
+> > +               page->inuse > page->objects /2)
+> >                 list_add_tail(&page->lru, &n->partial);
+> >         else
+> >                 list_add(&page->lru, &n->partial);
+> >
+> > But the result is out of my expectation before.
+> 
+> I don't think you'll get consistent results for all workloads with
+> something like this, some things may appear better and other things may
+> appear worse.  That's why I've always disagreed with determining whether
+> it should be added to the head or to the tail at the time of deactivation:
+> you know nothing about frees happening to that slab subsequent to the
+> decision you've made.  The only thing that's guaranteed is that you've
+> through cache hot objects out the window and potentially increased the
+> amount of internally fragmented slabs and/or unnecessarily long partial
+> lists.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- sound/soc/mxs/mxs-pcm.c      |    1 +
- sound/soc/mxs/mxs-sgtl5000.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+I said it not my original expectation doesn't mean my data has problem. :) 
+Of course any testing may have result variation. But it is benchmark accordingly, and there are lot technical to tuning your testing to make its stand division acceptable, like to sync your system in a clear status, to close unnecessary services, to use separate working disks for your testing etc. etc. For this data, like on my SNB-EP machine, (the following data is not stands for Intel, it is just my personal data). 
+4 times result of hackbench on this patch are 5.59, 5.475, 5.47833, 5.504
+And more results on original rc4 are from 5.54 to 5.61, the stand division of results show is stable and believable on my side. But since in our handreds benchmarks, only hackbench and loopback netperf is sensitive with slub change, and since it seems you did some testing on this. I thought you may like to do a double confirm with real data. 
 
-diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
-index 8646913..f39d7dd 100644
---- a/sound/soc/mxs/mxs-pcm.c
-+++ b/sound/soc/mxs/mxs-pcm.c
-@@ -359,3 +359,4 @@ static void __exit snd_mxs_pcm_exit(void)
- module_exit(snd_mxs_pcm_exit);
+In fact, I also collected the 'perf stat' for cache missing or reference data, but that wave too much not stabled like hackbench itself.
  
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:mxs-pcm-audio");
-diff --git a/sound/soc/mxs/mxs-sgtl5000.c b/sound/soc/mxs/mxs-sgtl5000.c
-index db5c184..228bbc5 100644
---- a/sound/soc/mxs/mxs-sgtl5000.c
-+++ b/sound/soc/mxs/mxs-sgtl5000.c
-@@ -172,3 +172,4 @@ module_exit(mxs_sgtl5000_exit);
- MODULE_AUTHOR("Freescale Semiconductor, Inc.");
- MODULE_DESCRIPTION("MXS ALSA SoC Machine driver");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:mxs-sgtl5000");
--- 
-1.5.6.5
+> Not sure what you're asking me to test, you would like this:
+> 
+> 	{
+> 	        n->nr_partial++;
+> 	-       if (tail == DEACTIVATE_TO_TAIL)
+> 	-               list_add_tail(&page->lru, &n->partial);
+> 	-       else
+> 	-               list_add(&page->lru, &n->partial);
+> 	+       list_add_tail(&page->lru, &n->partial);
+> 	}
+> 
+> with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
+> disabled since it impacts performance so heavily and I'm not sure what
+> information you're looking for with regards to those stats.
 
+NO, when you collect data, please close SLUB_STAT in kernel config.  _to_head statistics collection patch just tell you, I collected the statistics not include add_partial in early_kmem_cache_node_alloc(). And other places of add_partial were covered. Of course, the kernel with statistic can not be used to measure performance. 
