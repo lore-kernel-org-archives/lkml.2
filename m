@@ -1,173 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1LIWhI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:37:08 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34835 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab1LIWhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:37:04 -0500
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION 
-	,commit_signer:2/3=67%),
-        Rik van Riel <riel@redhat.com> (commit_signer:1/3=33%),
-        Joe Korty <joe.korty@ccur.com> (commit_signer:1/3=33% 
-	,commit_signer:2/9=22%,commit_signer:1/2=50%,commit_signer:2/13=15%),
-        Federica Teodori <federica.teodori@googlemail.com> (commit_signer:1/3=33%),
-        Doug Ledford <dledford@redhat.com> (commit_signer:5/9=56% 
-	,commit_signer:2/2=100%,commit_signer:5/13=38%,commit_signer:1/2=50%),
-        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/9=22% 
-	,commit_signer:1/2=50%),
-        David Howells <dhowells@redhat.com> (commit_signer:2/9=22% 
-	,commit_signer:1/2=50%),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [resend][PATCH 3/3] mqueue: separate mqueue default value from maximum value
-Date: Fri,  9 Dec 2011 17:35:57 -0500
-Message-Id: <1323470163-8723-3-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com>
+	id S1754818Ab1LIWlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:41:07 -0500
+Received: from the.earth.li ([46.43.34.31]:44727 "EHLO the.earth.li"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575Ab1LIWlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 17:41:03 -0500
+X-Greylist: delayed 2483 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Dec 2011 17:41:01 EST
+Date: Fri, 9 Dec 2011 13:59:29 -0800
+From: Jonathan McDowell <noodles@earth.li>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Imre Deak <imre.deak@nokia.com>,
+        Cory Maccarrone <darkstar6262@gmail.com>,
+        Laurent Gonzalez <palmte.linux@free.fr>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] video: omap: Staticise non-exported symbols
+Message-ID: <20111209215929.GF16333@earth.li>
+References: <1323394677.3740.2.camel@phoenix>
+ <201112090923.46643.marek.vasut@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112090923.46643.marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Fri, Dec 09, 2011 at 09:23:46AM +0100, Marek Vasut wrote:
+> > These symbols are not used outside it's driver so no need to
+> > make the symbol global.
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> >  drivers/video/omap/lcd_ams_delta.c |    2 +-
+> >  drivers/video/omap/lcd_h3.c        |    2 +-
+> >  drivers/video/omap/lcd_htcherald.c |    2 +-
+> >  drivers/video/omap/lcd_inn1510.c   |    2 +-
+> >  drivers/video/omap/lcd_inn1610.c   |    2 +-
+> >  drivers/video/omap/lcd_osk.c       |    2 +-
+> >  drivers/video/omap/lcd_palmte.c    |    2 +-
+> >  drivers/video/omap/lcd_palmtt.c    |    2 +-
+> >  drivers/video/omap/lcd_palmz71.c   |    2 +-
+> >  9 files changed, 9 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/video/omap/lcd_ams_delta.c
+> > b/drivers/video/omap/lcd_ams_delta.c index 6978ae4..eb50a95 100644
+> > --- a/drivers/video/omap/lcd_ams_delta.c
+> > +++ b/drivers/video/omap/lcd_ams_delta.c
+> > @@ -198,7 +198,7 @@ static int ams_delta_panel_resume(struct
+> > platform_device *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver ams_delta_panel_driver = {
+> > +static struct platform_driver ams_delta_panel_driver = {
+> >  	.probe		= ams_delta_panel_probe,
+> >  	.remove		= ams_delta_panel_remove,
+> >  	.suspend	= ams_delta_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_h3.c b/drivers/video/omap/lcd_h3.c
+> > index 622ad83..baec34e 100644
+> > --- a/drivers/video/omap/lcd_h3.c
+> > +++ b/drivers/video/omap/lcd_h3.c
+> > @@ -113,7 +113,7 @@ static int h3_panel_resume(struct platform_device
+> > *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver h3_panel_driver = {
+> > +static struct platform_driver h3_panel_driver = {
+> >  	.probe		= h3_panel_probe,
+> >  	.remove		= h3_panel_remove,
+> >  	.suspend	= h3_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_htcherald.c
+> > b/drivers/video/omap/lcd_htcherald.c index 4802419..b1a022f 100644
+> > --- a/drivers/video/omap/lcd_htcherald.c
+> > +++ b/drivers/video/omap/lcd_htcherald.c
+> > @@ -104,7 +104,7 @@ static int htcherald_panel_resume(struct
+> > platform_device *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver htcherald_panel_driver = {
+> > +static struct platform_driver htcherald_panel_driver = {
+> >  	.probe		= htcherald_panel_probe,
+> >  	.remove		= htcherald_panel_remove,
+> >  	.suspend	= htcherald_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_inn1510.c
+> > b/drivers/video/omap/lcd_inn1510.c index 3271f16..d129946 100644
+> > --- a/drivers/video/omap/lcd_inn1510.c
+> > +++ b/drivers/video/omap/lcd_inn1510.c
+> > @@ -98,7 +98,7 @@ static int innovator1510_panel_resume(struct
+> > platform_device *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver innovator1510_panel_driver = {
+> > +static struct platform_driver innovator1510_panel_driver = {
+> >  	.probe		= innovator1510_panel_probe,
+> >  	.remove		= innovator1510_panel_remove,
+> >  	.suspend	= innovator1510_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_inn1610.c
+> > b/drivers/video/omap/lcd_inn1610.c index 12cc52a..a95756b 100644
+> > --- a/drivers/video/omap/lcd_inn1610.c
+> > +++ b/drivers/video/omap/lcd_inn1610.c
+> > @@ -122,7 +122,7 @@ static int innovator1610_panel_resume(struct
+> > platform_device *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver innovator1610_panel_driver = {
+> > +static struct platform_driver innovator1610_panel_driver = {
+> >  	.probe		= innovator1610_panel_probe,
+> >  	.remove		= innovator1610_panel_remove,
+> >  	.suspend	= innovator1610_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_osk.c b/drivers/video/omap/lcd_osk.c
+> > index 6f8d13c..b985997 100644
+> > --- a/drivers/video/omap/lcd_osk.c
+> > +++ b/drivers/video/omap/lcd_osk.c
+> > @@ -116,7 +116,7 @@ static int osk_panel_resume(struct platform_device
+> > *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver osk_panel_driver = {
+> > +static struct platform_driver osk_panel_driver = {
+> >  	.probe		= osk_panel_probe,
+> >  	.remove		= osk_panel_remove,
+> >  	.suspend	= osk_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_palmte.c
+> > b/drivers/video/omap/lcd_palmte.c index 4cb3017..d79f436 100644
+> > --- a/drivers/video/omap/lcd_palmte.c
+> > +++ b/drivers/video/omap/lcd_palmte.c
+> > @@ -97,7 +97,7 @@ static int palmte_panel_resume(struct platform_device
+> > *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver palmte_panel_driver = {
+> > +static struct platform_driver palmte_panel_driver = {
+> >  	.probe		= palmte_panel_probe,
+> >  	.remove		= palmte_panel_remove,
+> >  	.suspend	= palmte_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_palmtt.c
+> > b/drivers/video/omap/lcd_palmtt.c index b51b332..c2e96a7 100644
+> > --- a/drivers/video/omap/lcd_palmtt.c
+> > +++ b/drivers/video/omap/lcd_palmtt.c
+> > @@ -102,7 +102,7 @@ static int palmtt_panel_resume(struct platform_device
+> > *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver palmtt_panel_driver = {
+> > +static struct platform_driver palmtt_panel_driver = {
+> >  	.probe		= palmtt_panel_probe,
+> >  	.remove		= palmtt_panel_remove,
+> >  	.suspend	= palmtt_panel_suspend,
+> > diff --git a/drivers/video/omap/lcd_palmz71.c
+> > b/drivers/video/omap/lcd_palmz71.c index 2334e56..1ab4847 100644
+> > --- a/drivers/video/omap/lcd_palmz71.c
+> > +++ b/drivers/video/omap/lcd_palmz71.c
+> > @@ -98,7 +98,7 @@ static int palmz71_panel_resume(struct platform_device
+> > *pdev) return 0;
+> >  }
+> > 
+> > -struct platform_driver palmz71_panel_driver = {
+> > +static struct platform_driver palmz71_panel_driver = {
+> >  	.probe		= palmz71_panel_probe,
+> >  	.remove		= palmz71_panel_remove,
+> >  	.suspend	= palmz71_panel_suspend,
+> 
+> I can speak for palmtt and palmz71,
+> 
+> Acked-by: Marek Vasut <marek.vasut@gmail.com>
 
-commit b231cca438 (message queues: increase range limits)
-changed mqueue default value when attr parameter is specified NULL
-from hard coded value to fs.mqueue.{msg,msgsize}_max sysctl value.
+Likewise, for ams-delta,
 
-This made large side effect. When user need to use two mqueue
-applications 1) using !NULL attr parameter and it require big
-message size and 2) using NULL attr parameter and only need small
-size message, app (1) require to raise fs.mqueue.msgsize_max and
-app (2) consume large memory size even though it doesn't need.
+Acked-By: Jonathan McDowell <noodles@earth.li>
 
-Doug Ledford propsed to switch back it to static hard coded value.
-However it also has a compatibility problem. Some applications might
-started depend on the default value is tunable.
+J.
 
-The solution is to separate default value from maximum value.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Acked-by: Joe Korty <joe.korty@ccur.com>
-Cc: Amerigo Wang <amwang@redhat.com>
-Cc: Serge E. Hallyn <serue@us.ibm.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
----
- Documentation/sysctl/fs.txt   |    7 +++++++
- include/linux/ipc_namespace.h |    2 ++
- ipc/mq_sysctl.c               |   18 ++++++++++++++++++
- ipc/mqueue.c                  |    9 ++++++---
- ipc/msgutil.c                 |    2 ++
- 5 files changed, 35 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
-index 88fd7f5..13d6166 100644
---- a/Documentation/sysctl/fs.txt
-+++ b/Documentation/sysctl/fs.txt
-@@ -225,6 +225,13 @@ a queue must be less or equal then msg_max.
- maximum  message size value (it is every  message queue's attribute set during
- its creation).
- 
-+/proc/sys/fs/mqueue/msg_default is  a read/write  file for setting/getting the
-+default number of messages in a queue value if attr parameter of mq_open(2) is
-+NULL. If it exceed msg_max, the default value is initialized msg_max.
-+
-+/proc/sys/fs/mqueue/msgsize_default is a read/write file for setting/getting
-+the default message size value if attr parameter of mq_open(2) is NULL. If it
-+exceed msgsize_max, the default value is initialized msgsize_max.
- 
- 4. /proc/sys/fs/epoll - Configuration options for the epoll interface
- --------------------------------------------------------
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 2488535..5499c92 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -62,6 +62,8 @@ struct ipc_namespace {
- 	unsigned int    mq_queues_max;   /* initialized to DFLT_QUEUESMAX */
- 	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
- 	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
-+	unsigned int    mq_msg_default;
-+	unsigned int    mq_msgsize_default;
- 
- 	/* user_ns which owns the ipc ns */
- 	struct user_namespace *user_ns;
-diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
-index e22336a..383d638 100644
---- a/ipc/mq_sysctl.c
-+++ b/ipc/mq_sysctl.c
-@@ -73,6 +73,24 @@ static ctl_table mq_sysctls[] = {
- 		.extra1		= &msg_maxsize_limit_min,
- 		.extra2		= &msg_maxsize_limit_max,
- 	},
-+	{
-+		.procname	= "msg_default",
-+		.data		= &init_ipc_ns.mq_msg_default,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_mq_dointvec_minmax,
-+		.extra1		= &msg_max_limit_min,
-+		.extra2		= &msg_max_limit_max,
-+	},
-+	{
-+		.procname	= "msgsize_default",
-+		.data		= &init_ipc_ns.mq_msgsize_default,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_mq_dointvec_minmax,
-+		.extra1		= &msg_maxsize_limit_min,
-+		.extra2		= &msg_maxsize_limit_max,
-+	},
- 	{}
- };
- 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 315f84f..894a61b 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -143,9 +143,10 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
- 		info->qsize = 0;
- 		info->user = NULL;	/* set when all is ok */
- 		memset(&info->attr, 0, sizeof(info->attr));
--		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max, DFLT_MSG);
--		info->attr.mq_msgsize =
--			min(ipc_ns->mq_msgsize_max, DFLT_MSGSIZE);
-+		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
-+					   ipc_ns->mq_msg_default);
-+		info->attr.mq_msgsize = min(ipc_ns->mq_msgsize_max,
-+					    ipc_ns->mq_msgsize_default);
- 		if (attr) {
- 			info->attr.mq_maxmsg = attr->mq_maxmsg;
- 			info->attr.mq_msgsize = attr->mq_msgsize;
-@@ -1266,6 +1267,8 @@ int mq_init_ns(struct ipc_namespace *ns)
- 	ns->mq_queues_max    = DFLT_QUEUESMAX;
- 	ns->mq_msg_max       = DFLT_MSGMAX;
- 	ns->mq_msgsize_max   = DFLT_MSGSIZEMAX;
-+	ns->mq_msg_default   = DFLT_MSG;
-+	ns->mq_msgsize_default  = DFLT_MSGSIZE;
- 
- 	ns->mq_mnt = kern_mount_data(&mqueue_fs_type, ns);
- 	if (IS_ERR(ns->mq_mnt)) {
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index 8b5ce5d..a344216 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -31,6 +31,8 @@ struct ipc_namespace init_ipc_ns = {
- 	.mq_queues_max   = DFLT_QUEUESMAX,
- 	.mq_msg_max      = DFLT_MSGMAX,
- 	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
-+	.mq_msg_default	    = DFLT_MSG,
-+	.mq_msgsize_default = DFLT_MSGSIZE,
- #endif
- 	.user_ns = &init_user_ns,
- };
 -- 
-1.7.1
-
+Generally, all generalizations are false..
+This .sig brought to you by the letter Z and the number 26
+Product of the Republic of HuggieTag
