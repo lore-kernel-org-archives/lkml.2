@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1LICJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 21:09:59 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42046 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1LICJ5 (ORCPT
+	id S1754169Ab1LICOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 21:14:16 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39028 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1LICOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 21:09:57 -0500
-X-SpamScore: 6
-X-BigFish: VS6(z36e9nzzz1202hzzz2dh2a8h668h839h944h64h)
-X-Spam-TCS-SCL: 3:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 9 Dec 2011 10:09:50 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <kernel@pengutronix.de>, <shawn.guo@linaro.org>
-Subject: imx cpufreq build failed
-Message-ID: <20111209020948.GA28216@b20223-02.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Thu, 8 Dec 2011 21:14:14 -0500
+Message-ID: <1323396846.3740.10.camel@phoenix>
+Subject: [PATCH] Input: mc13783-pwrbutton - convert to use
+ module_platform_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-input@vger.kernel.org
+Date: Fri, 09 Dec 2011 10:14:06 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  CC      arch/arm/plat-mxc/cpufreq.o
-arch/arm/plat-mxc/cpufreq.c:203: error: expected declaration specifiers or '...' before string constant
-arch/arm/plat-mxc/cpufreq.c:203: warning: data definition has no type or storage class
-arch/arm/plat-mxc/cpufreq.c:203: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-arch/arm/plat-mxc/cpufreq.c:203: warning: function declaration isn't a prototype
-arch/arm/plat-mxc/cpufreq.c:204: error: expected declaration specifiers or '...' before string constant
-arch/arm/plat-mxc/cpufreq.c:204: warning: data definition has no type or storage class
-arch/arm/plat-mxc/cpufreq.c:204: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-arch/arm/plat-mxc/cpufreq.c:204: warning: function declaration isn't a prototype
-arch/arm/plat-mxc/cpufreq.c:205: error: expected declaration specifiers or '...' before string constant
-arch/arm/plat-mxc/cpufreq.c:205: warning: data definition has no type or storage class
-arch/arm/plat-mxc/cpufreq.c:205: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-arch/arm/plat-mxc/cpufreq.c:205: warning: function declaration isn't a prototype
-make[1]: *** [arch/arm/plat-mxc/cpufreq.o] Error 1
-make: *** [arch/arm/plat-mxc] Error 2
+This patch converts mc13783-pwrbutton to use the module_platform_driver()
+macro which makes the code smaller and a bit simpler.
+
+Also staticise mc13783_pwrbutton_driver which is not used outside
+this driver so no need to make the symbol global.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/misc/mc13783-pwrbutton.c |   14 ++------------
+ 1 files changed, 2 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/input/misc/mc13783-pwrbutton.c b/drivers/input/misc/mc13783-pwrbutton.c
+index 09b0522..8428f1e 100644
+--- a/drivers/input/misc/mc13783-pwrbutton.c
++++ b/drivers/input/misc/mc13783-pwrbutton.c
+@@ -255,7 +255,7 @@ static int __devexit mc13783_pwrbutton_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver mc13783_pwrbutton_driver = {
++static struct platform_driver mc13783_pwrbutton_driver = {
+ 	.probe		= mc13783_pwrbutton_probe,
+ 	.remove		= __devexit_p(mc13783_pwrbutton_remove),
+ 	.driver		= {
+@@ -264,17 +264,7 @@ struct platform_driver mc13783_pwrbutton_driver = {
+ 	},
+ };
+ 
+-static int __init mc13783_pwrbutton_init(void)
+-{
+-	return platform_driver_register(&mc13783_pwrbutton_driver);
+-}
+-module_init(mc13783_pwrbutton_init);
+-
+-static void __exit mc13783_pwrbutton_exit(void)
+-{
+-	platform_driver_unregister(&mc13783_pwrbutton_driver);
+-}
+-module_exit(mc13783_pwrbutton_exit);
++module_platform_driver(mc13783_pwrbutton_driver);
+ 
+ MODULE_ALIAS("platform:mc13783-pwrbutton");
+ MODULE_DESCRIPTION("MC13783 Power Button");
+-- 
+1.7.5.4
 
 
-Thanks
-Richard
 
