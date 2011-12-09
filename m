@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab1LIRTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:19:42 -0500
-Received: from bay0-omc2-s7.bay0.hotmail.com ([65.54.190.82]:19210 "EHLO
-	bay0-omc2-s7.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752597Ab1LIRTk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:19:40 -0500
-Message-ID: <BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>
-X-Originating-IP: [82.43.252.147]
-From: Anand Kanaginhal <anand_dk@hotmail.com>
-To: <mjg59@srcf.ucam.org>
-CC: <bhelgaas@google.com>, <greg@kroah.com>,
-        Linux PCI mailing <linux-pci@vger.kernel.org>,
-        linux kernel mailing <linux-kernel@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>
-Subject: RE: PCIe Hotplugging not working
-Date: Fri, 9 Dec 2011 09:19:39 -0800
-Importance: Normal
-In-Reply-To: <20111209124524.GA3488@srcf.ucam.org>
-References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>,<BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>,<20111130154022.GA1411@srcf.ucam.org>,<BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>,<20111130182423.GA4831@srcf.ucam.org>,<CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>,<BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>,<20111209124524.GA3488@srcf.ucam.org>
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752664Ab1LIRWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:22:31 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47917 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab1LIRWa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:22:30 -0500
 MIME-Version: 1.0
-X-OriginalArrivalTime: 09 Dec 2011 17:19:39.0137 (UTC) FILETIME=[BB582F10:01CCB696]
+X-Originating-IP: [134.134.139.70]
+In-Reply-To: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
+References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
+Date: Fri, 9 Dec 2011 18:22:29 +0100
+Message-ID: <CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com>
+Subject: Re: kernel BUG at drivers/gpu/drm/i915/i915_gem
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Rocko Requin <rockorequin@hotmail.com>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Rocko,
 
-Following Daring fireball :).. my comments inline----------------------------------------
-> Date: Fri, 9 Dec 2011 12:45:25 +0000
-> From: mjg59@srcf.ucam.org
-> To: anand_dk@hotmail.com
-> CC: bhelgaas@google.com; greg@kroah.com; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
-> Subject: Re: PCIe Hotplugging not working
+Thanks for the bug report. Please report bugs always on the public
+mailing list so that all interest people can join in (also I'm
+travelling atm, so I can't do much).
+Afaics we're hitting
+
+BUG_ON(seqno == 0)
+
+in wait_requst. Unfortunately you've cut out the backtrace from the
+kernel oops, so I can't tell anything more.
+
+Please add the full dmesg and the usual details about your macine.
+
+Yours, Daniel
+
+On Fri, Dec 9, 2011 at 00:11, Rocko Requin <rockorequin@hotmail.com> wrote:
+> Hi Daniel,
 >
-> Do you have anything in /sys/class/pci/slots ? Does your card show up in
-> lspci when you hotplug it?
-I dont see the directory structure /sys/class/pci/slots 
-
-$ ls /sys/class   
-ata_device  dmi		 leds	   power_supply  scsi_disk	tty
-ata_link    firmware	 mdio_bus  ppdev	 scsi_generic	usbmon
-ata_port    gpio	 mem	   ppp		 scsi_host	vc
-backlight   graphics	 misc	   printer	 sound		vtconsole
-bdi	    hidraw	 mmc_host  regulator	 spi_host	wmi
-block	    hwmon	 net	   rfkill	 spi_master
-bsg	    i2c-adapter  pci_bus   rtc		 spi_transport
-dma	    input	 pktcdvd   scsi_device	 thermaldirectories. 
-
-
-However, slots was found in /sys/bus/pci/slots
-
-$ ls /sys/bus/pci/slots
-0000:00:00.0  0000:00:10.0  0000:00:1c.0  0000:00:1f.2	0000:03:01.0
-0000:00:03.0  0000:00:10.1  0000:00:1c.4  0000:00:1f.3	0000:03:08.0
-0000:00:08.0  0000:00:16.0  0000:00:1c.6  0000:00:1f.5	0000:03:09.0
-0000:00:08.1  0000:00:19.0  0000:00:1d.0  0000:01:00.0	0000:04:00.0
-0000:00:08.2  0000:00:1a.0  0000:00:1e.0  0000:01:00.1	0000:07:00.0
-0000:00:08.3  0000:00:1b.0  0000:00:1f.0  0000:02:00.0	0000:08:00.0
-
-lspci neither adds nor removes entries on hotplugging either card c1,c2.
-Output of lspci is as follows 
-
-$ lspci 
-...
-02:00.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
-03:01.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
-03:08.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
-03:09.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
- 
-anand card c1>>>>>>>>04:00.0 Memory controller: Device 174a:0701  
-anand card c2>>>>>>>>05:00.0 Ethernet controller: Agere Systems ET-131x PCI-E Ethernet Controller (rev 02) 
-....
-$ 
-Also along the other stuffs, for the topology I am having, please let me know if my assumptions are technically correct
----
-1. With the above setup, If I hotplug card c1 and/or c2, will my driver probe 
-get invoked. 
-2. I dont have to add any rules for in /etc/udev/rules.d/*.rules for my driver
- to work. 
-3. The standard hotplug controller driver would get the hotplug event from the
- switch and handle it. 
-4. The standard hotplug controller driver will be responsible for invoking 
-.probe and .remove functions of my driver.
----
-Thanks
-Anand
-
-
+> Since I applied commit eb1711bb94991e93669c5a1b5f84f11be2d51ea1 (drm/i915:
+> fix infinite recursion on unbind due to ilk vt-d w/a) to my kernel yesterday
+> afternoon, I've had the kernel lock up completely three times on me, so I'm
+> assuming it might have been the cause. (I was previously using a kernel
+> compiled from git on Dec 4th without problems.)
 >
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
- 		 	   		  
+> The last lockup showed this in the syslog:
+>
+> Dec  9 06:23:15 sierra kernel: [44486.289428] kernel BUG at
+> drivers/gpu/drm/i915/i915_gem.c:1952!
+> Dec  9 06:23:15 sierra kernel: [44486.289460] invalid opcode: 0000 [#1] SMP
+> ...
+> Dec  9 06:23:15 sierra kernel: [44486.289844] RIP:
+> 0010:[<ffffffffa02eccd3>]  [<ffffffffa02eccd3>]
+> i915_wait_request+0x563/0x580 [i915]
+>
+> I have attached a longer version of the log (but note that it was truncated
+> by the crash).
+>
+> I am booting the kernel with i915.i915_enable_rc6=1 but I didn't have any
+> lockup issues until yesterday.
+>
+> Thanks,
+> rocko
+
+
+
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
