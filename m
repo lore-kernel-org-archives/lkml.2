@@ -1,167 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1LIBiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:38:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37125 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab1LIBiK (ORCPT
+	id S1754053Ab1LIBiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 20:38:25 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45210 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab1LIBiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:38:10 -0500
-Message-ID: <1323394677.3740.2.camel@phoenix>
-Subject: [PATCH 1/2] video: omap: Staticise non-exported symbols
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jonathan McDowell <noodles@earth.li>, Imre Deak <imre.deak@nokia.com>,
-        Cory Maccarrone <darkstar6262@gmail.com>,
-        Laurent Gonzalez <palmte.linux@free.fr>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
-Date: Fri, 09 Dec 2011 09:37:57 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 20:38:21 -0500
+Date: Fri, 9 Dec 2011 12:38:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: linux-next: manual merge of the 4xx tree with the powerpc tree
+Message-Id: <20111209123811.12cf28971f21a309976f31bb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Dec_2011_12_38_11_+1100_6=FlIqzNwhf_zXaK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These symbols are not used outside it's driver so no need to
-make the symbol global.
+--Signature=_Fri__9_Dec_2011_12_38_11_+1100_6=FlIqzNwhf_zXaK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/omap/lcd_ams_delta.c |    2 +-
- drivers/video/omap/lcd_h3.c        |    2 +-
- drivers/video/omap/lcd_htcherald.c |    2 +-
- drivers/video/omap/lcd_inn1510.c   |    2 +-
- drivers/video/omap/lcd_inn1610.c   |    2 +-
- drivers/video/omap/lcd_osk.c       |    2 +-
- drivers/video/omap/lcd_palmte.c    |    2 +-
- drivers/video/omap/lcd_palmtt.c    |    2 +-
- drivers/video/omap/lcd_palmz71.c   |    2 +-
- 9 files changed, 9 insertions(+), 9 deletions(-)
+Hi Josh,
 
-diff --git a/drivers/video/omap/lcd_ams_delta.c b/drivers/video/omap/lcd_ams_delta.c
-index 6978ae4..eb50a95 100644
---- a/drivers/video/omap/lcd_ams_delta.c
-+++ b/drivers/video/omap/lcd_ams_delta.c
-@@ -198,7 +198,7 @@ static int ams_delta_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver ams_delta_panel_driver = {
-+static struct platform_driver ams_delta_panel_driver = {
- 	.probe		= ams_delta_panel_probe,
- 	.remove		= ams_delta_panel_remove,
- 	.suspend	= ams_delta_panel_suspend,
-diff --git a/drivers/video/omap/lcd_h3.c b/drivers/video/omap/lcd_h3.c
-index 622ad83..baec34e 100644
---- a/drivers/video/omap/lcd_h3.c
-+++ b/drivers/video/omap/lcd_h3.c
-@@ -113,7 +113,7 @@ static int h3_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver h3_panel_driver = {
-+static struct platform_driver h3_panel_driver = {
- 	.probe		= h3_panel_probe,
- 	.remove		= h3_panel_remove,
- 	.suspend	= h3_panel_suspend,
-diff --git a/drivers/video/omap/lcd_htcherald.c b/drivers/video/omap/lcd_htcherald.c
-index 4802419..b1a022f 100644
---- a/drivers/video/omap/lcd_htcherald.c
-+++ b/drivers/video/omap/lcd_htcherald.c
-@@ -104,7 +104,7 @@ static int htcherald_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver htcherald_panel_driver = {
-+static struct platform_driver htcherald_panel_driver = {
- 	.probe		= htcherald_panel_probe,
- 	.remove		= htcherald_panel_remove,
- 	.suspend	= htcherald_panel_suspend,
-diff --git a/drivers/video/omap/lcd_inn1510.c b/drivers/video/omap/lcd_inn1510.c
-index 3271f16..d129946 100644
---- a/drivers/video/omap/lcd_inn1510.c
-+++ b/drivers/video/omap/lcd_inn1510.c
-@@ -98,7 +98,7 @@ static int innovator1510_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver innovator1510_panel_driver = {
-+static struct platform_driver innovator1510_panel_driver = {
- 	.probe		= innovator1510_panel_probe,
- 	.remove		= innovator1510_panel_remove,
- 	.suspend	= innovator1510_panel_suspend,
-diff --git a/drivers/video/omap/lcd_inn1610.c b/drivers/video/omap/lcd_inn1610.c
-index 12cc52a..a95756b 100644
---- a/drivers/video/omap/lcd_inn1610.c
-+++ b/drivers/video/omap/lcd_inn1610.c
-@@ -122,7 +122,7 @@ static int innovator1610_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver innovator1610_panel_driver = {
-+static struct platform_driver innovator1610_panel_driver = {
- 	.probe		= innovator1610_panel_probe,
- 	.remove		= innovator1610_panel_remove,
- 	.suspend	= innovator1610_panel_suspend,
-diff --git a/drivers/video/omap/lcd_osk.c b/drivers/video/omap/lcd_osk.c
-index 6f8d13c..b985997 100644
---- a/drivers/video/omap/lcd_osk.c
-+++ b/drivers/video/omap/lcd_osk.c
-@@ -116,7 +116,7 @@ static int osk_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver osk_panel_driver = {
-+static struct platform_driver osk_panel_driver = {
- 	.probe		= osk_panel_probe,
- 	.remove		= osk_panel_remove,
- 	.suspend	= osk_panel_suspend,
-diff --git a/drivers/video/omap/lcd_palmte.c b/drivers/video/omap/lcd_palmte.c
-index 4cb3017..d79f436 100644
---- a/drivers/video/omap/lcd_palmte.c
-+++ b/drivers/video/omap/lcd_palmte.c
-@@ -97,7 +97,7 @@ static int palmte_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver palmte_panel_driver = {
-+static struct platform_driver palmte_panel_driver = {
- 	.probe		= palmte_panel_probe,
- 	.remove		= palmte_panel_remove,
- 	.suspend	= palmte_panel_suspend,
-diff --git a/drivers/video/omap/lcd_palmtt.c b/drivers/video/omap/lcd_palmtt.c
-index b51b332..c2e96a7 100644
---- a/drivers/video/omap/lcd_palmtt.c
-+++ b/drivers/video/omap/lcd_palmtt.c
-@@ -102,7 +102,7 @@ static int palmtt_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver palmtt_panel_driver = {
-+static struct platform_driver palmtt_panel_driver = {
- 	.probe		= palmtt_panel_probe,
- 	.remove		= palmtt_panel_remove,
- 	.suspend	= palmtt_panel_suspend,
-diff --git a/drivers/video/omap/lcd_palmz71.c b/drivers/video/omap/lcd_palmz71.c
-index 2334e56..1ab4847 100644
---- a/drivers/video/omap/lcd_palmz71.c
-+++ b/drivers/video/omap/lcd_palmz71.c
-@@ -98,7 +98,7 @@ static int palmz71_panel_resume(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver palmz71_panel_driver = {
-+static struct platform_driver palmz71_panel_driver = {
- 	.probe		= palmz71_panel_probe,
- 	.remove		= palmz71_panel_remove,
- 	.suspend	= palmz71_panel_suspend,
--- 
-1.7.5.4
+Today's linux-next merge of the 4xx tree got a conflict in
+arch/powerpc/platforms/40x/ppc40x_simple.c between commit 11eab297f57b
+("powerpc: Add support for OpenBlockS 600") from the powerpc tree and
+commit d5b9ee7b514e ("powerpc/40x: Add APM8018X SOC support") from the
+4xx tree.
 
+I fixed it up (see below) and can carry the fix as necessary.
 
+[Josh: I have changed you contact address to the above]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/powerpc/platforms/40x/ppc40x_simple.c
+index ecac237,2f8fde6..0000000
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@@ -55,8 -55,8 +55,9 @@@ static const char *board[] __initdata=20
+  	"amcc,haleakala",
+  	"amcc,kilauea",
+  	"amcc,makalu",
++ 	"apm,klondike",
+ -	"est,hotfoot"
+ +	"est,hotfoot",
+ +	"plathome,obs600"
+  };
+ =20
+  static int __init ppc40x_probe(void)
+
+--Signature=_Fri__9_Dec_2011_12_38_11_+1100_6=FlIqzNwhf_zXaK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO4WaDAAoJEECxmPOUX5FEVDQQAI093vlGj3Qn/duFIvD0DDoB
+rLnLIAmCIn5+cJbVsGZOtuUv0ITp7fb9pC8yXd5e58GFX8T+NW4s6twqCzVZYheP
+fGSkOHFJIR3o7gVkW2W9kjMOyx/8nKqoQkrsDv9vEzcOsHGCaTzna9gEGCOlxMhb
+MTRMp8j86rlE6YXDN2dPHdZSHpqaGePiw7HYR3ztNyLTpAjaDFPERoKtkOveJQM/
+9GwA5MQMa+N6NiyCxP/X4/4ZTJvlA0b4jr8H8w/OlgZkrLUvFhZ/rsY5mbgxo9ij
+IjGK5Xa5lOvAS+VRpAv7f3u6s/zk7JTnwdJsIVha8SaHT4QStu7EI/CfbXKXg+xi
+40FktqNcXajZwY7zGWqqMVMK7mqHOnLS/D/VgPdr/vA0ftXFT/DAen/KKtQjJjQh
+b1QJETa1DRWW4fm3JqO+kxJXERejehBmt7DtXxRx3OSKpTA/UVtoxmBa68UeEvL9
+SmorM1kVcqxi7fEitu8VUetesRqKizdQK74J1o6hEWByj9E8XeHz6Dje2xYcpbsf
+JTh9zWrmJ+rPRCpWk69D7dSjpmgq1a7WBFxMiuZevEanYqQ2J3CX0JhC/CrIwoZi
+ps3MYo3XZKSBaxAeqQ0G91nKloKiOfm+XyfzLxwKntq6aRBycPzctcCzbGD8iPrc
+tiEaK8+wqB+Ufs0K71Xf
+=OQUJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Dec_2011_12_38_11_+1100_6=FlIqzNwhf_zXaK--
