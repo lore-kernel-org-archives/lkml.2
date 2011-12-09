@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab1LIRTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:19:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63863 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab1LIRTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:19:34 -0500
-X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=sJHsf99JVXcf-4EybcAA:9 a=upQplXEDf3Dp7Tv9EHMA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>,
-        Borislav Petkov <bp@amd64.org>
-In-Reply-To: <1323448478.1937.26.camel@frodo>
-References: <20111208193003.112037550@goodmis.org>
-	 <20111208193136.366941904@goodmis.org>  <1323373012.30977.123.camel@frodo>
-	 <1323398616.30977.167.camel@frodo>  <1323448478.1937.26.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Dec 2011 12:19:31 -0500
-Message-ID: <1323451171.1937.33.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752710Ab1LIRTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:19:42 -0500
+Received: from bay0-omc2-s7.bay0.hotmail.com ([65.54.190.82]:19210 "EHLO
+	bay0-omc2-s7.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752597Ab1LIRTk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 12:19:40 -0500
+Message-ID: <BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>
+X-Originating-IP: [82.43.252.147]
+From: Anand Kanaginhal <anand_dk@hotmail.com>
+To: <mjg59@srcf.ucam.org>
+CC: <bhelgaas@google.com>, <greg@kroah.com>,
+        Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: RE: PCIe Hotplugging not working
+Date: Fri, 9 Dec 2011 09:19:39 -0800
+Importance: Normal
+In-Reply-To: <20111209124524.GA3488@srcf.ucam.org>
+References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>,<BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>,<20111130154022.GA1411@srcf.ucam.org>,<BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>,<20111130182423.GA4831@srcf.ucam.org>,<CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>,<BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>,<20111209124524.GA3488@srcf.ucam.org>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 09 Dec 2011 17:19:39.0137 (UTC) FILETIME=[BB582F10:01CCB696]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ added Boris as he's my AMD guy ]
 
-On Fri, 2011-12-09 at 11:34 -0500, Steven Rostedt wrote:
-> On Thu, 2011-12-08 at 21:43 -0500, Steven Rostedt wrote:
-> 
-> > diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> > index a8e3eb8..906a02a 100644
-> > --- a/arch/x86/kernel/traps.c
-> > +++ b/arch/x86/kernel/traps.c
-> > @@ -723,4 +723,9 @@ void __init trap_init(void)
-> >  	cpu_init();
-> >  
-> >  	x86_init.irqs.trap_init();
-> > +
-> > +#ifdef CONFIG_X86_64
-> > +	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
-> > +	set_nmi_gate(1, &debug);
-> 
-> Frederic Weisbecker told me on IRC that int3 is 3 #bp, not 1 #db. I need
-> to also add that:
-> 
-> 	set_nmi_gate(3, &int3)
-> 
-> Mathieu says we need to worry about MCEs, so maybe we can add that stack
-> as well.
-> 
-> 	set_nmi_gate(18, &machine_check);
+Following Daring fireball :).. my comments inline----------------------------------------
+> Date: Fri, 9 Dec 2011 12:45:25 +0000
+> From: mjg59@srcf.ucam.org
+> To: anand_dk@hotmail.com
+> CC: bhelgaas@google.com; greg@kroah.com; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> Subject: Re: PCIe Hotplugging not working
+>
+> Do you have anything in /sys/class/pci/slots ? Does your card show up in
+> lspci when you hotplug it?
+I dont see the directory structure /sys/class/pci/slots 
 
-Looking at the documentation, I'm not sure NMIs can interrupt an MCE.
-The MCE is higher up on the exception priority chart (thanks Peter for
-pointing that out). But the documentation is vague at best.
-
-Boris, H. Peter,
-
-Could you shed some light on this. Can an NMI interrupt an MCE in
-progress?
-
-Of course if it can, we have the NMI->MCE->NMI that could happen too.
-And this problem exists today. Actually, just having an MCE happen
-inside an NMI can cause the NMI->NMI problem as well.
-
--- Steve
+$ ls /sys/class   
+ata_device  dmi		 leds	   power_supply  scsi_disk	tty
+ata_link    firmware	 mdio_bus  ppdev	 scsi_generic	usbmon
+ata_port    gpio	 mem	   ppp		 scsi_host	vc
+backlight   graphics	 misc	   printer	 sound		vtconsole
+bdi	    hidraw	 mmc_host  regulator	 spi_host	wmi
+block	    hwmon	 net	   rfkill	 spi_master
+bsg	    i2c-adapter  pci_bus   rtc		 spi_transport
+dma	    input	 pktcdvd   scsi_device	 thermaldirectories. 
 
 
-> 
-> 
-> If we make NMIs not modify any stack, then we can remove the "NMI
-> executing variable" on the stack. As any nested NMIs will see that it
-> preempted an NMI by just checking the stack. We have to check it anyway,
-> and by removing another check, this may be good to do.
+However, slots was found in /sys/bus/pci/slots
+
+$ ls /sys/bus/pci/slots
+0000:00:00.0  0000:00:10.0  0000:00:1c.0  0000:00:1f.2	0000:03:01.0
+0000:00:03.0  0000:00:10.1  0000:00:1c.4  0000:00:1f.3	0000:03:08.0
+0000:00:08.0  0000:00:16.0  0000:00:1c.6  0000:00:1f.5	0000:03:09.0
+0000:00:08.1  0000:00:19.0  0000:00:1d.0  0000:01:00.0	0000:04:00.0
+0000:00:08.2  0000:00:1a.0  0000:00:1e.0  0000:01:00.1	0000:07:00.0
+0000:00:08.3  0000:00:1b.0  0000:00:1f.0  0000:02:00.0	0000:08:00.0
+
+lspci neither adds nor removes entries on hotplugging either card c1,c2.
+Output of lspci is as follows 
+
+$ lspci 
+...
+02:00.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:01.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:08.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+03:09.0 PCI bridge: PLX Technology, Inc. PEX 8533 32-lane, 6-port PCI Express Switch (rev aa)
+ 
+anand card c1>>>>>>>>04:00.0 Memory controller: Device 174a:0701  
+anand card c2>>>>>>>>05:00.0 Ethernet controller: Agere Systems ET-131x PCI-E Ethernet Controller (rev 02) 
+....
+$ 
+Also along the other stuffs, for the topology I am having, please let me know if my assumptions are technically correct
+---
+1. With the above setup, If I hotplug card c1 and/or c2, will my driver probe 
+get invoked. 
+2. I dont have to add any rules for in /etc/udev/rules.d/*.rules for my driver
+ to work. 
+3. The standard hotplug controller driver would get the hotplug event from the
+ switch and handle it. 
+4. The standard hotplug controller driver will be responsible for invoking 
+.probe and .remove functions of my driver.
+---
+Thanks
+Anand
 
 
-
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
+ 		 	   		  
