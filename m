@@ -1,111 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1LICHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 21:07:13 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59641 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1LICHL (ORCPT
+	id S1754162Ab1LICJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 21:09:59 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42046 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab1LICJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 21:07:11 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Dec 2011 11:05:50 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
-        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
-        hannes@cmpxchg.org, mhocko@suse.cz,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@fujtsu.com>
-Subject: Re: [PATCH v8 3/9] socket: initial cgroup code.
-Message-Id: <20111209110550.fc740b81.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1323120903-2831-4-git-send-email-glommer@parallels.com>
-References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
-	<1323120903-2831-4-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 21:09:57 -0500
+X-SpamScore: 6
+X-BigFish: VS6(z36e9nzzz1202hzzz2dh2a8h668h839h944h64h)
+X-Spam-TCS-SCL: 3:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 9 Dec 2011 10:09:50 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <kernel@pengutronix.de>, <shawn.guo@linaro.org>
+Subject: imx cpufreq build failed
+Message-ID: <20111209020948.GA28216@b20223-02.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Dec 2011 19:34:57 -0200
-Glauber Costa <glommer@parallels.com> wrote:
-
-> The goal of this work is to move the memory pressure tcp
-> controls to a cgroup, instead of just relying on global
-> conditions.
-> 
-> To avoid excessive overhead in the network fast paths,
-> the code that accounts allocated memory to a cgroup is
-> hidden inside a static_branch(). This branch is patched out
-> until the first non-root cgroup is created. So when nobody
-> is using cgroups, even if it is mounted, no significant performance
-> penalty should be seen.
-> 
-> This patch handles the generic part of the code, and has nothing
-> tcp-specific.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Kirill A. Shutemov <kirill@shutemov.name>
-> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtsu.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-
-I already replied Reviewed-by: but...
+  CC      arch/arm/plat-mxc/cpufreq.o
+arch/arm/plat-mxc/cpufreq.c:203: error: expected declaration specifiers or '...' before string constant
+arch/arm/plat-mxc/cpufreq.c:203: warning: data definition has no type or storage class
+arch/arm/plat-mxc/cpufreq.c:203: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+arch/arm/plat-mxc/cpufreq.c:203: warning: function declaration isn't a prototype
+arch/arm/plat-mxc/cpufreq.c:204: error: expected declaration specifiers or '...' before string constant
+arch/arm/plat-mxc/cpufreq.c:204: warning: data definition has no type or storage class
+arch/arm/plat-mxc/cpufreq.c:204: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+arch/arm/plat-mxc/cpufreq.c:204: warning: function declaration isn't a prototype
+arch/arm/plat-mxc/cpufreq.c:205: error: expected declaration specifiers or '...' before string constant
+arch/arm/plat-mxc/cpufreq.c:205: warning: data definition has no type or storage class
+arch/arm/plat-mxc/cpufreq.c:205: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+arch/arm/plat-mxc/cpufreq.c:205: warning: function declaration isn't a prototype
+make[1]: *** [arch/arm/plat-mxc/cpufreq.o] Error 1
+make: *** [arch/arm/plat-mxc] Error 2
 
 
-> +/* Writing them here to avoid exposing memcg's inner layout */
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +#ifdef CONFIG_INET
-> +#include <net/sock.h>
-> +
-> +static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
-> +void sock_update_memcg(struct sock *sk)
-> +{
-> +	/* A socket spends its whole life in the same cgroup */
-> +	if (sk->sk_cgrp) {
-> +		WARN_ON(1);
-> +		return;
-> +	}
-> +	if (static_branch(&memcg_socket_limit_enabled)) {
-> +		struct mem_cgroup *memcg;
-> +
-> +		BUG_ON(!sk->sk_prot->proto_cgroup);
-> +
-> +		rcu_read_lock();
-> +		memcg = mem_cgroup_from_task(current);
-> +		if (!mem_cgroup_is_root(memcg)) {
-> +			mem_cgroup_get(memcg);
-> +			sk->sk_cgrp = sk->sk_prot->proto_cgroup(memcg);
-> +		}
-> +		rcu_read_unlock();
-> +	}
-> +}
-
-Here, you do mem_cgroup_get() if !mem_cgroup_is_root().
-
-
-> +EXPORT_SYMBOL(sock_update_memcg);
-> +
-> +void sock_release_memcg(struct sock *sk)
-> +{
-> +	if (static_branch(&memcg_socket_limit_enabled) && sk->sk_cgrp) {
-> +		struct mem_cgroup *memcg;
-> +		WARN_ON(!sk->sk_cgrp->memcg);
-> +		memcg = sk->sk_cgrp->memcg;
-> +		mem_cgroup_put(memcg);
-> +	}
-> +}
->
-
-You don't check !mem_cgroup_is_root(). Hm, root memcg will not be freed
-by this ?
-
-Thanks,
--Kame
-
+Thanks
+Richard
 
