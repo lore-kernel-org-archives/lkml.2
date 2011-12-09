@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1LIBqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:46:43 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61862 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab1LIBqk (ORCPT
+	id S1754076Ab1LIBuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 20:50:23 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53750 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab1LIBuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:46:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111209123811.12cf28971f21a309976f31bb@canb.auug.org.au>
-References: <20111209123811.12cf28971f21a309976f31bb@canb.auug.org.au>
-Date: Thu, 8 Dec 2011 20:46:39 -0500
-Message-ID: <CA+5PVA5vVC=e24imM0QxbT10kBAF4v=kwheKs7cOHKKcC+if=A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the 4xx tree with the powerpc tree
-From: Josh Boyer <jwboyer@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Tanmay Inamdar <tinamdar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Dec 2011 20:50:20 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Dec 2011 10:49:01 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
+        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
+        hannes@cmpxchg.org, mhocko@suse.cz,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@fujtsu.com>
+Subject: Re: [PATCH v8 3/9] socket: initial cgroup code.
+Message-Id: <20111209104901.27c8692a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1323120903-2831-4-git-send-email-glommer@parallels.com>
+References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
+	<1323120903-2831-4-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 8, 2011 at 8:38 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Josh,
->
-> Today's linux-next merge of the 4xx tree got a conflict in
-> arch/powerpc/platforms/40x/ppc40x_simple.c between commit 11eab297f57b
-> ("powerpc: Add support for OpenBlockS 600") from the powerpc tree and
-> commit d5b9ee7b514e ("powerpc/40x: Add APM8018X SOC support") from the
-> 4xx tree.
+On Mon,  5 Dec 2011 19:34:57 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-I blame BenH.  I sent him a pull request with d5b9ee7b514e in it
-before he went and updated his tree.  Still not pulled afaik.  Guess
-I'll be rebasing my next branch tomorrow to pick up a series from Tony
-Breeds, unless Ben handles the outstanding pull before I wake up :).
+> The goal of this work is to move the memory pressure tcp
+> controls to a cgroup, instead of just relying on global
+> conditions.
+> 
+> To avoid excessive overhead in the network fast paths,
+> the code that accounts allocated memory to a cgroup is
+> hidden inside a static_branch(). This branch is patched out
+> until the first non-root cgroup is created. So when nobody
+> is using cgroups, even if it is mounted, no significant performance
+> penalty should be seen.
+> 
+> This patch handles the generic part of the code, and has nothing
+> tcp-specific.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Kirill A. Shutemov <kirill@shutemov.name>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtsu.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
 
-> I fixed it up (see below) and can carry the fix as necessary.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Looks correct to me.  Hopefully you won't have to carry it long.
->
-> [Josh: I have changed you contact address to the above]
-
-Thank you.
-
-josh
