@@ -1,165 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab1LINCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 08:02:20 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:45786 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751394Ab1LINCS (ORCPT
+	id S1753501Ab1LINLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 08:11:16 -0500
+Received: from mail1.nippynetworks.com ([91.220.24.129]:51195 "EHLO
+	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab1LINLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 08:02:18 -0500
-Date: Fri, 9 Dec 2011 08:02:16 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-Message-ID: <20111209130216.GA14718@Krystal>
-References: <20111208193003.112037550@goodmis.org> <20111208193136.366941904@goodmis.org> <1323373012.30977.123.camel@frodo> <20111209124026.GB14470@Krystal>
+	Fri, 9 Dec 2011 08:11:15 -0500
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Dec 2011 08:11:15 EST
+Message-ID: <4EE206AC.6060800@wildgooses.com>
+Date: Fri, 09 Dec 2011 13:01:32 +0000
+From: Ed W <lists@wildgooses.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111209124026.GB14470@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:57:39 up 380 days, 18:00,  2 users,  load average: 0.28, 0.06,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: john stultz <johnstul@us.ibm.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Improved TSC calculation
+References: <4DA6D85A.8000800@wildgooses.com> <1302805253.2673.17.camel@work-vm>
+In-Reply-To: <1302805253.2673.17.camel@work-vm>
+X-TagToolbar-Keys: D20111209130132771
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi Steven,
-> 
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Thu, 2011-12-08 at 14:30 -0500, Steven Rostedt wrote:
-> > 
-> > > If the first NMI hits a breakpoint and loses NMI context, and then it
-> > > hits another breakpoint and while processing that breakpoint we get a
-> > > nested NMI. When processing a breakpoint, the stack changes to the
-> > > breakpoint stack. If another NMI comes in here we can't rely on the
-> > > interrupted stack to be the NMI stack. 
-> > 
-> > As I wrote this part of the change log, I thought of another nasty
-> > gotcha with breakpoints in NMIs.
-> > 
-> > If you have a breakpoint in both normal context and NMI context. When
-> > the breakpoint is being processed, if an NMI comes in and it too
-> > triggers a breakpoint, this processing of the breakpoint has the same
-> > problem as nested NMIs. The NMI breakpoint handler will corrupt the
-> > stack of the breakpoint that was being processed when the NMI triggered.
-> > 
-> > I'm not sure how to handle this case. We could do something similar in
-> > the break point code to handle the same thing. But this just seems
-> > really ugly.
-> > 
-> > Anyone with any better ideas?
-> 
-> The nesting counters + code region address checks I proposed a few days
-> ago should handle this correctly. Here is a very slightly updated
-> version:
+On 14/04/2011 19:20, john stultz wrote:
+> On Thu, 2011-04-14 at 12:19 +0100, Ed W wrote:
+>> Hi, Thanks for the new stable TSC calculation commit
+>> (08ec0c58fb8a05d3191d5cb6f5d6f81adb419798).
+>>
+>> My situation is that I don't have a PM or HPET timer (x86 Alix board),
+>> and my requirements are embedded type use, but with only intermittently
+>> connected network/gps, so accurate timekeeping between reboots is
+>> important.
+>>
+>> I had been experimenting with extending the existing PIT timer routines
+>> at boot, but I had the problem that it was taking 1s+ to get a very
+>> stable calculation (which is undesirable for my requirements), however,
+>> having spotted your commit it seems like a much more sensible solution.
+> Thanks!
+>
+>> Before I try and hack probably an (inadequate) solution myself, do you
+>> have any thoughts on the best solution to extend your commit to non
+>> PM/HEPT machine?  My initial thought was to repeatedly call
+>> pit_calibrate_tsc() with an extended latch, looking for a stable
+>> solution (ie refactor native_calibrate_tsc() ).  Is this workable?
+>> Better ideas?
+> Oof. So with the PIT you can maybe utilize the second channel/counter,
+> using a largish long countdown to try to get a similar functionality.
+> The only big concern is that the timer interrupt hardware is always
+> problematic (every time we chanage our usage, some random chunk of
+> laptops seem to stop working). So whatever solution that works for you
+> might not be able to be generically deployed. But I think it could be
+> interesting and might be worth you giving it a shot.
+>
+> I'd probably look at reworking tsc_refine_calibration_work, extending
+> the tsc_read_refs() code to also get PIT count values and then start the
+> long PIT countdown on the second channel before we
+> schedule_delayed_work.
+>
+> thanks
+> -john
+>
 
-after a quick IRC discussion with Peter Zijlstra, one thing seems to be
-missing here to handle the INT3->NMI->INT3 issue: this could be achieved
-by splitting the DEBUG stack in 2 sub-stacks, and letting the int3
-handler keep track of its nesting within its own stack with an extra
-"int3_nest_count". AFAIU, supporting 2 nested int3 should be enough.
+Hi John
 
-Thanks,
+I don't suppose you ever gave any thought to looking into this
+yourself... :-)
 
-Mathieu 
+I have had a poke, but I'm way out of my depth trying to figure out a
+good solution. 
 
-> 
-> variables used:
-> 
-> cpu-local int nmi_nest_count;
-> cpu-local int nmi_latch;
-> __nmi_epilogue_begin (pointer to text)
-> __nmi_epilogue_end (pointer to text)
-> REAL_NMI_STACK: beginning of the stack used for real nmi handler
-> LATCHED_NMI_STACK: beginning of the stack used for latched nmi handler
-> 
-> int in_nmi_epilogue(void)
-> {
->   return (instruction_pointer() >= __nmi_epilogue_begin
-> 		&& instruction_pointer() < __nmi_epilogue_end);
-> }
-> 
-> int in_nmi(void)
-> {
->   return nmi_nest_count > 0;
-> }
-> 
-> /* Use REAL_NMI_STACK */
-> real_nmi_handler: /* always running with nmis disabled */
->   /*
->    * We disable interrupts to ensure we don't have to deal with IRQs
->    * when NMIs get re-enabled due to an iret from a fault/exception.
->    */
->   local_irq_disable();
->   if (in_nmi_epilogue()) {
->     nmi_latch = 0;
->     /* set stack pointer to start of LATCHED_NMI_STACK */
->     /* populate start of LATCHED_NMI_STACK with values for iret */
->     goto latched_nmi_handler;
->   }
->   if (in_nmi()) {
->      nmi_latch = 1;
->      iret
->   }
->   nmi_nest_count++;
->   /* set stack pointer to start of LATCHED_NMI_STACK */
->   /* populate start of LATCHED_NMI_STACK with values for iret */
->   goto latched_nmi_handler;
-> 
-> 
-> /* Use LATCHED_NMI_STACK */
-> latched_nmi_handler:	/* Can fault and reenable NMIs. */
-> 
->   [ execute actual system NMI handler, including faults, int3, ... ]
-> 
->   /*
->    * note: test nmi_latch and iret instruction are within the epilogue
->    * range to deal with latch test vs iret non-atomicity.  If a real nmi
->    * nests over this range, it clears the nmi_latch flag and just
->    * restarts the latched nmi handler.  No faults/exceptions/interrupts
->    * are permitted in this region, except for the real NMI and MCEs
->    * (TODO).
->    */
-> __nmi_epilogue_begin:
->   /*
->    * here we are restarting the latched nmi handler if an nmi happened
->    * while nested within the nmi nest count.
->    */
->   if (nmi_latch) {
->     nmi_latch = 0;
->     goto latched_nmi_handler;
->   }
->   nmi_nest_count--;
->   iret  /* restores interrupts */
-> __nmi_epilogue_end:
-> 
-> 
-> Best regards,
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+For reference my goal was to get a stable TSC calculation for my
+PCEngines Alix boards, which are basically popular, low cost x86
+compatible boards, but without HPET or PM.  I rather want to use them as
+way to get more reliable Stratum 1 NTP servers out in the wild -
+hopefully by documenting them as a very low cost solution to pair with a
+GPS.  Having them somewhat clock stable with respect to reboot would be
+handy
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+It's a big ask, so understand that you are probably going to discard
+this email
+
+Thanks for listening and your advice so far
+
+All the best
+
+Ed W
