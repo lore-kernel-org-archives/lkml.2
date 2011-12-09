@@ -1,141 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1LILcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 06:32:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37957 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1LILcl convert rfc822-to-8bit (ORCPT
+	id S1753356Ab1LILdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 06:33:02 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:52725 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab1LILdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 06:32:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAArOQ2UcC8P0xe6qwmf4FLitQs-tThtQLe7ZwS2J8FOwTXV=YQ@mail.gmail.com>
-References: <CAArOQ2UcC8P0xe6qwmf4FLitQs-tThtQLe7ZwS2J8FOwTXV=YQ@mail.gmail.com>
-Date: Fri, 9 Dec 2011 06:32:40 -0500
-Message-ID: <CAArOQ2V7bAxnWq5Mp1ROJ4oEdVBhHFAsbO_zGfEh50bYQcwtSg@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix infinite recursion on unbind
- due to ilk vt-d w/a
-From: Bobby Powers <bobbypowers@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Ben Widawsky <ben@bwidawsk.net>, Dave Airlie <airlied@gmail.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Dec 2011 06:33:00 -0500
+From: annie.li@oracle.com
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org, paul.durrant@citrix.com,
+        Ian.Campbell@citrix.com, annie.li@oracle.com
+Cc: kurt.hackel@oracle.com
+Subject: [PATCH V3 1/2] xen/granttable: Support sub-page grants
+Date: Fri,  9 Dec 2011 19:32:52 +0800
+Message-Id: <1323430372-5503-1-git-send-email-annie.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1323430321-5465-1-git-send-email-annie.li@oracle.com>
+References: <1323430321-5465-1-git-send-email-annie.li@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4EE1F1E8.00D0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 8, 2011 at 11:05 PM, Bobby Powers <bobbypowers@gmail.com> wrote:
-> On Tue, Dec 6, 2011 at 12:43 PM, Ben Widawsky <ben@bwidawsk.net> wrote:
->> On Tue, Dec 06, 2011 at 12:12:33PM +0100, Daniel Vetter wrote:
->>> The recursion loop goes retire_requests->unbind->gpu_idle->retire_reqeusts.
->>>
->>> Every time we go through this we need a
->>> - active object that can be retired
->>> - and there are no other references to that object than the one from
->>>   the active list, so that it gets unbound and freed immediately.
->>> Otherwise the recursion stops. So the recursion is only limited by the
->>> number of objects that fit these requirements sitting in the active list
->>> any time retire_request is called.
->>>
->>> Issue exercised by tests/gem_unref_active_buffers from i-g-t.
->>>
->>> There's been a decent bikeshed discussion whether it wouldn't be
->>> better to pass around a flag, but imo this is o.k. for such a limited
->>> case that only supports a w/a.
->>>
->>> Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>> Reviewed-by: Chris Wilson <chris@chris-wilson> # we built better
->>>       bikesheds, but this keeps the rain off for now
->>> ---
->>
->> What about:
->> http://lists.freedesktop.org/archives/intel-gfx/2011-October/012984.html
->>
->>
->> Did someone prove that doesn't work?
->
-> This patch caused hard lockups for me after ~35 minutes of casual use
-> (twice).  I've attached the oopses.  I'm running a Fedora 16 machine,
-> Lenovo T420 (i5-2540M w/ VT-d enabled), and at each time had a Windows
-> 7 KVM guest idling (not sure if that is relevant).  With this patch
-> reverted, I've had ~ 6 hours of oops free uptime.
+    -- They can't be used to map the page (so can only be used in a GNTTABOP_copy
+       hypercall).
+    -- It's possible to grant access with a finer granularity than whole pages.
+    -- Xen guarantees that they can be revoked quickly (a normal map grant can
+       only be revoked with the cooperation of the domain which has been granted
+       access).
 
-To be clear, by 'this patch' I mean commit eb1711bb "[PATCH] drm/i915:
-fix infinite recursion on unbind due to ilk vt-d w/a" on Linus's
-branch, not the patch Ben linked to.
+Signed-off-by: Annie Li <annie.li@oracle.com>
+---
+ drivers/xen/grant-table.c |   71 +++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/grant_table.h |   13 ++++++++
+ 2 files changed, 84 insertions(+), 0 deletions(-)
 
-> Let me know what additional information I can provide, or if there is
-> anything I can test to help narrow the issue down.
->
-> yours,
-> Bobby
->
-> ~~~
->
-> [bpowers@fina linux]$ lspci
-> 00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor
-> Family DRAM Controller (rev 09)
-> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation
-> Core Processor Family Integrated Graphics Controller (rev 09)
-> 00:16.0 Communication controller: Intel Corporation 6 Series/C200
-> Series Chipset Family MEI Controller #1 (rev 04)
-> 00:19.0 Ethernet controller: Intel Corporation 82579LM Gigabit Network
-> Connection (rev 04)
-> 00:1a.0 USB Controller: Intel Corporation 6 Series/C200 Series Chipset
-> Family USB Enhanced Host Controller #2 (rev 04)
-> 00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset
-> Family High Definition Audio Controller (rev 04)
-> 00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
-> Family PCI Express Root Port 1 (rev b4)
-> 00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
-> Family PCI Express Root Port 2 (rev b4)
-> 00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
-> Family PCI Express Root Port 4 (rev b4)
-> 00:1c.4 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
-> Family PCI Express Root Port 5 (rev b4)
-> 00:1d.0 USB Controller: Intel Corporation 6 Series/C200 Series Chipset
-> Family USB Enhanced Host Controller #1 (rev 04)
-> 00:1f.0 ISA bridge: Intel Corporation QM67 Express Chipset Family LPC
-> Controller (rev 04)
-> 00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series
-> Chipset Family 6 port SATA AHCI Controller (rev 04)
-> 00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family
-> SMBus Controller (rev 04)
-> 03:00.0 Network controller: Intel Corporation Centrino Advanced-N 6205 (rev 34)
-> 0d:00.0 System peripheral: Ricoh Co Ltd Device e823 (rev 08)
-> 0d:00.3 FireWire (IEEE 1394): Ricoh Co Ltd FireWire Host Controller (rev 04)
-> [bpowers@fina linux]$ cat /proc/cpuinfo
-> processor       : 0
-> vendor_id       : GenuineIntel
-> cpu family      : 6
-> model           : 42
-> model name      : Intel(R) Core(TM) i5-2540M CPU @ 2.60GHz
-> stepping        : 7
-> microcode       : 0x18
-> cpu MHz         : 800.000
-> cache size      : 3072 KB
-> physical id     : 0
-> siblings        : 4
-> core id         : 0
-> cpu cores       : 2
-> apicid          : 0
-> initial apicid  : 0
-> fpu             : yes
-> fpu_exception   : yes
-> cpuid level     : 13
-> wp              : yes
-> flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
-> pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
-> rdtscp lm constant_tsc arch_perfmon pebs bts nopl xtopology
-> nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est
-> tm2 ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt
-> tsc_deadline_timer aes xsave avx lahf_lm ida arat epb xsaveopt pln pts
-> dts tpr_shadow vnmi flexpriority ept vpid
-> bogomips        : 5184.24
-> clflush size    : 64
-> cache_alignment : 64
-> address sizes   : 36 bits physical, 48 bits virtual
-> power management:
->
-> [3 other processors omitted]
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index bd325fd..0ac16fa 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -120,6 +120,16 @@ struct gnttab_ops {
+ 	 * by bit operations.
+ 	 */
+ 	int (*query_foreign_access)(grant_ref_t);
++	/*
++	 * Grant a domain to access a range of bytes within the page referred by
++	 * an available grant entry. First parameter is grant entry reference
++	 * number, second one is id of grantee domain, third one is frame
++	 * address of subpage grant, forth one is grant type and flag
++	 * information, fifth one is offset of the range of bytes, and last one
++	 * is length of bytes to be accessed.
++	 */
++	void (*update_subpage_entry)(grant_ref_t, domid_t, unsigned long, int,
++				     unsigned, unsigned);
+ };
+ 
+ static struct gnttab_ops *gnttab_interface;
+@@ -261,6 +271,66 @@ int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
+ }
+ EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
+ 
++void gnttab_update_subpage_entry_v2(grant_ref_t ref, domid_t domid,
++				    unsigned long frame, int flags,
++				    unsigned page_off,
++				    unsigned length)
++{
++	gnttab_shared.v2[ref].sub_page.frame = frame;
++	gnttab_shared.v2[ref].sub_page.page_off = page_off;
++	gnttab_shared.v2[ref].sub_page.length = length;
++	gnttab_shared.v2[ref].hdr.domid = domid;
++	wmb();
++	gnttab_shared.v2[ref].hdr.flags =
++				GTF_permit_access | GTF_sub_page | flags;
++}
++
++int gnttab_grant_foreign_access_subpage_ref(grant_ref_t ref, domid_t domid,
++					    unsigned long frame, int flags,
++					    unsigned page_off,
++					    unsigned length)
++{
++	if (flags & (GTF_accept_transfer | GTF_reading |
++		     GTF_writing | GTF_transitive))
++		return -EPERM;
++
++	if (gnttab_interface->update_subpage_entry == NULL)
++		return -ENOSYS;
++
++	gnttab_interface->update_subpage_entry(ref, domid, frame, flags,
++					       page_off, length);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage_ref);
++
++int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned long frame,
++					int flags, unsigned page_off,
++					unsigned length)
++{
++	int ref, rc;
++
++	ref = get_free_entries(1);
++	if (unlikely(ref < 0))
++		return -ENOSPC;
++
++	rc = gnttab_grant_foreign_access_subpage_ref(ref, domid, frame, flags,
++						     page_off, length);
++	if (rc < 0) {
++		put_free_entry(ref);
++		return rc;
++	}
++
++	return ref;
++}
++EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage);
++
++bool gnttab_subpage_grants_available(void)
++{
++	return gnttab_interface->update_subpage_entry != NULL;
++}
++EXPORT_SYMBOL_GPL(gnttab_subpage_grants_available);
++
+ static int gnttab_query_foreign_access_v1(grant_ref_t ref)
+ {
+ 	return gnttab_shared.v1[ref].flags & (GTF_reading|GTF_writing);
+@@ -813,6 +883,7 @@ static struct gnttab_ops gnttab_v2_ops = {
+ 	.end_foreign_access_ref		= gnttab_end_foreign_access_ref_v2,
+ 	.end_foreign_transfer_ref	= gnttab_end_foreign_transfer_ref_v2,
+ 	.query_foreign_access		= gnttab_query_foreign_access_v2,
++	.update_subpage_entry		= gnttab_update_subpage_entry_v2,
+ };
+ 
+ static void gnttab_request_version(void)
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index fea4954..2b492b9 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -62,6 +62,15 @@ int gnttab_resume(void);
+ 
+ int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
+ 				int readonly);
++int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned long frame,
++					int flags, unsigned page_off,
++					unsigned length);
++
++/*
++ * Are sub-page grants available on this version of Xen?  Returns true if they
++ * are, and false if they're not.
++ */
++bool gnttab_subpage_grants_available(void);
+ 
+ /*
+  * End access through the given grant reference, iff the grant entry is no
+@@ -108,6 +117,10 @@ void gnttab_cancel_free_callback(struct gnttab_free_callback *callback);
+ 
+ void gnttab_grant_foreign_access_ref(grant_ref_t ref, domid_t domid,
+ 				     unsigned long frame, int readonly);
++int gnttab_grant_foreign_access_subpage_ref(grant_ref_t ref, domid_t domid,
++					    unsigned long frame, int flags,
++					    unsigned page_off,
++					    unsigned length);
+ 
+ void gnttab_grant_foreign_transfer_ref(grant_ref_t, domid_t domid,
+ 				       unsigned long pfn);
+-- 
+1.7.6.4
+
