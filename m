@@ -1,53 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab1LIJDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 04:03:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65185 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab1LIJDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 04:03:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="85327678"
-Date: Fri, 9 Dec 2011 17:03:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Zhenyu Z" <zhenyu.z.wang@intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drm/i915: DisplayPort hot remove notification to audio
- driver
-Message-ID: <20111209090343.GA2320@localhost>
+	id S1752675Ab1LIJNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 04:13:51 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12980 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab1LIJNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 04:13:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 09 Dec 2011 01:13:23 -0800
+Date: Fri, 9 Dec 2011 11:13:20 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Colin Cross <ccross@android.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v6 03/10] arm/tegra: prepare clock code for multiple
+ tegra variants
+Message-ID: <20111209091319.GI27578@tbergstrom-lnx.Nvidia.com>
+References: <1323348254-29072-1-git-send-email-pdeschrijver@nvidia.com>
+ <1323348254-29072-4-git-send-email-pdeschrijver@nvidia.com>
+ <CAMbhsRT97Oq-=8f9++f6Jgg=YVaimKSz68xcDDNbDbvL+V5fJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <CAMbhsRT97Oq-=8f9++f6Jgg=YVaimKSz68xcDDNbDbvL+V5fJg@mail.gmail.com>
+X-NVConfidentiality: public
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On DP monitor hot remove, clear DP_AUDIO_OUTPUT_ENABLE accordingly,
-so that the audio driver will receive hot plug events and take action
-to refresh its device state and ELD contents.
+On Thu, Dec 08, 2011 at 07:25:53PM +0100, Colin Cross wrote:
+> On Thu, Dec 8, 2011 at 4:43 AM, Peter De Schrijver <pdeschrijver@nvidia.com<mailto:pdeschrijver@nvidia.com>> wrote:
+> Rework the tegra20 clock code to support multiple tegra variants :
+> 
+>  * remove tegra2_periph_reset_assert/tegra2_periph_reset_deassert. This
+>   functionality should be in clock.c.
+>  * compile tegra_sdmmc_tap_delay only on tegra20 as this feature will not
+>   be available in future variants.
+>  * don't export clk_measure_input_freq as its functionality is also available
+>   using clk_get_rate().
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com<mailto:pdeschrijver@nvidia.com>>
+> ---
+>  arch/arm/mach-tegra/clock.c         |   12 +++++++-----
+>  arch/arm/mach-tegra/clock.h         |    8 ++++----
+>  arch/arm/mach-tegra/tegra2_clocks.c |   14 +-------------
+>  arch/arm/mach-tegra/timer.c         |   12 ++++++++----
+>  4 files changed, 20 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+> index f8d41ff..f27bdcc 100644
+> --- a/arch/arm/mach-tegra/clock.c
+> +++ b/arch/arm/mach-tegra/clock.c
+> @@ -387,13 +387,15 @@ EXPORT_SYMBOL(tegra_clk_init_from_table);
+> 
+>  void tegra_periph_reset_deassert(struct clk *c)
+>  {
+> -       tegra2_periph_reset_deassert(c);
+> +       BUG_ON(!c->ops->reset);
+> +       c->ops->reset(c, false);
+>  }
+>  EXPORT_SYMBOL(tegra_periph_reset_deassert);
+> 
+>  void tegra_periph_reset_assert(struct clk *c)
+>  {
+> -       tegra2_periph_reset_assert(c);
+> +       BUG_ON(!c->ops->reset);
+> +       c->ops->reset(c, true);
+>  }
+>  EXPORT_SYMBOL(tegra_periph_reset_assert);
+> 
+> @@ -403,9 +405,9 @@ void __init tegra_init_clock(void)
+>  }
+> 
+>  /*
+> - * The SDMMC controllers have extra bits in the clock source register that
+> - * adjust the delay between the clock and data to compenstate for delays
+> - * on the PCB.
+> + * The SDMMC controllers on tegra20 have extra bits in the clock source
+> + * register that adjust the delay between the clock and data to compenstate
+> + * for delays on the PCB.
+>  */
+>  void tegra_sdmmc_tap_delay(struct clk *c, int delay)
+>  {
+> 
+> I created this wrapper around tegra2_sdmmc_tap_delay because I guessed the same requirement would be present in tegra3.  If you don't expect this to be required on anything but tegra2, you could drop the wrapper and just have callers use tegra2_sdmmc_tap_delay.
+> 
 
-Note that the DP_AUDIO_OUTPUT_ENABLE bit may be enabled or disabled
-only when the link training is complete and set to "Normal".
+I will ask around if this is needed for tegra30.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- drivers/gpu/drm/i915/intel_dp.c |    1 +
- 1 file changed, 1 insertion(+)
+> diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
+> index 688316a..135bb5f 100644
+> --- a/arch/arm/mach-tegra/clock.h
+> +++ b/arch/arm/mach-tegra/clock.h
+> @@ -146,15 +146,15 @@ struct tegra_clk_init_table {
+>  };
+> 
+>  void tegra2_init_clocks(void);
+> -void tegra2_periph_reset_deassert(struct clk *c);
+> -void tegra2_periph_reset_assert(struct clk *c);
+>  void clk_init(struct clk *clk);
+>  struct clk *tegra_get_clock_by_name(const char *name);
+> -unsigned long clk_measure_input_freq(void);
+>  int clk_reparent(struct clk *c, struct clk *parent);
+>  void tegra_clk_init_from_table(struct tegra_clk_init_table *table);
+>  unsigned long clk_get_rate_locked(struct clk *c);
+>  int clk_set_rate_locked(struct clk *c, unsigned long rate);
+> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+>  void tegra2_sdmmc_tap_delay(struct clk *c, int delay);
+> -
+> +#else
+> +#define tegra2_sdmmc_tap_delay(c, d) do {} while(0);
+> 
+> It's more standard to use an empty static inline function here.
+> 
 
-This works both on KMS console and gnome desktop.
-Hot plug/unplug and DPMS on/off are all tested OK.
+clock.h is included in several board files. So making this a static inline
+function results in a number of 'static function declared but not used'
+warnings.
 
---- linux.orig/drivers/gpu/drm/i915/intel_dp.c	2011-12-09 16:51:21.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_dp.c	2011-12-09 16:59:45.000000000 +0800
-@@ -1771,6 +1771,7 @@ intel_dp_link_down(struct intel_dp *inte
- 			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
- 	}
- 
-+	DP &= ~DP_AUDIO_OUTPUT_ENABLE;
- 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
- 	POSTING_READ(intel_dp->output_reg);
- 	msleep(intel_dp->panel_power_down_delay);
+Cheers,
+
+Peter.
