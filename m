@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab1LITNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 14:13:11 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36288 "EHLO
-	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752153Ab1LITNK (ORCPT
+	id S1753520Ab1LITS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:18:29 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33218 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1LITS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 14:13:10 -0500
-Date: Fri, 9 Dec 2011 19:13:39 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Claudio Scordino <claudio@evidence.eu.com>
-Subject: Re: [PATCH RESEND 6/8] serial: 8250: update rs485 flags with
- polarity settings
-Message-ID: <20111209191339.0d9c3dd5@pyramind.ukuu.org.uk>
-In-Reply-To: <1323450440-414-7-git-send-email-w.sang@pengutronix.de>
-References: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-	<1323450440-414-7-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Dec 2011 14:18:28 -0500
+Date: Fri, 9 Dec 2011 20:18:19 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
+        X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, MCE: Drain mcelog buffer
+Message-ID: <20111209191819.GA17086@aftab>
+References: <1323353332-5671-1-git-send-email-bp@amd64.org>
+ <1323353332-5671-3-git-send-email-bp@amd64.org>
+ <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
+ <20111209182448.GA29629@gere.osrc.amd.com>
+ <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Dec 2011 18:07:18 +0100
-Wolfram Sang <w.sang@pengutronix.de> wrote:
-
-> Report the only mode we can support with the 16C850.
+On Fri, Dec 09, 2011 at 10:40:10AM -0800, Luck, Tony wrote:
+> > Do you see a usecase for multiple consumers?
 > 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> ---
->  drivers/tty/serial/8250.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-> index 28b3608..8cf6d76 100644
-> --- a/drivers/tty/serial/8250.c
-> +++ b/drivers/tty/serial/8250.c
-> @@ -2750,6 +2750,9 @@ static int serial8250_ioctl_port(struct uart_port *port,
->  		serial_outp(up, UART_LCR, lcr);
->  		spin_unlock_irqrestore(&up->port.lock, flags);
->  
-> +		/* only mode supported by the 16C850 */
-> +		rs485ctrl.flags &= ~SER_RS485_RTS_ON_SEND;
-> +		rs485ctrl.flags |= SER_RS485_RTS_AFTER_SEND;
->  		up->rs485_flags = rs485ctrl.flags;
+> Only a theoretical one ... we might have a cpu model specific decoder
+> and an OEM supplied platform decoder - each as an independent module.
 
-Chip specific stuff all wants to be in a port method so while #3 sorts
-out much of #2 this goes back to wanting port-> methods and flags to
-avoid assumptions about chip types in the core bits.
+Well, off the top of my head, we could probably _not_ delete the already
+logged MCEs (bool keep arg, or similar) and when the last one registers,
+it passes keep=false and cleans them up. And since we probably know
+which one is the last - order is enforced by the initcalls order -
+we're done.
 
-#7 really makes the point why it is needed.
+However, is the platform module using MCA at all or will it probably use
+PCIe AER instead?
 
-So pardon the confused series of review comments but I think the summary
-is port->ops for RS485 stuff please.
+Also, at the time the platform module inits, we've already regged the
+CPU decoders so we can go ahead and safely delete the logged MCEs.
 
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
