@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab1LIQtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 11:49:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375Ab1LIQtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 11:49:50 -0500
-Date: Fri, 9 Dec 2011 11:49:17 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
-Message-ID: <20111209164917.GA2444@redhat.com>
-References: <20111208193003.112037550@goodmis.org>
- <20111208193136.366941904@goodmis.org>
- <1323373012.30977.123.camel@frodo>
- <1323398616.30977.167.camel@frodo>
+	id S1751551Ab1LIQyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 11:54:01 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17988 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1LIQyA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 11:54:00 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 09 Dec 2011 08:53:48 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Date: Fri, 9 Dec 2011 08:53:48 -0800
+Subject: RE: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
+ SoCs
+Thread-Topic: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
+ SoCs
+Thread-Index: Acy2L5p9Mpu7IjSzSgS0F9div4YllgAYtvDA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17518604CA@HQMAIL01.nvidia.com>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+ <20111209010147.GH7913@S2100-06.ap.freescale.net>
+ <4EE18403.30604@nvidia.com>
+ <20111209043220.GJ7913@S2100-06.ap.freescale.net>
+ <4EE192DC.3080209@nvidia.com>
+ <20111209051413.GK7913@S2100-06.ap.freescale.net>
+In-Reply-To: <20111209051413.GK7913@S2100-06.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323398616.30977.167.camel@frodo>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 09:43:36PM -0500, Steven Rostedt wrote:
-> On Thu, 2011-12-08 at 14:36 -0500, Steven Rostedt wrote:
+Shawn Guo wrote at Thursday, December 08, 2011 10:14 PM:
+> On Thu, Dec 08, 2011 at 09:47:24PM -0700, Stephen Warren wrote:
+...
+> > I'm not familiar with imx. For my education, which of the following is true:
+> >
 > 
-> > I'm not sure how to handle this case. We could do something similar in
-> > the break point code to handle the same thing. But this just seems
-> > really ugly.
-> > 
-> > Anyone with any better ideas?
+> It's the case b).
 > 
-> On IRC, Peter Zijlstra mentioned changing the IDT in NMI. I'm not sure
-> if he was joking or not. But I decided to try it out. It seems to
-> work :)
+> > a)
+> >
+> > * UART TX signal can muxed onto 1 of 16 pins
+> > * UART RX signal can muxed onto 1 of 16 pins
+> >
+> > In this case, you'd just list say "UART A TX" as a legal function for
+> > each of those 16 pins. Yes, that's a lot of places, but still do-able.
+> >
+> > (16 possible positions would be a lot, but I suppose it is possible in HW)
+> >
+> > b)
+> >
+> > * UART TX signal can muxed onto 1 of 4 pins
+> > * UART RX signal can muxed onto 1 of 4 pins
+> > * So, there are 16 (4*4) combinations of these two settings
+> >
+> > In this case, you'd just list say "UART A TX" for the 4 pins, and "UART
+> > A RX" for the other 4 pins. The 16 combinations don't come into play at
+> > all; the board-specific mapping table would pick 1 single combination,
+> > and represent this as:
+> >
+> > pin X: function = UART A TX
+> > pin Y: function = UART A RX
 > 
-> 
-> What's nice is that this change is in the C code, which makes things
-> much easier.
-> 
-> I check on nmi entry, if the nmi preempted code running with the debug
-> stack. If it has, then I load a special "nmi_idt_table" that has a zero
-> IST for the debug stack, which will make the debug interrupt in the NMI
-> not change the stack pointer. Then on exit, it returns it to the old IDT
-> table.
-> 
-> Just to see how bad this was, I made it make the change on every NMI. I
-> didn't notice any difference, but I wasn't doing any real benchmark,
-> except doing a perf top -c 1000.
-> 
-> But in practice, it should seldom hit, if ever. It only updates the IDT
-> if it interrupted debug processing.
-> 
+> We really do not expect per pin function mapping but per block function
+> mapping.  That said, the UART driver is going to tell pinctrl subsystem
+> "I'm UARTA, please set all my pins up for me".
 
-Then, I'm wondering if the same technique can be used for the original
-nmi->int3->nmi case. That is, switch the IDT when the int3 comes in, so
-that the subsequent nmi will be handled on the debug stack. As you pointed out,
-these nesting and thus the IDT switching would be rare in
-practice. (I know you don't want to touch any code outside of nmi :))
+That's fine; UART A can operate that way with pinctrl used as intended.
 
-Thanks,
+The way the pinctrl subsystem is defined is:
 
--Jason
+The SoC-specific pinctrl driver exposes the per-pin available functions.
+
+The board-specific mapping table selects the function to use for each pin,
+based on the board's requirements.
+
+Any other way isn't fully consistent with the way pinctrl works. If we
+do see a need for just a single per-board table rather than a separate
+per-SoC table, and a per-board mapping table, we should rethink the
+pinctrl subsystem...
+
+> > Either way though, whether you put the data into tables in the driver or
+> > in the SoC .dtsi file (included by each board's .dts file), the pinctrl
+> 
+> We are not going to list that into SoC .dtsi file.
+> 
+> > driver's table really should list all possible options, and the pinctrl
+> > mapping table should select just one; that's kinda the whole point of
+> > the tables. If you try to put just the used subset into device tree, you
+> > won't be able to put it into the .dtsi file since it'll be
+> > board-specific, and you'll end up forcing board .dts authors to recreate
+> 
+> That's what we are going to do.
+> 
+> > that driver's complete configuration table every time, which seems like
+> > a lot of wasted work.
+
+I re-iterate that point...
+
+-- 
+nvpublic
+
