@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1LIOAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 09:00:06 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:49829 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1LIOAD (ORCPT
+	id S1753966Ab1LIOBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 09:01:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab1LIOBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 09:00:03 -0500
-Message-ID: <20194.5210.650914.867608@ipc1.ka-ro>
-Date: Fri, 9 Dec 2011 14:59:54 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] flexcan: Acknowledge all interrupt sources in the IRQ
- handler
-In-Reply-To: <4EE212AE.40005@pengutronix.de>
-References: <1323438454-6816-1-git-send-email-LW@KARO-electronics.de>
-	<4EE212AE.40005@pengutronix.de>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Fri, 9 Dec 2011 09:01:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <1323382390-14892-2-git-send-email-swarren@nvidia.com>
+References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
+	<1323382390-14892-2-git-send-email-swarren@nvidia.com>
+Date: Fri, 9 Dec 2011 15:01:04 +0100
+Message-ID: <CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
+Subject: Re: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, ext Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Dec 8, 2011 at 11:13 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-Marc Kleine-Budde writes:
-> On 12/09/2011 02:47 PM, Lothar Waßmann wrote:
-> > Otherwise the handler will get stuck in an endless IRQ loop when an
-> > interrupt condition occurs that is not being acked (e.g. TWRN)
-> 
-> On which CPU do you have this problem?
-> 
-on i.MX28.
+> This adds a driver for the Tegra pinmux, and required parameterization
+> data for Tegra20 and Tegra30.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-> Seems that mx25/35 behave a bit different than mx28. But I had no time
-> to dig into this, yet. BTW Wolfgang is just reworking error handling,
-> can you please test his patches he recently posted on linux-can.
-> 
-The ESR of i.MX25 is completely identical to the i.MX28.
-You should be able to reproduce the problem when trying to send a
-message to a CAN interface with the transceiver disabled.
-You will get a BIT0_ERR and the TWRN bit will be asserted and never
-cleared leading to an endless interrupt loop.
+This is looking good from a framework point of view (obviously,
+since you've designed the framework with me you sure know what
+you're doing).
 
+What we could worry about is the amount of hard-coded chip data
+which sort of correlates with the discussion with Tony on how to
+provide DT info for pin control drivers.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+If say this same controller appear in Tegra 4 with no changes but
+different pin names, it makes sense to try to push this into the
+DT as soon as possible, so as to avoid the situation Tony is
+having with the OMAP muxes. If Tegra 4 will be all-new and not even
+related, it doesn't.
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+So, just think a bit about it.
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+It will fit way better here than any place under
+arch/arm/* in any case, so it's a great achievement!
+
+Yours,
+Linus Walleij
