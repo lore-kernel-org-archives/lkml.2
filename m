@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab1LILIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 06:08:17 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48548 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab1LILIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 06:08:14 -0500
-Date: Fri, 9 Dec 2011 12:08:07 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-Message-ID: <20111209110807.GG27267@pengutronix.de>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
- <20111209010147.GH7913@S2100-06.ap.freescale.net>
- <4EE18403.30604@nvidia.com>
- <20111209043220.GJ7913@S2100-06.ap.freescale.net>
- <4EE192DC.3080209@nvidia.com>
- <20111209051413.GK7913@S2100-06.ap.freescale.net>
+	id S1752731Ab1LILKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 06:10:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850Ab1LILKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 06:10:01 -0500
+Message-ID: <4EE1EC7F.4060909@redhat.com>
+Date: Fri, 09 Dec 2011 09:09:51 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111209051413.GK7913@S2100-06.ap.freescale.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:24:43 up 26 days, 18:11, 40 users,  load average: 0.52, 0.59,
- 0.75
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Dmitri Belimov <d.belimov@gmail.com>,
+        Stefan Ringel <linuxtv@stefanringel.de>
+Subject: Re: [PATCH 2/8] MAINTAINERS: tm6000: Update F: patterns
+References: <cover.1323418149.git.joe@perches.com> <c161ff9b75651d9da542fa657bc282ea25c508c5.1323418149.git.joe@perches.com>
+In-Reply-To: <c161ff9b75651d9da542fa657bc282ea25c508c5.1323418149.git.joe@perches.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 01:14:14PM +0800, Shawn Guo wrote:
-> On Thu, Dec 08, 2011 at 09:47:24PM -0700, Stephen Warren wrote:
-> > 
-> > pin X: function = UART A TX
-> > pin Y: function = UART A RX
-> > 
-> 
-> We really do not expect per pin function mapping but per block function
-> mapping.  That said, the UART driver is going to tell pinctrl subsystem
-> "I'm UARTA, please set all my pins up for me".
+On 09-12-2011 06:12, Joe Perches wrote:
+> commit be30497085080 ("[media] move tm6000 to drivers/media/video")
+> move the files, update the F: pattern.
+>
+> CC: Mauro Carvalho Chehab<mchehab@redhat.com>
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
+> ---
+>   MAINTAINERS |   10 +++++-----
+>   1 files changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 04fb68c..149c676 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6375,11 +6375,6 @@ M:	Omar Ramirez Luna<omar.ramirez@ti.com>
+>   S:	Odd Fixes
+>   F:	drivers/staging/tidspbridge/
+>
+> -STAGING - TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+> -L:	linux-media@vger.kernel.org
+> -S:	Odd Fixes
+> -F:	drivers/staging/tm6000/
+> -
+>   STAGING - USB ENE SM/MS CARD READER DRIVER
+>   M:	Al Cho<acho@novell.com>
+>   S:	Odd Fixes
+> @@ -6634,6 +6629,11 @@ F:	include/linux/trace*.h
+>   F:	include/trace/
+>   F:	kernel/trace/
+>
+> +TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+> +L:	linux-media@vger.kernel.org
+> +S:	Odd Fixes
+> +F:	drivers/media/video/tm6000/
+> +
 
-I still think it should be "I'm board Y, please set all my pins up for me"
+This driver is under my umbrella. I wrote it, and have a few devices
+with it. Yet, currently, most of the patches nowadays come from
+Stefan and Dmitri.
 
-Drivers should not be bothered with pin muxing *at all*. When we add
-pinmux_request to drivers all SoCs using this driver are doomed to
-implement pinmux support regardless if they have any pinmux support in
-hardware or not.
-Where this leads we can currently see in current next branch with the
-smc91x driver where one single board has a regulator for.  Suddenly all
-other boards using this driver stopped working because they have no
-regulator provided for the driver.
-There is this CONFIG_REGULATOR_DUMMY option which will cause *all*
-regulator_request to succeed on all regulators in this binary which
-disqualifies this option for multiboard/SoC Kernels.
+As the coding style and other serious bugs were fixed already, the
+"S" tag no no longer apply. "S: Maintained" fits better.
 
-A pin setup is board specific and not driver specific. There are only
-some corner cases where a driver has to do something with the pin setup
-like for example on i.MX6 where the drive strength setting has to be
-changed with different card speeds.
+I would either remove this entry or add a new one, cloning from the
+media entry, like:
 
-There is also no value in being able to say which pins are allocated
-by which driver. All we really want is being able to abstract the
-pinmux in some common way and being able to detect conflicts.
+TRIDENT TVMASTER TMxxxx USB VIDEO CAPTURE DRIVERS
+M:	Mauro Carvalho Chehab <mchehab@infradead.org>
+P:	LinuxTV.org Project
+L:	linux-media@vger.kernel.org
+W:	http://linuxtv.org
+Q:	http://patchwork.kernel.org/project/linux-media/list/
+T:	git git://linuxtv.org/media_tree.git
+S:	Maintained
 
-Sascha
+If we add a new entry, it probably makes sense to add Stefan
+and/or Dmitri as co-maintainers there, if they're ok with that.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>   TRIVIAL PATCHES
+>   M:	Jiri Kosina<trivial@kernel.org>
+>   T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
+
