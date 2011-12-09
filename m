@@ -1,106 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab1LIB1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 20:27:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:57926 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598Ab1LIB1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 20:27:48 -0500
-Date: Fri, 9 Dec 2011 12:27:46 +1100
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: linux-next bad Kconfig for drivers/hid
-Message-ID: <20111209012746.GC20353@thor.bakeyournoodle.com>
-Mail-Followup-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-	Linux Kernel ML <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="11Y7aswkeuHtSBEs"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753979Ab1LIBiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 20:38:12 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37125 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab1LIBiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 20:38:10 -0500
+Message-ID: <1323394677.3740.2.camel@phoenix>
+Subject: [PATCH 1/2] video: omap: Staticise non-exported symbols
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan McDowell <noodles@earth.li>, Imre Deak <imre.deak@nokia.com>,
+        Cory Maccarrone <darkstar6262@gmail.com>,
+        Laurent Gonzalez <palmte.linux@free.fr>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
+Date: Fri, 09 Dec 2011 09:37:57 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These symbols are not used outside it's driver so no need to
+make the symbol global.
 
---11Y7aswkeuHtSBEs
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-
-Commit 4f5ca836bef3 (HID: hid-input: add support for HID devices
-reporting Battery Strength) went into linux-next on Dec 1st since then a
-ppc6xx_defconfig has been failing with:
-
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-drivers/built-in.o: In function `hidinput_cleanup_battery':
-/scratch/tony/working/drivers/hid/hid-input.c:351: undefined reference to `=
-power_supply_unregister'
-drivers/built-in.o: In function `hidinput_setup_battery':
-/scratch/tony/working/drivers/hid/hid-input.c:338: undefined reference to `=
-power_supply_register'
-make[1]: *** [.tmp_vmlinux1] Error 1
----
+ drivers/video/omap/lcd_ams_delta.c |    2 +-
+ drivers/video/omap/lcd_h3.c        |    2 +-
+ drivers/video/omap/lcd_htcherald.c |    2 +-
+ drivers/video/omap/lcd_inn1510.c   |    2 +-
+ drivers/video/omap/lcd_inn1610.c   |    2 +-
+ drivers/video/omap/lcd_osk.c       |    2 +-
+ drivers/video/omap/lcd_palmte.c    |    2 +-
+ drivers/video/omap/lcd_palmtt.c    |    2 +-
+ drivers/video/omap/lcd_palmz71.c   |    2 +-
+ 9 files changed, 9 insertions(+), 9 deletions(-)
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/5012563/
-vs
-http://kisskb.ellerman.id.au/kisskb/buildresult/5017366/
+diff --git a/drivers/video/omap/lcd_ams_delta.c b/drivers/video/omap/lcd_ams_delta.c
+index 6978ae4..eb50a95 100644
+--- a/drivers/video/omap/lcd_ams_delta.c
++++ b/drivers/video/omap/lcd_ams_delta.c
+@@ -198,7 +198,7 @@ static int ams_delta_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver ams_delta_panel_driver = {
++static struct platform_driver ams_delta_panel_driver = {
+ 	.probe		= ams_delta_panel_probe,
+ 	.remove		= ams_delta_panel_remove,
+ 	.suspend	= ams_delta_panel_suspend,
+diff --git a/drivers/video/omap/lcd_h3.c b/drivers/video/omap/lcd_h3.c
+index 622ad83..baec34e 100644
+--- a/drivers/video/omap/lcd_h3.c
++++ b/drivers/video/omap/lcd_h3.c
+@@ -113,7 +113,7 @@ static int h3_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver h3_panel_driver = {
++static struct platform_driver h3_panel_driver = {
+ 	.probe		= h3_panel_probe,
+ 	.remove		= h3_panel_remove,
+ 	.suspend	= h3_panel_suspend,
+diff --git a/drivers/video/omap/lcd_htcherald.c b/drivers/video/omap/lcd_htcherald.c
+index 4802419..b1a022f 100644
+--- a/drivers/video/omap/lcd_htcherald.c
++++ b/drivers/video/omap/lcd_htcherald.c
+@@ -104,7 +104,7 @@ static int htcherald_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver htcherald_panel_driver = {
++static struct platform_driver htcherald_panel_driver = {
+ 	.probe		= htcherald_panel_probe,
+ 	.remove		= htcherald_panel_remove,
+ 	.suspend	= htcherald_panel_suspend,
+diff --git a/drivers/video/omap/lcd_inn1510.c b/drivers/video/omap/lcd_inn1510.c
+index 3271f16..d129946 100644
+--- a/drivers/video/omap/lcd_inn1510.c
++++ b/drivers/video/omap/lcd_inn1510.c
+@@ -98,7 +98,7 @@ static int innovator1510_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver innovator1510_panel_driver = {
++static struct platform_driver innovator1510_panel_driver = {
+ 	.probe		= innovator1510_panel_probe,
+ 	.remove		= innovator1510_panel_remove,
+ 	.suspend	= innovator1510_panel_suspend,
+diff --git a/drivers/video/omap/lcd_inn1610.c b/drivers/video/omap/lcd_inn1610.c
+index 12cc52a..a95756b 100644
+--- a/drivers/video/omap/lcd_inn1610.c
++++ b/drivers/video/omap/lcd_inn1610.c
+@@ -122,7 +122,7 @@ static int innovator1610_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver innovator1610_panel_driver = {
++static struct platform_driver innovator1610_panel_driver = {
+ 	.probe		= innovator1610_panel_probe,
+ 	.remove		= innovator1610_panel_remove,
+ 	.suspend	= innovator1610_panel_suspend,
+diff --git a/drivers/video/omap/lcd_osk.c b/drivers/video/omap/lcd_osk.c
+index 6f8d13c..b985997 100644
+--- a/drivers/video/omap/lcd_osk.c
++++ b/drivers/video/omap/lcd_osk.c
+@@ -116,7 +116,7 @@ static int osk_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver osk_panel_driver = {
++static struct platform_driver osk_panel_driver = {
+ 	.probe		= osk_panel_probe,
+ 	.remove		= osk_panel_remove,
+ 	.suspend	= osk_panel_suspend,
+diff --git a/drivers/video/omap/lcd_palmte.c b/drivers/video/omap/lcd_palmte.c
+index 4cb3017..d79f436 100644
+--- a/drivers/video/omap/lcd_palmte.c
++++ b/drivers/video/omap/lcd_palmte.c
+@@ -97,7 +97,7 @@ static int palmte_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver palmte_panel_driver = {
++static struct platform_driver palmte_panel_driver = {
+ 	.probe		= palmte_panel_probe,
+ 	.remove		= palmte_panel_remove,
+ 	.suspend	= palmte_panel_suspend,
+diff --git a/drivers/video/omap/lcd_palmtt.c b/drivers/video/omap/lcd_palmtt.c
+index b51b332..c2e96a7 100644
+--- a/drivers/video/omap/lcd_palmtt.c
++++ b/drivers/video/omap/lcd_palmtt.c
+@@ -102,7 +102,7 @@ static int palmtt_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver palmtt_panel_driver = {
++static struct platform_driver palmtt_panel_driver = {
+ 	.probe		= palmtt_panel_probe,
+ 	.remove		= palmtt_panel_remove,
+ 	.suspend	= palmtt_panel_suspend,
+diff --git a/drivers/video/omap/lcd_palmz71.c b/drivers/video/omap/lcd_palmz71.c
+index 2334e56..1ab4847 100644
+--- a/drivers/video/omap/lcd_palmz71.c
++++ b/drivers/video/omap/lcd_palmz71.c
+@@ -98,7 +98,7 @@ static int palmz71_panel_resume(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-struct platform_driver palmz71_panel_driver = {
++static struct platform_driver palmz71_panel_driver = {
+ 	.probe		= palmz71_panel_probe,
+ 	.remove		= palmz71_panel_remove,
+ 	.suspend	= palmz71_panel_suspend,
+-- 
+1.7.5.4
 
-The defconfig in question doens't mention either option
-(CONFIG_POWER_SUPPLY or CONFIG_HID_BATTERY_STRENGTH) and kbuild is
-genertaing
-CONFIG_HID_BATTERY_STRENGTH=3Dy
-CONFIG_POWER_SUPPLY=3Dm
-which clearly isn't going to work.
 
-The following change to HID_BATTERY_STRENGTH Kconfig "works" but seems a
-little gross.
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 5ed64f6..d2a94e6 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -33,7 +33,7 @@ config HID
-=20
- config HID_BATTERY_STRENGTH
-        bool
--       depends on POWER_SUPPLY
-+       depends on POWER_SUPPLY=3Dy
-        default y
-=20
- config HIDRAW
-
-Any chance we can get a fix into linux-next?
-
-Yours Tony
-
---11Y7aswkeuHtSBEs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4WQSAAoJEEsCiJRY75GKshAQAIAjfQkgRa/aelAyilCJ9SUv
-Q+w+ASOD5RsZO6oMPx1PNnlX3IumO1ShRRU6WEpGh/4bzu9Ldf6Jpb04/Jo1xAg4
-OQbsx0qT4PFCPg2ijysfqrmT3UfESrALq28/WGoVBdxNS2YvrytkLks93ZJ4oGHi
-VoimNzvozR01iwGKPFVg8i4ram6UYG1Hmoi1BQZR8J/7S0Fb0t6kV3YaQfdaeUJS
-LSyJMPwOi7DhIba5Q3HID+SWzfLGsrfUro2iv8ur9YETYVCA5eJgcZy9LawZy2it
-MJDB0haVnna3QG8t8F9k0Rv+9WYdjSrwefq9VppdYXBEga53a59t2wCLjUrbaKrv
-jjxdiydqsd4zzN45LIFoMkj9yD0GcymHHi/giHpPBx+pcKHxU19IWSejNIg6twuP
-d4p+yP+JsT1quYsXpmNOYUIzi5eDz6GcgAVCiVeB4jOvpj91OEHxsA8rwxFqjyq2
-VemRuD3kjjMkfx8TvjEb2mkdV08djrf0BbeZbJrhYYhe1xM38rvW932ppb3Pmab7
-UZhY47SG2Kk637X5K9eQfqtEd7mfODakiIQVoQfOxCkWD2WxlHYPnDnBqMAqy5SK
-XZl+NNJbpHt7quTi+6/y1bcm4SY+R3zNMvH7yTyohfeKxotoYIkc9XqpD+kcRN8W
-CT3NTEGR+b+M0OTbVm7K
-=ZJZv
------END PGP SIGNATURE-----
-
---11Y7aswkeuHtSBEs--
