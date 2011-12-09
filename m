@@ -1,26 +1,28 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752304Ab1LJJCH (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sat, 10 Dec 2011 04:02:07 -0500
-Received: from mail.fcq.unc.edu.ar ([200.16.18.100]:50333 "EHLO
-        mail.fcq.unc.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751895Ab1LJJCD convert rfc822-to-8bit (ORCPT
+        id S1751791Ab1LKAz4 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Sat, 10 Dec 2011 19:55:56 -0500
+Received: from mail.uniparthenope.it ([192.167.9.244]:60613 "EHLO
+        mail.uniparthenope.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751084Ab1LKAzy convert rfc822-to-8bit (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 10 Dec 2011 04:02:03 -0500
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Dec 2011 04:02:03 EST
-Message-ID: <20111210055155.55015wz0n54qx12j@webmail.fcq.unc.edu.ar>
-Date: Sat, 10 Dec 2011 05:51:55 -0300
-From: CAPITAL EQUALITY LOAN COMPANY <capital@yahoo.com.hk>
+        Sat, 10 Dec 2011 19:55:54 -0500
+X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Dec 2011 19:55:54 EST
+Date: Fri, 09 Dec 2011 08:47:37 +0100
+From: squitieri@uniparthenope.it
 Reply-to: capitalequalityloancompany@yahoo.com.hk
 To: undisclosed-recipients:;
-Subject: Wir bieten Darlehen
 MIME-Version: 1.0
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+Message-ID: <20111209084737.19792lhhmtin9na1@webmail.uniparthenope.it>
 Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+        charset=ISO-8859-1;
+        DelSp="Yes";
+        format="flowed"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
+Subject: Wir bieten Darlehen
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.42/RELEASE,
+         bases: 20111210 #5975259, check: 20111211 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -57,6 +59,3 @@ Loan Officer
 E-mail: capitalequalityloancompany@yahoo.com.hk
 Tell: +447035958575
 Fax: +448447742385
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
