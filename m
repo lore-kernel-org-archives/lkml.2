@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab1LIWWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 17:22:19 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:33525
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750829Ab1LIWWP (ORCPT
+	id S1751611Ab1LIWZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 17:25:40 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46700 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750785Ab1LIWZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 17:22:15 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h66h)
-X-Spam-TCS-SCL: 5:0
-X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 9 Dec 2011 17:22:09 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <eranian@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf_event self-monitoring overhead regression
-In-Reply-To: <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112091717390.18889@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins> <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com> <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
- <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com> <alpine.DEB.2.00.1112061604040.23414@cl320.eecs.utk.edu> <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 9 Dec 2011 17:25:38 -0500
+X-Sasl-enc: n4jjKykcZRe8dcL8hF8H7DK1YuE/HNOupvHVnNGvePXZ 1323469537
+Date: Fri, 9 Dec 2011 14:25:20 -0800
+From: Greg KH <greg@kroah.com>
+To: Anand Kanaginhal <anand_dk@hotmail.com>
+Cc: mjg59@srcf.ucam.org, bhelgaas@google.com,
+        Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: Re: PCIe Hotplugging not working
+Message-ID: <20111209222520.GA24786@kroah.com>
+References: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
+ <20111130154022.GA1411@srcf.ucam.org>
+ <BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>
+ <20111130182423.GA4831@srcf.ucam.org>
+ <CAErSpo5SvHSJrdkWituFq11hMt=jbiobnxHeddN9Xf4DmK640g@mail.gmail.com>
+ <BAY163-W600D6D6A04D4BAE8278907FBB90@phx.gbl>
+ <20111209124524.GA3488@srcf.ucam.org>
+ <BAY163-W45C53B9E3E9E0B8629B683FBB90@phx.gbl>
+ <20111209180708.GA10768@kroah.com>
+ <BAY163-W154A24444BB398F609767CFBB90@phx.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BAY163-W154A24444BB398F609767CFBB90@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 09, 2011 at 01:17:53PM -0800, Anand Kanaginhal wrote:
+> 
+> 
+> > Date: Fri, 9 Dec 2011 10:07:08 -0800
+> > From: greg@kroah.com
+> > To: anand_dk@hotmail.com
+> > CC: mjg59@srcf.ucam.org; bhelgaas@google.com; linux-pci@vger.kernel.org;
+> linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> > Subject: Re: PCIe Hotplugging not working
+> >
+> > On Fri, Dec 09, 2011 at 09:19:39AM -0800, Anand Kanaginhal wrote:
+> > > 1. With the above setup, If I hotplug card c1 and/or c2, will my driver
+> probe
+> > > get invoked.
+> >
+> > Stop right here. Please get your pci hotplug controller driver working
+> > first, for your platform. That seems to be the problem. After that,
+> > the rest of your questions should just resolve themselves.
+> Thank you Greg for your assistance, perhaps it would be little more helpful, if
+> you could tell me the basis on which you drew the conclusion. I am no kernel
+> expert :( 
 
-Here are the complete results, using official kernels.
+As your driver's callbacks aren't being called, that's probably why this
+isn't working.
 
-   http://web.eecs.utk.edu/~vweaver1/projects/perf-events/benchmarks/rdtsc_overhead/
+Please make sure your pci hotplug driver is working first.  Try turning
+on and off the power to the card slot (in the sysfs directory for the
+slot) and see if that's working.
 
-The overall overhead start/stop/read has been getting worse.  3.1.0 was 
-bad and the current 3.2.0-rc4-tip tree is even worse.
+You also have failed to say exactly what pci hotplug controller you have
+in your system, what is it?  You have to have one, and the driver loaded
+for it, for any of this to work at all.
 
-I'm not sure if it's worth trying to track down the changes that cause 
-these regressions, as they might still be considered just noise, though 
-the best to worst performance degredation is ~ 15% when attempting to 
-self-monitor with 3 events on a core2 machine.
-
-Vince
-
+greg k-h
