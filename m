@@ -1,182 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab1LIRIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 12:08:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49441 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1LIRHg (ORCPT
+	id S1752691Ab1LIRI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 12:08:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62354 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab1LIRIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 12:07:36 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Juergen Beisert <jbe@pengutronix.de>
-Subject: [PATCH RESEND 7/8] serial: 8250: add Exar 16V2750 support
-Date: Fri,  9 Dec 2011 18:07:19 +0100
-Message-Id: <1323450440-414-8-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-References: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 9 Dec 2011 12:08:24 -0500
+Message-ID: <4EE24083.7020305@gmail.com>
+Date: Fri, 09 Dec 2011 10:08:19 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com
+Subject: Re: [PATCH] perf: fix comm for processes with named threads
+References: <1323446430-1955-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1323446430-1955-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This variant can select the polarity of RTS# when TX is active with
-RS485. Add code to support that, too.
+Disregard. Need to update to your latest core branch.
 
-Signed-off-by: Juergen Beisert <jbe@pengutronix.de>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
- drivers/tty/serial/8250.c   |   51 +++++++++++++++++++++++++++++++++++++------
- include/linux/serial_core.h |    3 +-
- include/linux/serial_reg.h  |    1 +
- 3 files changed, 47 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 8cf6d76..5039e60 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -247,6 +247,13 @@ static const struct serial8250_config uart_config[] = {
- 				  UART_FCR_T_TRIG_10,
- 		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
- 	},
-+	[PORT_16V2750] = {
-+		.name		= "XR16V2750",
-+		.fifo_size	= 64,
-+		.tx_loadsz	= 32,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-+	},
- 	[PORT_16850] = {
- 		.name		= "XR16850",
- 		.fifo_size	= 128,
-@@ -838,6 +845,7 @@ static void autoconfig_has_efr(struct uart_8250_port *up)
- 	 * We check for a XR16C850 by setting DLL and DLM to 0, and then
- 	 * reading back DLL and DLM.  The chip type depends on the DLM
- 	 * value read back:
-+	 *  0x0a - XR16V2750
- 	 *  0x10 - XR16C850 and the DLL contains the chip revision.
- 	 *  0x12 - XR16C2850.
- 	 *  0x14 - XR16C854.
-@@ -850,6 +858,10 @@ static void autoconfig_has_efr(struct uart_8250_port *up)
- 		up->port.type = PORT_16850;
- 		return;
- 	}
-+	if (id2 == 0x0a) {
-+		up->port.type = PORT_16V2750;
-+		return;
-+	}
- 
- 	/*
- 	 * It wasn't an XR16C850.
-@@ -2060,7 +2072,7 @@ static int serial8250_startup(struct uart_port *port)
- 	/*
- 	 * For a XR16C850, we need to set the trigger levels
- 	 */
--	if (up->port.type == PORT_16850) {
-+	if (up->port.type == PORT_16850 || up->port.type == PORT_16V2750) {
- 		unsigned char fctr;
- 
- 		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
-@@ -2726,9 +2738,9 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 	case TIOCSRS485:
- 	{
- 		struct serial_rs485 rs485ctrl;
--		unsigned char fctr, lcr;
-+		unsigned char fctr, lcr, emsr;
- 
--		if (port->type != PORT_16850)
-+		if (port->type != PORT_16850 && port->type != PORT_16V2750)
- 			return -ENOTTY;
- 
- 		if (copy_from_user(&rs485ctrl, (struct serial_rs485 *)arg,
-@@ -2739,6 +2751,34 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 			return -EOPNOTSUPP;
- 
- 		spin_lock_irqsave(&up->port.lock, flags);
-+		if (up->port.type == PORT_16V2750) {
-+			/* make EMSR visible */
-+			serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
-+			fctr = serial_inp(up, UART_FCTR);
-+			serial_outp(up, UART_FCTR, fctr | UART_FCTR_SCR_SWAP);
-+			serial_outp(up, UART_LCR, 0);
-+
-+			/* set RTS polarity */
-+			emsr = serial_inp(up, UART_EMSR) & ~UART_EMSR_RS485_INV;
-+			if (rs485ctrl.flags & SER_RS485_RTS_ON_SEND) {
-+				emsr |= UART_EMSR_RS485_INV;
-+				rs485ctrl.flags &= ~SER_RS485_RTS_AFTER_SEND;
-+			} else {
-+				rs485ctrl.flags |= SER_RS485_RTS_AFTER_SEND;
-+			}
-+			serial_outp(up, UART_EMSR, emsr);
-+
-+			/* make the EMSR invisible */
-+			serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
-+			fctr = serial_inp(up, UART_FCTR) & ~UART_FCTR_SCR_SWAP;
-+			serial_outp(up, UART_FCTR, fctr);
-+			serial_outp(up, UART_LCR, 0);
-+		} else {
-+			/* only mode supported by the 16C850 */
-+			rs485ctrl.flags &= ~SER_RS485_RTS_ON_SEND;
-+			rs485ctrl.flags |= SER_RS485_RTS_AFTER_SEND;
-+		}
-+
- 		lcr = serial_inp(up, UART_LCR);
- 		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 		fctr = serial_inp(up, UART_FCTR);
-@@ -2750,9 +2790,6 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 		serial_outp(up, UART_LCR, lcr);
- 		spin_unlock_irqrestore(&up->port.lock, flags);
- 
--		/* only mode supported by the 16C850 */
--		rs485ctrl.flags &= ~SER_RS485_RTS_ON_SEND;
--		rs485ctrl.flags |= SER_RS485_RTS_AFTER_SEND;
- 		up->rs485_flags = rs485ctrl.flags;
- 
- 		return 0;
-@@ -2762,7 +2799,7 @@ static int serial8250_ioctl_port(struct uart_port *port,
- 	{
- 		struct serial_rs485 rs485ctrl;
- 
--		if (port->type != PORT_16850)
-+		if (port->type != PORT_16850 && port->type != PORT_16V2750)
- 			return -ENOTTY;
- 
- 		memset(&rs485ctrl, 0, sizeof(rs485ctrl));
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index eadf33d..72118c5 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -47,7 +47,8 @@
- #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
--#define PORT_MAX_8250	21	/* max port ID */
-+#define PORT_16V2750	22	/* Exar XR16V2750 */
-+#define PORT_MAX_8250	22	/* max port ID */
- 
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
-diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
-index fb37c4f..0267bab6 100644
---- a/include/linux/serial_reg.h
-+++ b/include/linux/serial_reg.h
-@@ -216,6 +216,7 @@
- #define UART_EMSR	7	/* Extended Mode Select Register */
- #define UART_EMSR_FIFO_COUNT	0x01  /* Rx/Tx select */
- #define UART_EMSR_ALT_COUNT	0x02  /* Alternating count select */
-+#define UART_EMSR_RS485_INV	0x08  /* RS485 RTS output inversion */
- 
- /*
-  * The Intel XScale on-chip UARTs define these bits
--- 
-1.7.7.3
-
+On 12/09/2011 09:00 AM, David Ahern wrote:
+> perf does not properly handle monitoring of processes with named threads.
+> For example:
+> 
+> $ ps -C myapp -L
+>   PID   LWP TTY          TIME CMD
+> 25118 25118 ?        00:00:00 myapp
+> 25118 25119 ?        00:00:00 myapp:worker
+> 
+> perf record -e cs -c 1 -fo /tmp/perf.data -p 25118 -- sleep 10
+> perf report --stdio -i /tmp/perf.data
+>    100.00%  myapp:worker  [kernel.kallsyms]  [k] perf_event_task_sched_out
+> 
+> The process name is set to the name of the last thread it finds for the
+> process.
+> 
+> The Problem:
+> perf-top and perf-record both create a thread_map of threads to be
+> monitored. That map is used in perf_event__synthesize_thread_map which
+> loops over the entries in thread_map and calls __event__synthesize_thread
+> to generate COMM and MMAP events.
+> 
+> __event__synthesize_thread calls perf_event__synthesize_comm which opens
+> /proc/pid/status, reads the name of the task and its thread group id.
+> That's all fine. The problem is that it then reads /proc/pid/task and
+> generates COMM events for each task it finds - but using the name found
+> in /proc/pid/status where pid is the thread of interest. This means the
+> name of the last thread processed sets the name for all threads in the
+> process - which is not good for multithreaded processes with named
+> threads.
+> 
+> The Fix:
+> perf_event__synthesize_comm has an input argument (full) that decides
+> whether to process task entries for each pid it is passed. It currently
+> never set to 0 (perf_event__synthesize_comm has a single caller and it
+> always passes the value 1). Let's fix that.
+> 
+> Add the full input argument to __event__synthesize_thread which passes
+> it to perf_event__synthesize_comm. For thread/process monitoring set full
+> to 0 which means COMM and MMAP events are only generated for the pid
+> passed to it. For system wide monitoring set full to 1 so that COMM events
+> are generated for all threads in a process.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> ---
+>  tools/perf/util/event.c |   35 ++++++++++++++++++++++++++++++-----
+>  1 files changed, 30 insertions(+), 5 deletions(-)
+> 
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 437f8ca..6085727 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -260,10 +260,10 @@ int perf_event__synthesize_modules(perf_event__handler_t process,
+>  
+>  static int __event__synthesize_thread(union perf_event *comm_event,
+>  				      union perf_event *mmap_event,
+> -				      pid_t pid, perf_event__handler_t process,
+> +				      pid_t pid, int full, perf_event__handler_t process,
+>  				      struct perf_session *session)
+>  {
+> -	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, 1, process,
+> +	pid_t tgid = perf_event__synthesize_comm(comm_event, pid, full, process,
+>  					    session);
+>  	if (tgid == -1)
+>  		return -1;
+> @@ -276,7 +276,7 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
+>  				      struct perf_session *session)
+>  {
+>  	union perf_event *comm_event, *mmap_event;
+> -	int err = -1, thread;
+> +	int err = -1, thread, j;
+>  
+>  	comm_event = malloc(sizeof(comm_event->comm) + session->id_hdr_size);
+>  	if (comm_event == NULL)
+> @@ -289,11 +289,36 @@ int perf_event__synthesize_thread_map(struct thread_map *threads,
+>  	err = 0;
+>  	for (thread = 0; thread < threads->nr; ++thread) {
+>  		if (__event__synthesize_thread(comm_event, mmap_event,
+> -					       threads->map[thread],
+> +					       threads->map[thread], 0,
+>  					       process, session)) {
+>  			err = -1;
+>  			break;
+>  		}
+> +
+> +		/* 
+> +		 * comm.pid is set to thread group id by
+> +		 * perf_event__synthesize_comm
+> +		 */
+> +		if ((int) comm_event->comm.pid != threads->map[thread]) {
+> +			bool need_leader = true;
+> +
+> +			/* is thread group leader in thread_map? */
+> +			for (j = 0; j < threads->nr; ++j) {
+> +				if ((int) comm_event->comm.pid == threads->map[j]) {
+> +					need_leader = false;
+> +					break;
+> +				}
+> +			}
+> +
+> +			/* if not, generate events for it */
+> +			if (need_leader &&
+> +			    __event__synthesize_thread(comm_event, mmap_event,
+> +					       comm_event->comm.pid, 0,
+> +					       process, session)) {
+> +				err = -1;
+> +				break;
+> +			}
+> +		}
+>  	}
+>  	free(mmap_event);
+>  out_free_comm:
+> @@ -329,7 +354,7 @@ int perf_event__synthesize_threads(perf_event__handler_t process,
+>  		if (*end) /* only interested in proper numerical dirents */
+>  			continue;
+>  
+> -		__event__synthesize_thread(comm_event, mmap_event, pid,
+> +		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+>  					   process, session);
+>  	}
+>  
