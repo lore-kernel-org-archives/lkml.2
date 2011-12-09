@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab1LIDkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 22:40:51 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56680 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab1LIDks (ORCPT
+	id S1752618Ab1LIDoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 22:44:24 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1768 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab1LIDoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 22:40:48 -0500
-X-Nat-Received: from [202.181.97.72]:49988 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1323402046.5387
-Message-Id: <201112090340.pB93ek9i086855@www262.sakura.ne.jp>
-Subject: [3.2-rc4] pcnet32: DMA-API: device driver tries to sync DMA memory it has not allocated
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 8 Dec 2011 22:44:23 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 08 Dec 2011 19:44:07 -0800
+Message-ID: <4EE18403.30604@nvidia.com>
+Date: Thu, 08 Dec 2011 20:44:03 -0700
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32
+ SoCs
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de> <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com> <20111209010147.GH7913@S2100-06.ap.freescale.net>
+In-Reply-To: <20111209010147.GH7913@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Fri, 09 Dec 2011 12:40:46 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 09122011 #5956698, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw this warning twice. Never seen until 3.1.
+On 12/08/2011 06:01 PM, Shawn Guo wrote:
+> On Thu, Dec 08, 2011 at 03:14:40PM -0800, Stephen Warren wrote:
+>> Presumably, the set of pins, groups, and functions is determined by the
+>> SoC HW. Platform data is usually board-specific rather than SoC specific.
+>> You have two choices here: You could either parse this data from device
+>> tree as Arnd suggested (and I think as the TI OMAP pinctrl driver will),
+>> or do what I've done in the Tegra pinctrl driver, and simply put each
+>> SoC's data into the driver and select which one to use based on the DT
+>> compatible flag; I didn't see the point of putting data in to the DT that
+>> was identical for every board using a given SoC.
+>>
+> I'm not sure about tegra, but for imx, it's very difficult to enumerate
+> all these data and list them in pinctrl driver.  Sascha gave a few
+> examples when we discussed about it in another thread.  The TX and RX
+> pin of UART has 4 options each.  SD could possibly have 1, 4, and 8
+> data lines.  Display interface could have 16, 24, 32 data lines, etc.
+> All these options are chosen by board design for given soc pinmux
+> design.  So putting this data into device tree makes sense for imx too.
 
-[   90.160533] ------------[ cut here ]------------
-[   90.166508] WARNING: at lib/dma-debug.c:966 check_sync+0x53b/0x540()
-[   90.204591] Hardware name: VMware Virtual Platform
-[   90.210719] pcnet32 0000:02:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x0000000030e56810] [size=106 bytes]
-[   90.254360] Modules linked in: ipv6 ccsecurity pcnet32
-[   90.286588] Pid: 0, comm: swapper/0 Not tainted 3.2.0-rc4-00336-g09d9673-dirty #10
-[   90.296227] Call Trace:
-[   90.327395]  [<c11dae6b>] ? check_sync+0x53b/0x540
-[   90.333565]  [<c104009c>] warn_slowpath_common+0x7c/0xa0
-[   90.365453]  [<c11dae6b>] ? check_sync+0x53b/0x540
-[   90.371653]  [<c10400f1>] warn_slowpath_fmt+0x31/0x40
-[   90.403766]  [<c11dae6b>] check_sync+0x53b/0x540
-[   90.435377]  [<c10cddb1>] ? dbg_redzone1+0x11/0x30
-[   90.441526]  [<c11db55e>] debug_dma_sync_single_for_cpu+0x4e/0x60
-[   90.474657]  [<c10d0745>] ? __kmalloc_track_caller+0xe5/0x160
-[   90.481987]  [<c12df111>] ? __alloc_skb+0x61/0x110
-[   90.488108]  [<f8041da7>] pcnet32_rx_entry+0x287/0x400 [pcnet32]
-[   90.495788]  [<c107161b>] ? trace_hardirqs_off+0xb/0x10
-[   90.526820]  [<c1061d6b>] ? local_clock+0x3b/0x60
-[   90.532827]  [<f8041f70>] pcnet32_rx+0x50/0xa0 [pcnet32]
-[   90.539547]  [<f804226a>] pcnet32_poll+0x2a/0x100 [pcnet32]
-[   90.572516]  [<c12ec3f7>] net_rx_action+0x137/0x160
-[   90.579053]  [<c1071480>] ? trace_hardirqs_on_caller+0x90/0x100
-[   90.586503]  [<c1045fe4>] __do_softirq+0xd4/0x130
-[   90.616903]  [<c1045f10>] ? local_bh_enable_ip+0xd0/0xd0
-[   90.624046]  <IRQ>  [<c10460d2>] ? irq_exit+0x42/0x70
-[   90.630750]  [<c101e7d3>] ? smp_apic_timer_interrupt+0x33/0x40
-[   90.662535]  [<c13a2753>] ? apic_timer_interrupt+0x2f/0x34
-[   90.696651]  [<c10700d8>] ? check_prevs_add+0x68/0x100
-[   90.703668]  [<c100a554>] ? default_idle+0x34/0x60
-[   90.709802]  [<c1001858>] ? cpu_idle+0x68/0xb0
-[   90.742827]  [<c138bf11>] ? rest_init+0xa1/0xb0
-[   90.748840]  [<c138be70>] ? __read_lock_failed+0x20/0x20
-[   90.755670]  [<c158c807>] ? start_kernel+0x217/0x2b0
-[   90.762022]  [<c158c280>] ? loglevel+0x30/0x30
-[   90.767714]  [<c158c084>] ? i386_start_kernel+0x64/0xb0
-[   90.804957] ---[ end trace 7455a0a77cd44df9 ]---
+The pinctrl driver should simply represent the raw options that the HW
+supports on each individual pin. This table should be readily enumerable
+(it's probably already in the SoC's datasheet), and of non-exponential
+size. In this table, considerations such as display bus width do not
+come into play; you just note that a certain 32 pins could support the
+display function.
+
+The board-specific selection of which function to use for each pin/group
+(which is where the actual selection of e.g. 16/24/32-bit display bus
+comes in) is provided by the board-specific mapping table, which I agree
+makes perfect sense to put into device tree, since it's potentially
+highly variable.
+
+-- 
+nvpublic
