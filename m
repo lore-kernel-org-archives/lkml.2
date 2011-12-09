@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1LITcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 14:32:24 -0500
-Received: from home.keithp.com ([63.227.221.253]:47761 "EHLO keithp.com"
+	id S1754606Ab1LITjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 14:39:33 -0500
+Received: from claw.goop.org ([74.207.240.146]:35226 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359Ab1LITcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 14:32:22 -0500
-From: Keith Packard <keithp@keithp.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] drm/i915: Clean up multi-threaded forcewake patch
-Date: Fri,  9 Dec 2011 11:33:00 -0800
-Message-Id: <1323459180-7198-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1750954Ab1LITjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Dec 2011 14:39:31 -0500
+Message-ID: <4EE23E21.7090509@goop.org>
+Date: Fri, 09 Dec 2011 08:58:09 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
+        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
+Subject: Re: [GIT PULL] power_supply: add power supply scope
+References: <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com> <4EDE4C7A.1010802@goop.org> <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com> <4EDFA192.7000602@goop.org> <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com> <4EE015D1.5070005@goop.org> <20111208104127.GA1753@oksana.dev.rtsoft.ru> <4EE0EB7B.6060807@goop.org> <20111208233643.GA19022@oksana.dev.rtsoft.ru> <4EE1C467.9050607@goop.org> <20111209095925.GA19883@oksana.dev.rtsoft.ru>
+In-Reply-To: <20111209095925.GA19883@oksana.dev.rtsoft.ru>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We learned that the ECOBUS register was inside the GT power well, and
-so *did* need force wake to be read, so it gets removed from the list
-of 'doesn't need force wake' registers.
+On 12/09/2011 01:59 AM, Anton Vorontsov wrote:
+> On Fri, Dec 09, 2011 at 12:18:47AM -0800, Jeremy Fitzhardinge wrote:
+>> On 12/08/2011 03:36 PM, Anton Vorontsov wrote:
+>>> No different at all, I'm fine with either power_supply.scope or any
+>>> other flag. :-)
+>> So are you happy to pull that branch, or did you have some other
+>> concerns with it?
+> I'm OK w/ the idea itself, but to actually pull that branch, the issue
+> w/ needless patching of battery drivers has to be fixed (i.e. drop the
+> changes in the drivers/acpi/).
 
-That means the code reading ECOBUS after forcing the mt_force_wake
-function to be called needs to use I915_READ_NOTRACE; it doesn't need
-to do more force wake fun as it's already done it manually.
+OK, and just use the default System?  So only patch devices which are
+actually self-powered?
 
-This also adds a comment explaining why the MT forcewake testing code
-only needs to call mt_forcewake_get/put and not disable RC6 manually
--- the ECOBUS read will return 0 if the device is in RC6 and isn't
-using MT forcewake, causing the test to work correctly.
-
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/i915/i915_drv.c      |    7 -------
- drivers/gpu/drm/i915/i915_drv.h      |    3 +--
- drivers/gpu/drm/i915/intel_display.c |    8 +++++++-
- 3 files changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 28836fe..e63a0f0 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -922,13 +922,6 @@ MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL and additional rights");
- 
--/* We give fast paths for the really cool registers */
--#define NEEDS_FORCE_WAKE(dev_priv, reg) \
--	(((dev_priv)->info->gen >= 6) && \
--	 ((reg) < 0x40000) &&		 \
--	 ((reg) != FORCEWAKE) &&	 \
--	 ((reg) != ECOBUS))
--
- #define __i915_read(x, y) \
- u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
- 	u##x val = 0; \
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 1421118..bbd0604 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1364,8 +1364,7 @@ void __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv);
- #define NEEDS_FORCE_WAKE(dev_priv, reg) \
- 	(((dev_priv)->info->gen >= 6) && \
- 	 ((reg) < 0x40000) &&		 \
--	 ((reg) != FORCEWAKE) &&	 \
--	 ((reg) != ECOBUS))
-+	 ((reg) != FORCEWAKE))
- 
- #define __i915_read(x, y) \
- 	u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index a03ebf6..5abfc36 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8539,9 +8539,15 @@ static void intel_init_display(struct drm_device *dev)
- 		if (IS_IVYBRIDGE(dev)) {
- 			u32	ecobus;
- 
-+			/* A small trick here - if the bios hasn't configured MT forcewake,
-+			 * and if the device is in RC6, then force_wake_mt_get will not wake
-+			 * the device and the ECOBUS read will return zero. Which will be
-+			 * (correctly) interpreted by the test below as MT forcewake being
-+			 * disabled.
-+			 */
- 			mutex_lock(&dev->struct_mutex);
- 			__gen6_gt_force_wake_mt_get(dev_priv);
--			ecobus = I915_READ(ECOBUS);
-+			ecobus = I915_READ_NOTRACE(ECOBUS);
- 			__gen6_gt_force_wake_mt_put(dev_priv);
- 			mutex_unlock(&dev->struct_mutex);
- 
--- 
-1.7.7.3
-
+    J
