@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1LIVXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 16:23:35 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:49191 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab1LIVXe (ORCPT
+	id S1754736Ab1LIVZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 16:25:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60216 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab1LIVZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 16:23:34 -0500
-From: kosaki.motohiro@gmail.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org> (commit_signer:15/23=65%),
-        Hugh Dickins <hughd@google.com> (commit_signer:7/23=30%),
-        Peter Zijlstra <a.p.zijlstra@chello.nl> (commit_signer:4/23=17%),
-        Shaohua Li <shaohua.li@intel.com> (commit_signer:3/23=13%)
-Subject: [PATCH v2] mm: simplify find_vma_prev
-Date: Fri,  9 Dec 2011 16:23:00 -0500
-Message-Id: <1323465781-2976-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 9 Dec 2011 16:25:16 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Shridhar Rasal <srasal@nvidia.com>,
+        "rydberg@euromail.se" <rydberg@euromail.se>,
+        Rakesh Iyer <riyer@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/1] input: keyboard: Set configuration registers
+Date: Fri, 09 Dec 2011 13:25:06 -0800
+Message-ID: <3849551.l2KNPKMSmh@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.7.3 (Linux/3.2.0-rc3+; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1751860550@HQMAIL01.nvidia.com>
+References: <1323415758-16822-1-git-send-email-srasal@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF1751860550@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Friday, December 09, 2011 12:10:43 PM Stephen Warren wrote:
+> Shridhar Rasal wrote at Friday, December 09, 2011 12:29 AM:
+> > To: dmitry.torokhov@gmail.com
+> > Cc: rydberg@euromail.se; Stephen Warren; Rakesh Iyer;
+> > linux-kernel@vger.kernel.org; linux- input@vger.kernel.org;
+> > linux-tegra@vger.kernel.org; Shridhar Rasal Subject: [PATCH 1/1] input:
+> > keyboard: Set configuration registers
+> > 
+> > -Set only REQUIRED row and column configuration register to
+> > PROPER values to avoid continuously generating KBC input events.
+> > -Use *en* field in pin_cfg, to check GPIO_x_ROW_EN register
+> > should be set or clear.
+> > 
+> > Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
+> 
+> I wondered if num==0 could be used instead of a new en field, but 0 is a
+> valid row/column number, so no. As such,
+> 
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-commit 297c5eee37 (mm: make the vma list be doubly linked) added
-vm_prev member into vm_area_struct. Therefore we can simplify
-find_vma_prev() by using it. Also, this change help to improve
-page fault performance because it has strong locality of reference.
+Can we pass in number of pin_cfg instances in pdata and simply do not
+mention unneeded pins instead?
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/mmap.c |   40 +++++++++++-----------------------------
- 1 files changed, 11 insertions(+), 29 deletions(-)
+Thanks.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index eae90af..a84539b 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1603,39 +1603,21 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
- 
- EXPORT_SYMBOL(find_vma);
- 
--/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
-+/*
-+ * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
-+ * Note: pprev is set to NULL when return value is NULL.
-+ */
- struct vm_area_struct *
--find_vma_prev(struct mm_struct *mm, unsigned long addr,
--			struct vm_area_struct **pprev)
-+find_vma_prev(struct mm_struct *mm, unsigned long addr, struct vm_area_struct **pprev)
- {
--	struct vm_area_struct *vma = NULL, *prev = NULL;
--	struct rb_node *rb_node;
--	if (!mm)
--		goto out;
--
--	/* Guard against addr being lower than the first VMA */
--	vma = mm->mmap;
--
--	/* Go through the RB tree quickly. */
--	rb_node = mm->mm_rb.rb_node;
--
--	while (rb_node) {
--		struct vm_area_struct *vma_tmp;
--		vma_tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
-+	struct vm_area_struct *vma;
- 
--		if (addr < vma_tmp->vm_end) {
--			rb_node = rb_node->rb_left;
--		} else {
--			prev = vma_tmp;
--			if (!prev->vm_next || (addr < prev->vm_next->vm_end))
--				break;
--			rb_node = rb_node->rb_right;
--		}
--	}
-+	*pprev = NULL;
-+	vma = find_vma(mm, addr);
-+	if (vma)
-+		*pprev = vma->vm_prev;
- 
--out:
--	*pprev = prev;
--	return prev ? prev->vm_next : vma;
-+	return vma;
- }
- 
- /*
 -- 
-1.7.1
-
+Dmitry
