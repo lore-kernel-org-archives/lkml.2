@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1LJKlr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 05:41:47 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46164 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab1LJKlq (ORCPT
+	id S1753653Ab1LJKxY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 05:53:24 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43025 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab1LJKxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 05:41:46 -0500
-Message-ID: <4EE33766.6060704@monstr.eu>
-Date: Sat, 10 Dec 2011 11:41:42 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        anton.vorontsov@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] microblaze: Introduce IRQ_SW_OFFSET to help with
- sw IRQ
-References: <1323431121-12780-1-git-send-email-monstr@monstr.eu> <1323431121-12780-2-git-send-email-monstr@monstr.eu> <1323431121-12780-3-git-send-email-monstr@monstr.eu> <1323431121-12780-4-git-send-email-monstr@monstr.eu> <1323431121-12780-5-git-send-email-monstr@monstr.eu> <4EE21753.8050501@gmail.com>
-In-Reply-To: <4EE21753.8050501@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Dec 2011 05:53:18 -0500
+Message-Id: <20111210104840.199328732@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Sat, 10 Dec 2011 11:43:43 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: gregkh@suse.de, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, ostrikov@nvidia.com, adobriyan@gmail.com,
+        eric.dumazet@gmail.com, mingo@elte.hu,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 2/3] kref: Implement kref_put in terms of kref_sub
+References: <20111210104341.592561407@chello.nl>
+Content-Disposition: inline; filename=kref-simplify-1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Herring wrote:
-> On 12/09/2011 05:45 AM, Michal Simek wrote:
->> If you setup IRQ_OFFSET > nr_irq you completely separate hardware
->> and software IRQs which help you with debugging.
->>
->> For example:
->> IRQ_SW_OFFSET = 32
->>
->>         DTS   HW(line)   LINUX
->> timer - 2     3          35
->> sysace  4     5          37
->> serial  5     6          38
->>
->> HW line is setup DTS + NO_IRQ_OFFSET to ensure that NO_IRQ is always 0.
->>
-> 
-> This is really confusing. DTS is the HW numbering. The last 2 columns
-> are both Linux IRQ numbering. Just create a single define for an offset.
-> Then I would combine this into the previous patch.
-> 
+Less lines of code is better.
 
-DTS generator, which we used for DTS generator for more than 2 years,
-generates for the first IRQ in the system this property "interrupts = < 0 2 >;"
-Which is HW line 1 and linux irq_data->hwirq 0 (because of shift) and irq_data->irq = 1
-for SW_OFFSET=0.
+Cc: adobriyan@gmail.com
+Cc: eric.dumazet@gmail.com
+Cc: mingo@elte.hu
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/kref.h |   28 ++++++++++------------------
+ 1 file changed, 10 insertions(+), 18 deletions(-)
 
-Anyway no problem to keep just NO_IRQ_OFFSET value.
+Index: linux-2.6/include/linux/kref.h
+===================================================================
+--- linux-2.6.orig/include/linux/kref.h
++++ linux-2.6/include/linux/kref.h
+@@ -43,57 +43,49 @@ static inline void kref_get(struct kref
+ }
+ 
+ /**
+- * kref_put - decrement refcount for object.
++ * kref_sub - subtract a number of refcounts for object.
+  * @kref: object.
++ * @count: Number of recounts to subtract.
+  * @release: pointer to the function that will clean up the object when the
+  *	     last reference to the object is released.
+  *	     This pointer is required, and it is not acceptable to pass kfree
+  *	     in as this function.
+  *
+- * Decrement the refcount, and if 0, call release().
++ * Subtract @count from the refcount, and if 0, call release().
+  * Return 1 if the object was removed, otherwise return 0.  Beware, if this
+  * function returns 0, you still can not count on the kref from remaining in
+  * memory.  Only use the return value if you want to see if the kref is now
+  * gone, not present.
+  */
+-static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref))
++static inline int kref_sub(struct kref *kref, unsigned int count,
++	     void (*release)(struct kref *kref))
+ {
+ 	WARN_ON(release == NULL);
+ 	WARN_ON(release == (void (*)(struct kref *))kfree);
+ 
+-	if (atomic_dec_and_test(&kref->refcount)) {
++	if (atomic_sub_and_test((int) count, &kref->refcount)) {
+ 		release(kref);
+ 		return 1;
+ 	}
+ 	return 0;
+ }
+ 
+-
+ /**
+- * kref_sub - subtract a number of refcounts for object.
++ * kref_put - decrement refcount for object.
+  * @kref: object.
+- * @count: Number of recounts to subtract.
+  * @release: pointer to the function that will clean up the object when the
+  *	     last reference to the object is released.
+  *	     This pointer is required, and it is not acceptable to pass kfree
+  *	     in as this function.
+  *
+- * Subtract @count from the refcount, and if 0, call release().
++ * Decrement the refcount, and if 0, call release().
+  * Return 1 if the object was removed, otherwise return 0.  Beware, if this
+  * function returns 0, you still can not count on the kref from remaining in
+  * memory.  Only use the return value if you want to see if the kref is now
+  * gone, not present.
+  */
+-static inline int kref_sub(struct kref *kref, unsigned int count,
+-	     void (*release)(struct kref *kref))
++static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref))
+ {
+-	WARN_ON(release == NULL);
+-	WARN_ON(release == (void (*)(struct kref *))kfree);
+-
+-	if (atomic_sub_and_test((int) count, &kref->refcount)) {
+-		release(kref);
+-		return 1;
+-	}
+-	return 0;
++	return kref_sub(kref, 1, release);
+ }
+ #endif /* _KREF_H_ */
 
-Thanks,
-Michal
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
