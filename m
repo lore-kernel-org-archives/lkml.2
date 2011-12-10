@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab1LJUC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 15:02:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41014 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1LJUC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 15:02:27 -0500
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
-In-Reply-To: <CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-References: <20111210104341.592561407@chello.nl>
-	 <20111210104840.295857663@chello.nl>
-	 <CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
-	 <1323529084.16764.5.camel@twins>
-	 <CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 10 Dec 2011 20:49:11 +0100
-Message-ID: <1323546551.2822.14.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751854Ab1LJUCv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 15:02:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43066 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab1LJUCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Dec 2011 15:02:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="85800861"
+From: Andi Kleen <andi@firstfloor.org>
+To: t cheney <cdmalord@gmail.com>
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86: Add process memory layout to coredump file
+References: <CAE04G=Bu4WnU9SYU9u3-ap6OrBEjWONK8TA8bYBy5OSCCzzDqg@mail.gmail.com>
+Date: Sat, 10 Dec 2011 12:02:39 -0800
+In-Reply-To: <CAE04G=Bu4WnU9SYU9u3-ap6OrBEjWONK8TA8bYBy5OSCCzzDqg@mail.gmail.com>
+	(t. cheney's message of "Sat, 10 Dec 2011 22:37:02 +0800")
+Message-ID: <m2y5uknqjk.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-10 at 23:57 +0800, Ming Lei wrote:
+t cheney <cdmalord@gmail.com> writes:
 
-> CPU0			CPU1
-> 
-> atomic_set(v)
-> smp_mb()
-> 				smp_mb()
-> 				atomic_dec_and_test(v)
-> 
-> Without the barrier after atomic_set, CPU1 may see a stale
-> value of v first, then decrease it, so may miss a release operation.
+> This patch just add memory layout(same as /proc/pid/maps) to
+> coredump file. The layout is appended to corenote segment with
+> flag NT_MAPS=7.
 
-Your example is doubly broken. If there's concurrency possible with
-atomic_set() you've lost.
+Seems like a reasonable idea, but can you please share code with 
+the proc implementation? 
 
-Lets change it to kref_get() aka atomic_inc():
+It's a bit unusal to have ASCII in a coredump, but I suppose expressing
+this in binary would be somewhat ugly.
 
-	CPU0		CPU1
+> +	char *buf = notes->data;
+> +	size_t core_limit = notes->datasz;
+> +	gate_vma = get_gate_vma(current->mm);
+> +
 
-	atomic_inc()
-			atomic_dec_and_test()
+It seems a bit dubious to do this without locking even in a core dump.
 
-and
+> +	for (vma = first_vma(current, gate_vma); vma != NULL;
+> +		vma = next_vma(vma, gate_vma)) {
+> +		flags = vma->vm_flags;
+> +		maps_size += len;
+> +		if (file) {
+> +			if (maps_size > core_limit)
+> +				break;
 
-			atomic_dec_and_test()
-	atomic_inc()
+You have a one-off bug here. Also below.
 
-For if the first is possible, then so is the second.
-
-This illustrates that no matter how many barriers you put in, you're
-still up shit creek without no paddle because the kref_put() can come in
-before you do the kref_get(), making the kref_get() the invalid
-operation.
-
-> The pair of smp_mb can make order between atomic_set
-> and atomic_dec_and_test, can't it?
-
-No. Because there's nothing stopping the dec from happening before the
-set/inc.
-
-> > If there's a destruction race with kref_put() the barrier won't
-> 
-> Sorry, could you say what the destruction race is?
-
-The race to 0-refs, iow. the case above when you assume both cases start
-out with 1 ref.
+> +			DUMP_WRITE(buf, len, foffset);
+> +		}
 
 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
