@@ -1,71 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1LJASq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 19:18:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57409 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab1LJASo (ORCPT
+	id S1755169Ab1LJAZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 19:25:30 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49864 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab1LJAZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 19:18:44 -0500
+	Fri, 9 Dec 2011 19:25:29 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6555"; a="143119559"
+Message-ID: <4EE2A6F8.3010604@codeaurora.org>
+Date: Fri, 09 Dec 2011 16:25:28 -0800
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111209110807.GG27267@pengutronix.de>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
-	<20111209010147.GH7913@S2100-06.ap.freescale.net>
-	<4EE18403.30604@nvidia.com>
-	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
-	<4EE192DC.3080209@nvidia.com>
-	<20111209051413.GK7913@S2100-06.ap.freescale.net>
-	<20111209110807.GG27267@pengutronix.de>
-Date: Sat, 10 Dec 2011 01:18:43 +0100
-Message-ID: <CACRpkdYpq1phHTTLy875xSr-upiW5BmvKMPO_d-niG+-J14t9w@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Stephen Warren <swarren@nvidia.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: devicetree-discuss@lists.ozlabs.org
+CC: LKML <linux-kernel@vger.kernel.org>, David Brown <davidb@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Representing SPMI bus in Device Tree
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 9, 2011 at 12:08 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+Hi,
 
-> I still think it should be "I'm board Y, please set all my pins up for me"
+I am designing a bus driver for the System Power Management Interface, 
+which is also known as SPMI. Information about the bus can be found 
+through this website:
 
-This is basically what the current pinmux hog concept does.
+http://www.mipi.org/specifications/system-power-management-interface
 
-> Drivers should not be bothered with pin muxing *at all*.
+In short, to make a transaction, you need two things: a 4 bit slave ID 
+and a 16 bit address offset.
 
-Not if they are simple. Like - set them up once and for all and
-then forget about it.
+One difference in our model is a requirement to instantiate multiple 
+devices on the same slave ID. That is to say, our 16 bit address space 
+is segmented. For this reason, I was thinking it would be nice to have 
+an optional second level in the tree under the bus driver. The first 
+level specifies the slave ID, and the optional second is reserved for 
+specifying any number of address ranges for carving out chunks in the 
+16-bit address space.
 
-It gets problematic when we get to sleep states and the system
-need to reconfigure all pins on say idle or deep sleep.
+Here is a graphical representation on this model:
 
-We also have heard about hardware routing the *same*
-IO block (an I2C port IIRC) to two different sets of pins at
-*runtime*, i.e. route it to pin 1-4 do some traffic, route
-it to pin 9-12, do some other traffic...
+/ {
+         spmi@abc123 {
+         #address-cells = <1>;
+                 #size-cells = <0>;
+         compatible = "qcom,spmi-platform";
+                 pmic@1 {
+                         #address-cells = <1>;
+                         #size-cells = <1>;
+                         reg = <0x1>;
+                         spmi-dev-container;
 
-> There are only
-> some corner cases where a driver has to do something with the pin setup
-> like for example on i.MX6 where the drive strength setting has to be
-> changed with different card speeds.
+                         coincell@beef {
+                                 compatible = "qcom,coincell";
+                                 reg = <0xbeef 0x4000>;
+                 		interrupts = <100>;
+                         };
+                         pon@cafe {
+                                 compatible = "qcom,pon";
+                                 reg = <0xcafe 0x4000 0xf00 0x1000>;
+                         };
+                 };
+                 simple_dev@2 {
+                         compatible = "qcom,pon";
+                         reg = <0x2>;
+             		interrupts = <51>;
+                 };
+         };
+};
 
-I fear that is just the top of an iceberg :-P
+For each node entry, the of layer checks for the spmi-dev-container flag 
+that instructs whether this node 'contains' another level of devices, of 
+which include and number of bus address ranges. I think this approach 
+does a good job of describing the hardware and respecting the Device 
+Tree conventions.
 
-> There is also no value in being able to say which pins are allocated
-> by which driver. All we really want is being able to abstract the
-> pinmux in some common way and being able to detect conflicts.
+I can think of a couple other ways to portray this same information, but 
+each have what I consider huge problems. For example, we could treat the 
+first 'reg' tuple to mean slave ID, and any subsequent ones to be bus 
+addresses:
 
-It's a value to have it in debugfs, where it is right now, and that
-is optional. It helped me a lot when developing a driver...
 
-Thanks,
-Linus Walleij
+spmi@abc123 {
+     #address-cells = <1>;
+     #size-cells = <1>;
+     compatible = "qcom,spmi-platform";
+     coincell@1 {
+         compatible = "qcom,coincell";
+         reg = <0x1 0x0 0xbeef1 0x4000>;
+         interrupts = <100>;
+     };
+     pon@1 {
+         compatible = "qcom,pon";
+         reg = <0x1 0x0 0xcafe1 0x4000 0xf001 0x1000>;
+     };
+     simple_dev@2 {
+         compatible = "qcom,pon";
+         reg = <0x2>;
+         interrupts = <51>;
+     };
+};
+
+But then we end up with duplicate devices on the same node address for 
+the same bus level, which I understand is not allowed in Device Tree. 
+Also, I don't like the notion that the address meaning is overloaded 
+here. We could establish a new binding to represent bus addresses (eg. 
+spmi-bus-addr = <0xcafe 0x4000>, but my understanding is there should be 
+only one address specifier per node level.
+
+Another possibility is to have a single level that encapsulates both a 
+slave id and bus address within one address. For ex. the upper bits 
+represent the bus address and the least significant nibble is the slave 
+id. This seems somewhat convoluted, though. Since we require support for 
+multiple bus address ranges, then we have redundancy in the sense that 
+each address includes a separate declaration of the slave ID. Plus, we 
+have the same issue of an arbitrary structure imposed on an address.
+
+I probably dislike this one the most.
+
+Ex.
+
+spmi@abc123 {
+     #address-cells = <1>;
+     #size-cells = <1>;
+     compatible = "qcom,spmi-platform";
+     coincell@beef1 {
+         compatible = "qcom,coincell";
+         reg = <0xbeef1 0x4000>;
+         interrupts = <100>;
+     };
+     pon@cafe1 {
+         compatible = "qcom,pon";
+         reg = <0xcafe1 0x4000 0xf001 0x1000>;
+     };
+     simple_dev@2 {
+         compatible = "qcom,pon";
+         reg = <0x2>;
+         interrupts = <51>;
+     };
+};
+
+To me the first example is the most consistent with what Device Tree 
+expects, but I certainly welcome any feedback or additional ideas.
+
+A separate but related problem is how to convey these bus addresses and 
+interrupt values in a data structure. The of_platform code puts these in 
+a 'struct resource', which is almost exactly what we want here. But the 
+problem is that the semantics of a resource include addresses that are 
+translatable to cpu addresses, and SPMI addresses are not. For example, 
+of_address_to_resource() will fail on this model since it tries to 
+translate the addresses. I can always implement it using more primitive 
+APIs, but the fact that of_address_to_resource() is designed this way 
+makes me think that perhaps 'resources' are not the right mechanism to 
+be using. What is the best way to convey a variable amount of bus 
+addresses and interrupt numbers? Should we invent a new data structure?
+
+Thanks in advance for any suggestions that people have.
+
+Mike
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
