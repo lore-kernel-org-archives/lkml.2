@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab1LJLNk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 06:13:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab1LJLNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 06:13:36 -0500
-Message-ID: <4EE33EC2.6050508@redhat.com>
-Date: Sat, 10 Dec 2011 09:13:06 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1751367Ab1LJLmk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 06:42:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62846 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab1LJLmh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Dec 2011 06:42:37 -0500
 MIME-Version: 1.0
-To: Robert Morell <rmorell@nvidia.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Sumit Semwal <sumit.semwal@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jesse.barker@linaro.org" <jesse.barker@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "daniel@ffwll.ch" <daniel@ffwll.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer sharing
- mechanism
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <1322816252-19955-2-git-send-email-sumit.semwal@ti.com> <201112051718.48324.arnd@arndb.de> <20111209225056.GL7969@morell.nvidia.com>
-In-Reply-To: <20111209225056.GL7969@morell.nvidia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <28442.1323269262@redhat.com>
+References: <28442.1323269262@redhat.com>
+Date: Sat, 10 Dec 2011 12:42:36 +0100
+Message-ID: <CA+MtwOEHYu1z8TLXv7jwCKfgavaGX7EWXmxq2xs6b0jbujy35g@mail.gmail.com>
+Subject: Re: [GIT PULL] Crypto keys and module signing
+From: =?ISO-8859-2?Q?Arkadiusz_Mi=B6kiewicz?= <a.miskiewicz@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan@linux.intel.com, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09-12-2011 20:50, Robert Morell wrote:
-> On Mon, Dec 05, 2011 at 09:18:48AM -0800, Arnd Bergmann wrote:
->> On Friday 02 December 2011, Sumit Semwal wrote:
->>> This is the first step in defining a dma buffer sharing mechanism.
->>
-> [...]
->>
->>> +	return dmabuf;
->>> +}
->>> +EXPORT_SYMBOL(dma_buf_export);
->>
->> I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
->> because it's really a low-level function that I would expect
->> to get used by in-kernel subsystems providing the feature to
->> users and having back-end drivers, but it's not the kind of thing
->> we want out-of-tree drivers to mess with.
+On Wed, Dec 7, 2011 at 3:47 PM, David Howells <dhowells@redhat.com> wrote:
 >
-> Is this really necessary?  If this is intended to be a
-> lowest-common-denominator between many drivers to allow buffer sharing,
-> it seems like it needs to be able to be usable by all drivers.
+> Hi James,
 >
-> If the interface is not accessible then I fear many drivers will be
-> forced to continue to roll their own buffer sharing mechanisms (which is
-> exactly what we're trying to avoid here, needless to say).
+> Could you pull my module signing code into the security tree?  The patches can
+> be viewed here:
+>
+> http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/devel
 
-Doing a buffer sharing with something that is not GPL is not fun, as, if any
-issue rises there, it would be impossible to discover if the problem is either
-at the closed-source driver or at the open source one. At the time I was using
-the Nvidia proprietary driver, it was very common to have unexplained issues
-caused likely by bad code there at the buffer management code, causing X
-applications and extensions (like xv) to break.
+If I understand it is not possible to sign modules after they are
+built and load keys without actually
+rebuilding kernel?
 
-We should really make this EXPORT_SYMBOL_GPL(), in order to be able to latter
-debug future share buffer issues, when needed.
+For distro kernel the public and secret keys have to be available
+publicly, right? Otherwise people
+using distro kernels won't be able to build own signed modules for use
+with that distro kernel.
 
-Regards,
-Mauro
+Then I as admin have to rebuild the kernel to get my own keys in and
+prevent other, "unapproved" modules
+to be loaded. Correct?
+
+Would be nice if the modules could be signed/re-signed after being
+build and prehaps kernel could
+load keys from initramfs? Then everyone could use own keys on distro
+kernels without need to rebuild
+the thing.
+
+I think I'm missing something :)
+
+-- 
+Arkadiusz Mi¶kiewicz
