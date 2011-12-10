@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab1LJOI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 09:08:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26789 "EHLO mx1.redhat.com"
+	id S1751623Ab1LJO1P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 09:27:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37677 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab1LJOIx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 09:08:53 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <8739csq5ac.fsf@rustcorp.com.au>
-References: <8739csq5ac.fsf@rustcorp.com.au> <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk> <2657.1323456206@redhat.com>
-To: Rusty Russell <rusty@ozlabs.org>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        arjan.van.de.ven@intel.com, alan.cox@intel.com,
-        Jon Masters <jcm@jonmasters.org>
-Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
+	id S1751346Ab1LJO1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Dec 2011 09:27:12 -0500
+Message-ID: <4EE36C43.2040508@suse.cz>
+Date: Sat, 10 Dec 2011 15:27:15 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 10 Dec 2011 14:08:34 +0000
-Message-ID: <30007.1323526114@redhat.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: sam@ravnborg.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Rewriting kernel config after generation
+References: <20111202053342.GA13877@p183.telecom.by> <CACVxJT94xTVO3i7tzLwrjTkFdr3+ve2e1VBg6UjzVfvthtgDfw@mail.gmail.com>
+In-Reply-To: <CACVxJT94xTVO3i7tzLwrjTkFdr3+ve2e1VBg6UjzVfvthtgDfw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@ozlabs.org> wrote:
-
-> > > Sure, you now need to re-append that after stripping, but that's not the
-> > > kernel's problem.
-> > 
-> > You may also have to remove the signature before passing it to any
-> > binutils tool lest it malfunction on the trailer
+On 6.12.2011 12:45, Alexey Dobriyan wrote:
+> On Fri, Dec 2, 2011 at 7:33 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>> I'm trying to add compiling with -march=native to the kernel.
+>> The problem is that then some config options become discoverable at
+>> the beginning of the compilation. For example,
+>> CONFIG_X86_L1_CACHE_SHIFT=6 can be derived from "--param l1-cache-line-size=64".
+>> I suspect this is no-go, because all the dependency logic must be
+>> duplicated somewhere else (in the march=native script) for the above
+>> to work.
+>>
+>> Is there any cleaner way I'm missing?
+>>
+>> In theory, such script could even turn off CONFIG_CPU_SUP_AMD
+>> if it detects Intel CPU.
 > 
-> Well, you're already on your own if you're using non-module-init-tools
-> tools on modules.
+> Hrph, this is harder than it looks because "silentoldconfig" is done at
+> the beginning rewriting whatever changes done to .config by hand. :-(
 
-The distributions packaging tools and initramfs tools are things I have to
-contend with, and others will have to contend with.
+X86_L1_CACHE_SHIFT has no prompt, so it cannot be modified by the user.
+You would need to add a prompt if you want to modify it, e.g.
 
-> (We'll want to enhance modinfo, at least, to show the signatures).
+config X86_L1_CACHE_SHIFT
+        int
+	prompt "..." if X86_MARCH_NATIVE
 
-Ummm...  To show what exactly?  And why?  The modinfo has to go into the
-signature hash.  Further to find the modinfo, you have to parse the ELF - which
-brings us right back to how do you know you can trust it?
+But I wonder why is this needed. To build for the native cpu, you only
+need to detect what cpu you are running and select the matching
+processor family. The x86 Kconfig/Makefile will then take care of
+setting the right kconfig options and the right -march= parameter for gcc.
 
-> > I've found that rpmbuild and mkinitrd alter the module files at
-> > various times, so you'd need a bunch of signatures, one for each (may
-> > just be two, but I can't guarantee that).  This means the kernel build
-> > process needs to know what transformations are going to be applied to
-> > a module - something that has changed occasionally within the
-> > distribution I use and may vary between distributions (or even just
-> > someone building for themselves).
-> 
-> Yes, there may be more than stripped and unstripped.  You may need to
-> do fancy things.  But now, adding a signature is so easy that it's not a
-> real problem.  And we can always have a hook, like:
-> 
->         if VARIANTS=`make-module-variants $MOD`; then
->                 for m in $VARIANTS; do sign $m >> $MOD; rm $m; done
->         fi
-
-That's not very practical.  That spreads the what-do-we-need-to-calculate
-question over a whole bunch of packages: the kernel, rpmbuild (if RPM-based),
-mkinitramfs and maybe others.  I presume you're thinking of trying all the
-possible strip combinations and generating a signature for each?  However, if
-someone upgrades their binutils, but not their kernel, say, and then their
-initramfs gets rebuilt for some reason, this may invalidate all their module
-signatures.
-
-So the number of signatures is:
-
-	strip_combos × binutils_variations × other_factors
-
-and you have to generate all these at kernel build time because the secret key
-cannot be disseminated to the installed machines that might be affected by
-this.
-
-(Note that binutils may rearrange the symbol, relocation and section tables in
-different ways for different versions.)
-
-David
+Michal
