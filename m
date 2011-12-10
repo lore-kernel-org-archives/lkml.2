@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1LJEk4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 23:40:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42348 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1LJEkz convert rfc822-to-8bit (ORCPT
+	id S1751080Ab1LJFDW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 00:03:22 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48008 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1LJFDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 23:40:55 -0500
+	Sat, 10 Dec 2011 00:03:21 -0500
+Message-ID: <4EE2E7ED.6080202@linux.vnet.ibm.com>
+Date: Sat, 10 Dec 2011 10:32:37 +0530
+From: Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <1323483097-24210-1-git-send-email-jack@suse.cz>
-References: <1323483097-24210-1-git-send-email-jack@suse.cz>
-Date: Sat, 10 Dec 2011 13:40:53 +0900
-Message-ID: <CAKYAXd9jYMZMht02n=W4T8+hq8hU8owoZk07TbLb-myk52PNKw@mail.gmail.com>
-Subject: Re: [PATCH] udf: Fix deadlock when converting file from in-ICB one to
- normal one
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Matthias Matiak <netzpython@mail-on.us>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Paul Mackerras <paulus@samba.org>
+CC: Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Milton Miller <miltonm@bga.com>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Anton Blanchard <anton@samba.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH v5 1/9] fadump: Add documentation for firmware-assisted
+ dump.
+References: <20111115151145.16533.16384.stgit@mars.in.ibm.com> <20111115151334.16533.5790.stgit@mars.in.ibm.com> <20111124223410.GB19828@bloggs.ozlabs.ibm.com>
+In-Reply-To: <20111124223410.GB19828@bloggs.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120918-6102-0000-0000-0000005F9D4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/10 Jan Kara <jack@suse.cz>:
-> During BKL removal, conversion of files from in-ICB format to normal format got
-> broken. We call ->writepage with i_data_sem held but udf_get_block() also
-> acquires i_data_sem thus creating A-A deadlock.
->
-> We fix the problem by dropping i_data_sem before calling ->writepage() which is
-> safe since i_mutex still protects us against any changes in the file. Also fix
-> pagelock - i_data_sem lock inversion in udf_expand_file_adinicb() by dropping
-> i_data_sem before calling find_or_create_page().
->
-> Reported-by: Matthias Matiak <netzpython@mail-on.us>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/udf/file.c  |    6 +++---
->  fs/udf/inode.c |   20 +++++++++++++++++---
->  2 files changed, 20 insertions(+), 6 deletions(-)
->
->  I plan to merge this fix through my tree soon.
->
-> +/*
-> + * Expand file stored in ICB to a normal one-block-file
-> + *
-> + * This function requires i_data_sem for writing and releases it.
-> + * This function requires i_mutex held
-> + */
->  int udf_expand_file_adinicb(struct inode *inode)
->  {
->        struct page *page;
-> @@ -171,6 +177,11 @@ int udf_expand_file_adinicb(struct inode *inode)
->                mark_inode_dirty(inode);
-                  up_write(&iinfo->i_data_sem);
-Hi Jan.
-I do not know if that helps, Would it need here ?
-Thanks.
->                return 0;
->        }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 11/25/2011 04:04 AM, Paul Mackerras wrote:
+>> + /sys/kernel/debug/powerpc/fadump_region
+>> +
+>> +    This file shows the reserved memory regions if fadump is
+>> +    enabled otherwise this file is empty. The output format
+>> +    is:
+>> +    <region>: [<start>-<end>] <reserved-size> bytes, Dumped: <dump-size>
+>> +
+>> +    e.g.
+>> +    Contents when fadump is registered during first kernel
+>> +
+>> +    # cat /sys/kernel/debug/powerpc/fadump_region
+>> +    CPU : [0x0000006ffb0000-0x0000006fff001f] 0x40020 bytes, Dumped: 0x0
+>> +    HPTE: [0x0000006fff0020-0x0000006fff101f] 0x1000 bytes, Dumped: 0x0
+>> +    DUMP: [0x0000006fff1020-0x0000007fff101f] 0x10000000 bytes, Dumped: 0x0
+> 
+> How come the HPTE region is only 0x1000 (4k) bytes?  The hashed page
+> table (HPT) will be much bigger than this.  Is this our way of telling
+> the hypervisor that we don't care about the HPT?  If so, is it
+> possible to make this region 0 bytes instead of 0x1000?
+> 
+
+The firmware assisted dump registration fails with "Hardware
+error (-1)" when called with HPTE dump section with size 0.
+
+According to PAPR the size returned by ibm,configure-kernel-dump-sizes
+node for HPTE dump section is a minimum size for HPTE dump section.
+
+Though PAPR dose not mention this, but after sevaral trial and error, it
+looks like the HPTE dump section is one of the mandatory
+argument that needs to be passed (with non-zero size) while making
+ibm,configure-kernel-dump rtas call.
+
+Thanks,
+-Mahesh.
+
