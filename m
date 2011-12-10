@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab1LJTkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 14:40:04 -0500
-Received: from mognix.dark-green.com ([88.116.226.179]:59800 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1LJTkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 14:40:00 -0500
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Dec 2011 14:40:00 EST
-Message-ID: <4EE3B5AD.6060505@dark-green.com>
-Date: Sat, 10 Dec 2011 20:40:29 +0100
-From: gimli <gimli@dark-green.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	id S1751572Ab1LJTps (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 14:45:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068Ab1LJTpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Dec 2011 14:45:47 -0500
+Date: Sat, 10 Dec 2011 19:45:39 +0000
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: alsa-devel@alsa-project.org
+Cc: Tom Walder <tom.walder@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Jabra SPEAK 410 USB - no audio playback
+Message-ID: <20111210194539.GF16692@amd.home.annexia.org>
+References: <20111210142419.GC16692@amd.home.annexia.org>
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: "lkml, " <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>
-Subject: Re: [PATCH] efifb: Update documentation to include generic EFI 1.1
- and UEFI 2.0 platforms
-References: <4EE112A8.5030006@linux.intel.com>
-In-Reply-To: <4EE112A8.5030006@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="aYDVKSzuImP48n7V"
+Content-Disposition: inline
+In-Reply-To: <20111210142419.GC16692@amd.home.annexia.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-08 20:40, Darren Hart wrote:
-> According to the Kconfig help, efifb supports EFI 1.1 and UEFI 2.0 platforms
-> in addition to the Intel based Macs. I have Atom development platforms that
-> require CONFIG_FB_EFI for kernel output to the display console. I have left
-> the Mac kernel parameters alone as I do not have hardware to test it.
->
-> Signed-off-by: Darren Hart<dvhart@linux.intel.com>
-> CC: H. Peter Anvin<hpa@zytor.com>
-> CC: Matt Fleming<matt.fleming@linux.intel.com>
-> CC: Edgar Hucek<gimli@dark-green.com>
-> ---
->   Documentation/fb/efifb.txt |   12 ++++++++----
->   1 files changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/fb/efifb.txt b/Documentation/fb/efifb.txt
-> index a59916c..7cb9a62 100644
-> --- a/Documentation/fb/efifb.txt
-> +++ b/Documentation/fb/efifb.txt
-> @@ -2,12 +2,15 @@
->   What is efifb?
->   ===============
->
-> -This is a generic EFI platform driver for Intel based Apple computers.
-> -efifb is only for EFI booted Intel Macs.
-> +This is a generic EFI platform driver for Intel based Apple computers and
-> +platforms with EFI 1.10 or UEFI 2.0 firmware. Select CONFIG_FB_EFI to add
-> +support for using the EFI framebuffer as your console.
->
->   Supported Hardware
->   ==================
->
-> +EFI 1.10 platforms
-> +UEFI 2.0 platforms
->   iMac 17"/20"
->   Macbook
->   Macbook Pro 15"/17"
-> @@ -16,8 +19,9 @@ MacMini
->   How to use it?
->   ==============
->
-> -efifb does not have any kind of autodetection of your machine.
-> -You have to add the following kernel parameters in your elilo.conf:
-> +efifb will autodetect the framebuffer on some machines, for others
-> +you will have to add the appropriate kernel parameters to your boot
-> +loader configuration. For example:
->   	Macbook :
->   		video=efifb:macbook
->   	MacMini :
 
-Looks ok to me :
+--aYDVKSzuImP48n7V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Edgar Hucek <gimli@dark-green.com>
 
-Please forward it to the LKML.
+The attached patch fixes USB audio support for the Jabra SPEAK 410 USB.
+
+The problem, as I understand it, is that the device contains a
+Class-Specific Endpoint (CS_ENDPOINT) descriptor before the Endpoint
+(ENDPOINT) descriptor.  The USB code all assumes that CS_ENDPOINT can
+only appear after ENDPOINT.  Therefore the USB code divides up the
+interface descriptor into "stuff before ENDPOINT" (in
+interface->extra) and "stuff after ENDPOINT" (in
+interface->endpoint[0]->extra).  For this device, this division does
+not work.
+
+You can see lsusb for my device here:
+http://mailman.alsa-project.org/pipermail/alsa-devel/2011-December/047036.html
+Notice the "** UNRECOGNIZED: 07 25 01 81 02 00 00" line which is the
+CS_ENDPOINT descriptor.
+
+The solution (which is a hack ...) is to also search interface->extra
+looking for the missing descriptor.
+
+For me, this fully enables the functions of this device.
+
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+Read my programming blog: http://rwmj.wordpress.com
+Fedora now supports 80 OCaml packages (the OPEN alternative to F#)
+http://cocan.org/getting_started_with_ocaml_on_red_hat_and_fedora
+
+--aYDVKSzuImP48n7V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="linux-3.1.fc16-jabra.patch"
+
+diff -uNrp kernel-3.1.fc16.orig/sound/usb/stream.c kernel-3.1.fc16.new/sound/usb/stream.c
+--- kernel-3.1.fc16.orig/sound/usb/stream.c	2011-12-10 18:03:29.658729051 +0000
++++ kernel-3.1.fc16.new/sound/usb/stream.c	2011-12-10 18:08:41.468694907 +0000
+@@ -164,6 +164,12 @@ static int parse_uac_endpoint_attributes
+ 
+ 	csep = snd_usb_find_desc(alts->endpoint[0].extra, alts->endpoint[0].extralen, NULL, USB_DT_CS_ENDPOINT);
+ 
++	/* Jabra SPEAK 410 USB has CS_ENDPOINT before ordinary ENDPOINT,
++	 * which confuses the USB descriptor parsing code.  Try looking
++	 * for CS_ENDPOINT in the interface->extra - RWMJ. */
++	if (!csep)
++		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
++
+ 	/* Creamware Noah has this descriptor after the 2nd endpoint */
+ 	if (!csep && altsd->bNumEndpoints >= 2)
+ 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+
+--aYDVKSzuImP48n7V--
