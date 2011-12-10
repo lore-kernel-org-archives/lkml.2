@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab1LJUKu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 15:10:50 -0500
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:47955 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab1LJUKt (ORCPT
+	id S1751866Ab1LJUOP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 15:14:15 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52835 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1LJUOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 15:10:49 -0500
-X-manitu-Original-Sender-IP: 79.230.61.111
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <4EE3BCB4.7060401@grandegger.com>
-Date: Sat, 10 Dec 2011 21:10:28 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] flexcan: Acknowledge all interrupt sources in the IRQ
- handler
-References: <1323438454-6816-1-git-send-email-LW@KARO-electronics.de>	<4EE212AE.40005@pengutronix.de> <20194.5210.650914.867608@ipc1.ka-ro> <4EE21C96.5010604@grandegger.com>
-In-Reply-To: <4EE21C96.5010604@grandegger.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Sat, 10 Dec 2011 15:14:12 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: rtc-linux@googlegroups.com
+Cc: a.zummo@towertech.it, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] rtc: Kconfig: Place RTC_DRV_IMXDI and RTC_MXC under "on-CPU RTC drivers"
+Date: Sat, 10 Dec 2011 18:14:02 -0200
+Message-Id: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2011 03:35 PM, Wolfgang Grandegger wrote:
-> On 12/09/2011 02:59 PM, Lothar Waßmann wrote:
->> Hi,
->>
->> Marc Kleine-Budde writes:
->>> On 12/09/2011 02:47 PM, Lothar Waßmann wrote:
->>>> Otherwise the handler will get stuck in an endless IRQ loop when an
->>>> interrupt condition occurs that is not being acked (e.g. TWRN)
->>>
->>> On which CPU do you have this problem?
->>>
->> on i.MX28.
-> 
-> Yes, it is definitely needed on i.MX28 and I already have it in my
-> series. See:
-> 
-> https://gitorious.org/~wgrandegger/linux-can/wg-linux-can-next/commit/8ad94fa0dd7f7728824fa8fd4479390ac3f189c7
-> 
-> BTW: at similar patch was already sent by Reuben Dowle.
-> 
->>> Seems that mx25/35 behave a bit different than mx28. But I had no time
->>> to dig into this, yet. BTW Wolfgang is just reworking error handling,
->>> can you please test his patches he recently posted on linux-can.
->>>
->> The ESR of i.MX25 is completely identical to the i.MX28.
->> You should be able to reproduce the problem when trying to send a
->> message to a CAN interface with the transceiver disabled.
->> You will get a BIT0_ERR and the TWRN bit will be asserted and never
->> cleared leading to an endless interrupt loop.
-> 
-> If you are right, the code was never working on i.MX25/35... which I doubt.
+RTC_DRV_IMXDI and RTC_MXC are on-chip RTC modules, so move them under 
+"on-CPU RTC drivers" selection menu.
 
-I know remember that the old code was working on a MX35PDK board.
-Actually I did the porting some time ago. That means that we have to
-deal with two variants of the Flexcan controller, unfortunately:
+While at it change the dependency of RTC_DRV_IMXDI from ARCH_MX25 to SOC_IMX25.
 
-mx25/35: State changes *and* bus errors are both signalled via ESR ERR
-	bit. The TWRN, RWRN and BOFF bits seem not to be used. Therefore
-	bus error reporting cannot be enabled/disabled individually.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/rtc/Kconfig |   42 +++++++++++++++++++++---------------------
+ 1 files changed, 21 insertions(+), 21 deletions(-)
 
-mx28/mx53?: Bus error are signalled via ESR ERR bit and state changes
-	via TWRN, RWRN and BOFF bit. Therefore bus error reporting
-	*can* be enabled/disabled individually as implemented by this
-	patch:
-
-	https://gitorious.org/~wgrandegger/linux-can/wg-linux-can-next/commit/f0829d269a451c8abb99435d5a1a63cb18566668
-
-I will try to get a MX35PDK board for further evaluation and development.
-
-Wolfgang.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 53eb4e5..fdc32ba 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -613,27 +613,6 @@ config RTC_DRV_MSM6242
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-msm6242.
+ 
+-config RTC_DRV_IMXDI
+-	tristate "Freescale IMX DryIce Real Time Clock"
+-	depends on ARCH_MX25
+-	depends on RTC_CLASS
+-	help
+-	   Support for Freescale IMX DryIce RTC
+-
+-	   This driver can also be built as a module, if so, the module
+-	   will be called "rtc-imxdi".
+-
+-config RTC_MXC
+-	tristate "Freescale MXC Real Time Clock"
+-	depends on ARCH_MXC
+-	depends on RTC_CLASS
+-	help
+-	   If you say yes here you get support for the Freescale MXC
+-	   RTC module.
+-
+-	   This driver can also be built as a module, if so, the module
+-	   will be called "rtc-mxc".
+-
+ config RTC_DRV_BQ4802
+ 	tristate "TI BQ4802"
+ 	help
+@@ -731,6 +710,16 @@ config RTC_DRV_DAVINCI
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-davinci.
+ 
++config RTC_DRV_IMXDI
++	tristate "Freescale IMX DryIce Real Time Clock"
++	depends on SOC_IMX25
++	depends on RTC_CLASS
++	help
++	   Support for Freescale IMX DryIce RTC
++
++	   This driver can also be built as a module, if so, the module
++	   will be called "rtc-imxdi".
++
+ config RTC_DRV_OMAP
+ 	tristate "TI OMAP1"
+ 	depends on ARCH_OMAP15XX || ARCH_OMAP16XX || ARCH_OMAP730 || ARCH_DAVINCI_DA8XX
+@@ -1070,4 +1059,15 @@ config RTC_DRV_PUV3
+ 	  This drive can also be built as a module. If so, the module
+ 	  will be called rtc-puv3.
+ 
++config RTC_MXC
++	tristate "Freescale MXC Real Time Clock"
++	depends on ARCH_MXC
++	depends on RTC_CLASS
++	help
++	   If you say yes here you get support for the Freescale MXC
++	   RTC module.
++
++	   This driver can also be built as a module, if so, the module
++	   will be called "rtc-mxc".
++
+ endif # RTC_CLASS
+-- 
+1.7.1
 
