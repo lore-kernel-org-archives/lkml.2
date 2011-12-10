@@ -1,59 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab1LJLmk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 06:42:40 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62846 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1LJLmh convert rfc822-to-8bit (ORCPT
+	id S1751077Ab1LJMFW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 07:05:22 -0500
+Received: from fallback2.mail.ru ([94.100.176.87]:44967 "EHLO
+	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1LJMFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 06:42:37 -0500
+	Sat, 10 Dec 2011 07:05:20 -0500
+From: =?utf-8?b?0JDRgNGC0LXQvCDQkNC90LjRgdC40LzQvtCy?= 
+	<aanisimov@inbox.ru>
+To: linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: User time accounting is broken for ptrace()d processes
+Date: Sat, 10 Dec 2011 16:06:47 +0300
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4; KDE/4.5.95; i686; ; )
 MIME-Version: 1.0
-In-Reply-To: <28442.1323269262@redhat.com>
-References: <28442.1323269262@redhat.com>
-Date: Sat, 10 Dec 2011 12:42:36 +0100
-Message-ID: <CA+MtwOEHYu1z8TLXv7jwCKfgavaGX7EWXmxq2xs6b0jbujy35g@mail.gmail.com>
-Subject: Re: [GIT PULL] Crypto keys and module signing
-From: =?ISO-8859-2?Q?Arkadiusz_Mi=B6kiewicz?= <a.miskiewicz@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: jmorris@namei.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        arjan@linux.intel.com, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112101606.47148.aanisimov@inbox.ru>
+X-Spam: Not detected
+X-Mras: Ok
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 7, 2011 at 3:47 PM, David Howells <dhowells@redhat.com> wrote:
->
-> Hi James,
->
-> Could you pull my module signing code into the security tree?  The patches can
-> be viewed here:
->
-> http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/devel
+Hi!
 
-If I understand it is not possible to sign modules after they are
-built and load keys without actually
-rebuilding kernel?
+  I've tried to measure utime of a program when it is not ptrace()d and when 
+it is. User times reported in these two cases differ significantly and I 
+believe it indicates a bug in the time accounting code.
 
-For distro kernel the public and secret keys have to be available
-publicly, right? Otherwise people
-using distro kernels won't be able to build own signed modules for use
-with that distro kernel.
+  Let us start with description of the test setup. The source code can be 
+found at the end of this email.
 
-Then I as admin have to rebuild the kernel to get my own keys in and
-prevent other, "unapproved" modules
-to be loaded. Correct?
+  A program being traced essentially makes a considerable number of syscalls 
+and makes N_ARITH_OPS simple arithmetic operations and memory accesses between 
+two consequent syscalls; changing N_ARITH_OPS will later be used to obtain 
+some interesting results.
 
-Would be nice if the modules could be signed/re-signed after being
-build and prehaps kernel could
-load keys from initramfs? Then everyone could use own keys on distro
-kernels without need to rebuild
-the thing.
+  Now let us pass to the main program, which runs the child and measures its 
+utime in two different ways. First, it simply invokes the child, waits for its 
+completion and collects resource usage stats. Then, the child is started with 
+ptrace enabled and it is stopped at every invocation of a syscall; after 
+running the child in this ptrace()d mode its resource usage stats are 
+collected.
 
-I think I'm missing something :)
+  During the tests cpu frequency governor was set to 'performance' so that cpu 
+frequency scaling does not get in the way.
 
--- 
-Arkadiusz Mi¶kiewicz
+  Here are some numbers that I get when running my test on single-core i386 
+CPU (Pentium M Dothan @ 2.0GHz).
+
+N_ARITH_OPS=0*256                |  N_ARITH_OPS=2*256
+                                 |
+utime (untraced): 28501 musecs   |  utime (untraced): 452028 musecs
+utime (traced): 75004 musecs     |  utime (traced): 584536 musecs
+
+  As one can see, utime is consistently higher when the child is ptrace()d. 
+Strangely, difference between "traced" and "untraced" utimes is bigger when 
+N_ARITH_OPS=2*256 and the child does some work between syscalls.
+
+  Here are some numbers that I get when running my test on a dual-core x86_64 
+CPU (Intel E5500 @ 2.8GHz).
+
+N_ARITH_OPS=0*256                |  N_ARITH_OPS=2*256
+                                 |
+utime (untraced): 22496 musecs   |  utime (untraced): 675772 musecs
+utime (traced): 123230 musecs    |  utime (traced): 885989 musecs
+
+  The behaviour is essentially the same.
+
+  The test machines run linux-3.2-rc4 (i386) and linux-3.1.2 (x86_64). I've 
+also made a test run in a virtual machine (32-bit linux-3.1.2 guest on x86_64 
+host) and there I get ridiculous results: "traced" utime is consistently 10 
+times *smaller* than "untraced" utime.
+
+  Could you please explain why utime of a traced process is almost always 
+higher than utime of standalone process? The process being traced does not 
+change between two invocations so the increase of utime is certainly a bug. 
+Also I'd like to know if there is a way to measure utime reliably.
+
+  Please CC me when replying to this message because I am not subscribed to 
+linux-kernel.
+
+Thanks,
+Artem.
+
+----- child.c -----
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#define N_ITERATIONS (256*1024)
+#define N_ARITH_OPS (2*256)
+
+static void __attribute__((noreturn)) die(const char *msg)
+{
+        printf("%s, errno=%d\n",msg,errno);
+        exit(1);
+}
+
+/* don't let GCC optimize away a loop that does some work in user space */
+volatile int x;
+
+int main()
+{
+int fd;
+char buf[128];
+
+        fd=open("/proc/self/exe",O_RDONLY);
+        if(fd<0)
+                die("failed to open file");
+        
+        for(int i=0;i<N_ITERATIONS;++i)
+        {
+                pread(fd,buf,128,0);
+                for(int j=0;j<N_ARITH_OPS;++j)
+                        ++x;
+        }
+        close(fd);
+        
+        return 0;
+}
+----- child.c -----
+
+----- time-when-traced.c -----
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/ptrace.h>
+#include <time.h>
+#include <errno.h>
+
+#define N_RUNS (8)
+
+static void __attribute__((noreturn)) die(const char *msg)
+{
+        printf("%s, errno=%d\n",msg,errno);
+        exit(1);
+}
+
+static void child_untraced()
+{
+char path[1024];
+char *c;
+char *args[]={NULL,NULL};
+char *env[]={NULL};
+
+        if(0>readlink("/proc/self/exe",path,1024))
+                die("failed to read link to myself");
+        
+        c=strrchr(path,'/');
+        strcpy(c+1,"child");
+        
+        args[0]=path;
+        execve(path,args,env);
+        die("failed to start the child");
+}
+
+static void child_traced()
+{
+        if(0>ptrace(PTRACE_TRACEME,0,NULL,0))
+                die("failed to trace myself");
+        child_untraced();
+}
+
+static inline int timeval_to_musec(const struct timeval *t)
+{
+        return (t->tv_sec*1000*1000 + t->tv_usec);
+}
+
+static int measure_time_untraced()
+{
+pid_t p;
+int status;
+struct rusage rusage;
+
+        p=fork();
+        if(p<0)
+                die("failed to fork");
+        if(!p)
+                child_untraced();
+        
+        if(p!=wait4(p,&status,0,&rusage))
+                die("failed to wait for child termination");
+        
+        if(!WIFEXITED(status) || 0!=WEXITSTATUS(status))
+                die("child failed");
+        
+        return timeval_to_musec(&rusage.ru_utime);
+}
+
+static int measure_time_traced()
+{
+pid_t p;
+int status;
+struct rusage rusage;
+
+        p=fork();
+        if(p<0)
+                die("failed to fork");
+        if(!p)
+                child_traced();
+        
+        for(;;)
+        {
+                if(p!=wait4(p,&status,0,&rusage))
+                        die("failed to wait for child");
+                if(WIFSTOPPED(status))
+                {
+                        if(WSTOPSIG(status)!=SIGTRAP)
+                                die("stopped by signal other than SIGTRAP");
+                }
+                else if(WIFSIGNALED(status))
+                        die("child was signaled");
+                else if(WIFEXITED(status))
+                        break;
+                else
+                        die("neither stopped, nor signaled, nor killed?\n");
+                
+                if(0>ptrace(PTRACE_SYSCALL,p,NULL,0))
+                        die("failed to resume the child");
+        }
+        
+        return timeval_to_musec(&rusage.ru_utime);
+}
+
+int main()
+{
+int time_untraced;
+int time_traced;
+
+        time_untraced=time_traced=0;
+        
+        {
+                /* warm up */
+                measure_time_untraced();
+                measure_time_traced();
+        }
+        
+        for(int i=0;i<N_RUNS;++i)
+        {
+                time_untraced+=measure_time_untraced();
+                time_traced+=measure_time_traced();
+        }
+        
+        printf("utime (untraced): %d musecs\n",time_untraced/N_RUNS);
+        printf("utime (traced): %d musecs\n",time_traced/N_RUNS);
+        
+        return 0;
+}
+----- time-when-traced.c -----
+
+----- makefile -----
+default:  time-when-traced child
+
+time-when-traced: time-when-traced.c
+        gcc -std=c99 -O2 -o time-when-traced time-when-traced.c
+
+child: child.c
+        gcc -std=c99 -O2 -o child child.c
+----- makefile -----
