@@ -1,168 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab1LJAZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 19:25:30 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49864 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1LJAZ3 (ORCPT
+	id S1755196Ab1LJAZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 19:25:58 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40241 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab1LJAZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 19:25:29 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6555"; a="143119559"
-Message-ID: <4EE2A6F8.3010604@codeaurora.org>
-Date: Fri, 09 Dec 2011 16:25:28 -0800
-From: Michael Bohan <mbohan@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 9 Dec 2011 19:25:57 -0500
+Date: Sat, 10 Dec 2011 00:25:03 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5 v2] ARM: OMAP1: recalculate loops per jiffy after
+	dpll1 reprogram
+Message-ID: <20111210002503.GA6018@n2100.arm.linux.org.uk>
+References: <1322364751-29980-6-git-send-email-jkrzyszt@tis.icnet.pl> <1322526332-14088-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111209084245.GB14547@n2100.arm.linux.org.uk> <201112091100.01690.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-To: devicetree-discuss@lists.ozlabs.org
-CC: LKML <linux-kernel@vger.kernel.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Representing SPMI bus in Device Tree
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112091100.01690.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 09, 2011 at 11:00:01AM +0100, Janusz Krzysztofik wrote:
+> On Friday 09 of December 2011 at 09:42:45, Russell King - ARM Linux wrote:
+> > On Tue, Nov 29, 2011 at 01:25:32AM +0100, Janusz Krzysztofik wrote:
+> > > However, the result of cpufreq_scale() differs from that of
+> > > (re)calibrate_delay() by ca. 6%, i.e., 70.40 vs. 74.54. Please advise if
+> > > this approximation is acceptable.
+> > 
+> > You don't say which figure is what.
+> 
+> Hi,
+> Those were BogoMIPS, which you were talking about in your comment 
+> (http://www.spinics.net/lists/linux-omap/msg60811.html).
 
-I am designing a bus driver for the System Power Management Interface, 
-which is also known as SPMI. Information about the bus can be found 
-through this website:
+I realise that.  But which is which - is 70.40 from recalibrate_delay
+or is it 74.54?  Your message is too vague to be able to interpret your
+results because it's impossible to work out what figure refers to which
+method.
 
-http://www.mipi.org/specifications/system-power-management-interface
+> > Note that calibrate_delay() is itself inaccurate - the loops_per_jiffy
+> > is the number of loops which can be executed between two timer ticks
+> > _minus_ the time to process the timer interrupt itself.  So, it's
+> > actually always a little less than the theoretical number of loops
+> > within that time period.
+> 
+> I see. Then, in case of a machine always booting at, let's say, 12 and
+> then reprogrammed to 150 MHz, we actually scale up that less then the
+> theoretical number, with a side effect of scaling up its error as well.
+> Perhaps in this case, when the machine is going to run at that target
+> rate until rebooted, we should rather decide to recalibrate to keep
+> that error proportionally small compared to the target loops per
+> jiffy value, like it worked in my initial proposal? I think that
+> your argument about unnecessarily wasting 10s of milliseconds has
+> marginal importance here because we will be redoing that calibration
+> only once, at boot time, and never later until next reboot.
 
-In short, to make a transaction, you need two things: a 4 bit slave ID 
-and a 16 bit address offset.
+It really doesn't matter - udelay() etc is not designed to be mega
+accurate but good enough.  The fact is that it has always produced a
+delay of approximately the value requested of it (and normally it
+would produce a slightly shorter delay) and that's a fact of life
+that driver authors should already be dealing with.
 
-One difference in our model is a requirement to instantiate multiple 
-devices on the same slave ID. That is to say, our 16 bit address space 
-is segmented. For this reason, I was thinking it would be nice to have 
-an optional second level in the tree under the bus driver. The first 
-level specifies the slave ID, and the optional second is reserved for 
-specifying any number of address ranges for carving out chunks in the 
-16-bit address space.
-
-Here is a graphical representation on this model:
-
-/ {
-         spmi@abc123 {
-         #address-cells = <1>;
-                 #size-cells = <0>;
-         compatible = "qcom,spmi-platform";
-                 pmic@1 {
-                         #address-cells = <1>;
-                         #size-cells = <1>;
-                         reg = <0x1>;
-                         spmi-dev-container;
-
-                         coincell@beef {
-                                 compatible = "qcom,coincell";
-                                 reg = <0xbeef 0x4000>;
-                 		interrupts = <100>;
-                         };
-                         pon@cafe {
-                                 compatible = "qcom,pon";
-                                 reg = <0xcafe 0x4000 0xf00 0x1000>;
-                         };
-                 };
-                 simple_dev@2 {
-                         compatible = "qcom,pon";
-                         reg = <0x2>;
-             		interrupts = <51>;
-                 };
-         };
-};
-
-For each node entry, the of layer checks for the spmi-dev-container flag 
-that instructs whether this node 'contains' another level of devices, of 
-which include and number of bus address ranges. I think this approach 
-does a good job of describing the hardware and respecting the Device 
-Tree conventions.
-
-I can think of a couple other ways to portray this same information, but 
-each have what I consider huge problems. For example, we could treat the 
-first 'reg' tuple to mean slave ID, and any subsequent ones to be bus 
-addresses:
-
-
-spmi@abc123 {
-     #address-cells = <1>;
-     #size-cells = <1>;
-     compatible = "qcom,spmi-platform";
-     coincell@1 {
-         compatible = "qcom,coincell";
-         reg = <0x1 0x0 0xbeef1 0x4000>;
-         interrupts = <100>;
-     };
-     pon@1 {
-         compatible = "qcom,pon";
-         reg = <0x1 0x0 0xcafe1 0x4000 0xf001 0x1000>;
-     };
-     simple_dev@2 {
-         compatible = "qcom,pon";
-         reg = <0x2>;
-         interrupts = <51>;
-     };
-};
-
-But then we end up with duplicate devices on the same node address for 
-the same bus level, which I understand is not allowed in Device Tree. 
-Also, I don't like the notion that the address meaning is overloaded 
-here. We could establish a new binding to represent bus addresses (eg. 
-spmi-bus-addr = <0xcafe 0x4000>, but my understanding is there should be 
-only one address specifier per node level.
-
-Another possibility is to have a single level that encapsulates both a 
-slave id and bus address within one address. For ex. the upper bits 
-represent the bus address and the least significant nibble is the slave 
-id. This seems somewhat convoluted, though. Since we require support for 
-multiple bus address ranges, then we have redundancy in the sense that 
-each address includes a separate declaration of the slave ID. Plus, we 
-have the same issue of an arbitrary structure imposed on an address.
-
-I probably dislike this one the most.
-
-Ex.
-
-spmi@abc123 {
-     #address-cells = <1>;
-     #size-cells = <1>;
-     compatible = "qcom,spmi-platform";
-     coincell@beef1 {
-         compatible = "qcom,coincell";
-         reg = <0xbeef1 0x4000>;
-         interrupts = <100>;
-     };
-     pon@cafe1 {
-         compatible = "qcom,pon";
-         reg = <0xcafe1 0x4000 0xf001 0x1000>;
-     };
-     simple_dev@2 {
-         compatible = "qcom,pon";
-         reg = <0x2>;
-         interrupts = <51>;
-     };
-};
-
-To me the first example is the most consistent with what Device Tree 
-expects, but I certainly welcome any feedback or additional ideas.
-
-A separate but related problem is how to convey these bus addresses and 
-interrupt values in a data structure. The of_platform code puts these in 
-a 'struct resource', which is almost exactly what we want here. But the 
-problem is that the semantics of a resource include addresses that are 
-translatable to cpu addresses, and SPMI addresses are not. For example, 
-of_address_to_resource() will fail on this model since it tries to 
-translate the addresses. I can always implement it using more primitive 
-APIs, but the fact that of_address_to_resource() is designed this way 
-makes me think that perhaps 'resources' are not the right mechanism to 
-be using. What is the best way to convey a variable amount of bus 
-addresses and interrupt numbers? Should we invent a new data structure?
-
-Thanks in advance for any suggestions that people have.
-
-Mike
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+So, your patch is fine.
