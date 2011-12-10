@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab1LJO7P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 09:59:15 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:43573 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751719Ab1LJO7N (ORCPT
+	id S1751677Ab1LJPAd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 10:00:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55271 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab1LJPAc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 09:59:13 -0500
-Date: Sat, 10 Dec 2011 09:59:12 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 2/4] PM: Run the driver callback directly if the subsystem
- one is not there
-In-Reply-To: <201112100020.58055.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1112100958350.594-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 10 Dec 2011 10:00:32 -0500
+Message-ID: <1323529183.16764.7.camel@twins>
+Subject: Re: [PATCH 1/3] kref: Inline all functions
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu
+Date: Sat, 10 Dec 2011 15:59:43 +0100
+In-Reply-To: <CACVXFVO7jtONN=Dbi-64n8Q-1Rbs9gNgsp6Qq5-o3NBAKTrNbw@mail.gmail.com>
+References: <20111210104341.592561407@chello.nl>
+	 <20111210104840.107647845@chello.nl>
+	 <CACVXFVO7jtONN=Dbi-64n8Q-1Rbs9gNgsp6Qq5-o3NBAKTrNbw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Dec 2011, Rafael J. Wysocki wrote:
-
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, 2011-12-10 at 22:32 +0800, Ming Lei wrote:
+> Looks like no much text size increase in built vmlinux for ARM.
 > 
-> Make the PM core execute driver PM callbacks directly if the
-> corresponding subsystem callbacks are not present.
-> --- linux.orig/drivers/base/power/runtime.c
-> +++ linux/drivers/base/power/runtime.c
-> @@ -250,6 +250,9 @@ static int rpm_idle(struct device *dev,
->  	else
->  		callback = NULL;
->  
-> +	if (!callback && dev->driver && dev->driver->pm)
-> +		callback = dev->driver->pm->runtime_idle;
-> +
->  	if (callback)
->  		__rpm_callback(callback, dev);
->  
-> @@ -713,6 +716,12 @@ static int rpm_resume(struct device *dev
->  	else
->  		callback = NULL;
->  
-> +	if (!callback && dev->driver && dev->driver->pm)
-> +		callback = dev->driver->pm->runtime_suspend;
-> +
-> +	if (!callback && dev->driver && dev->driver->pm)
-> +		callback = dev->driver->pm->runtime_resume;
-> +
->  	retval = rpm_callback(callback, dev);
->  	if (retval) {
->  		__update_runtime_status(dev, RPM_SUSPENDED);
+> [tom@linux-2.6-omap]$size vmlinux
+>    text    data     bss     dec     hex filename
+> 6030247 2083292 7912356 16025895         f48927 vmlinux
+> 
+> [tom@linux-2.6-omap]$size vmlinux-before-kref-inline
+>    text    data     bss     dec     hex filename
+> 6023264 2083300 7912356 16018920         f46de8 vmlinux-before-kref-inline 
 
-Looks like part of that got added in the wrong place.
-
-Alan Stern
-
+Yeah, and I guess you can reduce it even further if you put the
+WARN_ON() in some CONFIG_DEBUG_BLAH section, like the refcount stuff
+from Alexey was doing.
