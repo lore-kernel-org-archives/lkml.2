@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab1LJP5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 10:57:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46951 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1LJP5P (ORCPT
+	id S1751728Ab1LJQIK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 11:08:10 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:50945 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1LJQIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 10:57:15 -0500
+	Sat, 10 Dec 2011 11:08:07 -0500
+Date: Sat, 10 Dec 2011 17:08:03 +0100
+From: Bastian Blank <bastian@waldi.eu.org>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 0/4] V2, Move stuff out of xenfs
+Message-ID: <20111210160803.GA15557@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
+	David Vrabel <david.vrabel@citrix.com>,
+	Ian Campbell <Ian.Campbell@citrix.com>,
+	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+References: <1323292396-19523-1-git-send-email-waldi@debian.org>
+ <1323333259.2969.56.camel@zakaz.uk.xensource.com>
+ <20111208092855.GB22678@wavehammer.waldi.eu.org>
+ <4EE09B42.4090801@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <1323529084.16764.5.camel@twins>
-References: <20111210104341.592561407@chello.nl>
-	<20111210104840.295857663@chello.nl>
-	<CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
-	<1323529084.16764.5.camel@twins>
-Date: Sat, 10 Dec 2011 23:57:14 +0800
-Message-ID: <CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-From: Ming Lei <tom.leiming@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4EE09B42.4090801@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 10, 2011 at 10:58 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Sat, 2011-12-10 at 22:07 +0800, Ming Lei wrote:
->> > While true, it fails to show why this is a problem. I say it is not a
->>
->> IMO, the added two barriers are pairs of the implicit barrier in kref_put, so
->> that we can order between kref_init/kref_get and kref_put.
->
-> Yeah so?
+On Thu, Dec 08, 2011 at 11:10:58AM +0000, David Vrabel wrote:
+> On 08/12/11 09:28, Bastian Blank wrote:
+> > On Thu, Dec 08, 2011 at 08:34:19AM +0000, Ian Campbell wrote:
+> >> How are we doing on the corresponding toolstack changes?
+> > I have at least parts of it somewhere on my workstation. I'll polish and
+> > submit them also.
+> I assume the toolstack will fall back to xenfs if the devices don't exist?
 
-I think so, see below:
+This was the plan.
 
+Bastian
 
-CPU0			CPU1
-
-atomic_set(v)
-smp_mb()
-				smp_mb()
-				atomic_dec_and_test(v)
-
-Without the barrier after atomic_set, CPU1 may see a stale
-value of v first, then decrease it, so may miss a release operation.
-
-The pair of smp_mb can make order between atomic_set
-and atomic_dec_and_test, can't it?
-
-> If there's a destruction race with kref_put() the barrier won't
-
-Sorry, could you say what the destruction race is?
-
-> solve it. Other than that the actual order of get/put is irrelevant.
-
-
-thanks,
 -- 
-Ming Lei
+	"Get back to your stations!"
+	"We're beaming down to the planet, sir."
+		-- Kirk and Mr. Leslie, "This Side of Paradise",
+		   stardate 3417.3
