@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab1LJGvf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 01:51:35 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60660 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab1LJGvc (ORCPT
+	id S1752891Ab1LJGvj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 01:51:39 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52945 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab1LJGvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 01:51:32 -0500
-Subject: [RFC PATCH v6 09/10] fadump: Invalidate the fadump registration
-	during machine shutdown.
+	Sat, 10 Dec 2011 01:51:35 -0500
+Subject: [RFC PATCH v6 06/10] fadump: Add PT_NOTE program header for vmcoreinfo
 To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -19,46 +18,76 @@ Cc: Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Ananth Narayan <ananth@in.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
         Anton Blanchard <anton@samba.org>
-Date: Sat, 10 Dec 2011 12:21:22 +0530
-Message-ID: <20111210065122.10195.980.stgit@mars.in.ibm.com>
+Date: Sat, 10 Dec 2011 12:20:54 +0530
+Message-ID: <20111210065054.10195.4026.stgit@mars.in.ibm.com>
 In-Reply-To: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
 References: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
 User-Agent: StGit/0.15-1-ged5e-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120921-3568-0000-0000-000000DE4ADE
+x-cbid: 11120920-9264-0000-0000-0000005F47D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-If dump is active during system reboot, shutdown or halt then invalidate
-the fadump registration as it does not get invalidated automatically.
+Introduce a PT_NOTE program header that points to physical address of
+vmcoreinfo_note buffer declared in kernel/kexec.c. The vmcoreinfo
+note buffer is populated during crash_fadump() at the time of system
+crash.
 
 Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
- arch/powerpc/kernel/setup-common.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/fadump.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index 4e62a56..b0ebdea 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -110,6 +110,14 @@ EXPORT_SYMBOL(ppc_do_canonicalize_irqs);
- /* also used by kexec */
- void machine_shutdown(void)
- {
-+#ifdef CONFIG_FA_DUMP
-+	/*
-+	 * if fadump is active, cleanup the fadump registration before we
-+	 * shutdown.
-+	 */
-+	fadump_cleanup();
-+#endif
-+
- 	if (ppc_md.machine_shutdown)
- 		ppc_md.machine_shutdown();
+diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
+index cab56e7..5689954 100644
+--- a/arch/powerpc/kernel/fadump.c
++++ b/arch/powerpc/kernel/fadump.c
+@@ -814,6 +814,19 @@ static void fadump_setup_crash_memory_ranges(void)
+ 	}
  }
+ 
++/*
++ * If the given physical address falls within the boot memory region then
++ * return the relocated address that points to the dump region reserved
++ * for saving initial boot memory contents.
++ */
++static inline unsigned long fadump_relocate(unsigned long paddr)
++{
++	if (paddr > RMA_START && paddr < fw_dump.boot_memory_size)
++		return fdm.rmr_region.destination_address + paddr;
++	else
++		return paddr;
++}
++
+ static int fadump_create_elfcore_headers(char *bufp)
+ {
+ 	struct elfhdr *elf;
+@@ -845,6 +858,22 @@ static int fadump_create_elfcore_headers(char *bufp)
+ 
+ 	(elf->e_phnum)++;
+ 
++	/* setup ELF PT_NOTE for vmcoreinfo */
++	phdr = (struct elf_phdr *)bufp;
++	bufp += sizeof(struct elf_phdr);
++	phdr->p_type	= PT_NOTE;
++	phdr->p_flags	= 0;
++	phdr->p_vaddr	= 0;
++	phdr->p_align	= 0;
++
++	phdr->p_paddr	= fadump_relocate(paddr_vmcoreinfo_note());
++	phdr->p_offset	= phdr->p_paddr;
++	phdr->p_memsz	= vmcoreinfo_max_size;
++	phdr->p_filesz	= vmcoreinfo_max_size;
++
++	/* Increment number of program headers. */
++	(elf->e_phnum)++;
++
+ 	/* setup PT_LOAD sections. */
+ 
+ 	for (i = 0; i < crash_mem_ranges; i++) {
 
