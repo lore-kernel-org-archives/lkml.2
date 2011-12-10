@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab1LJENj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 23:13:39 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50785 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab1LJENi (ORCPT
+	id S1753317Ab1LJEk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 23:40:56 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42348 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1LJEkz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 23:13:38 -0500
+	Fri, 9 Dec 2011 23:40:55 -0500
 MIME-Version: 1.0
-X-Originating-IP: [12.185.155.194]
-In-Reply-To: <BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl>
-References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
-	<CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com>
-	<BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl>
-Date: Sat, 10 Dec 2011 05:13:37 +0100
-Message-ID: <CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com>
-Subject: Re: kernel BUG at drivers/gpu/drm/i915/i915_gem
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Rocko Requin <rockorequin@hotmail.com>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1323483097-24210-1-git-send-email-jack@suse.cz>
+References: <1323483097-24210-1-git-send-email-jack@suse.cz>
+Date: Sat, 10 Dec 2011 13:40:53 +0900
+Message-ID: <CAKYAXd9jYMZMht02n=W4T8+hq8hU8owoZk07TbLb-myk52PNKw@mail.gmail.com>
+Subject: Re: [PATCH] udf: Fix deadlock when converting file from in-ICB one to
+ normal one
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Matthias Matiak <netzpython@mail-on.us>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 10, 2011 at 03:09, Rocko Requin <rockorequin@hotmail.com> wrote:
->> Please report bugs always on the public
->> mailing list so that all interest people can join in
+2011/12/10 Jan Kara <jack@suse.cz>:
+> During BKL removal, conversion of files from in-ICB format to normal format got
+> broken. We call ->writepage with i_data_sem held but udf_get_block() also
+> acquires i_data_sem thus creating A-A deadlock.
 >
-> Apologies, I used to log them to the kernel bug tracker, which never came
-> back up after kernel.org was rebuilt, and I didn't want to bother the public
-> list.
-
-You've trimmed the cc: list and removed intel-gfx and linux-kernel.
-Don't do that, people won't see your reply otherwise. Re-added to the
-cc: list.
-
->> Unfortunately you've cut out the backtrace from the
->> kernel oops, so I can't tell anything more.
+> We fix the problem by dropping i_data_sem before calling ->writepage() which is
+> safe since i_mutex still protects us against any changes in the file. Also fix
+> pagelock - i_data_sem lock inversion in udf_expand_file_adinicb() by dropping
+> i_data_sem before calling find_or_create_page().
 >
-> It wasn't me! The kernel locked up before it could complete writing the
-> backtrace to the log, so it simply isn't there (and unfortunately the PC
-> didn't switch to a tty to display it). There is the beginning of a backtrace
-> from the same bug the day before, but it doesn't get much past the invalid
-> opcode line
-
-If you can wire up netconsole you should be able to gather the full
-backtrace and that would be really useful. Otherwise can you please
-confirm by reverting that commit from your current tree that it is
-indeed the culprit? Otherwise please bisect the issue.
--Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> Reported-by: Matthias Matiak <netzpython@mail-on.us>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  fs/udf/file.c  |    6 +++---
+>  fs/udf/inode.c |   20 +++++++++++++++++---
+>  2 files changed, 20 insertions(+), 6 deletions(-)
+>
+>  I plan to merge this fix through my tree soon.
+>
+> +/*
+> + * Expand file stored in ICB to a normal one-block-file
+> + *
+> + * This function requires i_data_sem for writing and releases it.
+> + * This function requires i_mutex held
+> + */
+>  int udf_expand_file_adinicb(struct inode *inode)
+>  {
+>        struct page *page;
+> @@ -171,6 +177,11 @@ int udf_expand_file_adinicb(struct inode *inode)
+>                mark_inode_dirty(inode);
+                  up_write(&iinfo->i_data_sem);
+Hi Jan.
+I do not know if that helps, Would it need here ?
+Thanks.
+>                return 0;
+>        }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
