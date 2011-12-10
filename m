@@ -1,177 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751764Ab1LJQNo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 11:13:44 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:47510 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750861Ab1LJQNl (ORCPT
+	id S1751798Ab1LJQZv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 11:25:51 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:43126 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750826Ab1LJQZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 11:13:41 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] vmscan/trace: Add 'active' and 'file' info to trace_mm_vmscan_lru_isolate.
-Date: Sun, 11 Dec 2011 00:10:51 +0800
-Message-Id: <1323533451-2953-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.5.4
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.10.72 authed with tm@tao.ma}
+	Sat, 10 Dec 2011 11:25:50 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX18q729dpmsqcy2CNmQ9CPQJU1IRDY0hYnxf0b7jBm
+	q8zPky+kz4rZg9
+Date: Sat, 10 Dec 2011 17:25:38 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: boyd yang <boyd.yang@gmail.com>
+Cc: eparis@redhat.com, xiyou.wangcong@gmail.com,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fanotify: to differ file access event from different
+ threads
+Message-ID: <20111210162538.GB2773@Neptun>
+References: <CAE8kqZJO_YZ855g2P3803-3ptExDeKX108x-Q_2Rz7rgz1iUew@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE8kqZJO_YZ855g2P3803-3ptExDeKX108x-Q_2Rz7rgz1iUew@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Tue, Dec 06, 2011 at 09:23:25AM +0800, boyd yang wrote:
+> fanotify: to differ file access event from different threads
+> When fanotify is monitoring the whole mount point "/", and multiple
+> threads iterate the same direcotry, some thread will hang.
+> This patch let fanotify to differ access events from different
+> threads, prevent fanotify from merging access events from different
+> threads.
 
-In trace_mm_vmscan_lru_isolate, we don't output 'active' and 'file'
-information to the trace event and it is a bit inconvenient for the
-user to get the real information(like pasted below).
-mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+I could reproduce the problem you described. Actually it may occur each time
+when more than one thread of a process is waiting in fanotify_get_response() 
+at the same time. This is since we are not prepared to wake up more than one 
+waiter: We do 
 
-So this patch adds these 2 info to the trace event and it now looks like:
-mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 lru=1,0
+wait_event(group->fanotify_data.access_waitq, event->response ||
+			atomic_read(&group->fanotify_data.bypass_perm));
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- include/trace/events/vmscan.h |   25 +++++++++++++++++--------
- mm/memcontrol.c               |    2 +-
- mm/vmscan.c                   |    6 +++---
- 3 files changed, 21 insertions(+), 12 deletions(-)
+and after that 
+  event->response = 0;
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index edc4b3d..a0083b8 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -266,9 +266,10 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int active, int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file),
- 
- 	TP_STRUCT__entry(
- 		__field(int, order)
-@@ -279,6 +280,8 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__field(unsigned long, nr_lumpy_dirty)
- 		__field(unsigned long, nr_lumpy_failed)
- 		__field(isolate_mode_t, isolate_mode)
-+		__field(int, active)
-+		__field(int, file)
- 	),
- 
- 	TP_fast_assign(
-@@ -290,9 +293,11 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__entry->nr_lumpy_dirty = nr_lumpy_dirty;
- 		__entry->nr_lumpy_failed = nr_lumpy_failed;
- 		__entry->isolate_mode = isolate_mode;
-+		__entry->active = active;
-+		__entry->file = file;
- 	),
- 
--	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu",
-+	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu lru=%d,%d",
- 		__entry->isolate_mode,
- 		__entry->order,
- 		__entry->nr_requested,
-@@ -300,7 +305,9 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__entry->nr_taken,
- 		__entry->nr_lumpy_taken,
- 		__entry->nr_lumpy_dirty,
--		__entry->nr_lumpy_failed)
-+		__entry->nr_lumpy_failed,
-+		__entry->active,
-+		__entry->file)
- );
- 
- DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
-@@ -312,9 +319,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int active, int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
- 
- );
- 
-@@ -327,9 +335,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int active, int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
- 
- );
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..246fbce 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1249,7 +1249,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 	*scanned = scan;
- 
- 	trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
--				      0, 0, 0, mode);
-+				      0, 0, 0, mode, active, file);
- 
- 	return nr_taken;
- }
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f54a05b..97955ca 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1103,7 +1103,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
- static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		struct list_head *src, struct list_head *dst,
- 		unsigned long *scanned, int order, isolate_mode_t mode,
--		int file)
-+		int active, int file)
- {
- 	unsigned long nr_taken = 0;
- 	unsigned long nr_lumpy_taken = 0;
-@@ -1221,7 +1221,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			nr_to_scan, scan,
- 			nr_taken,
- 			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
--			mode);
-+			mode, active, file);
- 	return nr_taken;
- }
- 
-@@ -1237,7 +1237,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
- 	if (file)
- 		lru += LRU_FILE;
- 	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
--								mode, file);
-+							mode, active, file);
- }
- 
- /*
--- 
-1.7.0.4
+which is the reason that even if we woke up other waiters on the same waitqueue
+they may see event->response being already 0, go back to sleep and then possibly 
+hang forever.
 
+> It also hide overflow events to reach user space.
+
+This is not part of this patch and also should not be, since overflow
+events are supposted to reach user space.
+
+> -	if (event->mask & FAN_ALL_PERM_EVENTS) {
+> -		/* if we merged we need to wait on the new event */
+> -		if (notify_event)
+> -			event = notify_event;
+> -		ret = fanotify_get_response_from_access(group, event);
+> +	/*if overflow, do not wait for response*/
+> +	if (event->mask&FS_Q_OVERFLOW) {
+> +		pr_debug("fanotify overflow!\n");
+> +	}	else {
+> +		if (event->mask & FAN_ALL_PERM_EVENTS) {
+> +			/* if we merged we need to wait on the new event */
+> +			if (notify_event)
+> +				event = notify_event;
+> +			ret = fanotify_get_response_from_access(group, event);
+> +		}
+>  	}
+
+What is this for? All you do is introduce a debug message for no real reason.
+However your fix (avoid merging of events from the same process) seems to work.
+
+Regards,
+Lino
