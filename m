@@ -1,100 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab1LJUOP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 15:14:15 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52835 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab1LJUOM (ORCPT
+	id S1751843Ab1LJURR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 15:17:17 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48253 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1LJURO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 15:14:12 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: rtc-linux@googlegroups.com
-Cc: a.zummo@towertech.it, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] rtc: Kconfig: Place RTC_DRV_IMXDI and RTC_MXC under "on-CPU RTC drivers"
-Date: Sat, 10 Dec 2011 18:14:02 -0200
-Message-Id: <1323548042-25432-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 10 Dec 2011 15:17:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EE2BC33.80902@gmail.com>
+References: <4EE2BC33.80902@gmail.com>
+Date: Sat, 10 Dec 2011 12:17:13 -0800
+X-Google-Sender-Auth: -z9S1EV5-ATSk9qPfFvdaYV3aAY
+Message-ID: <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Berck E. Nash" <flyboy@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: multipart/mixed; boundary=20cf305b13e6534a1c04b3c296c0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RTC_DRV_IMXDI and RTC_MXC are on-chip RTC modules, so move them under 
-"on-CPU RTC drivers" selection menu.
+--20cf305b13e6534a1c04b3c296c0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-While at it change the dependency of RTC_DRV_IMXDI from ARCH_MX25 to SOC_IMX25.
+On Fri, Dec 9, 2011 at 5:56 PM, Berck E. Nash <flyboy@gmail.com> wrote:
+> X2APIC has never worked on this system, and continues to not work
+> 3.2.0-rc5. =A0Simply hangs on boot with an error message that helpfully
+> indicates that x2apic is the problem. =A0The system is an ASRock P67
+> Extreme 6. =A0Log attached, let me know if I can do anything to help.
+> Please cc as I'm not subscribed.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/rtc/Kconfig |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
+madt said cpu is x2apic.
+[    0.000000] ACPI: X2APIC (apic_id[0x00] uid[0x01] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x02] uid[0x02] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x04] uid[0x03] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x06] uid[0x04] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x01] uid[0x05] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x03] uid[0x06] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x05] uid[0x07] enabled)
+[    0.000000] ACPI: X2APIC (apic_id[0x07] uid[0x08] enabled)
+[    0.000000] ACPI: X2APIC_NMI (uid[0xffffffff] high edge lint[0x1])
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 53eb4e5..fdc32ba 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -613,27 +613,6 @@ config RTC_DRV_MSM6242
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-msm6242.
- 
--config RTC_DRV_IMXDI
--	tristate "Freescale IMX DryIce Real Time Clock"
--	depends on ARCH_MX25
--	depends on RTC_CLASS
--	help
--	   Support for Freescale IMX DryIce RTC
--
--	   This driver can also be built as a module, if so, the module
--	   will be called "rtc-imxdi".
--
--config RTC_MXC
--	tristate "Freescale MXC Real Time Clock"
--	depends on ARCH_MXC
--	depends on RTC_CLASS
--	help
--	   If you say yes here you get support for the Freescale MXC
--	   RTC module.
--
--	   This driver can also be built as a module, if so, the module
--	   will be called "rtc-mxc".
--
- config RTC_DRV_BQ4802
- 	tristate "TI BQ4802"
- 	help
-@@ -731,6 +710,16 @@ config RTC_DRV_DAVINCI
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-davinci.
- 
-+config RTC_DRV_IMXDI
-+	tristate "Freescale IMX DryIce Real Time Clock"
-+	depends on SOC_IMX25
-+	depends on RTC_CLASS
-+	help
-+	   Support for Freescale IMX DryIce RTC
-+
-+	   This driver can also be built as a module, if so, the module
-+	   will be called "rtc-imxdi".
-+
- config RTC_DRV_OMAP
- 	tristate "TI OMAP1"
- 	depends on ARCH_OMAP15XX || ARCH_OMAP16XX || ARCH_OMAP730 || ARCH_DAVINCI_DA8XX
-@@ -1070,4 +1059,15 @@ config RTC_DRV_PUV3
- 	  This drive can also be built as a module. If so, the module
- 	  will be called rtc-puv3.
- 
-+config RTC_MXC
-+	tristate "Freescale MXC Real Time Clock"
-+	depends on ARCH_MXC
-+	depends on RTC_CLASS
-+	help
-+	   If you say yes here you get support for the Freescale MXC
-+	   RTC module.
-+
-+	   This driver can also be built as a module, if so, the module
-+	   will be called "rtc-mxc".
-+
- endif # RTC_CLASS
--- 
-1.7.1
+but bios does not provide DMAR table...
 
+[    0.000000] ACPI: RSDP 00000000000f0450 00024 (v02 ALASKA)
+[    0.000000] ACPI: XSDT 00000000bef32068 00054 (v01 ALASKA    A M I
+01072009 AMI  00010013)
+[    0.000000] ACPI: FACP 00000000bef398f8 000F4 (v04 ALASKA    A M I
+01072009 AMI  00010013)
+[    0.000000] ACPI: DSDT 00000000bef32150 077A6 (v02 ALASKA    A M I
+00000000 INTL 20051117)
+[    0.000000] ACPI: FACS 00000000bf60af80 00040
+[    0.000000] ACPI: APIC 00000000bef399f0 000D8 (v03 ALASKA    A M I
+01072009 AMI  00010013)
+[    0.000000] ACPI: SSDT 00000000bef39ac8 001DE (v01 AMICPU     PROC
+00000001 MSFT 03000001)
+[    0.000000] ACPI: MCFG 00000000bef39ca8 0003C (v01 ALASKA    A M I
+01072009 MSFT 00000097)
+[    0.000000] ACPI: AAFT 00000000bef39ce8 0006F (v01 ALASKA OEMAAFT
+01072009 MSFT 00000097)
+[    0.000000] ACPI: HPET 00000000bef39d58 00038 (v01 ALASKA    A M I
+01072009 AMI. 00000004)
+
+so kernel can not enable interrput remapping, then it will panic..
+
+[    0.085717] Kernel panic - not syncing: x2apic: enabled by BIOS but
+kernel init failed.
+[    0.093697] Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc5 #2
+[    0.099337] Call Trace:
+[    0.101788]  [<ffffffff8137b7ce>] ? panic+0x95/0x18e
+[    0.106755]  [<ffffffff81016259>] ? __ioapic_write_entry+0x16/0x32
+[    0.112925]  [<ffffffff8152d5bf>] ? enable_IR_x2apic+0x19a/0x1d7
+[    0.118913]  [<ffffffff8152f281>] ? default_setup_apic_routing+0xd/0x71
+[    0.125506]  [<ffffffff8152c536>] ? native_smp_prepare_cpus+0x2f1/0x325
+[    0.132102]  [<ffffffff81522abf>] ? kernel_init+0x46/0x10f
+[    0.137571]  [<ffffffff813841f4>] ? kernel_thread_helper+0x4/0x10
+[    0.143650]  [<ffffffff81522a79>] ? start_kernel+0x341/0x341
+[    0.149297]  [<ffffffff813841f0>] ? gs_change+0xb/0xb
+
+your bios should not enable x2apic in this case.
+
+please get one bios update.
+
+also I have one old patch that could disable apic. but it is not get
+merged and it may not be applied to current tree.
+
+let us know if you can not get BIOS update or can not disable x2apic
+in BIOS setup.
+
+Thanks
+
+Yinghai Lu
+
+--20cf305b13e6534a1c04b3c296c0
+Content-Type: text/x-patch; charset=US-ASCII; name="nox2apic.patch"
+Content-Disposition: attachment; filename="nox2apic.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gw12bnz91
+
+U3ViamVjdDogW1BBVENIIC12M10geDg2OiBEaXNhYmxlIHgyYXBpYyBpZiBub3gyYXBpYyBpcyBz
+cGVjaWZpZWQKCkZvcgoxLiB4MmFwaWMgcHJlZW5hYmxlZCBzeXN0ZW0KMi4gZmlyc3Qga2VybmVs
+IGhhdmUgeDJhcGljIGVuYWJsZWQsIGFuZCB0cnkgdG8ga2V4ZWMgc2Vjb25kIGtlcm5lbCB3aXRo
+ICJub3gyYXBpYyIKCldpbGwgcHV0IGJhY2sgY3B1IHdpdGggYXBpYyBpZCA8IDI1NSBpbnRvIHhh
+cGljIG1vZGUsIGluc3RlYWQgb2YgcGFuaWMuCgotdjI6IHVzZSB4MmFwaWNfZGlzYWJsZWQgaW5z
+dGVhZCBvZiBub3gyYXBpYywgU3VnZ2VzdGVkIGJ5IFRob21hcwogICAgIHVwZGF0ZSB4MmFwaWNf
+c3VwcG9ydGVkIHdpdGggeDJhcGljX2Rpc2FibGVkLCBTdWdnZXN0ZWQgYnkgVGhvbWFzCgotdjM6
+IGFkZCBjaGVja2luZyBmb3IgYm9vdCBjcHUgYXBpYyBpZCA+IDI1NS4gaW4gdGhhdCBjYXNlIHdp
+bGwganVzdCBwYW5pYwogICAgIC0tLSBwb2ludGVkIG91dCBieSBTdXJlc2guCgpTaWduZWQtb2Zm
+LWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGFyY2gveDg2L2luY2x1
+ZGUvYXNtL2FwaWMuaCAgICAgIHwgICAgNiArKystCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9hcGlj
+ZGVmLmggICB8ICAgIDEgCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wcm9jZXNzb3IuaCB8ICAgIDEg
+CiBhcmNoL3g4Ni9rZXJuZWwvYWNwaS9ib290LmMgICAgICB8ICAgMTAgKysrKysrLQogYXJjaC94
+ODYva2VybmVsL2FwaWMvYXBpYy5jICAgICAgfCAgIDUxICsrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKy0tLS0tLQogYXJjaC94ODYva2VybmVsL2NwdS90b3BvbG9neS5jICAgfCAgIDIx
+ICsrKysrKysrKysrKysrKysKIGFyY2gveDg2L21tL3NyYXQuYyAgICAgICAgICAgICAgIHwgICAg
+NyArKysrLQogNyBmaWxlcyBjaGFuZ2VkLCA4NSBpbnNlcnRpb25zKCspLCAxMiBkZWxldGlvbnMo
+LSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5oCj09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2luY2x1ZGUvYXNtL2FwaWMuaAorKysgbGlu
+dXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL2FwaWMuaApAQCAtMTc1LDYgKzE3NSw3IEBAIHN0
+YXRpYyBpbmxpbmUgdTY0IG5hdGl2ZV94MmFwaWNfaWNyX3JlYWQKIH0KIAogZXh0ZXJuIGludCB4
+MmFwaWNfcGh5czsKK2V4dGVybiBpbnQgeDJhcGljX2Rpc2FibGVkOwogZXh0ZXJuIHZvaWQgY2hl
+Y2tfeDJhcGljKHZvaWQpOwogZXh0ZXJuIHZvaWQgZW5hYmxlX3gyYXBpYyh2b2lkKTsKIGV4dGVy
+biB2b2lkIHgyYXBpY19pY3Jfd3JpdGUodTMyIGxvdywgdTMyIGlkKTsKQEAgLTE4Miw3ICsxODMs
+NyBAQCBzdGF0aWMgaW5saW5lIGludCB4MmFwaWNfZW5hYmxlZCh2b2lkKQogewogCXU2NCBtc3I7
+CiAKLQlpZiAoIWNwdV9oYXNfeDJhcGljKQorCWlmICghY3B1X2hhc194MmFwaWMgfHwgeDJhcGlj
+X2Rpc2FibGVkKQogCQlyZXR1cm4gMDsKIAogCXJkbXNybChNU1JfSUEzMl9BUElDQkFTRSwgbXNy
+KTsKQEAgLTE5MSw3ICsxOTIsNyBAQCBzdGF0aWMgaW5saW5lIGludCB4MmFwaWNfZW5hYmxlZCh2
+b2lkKQogCXJldHVybiAwOwogfQogCi0jZGVmaW5lIHgyYXBpY19zdXBwb3J0ZWQoKQkoY3B1X2hh
+c194MmFwaWMpCisjZGVmaW5lIHgyYXBpY19zdXBwb3J0ZWQoKQkoY3B1X2hhc194MmFwaWMgJiYg
+IXgyYXBpY19kaXNhYmxlZCkKIHN0YXRpYyBpbmxpbmUgdm9pZCB4MmFwaWNfZm9yY2VfcGh5cyh2
+b2lkKQogewogCXgyYXBpY19waHlzID0gMTsKQEAgLTIxMyw2ICsyMTQsNyBAQCBzdGF0aWMgaW5s
+aW5lIHZvaWQgeDJhcGljX2ZvcmNlX3BoeXModm9pCiAKICNkZWZpbmUJeDJhcGljX3ByZWVuYWJs
+ZWQgMAogI2RlZmluZQl4MmFwaWNfc3VwcG9ydGVkKCkJMAorI2RlZmluZQl4MmFwaWNfZGlzYWJs
+ZWQJMQogI2VuZGlmCiAKIGV4dGVybiB2b2lkIGVuYWJsZV9JUl94MmFwaWModm9pZCk7CkluZGV4
+OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL2FjcGkvYm9vdC5jCj09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxp
+bnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9hY3BpL2Jvb3QuYworKysgbGludXgtMi42L2Fy
+Y2gveDg2L2tlcm5lbC9hY3BpL2Jvb3QuYwpAQCAtMjE5LDYgKzIxOSw4IEBAIHN0YXRpYyBpbnQg
+X19pbml0CiBhY3BpX3BhcnNlX3gyYXBpYyhzdHJ1Y3QgYWNwaV9zdWJ0YWJsZV9oZWFkZXIgKmhl
+YWRlciwgY29uc3QgdW5zaWduZWQgbG9uZyBlbmQpCiB7CiAJc3RydWN0IGFjcGlfbWFkdF9sb2Nh
+bF94MmFwaWMgKnByb2Nlc3NvciA9IE5VTEw7CisJaW50IGFwaWNfaWQ7CisJdTggZW5hYmxlZDsK
+IAogCXByb2Nlc3NvciA9IChzdHJ1Y3QgYWNwaV9tYWR0X2xvY2FsX3gyYXBpYyAqKWhlYWRlcjsK
+IApAQCAtMjI3LDYgKzIyOSw4IEBAIGFjcGlfcGFyc2VfeDJhcGljKHN0cnVjdCBhY3BpX3N1YnRh
+YmxlX2gKIAogCWFjcGlfdGFibGVfcHJpbnRfbWFkdF9lbnRyeShoZWFkZXIpOwogCisJYXBpY19p
+ZCA9IHByb2Nlc3Nvci0+bG9jYWxfYXBpY19pZDsKKwllbmFibGVkID0gcHJvY2Vzc29yLT5sYXBp
+Y19mbGFncyAmIEFDUElfTUFEVF9FTkFCTEVEOwogI2lmZGVmIENPTkZJR19YODZfWDJBUElDCiAJ
+LyoKIAkgKiBXZSBuZWVkIHRvIHJlZ2lzdGVyIGRpc2FibGVkIENQVSBhcyB3ZWxsIHRvIHBlcm1p
+dApAQCAtMjM1LDggKzIzOSwxMCBAQCBhY3BpX3BhcnNlX3gyYXBpYyhzdHJ1Y3QgYWNwaV9zdWJ0
+YWJsZV9oCiAJICogdG8gbm90IHByZWFsbG9jYXRpbmcgbWVtb3J5IGZvciBhbGwgTlJfQ1BVUwog
+CSAqIHdoZW4gd2UgdXNlIENQVSBob3RwbHVnLgogCSAqLwotCWFjcGlfcmVnaXN0ZXJfbGFwaWMo
+cHJvY2Vzc29yLT5sb2NhbF9hcGljX2lkLAkvKiBBUElDIElEICovCi0JCQkgICAgcHJvY2Vzc29y
+LT5sYXBpY19mbGFncyAmIEFDUElfTUFEVF9FTkFCTEVEKTsKKwlpZiAoeDJhcGljX2Rpc2FibGVk
+ICYmIChhcGljX2lkID49IDB4ZmYpICYmIGVuYWJsZWQpCisJCXByaW50ayhLRVJOX1dBUk5JTkcg
+UFJFRklYICJ4MmFwaWMgZW50cnkgaWdub3JlZFxuIik7CisJZWxzZQorCQlhY3BpX3JlZ2lzdGVy
+X2xhcGljKGFwaWNfaWQsIGVuYWJsZWQpOwogI2Vsc2UKIAlwcmludGsoS0VSTl9XQVJOSU5HIFBS
+RUZJWCAieDJhcGljIGVudHJ5IGlnbm9yZWRcbiIpOwogI2VuZGlmCkluZGV4OiBsaW51eC0yLjYv
+YXJjaC94ODYva2VybmVsL2FwaWMvYXBpYy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmln
+L2FyY2gveDg2L2tlcm5lbC9hcGljL2FwaWMuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5l
+bC9hcGljL2FwaWMuYwpAQCAtMTQ3LDE1ICsxNDcsMTQgQEAgaW50IHgyYXBpY19tb2RlOwogI2lm
+ZGVmIENPTkZJR19YODZfWDJBUElDCiAvKiB4MmFwaWMgZW5hYmxlZCBiZWZvcmUgT1MgaGFuZG92
+ZXIgKi8KIHN0YXRpYyBpbnQgeDJhcGljX3ByZWVuYWJsZWQ7CitpbnQgeDJhcGljX2Rpc2FibGVk
+Owogc3RhdGljIF9faW5pdCBpbnQgc2V0dXBfbm94MmFwaWMoY2hhciAqc3RyKQogewotCWlmICh4
+MmFwaWNfZW5hYmxlZCgpKSB7Ci0JCXByX3dhcm5pbmcoIkJpb3MgYWxyZWFkeSBlbmFibGVkIHgy
+YXBpYywgIgotCQkJICAgImNhbid0IGVuZm9yY2Ugbm94MmFwaWMiKTsKLQkJcmV0dXJuIDA7Ci0J
+fQorCWlmICh4MmFwaWNfZW5hYmxlZCgpKQorCQlwcl93YXJuaW5nKCJCaW9zIGFscmVhZHkgZW5h
+YmxlZCB4MmFwaWMsIHdpbGwgZGlzYWJsZSBpdCIpOworCisJeDJhcGljX2Rpc2FibGVkID0gMTsK
+IAotCXNldHVwX2NsZWFyX2NwdV9jYXAoWDg2X0ZFQVRVUkVfWDJBUElDKTsKIAlyZXR1cm4gMDsK
+IH0KIGVhcmx5X3BhcmFtKCJub3gyYXBpYyIsIHNldHVwX25veDJhcGljKTsKQEAgLTE0MTIsOCAr
+MTQxMSwzOCBAQCB2b2lkIF9faW5pdCBic3BfZW5kX2xvY2FsX0FQSUNfc2V0dXAodm9pCiB9CiAK
+ICNpZmRlZiBDT05GSUdfWDg2X1gyQVBJQworCitzdGF0aWMgdm9pZCBkaXNhYmxlX3gyYXBpYyh2
+b2lkKQoreworCWludCBtc3IsIG1zcjI7CisKKwlpZiAoIWNwdV9oYXNfeDJhcGljKQorCQlyZXR1
+cm47CisKKwlyZG1zcihNU1JfSUEzMl9BUElDQkFTRSwgbXNyLCBtc3IyKTsKKwlpZiAobXNyICYg
+WDJBUElDX0VOQUJMRSkgeworCQl1MzIgeDJhcGljX2lkID0geDJhcGljX2NwdWlkX2luaXRpYWxf
+YXBpY2lkKCk7CisKKwkJaWYgKHgyYXBpY19pZCA+IDI1NSkKKwkJCXBhbmljKCJDYW4gbm90IGRp
+c2FibGUgeDJhcGljLCBpZDogJTA4eFxuIiwgeDJhcGljX2lkKTsKKworCQlwcl9pbmZvKCJEaXNh
+YmxpbmcgeDJhcGljXG4iKTsKKwkJLyoKKwkJICogTmVlZCB0byBkaXNhYmxlIHhhcGljIGFuZCB4
+MmFwaWMgYXQgdGhlIHNhbWUgdGltZSBhdCBmaXJzdAorCQkgKiAgdGhlbiBlbmFibGUgeGFwaWMK
+KwkJICovCisJCXdybXNyKE1TUl9JQTMyX0FQSUNCQVNFLCBtc3IgJiB+KFgyQVBJQ19FTkFCTEUg
+fCBYQVBJQ19FTkFCTEUpLAorCQkJIDApOworCQl3cm1zcihNU1JfSUEzMl9BUElDQkFTRSwgbXNy
+ICYgflgyQVBJQ19FTkFCTEUsIDApOworCX0KK30KIHZvaWQgY2hlY2tfeDJhcGljKHZvaWQpCiB7
+CisJaWYgKHgyYXBpY19kaXNhYmxlZCkgeworCQlkaXNhYmxlX3gyYXBpYygpOworCQlyZXR1cm47
+CisJfQorCiAJaWYgKHgyYXBpY19lbmFibGVkKCkpIHsKIAkJcHJfaW5mbygieDJhcGljIGVuYWJs
+ZWQgYnkgQklPUywgc3dpdGNoaW5nIHRvIHgyYXBpYyBvcHNcbiIpOwogCQl4MmFwaWNfcHJlZW5h
+YmxlZCA9IHgyYXBpY19tb2RlID0gMTsKQEAgLTE0MjQsNiArMTQ1MywxMSBAQCB2b2lkIGVuYWJs
+ZV94MmFwaWModm9pZCkKIHsKIAlpbnQgbXNyLCBtc3IyOwogCisJaWYgKHgyYXBpY19kaXNhYmxl
+ZCkgeworCQlkaXNhYmxlX3gyYXBpYygpOworCQlyZXR1cm47CisJfQorCiAJaWYgKCF4MmFwaWNf
+bW9kZSkKIAkJcmV0dXJuOwogCkBAIC0xNDg1LDYgKzE1MTksOSBAQCB2b2lkIF9faW5pdCBlbmFi
+bGVfSVJfeDJhcGljKHZvaWQpCiAJZWxzZQogCQlyZXQgPSBlbmFibGVfSVIoKTsKIAorCWlmICh4
+MmFwaWNfZGlzYWJsZWQpCisJCWdvdG8gbm94MmFwaWM7CisKIAlpZiAoIXJldCkgewogCQkvKiBJ
+UiBpcyByZXF1aXJlZCBpZiB0aGVyZSBpcyBBUElDIElEID4gMjU1IGV2ZW4gd2hlbiBydW5uaW5n
+CiAJCSAqIHVuZGVyIEtWTQpAQCAtMTUxOSw3ICsxNTU2LDcgQEAgb3V0OgogCiAJaWYgKHgyYXBp
+Y19wcmVlbmFibGVkKQogCQlwYW5pYygieDJhcGljOiBlbmFibGVkIGJ5IEJJT1MgYnV0IGtlcm5l
+bCBpbml0IGZhaWxlZC4iKTsKLQllbHNlIGlmIChjcHVfaGFzX3gyYXBpYykKKwllbHNlIGlmIChj
+cHVfaGFzX3gyYXBpYyAmJiAheDJhcGljX2Rpc2FibGVkKQogCQlwcl9pbmZvKCJOb3QgZW5hYmxp
+bmcgeDJhcGljLCBJbnRyLXJlbWFwcGluZyBpbml0IGZhaWxlZC5cbiIpOwogfQogCkluZGV4OiBs
+aW51eC0yLjYvYXJjaC94ODYvbW0vc3JhdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmln
+L2FyY2gveDg2L21tL3NyYXQuYworKysgbGludXgtMi42L2FyY2gveDg2L21tL3NyYXQuYwpAQCAt
+NjksNiArNjksMTIgQEAgYWNwaV9udW1hX3gyYXBpY19hZmZpbml0eV9pbml0KHN0cnVjdCBhYwog
+CWlmICgocGEtPmZsYWdzICYgQUNQSV9TUkFUX0NQVV9FTkFCTEVEKSA9PSAwKQogCQlyZXR1cm47
+CiAJcHhtID0gcGEtPnByb3hpbWl0eV9kb21haW47CisJYXBpY19pZCA9IHBhLT5hcGljX2lkOwor
+CWlmICh4MmFwaWNfZGlzYWJsZWQgJiYgKGFwaWNfaWQgPj0gMHhmZikpIHsKKwkJcHJpbnRrKEtF
+Uk5fSU5GTyAiU1JBVDogUFhNICV1IC0+IFgyQVBJQyAweCUwNHggaWdub3JlZFxuIiwKKwkJCSBw
+eG0sIGFwaWNfaWQpOworCQlyZXR1cm47CisJfQogCW5vZGUgPSBzZXR1cF9ub2RlKHB4bSk7CiAJ
+aWYgKG5vZGUgPCAwKSB7CiAJCXByaW50ayhLRVJOX0VSUiAiU1JBVDogVG9vIG1hbnkgcHJveGlt
+aXR5IGRvbWFpbnMgJXhcbiIsIHB4bSk7CkBAIC03Niw3ICs4Miw2IEBAIGFjcGlfbnVtYV94MmFw
+aWNfYWZmaW5pdHlfaW5pdChzdHJ1Y3QgYWMKIAkJcmV0dXJuOwogCX0KIAotCWFwaWNfaWQgPSBw
+YS0+YXBpY19pZDsKIAlpZiAoYXBpY19pZCA+PSBNQVhfTE9DQUxfQVBJQykgewogCQlwcmludGso
+S0VSTl9JTkZPICJTUkFUOiBQWE0gJXUgLT4gQVBJQyAweCUwNHggLT4gTm9kZSAldSBza2lwcGVk
+IGFwaWNpZCB0aGF0IGlzIHRvbyBiaWdcbiIsIHB4bSwgYXBpY19pZCwgbm9kZSk7CiAJCXJldHVy
+bjsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9hcGljZGVmLmgKPT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpY2RlZi5oCisr
+KyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpY2RlZi5oCkBAIC0xNDIsNiArMTQy
+LDcgQEAKIAogI2RlZmluZSBBUElDX0JBU0UgKGZpeF90b192aXJ0KEZJWF9BUElDX0JBU0UpKQog
+I2RlZmluZSBBUElDX0JBU0VfTVNSCTB4ODAwCisjZGVmaW5lIFhBUElDX0VOQUJMRQkoMVVMIDw8
+IDExKQogI2RlZmluZSBYMkFQSUNfRU5BQkxFCSgxVUwgPDwgMTApCiAKICNpZmRlZiBDT05GSUdf
+WDg2XzMyCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcHJvY2Vzc29yLmgK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vcHJvY2Vz
+c29yLmgKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wcm9jZXNzb3IuaApAQCAt
+MTY3LDYgKzE2Nyw3IEBAIGV4dGVybiB2b2lkIGluaXRfc2NhdHRlcmVkX2NwdWlkX2ZlYXR1cmUK
+IGV4dGVybiB1bnNpZ25lZCBpbnQgaW5pdF9pbnRlbF9jYWNoZWluZm8oc3RydWN0IGNwdWluZm9f
+eDg2ICpjKTsKIGV4dGVybiB1bnNpZ25lZCBzaG9ydCBudW1fY2FjaGVfbGVhdmVzOwogCit1MzIg
+eDJhcGljX2NwdWlkX2luaXRpYWxfYXBpY2lkKHZvaWQpOwogZXh0ZXJuIHZvaWQgZGV0ZWN0X2V4
+dGVuZGVkX3RvcG9sb2d5KHN0cnVjdCBjcHVpbmZvX3g4NiAqYyk7CiBleHRlcm4gdm9pZCBkZXRl
+Y3RfaHQoc3RydWN0IGNwdWluZm9feDg2ICpjKTsKIApJbmRleDogbGludXgtMi42L2FyY2gveDg2
+L2tlcm5lbC9jcHUvdG9wb2xvZ3kuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNo
+L3g4Ni9rZXJuZWwvY3B1L3RvcG9sb2d5LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwv
+Y3B1L3RvcG9sb2d5LmMKQEAgLTIxLDYgKzIxLDI3IEBACiAjZGVmaW5lIEJJVFNfU0hJRlRfTkVY
+VF9MRVZFTChlYXgpCSgoZWF4KSAmIDB4MWYpCiAjZGVmaW5lIExFVkVMX01BWF9TSUJMSU5HUyhl
+YngpCQkoKGVieCkgJiAweGZmZmYpCiAKK3UzMiB4MmFwaWNfY3B1aWRfaW5pdGlhbF9hcGljaWQo
+dm9pZCkKK3sKKwl1bnNpZ25lZCBpbnQgZWF4LCBlYngsIGVjeCwgZWR4OworCisJaWYgKGJvb3Rf
+Y3B1X2RhdGEuY3B1aWRfbGV2ZWwgPCAweGIpCisJCXJldHVybiAwOworCisJY3B1aWRfY291bnQo
+MHhiLCBTTVRfTEVWRUwsICZlYXgsICZlYngsICZlY3gsICZlZHgpOworCisJLyoKKwkgKiBjaGVj
+ayBpZiB0aGUgY3B1aWQgbGVhZiAweGIgaXMgYWN0dWFsbHkgaW1wbGVtZW50ZWQuCisJICovCisJ
+aWYgKGVieCA9PSAwIHx8IChMRUFGQl9TVUJUWVBFKGVjeCkgIT0gU01UX1RZUEUpKQorCQlyZXR1
+cm4gMDsKKworCS8qCisJICogaW5pdGlhbCBhcGljIGlkLCB3aGljaCBhbHNvIHJlcHJlc2VudHMg
+MzItYml0IGV4dGVuZGVkIHgyYXBpYyBpZC4KKwkgKi8KKwlyZXR1cm4gZWR4OworfQorCiAvKgog
+ICogQ2hlY2sgZm9yIGV4dGVuZGVkIHRvcG9sb2d5IGVudW1lcmF0aW9uIGNwdWlkIGxlYWYgMHhi
+IGFuZCBpZiBpdAogICogZXhpc3RzLCB1c2UgaXQgZm9yIHBvcHVsYXRpbmcgaW5pdGlhbF9hcGlj
+aWQgYW5kIGNwdSB0b3BvbG9neQo=
+--20cf305b13e6534a1c04b3c296c0--
