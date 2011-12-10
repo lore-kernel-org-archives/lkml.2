@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab1LJIhN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 03:37:13 -0500
-Received: from comu.ring0.de ([46.4.151.82]:53070 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab1LJIhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 03:37:09 -0500
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  3.3 RCVD_IN_PBL RBL: Received via a relay in Spamhaus PBL
-	*      [2.204.188.49 listed in zen.spamhaus.org]
-	*  1.4 RCVD_IN_BRBL_LASTEXT RBL: RCVD_IN_BRBL_LASTEXT
-	*      [2.204.188.49 listed in bb.barracudacentral.org]
-	*  0.8 RDNS_NONE Delivered to internal network by a host with no rDNS
-Date: Sat, 10 Dec 2011 09:37:03 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <krohei@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>, stable@kernel.org
-Subject: Re: [PATCH v2] omap: rx51: fix USB
-Message-ID: <20111210083702.GB32605@earth.universe>
-References: <20111208144044.GA25415@xps8300>
- <1323375780-13190-1-git-send-email-felipe.contreras@nokia.com>
+	id S1752753Ab1LJJt5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 04:49:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47100 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab1LJJty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Dec 2011 04:49:54 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="/WwmFnJnmDyWGHa4"
-Content-Disposition: inline
-In-Reply-To: <1323375780-13190-1-git-send-email-felipe.contreras@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EE2191E.8070107@linux.intel.com>
+References: <alpine.LRH.2.00.1112091505010.20839@tundra.namei.org>
+	<28442.1323269262@redhat.com>
+	<2409.1323422253@redhat.com>
+	<4EE2191E.8070107@linux.intel.com>
+Date: Sat, 10 Dec 2011 10:49:52 +0100
+X-Google-Sender-Auth: H2HtRn4x-yx9bi3HRrRoIxgnmk8
+Message-ID: <CAMuHMdXn1xcFpVFUxukAPpM7x6Z5hfyS0PvUXSQnNao5q26gig@mail.gmail.com>
+Subject: Re: [GIT PULL] Crypto keys and module signing
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 9, 2011 at 15:20, Arjan van de Ven <arjan@linux.intel.com> wrote:
+>> I wonder what the best way to deal with that is...  I guess make
+>> allyesconfig and make allmodconfig are going to break otherwise.
+>
+> the best way to deal is to have KBUILD generate a key on demand ;-)
 
---/WwmFnJnmDyWGHa4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or provide a default key with the kernel, cfr. all the other "*.shipped" files?
+No entropy source needed.
 
-On Thu, Dec 08, 2011 at 10:23:00PM +0200, Felipe Contreras wrote:
-> The transceiver should be powered on by default, otherwise USB doesn't
-> work at all.
->=20
-> All kernels after v3.0 are affected.
+Gr{oetje,eeting}s,
 
-I tested this patch successfully on 3.1 mainline kernel.
-You can add this if you want:
+                        Geert
 
-Reviewed-by: Sebastian Reichel <sre@debian.org>
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- Sebastian
-
---/WwmFnJnmDyWGHa4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4xouAAoJENju1/PIO/qacR4P/RlXiHDjB0FJTZjjFMK+4jB9
-4xn1WEAys/SjRC55jBqGTMf4X3v5KjzYzTbR+OfEQCfNlm6hgv9gPVaw8dbLkzfm
-CH/7kSPmjfli/lP6LZPZmZyXzBbm2V8zmmmjvVmcavTlmGMPE1JfGhN9LKNljpPo
-+YI2UafVCD7ReEzRC8mzDKWK+hHihauitilCK9AHZ4lcWU572Oz8pgLZSR//5V6I
-MtDB+FK5uSPiu9F4hoBC0mujVoqw9vJMGQFsUfkocdibA5QFAZ737dbhaI+naSGm
-sr9PMGTK9ATzsj+coM8ZeH9oYfCuveCO6OUH6McZGS6GK8BSPW5fgC0be01/1WLT
-mIo8ssQEpy9xIAjdh11zIuciOPFMQlUt4i8sbzuYXx4hilRrhcKWLCGPJw0iB7S3
-gw4qtskmQIdm8SrznDaW3HF+kIWJ6mBQeerEvO7J7PdF4rtleeg9Og0ojYVMfDeu
-CdWeWrGHllrwsSMy9E2Fl/7w0BD5IFjPUw1SY2sOig5wuz/DFsuGoVmrLUAdORsQ
-Y4Yvw1EM3MWDUKwJ5WrN40HCA93soqzE01ySdHRTl82wQQIKvdwuUUZ4nCu1q3VH
-6+78dhQl3TGH2yzVZbusYVoYicH2H5NJg34+ibcDJ0gBZw0d9Qzk2L3N6V2U7R2u
-vQyTR3efqYn00zysL0yv
-=8wae
------END PGP SIGNATURE-----
-
---/WwmFnJnmDyWGHa4--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
