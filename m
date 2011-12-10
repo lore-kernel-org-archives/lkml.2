@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab1LJCiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Dec 2011 21:38:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48780 "EHLO
+	id S1755235Ab1LJCjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Dec 2011 21:39:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48790 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab1LJCiU (ORCPT
+	with ESMTP id S1751256Ab1LJCjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Dec 2011 21:38:20 -0500
-Date: Fri, 9 Dec 2011 18:38:11 -0800
+	Fri, 9 Dec 2011 21:39:07 -0500
+Date: Fri, 9 Dec 2011 18:38:57 -0800
 From: tip-bot for Matt Fleming <matt.fleming@intel.com>
-Message-ID: <tip-f7d7d01be53cb47e0ae212c4e968aa28b82d2138@git.kernel.org>
+Message-ID: <tip-f30ca6ba0bb2b7d050f24682bb8639c939c79859@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
         mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com,
         matt.fleming@intel.com
@@ -19,77 +19,107 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
 In-Reply-To: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
 References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86: Don't use magic strings for EFI loader signature
-Git-Commit-ID: f7d7d01be53cb47e0ae212c4e968aa28b82d2138
+Subject: [tip:x86/efi] efi.h: Add struct definition for boot time services
+Git-Commit-ID: f30ca6ba0bb2b7d050f24682bb8639c939c79859
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Dec 2011 18:38:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Dec 2011 18:39:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7d7d01be53cb47e0ae212c4e968aa28b82d2138
-Gitweb:     http://git.kernel.org/tip/f7d7d01be53cb47e0ae212c4e968aa28b82d2138
+Commit-ID:  f30ca6ba0bb2b7d050f24682bb8639c939c79859
+Gitweb:     http://git.kernel.org/tip/f30ca6ba0bb2b7d050f24682bb8639c939c79859
 Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Tue, 15 Nov 2011 12:56:14 +0000
+AuthorDate: Tue, 15 Nov 2011 12:56:32 +0000
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 9 Dec 2011 17:35:38 -0800
+CommitDate: Fri, 9 Dec 2011 17:35:40 -0800
 
-x86: Don't use magic strings for EFI loader signature
+efi.h: Add struct definition for boot time services
 
-Introduce a symbol, EFI_LOADER_SIGNATURE instead of using the magic
-strings, which also helps to reduce the amount of ifdeffery.
+With the forthcoming efi stub code we're gonna need to access boot
+time services so let's define a struct so we can access the functions.
 
 Cc: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Link: http://lkml.kernel.org/r/1318848017-12301-1-git-send-email-matt@console-pimps.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/efi.h |    4 ++++
- arch/x86/kernel/setup.c    |    7 +------
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ include/linux/efi.h |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 52 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index b8d8bfc..26d8c18 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -3,6 +3,8 @@
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 2362a0b..9547597 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -139,6 +139,57 @@ typedef struct {
+ } efi_time_cap_t;
  
- #ifdef CONFIG_X86_32
- 
-+#define EFI_LOADER_SIGNATURE	"EL32"
+ /*
++ * EFI Boot Services table
++ */
++typedef struct {
++	efi_table_hdr_t hdr;
++	void *raise_tpl;
++	void *restore_tpl;
++	void *allocate_pages;
++	void *free_pages;
++	void *get_memory_map;
++	void *allocate_pool;
++	void *free_pool;
++	void *create_event;
++	void *set_timer;
++	void *wait_for_event;
++	void *signal_event;
++	void *close_event;
++	void *check_event;
++	void *install_protocol_interface;
++	void *reinstall_protocol_interface;
++	void *uninstall_protocol_interface;
++	void *handle_protocol;
++	void *__reserved;
++	void *register_protocol_notify;
++	void *locate_handle;
++	void *locate_device_path;
++	void *install_configuration_table;
++	void *load_image;
++	void *start_image;
++	void *exit;
++	void *unload_image;
++	void *exit_boot_services;
++	void *get_next_monotonic_count;
++	void *stall;
++	void *set_watchdog_timer;
++	void *connect_controller;
++	void *disconnect_controller;
++	void *open_protocol;
++	void *close_protocol;
++	void *open_protocol_information;
++	void *protocols_per_handle;
++	void *locate_handle_buffer;
++	void *locate_protocol;
++	void *install_multiple_protocol_interfaces;
++	void *uninstall_multiple_protocol_interfaces;
++	void *calculate_crc32;
++	void *copy_mem;
++	void *set_mem;
++	void *create_event_ex;
++} efi_boot_services_t;
 +
- extern unsigned long asmlinkage efi_call_phys(void *, ...);
- 
- #define efi_call_phys0(f)		efi_call_phys(f)
-@@ -35,6 +37,8 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
- 
- #else /* !CONFIG_X86_32 */
- 
-+#define EFI_LOADER_SIGNATURE	"EL64"
-+
- extern u64 efi_call0(void *fp);
- extern u64 efi_call1(void *fp, u64 arg1);
- extern u64 efi_call2(void *fp, u64 arg1, u64 arg2);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 9a9e40f..4d5243c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -752,12 +752,7 @@ void __init setup_arch(char **cmdline_p)
- #endif
- #ifdef CONFIG_EFI
- 	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
--#ifdef CONFIG_X86_32
--		     "EL32",
--#else
--		     "EL64",
--#endif
--	 4)) {
-+		     EFI_LOADER_SIGNATURE, 4)) {
- 		efi_enabled = 1;
- 		efi_memblock_x86_reserve_range();
- 	}
++/*
+  * Types and defines for EFI ResetSystem
+  */
+ #define EFI_RESET_COLD 0
+@@ -261,7 +312,7 @@ typedef struct {
+ 	unsigned long stderr_handle;
+ 	unsigned long stderr;
+ 	efi_runtime_services_t *runtime;
+-	unsigned long boottime;
++	efi_boot_services_t *boottime;
+ 	unsigned long nr_tables;
+ 	unsigned long tables;
+ } efi_system_table_t;
