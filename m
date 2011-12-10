@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab1LJSai (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 13:30:38 -0500
-Received: from wavehammer.waldi.eu.org ([82.139.201.20]:51212 "EHLO
+	id S1751849Ab1LJSad (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 13:30:33 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:51215 "EHLO
 	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab1LJSaB (ORCPT
+	with ESMTP id S1751091Ab1LJSaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 10 Dec 2011 13:30:01 -0500
 From: Bastian Blank <waldi@debian.org>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: konrad.wilk@oracle.com
-Subject: [PATCH 3/6] xen: Add xenbus_backend device
-Date: Sat, 10 Dec 2011 19:29:48 +0100
-Message-Id: <1323541791-18006-4-git-send-email-waldi@debian.org>
+Subject: [PATCH 2/6] xen: Add xenbus device driver
+Date: Sat, 10 Dec 2011 19:29:47 +0100
+Message-Id: <1323541791-18006-3-git-send-email-waldi@debian.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323541791-18006-1-git-send-email-waldi@debian.org>
 References: <1323541791-18006-1-git-send-email-waldi@debian.org>
@@ -20,172 +20,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Access for xenstored to the event channel and pre-allocated ring is
-managed via xenfs.  This adds its own character device featuring mmap
-for the ring and an ioctl for the event channel.
+Access to xenbus is currently handled via xenfs. This adds a device
+driver for xenbus and makes xenfs use this code.
 
 Signed-off-by: Bastian Blank <waldi@debian.org>
 Acked-by: Ian Campbell <ian.campbell@citrix.com>
 ---
- drivers/xen/xenbus/Makefile             |    1 +
- drivers/xen/xenbus/xenbus_dev_backend.c |   89 +++++++++++++++++++++++++++++++
- include/xen/xenbus_dev.h                |   41 ++++++++++++++
- 3 files changed, 131 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xen/xenbus/xenbus_dev_backend.c
- create mode 100644 include/xen/xenbus_dev.h
+ drivers/xen/xenbus/Makefile                        |    1 +
+ drivers/xen/xenbus/xenbus_comms.h                  |    4 ++
+ .../xenbus.c => xenbus/xenbus_dev_frontend.c}      |   37 ++++++++++++++++++--
+ drivers/xen/xenfs/Makefile                         |    2 +-
+ drivers/xen/xenfs/super.c                          |    3 +-
+ drivers/xen/xenfs/xenfs.h                          |    1 -
+ 6 files changed, 42 insertions(+), 6 deletions(-)
+ rename drivers/xen/{xenfs/xenbus.c => xenbus/xenbus_dev_frontend.c} (95%)
 
 diff --git a/drivers/xen/xenbus/Makefile b/drivers/xen/xenbus/Makefile
-index a2ea363..31e2e90 100644
+index 8dca685..a2ea363 100644
 --- a/drivers/xen/xenbus/Makefile
 +++ b/drivers/xen/xenbus/Makefile
-@@ -10,4 +10,5 @@ xenbus-objs += xenbus_probe.o
- xenbus-be-objs-$(CONFIG_XEN_BACKEND) += xenbus_probe_backend.o
- xenbus-objs += $(xenbus-be-objs-y)
+@@ -1,4 +1,5 @@
+ obj-y	+= xenbus.o
++obj-y	+= xenbus_dev_frontend.o
  
-+obj-$(CONFIG_XEN_BACKEND) += xenbus_dev_backend.o
- obj-$(CONFIG_XEN_XENBUS_FRONTEND) += xenbus_probe_frontend.o
-diff --git a/drivers/xen/xenbus/xenbus_dev_backend.c b/drivers/xen/xenbus/xenbus_dev_backend.c
-new file mode 100644
-index 0000000..a2092bd
---- /dev/null
-+++ b/drivers/xen/xenbus/xenbus_dev_backend.c
-@@ -0,0 +1,89 @@
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/mm.h>
+ xenbus-objs =
+ xenbus-objs += xenbus_client.o
+diff --git a/drivers/xen/xenbus/xenbus_comms.h b/drivers/xen/xenbus/xenbus_comms.h
+index c21db75..6e42800 100644
+--- a/drivers/xen/xenbus/xenbus_comms.h
++++ b/drivers/xen/xenbus/xenbus_comms.h
+@@ -31,6 +31,8 @@
+ #ifndef _XENBUS_COMMS_H
+ #define _XENBUS_COMMS_H
+ 
 +#include <linux/fs.h>
++
+ int xs_init(void);
+ int xb_init_comms(void);
+ 
+@@ -43,4 +45,6 @@ int xs_input_avail(void);
+ extern struct xenstore_domain_interface *xen_store_interface;
+ extern int xen_store_evtchn;
+ 
++extern const struct file_operations xen_xenbus_fops;
++
+ #endif /* _XENBUS_COMMS_H */
+diff --git a/drivers/xen/xenfs/xenbus.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
+similarity index 95%
+rename from drivers/xen/xenfs/xenbus.c
+rename to drivers/xen/xenbus/xenbus_dev_frontend.c
+index bbd000f..fb30cff 100644
+--- a/drivers/xen/xenfs/xenbus.c
++++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
+@@ -52,13 +52,16 @@
+ #include <linux/namei.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
 +#include <linux/miscdevice.h>
 +#include <linux/module.h>
-+#include <linux/capability.h>
-+
-+#include <xen/page.h>
-+#include <xen/xenbus_dev.h>
-+
+ 
+-#include "xenfs.h"
+-#include "../xenbus/xenbus_comms.h"
 +#include "xenbus_comms.h"
-+
+ 
+ #include <xen/xenbus.h>
+ #include <asm/xen/hypervisor.h>
+ 
 +MODULE_LICENSE("GPL");
 +
-+static int xenbus_backend_open(struct inode *inode, struct file *filp)
-+{
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
+ /*
+  * An element of a list of outstanding transactions, for which we're
+  * still waiting a reply.
+@@ -583,7 +586,7 @@ static unsigned int xenbus_file_poll(struct file *file, poll_table *wait)
+ 	return 0;
+ }
+ 
+-const struct file_operations xenbus_file_ops = {
++const struct file_operations xen_xenbus_fops = {
+ 	.read = xenbus_file_read,
+ 	.write = xenbus_file_write,
+ 	.open = xenbus_file_open,
+@@ -591,3 +594,31 @@ const struct file_operations xenbus_file_ops = {
+ 	.poll = xenbus_file_poll,
+ 	.llseek = no_llseek,
+ };
++EXPORT_SYMBOL_GPL(xen_xenbus_fops);
 +
-+	return nonseekable_open(inode, filp);
-+}
-+
-+static long xenbus_backend_ioctl(struct file *file, unsigned int cmd, unsigned long data)
-+{
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	switch (cmd) {
-+		case IOCTL_XENBUS_BACKEND_EVTCHN:
-+			if (xen_store_evtchn > 0)
-+				return xen_store_evtchn;
-+			return -ENODEV;
-+
-+		default:
-+			return -ENOTTY;
-+	}
-+}
-+
-+static int xenbus_backend_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	size_t size = vma->vm_end - vma->vm_start;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if ((size > PAGE_SIZE) || (vma->vm_pgoff != 0))
-+		return -EINVAL;
-+
-+	if (remap_pfn_range(vma, vma->vm_start,
-+			    virt_to_pfn(xen_store_interface),
-+			    size, vma->vm_page_prot))
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-+
-+const struct file_operations xenbus_backend_fops = {
-+	.open = xenbus_backend_open,
-+	.mmap = xenbus_backend_mmap,
-+	.unlocked_ioctl = xenbus_backend_ioctl,
-+};
-+
-+static struct miscdevice xenbus_backend_dev = {
++static struct miscdevice xenbus_dev = {
 +	.minor = MISC_DYNAMIC_MINOR,
-+	.name = "xen/xenbus_backend",
-+	.fops = &xenbus_backend_fops,
++	.name = "xen/xenbus",
++	.fops = &xen_xenbus_fops,
 +};
 +
-+static int __init xenbus_backend_init(void)
++static int __init xenbus_init(void)
 +{
 +	int err;
 +
-+	if (!xen_initial_domain())
++	if (!xen_domain())
 +		return -ENODEV;
 +
-+	err = misc_register(&xenbus_backend_dev);
++	err = misc_register(&xenbus_dev);
 +	if (err)
-+		printk(KERN_ERR "Could not register xenbus backend device\n");
++		printk(KERN_ERR "Could not register xenbus device\n");
 +	return err;
 +}
 +
-+static void __exit xenbus_backend_exit(void)
++static void __exit xenbus_exit(void)
 +{
-+	misc_deregister(&xenbus_backend_dev);
++	misc_deregister(&xenbus_dev);
 +}
 +
-+module_init(xenbus_backend_init);
-+module_exit(xenbus_backend_exit);
-diff --git a/include/xen/xenbus_dev.h b/include/xen/xenbus_dev.h
-new file mode 100644
-index 0000000..ac5f0fe
---- /dev/null
-+++ b/include/xen/xenbus_dev.h
-@@ -0,0 +1,41 @@
-+/******************************************************************************
-+ * evtchn.h
-+ *
-+ * Interface to /dev/xen/xenbus_backend.
-+ *
-+ * Copyright (c) 2011 Bastian Blank <waldi@debian.org>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation; or, when distributed
-+ * separately from the Linux kernel or incorporated into other
-+ * software packages, subject to the following license:
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this source file (the "Software"), to deal in the Software without
-+ * restriction, including without limitation the rights to use, copy, modify,
-+ * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-+ * and to permit persons to whom the Software is furnished to do so, subject to
-+ * the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-+ * IN THE SOFTWARE.
-+ */
-+
-+#ifndef __LINUX_XEN_XENBUS_DEV_H__
-+#define __LINUX_XEN_XENBUS_DEV_H__
-+
-+#include <linux/ioctl.h>
-+
-+#define IOCTL_XENBUS_BACKEND_EVTCHN			\
-+	_IOC(_IOC_NONE, 'B', 0, 0)
-+
-+#endif /* __LINUX_XEN_XENBUS_DEV_H__ */
++module_init(xenbus_init);
++module_exit(xenbus_exit);
+diff --git a/drivers/xen/xenfs/Makefile b/drivers/xen/xenfs/Makefile
+index 5d45ff1..b019865 100644
+--- a/drivers/xen/xenfs/Makefile
++++ b/drivers/xen/xenfs/Makefile
+@@ -1,4 +1,4 @@
+ obj-$(CONFIG_XENFS) += xenfs.o
+ 
+-xenfs-y			  = super.o xenbus.o
++xenfs-y			  = super.o
+ xenfs-$(CONFIG_XEN_DOM0) += xenstored.o
+diff --git a/drivers/xen/xenfs/super.c b/drivers/xen/xenfs/super.c
+index a55fbf9..a84b53c 100644
+--- a/drivers/xen/xenfs/super.c
++++ b/drivers/xen/xenfs/super.c
+@@ -17,6 +17,7 @@
+ 
+ #include "xenfs.h"
+ #include "../privcmd.h"
++#include "../xenbus/xenbus_comms.h"
+ 
+ #include <asm/xen/hypervisor.h>
+ 
+@@ -83,7 +84,7 @@ static int xenfs_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	static struct tree_descr xenfs_files[] = {
+ 		[1] = {},
+-		{ "xenbus", &xenbus_file_ops, S_IRUSR|S_IWUSR },
++		{ "xenbus", &xen_xenbus_fops, S_IRUSR|S_IWUSR },
+ 		{ "capabilities", &capabilities_file_ops, S_IRUGO },
+ 		{ "privcmd", &xen_privcmd_fops, S_IRUSR|S_IWUSR },
+ 		{""},
+diff --git a/drivers/xen/xenfs/xenfs.h b/drivers/xen/xenfs/xenfs.h
+index 5056306..6b80c77 100644
+--- a/drivers/xen/xenfs/xenfs.h
++++ b/drivers/xen/xenfs/xenfs.h
+@@ -1,7 +1,6 @@
+ #ifndef _XENFS_XENBUS_H
+ #define _XENFS_XENBUS_H
+ 
+-extern const struct file_operations xenbus_file_ops;
+ extern const struct file_operations xsd_kva_file_ops;
+ extern const struct file_operations xsd_port_file_ops;
+ 
 -- 
 1.7.7.3
 
