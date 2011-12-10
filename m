@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab1LJGvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 01:51:52 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47880 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab1LJGvt (ORCPT
+	id S1752512Ab1LJGwR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 01:52:17 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45964 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1LJGwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 01:51:49 -0500
-Subject: [RFC PATCH v6 08/10] fadump: Invalidate registration and release
-	reserved memory for general use.
+	Sat, 10 Dec 2011 01:52:12 -0500
+Subject: [RFC PATCH v6 10/10] fadump: Remove the phyp assisted dump code.
 To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -19,265 +18,891 @@ Cc: Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Ananth Narayan <ananth@in.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
         Anton Blanchard <anton@samba.org>
-Date: Sat, 10 Dec 2011 12:21:13 +0530
-Message-ID: <20111210065113.10195.38504.stgit@mars.in.ibm.com>
+Date: Sat, 10 Dec 2011 12:21:31 +0530
+Message-ID: <20111210065131.10195.80441.stgit@mars.in.ibm.com>
 In-Reply-To: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
 References: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
 User-Agent: StGit/0.15-1-ged5e-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120920-6102-0000-0000-0000005FAFA0
+x-cbid: 11120920-5140-0000-0000-000000668A42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-This patch introduces an sysfs interface '/sys/kernel/fadump_release_mem' to
-invalidate the last fadump registration, invalidate '/proc/vmcore', release
-the reserved memory for general use and re-register for future kernel dump.
-Once the dump is copied to the disk, the userspace tool will echo 1 to
-'/sys/kernel/fadump_release_mem'.
-
-Release the reserved memory region excluding the size of the memory required
-for future kernel dump registration.
+Remove the phyp assisted dump implementation which is not is use.
 
 Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/fadump.h |    3 +
- arch/powerpc/kernel/fadump.c      |  158 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 157 insertions(+), 4 deletions(-)
+ Documentation/powerpc/phyp-assisted-dump.txt |  127 ------
+ arch/powerpc/Kconfig                         |   10 -
+ arch/powerpc/include/asm/phyp_dump.h         |   47 --
+ arch/powerpc/kernel/prom.c                   |   87 ----
+ arch/powerpc/platforms/pseries/Makefile      |    1 
+ arch/powerpc/platforms/pseries/phyp_dump.c   |  513 --------------------------
+ 6 files changed, 0 insertions(+), 785 deletions(-)
+ delete mode 100644 Documentation/powerpc/phyp-assisted-dump.txt
+ delete mode 100644 arch/powerpc/include/asm/phyp_dump.h
+ delete mode 100644 arch/powerpc/platforms/pseries/phyp_dump.c
 
-diff --git a/arch/powerpc/include/asm/fadump.h b/arch/powerpc/include/asm/fadump.h
-index 6768195..88dbf96 100644
---- a/arch/powerpc/include/asm/fadump.h
-+++ b/arch/powerpc/include/asm/fadump.h
-@@ -208,6 +208,9 @@ extern int fadump_reserve_mem(void);
- extern int setup_fadump(void);
- extern int is_fadump_active(void);
- extern void crash_fadump(struct pt_regs *, const char *);
-+extern void fadump_cleanup(void);
-+
-+extern void vmcore_cleanup(void);
- #else	/* CONFIG_FA_DUMP */
- static inline int is_fadump_active(void) { return 0; }
- static inline void crash_fadump(struct pt_regs *regs, const char *str) { }
-diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
-index 5689954..8874d6b 100644
---- a/arch/powerpc/kernel/fadump.c
-+++ b/arch/powerpc/kernel/fadump.c
-@@ -33,6 +33,8 @@
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/crash_dump.h>
-+#include <linux/kobject.h>
-+#include <linux/sysfs.h>
+diff --git a/Documentation/powerpc/phyp-assisted-dump.txt b/Documentation/powerpc/phyp-assisted-dump.txt
+deleted file mode 100644
+index ad34020..0000000
+--- a/Documentation/powerpc/phyp-assisted-dump.txt
++++ /dev/null
+@@ -1,127 +0,0 @@
+-
+-                   Hypervisor-Assisted Dump
+-                   ------------------------
+-                       November 2007
+-
+-The goal of hypervisor-assisted dump is to enable the dump of
+-a crashed system, and to do so from a fully-reset system, and
+-to minimize the total elapsed time until the system is back
+-in production use.
+-
+-As compared to kdump or other strategies, hypervisor-assisted
+-dump offers several strong, practical advantages:
+-
+--- Unlike kdump, the system has been reset, and loaded
+-   with a fresh copy of the kernel.  In particular,
+-   PCI and I/O devices have been reinitialized and are
+-   in a clean, consistent state.
+--- As the dump is performed, the dumped memory becomes
+-   immediately available to the system for normal use.
+--- After the dump is completed, no further reboots are
+-   required; the system will be fully usable, and running
+-   in its normal, production mode on its normal kernel.
+-
+-The above can only be accomplished by coordination with,
+-and assistance from the hypervisor. The procedure is
+-as follows:
+-
+--- When a system crashes, the hypervisor will save
+-   the low 256MB of RAM to a previously registered
+-   save region. It will also save system state, system
+-   registers, and hardware PTE's.
+-
+--- After the low 256MB area has been saved, the
+-   hypervisor will reset PCI and other hardware state.
+-   It will *not* clear RAM. It will then launch the
+-   bootloader, as normal.
+-
+--- The freshly booted kernel will notice that there
+-   is a new node (ibm,dump-kernel) in the device tree,
+-   indicating that there is crash data available from
+-   a previous boot. It will boot into only 256MB of RAM,
+-   reserving the rest of system memory.
+-
+--- Userspace tools will parse /sys/kernel/release_region
+-   and read /proc/vmcore to obtain the contents of memory,
+-   which holds the previous crashed kernel. The userspace
+-   tools may copy this info to disk, or network, nas, san,
+-   iscsi, etc. as desired.
+-
+-   For Example: the values in /sys/kernel/release-region
+-   would look something like this (address-range pairs).
+-   CPU:0x177fee000-0x10000: HPTE:0x177ffe020-0x1000: /
+-   DUMP:0x177fff020-0x10000000, 0x10000000-0x16F1D370A
+-
+--- As the userspace tools complete saving a portion of
+-   dump, they echo an offset and size to
+-   /sys/kernel/release_region to release the reserved
+-   memory back to general use.
+-
+-   An example of this is:
+-     "echo 0x40000000 0x10000000 > /sys/kernel/release_region"
+-   which will release 256MB at the 1GB boundary.
+-
+-Please note that the hypervisor-assisted dump feature
+-is only available on Power6-based systems with recent
+-firmware versions.
+-
+-Implementation details:
+-----------------------
+-
+-During boot, a check is made to see if firmware supports
+-this feature on this particular machine. If it does, then
+-we check to see if a active dump is waiting for us. If yes
+-then everything but 256 MB of RAM is reserved during early
+-boot. This area is released once we collect a dump from user
+-land scripts that are run. If there is dump data, then
+-the /sys/kernel/release_region file is created, and
+-the reserved memory is held.
+-
+-If there is no waiting dump data, then only the highest
+-256MB of the ram is reserved as a scratch area. This area
+-is *not* released: this region will be kept permanently
+-reserved, so that it can act as a receptacle for a copy
+-of the low 256MB in the case a crash does occur. See,
+-however, "open issues" below, as to whether
+-such a reserved region is really needed.
+-
+-Currently the dump will be copied from /proc/vmcore to a
+-a new file upon user intervention. The starting address
+-to be read and the range for each data point in provided
+-in /sys/kernel/release_region.
+-
+-The tools to examine the dump will be same as the ones
+-used for kdump.
+-
+-General notes:
+---------------
+-Security: please note that there are potential security issues
+-with any sort of dump mechanism. In particular, plaintext
+-(unencrypted) data, and possibly passwords, may be present in
+-the dump data. Userspace tools must take adequate precautions to
+-preserve security.
+-
+-Open issues/ToDo:
+-------------
+- o The various code paths that tell the hypervisor that a crash
+-   occurred, vs. it simply being a normal reboot, should be
+-   reviewed, and possibly clarified/fixed.
+-
+- o Instead of using /sys/kernel, should there be a /sys/dump
+-   instead? There is a dump_subsys being created by the s390 code,
+-   perhaps the pseries code should use a similar layout as well.
+-
+- o Is reserving a 256MB region really required? The goal of
+-   reserving a 256MB scratch area is to make sure that no
+-   important crash data is clobbered when the hypervisor
+-   save low mem to the scratch area. But, if one could assure
+-   that nothing important is located in some 256MB area, then
+-   it would not need to be reserved. Something that can be
+-   improved in subsequent versions.
+-
+- o Still working the kdump team to integrate this with kdump,
+-   some work remains but this would not affect the current
+-   patches.
+-
+- o Still need to write a shell script, to copy the dump away.
+-   Currently I am parsing it manually.
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 5a61aaa..e298cf0 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -369,16 +369,6 @@ config CRASH_DUMP
+ 	  The same kernel binary can be used as production kernel and dump
+ 	  capture kernel.
  
- #include <asm/page.h>
- #include <asm/prom.h>
-@@ -984,6 +986,132 @@ static int fadump_unregister_dump(struct fadump_mem_struct *fdm)
- 	return 0;
+-config PHYP_DUMP
+-	bool "Hypervisor-assisted dump (EXPERIMENTAL)"
+-	depends on PPC_PSERIES && EXPERIMENTAL
+-	help
+-	  Hypervisor-assisted dump is meant to be a kdump replacement
+-	  offering robustness and speed not possible without system
+-	  hypervisor assistance.
+-
+-	  If unsure, say "N"
+-
+ config FA_DUMP
+ 	bool "Firmware-assisted dump"
+ 	depends on PPC64 && PPC_RTAS && CRASH_DUMP
+diff --git a/arch/powerpc/include/asm/phyp_dump.h b/arch/powerpc/include/asm/phyp_dump.h
+deleted file mode 100644
+index fa74c6c..0000000
+--- a/arch/powerpc/include/asm/phyp_dump.h
++++ /dev/null
+@@ -1,47 +0,0 @@
+-/*
+- * Hypervisor-assisted dump
+- *
+- * Linas Vepstas, Manish Ahuja 2008
+- * Copyright 2008 IBM Corp.
+- *
+- *      This program is free software; you can redistribute it and/or
+- *      modify it under the terms of the GNU General Public License
+- *      as published by the Free Software Foundation; either version
+- *      2 of the License, or (at your option) any later version.
+- */
+-
+-#ifndef _PPC64_PHYP_DUMP_H
+-#define _PPC64_PHYP_DUMP_H
+-
+-#ifdef CONFIG_PHYP_DUMP
+-
+-/* The RMR region will be saved for later dumping
+- * whenever the kernel crashes. Set this to 256MB. */
+-#define PHYP_DUMP_RMR_START 0x0
+-#define PHYP_DUMP_RMR_END   (1UL<<28)
+-
+-struct phyp_dump {
+-	/* Memory that is reserved during very early boot. */
+-	unsigned long init_reserve_start;
+-	unsigned long init_reserve_size;
+-	/* cmd line options during boot */
+-	unsigned long reserve_bootvar;
+-	unsigned long phyp_dump_at_boot;
+-	/* Check status during boot if dump supported, active & present*/
+-	unsigned long phyp_dump_configured;
+-	unsigned long phyp_dump_is_active;
+-	/* store cpu & hpte size */
+-	unsigned long cpu_state_size;
+-	unsigned long hpte_region_size;
+-	/* previous scratch area values */
+-	unsigned long reserved_scratch_addr;
+-	unsigned long reserved_scratch_size;
+-};
+-
+-extern struct phyp_dump *phyp_dump_info;
+-
+-int early_init_dt_scan_phyp_dump(unsigned long node,
+-		const char *uname, int depth, void *data);
+-
+-#endif /* CONFIG_PHYP_DUMP */
+-#endif /* _PPC64_PHYP_DUMP_H */
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index 42ddf4b..b931558 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -52,7 +52,6 @@
+ #include <asm/machdep.h>
+ #include <asm/pSeries_reconfig.h>
+ #include <asm/pci-bridge.h>
+-#include <asm/phyp_dump.h>
+ #include <asm/kexec.h>
+ #include <asm/opal.h>
+ #include <asm/fadump.h>
+@@ -616,86 +615,6 @@ static void __init early_reserve_mem(void)
+ 	}
  }
  
-+static int fadump_invalidate_dump(struct fadump_mem_struct *fdm)
-+{
-+	int rc = 0;
-+	unsigned int wait_time;
-+
-+	pr_debug("Invalidating firmware-assisted dump registration\n");
-+
-+	/* TODO: Add upper time limit for the delay */
-+	do {
-+		rc = rtas_call(fw_dump.ibm_configure_kernel_dump, 3, 1, NULL,
-+			FADUMP_INVALIDATE, fdm,
-+			sizeof(struct fadump_mem_struct));
-+
-+		wait_time = rtas_busy_delay_time(rc);
-+		if (wait_time)
-+			mdelay(wait_time);
-+	} while (wait_time);
-+
-+	if (rc) {
-+		printk(KERN_ERR "Failed to invalidate firmware-assisted dump "
-+			"rgistration. unexpected error(%d).\n", rc);
-+		return rc;
-+	}
-+	fw_dump.dump_active = 0;
-+	fdm_active = NULL;
-+	return 0;
-+}
-+
-+void fadump_cleanup(void)
-+{
-+	/* Invalidate the registration only if dump is active. */
-+	if (fw_dump.dump_active) {
-+		init_fadump_mem_struct(&fdm,
-+			fdm_active->cpu_state_data.destination_address);
-+		fadump_invalidate_dump(&fdm);
-+	}
-+}
-+
-+/*
-+ * Release the memory that was reserved in early boot to preserve the memory
-+ * contents. The released memory will be available for general use.
-+ */
-+static void fadump_release_memory(unsigned long begin, unsigned long end)
-+{
-+	unsigned long addr;
-+	unsigned long ra_start, ra_end;
-+
-+	ra_start = fw_dump.reserve_dump_area_start;
-+	ra_end = ra_start + fw_dump.reserve_dump_area_size;
-+
-+	for (addr = begin; addr < end; addr += PAGE_SIZE) {
-+		/*
-+		 * exclude the dump reserve area. Will reuse it for next
-+		 * fadump registration.
-+		 */
-+		if (addr <= ra_end && ((addr + PAGE_SIZE) > ra_start))
-+			continue;
-+
-+		ClearPageReserved(pfn_to_page(addr >> PAGE_SHIFT));
-+		init_page_count(pfn_to_page(addr >> PAGE_SHIFT));
-+		free_page((unsigned long)__va(addr));
-+		totalram_pages++;
-+	}
-+}
-+
-+static void fadump_invalidate_release_mem(void)
-+{
-+	unsigned long reserved_area_start, reserved_area_end;
-+	unsigned long destination_address;
-+
-+	mutex_lock(&fadump_mutex);
-+	if (!fw_dump.dump_active) {
-+		mutex_unlock(&fadump_mutex);
-+		return;
-+	}
-+
-+	destination_address = fdm_active->cpu_state_data.destination_address;
-+	fadump_cleanup();
-+	mutex_unlock(&fadump_mutex);
-+
-+	/*
-+	 * Save the current reserved memory bounds we will require them
-+	 * later for releasing the memory for general use.
-+	 */
-+	reserved_area_start = fw_dump.reserve_dump_area_start;
-+	reserved_area_end = reserved_area_start +
-+			fw_dump.reserve_dump_area_size;
-+	/*
-+	 * Setup reserve_dump_area_start and its size so that we can
-+	 * reuse this reserved memory for Re-registration.
-+	 */
-+	fw_dump.reserve_dump_area_start = destination_address;
-+	fw_dump.reserve_dump_area_size = get_fadump_area_size();
-+
-+	fadump_release_memory(reserved_area_start, reserved_area_end);
-+	if (fw_dump.cpu_notes_buf) {
-+		fadump_cpu_notes_buf_free(
-+				(unsigned long)__va(fw_dump.cpu_notes_buf),
-+				fw_dump.cpu_notes_buf_size);
-+		fw_dump.cpu_notes_buf = 0;
-+		fw_dump.cpu_notes_buf_size = 0;
-+	}
-+	/* Initialize the kernel dump memory structure for FAD registration. */
-+	init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
-+}
-+
-+static ssize_t fadump_release_memory_store(struct kobject *kobj,
-+					struct kobj_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	if (!fw_dump.dump_active)
-+		return -EPERM;
-+
-+	if (buf[0] == '1') {
-+		/*
-+		 * Take away the '/proc/vmcore'. We are releasing the dump
-+		 * memory, hence it will not be valid anymore.
-+		 */
-+		vmcore_cleanup();
-+		fadump_invalidate_release_mem();
-+
-+	} else
-+		return -EINVAL;
-+	return count;
-+}
-+
- static ssize_t fadump_enabled_show(struct kobject *kobj,
- 					struct kobj_attribute *attr,
- 					char *buf)
-@@ -1043,10 +1171,13 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 	if (!fw_dump.fadump_enabled)
- 		return 0;
+-#ifdef CONFIG_PHYP_DUMP
+-/**
+- * phyp_dump_calculate_reserve_size() - reserve variable boot area 5% or arg
+- *
+- * Function to find the largest size we need to reserve
+- * during early boot process.
+- *
+- * It either looks for boot param and returns that OR
+- * returns larger of 256 or 5% rounded down to multiples of 256MB.
+- *
+- */
+-static inline unsigned long phyp_dump_calculate_reserve_size(void)
+-{
+-	unsigned long tmp;
+-
+-	if (phyp_dump_info->reserve_bootvar)
+-		return phyp_dump_info->reserve_bootvar;
+-
+-	/* divide by 20 to get 5% of value */
+-	tmp = memblock_end_of_DRAM();
+-	do_div(tmp, 20);
+-
+-	/* round it down in multiples of 256 */
+-	tmp = tmp & ~0x0FFFFFFFUL;
+-
+-	return (tmp > PHYP_DUMP_RMR_END ? tmp : PHYP_DUMP_RMR_END);
+-}
+-
+-/**
+- * phyp_dump_reserve_mem() - reserve all not-yet-dumped mmemory
+- *
+- * This routine may reserve memory regions in the kernel only
+- * if the system is supported and a dump was taken in last
+- * boot instance or if the hardware is supported and the
+- * scratch area needs to be setup. In other instances it returns
+- * without reserving anything. The memory in case of dump being
+- * active is freed when the dump is collected (by userland tools).
+- */
+-static void __init phyp_dump_reserve_mem(void)
+-{
+-	unsigned long base, size;
+-	unsigned long variable_reserve_size;
+-
+-	if (!phyp_dump_info->phyp_dump_configured) {
+-		printk(KERN_ERR "Phyp-dump not supported on this hardware\n");
+-		return;
+-	}
+-
+-	if (!phyp_dump_info->phyp_dump_at_boot) {
+-		printk(KERN_INFO "Phyp-dump disabled at boot time\n");
+-		return;
+-	}
+-
+-	variable_reserve_size = phyp_dump_calculate_reserve_size();
+-
+-	if (phyp_dump_info->phyp_dump_is_active) {
+-		/* Reserve *everything* above RMR.Area freed by userland tools*/
+-		base = variable_reserve_size;
+-		size = memblock_end_of_DRAM() - base;
+-
+-		/* XXX crashed_ram_end is wrong, since it may be beyond
+-		 * the memory_limit, it will need to be adjusted. */
+-		memblock_reserve(base, size);
+-
+-		phyp_dump_info->init_reserve_start = base;
+-		phyp_dump_info->init_reserve_size = size;
+-	} else {
+-		size = phyp_dump_info->cpu_state_size +
+-			phyp_dump_info->hpte_region_size +
+-			variable_reserve_size;
+-		base = memblock_end_of_DRAM() - size;
+-		memblock_reserve(base, size);
+-		phyp_dump_info->init_reserve_start = base;
+-		phyp_dump_info->init_reserve_size = size;
+-	}
+-}
+-#else
+-static inline void __init phyp_dump_reserve_mem(void) {}
+-#endif /* CONFIG_PHYP_DUMP  && CONFIG_PPC_RTAS */
+-
+ void __init early_init_devtree(void *params)
+ {
+ 	phys_addr_t limit;
+@@ -715,11 +634,6 @@ void __init early_init_devtree(void *params)
+ 	of_scan_flat_dt(early_init_dt_scan_opal, NULL);
+ #endif
  
-+	mutex_lock(&fadump_mutex);
- 	if (fdm_active)
- 		fdm_ptr = fdm_active;
--	else
-+	else {
-+		mutex_unlock(&fadump_mutex);
- 		fdm_ptr = &fdm;
-+	}
+-#ifdef CONFIG_PHYP_DUMP
+-	/* scan tree to see if dump occurred during last boot */
+-	of_scan_flat_dt(early_init_dt_scan_phyp_dump, NULL);
+-#endif
+-
+ #ifdef CONFIG_FA_DUMP
+ 	/* scan tree to see if dump is active during last boot */
+ 	of_scan_flat_dt(early_init_dt_scan_fw_dump, NULL);
+@@ -767,7 +681,6 @@ void __init early_init_devtree(void *params)
+ #endif
+ 		reserve_crashkernel();
+ 	early_reserve_mem();
+-	phyp_dump_reserve_mem();
  
- 	seq_printf(m,
- 			"CPU : [%#016llx-%#016llx] %#llx bytes, "
-@@ -1076,7 +1207,7 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 	if (!fdm_active ||
- 		(fw_dump.reserve_dump_area_start ==
- 		fdm_ptr->cpu_state_data.destination_address))
+ 	limit = memory_limit;
+ 	if (! limit) {
+diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
+index 3556e40..b00620e 100644
+--- a/arch/powerpc/platforms/pseries/Makefile
++++ b/arch/powerpc/platforms/pseries/Makefile
+@@ -18,7 +18,6 @@ obj-$(CONFIG_MEMORY_HOTPLUG)	+= hotplug-memory.o
+ obj-$(CONFIG_HVC_CONSOLE)	+= hvconsole.o
+ obj-$(CONFIG_HVCS)		+= hvcserver.o
+ obj-$(CONFIG_HCALL_STATS)	+= hvCall_inst.o
+-obj-$(CONFIG_PHYP_DUMP)		+= phyp_dump.o
+ obj-$(CONFIG_CMM)		+= cmm.o
+ obj-$(CONFIG_DTL)		+= dtl.o
+ obj-$(CONFIG_IO_EVENT_IRQ)	+= io_event_irq.o
+diff --git a/arch/powerpc/platforms/pseries/phyp_dump.c b/arch/powerpc/platforms/pseries/phyp_dump.c
+deleted file mode 100644
+index 6e7742d..0000000
+--- a/arch/powerpc/platforms/pseries/phyp_dump.c
++++ /dev/null
+@@ -1,513 +0,0 @@
+-/*
+- * Hypervisor-assisted dump
+- *
+- * Linas Vepstas, Manish Ahuja 2008
+- * Copyright 2008 IBM Corp.
+- *
+- *      This program is free software; you can redistribute it and/or
+- *      modify it under the terms of the GNU General Public License
+- *      as published by the Free Software Foundation; either version
+- *      2 of the License, or (at your option) any later version.
+- *
+- */
+-
+-#include <linux/gfp.h>
+-#include <linux/init.h>
+-#include <linux/kobject.h>
+-#include <linux/mm.h>
+-#include <linux/of.h>
+-#include <linux/pfn.h>
+-#include <linux/swap.h>
+-#include <linux/sysfs.h>
+-
+-#include <asm/page.h>
+-#include <asm/phyp_dump.h>
+-#include <asm/machdep.h>
+-#include <asm/prom.h>
+-#include <asm/rtas.h>
+-
+-/* Variables, used to communicate data between early boot and late boot */
+-static struct phyp_dump phyp_dump_vars;
+-struct phyp_dump *phyp_dump_info = &phyp_dump_vars;
+-
+-static int ibm_configure_kernel_dump;
+-/* ------------------------------------------------- */
+-/* RTAS interfaces to declare the dump regions */
+-
+-struct dump_section {
+-	u32 dump_flags;
+-	u16 source_type;
+-	u16 error_flags;
+-	u64 source_address;
+-	u64 source_length;
+-	u64 length_copied;
+-	u64 destination_address;
+-};
+-
+-struct phyp_dump_header {
+-	u32 version;
+-	u16 num_of_sections;
+-	u16 status;
+-
+-	u32 first_offset_section;
+-	u32 dump_disk_section;
+-	u64 block_num_dd;
+-	u64 num_of_blocks_dd;
+-	u32 offset_dd;
+-	u32 maxtime_to_auto;
+-	/* No dump disk path string used */
+-
+-	struct dump_section cpu_data;
+-	struct dump_section hpte_data;
+-	struct dump_section kernel_data;
+-};
+-
+-/* The dump header *must be* in low memory, so .bss it */
+-static struct phyp_dump_header phdr;
+-
+-#define NUM_DUMP_SECTIONS	3
+-#define DUMP_HEADER_VERSION	0x1
+-#define DUMP_REQUEST_FLAG	0x1
+-#define DUMP_SOURCE_CPU		0x0001
+-#define DUMP_SOURCE_HPTE	0x0002
+-#define DUMP_SOURCE_RMO		0x0011
+-#define DUMP_ERROR_FLAG		0x2000
+-#define DUMP_TRIGGERED		0x4000
+-#define DUMP_PERFORMED		0x8000
+-
+-
+-/**
+- * init_dump_header() - initialize the header declaring a dump
+- * Returns: length of dump save area.
+- *
+- * When the hypervisor saves crashed state, it needs to put
+- * it somewhere. The dump header tells the hypervisor where
+- * the data can be saved.
+- */
+-static unsigned long init_dump_header(struct phyp_dump_header *ph)
+-{
+-	unsigned long addr_offset = 0;
+-
+-	/* Set up the dump header */
+-	ph->version = DUMP_HEADER_VERSION;
+-	ph->num_of_sections = NUM_DUMP_SECTIONS;
+-	ph->status = 0;
+-
+-	ph->first_offset_section =
+-		(u32)offsetof(struct phyp_dump_header, cpu_data);
+-	ph->dump_disk_section = 0;
+-	ph->block_num_dd = 0;
+-	ph->num_of_blocks_dd = 0;
+-	ph->offset_dd = 0;
+-
+-	ph->maxtime_to_auto = 0; /* disabled */
+-
+-	/* The first two sections are mandatory */
+-	ph->cpu_data.dump_flags = DUMP_REQUEST_FLAG;
+-	ph->cpu_data.source_type = DUMP_SOURCE_CPU;
+-	ph->cpu_data.source_address = 0;
+-	ph->cpu_data.source_length = phyp_dump_info->cpu_state_size;
+-	ph->cpu_data.destination_address = addr_offset;
+-	addr_offset += phyp_dump_info->cpu_state_size;
+-
+-	ph->hpte_data.dump_flags = DUMP_REQUEST_FLAG;
+-	ph->hpte_data.source_type = DUMP_SOURCE_HPTE;
+-	ph->hpte_data.source_address = 0;
+-	ph->hpte_data.source_length = phyp_dump_info->hpte_region_size;
+-	ph->hpte_data.destination_address = addr_offset;
+-	addr_offset += phyp_dump_info->hpte_region_size;
+-
+-	/* This section describes the low kernel region */
+-	ph->kernel_data.dump_flags = DUMP_REQUEST_FLAG;
+-	ph->kernel_data.source_type = DUMP_SOURCE_RMO;
+-	ph->kernel_data.source_address = PHYP_DUMP_RMR_START;
+-	ph->kernel_data.source_length = PHYP_DUMP_RMR_END;
+-	ph->kernel_data.destination_address = addr_offset;
+-	addr_offset += ph->kernel_data.source_length;
+-
+-	return addr_offset;
+-}
+-
+-static void print_dump_header(const struct phyp_dump_header *ph)
+-{
+-#ifdef DEBUG
+-	if (ph == NULL)
+-		return;
+-
+-	printk(KERN_INFO "dump header:\n");
+-	/* setup some ph->sections required */
+-	printk(KERN_INFO "version = %d\n", ph->version);
+-	printk(KERN_INFO "Sections = %d\n", ph->num_of_sections);
+-	printk(KERN_INFO "Status = 0x%x\n", ph->status);
+-
+-	/* No ph->disk, so all should be set to 0 */
+-	printk(KERN_INFO "Offset to first section 0x%x\n",
+-		ph->first_offset_section);
+-	printk(KERN_INFO "dump disk sections should be zero\n");
+-	printk(KERN_INFO "dump disk section = %d\n", ph->dump_disk_section);
+-	printk(KERN_INFO "block num = %lld\n", ph->block_num_dd);
+-	printk(KERN_INFO "number of blocks = %lld\n", ph->num_of_blocks_dd);
+-	printk(KERN_INFO "dump disk offset = %d\n", ph->offset_dd);
+-	printk(KERN_INFO "Max auto time= %d\n", ph->maxtime_to_auto);
+-
+-	/*set cpu state and hpte states as well scratch pad area */
+-	printk(KERN_INFO " CPU AREA\n");
+-	printk(KERN_INFO "cpu dump_flags =%d\n", ph->cpu_data.dump_flags);
+-	printk(KERN_INFO "cpu source_type =%d\n", ph->cpu_data.source_type);
+-	printk(KERN_INFO "cpu error_flags =%d\n", ph->cpu_data.error_flags);
+-	printk(KERN_INFO "cpu source_address =%llx\n",
+-		ph->cpu_data.source_address);
+-	printk(KERN_INFO "cpu source_length =%llx\n",
+-		ph->cpu_data.source_length);
+-	printk(KERN_INFO "cpu length_copied =%llx\n",
+-		ph->cpu_data.length_copied);
+-
+-	printk(KERN_INFO " HPTE AREA\n");
+-	printk(KERN_INFO "HPTE dump_flags =%d\n", ph->hpte_data.dump_flags);
+-	printk(KERN_INFO "HPTE source_type =%d\n", ph->hpte_data.source_type);
+-	printk(KERN_INFO "HPTE error_flags =%d\n", ph->hpte_data.error_flags);
+-	printk(KERN_INFO "HPTE source_address =%llx\n",
+-		ph->hpte_data.source_address);
+-	printk(KERN_INFO "HPTE source_length =%llx\n",
+-		ph->hpte_data.source_length);
+-	printk(KERN_INFO "HPTE length_copied =%llx\n",
+-		ph->hpte_data.length_copied);
+-
+-	printk(KERN_INFO " SRSD AREA\n");
+-	printk(KERN_INFO "SRSD dump_flags =%d\n", ph->kernel_data.dump_flags);
+-	printk(KERN_INFO "SRSD source_type =%d\n", ph->kernel_data.source_type);
+-	printk(KERN_INFO "SRSD error_flags =%d\n", ph->kernel_data.error_flags);
+-	printk(KERN_INFO "SRSD source_address =%llx\n",
+-		ph->kernel_data.source_address);
+-	printk(KERN_INFO "SRSD source_length =%llx\n",
+-		ph->kernel_data.source_length);
+-	printk(KERN_INFO "SRSD length_copied =%llx\n",
+-		ph->kernel_data.length_copied);
+-#endif
+-}
+-
+-static ssize_t show_phyp_dump_active(struct kobject *kobj,
+-			struct kobj_attribute *attr, char *buf)
+-{
+-
+-	/* create filesystem entry so kdump is phyp-dump aware */
+-	return sprintf(buf, "%lx\n", phyp_dump_info->phyp_dump_at_boot);
+-}
+-
+-static struct kobj_attribute pdl = __ATTR(phyp_dump_active, 0600,
+-					show_phyp_dump_active,
+-					NULL);
+-
+-static void register_dump_area(struct phyp_dump_header *ph, unsigned long addr)
+-{
+-	int rc;
+-
+-	/* Add addr value if not initialized before */
+-	if (ph->cpu_data.destination_address == 0) {
+-		ph->cpu_data.destination_address += addr;
+-		ph->hpte_data.destination_address += addr;
+-		ph->kernel_data.destination_address += addr;
+-	}
+-
+-	/* ToDo Invalidate kdump and free memory range. */
+-
+-	do {
+-		rc = rtas_call(ibm_configure_kernel_dump, 3, 1, NULL,
+-				1, ph, sizeof(struct phyp_dump_header));
+-	} while (rtas_busy_delay(rc));
+-
+-	if (rc) {
+-		printk(KERN_ERR "phyp-dump: unexpected error (%d) on "
+-						"register\n", rc);
+-		print_dump_header(ph);
+-		return;
+-	}
+-
+-	rc = sysfs_create_file(kernel_kobj, &pdl.attr);
+-	if (rc)
+-		printk(KERN_ERR "phyp-dump: unable to create sysfs"
+-				" file (%d)\n", rc);
+-}
+-
+-static
+-void invalidate_last_dump(struct phyp_dump_header *ph, unsigned long addr)
+-{
+-	int rc;
+-
+-	/* Add addr value if not initialized before */
+-	if (ph->cpu_data.destination_address == 0) {
+-		ph->cpu_data.destination_address += addr;
+-		ph->hpte_data.destination_address += addr;
+-		ph->kernel_data.destination_address += addr;
+-	}
+-
+-	do {
+-		rc = rtas_call(ibm_configure_kernel_dump, 3, 1, NULL,
+-				2, ph, sizeof(struct phyp_dump_header));
+-	} while (rtas_busy_delay(rc));
+-
+-	if (rc) {
+-		printk(KERN_ERR "phyp-dump: unexpected error (%d) "
+-						"on invalidate\n", rc);
+-		print_dump_header(ph);
+-	}
+-}
+-
+-/* ------------------------------------------------- */
+-/**
+- * release_memory_range -- release memory previously memblock_reserved
+- * @start_pfn: starting physical frame number
+- * @nr_pages: number of pages to free.
+- *
+- * This routine will release memory that had been previously
+- * memblock_reserved in early boot. The released memory becomes
+- * available for genreal use.
+- */
+-static void release_memory_range(unsigned long start_pfn,
+-			unsigned long nr_pages)
+-{
+-	struct page *rpage;
+-	unsigned long end_pfn;
+-	long i;
+-
+-	end_pfn = start_pfn + nr_pages;
+-
+-	for (i = start_pfn; i <= end_pfn; i++) {
+-		rpage = pfn_to_page(i);
+-		if (PageReserved(rpage)) {
+-			ClearPageReserved(rpage);
+-			init_page_count(rpage);
+-			__free_page(rpage);
+-			totalram_pages++;
+-		}
+-	}
+-}
+-
+-/**
+- * track_freed_range -- Counts the range being freed.
+- * Once the counter goes to zero, it re-registers dump for
+- * future use.
+- */
+-static void
+-track_freed_range(unsigned long addr, unsigned long length)
+-{
+-	static unsigned long scratch_area_size, reserved_area_size;
+-
+-	if (addr < phyp_dump_info->init_reserve_start)
+-		return;
+-
+-	if ((addr >= phyp_dump_info->init_reserve_start) &&
+-	    (addr <= phyp_dump_info->init_reserve_start +
+-	     phyp_dump_info->init_reserve_size))
+-		reserved_area_size += length;
+-
+-	if ((addr >= phyp_dump_info->reserved_scratch_addr) &&
+-	    (addr <= phyp_dump_info->reserved_scratch_addr +
+-	     phyp_dump_info->reserved_scratch_size))
+-		scratch_area_size += length;
+-
+-	if ((reserved_area_size == phyp_dump_info->init_reserve_size) &&
+-	    (scratch_area_size == phyp_dump_info->reserved_scratch_size)) {
+-
+-		invalidate_last_dump(&phdr,
+-				phyp_dump_info->reserved_scratch_addr);
+-		register_dump_area(&phdr,
+-				phyp_dump_info->reserved_scratch_addr);
+-	}
+-}
+-
+-/* ------------------------------------------------- */
+-/**
+- * sysfs_release_region -- sysfs interface to release memory range.
+- *
+- * Usage:
+- *   "echo <start addr> <length> > /sys/kernel/release_region"
+- *
+- * Example:
+- *   "echo 0x40000000 0x10000000 > /sys/kernel/release_region"
+- *
+- * will release 256MB starting at 1GB.
+- */
+-static ssize_t store_release_region(struct kobject *kobj,
+-				struct kobj_attribute *attr,
+-				const char *buf, size_t count)
+-{
+-	unsigned long start_addr, length, end_addr;
+-	unsigned long start_pfn, nr_pages;
+-	ssize_t ret;
+-
+-	ret = sscanf(buf, "%lx %lx", &start_addr, &length);
+-	if (ret != 2)
+-		return -EINVAL;
+-
+-	track_freed_range(start_addr, length);
+-
+-	/* Range-check - don't free any reserved memory that
+-	 * wasn't reserved for phyp-dump */
+-	if (start_addr < phyp_dump_info->init_reserve_start)
+-		start_addr = phyp_dump_info->init_reserve_start;
+-
+-	end_addr = phyp_dump_info->init_reserve_start +
+-			phyp_dump_info->init_reserve_size;
+-	if (start_addr+length > end_addr)
+-		length = end_addr - start_addr;
+-
+-	/* Release the region of memory assed in by user */
+-	start_pfn = PFN_DOWN(start_addr);
+-	nr_pages = PFN_DOWN(length);
+-	release_memory_range(start_pfn, nr_pages);
+-
+-	return count;
+-}
+-
+-static ssize_t show_release_region(struct kobject *kobj,
+-			struct kobj_attribute *attr, char *buf)
+-{
+-	u64 second_addr_range;
+-
+-	/* total reserved size - start of scratch area */
+-	second_addr_range = phyp_dump_info->init_reserve_size -
+-				phyp_dump_info->reserved_scratch_size;
+-	return sprintf(buf, "CPU:0x%llx-0x%llx: HPTE:0x%llx-0x%llx:"
+-			    " DUMP:0x%llx-0x%llx, 0x%lx-0x%llx:\n",
+-		phdr.cpu_data.destination_address,
+-		phdr.cpu_data.length_copied,
+-		phdr.hpte_data.destination_address,
+-		phdr.hpte_data.length_copied,
+-		phdr.kernel_data.destination_address,
+-		phdr.kernel_data.length_copied,
+-		phyp_dump_info->init_reserve_start,
+-		second_addr_range);
+-}
+-
+-static struct kobj_attribute rr = __ATTR(release_region, 0600,
+-					show_release_region,
+-					store_release_region);
+-
+-static int __init phyp_dump_setup(void)
+-{
+-	struct device_node *rtas;
+-	const struct phyp_dump_header *dump_header = NULL;
+-	unsigned long dump_area_start;
+-	unsigned long dump_area_length;
+-	int header_len = 0;
+-	int rc;
+-
+-	/* If no memory was reserved in early boot, there is nothing to do */
+-	if (phyp_dump_info->init_reserve_size == 0)
 -		return 0;
-+		goto out;
- 
- 	/* Dump is active. Show reserved memory region. */
- 	seq_printf(m,
-@@ -1088,9 +1219,15 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 			fw_dump.reserve_dump_area_start,
- 			fdm_ptr->cpu_state_data.destination_address -
- 			fw_dump.reserve_dump_area_start);
-+out:
-+	if (fdm_active)
-+		mutex_unlock(&fadump_mutex);
- 	return 0;
- }
- 
-+static struct kobj_attribute fadump_release_attr = __ATTR(fadump_release_mem,
-+						0200, NULL,
-+						fadump_release_memory_store);
- static struct kobj_attribute fadump_attr = __ATTR(fadump_enabled,
- 						0444, fadump_enabled_show,
- 						NULL);
-@@ -1131,6 +1268,13 @@ static void fadump_init_files(void)
- 	if (!debugfs_file)
- 		printk(KERN_ERR "fadump: unable to create debugfs file"
- 				" fadump_region\n");
-+
-+	if (fw_dump.dump_active) {
-+		rc = sysfs_create_file(kernel_kobj, &fadump_release_attr.attr);
-+		if (rc)
-+			printk(KERN_ERR "fadump: unable to create sysfs file"
-+				" fadump_release_mem (%d)\n", rc);
-+	}
- 	return;
- }
- 
-@@ -1150,8 +1294,14 @@ int __init setup_fadump(void)
- 	 * If dump data is available then see if it is valid and prepare for
- 	 * saving it to the disk.
- 	 */
--	if (fw_dump.dump_active)
--		process_fadump(fdm_active);
-+	if (fw_dump.dump_active) {
-+		/*
-+		 * if dump process fails then invalidate the registration
-+		 * and release memory before proceeding for re-registration.
-+		 */
-+		if (process_fadump(fdm_active) < 0)
-+			fadump_invalidate_release_mem();
-+	}
- 	/* Initialize the kernel dump memory structure for FAD registration. */
- 	else if (fw_dump.reserve_dump_area_size)
- 		init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
+-
+-	/* Return if phyp dump not supported */
+-	if (!phyp_dump_info->phyp_dump_configured)
+-		return -ENOSYS;
+-
+-	/* Is there dump data waiting for us? If there isn't,
+-	 * then register a new dump area, and release all of
+-	 * the rest of the reserved ram.
+-	 *
+-	 * The /rtas/ibm,kernel-dump rtas node is present only
+-	 * if there is dump data waiting for us.
+-	 */
+-	rtas = of_find_node_by_path("/rtas");
+-	if (rtas) {
+-		dump_header = of_get_property(rtas, "ibm,kernel-dump",
+-						&header_len);
+-		of_node_put(rtas);
+-	}
+-
+-	ibm_configure_kernel_dump = rtas_token("ibm,configure-kernel-dump");
+-
+-	print_dump_header(dump_header);
+-	dump_area_length = init_dump_header(&phdr);
+-	/* align down */
+-	dump_area_start = phyp_dump_info->init_reserve_start & PAGE_MASK;
+-
+-	if (dump_header == NULL) {
+-		register_dump_area(&phdr, dump_area_start);
+-		return 0;
+-	}
+-
+-	/* re-register the dump area, if old dump was invalid */
+-	if ((dump_header) && (dump_header->status & DUMP_ERROR_FLAG)) {
+-		invalidate_last_dump(&phdr, dump_area_start);
+-		register_dump_area(&phdr, dump_area_start);
+-		return 0;
+-	}
+-
+-	if (dump_header) {
+-		phyp_dump_info->reserved_scratch_addr =
+-				dump_header->cpu_data.destination_address;
+-		phyp_dump_info->reserved_scratch_size =
+-				dump_header->cpu_data.source_length +
+-				dump_header->hpte_data.source_length +
+-				dump_header->kernel_data.source_length;
+-	}
+-
+-	/* Should we create a dump_subsys, analogous to s390/ipl.c ? */
+-	rc = sysfs_create_file(kernel_kobj, &rr.attr);
+-	if (rc)
+-		printk(KERN_ERR "phyp-dump: unable to create sysfs file (%d)\n",
+-									rc);
+-
+-	/* ToDo: re-register the dump area, for next time. */
+-	return 0;
+-}
+-machine_subsys_initcall(pseries, phyp_dump_setup);
+-
+-int __init early_init_dt_scan_phyp_dump(unsigned long node,
+-		const char *uname, int depth, void *data)
+-{
+-	const unsigned int *sizes;
+-
+-	phyp_dump_info->phyp_dump_configured = 0;
+-	phyp_dump_info->phyp_dump_is_active = 0;
+-
+-	if (depth != 1 || strcmp(uname, "rtas") != 0)
+-		return 0;
+-
+-	if (of_get_flat_dt_prop(node, "ibm,configure-kernel-dump", NULL))
+-		phyp_dump_info->phyp_dump_configured++;
+-
+-	if (of_get_flat_dt_prop(node, "ibm,dump-kernel", NULL))
+-		phyp_dump_info->phyp_dump_is_active++;
+-
+-	sizes = of_get_flat_dt_prop(node, "ibm,configure-kernel-dump-sizes",
+-				    NULL);
+-	if (!sizes)
+-		return 0;
+-
+-	if (sizes[0] == 1)
+-		phyp_dump_info->cpu_state_size = *((unsigned long *)&sizes[1]);
+-
+-	if (sizes[3] == 2)
+-		phyp_dump_info->hpte_region_size =
+-						*((unsigned long *)&sizes[4]);
+-	return 1;
+-}
+-
+-/* Look for phyp_dump= cmdline option */
+-static int __init early_phyp_dump_enabled(char *p)
+-{
+-	phyp_dump_info->phyp_dump_at_boot = 1;
+-
+-        if (!p)
+-                return 0;
+-
+-        if (strncmp(p, "1", 1) == 0)
+-		phyp_dump_info->phyp_dump_at_boot = 1;
+-        else if (strncmp(p, "0", 1) == 0)
+-		phyp_dump_info->phyp_dump_at_boot = 0;
+-
+-        return 0;
+-}
+-early_param("phyp_dump", early_phyp_dump_enabled);
+-
+-/* Look for phyp_dump_reserve_size= cmdline option */
+-static int __init early_phyp_dump_reserve_size(char *p)
+-{
+-        if (p)
+-		phyp_dump_info->reserve_bootvar = memparse(p, &p);
+-
+-        return 0;
+-}
+-early_param("phyp_dump_reserve_size", early_phyp_dump_reserve_size);
 
