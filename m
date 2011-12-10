@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597Ab1LJUvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 15:51:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49917 "EHLO
+	id S1751811Ab1LJU4O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 15:56:14 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49925 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1LJUvs (ORCPT
+	with ESMTP id S1751105Ab1LJU4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 15:51:48 -0500
-Date: Sat, 10 Dec 2011 21:51:43 +0100 (CET)
+	Sat, 10 Dec 2011 15:56:12 -0500
+Date: Sat, 10 Dec 2011 21:56:09 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Pekka Enberg <penberg@kernel.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
-        mingo@elte.hu
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-In-Reply-To: <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
-Message-ID: <alpine.LFD.2.02.1112102144370.3020@ionos>
-References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: [GIT pull] x86 fixes for 3.2
+In-Reply-To: <CA+55aFyO2yiTLmM67JMq3f3pLeuc5pKk2fPdC80PSV_YT6LfvQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1112102154130.3020@ionos>
+References: <alpine.LFD.2.02.1112092128150.3020@ionos> <CA+55aFyO2yiTLmM67JMq3f3pLeuc5pKk2fPdC80PSV_YT6LfvQ@mail.gmail.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-179979404-1323550570=:3020"
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,109 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Dec 2011, Pekka Enberg wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Sat, 10 Dec 2011, Thomas Gleixner wrote:
-> > We observed massive hangs of the serial console in kvm tool which
-> > turned out to be caused by the bogus emulation of the interrupt line
-> > behaviour.
-> > 
-> > This series cleans up and simplifies the serial code and in the last
-> > step fixes the interrupt handling proper.
+--8323328-179979404-1323550570=:3020
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 9 Dec 2011, Linus Torvalds wrote:
+
+> On Fri, Dec 9, 2011 at 12:29 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> > Please pull the latest x86-urgent-for-linus git tree from:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
 > 
-> Applied, thanks Thomas!
+> Christ, Thomas - fix your script already, and learn to double-check
+> your pull requests.
+> 
+> That is *not* a valid repository. There's nothing there. Stop pointing
+> me at it, dammit!
 
-There is a slight problem with them. I only tested them with the
-rt-guest kernels, but non rt kernels are slightly unhappy. Sorry for
-not thinking about that.
-
-Fix below.
+Me culpa. I fixed the script, but missed to deploy the update on my
+main devel machine from which I generated the pull request. Won't
+happen again.
 
 Thanks,
 
 	tglx
------------------->
-Subject: kvm tools: serial: Make it work with non rt guests as well
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 10 Dec 2011 21:27:26 +0100
-
-Sasha reported, that a non RT guest reports "too much work for irq 4"
-with the previous serial overhaul.
-
-The reason is, that the new code allows unlimited tx transfers, which
-triggers the sanity check in the 8250.c interrupt handler.
-
-Limit the consecutive TX chars to 16 and let the guest kernel escape
-from the 8250 interrupt handler. Set the TEMT/THRE bits in the
-periodic serial console update.
-
-Reported-by: Sasha Levin  <levinsasha928@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- tools/kvm/hw/serial.c |   30 ++++++++++++++++++++++--------
- 1 file changed, 22 insertions(+), 8 deletions(-)
-
-Index: linux-kvm/tools/kvm/hw/serial.c
-===================================================================
---- linux-kvm.orig/tools/kvm/hw/serial.c
-+++ linux-kvm/tools/kvm/hw/serial.c
-@@ -19,6 +19,7 @@ struct serial8250_device {
- 	u16			iobase;
- 	u8			irq;
- 	u8			irq_state;
-+	int			txcnt;
- 
- 	u8			rbr;		/* receive buffer */
- 	u8			dll;
-@@ -105,6 +106,16 @@ static void serial8250_update_irq(struct
- 			kvm__irq_line(kvm, dev->irq, 1);
- 	}
- 	dev->irq_state = iir;
-+
-+	/*
-+	 * If the kernel disabled the tx interrupt, we know that there
-+	 * is nothing more to transmit, so we can reset our tx logic
-+	 * here.
-+	 */
-+	if (!(dev->ier & UART_IER_THRI)) {
-+		dev->lsr |= UART_LSR_TEMT | UART_LSR_THRE;
-+		dev->txcnt = 0;
-+	}
- }
- 
- #define SYSRQ_PENDING_NONE		0
-@@ -134,6 +145,15 @@ static void serial8250__receive(struct k
- {
- 	int c;
- 
-+	/*
-+	 * If the guest transmitted 16 chars in a row, we clear the
-+	 * TEMT/THRE bits to let the kernel escape from the 8250
-+	 * interrupt handler. We come here only once a ms, so that
-+	 * should give the kernel the desired pause.
-+	 */
-+	dev->lsr |= UART_LSR_TEMT | UART_LSR_THRE;
-+	dev->txcnt = 0;
-+
- 	if (dev->lsr & UART_LSR_DR)
- 		return;
- 
-@@ -212,14 +232,8 @@ static bool serial8250_out(struct ioport
- 				term_putc(CONSOLE_8250, addr, size, dev->id);
- 			/* else FIXME: Inject data into rcv path for LOOP */
- 
--			/*
--			 * Set transmitter and transmit hold register
--			 * empty.  We have no FIFO at the moment and
--			 * on the TX side it's only interesting, when
--			 * we could coalesce port io on the kernel
--			 * kernel.
--			 */
--			dev->lsr |= UART_LSR_TEMT | UART_LSR_THRE;
-+			if (++dev->txcnt == 16)
-+				dev->lsr &= ~(UART_LSR_TEMT | UART_LSR_THRE);
- 			break;
- 		} else {
- 			dev->dll = ioport__read8(data);
-
-
+--8323328-179979404-1323550570=:3020--
