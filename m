@@ -1,270 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1LKUQb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 15:16:31 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:48542 "EHLO d1.icnet.pl"
+	id S1752513Ab1LKUQt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 15:16:49 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:48589 "EHLO d1.icnet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab1LKUQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 15:16:27 -0500
+	id S1752428Ab1LKUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 15:16:46 -0500
 From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 To: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 05/10] MTD: NAND: ams-delta: Use GPIO instead of custom I/O
-Date: Sun, 11 Dec 2011 21:12:03 +0100
-Message-Id: <1323634328-856-6-git-send-email-jkrzyszt@tis.icnet.pl>
+        alsa-devel@alsa-project.org, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 06/10] ARM: OMAP1: ams-delta: Use GPIO API in modem setup
+Date: Sun, 11 Dec 2011 21:12:04 +0100
+Message-Id: <1323634328-856-7-git-send-email-jkrzyszt@tis.icnet.pl>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
 References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
-To: David Woodhouse <dwmw2@infradead.org>
 X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use Amstrad Delta custom I/O functions for controlling the device,
-use GPIO API instead.
+Don't use Amstrad Delta custom I/O functions for setting up modem
+related pins, use GPIO API instead. However, keep old pin definitions
+used by ams_delta_latch2_write() for now, as those are still used by the
+Amstrad Delta ASoC driver.
 
-While being at it, add missing gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB).
+While being at it, extend the device platform data with a power
+management hook which toggles one of those new GPIO pins.
 
 Depends on patch 2/10 "ARM: OMAP1: Convert Amstrad E3 latches to
 basic_mmio_gpio".
 
 Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 ---
-Hi,
-I considered dropping the Amstrad Delta NAND driver and moving to either
-gpio-nand or gen_nand, but finally decided to keep it for now.
-
-The problem with the gpio-nand is that it seems to match a different
-hardware interface model. Having no knowledge about the original
-hardware that driver was designed in mind, I'd rather not try to
-modify it, and creating another GPIO based NAND driver also seems not
-a really good idea.
-
-If I decided to use gen_nand instead, I would have to move virtually all
-of the old driver callback functions somewhere under arch, either to the
-board file or to a new one, and still use some hacks unless either
-nand_base.c or plat_nand.c is modified.
-
-I'm willing to take one of those two approaches in a follow up series if
-I get a positive feedback.
-
-Thanks,
-Janusz
-
-
- arch/arm/mach-omap1/board-ams-delta.c             |   30 --------
- arch/arm/plat-omap/include/plat/board-ams-delta.h |    6 --
- drivers/mtd/nand/ams-delta.c                      |   74 ++++++++++++++------
- 3 files changed, 52 insertions(+), 58 deletions(-)
+ arch/arm/mach-omap1/board-ams-delta.c |   44 ++++++++++++++++++++------------
+ 1 files changed, 27 insertions(+), 17 deletions(-)
 
 diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-index bdf7399..7670374 100644
+index 7670374..5705481 100644
 --- a/arch/arm/mach-omap1/board-ams-delta.c
 +++ b/arch/arm/mach-omap1/board-ams-delta.c
-@@ -242,36 +242,6 @@ static struct gpio _latch_gpios[] __initconst = {
- 		.label	= "lcd_ndisp",
+@@ -262,16 +262,6 @@ static struct gpio _latch_gpios[] __initconst = {
+ 		.label	= "scard_cmdvcc",
  	},
  	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NCE,
+-		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_NRESET,
 -		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_nce",
+-		.label	= "modem_nreset",
 -	},
 -	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NRE,
+-		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_CODEC,
 -		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_nre",
+-		.label	= "modem_codec",
 -	},
 -	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWP,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_nwp",
--	},
--	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWE,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_nwe",
--	},
--	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_ALE,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_ale",
--	},
--	{
--		.gpio	= AMS_DELTA_GPIO_PIN_NAND_CLE,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "nand_cle",
--	},
--	{
- 		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
+ 		.gpio	= AMS_DELTA_LATCH2_GPIO_BASE + 14,
  		.flags	= GPIOF_OUT_INIT_LOW,
- 		.label	= "keybrd_pwr",
-diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-index c096e14..b586078 100644
---- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-+++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-@@ -30,12 +30,6 @@
- 
- #define AMS_DELTA_LATCH2_LCD_VBLEN	0x0001
- #define AMS_DELTA_LATCH2_LCD_NDISP	0x0002
--#define AMS_DELTA_LATCH2_NAND_NCE	0x0004
--#define AMS_DELTA_LATCH2_NAND_NRE	0x0008
--#define AMS_DELTA_LATCH2_NAND_NWP	0x0010
--#define AMS_DELTA_LATCH2_NAND_NWE	0x0020
--#define AMS_DELTA_LATCH2_NAND_ALE	0x0040
--#define AMS_DELTA_LATCH2_NAND_CLE	0x0080
- #define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
- #define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
- #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
-diff --git a/drivers/mtd/nand/ams-delta.c b/drivers/mtd/nand/ams-delta.c
-index 9e6b498..5769bd2 100644
---- a/drivers/mtd/nand/ams-delta.c
-+++ b/drivers/mtd/nand/ams-delta.c
-@@ -26,7 +26,7 @@
- #include <asm/io.h>
- #include <mach/hardware.h>
- #include <asm/sizes.h>
--#include <asm/gpio.h>
-+#include <linux/gpio.h>
- #include <plat/board-ams-delta.h>
- 
- /*
-@@ -34,8 +34,6 @@
-  */
- static struct mtd_info *ams_delta_mtd = NULL;
- 
--#define NAND_MASK (AMS_DELTA_LATCH2_NAND_NRE | AMS_DELTA_LATCH2_NAND_NWE | AMS_DELTA_LATCH2_NAND_CLE | AMS_DELTA_LATCH2_NAND_ALE | AMS_DELTA_LATCH2_NAND_NCE | AMS_DELTA_LATCH2_NAND_NWP)
--
- /*
-  * Define partitions for flash devices
-  */
-@@ -68,10 +66,9 @@ static void ams_delta_write_byte(struct mtd_info *mtd, u_char byte)
- 
- 	writew(0, io_base + OMAP_MPUIO_IO_CNTL);
- 	writew(byte, this->IO_ADDR_W);
--	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NWE, 0);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NWE, 0);
- 	ndelay(40);
--	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NWE,
--			       AMS_DELTA_LATCH2_NAND_NWE);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NWE, 1);
+ 		.label	= "hookflash1",
+@@ -482,6 +472,12 @@ static void __init ams_delta_init(void)
+ 	omap_writew(omap_readw(ARM_RSTCT1) | 0x0004, ARM_RSTCT1);
  }
  
- static u_char ams_delta_read_byte(struct mtd_info *mtd)
-@@ -80,12 +77,11 @@ static u_char ams_delta_read_byte(struct mtd_info *mtd)
- 	struct nand_chip *this = mtd->priv;
- 	void __iomem *io_base = this->priv;
++static void _modem_pm(struct uart_port *port, unsigned int state, unsigned old)
++{
++	if (state != old)
++		gpio_set_value(AMS_DELTA_GPIO_PIN_MODEM_NRESET, state == 0);
++}
++
+ static struct plat_serial8250_port ams_delta_modem_ports[] = {
+ 	{
+ 		.membase	= IOMEM(_MODEM_VIRT),
+@@ -492,6 +488,7 @@ static struct plat_serial8250_port ams_delta_modem_ports[] = {
+ 		.iotype		= UPIO_MEM,
+ 		.regshift	= 1,
+ 		.uartclk	= BASE_BAUD * 16,
++		.pm		= _modem_pm,
+ 	},
+ 	{ },
+ };
+@@ -504,6 +501,24 @@ static struct platform_device ams_delta_modem_device = {
+ 	},
+ };
  
--	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NRE, 0);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NRE, 0);
- 	ndelay(40);
- 	writew(~0, io_base + OMAP_MPUIO_IO_CNTL);
- 	res = readw(this->IO_ADDR_R);
--	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NRE,
--			       AMS_DELTA_LATCH2_NAND_NRE);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NRE, 1);
- 
- 	return res;
- }
-@@ -132,15 +128,12 @@ static void ams_delta_hwcontrol(struct mtd_info *mtd, int cmd,
- {
- 
- 	if (ctrl & NAND_CTRL_CHANGE) {
--		unsigned long bits;
--
--		bits = (~ctrl & NAND_NCE) ? AMS_DELTA_LATCH2_NAND_NCE : 0;
--		bits |= (ctrl & NAND_CLE) ? AMS_DELTA_LATCH2_NAND_CLE : 0;
--		bits |= (ctrl & NAND_ALE) ? AMS_DELTA_LATCH2_NAND_ALE : 0;
--
--		ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_CLE |
--				AMS_DELTA_LATCH2_NAND_ALE |
--				AMS_DELTA_LATCH2_NAND_NCE, bits);
-+		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NCE,
-+				(ctrl & NAND_NCE) == 0);
-+		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_CLE,
-+				(ctrl & NAND_CLE) != 0);
-+		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_ALE,
-+				(ctrl & NAND_ALE) != 0);
- 	}
- 
- 	if (cmd != NAND_CMD_NONE)
-@@ -152,6 +145,39 @@ static int ams_delta_nand_ready(struct mtd_info *mtd)
- 	return gpio_get_value(AMS_DELTA_GPIO_PIN_NAND_RB);
- }
- 
-+static struct gpio _mandatory_gpio[] __initconst_or_module = {
++static struct gpio _modem_gpios[] __initconst = {
 +	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NCE,
++		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_IRQ,
++		.flags	= GPIOF_DIR_IN,
++		.label	= "modem_irq",
++	},
++	{
++		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_NRESET,
 +		.flags	= GPIOF_OUT_INIT_HIGH,
-+		.label	= "nand_nce",
++		.label	= "modem_nreset",
 +	},
 +	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NRE,
++		.gpio	= AMS_DELTA_GPIO_PIN_MODEM_CODEC,
 +		.flags	= GPIOF_OUT_INIT_HIGH,
-+		.label	= "nand_nre",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWP,
-+		.flags	= GPIOF_OUT_INIT_HIGH,
-+		.label	= "nand_nwp",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWE,
-+		.flags	= GPIOF_OUT_INIT_HIGH,
-+		.label	= "nand_nwe",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_ALE,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "nand_ale",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_NAND_CLE,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "nand_cle",
++		.label	= "modem_codec",
 +	},
 +};
 +
- /*
-  * Main initialization routine
-  */
-@@ -223,10 +249,9 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, io_base);
+ static int __init ams_delta_modem_init(void)
+ {
+ 	int err;
+@@ -515,16 +530,11 @@ static int __init ams_delta_modem_init(void)
+ 	ams_delta_modem_ports[0].irq =
+ 			gpio_to_irq(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
  
- 	/* Set chip enabled, but  */
--	ams_delta_latch2_write(NAND_MASK, AMS_DELTA_LATCH2_NAND_NRE |
--					  AMS_DELTA_LATCH2_NAND_NWE |
--					  AMS_DELTA_LATCH2_NAND_NCE |
--					  AMS_DELTA_LATCH2_NAND_NWP);
-+	err = gpio_request_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-+	if (err)
-+		goto out_gpio;
+-	err = gpio_request(AMS_DELTA_GPIO_PIN_MODEM_IRQ, "modem");
++	err = gpio_request_array(_modem_gpios, ARRAY_SIZE(_modem_gpios));
+ 	if (err) {
+-		pr_err("Couldn't request gpio pin for modem\n");
++		pr_err("Couldn't request gpio pins for modem\n");
+ 		return err;
+ 	}
+-	gpio_direction_input(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+-
+-	ams_delta_latch2_write(
+-		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC,
+-		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC);
  
- 	/* Scan to find existence of the device */
- 	if (nand_scan(ams_delta_mtd, 1)) {
-@@ -241,7 +266,10 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
- 	goto out;
- 
-  out_mtd:
-+	gpio_free_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-+out_gpio:
- 	platform_set_drvdata(pdev, NULL);
-+	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
- 	iounmap(io_base);
- out_release_io:
- 	release_mem_region(res->start, resource_size(res));
-@@ -262,6 +290,8 @@ static int __devexit ams_delta_cleanup(struct platform_device *pdev)
- 	/* Release resources, unregister device */
- 	nand_release(ams_delta_mtd);
- 
-+	gpio_free_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-+	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
- 	iounmap(io_base);
- 	release_mem_region(res->start, resource_size(res));
- 
+ 	return platform_device_register(&ams_delta_modem_device);
+ }
 -- 
 1.7.3.4
 
