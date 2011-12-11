@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab1LKGGP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 01:06:15 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:19500 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab1LKGGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 01:06:14 -0500
-Message-ID: <4EE44831.8060002@oracle.com>
-Date: Sun, 11 Dec 2011 14:05:37 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Subject: Re: [PATCH V3 1/2] xen/granttable: Support sub-page grants
-References: <1323430321-5465-1-git-send-email-annie.li@oracle.com>	 <1323430372-5503-1-git-send-email-annie.li@oracle.com> <1323452339.20077.92.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1323452339.20077.92.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4EE44851.0016,ss=1,re=0.000,fgs=0
+	id S1751464Ab1LKGIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 01:08:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44109 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab1LKGIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 01:08:39 -0500
+Date: Sun, 11 Dec 2011 17:08:13 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Commit 09d28d2c19 introduces set-after-free in
+ arch/arm/mach-omap2/mcbsp.c
+Message-ID: <20111211170813.02fd478a@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/62CuFcmZKT=0=I7v2d4sjQ9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/62CuFcmZKT=0=I7v2d4sjQ9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
 
-On 2011-12-10 1:38, Ian Campbell wrote:
-> On Fri, 2011-12-09 at 11:32 +0000, annie.li@oracle.com wrote:
->> -- They can't be used to map the page (so can only be used in a GNTTABOP_copy
->>         hypercall).
->>      -- It's possible to grant access with a finer granularity than whole pages.
->>      -- Xen guarantees that they can be revoked quickly (a normal map grant can
->>         only be revoked with the cooperation of the domain which has been granted
->>         access).
->>
->> Signed-off-by: Annie Li<annie.li@oracle.com>
->> ---
->>   drivers/xen/grant-table.c |   71 +++++++++++++++++++++++++++++++++++++++++++++
->>   include/xen/grant_table.h |   13 ++++++++
->>   2 files changed, 84 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
->> index bd325fd..0ac16fa 100644
->> --- a/drivers/xen/grant-table.c
->> +++ b/drivers/xen/grant-table.c
->> @@ -120,6 +120,16 @@ struct gnttab_ops {
->>   	 * by bit operations.
->>   	 */
->>   	int (*query_foreign_access)(grant_ref_t);
->> +	/*
->> +	 * Grant a domain to access a range of bytes within the page referred by
->> +	 * an available grant entry. First parameter is grant entry reference
->> +	 * number, second one is id of grantee domain, third one is frame
->> +	 * address of subpage grant, forth one is grant type and flag
->> +	 * information, fifth one is offset of the range of bytes, and last one
->> +	 * is length of bytes to be accessed.
->> +	 */
->> +	void (*update_subpage_entry)(grant_ref_t, domid_t, unsigned long, int,
->> +				     unsigned, unsigned);
-> Please can you name the arguments here and then refer to them by name in
-> the comments instead of all this "First parameter", "second one" stuff.
->
-> Similarly for the existing comments sorry I didn't notice this in
-> previous review.
-Ok, I will do this in another separate patch.
+
+Hi,
+
+commit 09d28d2c19fe5c2d51b3133329584166dec89f86
+Author: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Date:   Mon Sep 26 10:45:48 2011 +0300
+
+    ARM: OMAP: mcbsp: Start generalize omap2_mcbsp_set_clks_src
+   =20
+...
+
+contains (when displayed with "-U10"):
+
+diff --git a/arch/arm/mach-omap2/mcbsp.c b/arch/arm/mach-omap2/mcbsp.c
+index 92bd5e2..3dd4c47 100644
+--- a/arch/arm/mach-omap2/mcbsp.c
++++ b/arch/arm/mach-omap2/mcbsp.c
+....
+@@ -181,20 +173,21 @@ static int omap_init_mcbsp(struct omap_hwmod *oh, voi=
+d *unused)
+        }
+        pdev =3D omap_device_build_ss(name, id, oh_device, count, pdata,
+                                sizeof(*pdata), omap2_mcbsp_latency,
+                                ARRAY_SIZE(omap2_mcbsp_latency), false);
+        kfree(pdata);
+        if (IS_ERR(pdev))  {
+                pr_err("%s: Can't build omap_device for %s:%s.\n", __func__,
+                                        name, oh->name);
+                return PTR_ERR(pdev);
+        }
++       pdata->set_clk_src =3D omap2_mcbsp_set_clk_src;
+        omap_mcbsp_count++;
+        return 0;
+ }
+=20
+ static int __init omap2_mcbsp_init(void)
+ {
+        omap_hwmod_for_each_by_class("mcbsp", omap_init_mcbsp, NULL);
+=20
+        mcbsp_ptr =3D kzalloc(omap_mcbsp_count * sizeof(struct omap_mcbsp *=
+),
+                                                                GFP_KERNEL);
+
+
+
+which sets a field in pdata after it has been freed.
+
+commit 7bc0c4bac72375517d904e02c46da2a23e079e8b
+Author: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Date:   Mon Sep 26 10:45:49 2011 +0300
+
+
+then adds
+
+@@ -181,6 +184,8 @@ static int omap_init_mcbsp(struct omap_hwmod *oh, void =
+*unused)
+                return PTR_ERR(pdev);
+        }
+        pdata->set_clk_src =3D omap2_mcbsp_set_clk_src;
++       if (id =3D=3D 1)
++               pdata->mux_signal =3D omap2_mcbsp1_mux_rx_clk;
+        omap_mcbsp_count++;
+        return 0;
+ }
+
+
+which sets another field.
+
+Should these settings just be moved up before the call to
+omap_device_build_ss?? Doing that removes=20
+[    0.196014] Slab corruption: size-32 start=3Dded3edc0, len=3D32
+warning.
 
 Thanks,
-Annie.
-> Ian.
->
->
+NeilBrown
+
+--Sig_/62CuFcmZKT=0=I7v2d4sjQ9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTuRIzTnsnt1WYoG5AQLGMg//X/r8G2g0GZWfucAD/P3bgbPB28+7FdK5
+pLkRM7ENPXwHRzGa3+fRuKRLMpeR6gshK+0wDxaYu7AqHDIKyB0+vBOGz93wIeCb
+vlxbDnAzuQRO7xi9gha2u2hInvnBOsG79e24EPidO+GsAfjklFO/fBTVX5rRujmn
+xEwOxn2b7Bjzya4GwDwvJsfMsnl0bLnlbkfdfNpLnfqHlOoMAuhmtQWP4GJXtkN1
+gKv0Kwh7e7Tybm2eIzoN+vcrMwWw0GQpyP6BXBvf3/mFPo6noinhuuDJcnp9Bw29
+Wmhk0h3TkwgKSUeCKAZdBzKSNTN4zrfijsLx10z6/6/2f3EgzdLwIbRBT/t1/0yK
+YUv99KBPUbnJLiy2hMQGAbhUQHcj0SNLiTmvAU6ZA2ZOGk+vJhoIffojaAuTGUlQ
+3yGMGIyxLxeSFPOoVVGNNA82V88pVscQ7dwr44MlohtN/vHodr63cL0jUpcvQbSL
+ztZYYeASl5bG8iCDevUp+LloQEhOvXrbvR201RyftURs+r+bZObRJEHOFoa1MkAE
+2tXz9GHX/xdJ16YrtyINRsRGTtZStfWL9s+pj8Gc19GfHVBaiO9ipogtpR70gENJ
+HG8CcRPya1afRFB/P8cFanr3Q6LlFgUNu4YMM4BM27DIWldP1+W+HDMm2MMYbGJZ
+FjVTTb+0leQ=
+=C4a2
+-----END PGP SIGNATURE-----
+
+--Sig_/62CuFcmZKT=0=I7v2d4sjQ9--
