@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab1LKOEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 09:04:42 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51027 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab1LKOEl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 09:04:41 -0500
-Date: Sun, 11 Dec 2011 15:04:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-In-Reply-To: <20111211103047.GA19299@elte.hu>
-Message-ID: <alpine.LFD.2.02.1112111459270.3020@ionos>
-References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752019Ab1LKOFY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 09:05:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698Ab1LKOFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 09:05:23 -0500
+Message-ID: <4EE4B890.20500@redhat.com>
+Date: Sun, 11 Dec 2011 16:05:04 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
+Subject: Re: [PATCHv3 00/10] KVM in-guest performance monitoring
+References: <1320929850-10480-1-git-send-email-gleb@redhat.com>
+In-Reply-To: <1320929850-10480-1-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Dec 2011, Ingo Molnar wrote:
-> In theory a kvm driven serial console should be extremely fast, 
-> much faster than a real serial console, basically as fast as a 
-> local console. Yet this still does not seem to be the case.
-> 
-> In fact even ssh-ing in to a box over Wifi and running the above 
-> top session is undistinguishable from top running in a local 
-> console. So IMO it cannot be virtualization overhead - there 
-> must still be some delay or serious lack of buffering somewhere.
+On 11/10/2011 02:57 PM, Gleb Natapov wrote:
+> This patchset exposes an emulated version 2 architectural performance
+> monitoring unit to KVM guests.  The PMU is emulated using perf_events,
+> so the host kernel can multiplex host-wide, host-user, and the
+> guest on available resources.
+>
+> The patches are against next branch on kvm.git.
+>
+>
 
-Well, the difference between ssh and serial is, that ssh can pack 1.5k
-worth of data into one frame, while serial has to send it
-piecewise. And the emulation has to trap into kvm tool for each tx
-byte, which doesnt help either. We cannot do much with buffering on
-the kvm tool side as we have no clue how much consecutive data will
-come in. That's why there is a virtual console, which has the
-disadvantage that you cant see the early boot messages.
+Thanks, applied.
 
-Thanks,
-
-	tglx
+-- 
+error compiling committee.c: too many arguments to function
 
