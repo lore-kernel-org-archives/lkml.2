@@ -1,211 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab1LKNT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 08:19:28 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53323 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442Ab1LKNTX (ORCPT
+	id S1751991Ab1LKNxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 08:53:17 -0500
+Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:60246 "EHLO
+	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab1LKNxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 08:19:23 -0500
+	Sun, 11 Dec 2011 08:53:15 -0500
+X-Greylist: delayed 1728 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Dec 2011 08:53:14 EST
+Message-ID: <4EE4AEF4.2080702@udo.edu>
+Date: Sun, 11 Dec 2011 14:24:04 +0100
+From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111120 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAE04G=Bq+tyPnM+SVHUm+AQH4nLOy-KH7foRVNFs6GNdzpiX_Q@mail.gmail.com>
-References: <CAE04G=Bu4WnU9SYU9u3-ap6OrBEjWONK8TA8bYBy5OSCCzzDqg@mail.gmail.com>
-	<m2y5uknqjk.fsf@firstfloor.org>
-	<CAE04G=Bq+tyPnM+SVHUm+AQH4nLOy-KH7foRVNFs6GNdzpiX_Q@mail.gmail.com>
-Date: Sun, 11 Dec 2011 21:19:22 +0800
-Message-ID: <CAE04G=A7WWG4WDoTfcBVMsxNB2xndVTq4s6DPdsyDEca4Up=SQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] x86: Add process memory layout to coredump file
-From: t cheney <cdmalord@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+CC: Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: iwlagn regression in v3.1.5
+Content-Type: multipart/mixed;
+ boundary="------------060407050101070901000206"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is readelf's patch which can retrieve maps in coredump
-file, and it is based on binutils-2.21.1.
-Usage: ./readelf -m coredumpfile
-https://github.com/cdma/coredumpmap/blob/dev/readelf.c
-https://github.com/cdma/coredumpmap/blob/dev/common.h
+This is a multi-part message in MIME format.
+--------------060407050101070901000206
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Alternately, following is diff's result:
-changed files:
-./binutils-2.21.1/binutils/readelf.c
-./binutils-2.21.1/include/elf/common.h
+Hello,
 
-diff -u ./binutils-2.21.1/binutils/readelf.c
-./binutils-2.21.1/binutils/readelf.c.orig
---- ./binutils-2.21.1/binutils/readelf.c        2011-12-07
-14:54:45.000000000 -0500
-+++ ./binutils-2.21.1/binutils/readelf.c.orig   2011-12-07
-14:53:43.000000000 -0500
-@@ -196,7 +196,6 @@
- static int do_notes;
- static int do_archive_index;
- static int is_32bit_elf;
--static int do_maps;
+there in an regression in kernel release v3.1.5. Commit 
+43c308bd8d0a3e7d98c5abcd41a4a3fada3d198f "iwlwifi: do not re-configure 
+HT40 after associated" break iwlagn driver for Intel Corporation 
+Centrino Ultimate-N 6300 (rev 35) on my Thinkpad t510. I still can 
+connect to the AP, but i can't pin or access anything. Reverting that 
+commit solved the Problem. I attached the patch.
 
- struct group_list
- {
-@@ -3072,7 +3071,6 @@
-  {"dyn-syms",        no_argument, 0, OPTION_DYN_SYMS},
-  {"relocs",          no_argument, 0, 'r'},
-  {"notes",           no_argument, 0, 'n'},
--  {"maps",            no_argument, 0, 'm'},
-  {"dynamic",         no_argument, 0, 'd'},
-  {"arch-specific",    no_argument, 0, 'A'},
-  {"version-info",     no_argument, 0, 'V'},
-@@ -3112,7 +3110,6 @@
-     --symbols           An alias for --syms\n\
-  --dyn-syms             Display the dynamic symbol table\n\
-  -n --notes             Display the core notes (if present)\n\
--  -m --maps              Display the core maps (if present)\n\
-  -r --relocs            Display the relocations (if present)\n\
-  -u --unwind            Display the unwind info (if present)\n\
-  -d --dynamic           Display the dynamic section (if present)\n\
-@@ -3231,7 +3228,7 @@
-    usage (stderr);
+Regards,
+Andrej Gelenberg
 
-  while ((c = getopt_long
--         (argc, argv, "ADHINR:SVWacdeghi:lnp:rstuvw::x:m", options,
-NULL)) != EOF)
-+         (argc, argv, "ADHINR:SVWacdeghi:lnp:rstuvw::x:", options,
-NULL)) != EOF)
-    {
-      switch (c)
-       {
-@@ -3354,9 +3351,6 @@
-       case 'W':
-         do_wide++;
-         break;
--       case 'm':
--         do_maps++;
--         break;
-       default:
-         /* xgettext:c-format */
-         error (_("Invalid option '-%c'\n"), c);
-@@ -3370,7 +3364,7 @@
-      && !do_segments && !do_header && !do_dump && !do_version
-      && !do_histogram && !do_debugging && !do_arch && !do_notes
-      && !do_section_groups && !do_archive_index
--      && !do_dyn_syms && !do_maps)
-+      && !do_dyn_syms)
-    usage (stderr);
-  else if (argc < 3)
-    {
-@@ -11855,8 +11849,6 @@
-       return _("NT_LWPSINFO (lwpsinfo_t structure)");
-      case NT_WIN32PSTATUS:
-       return _("NT_WIN32PSTATUS (win32_pstatus structure)");
--      case NT_MAPS:
--       return _("NT_MAPS (maps info)");
-      default:
-       break;
-      }
-@@ -11970,9 +11962,6 @@
- {
-  const char * name = pnote->namesz ? pnote->namedata : "(NONE)";
-  const char * nt;
--
--  if (do_maps && pnote->type != NT_MAPS)
--       return 0;
+--------------060407050101070901000206
+Content-Type: text/x-patch;
+ name="0001-Revert-iwlwifi-do-not-re-configure-HT40-after-associ.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Revert-iwlwifi-do-not-re-configure-HT40-after-associ.pa";
+ filename*1="tch"
 
-  if (pnote->namesz == 0)
-    /* If there is no note name, then use the default set of
-@@ -12000,13 +11989,6 @@
-      nt = get_note_type (pnote->type);
+>From 4f53ace64deb22cc4dc5616c93a3b5e21435d429 Mon Sep 17 00:00:00 2001
+From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Date: Sun, 11 Dec 2011 13:50:26 +0100
+Subject: [PATCH] Revert "iwlwifi: do not re-configure HT40 after associated"
 
-  printf ("  %s\t\t0x%08lx\t%s\n", name, pnote->descsz, nt);
--  if (do_maps && pnote->type == NT_MAPS)
--  {
--      pnote->descdata[pnote->descsz] = 0;
--      printf("Maps is following:\n");
--      printf("%s\n",pnote->descdata);
--  }
--
-  return 1;
+This reverts commit 43c308bd8d0a3e7d98c5abcd41a4a3fada3d198f.
+It break wlan driver on my Thinkpad t510. I can connect to the network
+and i get ip from dhcpcd, but no ping or tcp connection can be
+established.
+
+lspci:
+03:00.0 Network controller: Intel Corporation Centrino Ultimate-N 6300
+(rev 35)
+
+dmesg:
+[    3.697288] iwlagn 0000:03:00.0: PCI INT A -> GSI 17 (level, low) ->
+IRQ 17
+[    3.697841] iwlagn 0000:03:00.0: setting latency timer to 64
+[    3.697873] iwlagn 0000:03:00.0: pci_resource_len = 0x00002000
+[    3.698389] iwlagn 0000:03:00.0: pci_resource_base = ffffc90010084000
+[    3.698954] iwlagn 0000:03:00.0: HW Revision ID = 0x35
+[    3.699629] iwlagn 0000:03:00.0: irq 43 for MSI/MSI-X
+[    3.699705] iwlagn 0000:03:00.0: Detected Intel(R) Centrino(R)
+Ultimate-N 6300 AGN, REV=0x74
+[    3.700181] iwlagn 0000:03:00.0: L1 Enabled; Disabling L0S
+[    3.717265] iwlagn 0000:03:00.0: device EEPROM VER=0x436, CALIB=0x6
+[    3.717461] iwlagn 0000:03:00.0: Device SKU: 0X1f0
+[    3.717984] iwlagn 0000:03:00.0: Valid Tx ant: 0X7, Valid Rx ant: 0X7
+[    3.718531] iwlagn 0000:03:00.0: Tunable channels: 13 802.11bg, 24
+802.11a channels
+[    3.719141] iwlagn 0000:03:00.0: loaded firmware version 9.221.4.1
+build 25532
+...
+[   71.965289] iwlagn 0000:03:00.0: L1 Enabled; Disabling L0S
+[   71.972290] iwlagn 0000:03:00.0: Radio type=0x0-0x3-0x1
+[   72.213804] iwlagn 0000:03:00.0: L1 Enabled; Disabling L0S
+[   72.220770] iwlagn 0000:03:00.0: Radio type=0x0-0x3-0x1
+
+Signed-off-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+---
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 +++++++++-----------------
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   18 +++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 -
+ 3 files changed, 28 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
+index eabbf1a..a7ddc98 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
+@@ -542,24 +542,6 @@ int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+ 	return 0;
  }
-
-@@ -12093,6 +12075,7 @@
-       }
-
-      res &= process_note (& inote);
-+
-      if (temp != NULL)
-       {
-         free (temp);
-@@ -12150,7 +12133,7 @@
- process_notes (FILE * file)
+ 
+-void iwlagn_config_ht40(struct ieee80211_conf *conf,
+-	struct iwl_rxon_context *ctx)
+-{
+-	if (conf_is_ht40_minus(conf)) {
+-		ctx->ht.extension_chan_offset =
+-			IEEE80211_HT_PARAM_CHA_SEC_BELOW;
+-		ctx->ht.is_40mhz = true;
+-	} else if (conf_is_ht40_plus(conf)) {
+-		ctx->ht.extension_chan_offset =
+-			IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
+-		ctx->ht.is_40mhz = true;
+-	} else {
+-		ctx->ht.extension_chan_offset =
+-			IEEE80211_HT_PARAM_CHA_SEC_NONE;
+-		ctx->ht.is_40mhz = false;
+-	}
+-}
+-
+ int iwlagn_mac_config(struct ieee80211_hw *hw, u32 changed)
  {
-  /* If we have not been asked to display the notes then do nothing.  */
--  if (! do_notes && !do_maps)
-+  if (! do_notes)
-    return 1;
+ 	struct iwl_priv *priv = hw->priv;
+@@ -618,11 +600,19 @@ int iwlagn_mac_config(struct ieee80211_hw *hw, u32 changed)
+ 				ctx->ht.enabled = conf_is_ht(conf);
+ 
+ 			if (ctx->ht.enabled) {
+-				/* if HT40 is used, it should not change
+-				 * after associated except channel switch */
+-				if (iwl_is_associated_ctx(ctx) &&
+-				     !ctx->ht.is_40mhz)
+-					iwlagn_config_ht40(conf, ctx);
++				if (conf_is_ht40_minus(conf)) {
++					ctx->ht.extension_chan_offset =
++						IEEE80211_HT_PARAM_CHA_SEC_BELOW;
++					ctx->ht.is_40mhz = true;
++				} else if (conf_is_ht40_plus(conf)) {
++					ctx->ht.extension_chan_offset =
++						IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
++					ctx->ht.is_40mhz = true;
++				} else {
++					ctx->ht.extension_chan_offset =
++						IEEE80211_HT_PARAM_CHA_SEC_NONE;
++					ctx->ht.is_40mhz = false;
++				}
+ 			} else
+ 				ctx->ht.is_40mhz = false;
+ 
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index f473c01..7157c6b 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3086,9 +3086,21 @@ static void iwlagn_mac_channel_switch(struct ieee80211_hw *hw,
+ 
+ 	/* Configure HT40 channels */
+ 	ctx->ht.enabled = conf_is_ht(conf);
+-	if (ctx->ht.enabled)
+-		iwlagn_config_ht40(conf, ctx);
+-	else
++	if (ctx->ht.enabled) {
++		if (conf_is_ht40_minus(conf)) {
++			ctx->ht.extension_chan_offset =
++				IEEE80211_HT_PARAM_CHA_SEC_BELOW;
++			ctx->ht.is_40mhz = true;
++		} else if (conf_is_ht40_plus(conf)) {
++			ctx->ht.extension_chan_offset =
++				IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
++			ctx->ht.is_40mhz = true;
++		} else {
++			ctx->ht.extension_chan_offset =
++				IEEE80211_HT_PARAM_CHA_SEC_NONE;
++			ctx->ht.is_40mhz = false;
++		}
++	} else
+ 		ctx->ht.is_40mhz = false;
+ 
+ 	if ((le16_to_cpu(ctx->staging.channel) != ch))
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.h b/drivers/net/wireless/iwlwifi/iwl-agn.h
+index e172f6b..d941c4c 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.h
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.h
+@@ -135,8 +135,6 @@ void iwlagn_bss_info_changed(struct ieee80211_hw *hw,
+ 			     struct ieee80211_vif *vif,
+ 			     struct ieee80211_bss_conf *bss_conf,
+ 			     u32 changes);
+-void iwlagn_config_ht40(struct ieee80211_conf *conf,
+-			struct iwl_rxon_context *ctx);
+ 
+ /* uCode */
+ void iwlagn_rx_calib_result(struct iwl_priv *priv,
+-- 
+1.7.8
 
-  if (elf_header.e_type != ET_CORE)
 
-
-diff -u ./binutils-2.21.1/include/elf/common.h
-./binutils-2.21.1/include/elf/common.h.orig
---- ./binutils-2.21.1/include/elf/common.h      2011-12-07
-14:56:02.000000000 -0500
-+++ ./binutils-2.21.1/include/elf/common.h.orig 2011-12-07
-14:55:45.000000000 -0500
-@@ -518,7 +518,6 @@
- #define NT_PRPSINFO    3               /* Contains copy of prpsinfo struct */
- #define NT_TASKSTRUCT  4             /* Contains copy of task struct */
- #define NT_AUXV                6            /* Contains copy of Elfxx_auxv_t */
--#define NT_MAPS         7               /* Contains copy of maps*/
- #define NT_PRXFPREG    0x46e62b7f      /* Contains a user_xfpregs_struct; */
-                                       /*   note name must be "LINUX".  */
- #define NT_PPC_VMX     0x100           /* PowerPC Altivec/VMX registers */
-
-
-
-On 12/11/11, t cheney <cdmalord@gmail.com> wrote:
-> On 12/11/11, Andi Kleen <andi@firstfloor.org> wrote:
->> t cheney <cdmalord@gmail.com> writes:
->>
->>> This patch just add memory layout(same as /proc/pid/maps) to
->>> coredump file. The layout is appended to corenote segment with
->>> flag NT_MAPS=7.
->>
->> Seems like a reasonable idea, but can you please share code with
->> the proc implementation?
-> Yes, I will post it in following mail.
->>
->> It's a bit unusal to have ASCII in a coredump, but I suppose expressing
->> this in binary would be somewhat ugly.
->>
->>> +	char *buf = notes->data;
->>> +	size_t core_limit = notes->datasz;
->>> +	gate_vma = get_gate_vma(current->mm);
->>> +
-> The maps info is appended to core notes segment in which there are all
-> ASCII text such as regs,signal and thread info.
->>
->> It seems a bit dubious to do this without locking even in a core dump.
->>
->>> +	for (vma = first_vma(current, gate_vma); vma != NULL;
->>> +		vma = next_vma(vma, gate_vma)) {
->>> +		flags = vma->vm_flags;
->>> +		maps_size += len;
->>> +		if (file) {
->>> +			if (maps_size > core_limit)
->>> +				break;
->>
->> You have a one-off bug here. Also below.
->>
->>> +			DUMP_WRITE(buf, len, foffset);
->>> +		}
->>
-> Because proceses that could change vma pages are blocked in do_exit,
-> here vma pages are safe.
->>
->> -Andi
->> --
->> ak@linux.intel.com -- Speaking for myself only
->>
->
+--------------060407050101070901000206--
