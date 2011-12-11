@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1LKXUl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 18:20:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55207 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1LKXUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 18:20:40 -0500
-Date: Sun, 11 Dec 2011 15:20:29 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] proc: fix task_struct infoleak
-In-Reply-To: <20111211182821.GA2853@albatros>
-Message-ID: <alpine.LSU.2.00.1112111511290.2297@eggly>
-References: <20111211182821.GA2853@albatros>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1752630Ab1LKXVX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 18:21:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38626 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402Ab1LKXVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 18:21:22 -0500
+Date: Mon, 12 Dec 2011 00:21:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next bad Kconfig for drivers/hid
+In-Reply-To: <4EE19DA0.5010705@goop.org>
+Message-ID: <alpine.LNX.2.00.1112120020330.21970@pobox.suse.cz>
+References: <20111209012746.GC20353@thor.bakeyournoodle.com> <4EE19DA0.5010705@goop.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Dec 2011, Vasiliy Kulikov wrote:
+On Thu, 8 Dec 2011, Jeremy Fitzhardinge wrote:
 
-> proc_pid_permission() doesn't put task_struct on every /proc/$pid/
-> access.  A demo from Hugh Dickins:
+> > Commit 4f5ca836bef3 (HID: hid-input: add support for HID devices
+> > reporting Battery Strength) went into linux-next on Dec 1st since then a
+> > ppc6xx_defconfig has been failing with:
+> >
+> > ---
+> > drivers/built-in.o: In function `hidinput_cleanup_battery':
+> > /scratch/tony/working/drivers/hid/hid-input.c:351: undefined reference to `power_supply_unregister'
+> > drivers/built-in.o: In function `hidinput_setup_battery':
+> > /scratch/tony/working/drivers/hid/hid-input.c:338: undefined reference to `power_supply_register'
+> > make[1]: *** [.tmp_vmlinux1] Error 1
+> > ---
+> >
+> > http://kisskb.ellerman.id.au/kisskb/buildresult/5012563/
+> > vs
+> > http://kisskb.ellerman.id.au/kisskb/buildresult/5017366/
+> >
+> > The defconfig in question doens't mention either option
+> > (CONFIG_POWER_SUPPLY or CONFIG_HID_BATTERY_STRENGTH) and kbuild is
+> > genertaing
+> > CONFIG_HID_BATTERY_STRENGTH=y
+> > CONFIG_POWER_SUPPLY=m
+> > which clearly isn't going to work.
+> >
+> > The following change to HID_BATTERY_STRENGTH Kconfig "works" but seems a
+> > little gross.
+> >
+> > diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> > index 5ed64f6..d2a94e6 100644
+> > --- a/drivers/hid/Kconfig
+> > +++ b/drivers/hid/Kconfig
+> > @@ -33,7 +33,7 @@ config HID
+> >  
+> >  config HID_BATTERY_STRENGTH
+> >         bool
+> > -       depends on POWER_SUPPLY
+> > +       depends on POWER_SUPPLY=y
+> >         default y
+> >  
+> >  config HIDRAW
+> >
+> > Any chance we can get a fix into linux-next?
 > 
-> while :; do ps; grep KernelStack /proc/meminfo; sleep 1; done
-> 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Hm.  How about making it "depends on HID && POWER_SUPPLY"?  I think that
+> would needlessly disable it if HID is also modular, but I'm not sure how
+> to fix that.  "depends on HID && POWER_SUPPLY && HID == POWER_SUPPLY"?
 
-Thank you, yes, that fixes it for me:
-Tested-by: Hugh Dickins <hughd@google.com>
-but hopefully akpm will just fold this into the original patch.
+How about making it 'default POWER_SUPPLY' instead?
 
-Hmm, tiny niggle, but I notice that has_pid_permissions() is
-declared, reasonably, as bool; so wouldn't it be better for
-has_perms to be declared as bool instead of int?  Hardly
-worth bothering about, but if you've a mind to respin with
-a corrected Subject as Al rightly suggests.
+I somehow feel that we'd rather avoid too much 'default y's.
 
-> ---
->  This is a patch against a hidepid patchset from -mm.
-> 
->  fs/proc/base.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 8caf5cb..0e5c577 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -646,9 +646,14 @@ static bool has_pid_permissions(struct pid_namespace *pid,
->  static int proc_pid_permission(struct inode *inode, int mask)
->  {
->  	struct pid_namespace *pid = inode->i_sb->s_fs_info;
-> -	struct task_struct *task = get_proc_task(inode);
-> +	struct task_struct *task;
-> +	int has_perms;
-> +
-> +	task = get_proc_task(inode);
-> +	has_perms = has_pid_permissions(pid, task, 1);
-> +	put_task_struct(task);
->  
-> -	if (!has_pid_permissions(pid, task, 1)) {
-> +	if (!has_perms) {
->  		if (pid->hide_pid == 2) {
->  			/*
->  			 * Let's make getdents(), stat(), and open()
-> -- 
-> 1.7.0.4
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
