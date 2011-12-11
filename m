@@ -1,99 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab1LKCWt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 21:22:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50474 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab1LKCWs convert rfc822-to-8bit (ORCPT
+	id S1751629Ab1LKCyz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 21:54:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60532 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751334Ab1LKCyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 21:22:48 -0500
+	Sat, 10 Dec 2011 21:54:54 -0500
+Date: Sun, 11 Dec 2011 10:53:59 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, alsa-devel@alsa-project.org,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] [PATCH 2/5] ASoC: mxs: add .owner to struct
+ snd_soc_card
+Message-ID: <20111211025358.GB2800@opensource.wolfsonmicro.com>
+References: <cover.1323436034.git.LW@KARO-electronics.de>
+ <555be1750dd09586d5eede6457f72310890274b0.1323436034.git.LW@KARO-electronics.de>
+ <20111209141203.GH3327@pengutronix.de>
+ <20194.7382.414612.182139@ipc1.ka-ro>
 MIME-Version: 1.0
-In-Reply-To: <1323546551.2822.14.camel@laptop>
-References: <20111210104341.592561407@chello.nl>
-	<20111210104840.295857663@chello.nl>
-	<CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
-	<1323529084.16764.5.camel@twins>
-	<CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-	<1323546551.2822.14.camel@laptop>
-Date: Sun, 11 Dec 2011 10:22:46 +0800
-Message-ID: <CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-From: Ming Lei <tom.leiming@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20194.7382.414612.182139@ipc1.ka-ro>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 3:49 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Sat, 2011-12-10 at 23:57 +0800, Ming Lei wrote:
->
->> CPU0                  CPU1
->>
->> atomic_set(v)
->> smp_mb()
->>                               smp_mb()
->>                               atomic_dec_and_test(v)
->>
->> Without the barrier after atomic_set, CPU1 may see a stale
->> value of v first, then decrease it, so may miss a release operation.
->
-> Your example is doubly broken. If there's concurrency possible with
-> atomic_set() you've lost.
+On Fri, Dec 09, 2011 at 03:36:06PM +0100, Lothar Waßmann wrote:
+> Wolfram Sang writes:
 
-kref_init is guaranteed to be run only one time __before__ executing
-kref_get/kref_put.
+> > I can't find any other instance setting owner in snd_soc_card?
 
->
-> Lets change it to kref_get() aka atomic_inc():
->
->        CPU0            CPU1
->
->        atomic_inc()
->                        atomic_dec_and_test()
->
-> and
->
->                        atomic_dec_and_test()
->        atomic_inc()
->
-> For if the first is possible, then so is the second.
+> Then that other uses are most probably faulty too.
 
-Yes, both are reasonable.
-
->
-> This illustrates that no matter how many barriers you put in, you're
-> still up shit creek without no paddle because the kref_put() can come in
-> before you do the kref_get(), making the kref_get() the invalid
-> operation.
-
-So one smp_mb__before_atomic_inc should be added before atomic_inc
-to make sure that CPU0 can see the uptodate ref, right?
-
->> The pair of smp_mb can make order between atomic_set
->> and atomic_dec_and_test, can't it?
->
-> No. Because there's nothing stopping the dec from happening before the
-> set/inc.
-
-As stated above, one smp_mb__before_atomic_inc before atomic_inc
-may avoid the race.
-
->> > If there's a destruction race with kref_put() the barrier won't
->>
->> Sorry, could you say what the destruction race is?
->
-> The race to 0-refs, iow. the case above when you assume both cases start
-> out with 1 ref.
-
-But the initial value of kref is 1, so seems we don't need to consider
-the 0-refs.
-
-
-thanks,
--- 
-Ming Lei
+This needs to be fixed up generally, not just for a specific driver.
