@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab1LKTFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 14:05:44 -0500
-Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:34869 "EHLO
-	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab1LKTFm (ORCPT
+	id S1752229Ab1LKTLs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 14:11:48 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:39353 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab1LKTLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 14:05:42 -0500
-Message-ID: <4EE4FEF0.1090107@udo.edu>
-Date: Sun, 11 Dec 2011 20:05:20 +0100
-From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111120 Thunderbird/8.0
+	Sun, 11 Dec 2011 14:11:47 -0500
+Message-ID: <4EE5006F.6070604@gmail.com>
+Date: Sun, 11 Dec 2011 14:11:43 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: wwguy <wey-yi.w.guy@intel.com>
-CC: Udo Steinberg <udo@hypervisor.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: iwlagn regression in v3.1.5
-References: <4EE4AEF4.2080702@udo.edu> <4EE4DB55.4090804@udo.edu>  <20111211174138.79e51fe8@x220.fritz.box>  <4EE4E152.2070204@udo.edu> <1323627815.1806.19.camel@wwguy-ubuntu>
-In-Reply-To: <1323627815.1806.19.camel@wwguy-ubuntu>
+To: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        cgroups@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        devel@openvz.org, Linux Containers <containers@lists.osdl.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: How to draw values for /proc/stat
+References: <4EDC8FB1.60407@parallels.com> <1323439411.17673.65.camel@twins> <4EE22179.5090106@parallels.com> <4EE4C350.90509@parallels.com>
+In-Reply-To: <4EE4C350.90509@parallels.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-i haven't experienced firmware crushes, but after that commit i don't 
-get any networking with my wlan card. I added some lspci and dmesg 
-output to the patch. There was no strange output in my dmesg. dhcpcd 
-says in logs, that carrier lost after about 30 seconds. How can i 
-reproduce the HT40 bug?
-
-Regards,
-Andrej
-
-On 12/11/2011 07:23 PM, wwguy wrote:
-> On Sun, 2011-12-11 at 08:58 -0800, Andrej Gelenberg wrote:
->> Hi,
+>>> IOW a /proc namespace coupled to cgroup scope would do what you want.
+>>> Now my head hurts..
 >>
->> this is pretty mean regression for the stable kernel. You may the fix
->> only for cards, which need it and not for all of them.
->
-> Could you elaborate more on the failure case and setup. this patch is to
-> address HT40 related problem which cause the iwlwifi firmware crash.
->
-> Thanks
-> Wey
->>>
->
->
+>> Mine too. The idea is good, but too broad. Boils down to: How do you
+>> couple them? And none of the methods I thought about seemed to make any
+>> sense.
+>>
+>> If we really want to have the values in /proc being opted-in, I think
+>> Kamezawa's idea of a mount option is the winner so far.
+
+ > diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+ > index 1b7f9d5..f0bc2e9 100644
+ > --- a/include/linux/cgroup.h
+ > +++ b/include/linux/cgroup.h
+ > @@ -158,6 +158,7 @@ enum {
+ > 	 * Clone cgroup values when creating a new child cgroup
+ > 	 */
+ > 	CGRP_CLONE_CHILDREN,
+ > +	CGRP_PROC_OVERLAY,
+ > };
+
+I'm not cgroup expert, but I doubt it is mount option. I suspect it's
+cgroup option. That's said, if we have following two directories,
+
+/cgroup-for-virtualization
+/cgroup-for-resource-management
+
+are both directory affected the overlay flag? I don't think it is not
+optimal. Why? we must care some system software (e.g. kvm, systemd) are
+using cgroup internally and we expected this trend will grow more.
+
+So, I doubt namespace issue can be solved by such tiny patch.
 
