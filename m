@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab1LKPth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 10:49:37 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45962 "EHLO mx2.mail.elte.hu"
+	id S1752102Ab1LKPzf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 10:55:35 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54804 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036Ab1LKPtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 10:49:36 -0500
-Date: Sun, 11 Dec 2011 16:47:42 +0100
+	id S1752051Ab1LKPzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 10:55:33 -0500
+Date: Sun, 11 Dec 2011 16:53:47 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com
-Subject: Re: [PATCH 2/4] perf_event: add PERF_COUNT_HW_REF_CPU_CYCLES generic
- PMU event
-Message-ID: <20111211154742.GA1213@elte.hu>
-References: <1323559734-3488-1-git-send-email-eranian@google.com>
- <1323559734-3488-3-git-send-email-eranian@google.com>
- <20111211080138.GB20790@elte.hu>
- <1323608131.16764.19.camel@twins>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+Message-ID: <20111211155347.GA1297@elte.hu>
+References: <20111210132220.083204833@linutronix.de>
+ <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
+ <alpine.LFD.2.02.1112102144370.3020@ionos>
+ <alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
+ <20111211103047.GA19299@elte.hu>
+ <alpine.LFD.2.02.1112111459270.3020@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323608131.16764.19.camel@twins>
+In-Reply-To: <alpine.LFD.2.02.1112111459270.3020@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -37,32 +37,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> On Sun, 2011-12-11 at 09:01 +0100, Ingo Molnar wrote:
-> > > +     PERF_COUNT_HW_REF_CPU_CYCLES            = 9,
+> On Sun, 11 Dec 2011, Ingo Molnar wrote:
+
+> > In theory a kvm driven serial console should be extremely 
+> > fast, much faster than a real serial console, basically as 
+> > fast as a local console. Yet this still does not seem to be 
+> > the case.
 > > 
-> > Btw., that was what 'bus cycles' tried to do a long time ago: 
-> > the constant, non-variable baseline heartbeat of the system. 
+> > In fact even ssh-ing in to a box over Wifi and running the 
+> > above top session is undistinguishable from top running in a 
+> > local console. So IMO it cannot be virtualization overhead - 
+> > there must still be some delay or serious lack of buffering 
+> > somewhere.
 > 
-> This isn't about that. Its about exposing the third fixed 
-> purpose counter. Intel, in their infinite wisdom, created a 
-> fixed purpose counter for which there is no equivalent in the 
-> general purpose events.
-> 
-> Our fixed purpose counter support is predicated on the 
-> assumption that there is, and simply maps any event code to 
-> also include the fixed purpose counter if appropriate.
-> 
-> There not being an event to map from has thus far avoided 
-> exposing this third fixed purpose event.
-> 
-> The problem with remapping BUS_CYCLES is that BUS_CYCLES (now) 
-> is something you can program on the {2,4,8} general purpose 
-> counters, whereas this new thing can only ever be ran from the 
-> 1 fixed purpose counter.
+> Well, the difference between ssh and serial is, that ssh can 
+> pack 1.5k worth of data into one frame, while serial has to 
+> send it piecewise. And the emulation has to trap into kvm tool 
+> for each tx byte, which doesnt help either. We cannot do much 
+> with buffering on the kvm tool side as we have no clue how 
+> much consecutive data will come in. That's why there is a 
+> virtual console, which has the disadvantage that you cant see 
+> the early boot messages.
 
-Okay - if we want/need 3 variants then i have no objections.
+Okay, but look at it from another angle: the top output i 
+generate is about 300k characters. 5000 msecs to execute it 
+means 16 usecs overhead per character - or about 50k cycles - on 
+a top of the class x86 CPU.
+
+50k cycles for every single byte. And as a user i notice that 
+first hand.
 
 Thanks,
 
