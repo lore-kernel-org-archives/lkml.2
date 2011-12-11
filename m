@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab1LKJYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 04:24:10 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61187 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab1LKJYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 04:24:08 -0500
+	id S1751481Ab1LKJY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 04:24:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55867 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab1LKJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 04:24:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="84464478"
+Message-ID: <4EE476D9.2040701@linux.intel.com>
+Date: Sun, 11 Dec 2011 01:24:41 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <1322555472.4110.8.camel@jlt3.sipsolutions.net>
-References: <20111125122143.GA30404@gamma.logic.tuwien.ac.at>
-	<CANUX_P1hFzSVPQzd6gq3tLY7hu+LX5suph6uHP+hq6+7rdAK1w@mail.gmail.com>
-	<20111125123720.GA31564@gamma.logic.tuwien.ac.at>
-	<CANUX_P2mGQX9H-f7OFusjUrv8ey56JNzFVEdKJkAejsg9zVNkQ@mail.gmail.com>
-	<CANUX_P1aAz-4TpgSzQ2G=RkJOxXCAVQBja3GNsj_HpMNmqxeUw@mail.gmail.com>
-	<1322387175.4044.16.camel@jlt3.sipsolutions.net>
-	<CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com>
-	<20111128035627.GH1422@gamma.logic.tuwien.ac.at>
-	<CANUX_P2kYiFCP8uAhLZC_kVEjoyxabRBx3Pn+ndtFus=6hJN7Q@mail.gmail.com>
-	<20111128042343.GA4619@gamma.logic.tuwien.ac.at>
-	<20111128232525.GA12719@gamma.logic.tuwien.ac.at>
-	<CANUX_P2b_ZYr4hHigA+tGa9uakcq3hQXnOiP5isQtfcYxCaxcw@mail.gmail.com>
-	<1322555472.4110.8.camel@jlt3.sipsolutions.net>
-Date: Sun, 11 Dec 2011 11:24:06 +0200
-Message-ID: <CANUX_P2YeE1ixzFU5VM-oex0aTURqr54VHt5FVAL9BJ0PuRX_A@mail.gmail.com>
-Subject: Re: iwlagn is getting very shaky
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Norbert Preining <preining@logic.at>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>
+To: gimli <gimli@dark-green.com>
+CC: "lkml, " <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>
+Subject: Re: [PATCH] efifb: Update documentation to include generic EFI 1.1
+ and UEFI 2.0 platforms
+References: <4EE112A8.5030006@linux.intel.com> <4EE3B5AD.6060505@dark-green.com>
+In-Reply-To: <4EE3B5AD.6060505@dark-green.com>
+X-Enigmail-Version: 1.3.3
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > Intersperesed I see some other messages that are new to me:
->> > [ 4019.443129] Open BA session requested for 00:0a:79:eb:56:10 tid 0
->> > [ 4019.500149] activated addBA response timer on tid 0
->> > [ 4020.500033] addBA response timer expired on tid 0
->
-> I guess the delay here is due to the synchronize_net()? That can take a
-> while, 57ms seems a lot but I suppose it's possible.
->
->> > [ 4020.501626] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 0
->> > [ 4023.740570] switched off addBA timer for tid 0
->> > [ 4023.740578] got addBA resp for tid 0 but we already gave up
+
+
+On 12/10/2011 11:40 AM, gimli wrote:
+> On 2011-12-08 20:40, Darren Hart wrote:
+>> According to the Kconfig help, efifb supports EFI 1.1 and UEFI 2.0 platforms
+>> in addition to the Intel based Macs. I have Atom development platforms that
+>> require CONFIG_FB_EFI for kernel output to the display console. I have left
+>> the Mac kernel parameters alone as I do not have hardware to test it.
 >>
->> Here is the AP is finally replying
->
-> It's kinda hard to believe that the AP took 4 seconds (!) to reply to
-> the frame. Where could the frame get stuck? I don't see any other work
-> processing happening etc. either. It's also curious that in those 3
-> seconds between these messages, we didn't actually get around to
-> stopping the session, that only happens just after:
->
+>> Signed-off-by: Darren Hart<dvhart@linux.intel.com>
+>> CC: H. Peter Anvin<hpa@zytor.com>
+>> CC: Matt Fleming<matt.fleming@linux.intel.com>
+>> CC: Edgar Hucek<gimli@dark-green.com>
+>> ---
+>>   Documentation/fb/efifb.txt |   12 ++++++++----
+>>   1 files changed, 8 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/fb/efifb.txt b/Documentation/fb/efifb.txt
+>> index a59916c..7cb9a62 100644
+>> --- a/Documentation/fb/efifb.txt
+>> +++ b/Documentation/fb/efifb.txt
+>> @@ -2,12 +2,15 @@
+>>   What is efifb?
+>>   ===============
+>>
+>> -This is a generic EFI platform driver for Intel based Apple computers.
+>> -efifb is only for EFI booted Intel Macs.
+>> +This is a generic EFI platform driver for Intel based Apple computers and
+>> +platforms with EFI 1.10 or UEFI 2.0 firmware. Select CONFIG_FB_EFI to add
+>> +support for using the EFI framebuffer as your console.
+>>
+>>   Supported Hardware
+>>   ==================
+>>
+>> +EFI 1.10 platforms
+>> +UEFI 2.0 platforms
+>>   iMac 17"/20"
+>>   Macbook
+>>   Macbook Pro 15"/17"
+>> @@ -16,8 +19,9 @@ MacMini
+>>   How to use it?
+>>   ==============
+>>
+>> -efifb does not have any kind of autodetection of your machine.
+>> -You have to add the following kernel parameters in your elilo.conf:
+>> +efifb will autodetect the framebuffer on some machines, for others
+>> +you will have to add the appropriate kernel parameters to your boot
+>> +loader configuration. For example:
+>>   	Macbook :
+>>   		video=efifb:macbook
+>>   	MacMini :
+> 
+> Looks ok to me :
+> 
+> Acked-by: Edgar Hucek <gimli@dark-green.com>
+> 
+> Please forward it to the LKML.
 
-<snip>
+Sorry, what do you mean? The original did go to lkml, as did all
+replies, including yours...
 
->
->
-> Could something be hogging the workqueues?
->
-
-
-So I tried to understand what is going on with the workqueue and ended
-up to see that if we are lucky, we can need the workqueue for the BA
-handshake (could be AddBA / DelBA handling, or driver callback) while
-we are scanning. Which basically means that we will need to wait until
-the scan is over to handle these frames / callbacks. I got these
-measurements while stopping the BA session:
-
-* scanning working for roughly 3 seconds (pardon me not being precise,
-but with this order of magnitude I don't care much about the single
-millisecond..)
-* when scanning is over, the while loop in ieee80211_iface_work
-consumes 73 mgmt for about 34ms.
-( how come we have so many beacons during those 3 seconds..., or maybe
-all the BCAST probe request ?, my network is quite busy...)
-* then the finally my stop_tx_ba_cb was served which took 10ms (time
-takes by the driver).
-* another series of beacons (10ms).
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
