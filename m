@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab1LKU7u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 15:59:50 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53397 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab1LKU7r (ORCPT
+	id S1752554Ab1LKVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 16:22:16 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:49907 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752482Ab1LKVWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 15:59:47 -0500
-Date: Sun, 11 Dec 2011 20:59:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH -next] proc: fix task_struct infoleak
-Message-ID: <20111211205939.GH2203@ZenIV.linux.org.uk>
-References: <20111211182821.GA2853@albatros>
+	Sun, 11 Dec 2011 16:22:15 -0500
+Date: Mon, 12 Dec 2011 02:51:39 +0530
+From: Rabin Vincent <rabin.vincent@stericsson.com>
+To: Andreas Friedrich <afrie@gmx.net>
+Cc: "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: REGRESSION 3.1.5: auto poweron after 5 minutes
+Message-ID: <20111211212110.GA8839@bnru05.bnr.st.com>
+References: <20111210140908.GA18596@upset.ux.pdb.fsc.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111211182821.GA2853@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111210140908.GA18596@upset.ux.pdb.fsc.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 10:28:21PM +0400, Vasiliy Kulikov wrote:
-> proc_pid_permission() doesn't put task_struct on every /proc/$pid/
-> access.  A demo from Hugh Dickins:
+(CCing the lists)
+
+On Sat, Dec 10, 2011 at 15:09:08 +0100, Andreas Friedrich wrote:
+> with kernel 3.1.5 I've got a problem on my Toshiba Tecra notebook:
 > 
-> while :; do ps; grep KernelStack /proc/meminfo; sleep 1; done
+> After shuting down my system as usual, it powers on automatically
+> after about 5 minutes. With kernel 3.1.4 the system stays off.
 > 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  This is a patch against a hidepid patchset from -mm.
+> After wondering around some time I read something about "ACPI RTC
+> wakealarm" and found the description of your fix in the changelog of
+> kernel 3.1.5:
+> 
+>   commit 0cbc008c56f7b4a11ba6fe80e196d7ab322baabf
+>   Author: Rabin Vincent <rabin.vincent@stericsson.com>
+>   Date:   Tue Nov 22 11:03:14 2011 +0100
+> 
+>       rtc: Disable the alarm in the hardware
+> 
+>       commit c0afabd3d553c521e003779c127143ffde55a16f upstream.
+> 
+>       Currently, the RTC code does not disable the alarm in the hardware.
+> 
+>       This means that after a sequence such as the one below (the files are in the
+>       RTC sysfs), the box will boot up after 2 minutes even though we've
+>       asked for the alarm to be turned off.
+> 
+>           # echo $((`cat since_epoch`)+120) > wakealarm
+>           # echo 0 > wakealarm
+>           # poweroff
+> 
+>       Fix this by disabling the alarm when there are no timers to run.
+> 
+> So may be your fix caused the opposite reaction on my system. Have you
+> any ideas to fix this problem?
 
-Choose saner commit summary, please.  It's not information leak, for pity sake
-- it's a plain and simple memory leak...
+That patch, in order to disable the alarm, calls set_alarm() on the
+RTC driver with alarm->enabled as zero (and a time value that is five
+minutes ahead).
 
-Speaking of which, I've a couple of memory leaks in mainline procfs and
-mqueue; Alexey, are you OK with that sucker going directly to Linus or
-would you rather push it yourself?  See the patch below...
-
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 9a8a2b7..03102d9 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -91,20 +91,18 @@ static struct file_system_type proc_fs_type = {
- 
- void __init proc_root_init(void)
- {
--	struct vfsmount *mnt;
- 	int err;
- 
- 	proc_init_inodecache();
- 	err = register_filesystem(&proc_fs_type);
- 	if (err)
- 		return;
--	mnt = kern_mount_data(&proc_fs_type, &init_pid_ns);
--	if (IS_ERR(mnt)) {
-+	err = pid_ns_prepare_proc(&init_pid_ns);
-+	if (err) {
- 		unregister_filesystem(&proc_fs_type);
- 		return;
- 	}
- 
--	init_pid_ns.proc_mnt = mnt;
- 	proc_symlink("mounts", NULL, "self/mounts");
- 
- 	proc_net_init();
-@@ -209,5 +207,5 @@ int pid_ns_prepare_proc(struct pid_namespace *ns)
- 
- void pid_ns_release_proc(struct pid_namespace *ns)
- {
--	mntput(ns->proc_mnt);
-+	kern_unmount(ns->proc_mnt);
- }
+Perhaps the ACPI RTC driver enables the alarm even when alarm->enable
+is zero?  There appears to be handling for this in rtc-cmos.c (I assume
+that's what is being used) but I don't know enough about that hardware
+to say if that's sufficient or not.
