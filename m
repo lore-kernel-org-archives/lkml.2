@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab1LKOFY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 09:05:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42764 "EHLO mx1.redhat.com"
+	id S1751962Ab1LKOmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 09:42:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59511 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751698Ab1LKOFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 09:05:23 -0500
-Message-ID: <4EE4B890.20500@redhat.com>
-Date: Sun, 11 Dec 2011 16:05:04 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1750881Ab1LKOmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 09:42:46 -0500
+Date: Sun, 11 Dec 2011 16:44:29 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio_net: fix refill related races
+Message-ID: <20111211144428.GB14381@redhat.com>
+References: <20111207152120.GA23417@redhat.com>
+ <8739cvisqe.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: Re: [PATCHv3 00/10] KVM in-guest performance monitoring
-References: <1320929850-10480-1-git-send-email-gleb@redhat.com>
-In-Reply-To: <1320929850-10480-1-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8739cvisqe.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 02:57 PM, Gleb Natapov wrote:
-> This patchset exposes an emulated version 2 architectural performance
-> monitoring unit to KVM guests.  The PMU is emulated using perf_events,
-> so the host kernel can multiplex host-wide, host-user, and the
-> guest on available resources.
->
-> The patches are against next branch on kvm.git.
->
->
+On Thu, Dec 08, 2011 at 03:07:29PM +1030, Rusty Russell wrote:
+> On Wed, 7 Dec 2011 17:21:22 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > Fix theoretical races related to refill work:
+> > 1. After napi is disabled by ndo_stop, refill work
+> >    can run and re-enable it.
+> > 2. Refill can reschedule itself, if this happens
+> >    it can run after cancel_delayed_work_sync,
+> >    and will access device after it is destroyed.
+> > 
+> > As a solution, add flags to track napi state and
+> > to disable refill, and toggle them on start, stop
+> > and remove; check these flags on refill.
+> 
+> Why isn't a "dont-readd" flag sufficient?
+> 
+> Cheers,
+> Rusty.
 
-Thanks, applied.
+I started with that, but here's the problem I wanted to
+address:
+
+- we run out of descriptors and schedule refill work
+- ndo_close runs
+- refill work runs
+- ndo_open runs
+
+
+Now if we just disable refill, refill work will not add buffers and will
+not reschedule.  Now we'll never get more buffers.
+We can try starting refill work from ndo_open but overall
+this seems to me more risky than just splitting flags.
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+MST
