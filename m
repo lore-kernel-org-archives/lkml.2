@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab1LKBjw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 20:39:52 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:42066 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751266Ab1LKBju (ORCPT
+	id S1751561Ab1LKCWt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 21:22:49 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50474 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1LKCWs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 20:39:50 -0500
-Message-ID: <4EE409CA.3080404@tao.ma>
-Date: Sun, 11 Dec 2011 09:39:22 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sat, 10 Dec 2011 21:22:48 -0500
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] vmscan/trace: Add 'active' and 'file' info to trace_mm_vmscan_lru_isolate.
-References: <1323533451-2953-1-git-send-email-tm@tao.ma> <4EE388D0.2090608@gmail.com>
-In-Reply-To: <4EE388D0.2090608@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.52.233 authed with tm@tao.ma}
+In-Reply-To: <1323546551.2822.14.camel@laptop>
+References: <20111210104341.592561407@chello.nl>
+	<20111210104840.295857663@chello.nl>
+	<CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
+	<1323529084.16764.5.camel@twins>
+	<CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
+	<1323546551.2822.14.camel@laptop>
+Date: Sun, 11 Dec 2011 10:22:46 +0800
+Message-ID: <CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+From: Ming Lei <tom.leiming@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2011 12:29 AM, KOSAKI Motohiro wrote:
-> (12/10/11 11:10 AM), Tao Ma wrote:
->> From: Tao Ma<boyu.mt@taobao.com>
+On Sun, Dec 11, 2011 at 3:49 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Sat, 2011-12-10 at 23:57 +0800, Ming Lei wrote:
+>
+>> CPU0                  CPU1
 >>
->> In trace_mm_vmscan_lru_isolate, we don't output 'active' and 'file'
->> information to the trace event and it is a bit inconvenient for the
->> user to get the real information(like pasted below).
->> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
->> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>> atomic_set(v)
+>> smp_mb()
+>>                               smp_mb()
+>>                               atomic_dec_and_test(v)
 >>
->> So this patch adds these 2 info to the trace event and it now looks like:
->> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
->> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 lru=1,0
-> 
-> addition is ok to me. but lru=1,0 is not human readable. I suspect
-> people will easily forget which value is active.
-Sure, I can change it to something like "active=1,file=0".
-Maybe I am too worried about the memory used.
-So if there is no objection, I will change it.
+>> Without the barrier after atomic_set, CPU1 may see a stale
+>> value of v first, then decrease it, so may miss a release operation.
+>
+> Your example is doubly broken. If there's concurrency possible with
+> atomic_set() you've lost.
 
-Thanks
-Tao
+kref_init is guaranteed to be run only one time __before__ executing
+kref_get/kref_put.
+
+>
+> Lets change it to kref_get() aka atomic_inc():
+>
+>        CPU0            CPU1
+>
+>        atomic_inc()
+>                        atomic_dec_and_test()
+>
+> and
+>
+>                        atomic_dec_and_test()
+>        atomic_inc()
+>
+> For if the first is possible, then so is the second.
+
+Yes, both are reasonable.
+
+>
+> This illustrates that no matter how many barriers you put in, you're
+> still up shit creek without no paddle because the kref_put() can come in
+> before you do the kref_get(), making the kref_get() the invalid
+> operation.
+
+So one smp_mb__before_atomic_inc should be added before atomic_inc
+to make sure that CPU0 can see the uptodate ref, right?
+
+>> The pair of smp_mb can make order between atomic_set
+>> and atomic_dec_and_test, can't it?
+>
+> No. Because there's nothing stopping the dec from happening before the
+> set/inc.
+
+As stated above, one smp_mb__before_atomic_inc before atomic_inc
+may avoid the race.
+
+>> > If there's a destruction race with kref_put() the barrier won't
+>>
+>> Sorry, could you say what the destruction race is?
+>
+> The race to 0-refs, iow. the case above when you assume both cases start
+> out with 1 ref.
+
+But the initial value of kref is 1, so seems we don't need to consider
+the 0-refs.
+
+
+thanks,
+-- 
+Ming Lei
