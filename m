@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1LKTLs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 14:11:48 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:39353 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab1LKTLr (ORCPT
+	id S1752284Ab1LKTUU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 14:20:20 -0500
+Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:35269 "EHLO
+	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab1LKTUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 14:11:47 -0500
-Message-ID: <4EE5006F.6070604@gmail.com>
-Date: Sun, 11 Dec 2011 14:11:43 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Sun, 11 Dec 2011 14:20:16 -0500
+Message-ID: <4EE50266.4050208@udo.edu>
+Date: Sun, 11 Dec 2011 20:20:06 +0100
+From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111120 Thunderbird/8.0
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        cgroups@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        devel@openvz.org, Linux Containers <containers@lists.osdl.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: How to draw values for /proc/stat
-References: <4EDC8FB1.60407@parallels.com> <1323439411.17673.65.camel@twins> <4EE22179.5090106@parallels.com> <4EE4C350.90509@parallels.com>
-In-Reply-To: <4EE4C350.90509@parallels.com>
+To: wwguy <wey-yi.w.guy@intel.com>
+CC: Udo Steinberg <udo@hypervisor.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: iwlagn regression in v3.1.5
+References: <4EE4AEF4.2080702@udo.edu> <4EE4DB55.4090804@udo.edu>  <20111211174138.79e51fe8@x220.fritz.box>  <4EE4E152.2070204@udo.edu> <1323627815.1806.19.camel@wwguy-ubuntu>
+In-Reply-To: <1323627815.1806.19.camel@wwguy-ubuntu>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
->>> IOW a /proc namespace coupled to cgroup scope would do what you want.
->>> Now my head hurts..
+some info to the AP i use:
+
+Technaxx Router-150 Wifi-N based on ranik soc
+
+$ iw dev wlan0 station dump
+Station xx:xx..xx:xx (on wlan0)
+         inactive time:  6603 ms
+         rx bytes:       377786468
+         rx packets:     443535
+         tx bytes:       15677515
+         tx packets:     155009
+         tx retries:     2723757
+         tx failed:      51495
+         signal:         -72 dBm
+         signal avg:     -71 dBm
+         tx bitrate:     135.0 MBit/s MCS 6 40Mhz short GI
+         authorized:     yes
+         authenticated:  yes
+         preamble:       long
+         WMM/WME:        yes
+         MFP:            no
+
+$ iwconfig wlan0
+wlan0     IEEE 802.11abgn  ESSID:"xxx"
+           Mode:Managed  Frequency:2.437 GHz  Access Point: xx:xx..xx:xx
+           Bit Rate=121.5 Mb/s   Tx-Power=15 dBm
+           Retry  long limit:7   RTS thr:off   Fragment thr:off
+           Power Management:off
+           Link Quality=42/70  Signal level=-68 dBm
+           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+           Tx excessive retries:51520  Invalid misc:3567 Missed beacon:0
+
+some dmesg output:
+
+[  903.748514] wlan0: authenticate with xx:xx..xx:xx (try 1)
+[  903.750991] wlan0: authenticated
+[  903.753357] wlan0: associate with xx:xx..xx:xx (try 1)
+[  903.759482] wlan0: RX AssocResp from xx:xx..xx:xx (capab=0xc31 
+status=0 aid=1)
+[  903.759487] wlan0: associated
+
+$ iwlist wlan0 scan
+
+           Cell 06 - Address: xx:xx..xx:xx
+                     Channel:6
+                     Frequency:2.437 GHz (Channel 6)
+                     Quality=45/70  Signal level=-65 dBm
+                     Encryption key:on
+                     ESSID:"xxx"
+                     Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 9 Mb/s
+                               18 Mb/s; 36 Mb/s; 54 Mb/s
+                     Bit Rates:6 Mb/s; 12 Mb/s; 24 Mb/s; 48 Mb/s
+                     Mode:Master
+                     Extra:tsf=0000005666eac197
+                     Extra: Last beacon: 33ms ago
+                     IE: Unknown: 000873757065726B7568
+                     IE: Unknown: 010882848B961224486C
+                     IE: Unknown: 030106
+                     IE: Unknown: 2A0100
+                     IE: Unknown: 32040C183060
+                     IE: Unknown: 
+2D1A7E1117FF000000010000000000000000000000000C0000000000
+                     IE: Unknown: 
+3D1606070500000000000000000000000000000000000000
+                     IE: Unknown: 3E0100
+                     IE: IEEE 802.11i/WPA2 Version 1
+                         Group Cipher : CCMP
+                         Pairwise Ciphers (1) : CCMP
+                         Authentication Suites (1) : PSK
+                     IE: Unknown: 
+DD180050F2020101800003A4000027A4000042435E0062322F00
+                     IE: Unknown: 0B05020012127A
+                     IE: Unknown: 4A0E14000A002C01C800140005001900
+                     IE: Unknown: 7F0101
+                     IE: Unknown: DD07000C4307000000
+                     IE: Unknown: 0706465220010D10
+                     IE: Unknown: 
+DD1E00904C337E1117FF000000010000000000000000000000000C0000000000
+                     IE: Unknown: 
+DD1A00904C3406070500000000000000000000000000000000000000
+
+Regards,
+Andrej Gelenberg
+
+On 12/11/2011 07:23 PM, wwguy wrote:
+> On Sun, 2011-12-11 at 08:58 -0800, Andrej Gelenberg wrote:
+>> Hi,
 >>
->> Mine too. The idea is good, but too broad. Boils down to: How do you
->> couple them? And none of the methods I thought about seemed to make any
->> sense.
->>
->> If we really want to have the values in /proc being opted-in, I think
->> Kamezawa's idea of a mount option is the winner so far.
-
- > diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
- > index 1b7f9d5..f0bc2e9 100644
- > --- a/include/linux/cgroup.h
- > +++ b/include/linux/cgroup.h
- > @@ -158,6 +158,7 @@ enum {
- > 	 * Clone cgroup values when creating a new child cgroup
- > 	 */
- > 	CGRP_CLONE_CHILDREN,
- > +	CGRP_PROC_OVERLAY,
- > };
-
-I'm not cgroup expert, but I doubt it is mount option. I suspect it's
-cgroup option. That's said, if we have following two directories,
-
-/cgroup-for-virtualization
-/cgroup-for-resource-management
-
-are both directory affected the overlay flag? I don't think it is not
-optimal. Why? we must care some system software (e.g. kvm, systemd) are
-using cgroup internally and we expected this trend will grow more.
-
-So, I doubt namespace issue can be solved by such tiny patch.
+>> this is pretty mean regression for the stable kernel. You may the fix
+>> only for cards, which need it and not for all of them.
+>
+> Could you elaborate more on the failure case and setup. this patch is to
+> address HT40 related problem which cause the iwlwifi firmware crash.
+>
+> Thanks
+> Wey
+>>>
+>
+>
 
