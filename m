@@ -1,130 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab1LKWKf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 17:10:35 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44214 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab1LKWKe (ORCPT
+	id S1752599Ab1LKWNL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 17:13:11 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:43735 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab1LKWNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 17:10:34 -0500
-From: Brian Gerst <brgerst@gmail.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, tim@klingt.org, hpa@zytor.com,
-        torvalds@linux-foundation.org
-Subject: [PATCH] x86: Split off mem*io functions
-Date: Sun, 11 Dec 2011 17:10:36 -0500
-Message-Id: <1323641436-12249-1-git-send-email-brgerst@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <CAMzpN2jiZn3=Og9EVhnWbEhZkvi6eebEJpR7qYn00OyJnZgcFQ@mail.gmail.com>
-References: <CAMzpN2jiZn3=Og9EVhnWbEhZkvi6eebEJpR7qYn00OyJnZgcFQ@mail.gmail.com>
+	Sun, 11 Dec 2011 17:13:05 -0500
+Date: Mon, 12 Dec 2011 07:13:03 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org
+Subject: recent regression: after resume the mouse and X is extremely slow
+Message-ID: <20111211221303.GA8710@gamma.logic.tuwien.ac.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6175ddf06b6172046a329e3abfd9c901a43efd2e changed the mem*io
-functions to use the standard memcpy/memset routines, but there were
-unintended consequences.  Some devices cannot cope with 64-bit or
-non-sequential accesses that the optimized routines do.  Change them
-back to simple 32-bit sequential writes.
+Hi everyone,
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
----
- arch/x86/include/asm/io.h |   20 +++-----------------
- arch/x86/lib/Makefile     |    1 +
- arch/x86/lib/io.c         |   41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 45 insertions(+), 17 deletions(-)
- create mode 100644 arch/x86/lib/io.c
+(please cc)
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index d8e8eef..8115978 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -199,23 +199,9 @@ extern void set_iounmap_nonlazy(void);
-  */
- #define xlate_dev_kmem_ptr(p)	p
- 
--static inline void
--memset_io(volatile void __iomem *addr, unsigned char val, size_t count)
--{
--	memset((void __force *)addr, val, count);
--}
--
--static inline void
--memcpy_fromio(void *dst, const volatile void __iomem *src, size_t count)
--{
--	memcpy(dst, (const void __force *)src, count);
--}
--
--static inline void
--memcpy_toio(volatile void __iomem *dst, const void *src, size_t count)
--{
--	memcpy((void __force *)dst, src, count);
--}
-+extern void memset_io(volatile void __iomem *addr, unsigned char val, size_t count);
-+extern void memcpy_fromio(void *dst, const volatile void __iomem *src, size_t count);
-+extern void memcpy_toio(volatile void __iomem *dst, const void *src, size_t count);
- 
- /*
-  * ISA space is 'always mapped' on a typical x86 system, no need to
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index b00f678..160d934 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -17,6 +17,7 @@ clean-files := inat-tables.c
- obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
- 
- lib-y := delay.o
-+lib-y += io.o
- lib-y += thunk_$(BITS).o
- lib-y += usercopy_$(BITS).o usercopy.o getuser.o putuser.o
- lib-y += memcpy_$(BITS).o
-diff --git a/arch/x86/lib/io.c b/arch/x86/lib/io.c
-new file mode 100644
-index 0000000..7acdd6d
---- /dev/null
-+++ b/arch/x86/lib/io.c
-@@ -0,0 +1,41 @@
-+#include <asm/io.h>
-+#include <asm/types.h>
-+#include <linux/module.h>
-+
-+/*
-+ * Some devices can't handle 64-bit or non-sequential accesses.
-+ * Use simple string instructions here instead of the normal optimized
-+ * memcpy/menset functions.
-+ */
-+
-+void memset_io(volatile void __iomem *addr, unsigned char val, size_t count)
-+{
-+	unsigned int v = val * 0x01010101;
-+	size_t c = count / 4;
-+	asm volatile("rep; stosl" : "+D" (addr), "+c" (c) : "a" (v) : "memory");
-+	c = count & 3;
-+	if (c)
-+		asm volatile("rep; stosb" : "+D" (addr), "+c" (c) : "a" (v) : "memory");
-+}
-+EXPORT_SYMBOL(memset_io);
-+
-+static void __memcpy_io(void *dst, const void *src, size_t count)
-+{
-+	size_t c = count / 4;
-+	asm volatile("rep; movsl" : "+S" (src), "+D" (dst), "+c" (c) : : "memory");
-+	c = count & 3;
-+	if (c)
-+		asm volatile("rep; movsb" : "+S" (src), "+D" (dst), "+c" (c) : : "memory");
-+}
-+
-+void memcpy_fromio(void *dst, const volatile void __iomem *src, size_t count)
-+{
-+        __memcpy_io(dst, (const void __force *)src, count);
-+}
-+EXPORT_SYMBOL(memcpy_fromio);
-+
-+void memcpy_toio(volatile void __iomem *dst, const void *src, size_t count)
-+{
-+        __memcpy_io((void __force *)dst, src, count);
-+}
-+EXPORT_SYMBOL(memcpy_toio);
--- 
-1.7.4.4
+I am running 3.2.0-rc5 and experience the following problem which 
+was introduced in one of the last commit, but I have no idea when it
+was. When I resume from a suspend to ram, the X is suddently
+extremely slow. I cannot even log in/unlock the screen. It takes
+minutes to show the dialog, the mouse moves, no crawls millimeter
+per milimeter. THe only way is to restart X.
 
+I have found *NO* traces on what is going on. The cpu usage is low,
+there are no messages in the syslog, it all looks rather normal,
+besides that it is unusable.
+
+In recent times I have only changed two things: - remove the the 
+CONFIG_ACPI_PROCFS_POWER setting and increase the MAX CPU to 4 from 2.
+And ugraded from some intermedieate (git between rc4 and rc5)
+to rc5.
+
+I am now reverting the CONFIG changes and will see if that makes a difference.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+"I don't know, " said the voice on the PA, "apathetic
+bloody planet, I've no sympathy at all."
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
