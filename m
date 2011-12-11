@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1LKOuq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 09:50:46 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:14259 "EHLO relay.sw.ru"
+	id S1752071Ab1LKOuw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 09:50:52 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9913 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab1LKOun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 09:50:43 -0500
+	id S1751914Ab1LKOus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 09:50:48 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: jbottomley@parallels.com, cgroups@vger.kernel.org, bsingharora@gmail.com,
         devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com, tj@kernel.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH] make clone_children a flag
-Date: Sun, 11 Dec 2011 15:45:35 +0100
-Message-Id: <1323614738-7405-2-git-send-email-glommer@parallels.com>
+Subject: [PATCH 2/3] make clone_children a flag
+Date: Sun, 11 Dec 2011 15:45:37 +0100
+Message-Id: <1323614738-7405-4-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1323614738-7405-1-git-send-email-glommer@parallels.com>
 References: <1323614738-7405-1-git-send-email-glommer@parallels.com>
