@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab1LKN4u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 08:56:50 -0500
-Received: from fed1rmfepo202.cox.net ([68.230.241.147]:53911 "EHLO
-	fed1rmfepo202.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1LKN4r (ORCPT
+	id S1751997Ab1LKOBh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 09:01:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49279 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1LKOBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 08:56:47 -0500
-X-Greylist: delayed 1076 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Dec 2011 08:56:47 EST
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020201.4EE4B26A.0035,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=457y4IXgkPg9sNWMz/ExzYRHvCCDEIe40hmIg5h2CZg=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=jTqcXt0xA3MA:10 a=2T_qAw5GdVMA:10
- a=WHsXhg87phMA:10 a=Cfj4BQAnxiAA:10 a=FAFMN7PxCXjuA3Q9LVOINA==:17
- a=Jp5U30vwJmzSpdhXvngA:9 a=Ft8UYL4EG9YA:10 a=Tpomezz-_UebcT8q:21
- a=j_lpGakN_y8XT0v-:21 a=FAFMN7PxCXjuA3Q9LVOINA==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN)
- smtp.auth=hgkljfjflfjrr6@cox.net
-Reply-To: <unit4coladesk@hotmail.com>
-From: "C.-draw" <info@ashrm.com>
-Subject: C.drw
-Date: Sun, 11 Dec 2011 19:08:49 +0530
+	Sun, 11 Dec 2011 09:01:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 111210-1, 12/10/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20111211133850.SAHC3766.fed1rmfepo202.cox.net@fed1rmimpo110.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CABexPfEXWo4YYG=3hA-ZW1tqV8-R=BQj=COgUM6_7_epPavx5g@mail.gmail.com>
+References: <CABexPfEXWo4YYG=3hA-ZW1tqV8-R=BQj=COgUM6_7_epPavx5g@mail.gmail.com>
+Date: Sun, 11 Dec 2011 22:01:35 +0800
+Message-ID: <CABexPfG0PAo31HUA_mOOgJvHzPdk_U9A-5zufbECSQ3=Riai=w@mail.gmail.com>
+Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
+ is lost if the process is rescheduled to a differenet cpu before the local
+ irq is disabled when calling __slab_alloc()
+From: zhihua che <zhihua.che@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/12/11 zhihua che <zhihua.che@gmail.com>:
+> Hi, everyone
+>        I'm reading the linux kernel and now focusing on memory
+> management. Image a case like below, a process on cpu0 is calling
+> slab_alloc for a free obj, and finds that the c0->freelist is null,
+> where c0 is the pointer to a kmem_cache_cpu object corresponding to
+> the current cpu0. Then the process resorts to the __slab_alloc and
+> HERE, the process MAY BE rescheduled to a different cpu1 before the
+> local irq is disabled. Then, a new kmem_cache_cpu pointer c1 is
+> retrieved. I think there are chances that with respect to this
+> different kmem_cache_cpu pointer c1, c1->freelist is NOT null and
+> could be lost if the  following code is executed in __slab_alloc:
+>
+>         load_freelist:
+>                 VM_BUG_ON(!page->frozen);
+>                 c->freelist = get_free_pointer(s, object);
+> /* THIS ASSIGNMENT */
+>                 c->tid = next_tid(c->tid);
+>                 local_irq_restore(flags);
+>                 return object;
+>
+>         I think the assignment above may cause the loss of the
+> freelist pointed by c->freelist, because c now  points to a different
+> kmem_cache_cpu object due the reschedule and this freelist may be NOT
+> null as I imaged earlier.
 
 
-In the C.C. award, yours emerge as a recipient of
-1,000,000:00 GBP. Send
-
-          Receipient Name
-          Mobile #mailbox 
-          Address
-          Nationality
-
-
-For fund remittance
+The case I imaged above is based on version 3.1.5. and I find that in
+2.6.38, the local irq has been disabled in slab_alloc(), so this case
+is  not possible in earlier version.
