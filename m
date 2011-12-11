@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1LKEbK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 23:31:10 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:42789 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1LKEbG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 23:31:06 -0500
-Date: Sun, 11 Dec 2011 15:30:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: error while fetching the hexagon quilt series
-Message-Id: <20111211153055.aaaecee7ee8815dd0b9eddf9@canb.auug.org.au>
-In-Reply-To: <20111209163146.GA2506@codeaurora.org>
-References: <20111209103444.64a1e274b03ac7f7bb6c54fe@canb.auug.org.au>
-	<20111209163146.GA2506@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__11_Dec_2011_15_30_55_+1100_YWOu3B_mIIolAZFZ"
+	id S1751363Ab1LKFLw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 00:11:52 -0500
+Received: from ozlabs.org ([203.10.76.45]:43180 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab1LKFLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 00:11:49 -0500
+From: Rusty Russell <rusty@ozlabs.org>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, arjan@linux.intel.com, alan.cox@intel.com,
+        Jon Masters <jcm@jonmasters.org>
+Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
+In-Reply-To: <20111210103723.6c89405f@infradead.org>
+References: <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk> <2657.1323456206@redhat.com> <8739csq5ac.fsf@rustcorp.com.au> <20111210103723.6c89405f@infradead.org>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sun, 11 Dec 2011 15:29:10 +1030
+Message-ID: <87mxazog9t.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__11_Dec_2011_15_30_55_+1100_YWOu3B_mIIolAZFZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 10 Dec 2011 10:37:23 -0800, Arjan van de Ven <arjan@infradead.org> wrote:
+> > 
+> > Yes, there may be more than stripped and unstripped.  You may need to
+> > do fancy things.  But now, adding a signature is so easy that it's
+> > not a real problem.  And we can always have a hook, like:
+> > 
+> >         if VARIANTS=`make-module-variants $MOD`; then
+> >                 for m in $VARIANTS; do sign $m >> $MOD; rm $m; done
+> >         fi
+> 
+> but that requires you to keep the key around.
 
-Hi Richard,
+No, that's the point.  This was proposed as part of the kernel build.
 
-On Fri, 9 Dec 2011 10:31:46 -0600 Richard Kuo <rkuo@codeaurora.org> wrote:
->
-> Can a read error result from network/server issues?  Sometimes our servers
-> are...  not reliable.
+make-module-variants does one or more transforms on the module
+(eg. strip) and outputs the names of the results.  If they're not
+reproducable, you have to keep them somewhere, yes, rather than remove
+them as here.
 
-Yeah.  It seems to be OK now.
+> the most simple and common deployment of this is to generate a key,
+> build the public key into the kernel, sign the modules as you build the
+> kernel, and then destroy the key.
+> And THEN it gets deployed.
 
-> I haven't changed that directory since the last time you fetched, so the
-> previous fetch will be fine.
+Indeed.
 
-OK, good.
+You have to demonstrate why the simplest way won't work, before putting
+450 lines of extra checking into the kernel.  Particularly since it's
+supposed to protect against malicious modules, so I need to *really*
+carefully review it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__11_Dec_2011_15_30_55_+1100_YWOu3B_mIIolAZFZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO5DH/AAoJEECxmPOUX5FEn10QAKMw0k3DUAd06w9RWB1IrfKX
-BkyoUIjc5i/kQ2nd+NYJDiJyrnaNOuUZWgBtqvV7HQCtzAfB7/SBvlDrtdwYFTDD
-oPywwzy3HVTDA3FpHKb4QZ3Fh/8O2r6kpZ0FsRjr57rzA7oAp+ux/t4LYGSzqfvu
-PBq1DYgir8vIErXzYvOdHb8LOoY54VI5xF/qQuaRtjTzNUqqGUpJK9nKsO1K7eT/
-RhpG3IxfH0d1lBfp5S3FM666E+y9SNPvanpMplET841w2WR7NCErph6CwEU+VVW3
-XCQzuzRukMQsSv9gjsxu6Y6WbJOAoj/H+Pp8JG6W2+GYhFZJGTexvgDIWrem5tMv
-5opgNWpPQghZa/v24UbxyrlT/J+Nsjdy0eC1RIXcLZ4mY16blWFuQ+Frw4MamF81
-W0ohaCCl2aoWBy9Vkjk2gAObJyjAZI4WFLlWe2h1R7A/Q7QbY0PjUZEGZWj70EaN
-pHsjFJeOZfDsvOfrYSN2+QobPc4ijFp54m2WWUeasDPZdO9i3cNBod/TJQ00/JVv
-LoOJ30EaL9lSJ42dbU7JBnJt2sZYtcXCXjL3Xy3FJi6Un87kjFNbucdBerUv7Y6r
-BwMhHJdn8h+jfDpltZsAELPs2FXRfsbQc+PfJcOe5IjoQkQJd2XNMUS8bzc7iter
-YCOyTso33n71k7uo5TkN
-=Q6Fo
------END PGP SIGNATURE-----
-
---Signature=_Sun__11_Dec_2011_15_30_55_+1100_YWOu3B_mIIolAZFZ--
+Thanks,
+Rusty.
