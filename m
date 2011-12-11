@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab1LKOBh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 09:01:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49279 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1LKOBg convert rfc822-to-8bit (ORCPT
+	id S1752010Ab1LKOEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 09:04:42 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51027 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab1LKOEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 09:01:36 -0500
+	Sun, 11 Dec 2011 09:04:41 -0500
+Date: Sun, 11 Dec 2011 15:04:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+In-Reply-To: <20111211103047.GA19299@elte.hu>
+Message-ID: <alpine.LFD.2.02.1112111459270.3020@ionos>
+References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CABexPfEXWo4YYG=3hA-ZW1tqV8-R=BQj=COgUM6_7_epPavx5g@mail.gmail.com>
-References: <CABexPfEXWo4YYG=3hA-ZW1tqV8-R=BQj=COgUM6_7_epPavx5g@mail.gmail.com>
-Date: Sun, 11 Dec 2011 22:01:35 +0800
-Message-ID: <CABexPfG0PAo31HUA_mOOgJvHzPdk_U9A-5zufbECSQ3=Riai=w@mail.gmail.com>
-Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
- is lost if the process is rescheduled to a differenet cpu before the local
- irq is disabled when calling __slab_alloc()
-From: zhihua che <zhihua.che@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/11 zhihua che <zhihua.che@gmail.com>:
-> Hi, everyone
->        I'm reading the linux kernel and now focusing on memory
-> management. Image a case like below, a process on cpu0 is calling
-> slab_alloc for a free obj, and finds that the c0->freelist is null,
-> where c0 is the pointer to a kmem_cache_cpu object corresponding to
-> the current cpu0. Then the process resorts to the __slab_alloc and
-> HERE, the process MAY BE rescheduled to a different cpu1 before the
-> local irq is disabled. Then, a new kmem_cache_cpu pointer c1 is
-> retrieved. I think there are chances that with respect to this
-> different kmem_cache_cpu pointer c1, c1->freelist is NOT null and
-> could be lost if the  following code is executed in __slab_alloc:
->
->         load_freelist:
->                 VM_BUG_ON(!page->frozen);
->                 c->freelist = get_free_pointer(s, object);
-> /* THIS ASSIGNMENT */
->                 c->tid = next_tid(c->tid);
->                 local_irq_restore(flags);
->                 return object;
->
->         I think the assignment above may cause the loss of the
-> freelist pointed by c->freelist, because c now  points to a different
-> kmem_cache_cpu object due the reschedule and this freelist may be NOT
-> null as I imaged earlier.
+On Sun, 11 Dec 2011, Ingo Molnar wrote:
+> In theory a kvm driven serial console should be extremely fast, 
+> much faster than a real serial console, basically as fast as a 
+> local console. Yet this still does not seem to be the case.
+> 
+> In fact even ssh-ing in to a box over Wifi and running the above 
+> top session is undistinguishable from top running in a local 
+> console. So IMO it cannot be virtualization overhead - there 
+> must still be some delay or serious lack of buffering somewhere.
 
+Well, the difference between ssh and serial is, that ssh can pack 1.5k
+worth of data into one frame, while serial has to send it
+piecewise. And the emulation has to trap into kvm tool for each tx
+byte, which doesnt help either. We cannot do much with buffering on
+the kvm tool side as we have no clue how much consecutive data will
+come in. That's why there is a virtual console, which has the
+disadvantage that you cant see the early boot messages.
 
-The case I imaged above is based on version 3.1.5. and I find that in
-2.6.38, the local irq has been disabled in slab_alloc(), so this case
-is  not possible in earlier version.
+Thanks,
+
+	tglx
+
