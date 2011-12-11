@@ -1,227 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab1LKMYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 07:24:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14259 "EHLO mx1.redhat.com"
+	id S1751941Ab1LKMl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 07:41:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30135 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab1LKMYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 07:24:14 -0500
-Date: Sun, 11 Dec 2011 14:25:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, akong@redhat.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-Message-ID: <20111211122544.GC11504@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <1322867384.11728.20.camel@pasglop>
- <87hb1iqls3.fsf@rustcorp.com.au>
+	id S1751836Ab1LKMlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 07:41:23 -0500
+Message-ID: <4EE4A4DA.90100@redhat.com>
+Date: Sun, 11 Dec 2011 14:40:58 +0200
+From: Dor Laor <dlaor@redhat.com>
+Reply-To: dlaor@redhat.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <87hb1iqls3.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
+        levinsasha928@gmail.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped
+ by host
+References: <1323116344-17911-1-git-send-email-emunson@mgebm.net> <4EDF7B0D.4060001@redhat.com>
+In-Reply-To: <4EDF7B0D.4060001@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/07/2011 04:41 PM, Avi Kivity wrote:
+> On 12/05/2011 10:18 PM, Eric B Munson wrote:
+>> Changes from V4:
+>> Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
+>> Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
+>>
+>> Changes from V3:
+>> Include CC's on patch 3
+>> Drop clear flag ioctl and have the watchdog clear the flag when it is reset
+>>
+>> Changes from V2:
+>> A new kvm functions defined in kvm_para.h, the only change to pvclock is the
+>> initial flag definition
+>>
+>> Changes from V1:
+>> (Thanks Marcelo)
+>> Host code has all been moved to arch/x86/kvm/x86.c
+>> KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
+>>
+>> When a guest kernel is stopped by the host hypervisor it can look like a soft
+>> lockup to the guest kernel.  This false warning can mask later soft lockup
+>> warnings which may be real.  This patch series adds a method for a host
+>> hypervisor to communicate to a guest kernel that it is being stopped.  The
+>> final patch in the series has the watchdog check this flag when it goes to
+>> issue a soft lockup warning and skip the warning if the guest knows it was
+>> stopped.
+>>
+>> It was attempted to solve this in Qemu, but the side effects of saving and
+>> restoring the clock and tsc for each vcpu put the wall clock of the guest behind
+>> by the amount of time of the pause.  This forces a guest to have ntp running
+>> in order to keep the wall clock accurate.
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Guests need to run NTP regardless, not only the virtualization layer add 
+some skew, the physical world is not that perfect.
+btw: traditional NTP client won't sync the time automatically if the 
+diff is > 0.5%.
 
-On Sat, Dec 03, 2011 at 03:44:36PM +1030, Rusty Russell wrote:
-> On Sat, 03 Dec 2011 10:09:44 +1100, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> > On Tue, 2011-11-29 at 14:31 +0200, Ohad Ben-Cohen wrote:
-> > > A trivial, albeit sub-optimal, solution would be to simply revert
-> > > commit d57ed95 "virtio: use smp_XX barriers on SMP". Obviously, though,
-> > > that's going to have a negative impact on performance of SMP-based
-> > > virtualization use cases.
-> > 
-> > Have you measured the impact of using normal barriers (non-SMP ones)
-> > like we use on normal HW drivers unconditionally ?
-> > 
-> > IE. If the difference is small enough I'd say just go for it and avoid
-> > the bloat.
-> 
-> Yep.  Plan is:
-> 1) Measure the difference.
-> 2) Difference unmeassurable?  Use normal barriers (ie. revert d57ed95).
-> 3) Difference small?  Revert d57ed95 for 3.2, revisit for 3.3.
-> 4) Difference large?  Runtime switch based on "if you're PCI" for 3.2,
->    revisit for 3.3.
-> 
-> Cheers,
-> Rusty.
+>
+> Having this controlled from userspace means it doesn't work for SIGSTOP
+> or for long scheduling delays.  What about doing this automatically
+> based on preempt notifiers?
+>
+>
 
-Forwarding some results by Amos, who run multiple netperf streams in
-parallel, from an external box to the guest.  TCP_STREAM results were
-noisy.  This could be due to buffering done by TCP, where packet size
-varies even as message size is constant.
-
-TCP_RR results were consistent. In this benchmark, after switching
-to mandatory barriers, CPU utilization increased by up to 35% while
-throughput went down by up to 14%. the normalized throughput/cpu
-regressed consistently, between 7 and 35%
-
-The "fix" applied was simply this:
-
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 3198f2e..fdccb77 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -23,7 +23,7 @@
- 
- /* virtio guest is communicating with a virtual "device" that actually runs on
-  * a host processor.  Memory barriers are used to control SMP effects. */
--#ifdef CONFIG_SMP
-+#if 0
- /* Where possible, use SMP barriers which are more lightweight than mandatory
-  * barriers, because mandatory barriers control MMIO effects on accesses
-  * through relaxed memory I/O windows (which virtio does not use). */
-
-
-
--- 
-MST
-
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="compare-external_host-guest.txt"
-
-Fri Dec  9 23:57:33 2011
-
-1 - old-exhost_guest.txt
-2 - fixed-exhost_guest.txt
-
-======================================================================================================================================================
-TCP_STREAM
-      sessions| size|throughput|   cpu| normalize|  #tx-pkts|  #rx-pkts| #re-trans|  #tx-intr|  #rx-intr|  #io_exit|  #irq_inj|#tpkt/#exit| #rpkt/#irq
-1            1|   64|    949.64| 10.64|        89|   1170134|   1368739|         0|        17|    487392|    488820|    504716|       2.39|       2.71
-2            1|   64|    946.03| 10.87|        87|   1119582|   1325851|         0|        17|    493763|    485865|    516161|       2.30|       2.57
-%             |  0.0|      -0.4|  +2.2|      -2.2|      -4.3|      -3.1|         0|       0.0|      +1.3|      -0.6|      +2.3|       -3.8|       -5.2
-1            2|   64|   1877.15| 15.45|       121|   2151267|   2561929|         0|        33|    923916|    971093|    969360|       2.22|       2.64
-2            2|   64|   1867.63| 15.06|       124|   2212457|   2607606|         0|        33|    836160|    927721|    883964|       2.38|       2.95
-%             |  0.0|      -0.5|  -2.5|      +2.5|      +2.8|      +1.8|         0|       0.0|      -9.5|      -4.5|      -8.8|       +7.2|      +11.7
-1            4|   64|   3577.38| 19.62|       182|   4176151|   5036661|         0|        64|   1677417|   1412979|   1859101|       2.96|       2.71
-2            4|   64|   3583.17| 20.05|       178|   4215327|   5063534|         0|        65|   1682582|   1549394|   1759033|       2.72|       2.88
-%             |  0.0|      +0.2|  +2.2|      -2.2|      +0.9|      +0.5|         0|      +1.6|      +0.3|      +9.7|      -5.4|       -8.1|       +6.3
-1            1|  256|   2654.52| 11.41|       232|    925787|   1029214|         0|        14|    597763|    670927|    619414|       1.38|       1.66
-2            1|  256|   2632.22| 20.32|       129|    977446|   1036094|         0|        15|    742699|    715460|    764512|       1.37|       1.36
-%             |  0.0|      -0.8| +78.1|     -44.4|      +5.6|      +0.7|         0|      +7.1|     +24.2|      +6.6|     +23.4|       -0.7|      -18.1
-1            2|  256|   5228.76| 16.94|       308|   1949442|   2082492|         0|        30|   1230329|   1323945|   1274262|       1.47|       1.63
-2            2|  256|   5140.98| 19.58|       262|   1991090|   2093206|         0|        30|   1400232|   1271363|   1441564|       1.57|       1.45
-%             |  0.0|      -1.7| +15.6|     -14.9|      +2.1|      +0.5|         0|       0.0|     +13.8|      -4.0|     +13.1|       +6.8|      -11.0
-1            4|  256|   9412.61| 24.04|       391|   2292404|   2351356|         0|        35|   1669864|    555786|   1741742|       4.12|       1.35
-2            4|  256|   9408.92| 22.80|       412|   2303267|   2350153|         0|        35|   1665622|    889883|   1760349|       2.59|       1.34
-%             |  0.0|      -0.0|  -5.2|      +5.4|      +0.5|      -0.1|         0|       0.0|      -0.3|     +60.1|      +1.1|      -37.1|       -0.7
-1            1|  512|   3683.30| 13.18|       279|    914301|   1024803|         0|        14|    633219|    676673|    661047|       1.35|       1.55
-2            1|  512|   3639.29| 14.48|       251|    997516|   1039428|         0|        15|    682321|    754864|    708906|       1.32|       1.47
-%             |  0.0|      -1.2|  +9.9|     -10.0|      +9.1|      +1.4|         0|      +7.1|      +7.8|     +11.6|      +7.2|       -2.2|       -5.2
-1            2|  512|   7476.00| 19.81|       377|   1938184|   2018640|         0|        29|   1473562|    864841|   1513069|       2.24|       1.33
-2            2|  512|   7220.90| 19.18|       376|   1785571|   2017992|         0|        28|   1177162|   1113322|   1232894|       1.60|       1.64
-%             |  0.0|      -3.4|  -3.2|      -0.3|      -7.9|      -0.0|         0|      -3.4|     -20.1|     +28.7|     -18.5|      -28.6|      +23.3
-1            4|  512|   8858.46| 23.02|       384|   2312952|   2376210|         0|        38|   1757540|     92819|   1803434|      24.92|       1.32
-2            4|  512|   9412.01| 24.78|       379|   1984425|   2308926|         0|        30|   1597209|    682183|   1808295|       2.91|       1.28
-%             |  0.0|      +6.2|  +7.6|      -1.3|     -14.2|      -2.8|         0|     -21.1|      -9.1|    +635.0|      +0.3|      -88.3|       -3.0
-1            1| 1024|   4208.94| 14.76|       285|    849941|    921136|         0|        13|    674738|    613922|    700105|       1.38|       1.32
-2            1| 1024|   4192.50| 14.03|       298|    817761|    922081|         0|        12|    583808|    566704|    609916|       1.44|       1.51
-%             |  0.0|      -0.4|  -4.9|      +4.6|      -3.8|      +0.1|         0|      -7.7|     -13.5|      -7.7|     -12.9|       +4.3|      +14.4
-1            2| 1024|   9408.36| 21.04|       447|   1767352|   1918373|         0|        27|   1124248|    860371|   1179068|       2.05|       1.63
-2            2| 1024|   8694.83| 18.20|       477|   1784228|   1872733|         0|        28|   1116901|   1220318|   1161491|       1.46|       1.61
-%             |  0.0|      -7.6| -13.5|      +6.7|      +1.0|      -2.4|         0|      +3.7|      -0.7|     +41.8|      -1.5|      -28.8|       -1.2
-1            4| 1024|   9411.98| 24.04|       391|   1961925|   2292825|         0|        30|   1398947|    965506|   1835604|       2.03|       1.25
-2            4| 1024|   9409.97| 26.15|       359|   2072379|   2317492|         0|        34|   1494789|    855245|   1874374|       2.42|       1.24
-%             |  0.0|      -0.0|  +8.8|      -8.2|      +5.6|      +1.1|         0|     +13.3|      +6.9|     -11.4|      +2.1|      +19.2|       -0.8
-TCP_MAERTS
-      sessions| size|throughput|   cpu| normalize|  #tx-pkts|  #rx-pkts| #re-trans|  #tx-intr|  #rx-intr|  #io_exit|  #irq_inj|#tpkt/#exit| #rpkt/#irq
-1            1|   64|   1092.21| 17.68|        61|   5855912|   1155517|         4|        89|    476428|   4912055|    538322|       1.19|       2.15
-2            1|   64|   1031.43| 17.42|        59|   5533459|   1114148|         1|        85|    476884|   4701241|    538789|       1.18|       2.07
-%             |  0.0|      -5.6|  -1.5|      -3.3|      -5.5|      -3.6|     -75.0|      -4.5|      +0.1|      -4.3|      +0.1|       -0.8|       -3.7
-1            2|   64|   2540.09| 32.76|        77|  13466718|   2509747|         1|       206|    473959|   2026564|    594762|       6.65|       4.22
-2            2|   64|   2523.91| 32.72|        77|  13371187|   2486851|         1|       204|    477741|   1909387|    598663|       7.00|       4.15
-%             |  0.0|      -0.6|  -0.1|       0.0|      -0.7|      -0.9|       0.0|      -1.0|      +0.8|      -5.8|      +0.7|       +5.3|       -1.7
-1            4|   64|   2532.23| 32.96|        76|  13444352|   2555416|         1|       205|    477843|   2048074|    598584|       6.56|       4.27
-2            4|   64|   2519.36| 33.10|        76|  13371867|   2530066|         3|       207|    476255|   1917578|    596967|       6.97|       4.24
-%             |  0.0|      -0.5|  +0.4|       0.0|      -0.5|      -1.0|    +200.0|      +1.0|      -0.3|      -6.4|      -0.3|       +6.3|       -0.7
-1            1|  256|   3481.21| 24.08|       144|  18046440|   1051754|         0|       277|     95147|    115092|    157259|     156.80|       6.69
-2            1|  256|   3582.56| 25.00|       143|  18555128|   1079983|         2|       285|     82839|     69704|    144987|     266.20|       7.45
-%             |  0.0|      +2.9|  +3.8|      -0.7|      +2.8|      +2.7|         0|      +2.9|     -12.9|     -39.4|      -7.8|      +69.8|      +11.4
-1            2|  256|   7835.95| 29.20|       268|   9215513|    988831|         2|     13609|    242276|    235627|    359178|      39.11|       2.75
-2            2|  256|   7227.12| 26.14|       276|   8224494|    974662|         0|      3787|    267604|    257681|    362507|      31.92|       2.69
-%             |  0.0|      -7.8| -10.5|      +3.0|     -10.8|      -1.4|    -100.0|     -72.2|     +10.5|      +9.4|      +0.9|      -18.4|       -2.2
-1            4|  256|   9286.71| 29.59|       313|   3119380|   1125149|      1585|      2794|    365162|    334103|    483517|       9.34|       2.33
-2            4|  256|   9365.28| 28.90|       324|   2609986|   1116090|       971|      2064|    373494|    342389|    488519|       7.62|       2.28
-%             |  0.0|      +0.8|  -2.3|      +3.5|     -16.3|      -0.8|     -38.7|     -26.1|      +2.3|      +2.5|      +1.0|      -18.4|       -2.1
-1            1|  512|   9067.78| 17.76|       510|   2489492|    926754|         0|      3072|    350716|    318289|    415029|       7.82|       2.23
-2            1|  512|   9363.32| 17.00|       550|   1239455|    934632|         0|       360|    444912|    419859|    506000|       2.95|       1.85
-%             |  0.0|      +3.3|  -4.3|      +7.8|     -50.2|      +0.9|         0|     -88.3|     +26.9|     +31.9|     +21.9|      -62.3|      -17.0
-1            2|  512|   8897.24| 20.18|       440|   4677263|    765728|         0|      8964|    312268|    266093|    384872|      17.58|       1.99
-2            2|  512|   8994.28| 19.60|       458|   4068494|    777077|         0|      8040|    324208|    279281|    394930|      14.57|       1.97
-%             |  0.0|      +1.1|  -2.9|      +4.1|     -13.0|      +1.5|         0|     -10.3|      +3.8|      +5.0|      +2.6|      -17.1|       -1.0
-1            4|  512|   8660.59| 22.89|       378|   6274162|   1004294|         0|      9581|    300087|    248234|    381499|      25.28|       2.63
-2            4|  512|   8720.95| 22.42|       388|   6321071|    996665|         2|      9307|    293339|    239522|    372874|      26.39|       2.67
-%             |  0.0|      +0.7|  -2.1|      +2.6|      +0.7|      -0.8|         0|      -2.9|      -2.2|      -3.5|      -2.3|       +4.4|       +1.5
-1            1| 1024|   9382.57| 16.55|       566|   1098014|    943968|         0|        63|    411612|    385473|    463009|       2.85|       2.04
-2            1| 1024|   9375.36| 16.46|       569|   1113185|    962141|         0|       109|    434974|    419286|    486685|       2.65|       1.98
-%             |  0.0|      -0.1|  -0.5|      +0.5|      +1.4|      +1.9|         0|     +73.0|      +5.7|      +8.8|      +5.1|       -7.0|       -2.9
-1            2| 1024|   9341.87| 17.32|       539|   1449472|    807439|         0|       897|    380053|    354028|    433351|       4.09|       1.86
-2            2| 1024|   9364.12| 17.13|       546|   1344190|    794110|         0|       581|    379684|    352227|    431694|       3.82|       1.84
-%             |  0.0|      +0.2|  -1.1|      +1.3|      -7.3|      -1.7|         0|     -35.2|      -0.1|      -0.5|      -0.4|       -6.6|       -1.1
-1            4| 1024|   9391.41| 18.70|       502|   1509582|   1104681|      2166|       658|    399083|    369721|    453543|       4.08|       2.44
-2            4| 1024|   9404.67| 18.45|       509|   1361411|   1083647|       386|       398|    400368|    374415|    453718|       3.64|       2.39
-%             |  0.0|      +0.1|  -1.3|      +1.4|      -9.8|      -1.9|     -82.2|     -39.5|      +0.3|      +1.3|      +0.0|      -10.8|       -2.0
-TCP_RR
-      sessions| size|throughput|   cpu| normalize|  #tx-pkts|  #rx-pkts| #re-trans|  #tx-intr|  #rx-intr|  #io_exit|  #irq_inj|#tpkt/#exit| #rpkt/#irq
-1           50|   64|  10874.30|  6.75|      1611|    652525|    652529|         0|        10|    652518|    652582|    663468|       1.00|       0.98
-2           50|   64|   9568.49|  9.13|      1048|    574176|    574180|         0|         8|    574166|    574255|    593988|       1.00|       0.97
-%             |  0.0|     -12.0| +35.3|     -34.9|     -12.0|     -12.0|         0|     -20.0|     -12.0|     -12.0|     -10.5|        0.0|       -1.0
-1          100|   64|  10880.83|  6.77|      1607|    652919|    652926|         0|        10|    652912|    652981|    664406|       1.00|       0.98
-2          100|   64|   9586.65|  7.67|      1249|    575267|    575270|         0|         9|    575257|    575326|    593343|       1.00|       0.97
-%             |  0.0|     -11.9| +13.3|     -22.3|     -11.9|     -11.9|         0|     -10.0|     -11.9|     -11.9|     -10.7|        0.0|       -1.0
-1          250|   64|  10930.11|  6.81|      1605|    655873|    655884|         0|        10|    655869|    655951|    664979|       1.00|       0.99
-2          250|   64|   9556.15|  7.65|      1249|    573436|    573440|         0|         9|    573427|    573488|    591151|       1.00|       0.97
-%             |  0.0|     -12.6| +12.3|     -22.2|     -12.6|     -12.6|         0|     -10.0|     -12.6|     -12.6|     -11.1|        0.0|       -2.0
-1          500|   64|  10930.33|  6.77|      1614|    655886|    655890|         0|        10|    655877|    655949|    664983|       1.00|       0.99
-2          500|   64|   9598.61|  8.46|      1134|    575983|    575987|         0|         9|    575975|    576057|    595875|       1.00|       0.97
-%             |  0.0|     -12.2| +25.0|     -29.7|     -12.2|     -12.2|         0|     -10.0|     -12.2|     -12.2|     -10.4|        0.0|       -2.0
-1           50|  256|  10435.24|  8.87|      1176|    626181|    626184|         0|         9|    626173|    626240|    641870|       1.00|       0.98
-2           50|  256|   8948.58| 10.06|       889|    536981|    536985|         0|         8|    536971|    537025|    552906|       1.00|       0.97
-%             |  0.0|     -14.2| +13.4|     -24.4|     -14.2|     -14.2|         0|     -11.1|     -14.2|     -14.2|     -13.9|        0.0|       -1.0
-1          100|  256|  10401.87|  8.73|      1191|    624179|    624184|         0|        10|    624168|    624248|    640003|       1.00|       0.98
-2          100|  256|   9060.39| 10.46|       866|    543692|    543696|         0|         8|    543683|    543752|    559009|       1.00|       0.97
-%             |  0.0|     -12.9| +19.8|     -27.3|     -12.9|     -12.9|         0|     -20.0|     -12.9|     -12.9|     -12.7|        0.0|       -1.0
-1          250|  256|  10369.91|  8.79|      1179|    622261|    622267|         0|         9|    622252|    622325|    638523|       1.00|       0.97
-2          250|  256|   9011.48| 10.88|       828|    540755|    540758|         0|         8|    540743|    540830|    555336|       1.00|       0.97
-%             |  0.0|     -13.1| +23.8|     -29.8|     -13.1|     -13.1|         0|     -11.1|     -13.1|     -13.1|     -13.0|        0.0|        0.0
-1          500|  256|  10400.42|  8.70|      1195|    624094|    624099|         0|        10|    624085|    624155|    639254|       1.00|       0.98
-2          500|  256|   9178.08| 10.83|       847|    550753|    550757|         0|         9|    550744|    550811|    566165|       1.00|       0.97
-%             |  0.0|     -11.8| +24.5|     -29.1|     -11.8|     -11.8|         0|     -10.0|     -11.8|     -11.8|     -11.4|        0.0|       -1.0
-1           50|  512|   8231.77|  6.22|      1323|    493974|    493978|         0|         7|    493966|    494049|    507228|       1.00|       0.97
-2           50|  512|   7718.30|  5.81|      1328|    463164|    463168|         0|         7|    463155|    463218|    478833|       1.00|       0.97
-%             |  0.0|      -6.2|  -6.6|      +0.4|      -6.2|      -6.2|         0|       0.0|      -6.2|      -6.2|      -5.6|        0.0|        0.0
-1          100|  512|   8267.63|  6.16|      1342|    496125|    496130|         0|         8|    496115|    496186|    509422|       1.00|       0.97
-2          100|  512|   7713.78|  8.29|       930|    462894|    462900|         0|         7|    462885|    462977|    488732|       1.00|       0.95
-%             |  0.0|      -6.7| +34.6|     -30.7|      -6.7|      -6.7|         0|     -12.5|      -6.7|      -6.7|      -4.1|        0.0|       -2.1
-1          250|  512|   8227.23|  6.30|      1305|    493701|    493704|         0|         7|    493691|    493751|    507689|       1.00|       0.97
-2          250|  512|   7737.14|  8.35|       926|    464296|    464303|         0|         7|    464291|    464358|    486086|       1.00|       0.96
-%             |  0.0|      -6.0| +32.5|     -29.0|      -6.0|      -6.0|         0|       0.0|      -6.0|      -6.0|      -4.3|        0.0|       -1.0
-1          500|  512|   8259.80|  6.20|      1332|    495656|    495661|         0|         8|    495649|    495711|    509070|       1.00|       0.97
-2          500|  512|   7614.72|  7.47|      1019|    456950|    456959|         0|         7|    456941|    457005|    476914|       1.00|       0.96
-%             |  0.0|      -7.8| +20.5|     -23.5|      -7.8|      -7.8|         0|     -12.5|      -7.8|      -7.8|      -6.3|        0.0|       -1.0
-1           50| 1024|   7879.43|  6.80|      1158|    472832|    472835|         0|         7|    472822|    472906|    488163|       1.00|       0.97
-2           50| 1024|   7302.28|  7.35|       993|    438203|    438207|         0|         7|    438193|    438261|    455627|       1.00|       0.96
-%             |  0.0|      -7.3|  +8.1|     -14.2|      -7.3|      -7.3|         0|       0.0|      -7.3|      -7.3|      -6.7|        0.0|       -1.0
-1          100| 1024|   7916.07|  6.84|      1157|    475031|    475038|         0|         8|    475024|    475097|    490797|       1.00|       0.97
-2          100| 1024|   7491.90|  6.96|      1076|    449582|    449587|         0|         7|    449573|    449627|    462560|       1.00|       0.97
-%             |  0.0|      -5.4|  +1.8|      -7.0|      -5.4|      -5.4|         0|     -12.5|      -5.4|      -5.4|      -5.8|        0.0|        0.0
-1          250| 1024|   7865.20|  6.82|      1153|    471978|    471984|         0|         7|    471969|    472035|    486978|       1.00|       0.97
-2          250| 1024|   7472.83|  7.07|      1056|    448436|    448442|         0|         6|    448431|    448496|    463680|       1.00|       0.97
-%             |  0.0|      -5.0|  +3.7|      -8.4|      -5.0|      -5.0|         0|     -14.3|      -5.0|      -5.0|      -4.8|        0.0|        0.0
-1          500| 1024|   7931.30|  6.99|      1134|    475944|    475954|         0|         7|    475939|    476016|    491021|       1.00|       0.97
-2          500| 1024|   7407.54|  7.57|       978|    444519|    444524|         0|         7|    444509|    444567|    462360|       1.00|       0.96
-%             |  0.0|      -6.6|  +8.3|     -13.8|      -6.6|      -6.6|         0|       0.0|      -6.6|      -6.6|      -5.8|        0.0|       -1.0
-
---FkmkrVfFsRoUs1wW--
+Isn't it solved by steal time?
