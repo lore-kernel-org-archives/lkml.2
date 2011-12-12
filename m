@@ -1,149 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1LLScX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:32:23 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.18.14]:33101 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab1LLScT (ORCPT
+	id S1753757Ab1LLSdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:33:15 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:33573 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab1LLSdJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:32:19 -0500
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 13:32:19 EST
-References: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com> <96a258354ce375bf80259f783506bbd7191b520d.1322593277.git.joe@perches.com>
-Message-ID: <cone.1323714410.432860.1894.1000@zopiie>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Joe Perches <joe@perches.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] acerhdf: Message logging neatening
-Date: Mon, 12 Dec 2011 19:26:50 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Df-Sender: NDA0MDk0
+	Mon, 12 Dec 2011 13:33:09 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 12 Dec 2011 13:32:16 -0500
+Subject: RE: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
+ WARN_ON()
+Thread-Topic: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
+ WARN_ON()
+Thread-Index: Acy45u6rvyeczNRlQ4u2K/evnn5cKQAFPqJQ
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57DC0D10@USINDEVS01.corp.hds.com>
+ <20111212155827.GR1669@redhat.com>
+In-Reply-To: <20111212155827.GR1669@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1112120180
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+Hi,
 
-thanks for sending this patch, I've got some comments on it.
+>> -	if (in_nmi()) {
+>> -		is_locked = spin_trylock(&psinfo->buf_lock);
+>> -		if (!is_locked)
+>> -			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
+>> -	} else
+>> +	/*
+>> +	 * pstore_dump() is serialized in panic path.
+>> +	 * So, we don't need to take any locks.
+>> +	 */
+>> +	if (reason != KMSG_DUMP_PANIC)
+>>  		spin_lock_irqsave(&psinfo->buf_lock, flags);
+>
+>This probably won't work because the original check wasn't necessarily for
+>locking purposes but to see if a lock was already taken in the serialized
+>path.  If buf_lock is already held, the code may have trouble executing
+>the backend, hence the pr_err.
 
+If locking of backend drivers ,such as erst_lock/efivars_lock, was held in serialized path,
+the backend drivers may have some troubles.
 
-Joe Perches writes:
-> Use pr_warn not pr_warning.
+On the other hand, pstore will not have any trouble with my code because psinfo->buf_lock is protecting 
+the memory ,psinfo->buf, which backend driver use to save data and the content of psinfo->buf is
+simply overwritten in pstore_dump().
 
-Don't see any line, where you changed this…
+So, pstore can just blindly continue even if psinfo->buf_lock is held in the serialized path.
 
-
-> Coalesce formats.
-> Argument aligning.
-> Remove superfluous parentheses.
-
-Discussed inline.
-
-
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/platform/x86/acerhdf.c |   19 ++++++++-----------
->  1 files changed, 8 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-> index 833c0ec..639db4d 100644
-> --- a/drivers/platform/x86/acerhdf.c
-> +++ b/drivers/platform/x86/acerhdf.c
-> @@ -262,12 +262,11 @@ static void acerhdf_change_fanstate(int state)
->  	unsigned char cmd;
->  
->  	if (verbose)
-> -		pr_notice("fan %s\n", (state == ACERHDF_FAN_OFF) ?
-> -				"OFF" : "ON");
-> +		pr_notice("fan %s\n", state == ACERHDF_FAN_OFF ? "OFF" : "ON");
-
-In my opinion the one with brackets is easier to read.
+If there are some troubles in backend drivers, they should be fixed.
 
 
->  	if ((state != ACERHDF_FAN_OFF) && (state != ACERHDF_FAN_AUTO)) {
->  		pr_err("invalid fan state %d requested, setting to auto!\n",
-> -			state);
-> +		       state);
+I guess you suggest me to add some code checking lock status so that users/developers know 
+the reason why pstore failed.
+So, I have a comment about that.
 
-Is it written somewhere to use spaces instead of a tab in such cases? I like 
-tab more. (1)
+If you would like to just check if a lock was already in the serialized path,
+"is_spin_locked()" macro is better.
+In addition to that, if you would like to let users know the locking status, pr_err() is needed. 
+So, the code will be as follows.
 
+ if (reason == KMSG_DUMP_PANIC) {
+ 	if(is_spin_locked(&psinfo->buf_lock))
+ 		pr_err("lock is taken.\n");
+ else {
+ 	spin_lock_irqsave(&psinfo->buf_lock, flags);
+ }
 
->  		state = ACERHDF_FAN_AUTO;
->  	}
->  
-> @@ -282,19 +281,18 @@ static void acerhdf_check_param(struct thermal_zone_device *thermal)
->  {
->  	if (fanon > ACERHDF_MAX_FANON) {
->  		pr_err("fanon temperature too high, set to %d\n",
-> -				ACERHDF_MAX_FANON);
-> +		       ACERHDF_MAX_FANON);
-
-see (1). - but maybe one tab shall be removed.
-
-
->  		fanon = ACERHDF_MAX_FANON;
->  	}
->  
->  	if (kernelmode && prev_interval != interval) {
->  		if (interval > ACERHDF_MAX_INTERVAL) {
->  			pr_err("interval too high, set to %d\n",
-> -				ACERHDF_MAX_INTERVAL);
-> +			       ACERHDF_MAX_INTERVAL);
-
-see (1).
+However, this won't work for this reason.
+  - printk() must not be called in serialized path because deadlock of logbuf_lock may cause.
+  
+Of course, we can avoid deadlock if spin_lock_init(logbuf_lock) is called. But spin_lock_init() 
+is not accepted in previous discussion.
 
 
->  			interval = ACERHDF_MAX_INTERVAL;
->  		}
->  		if (verbose)
-> -			pr_notice("interval changed to: %d\n",
-> -					interval);
-> +			pr_notice("interval changed to: %d\n", interval);
 
-I agree on this.
+>> +	WARN_ON(in_nmi() && reason != KMSG_DUMP_PANIC);
+>> +
+>
+>You will need a comment to explain why the above is there.
 
+I agree. The comment is needed.
 
->  		thermal->polling_delay = interval*1000;
->  		prev_interval = interval;
->  	}
-> @@ -605,8 +603,8 @@ static int acerhdf_check_hardware(void)
->  	}
->  
->  	if (!bios_cfg) {
-> -		pr_err("unknown (unsupported) BIOS version %s/%s/%s, "
-> -			"please report, aborting!\n", vendor, product, version);
-> +		pr_err("unknown (unsupported) BIOS version %s/%s/%s, please report, aborting!\n",
-> +		       vendor, product, version);
+Seiji
 
-disagree, as it exceeds 80 chars.
-
-
->  		return -EINVAL;
->  	}
->  
-> @@ -616,8 +614,7 @@ static int acerhdf_check_hardware(void)
->  	 */
->  	if (!kernelmode) {
->  		pr_notice("Fan control off, to enable do:\n");
-> -		pr_notice("echo -n \"enabled\" > "
-> -			"/sys/class/thermal/thermal_zone0/mode\n");
-> +		pr_notice("echo -n \"enabled\" > /sys/class/thermal/thermal_zone0/mode\n");
-
-disagree, as it exceeds 80 chars when using tabstop=8.
-
-
->  	}
->  
->  	return 0;
-> -- 
-> 1.7.6.405.gc1be0
-> 
-
---
-kind regards,
---peter;
