@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1LLXz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:55:29 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:33883 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753426Ab1LLXz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:55:26 -0500
-Message-ID: <1323734123.3837.2.camel@joe2Laptop>
-Subject: drivers/media/video/s5p-fimc/fimc-capture.c: boolean and / or
- confusion
-From: Joe Perches <joe@perches.com>
-To: roel <roel.kluin@gmail.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Date: Mon, 12 Dec 2011 15:55:23 -0800
-In-Reply-To: <1323733493.1812.10.camel@joe2Laptop>
-References: <4EE688FC.8090606@gmail.com>
-	 <1323733493.1812.10.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754616Ab1LLXzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:55:52 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43127 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753675Ab1LLXzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 18:55:49 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18WM1jkJS0m3Tj8HJo19fYa
+Date: Mon, 12 Dec 2011 15:55:44 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 01/10] GPIO: gpio-generic: Move initialization up to
+ postcore
+Message-ID: <20111212235544.GM32251@atomide.com>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
+ <201112130005.35386.jkrzyszt@tis.icnet.pl>
+ <20111212231519.GK32251@atomide.com>
+ <201112130044.02007.jkrzyszt@tis.icnet.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112130044.02007.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-13 at 00:06 +0100, roel wrote:
-> The test not [val1] or not [val2] always evaluates to true
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111212 15:13]:
+> On Tuesday 13 of December 2011 at 00:15:20, Tony Lindgren wrote:
+> > 
+> > Might be worth checking if some board specific __initcall helps here
+> > too?
+> 
+> If I only knew how I could insert a board specific __initcall between 
+> two points from where the generic-gpio first, then the 8250 driver, are 
+> called.
+> 
+> Any hints?
 
-Hello
+Hmm, can't you do all that in the order you want in
+ams_delta_modem_init()?  Or make that into a late_initcall so
+you have generic-gpio available?
 
-Looking at drivers with:
+It seems that the pieces of code you're talking about don't need
+to be initialized early, just needs to be done in the right
+order to get things working.
 
-$ grep -rP --include=*.[ch] "(\b[\w\[\]\>\._\-]+)\s*\!\=\s*[\w\[\]\>\._\-]+\s*\|\|\s*\1\s*\!\=" drivers
+Regards,
 
-drivers/media/video/s5p-fimc/fimc-capture.c:		if (mf->width != tfmt->width || mf->width != tfmt->width) {
-drivers/media/video/s5p-fimc/fimc-capture.c:			if (mf->width != tfmt->width || mf->width != tfmt->width)
-
-Most likely these tests should be:
-	if (mf->height != tfmt->height || mf->width != tfmt->width)
-
-
-
+Tony
