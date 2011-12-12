@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1LLRpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:45:16 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43342 "EHLO mx2.mail.elte.hu"
+	id S1753787Ab1LLRpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:45:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37205 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655Ab1LLRpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:45:11 -0500
-Date: Mon, 12 Dec 2011 18:32:15 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com
-Subject: Re: [PATCH 2/4] perf_event: add PERF_COUNT_HW_REF_CPU_CYCLES generic
- PMU event
-Message-ID: <20111212173215.GI23870@elte.hu>
-References: <1323559734-3488-1-git-send-email-eranian@google.com>
- <1323559734-3488-3-git-send-email-eranian@google.com>
- <1323694657.13285.12.camel@twins>
+	id S1753750Ab1LLRpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:45:43 -0500
+Message-ID: <4EE63DC1.3010104@redhat.com>
+Date: Mon, 12 Dec 2011 15:45:37 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323694657.13285.12.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for 3.2-rc5] media fixes
+References: <4EE63039.4040004@redhat.com> <4EE63985.30001@samsung.com>
+In-Reply-To: <4EE63985.30001@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-12-2011 15:27, Sylwester Nawrocki wrote:
+> Hi Mauro,
+>
+> On 12/12/2011 05:47 PM, Mauro Carvalho Chehab wrote:
+>> Hi Linus,
+>>
+>> Please pull from:
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+>>
+>> For a couple fixes for media drivers.
+>> The changes are:
+>>      - ati_remote (new driver for 3.2): Fix the scancode tables;
+>>      - af9015: fix some issues with firmware load;
+>>      - au0828: (trivial) add device ID's for some devices;
+>>      - omap3 and s5p: several small fixes;
+>>      - Update MAINTAINERS entry to cover /drivers/staging/media and
+>>        media DocBook;
+>>      - a few other small trivial fixes.
+>>
+>> Thanks!
+>> Mauro
+> [...]
+>
+>>
+>> Sylwester Nawrocki (10):
+>>        [media] s5p-fimc: Fix wrong pointer dereference when unregistering sensors
+>>        [media] s5p-fimc: Fix error in the capture subdev deinitialization
+>>        [media] s5p-fimc: Fix initialization for proper system suspend support
+>>        [media] s5p-fimc: Fix buffer dequeue order issue
+>>        [media] s5p-fimc: Allow probe() to succeed with null platform data
+>>        [media] s5p-fimc: Adjust pixel height alignments according to the IP
+>> revision
+>>        [media] s5p-fimc: Fail driver probing when sensor configuration is wrong
+>>        [media] s5p-fimc: Use correct fourcc for RGB565 colour format
+>>        [media] m5mols: Fix set_fmt to return proper pixel format code
+>>        [media] s5p-fimc: Fix camera input configuration in subdev operations
+>
+> There is one more quite important patch left out:
+>
+> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commitdiff/817069678ab57150b21cd0705e2f3a3b2b6509f4
+>
+> It was included in my recent pull request. It would be good to have in v3.2
+> too. Are you planning to add it to a next pull request to Linus ?
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Not likely, but it might be possible.
 
-> On Sun, 2011-12-11 at 00:28 +0100, Stephane Eranian wrote:
-> > This event counts the number of reference core cpu cycles.
-> > Reference means that the event increments at a constant rate which
-> > is not subject to core CPU frequency adjustments. The event may
-> > not count when the processor is in halted (low power) state.
-> > As such, it may not be equivalent to wall clock time. However,
-> > when the processor is not halted state, the event keeps
-> > a constant correlation with wall clock time.
-> > 
-> > Signed-off-by: Stephane Eranian <eranian@google.com>
-> > ---
-> >  include/linux/perf_event.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index 564769c..0885561 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -54,6 +54,7 @@ enum perf_hw_id {
-> >  	PERF_COUNT_HW_BUS_CYCLES		= 6,
-> >  	PERF_COUNT_HW_STALLED_CYCLES_FRONTEND	= 7,
-> >  	PERF_COUNT_HW_STALLED_CYCLES_BACKEND	= 8,
-> > +	PERF_COUNT_HW_REF_CPU_CYCLES		= 9,
-> >  
-> >  	PERF_COUNT_HW_MAX,			/* non-ABI */
-> >  };
-> 
-> Does it make sense to add this to the 'generic' events? Are 
-> other archs going to use this?
-> 
-> That is, I already queued patch 1, I'm just wondering if the 
-> generic bit makes sense, Even BUS_CYCLES seems to be a 
-> questionable 'generic' event, but that's history and we can't 
-> fix it.
+I'll be out the rest of this week due to a travel for a series of meetings
+at the office.
 
-If we named it in a generic way, with a generic, 
-platform-independent meaning behind it, then it shouldn't be a 
-problem. This is why i suggested naming it 'constant CPU cycles' 
-- or 'constant freq cycles' or a variant of that.
+I might not be able to prepare another pull request until next week. After
+having it done, I should wait for a couple days for it to be at -next, but
+then it will almost be Xmas. Let's see.
 
-Thanks,
-
-	Ingo
+Regards,
+Mauro
