@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1LLO3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:29:12 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:59708 "EHLO gir.skynet.ie"
+	id S1753257Ab1LLO3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:29:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:3196 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab1LLO3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:29:10 -0500
-Date: Mon, 12 Dec 2011 14:29:07 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 04/11] mm: compaction: export some of the functions
-Message-ID: <20111212142906.GE3277@csn.ul.ie>
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-5-git-send-email-m.szyprowski@samsung.com>
+	id S1752792Ab1LLO3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:29:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95214498"
+Date: Mon, 12 Dec 2011 15:34:42 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 0/8] WM8994 MFD updates for 3.3
+Message-ID: <20111212143442.GG13952@sortiz-mobl>
+References: <20111128224017.GA13163@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321634598-16859-5-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <20111128224017.GA13163@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 05:43:11PM +0100, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> This commit exports some of the functions from compaction.c file
-> outside of it adding their declaration into internal.h header
-> file so that other mm related code can use them.
-> 
-> This forced compaction.c to always be compiled (as opposed to being
-> compiled only if CONFIG_COMPACTION is defined) but as to avoid
-> introducing code that user did not ask for, part of the compaction.c
-> is now wrapped in on #ifdef.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  mm/Makefile     |    3 +-
->  mm/compaction.c |  112 +++++++++++++++++++++++--------------------------------
->  mm/internal.h   |   35 +++++++++++++++++
->  3 files changed, 83 insertions(+), 67 deletions(-)
-> 
-> diff --git a/mm/Makefile b/mm/Makefile
-> index 50ec00e..24ed801 100644
-> --- a/mm/Makefile
-> +++ b/mm/Makefile
-> @@ -13,7 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
->  			   readahead.o swap.o truncate.o vmscan.o shmem.o \
->  			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
->  			   page_isolation.o mm_init.o mmu_context.o percpu.o \
-> -			   $(mmu-y)
-> +			   $(mmu-y) compaction.o
+Hi Mark,
 
-That should be
+On Mon, Nov 28, 2011 at 10:40:18PM +0000, Mark Brown wrote:
+> The following patch series (and pull request) contains a bunch of
+> updates I've previously posted for wm8994 but which haven't been merged
+> plus a big update adding register cache support for the wm8994 driver
+> which hasn't previously been posted.  As there's a matching update for
+> the ASoC driver for WM8994 removing the copy of the register cache there
+> it'd be great if it were possible to merge this via the ASoC tree.
+> 
+> I've also got one more patch which depends on this lot converting the
+> IRQ controller over to use the generic regmap IRQ controller which I'll
+> post as well - that also depends on this series as the regmap interrupt
+> controller relies on the register cache - so I'd also like to either
+> pull the same branch into the regmap tree or merge both this and the
+> regmap IRQ stuff via ASoC.
+> 
+> This seems like the easiest route from the point of view of bisection
+> and cross tree issues - does that all sound OK to you?
+Yes, that sounds good. Please add my:
 
-compaction.o $(mmu-y)
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-for consistency.
+to this patchset.
 
-Overall, this patch implies that CMA is always compiled in. Why
-not just make CMA depend on COMPACTION to keep things simplier? For
-example, if you enable CMA and do not enable COMPACTION, you lose
-things like the vmstat counters that can aid debugging. In fact, as
-parts of compaction.c are using defines like COMPACTBLOCKS, I'm not
-even sure compaction.c can compile without CONFIG_COMPACTION because
-of the vmstat stuff.
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
