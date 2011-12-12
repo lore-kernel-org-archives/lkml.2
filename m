@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1LLOfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:35:11 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47428 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab1LLOfJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:35:09 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Mel Gorman" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 03/11] mm: mmzone: introduce zone_pfn_same_memmap()
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-4-git-send-email-m.szyprowski@samsung.com>
- <20111212141953.GD3277@csn.ul.ie>
-Date: Mon, 12 Dec 2011 15:35:03 +0100
+	id S1753126Ab1LLOhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:37:24 -0500
+Received: from mga14.intel.com ([143.182.124.37]:17625 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557Ab1LLOhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:37:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="84784408"
+Date: Mon, 12 Dec 2011 15:42:28 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 05/11] mfd: Remove redundant spi driver bus initialization
+Message-ID: <20111212144228.GJ13952@sortiz-mobl>
+References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
+ <1322148561-25138-5-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v6dr4pj43l0zgt@mpn-glaptop>
-In-Reply-To: <20111212141953.GD3277@csn.ul.ie>
-User-Agent: Opera Mail/11.60 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322148561-25138-5-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Nov 18, 2011 at 05:43:10PM +0100, Marek Szyprowski wrote:
->> From: Michal Nazarewicz <mina86@mina86.com>
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index 6afae0e..09c9702 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -111,7 +111,10 @@ skip:
->>
->>  next:
->>  		pfn += isolated;
->> -		page += isolated;
->> +		if (zone_pfn_same_memmap(pfn - isolated, pfn))
->> +			page += isolated;
->> +		else
->> +			page = pfn_to_page(pfn);
->>  	}
+Hi Lars,
 
-On Mon, 12 Dec 2011 15:19:53 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> Is this necessary?
->
-> We are isolating pages, the largest of which is a MAX_ORDER_NR_PAGES
-> page.  [...]
+On Thu, Nov 24, 2011 at 04:29:15PM +0100, Lars-Peter Clausen wrote:
+> In ancient times it was necessary to manually initialize the bus field of an
+> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
+> so we can drop the manual assignment.
 
-This is not true for CMA.
+Thanks for the cleanup, I applied this one.
 
-> That said, everywhere else managed to avoid checks like this by always
-> scanning in units of pageblocks. Maybe this should be structured
-> the same way to guarantee pfn_valid is called at least per pageblock
-> (even though only once per MAX_ORDER_NR_PAGES is necessary).
-
-I'll look into that.
+Cheers,
+Samuel.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Intel Open Source Technology Centre
+http://oss.intel.com/
