@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab1LLHwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:52:37 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48294 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1LLHwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:52:36 -0500
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: gregkh@suse.de, edwin_rong@realsil.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 1/1] remove version.h includes in drivers/staging/rts5139 as reported by "make versioncheck"
-Date: Mon, 12 Dec 2011 02:52:13 -0500
-Message-Id: <1323676333-7333-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753097Ab1LLHxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:53:14 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:48402 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751259Ab1LLHxM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:53:12 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Dec 2011 08:52:43 +0100
+Subject: RE: [PATCH -next] xshm: fix build errors, depends on NET
+Thread-Topic: [PATCH -next] xshm: fix build errors, depends on NET
+Thread-Index: Acy2uKR44uv0gqFsSzyKH0KQuE8sOQB6Yxkw
+Message-ID: <81C3A93C17462B4BBD7E272753C105791FB0D6B96F@EXDCVYMBSTM005.EQ1STM.local>
+References: <20111209163247.1de15dcb5b735ca5e1ad030b@canb.auug.org.au>
+ <4EE289FE.90006@xenotime.net>
+In-Reply-To: <4EE289FE.90006@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From: Randy Dunlap <rdunlap@xenotime.net>
+>
+>Fix build errors in xshm.  xshm uses netlink, so it
+>should depend on NET.
+>
+>ERROR: "genl_unregister_family" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "netlink_unicast" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "genl_register_family_with_ops" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "init_net" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "__alloc_skb" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "kfree_skb" [drivers/xshm/xshm.ko] undefined!
+>ERROR: "skb_put" [drivers/xshm/xshm.ko] undefined!
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/rts5139/rts51x.h           |    1 -
- drivers/staging/rts5139/rts51x_transport.h |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+Thank you Randy,
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-diff --git a/drivers/staging/rts5139/rts51x.h b/drivers/staging/rts5139/rts51x.h
-index 9415d5c..b2c5839 100644
---- a/drivers/staging/rts5139/rts51x.h
-+++ b/drivers/staging/rts5139/rts51x.h
-@@ -34,7 +34,6 @@
- #include <linux/mutex.h>
- #include <linux/cdrom.h>
- #include <linux/kernel.h>
--#include <linux/version.h>
-
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
-diff --git a/drivers/staging/rts5139/rts51x_transport.h b/drivers/staging/rts5139/rts51x_transport.h
-index f7aa87f..8464c48 100644
---- a/drivers/staging/rts5139/rts51x_transport.h
-+++ b/drivers/staging/rts5139/rts51x_transport.h
-@@ -28,7 +28,6 @@
- #define __RTS51X_TRANSPORT_H
-
- #include <linux/kernel.h>
--#include <linux/version.h>
-
- #include "rts51x.h"
- #include "rts51x_chip.h"
---
-1.7.4.1
+>Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>Cc: Sjur Brendeland <sjur.brandeland@stericsson.com>
