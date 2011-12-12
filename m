@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1LKXln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 18:41:43 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54652 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab1LKXlk (ORCPT
+	id S1752663Ab1LLARN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 19:17:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39629 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab1LLARK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 18:41:40 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH] [media] uvcvideo: Use kcalloc instead of kzalloc to allocate array
-Date: Mon, 12 Dec 2011 00:41:54 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.3; x86_64; ; )
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1322600880.1534.315.camel@localhost.localdomain>
-In-Reply-To: <1322600880.1534.315.camel@localhost.localdomain>
+	Sun, 11 Dec 2011 19:17:10 -0500
+Date: Sun, 11 Dec 2011 16:17:03 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
+        Gary King <gking@nvidia.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v6 04/10] arm/tegra: prepare early init for multiple
+ tegra variants
+Message-ID: <20111212001703.GA26598@quad.lixom.net>
+References: <1323348254-29072-1-git-send-email-pdeschrijver@nvidia.com>
+ <1323348254-29072-5-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112120041.54884.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323348254-29072-5-git-send-email-pdeschrijver@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-Thanks for the patch.
-
-On Tuesday 29 November 2011 22:08:00 Thomas Meyer wrote:
-> The advantage of kcalloc is, that will prevent integer overflows which
-> could result from the multiplication of number of elements and size and it
-> is also a bit nicer to read.
+On Thu, Dec 08, 2011 at 02:43:47PM +0200, Peter De Schrijver wrote:
+> This patch splits the early init code in a common and a tegra20 specific part.
+> L2 cache initialization is generalized and discovers the cache associativity
+> at runtime. Also use arm_pm_restart instead of arm_arch_reset and reset the
+> the system using the PMC reset feature rather then the CAR system reset.
 > 
-> The semantic patch that makes this change is available
-> in https://lkml.org/lkml/2011/11/25/107
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-Should I take the patch in my tree, or do you plan to push several similar 
-patches directly in one go ?
-
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 > ---
+>  arch/arm/mach-tegra/board-dt.c        |   10 +++++---
+>  arch/arm/mach-tegra/board-harmony.c   |    2 +-
+>  arch/arm/mach-tegra/board-paz00.c     |    2 +-
+>  arch/arm/mach-tegra/board-seaboard.c  |    6 ++--
+>  arch/arm/mach-tegra/board-trimslice.c |    2 +-
+>  arch/arm/mach-tegra/board.h           |    2 +-
+>  arch/arm/mach-tegra/clock.c           |    5 ----
+>  arch/arm/mach-tegra/common.c          |   34 ++++++++++++++++++++------------
+>  8 files changed, 34 insertions(+), 29 deletions(-)
 > 
-> diff -u -p a/drivers/media/video/uvc/uvc_ctrl.c
-> b/drivers/media/video/uvc/uvc_ctrl.c ---
-> a/drivers/media/video/uvc/uvc_ctrl.c 2011-11-28 19:36:47.613437745 +0100
-> +++ b/drivers/media/video/uvc/uvc_ctrl.c 2011-11-28 19:58:26.309317018
-> +0100 @@ -1861,7 +1861,7 @@ int uvc_ctrl_init_device(struct uvc_devi
->  		if (ncontrols == 0)
->  			continue;
-> 
-> -		entity->controls = kzalloc(ncontrols * sizeof(*ctrl),
-> +		entity->controls = kcalloc(ncontrols, sizeof(*ctrl),
->  					   GFP_KERNEL);
->  		if (entity->controls == NULL)
->  			return -ENOMEM;
+> diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+> index 6a460a2..ef9843c 100644
+> --- a/arch/arm/mach-tegra/board-dt.c
+> +++ b/arch/arm/mach-tegra/board-dt.c
+> @@ -133,7 +133,8 @@ static void __init tegra_dt_init(void)
+>  		"Unknown platform! Pinmuxing not initialized\n");
+>  }
+>  
+> -static const char * tegra_dt_board_compat[] = {
+> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+> +static const char *tegra20_dt_board_compat[] = {
+>  	"compulab,trimslice",
+>  	"nvidia,harmony",
+>  	"compal,paz00",
+> @@ -142,13 +143,14 @@ static const char * tegra_dt_board_compat[] = {
+>  	NULL
+>  };
+>  
+> -DT_MACHINE_START(TEGRA_DT, "nVidia Tegra (Flattened Device Tree)")
+> +DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+>  	.map_io		= tegra_map_common_io,
+> -	.init_early	= tegra_init_early,
+> +	.init_early	= tegra20_init_early,
+>  	.init_irq	= tegra_dt_init_irq,
+>  	.handle_irq	= gic_handle_irq,
+>  	.timer		= &tegra_timer,
+>  	.init_machine	= tegra_dt_init,
+>  	.restart	= tegra_assert_system_reset,
+> -	.dt_compat	= tegra_dt_board_compat,
+> +	.dt_compat	= tegra20_dt_board_compat,
+>  MACHINE_END
+> +#endif
 
--- 
-Regards,
+As previously mentioned by Stephen, please split up in separate
+patches.
 
-Laurent Pinchart
+But also, I would prefer to see one board-dt for tegra20 and one for
+tegra30 (board-dt-t20 and board-dt-t30, or whatnot). They wouldn't be
+sharing much code anyway, I would rather see a limited amount of code
+duplication than excessive ifdefs in one file.
+
+
+-Olof
