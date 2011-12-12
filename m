@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1LLHKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:10:49 -0500
-Received: from [213.157.87.50] ([213.157.87.50]:40127 "EHLO bitmer.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241Ab1LLHKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:10:47 -0500
-Message-ID: <4EE5A8A0.2010206@bitmer.com>
-Date: Mon, 12 Dec 2011 09:09:20 +0200
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
-MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <heikki.krogerus@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>	<CAMP44s3Szzm9iXxghXfNCBjKyUw-nRrG1aEeweKnRCidaxmxEA@mail.gmail.com>	<4EDF5231.6080309@bitmer.com> <CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
-In-Reply-To: <CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752741Ab1LLHOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:14:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52207 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962Ab1LLHN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:13:56 -0500
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 02/11] kvm tools: fix function name
+Date: Mon, 12 Dec 2011 15:15:46 +0800
+Message-Id: <1323674155-17570-3-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1323674155-17570-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1323674155-17570-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-12 15:13:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-12 15:13:21,
+	Serialize complete at 2011-12-12 15:13:21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 08:42 PM, Felipe Contreras wrote:
-> On Wed, Dec 7, 2011 at 1:46 PM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
->> On 12/05/2011 07:31 PM, Felipe Contreras wrote:
->>> Should probably have CC'ed linux-omap.
->>>
->>> On Mon, Dec 5, 2011 at 7:23 PM, Felipe Contreras
->>> <felipe.contreras@nokia.com>  wrote:
->>>> From: Felipe Contreras<felipe.contreras@gmail.com>
->>>>
->>>> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
->>>>
->>>> This seems to break USB networking stuff.
->>>>
->> I don't think revert is needed since CONFIG_CHARGER_ISP1704=y should make it
->> working. Although I don't know do we really need to drive the ISP1704 into
->> reset in board-rx51-peripherals.c? Would it be better to leave gpio state as
->> it was set by the bootloader and let the driver to do reset sequence if
->> needed?
->>
->> http://marc.info/?l=linux-omap&m=130795363204884&w=2
-> Nope, that's actually worst:
->
-> Unhandled fault: external abort on non-linefetch (0x1028) at 0xfa0ab001
-> Internal error: : 1028 [#1]
-> Modules linked in:
-Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
-non isp1704_charger change has broke it as there hasn't been changes on it.
+In here, xxx_locked() should means "called with job_mutex locked",
+the original funtion are opposite, fix them.
 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ tools/kvm/threadpool.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/tools/kvm/threadpool.c b/tools/kvm/threadpool.c
+index 2e59e62..bafbcd7 100644
+--- a/tools/kvm/threadpool.c
++++ b/tools/kvm/threadpool.c
+@@ -15,7 +15,7 @@ static LIST_HEAD(head);
+ static pthread_t	*threads;
+ static long		threadcount;
+ 
+-static struct thread_pool__job *thread_pool__job_pop(void)
++static struct thread_pool__job *thread_pool__job_pop_locked(void)
+ {
+ 	struct thread_pool__job *job;
+ 
+@@ -28,25 +28,25 @@ static struct thread_pool__job *thread_pool__job_pop(void)
+ 	return job;
+ }
+ 
+-static void thread_pool__job_push(struct thread_pool__job *job)
++static void thread_pool__job_push_locked(struct thread_pool__job *job)
+ {
+ 	list_add_tail(&job->queue, &head);
+ }
+ 
+-static struct thread_pool__job *thread_pool__job_pop_locked(void)
++static struct thread_pool__job *thread_pool__job_pop(void)
+ {
+ 	struct thread_pool__job *job;
+ 
+ 	mutex_lock(&job_mutex);
+-	job = thread_pool__job_pop();
++	job = thread_pool__job_pop_locked();
+ 	mutex_unlock(&job_mutex);
+ 	return job;
+ }
+ 
+-static void thread_pool__job_push_locked(struct thread_pool__job *job)
++static void thread_pool__job_push(struct thread_pool__job *job)
+ {
+ 	mutex_lock(&job_mutex);
+-	thread_pool__job_push(job);
++	thread_pool__job_push_locked(job);
+ 	mutex_unlock(&job_mutex);
+ }
+ 
+@@ -59,11 +59,11 @@ static void thread_pool__handle_job(struct thread_pool__job *job)
+ 
+ 		if (--job->signalcount > 0)
+ 			/* If the job was signaled again while we were working */
+-			thread_pool__job_push_locked(job);
++			thread_pool__job_push(job);
+ 
+ 		mutex_unlock(&job->mutex);
+ 
+-		job = thread_pool__job_pop_locked();
++		job = thread_pool__job_pop();
+ 	}
+ }
+ 
+@@ -80,7 +80,7 @@ static void *thread_pool__threadfunc(void *param)
+ 		struct thread_pool__job *curjob;
+ 
+ 		mutex_lock(&job_mutex);
+-		while ((curjob = thread_pool__job_pop()) == NULL)
++		while ((curjob = thread_pool__job_pop_locked()) == NULL)
+ 			pthread_cond_wait(&job_cond, &job_mutex);
+ 		mutex_unlock(&job_mutex);
+ 
+@@ -136,7 +136,7 @@ void thread_pool__do_job(struct thread_pool__job *job)
+ 
+ 	mutex_lock(&jobinfo->mutex);
+ 	if (jobinfo->signalcount++ == 0)
+-		thread_pool__job_push_locked(job);
++		thread_pool__job_push(job);
+ 	mutex_unlock(&jobinfo->mutex);
+ 
+ 	mutex_lock(&job_mutex);
 -- 
-Jarkko
+1.7.4.4
+
