@@ -1,141 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1LLNMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 08:12:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49046 "EHLO mx2.suse.de"
+	id S1753139Ab1LLNSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 08:18:12 -0500
+Received: from ni.piap.pl ([195.187.100.4]:37755 "EHLO ni.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab1LLNMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 08:12:20 -0500
-Date: Mon, 12 Dec 2011 14:12:18 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3] procfs: do not confuse jiffies with cputime64_t
-Message-ID: <20111212131218.GD14720@tiehlicka.suse.cz>
-References: <m28vmi7ip3.fsf@igel.home>
- <201112120922.13633.arnd@arndb.de>
- <m21usavwi0.fsf_-_@igel.home>
- <20111212124333.GC14720@tiehlicka.suse.cz>
- <m2wra2uedy.fsf_-_@igel.home>
+	id S1752681Ab1LLNSK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 08:18:10 -0500
+X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 08:18:09 EST
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Oliver Neukum <oliver@neukum.name>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Dec 2011 14:10:23 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2wra2uedy.fsf_-_@igel.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <m3liqiylz4.fsf@t19.piap.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] Add PCI IDs for Motorola H24 HSPA USB module.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20111212 #5986898, check: 20111212 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-12-11 14:07:53, Andreas Schwab wrote:
-> get_{idle,iowait}_time are supposed to return cputime64_t values, not
-> jiffies.  Add usecs_to_cputime64 for this.
-> 
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Add PCI IDs for Motorola H24 HSPA USB module.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
 
-Thanks!
-
-> ---
->  arch/ia64/include/asm/cputime.h    |    1 +
->  arch/powerpc/include/asm/cputime.h |    2 ++
->  arch/s390/include/asm/cputime.h    |    2 ++
->  fs/proc/stat.c                     |    4 ++--
->  include/asm-generic/cputime.h      |    1 +
->  5 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
-> index 6073b18..5a274af 100644
-> --- a/arch/ia64/include/asm/cputime.h
-> +++ b/arch/ia64/include/asm/cputime.h
-> @@ -60,6 +60,7 @@ typedef u64 cputime64_t;
->   */
->  #define cputime_to_usecs(__ct)		((__ct) / NSEC_PER_USEC)
->  #define usecs_to_cputime(__usecs)	((__usecs) * NSEC_PER_USEC)
-> +#define usecs_to_cputime64(__usecs)	usecs_to_cputime(__usecs)
->  
->  /*
->   * Convert cputime <-> seconds
-> diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-> index 33a3580..fa3f921 100644
-> --- a/arch/powerpc/include/asm/cputime.h
-> +++ b/arch/powerpc/include/asm/cputime.h
-> @@ -150,6 +150,8 @@ static inline cputime_t usecs_to_cputime(const unsigned long us)
->  	return ct;
->  }
->  
-> +#define usecs_to_cputime64(us)		usecs_to_cputime(us)
-> +
->  /*
->   * Convert cputime <-> seconds
->   */
-> diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-> index 0814348..b9acaaa 100644
-> --- a/arch/s390/include/asm/cputime.h
-> +++ b/arch/s390/include/asm/cputime.h
-> @@ -87,6 +87,8 @@ usecs_to_cputime(const unsigned int m)
->  	return (cputime_t) m * 4096;
->  }
->  
-> +#define usecs_to_cputime64(m)		usecs_to_cputime(m)
-> +
->  /*
->   * Convert cputime to milliseconds and back.
->   */
-> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> index 2a30d67..0855e6f 100644
-> --- a/fs/proc/stat.c
-> +++ b/fs/proc/stat.c
-> @@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
->  		idle = kstat_cpu(cpu).cpustat.idle;
->  		idle = cputime64_add(idle, arch_idle_time(cpu));
->  	} else
-> -		idle = nsecs_to_jiffies64(1000 * idle_time);
-> +		idle = usecs_to_cputime64(idle_time);
->  
->  	return idle;
->  }
-> @@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
->  		/* !NO_HZ so we can rely on cpustat.iowait */
->  		iowait = kstat_cpu(cpu).cpustat.iowait;
->  	else
-> -		iowait = nsecs_to_jiffies64(1000 * iowait_time);
-> +		iowait = usecs_to_cputime64(iowait_time);
->  
->  	return iowait;
->  }
-> diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-> index 62ce682..12a1764 100644
-> --- a/include/asm-generic/cputime.h
-> +++ b/include/asm-generic/cputime.h
-> @@ -40,6 +40,7 @@ typedef u64 cputime64_t;
->   */
->  #define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct)
->  #define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs)
-> +#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
->  
->  /*
->   * Convert cputime to seconds and back.
-> -- 
-> 1.7.8
-> 
-> -- 
-> Andreas Schwab, schwab@linux-m68k.org
-> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-> "And now for something completely different."
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1458,6 +1458,16 @@ static const struct usb_device_id acm_ids[] = {
+ 	},
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
++	/* Motorola H24 HSPA module: */
++	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
++	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
++	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
++	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
++	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
++
+ 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
+ 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+ 					   data interface instead of
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
