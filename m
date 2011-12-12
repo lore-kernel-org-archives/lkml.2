@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab1LLPPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:15:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56032 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab1LLPPD convert rfc822-to-8bit (ORCPT
+	id S1751936Ab1LLPRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:17:14 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46151 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab1LLPRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:15:03 -0500
-Message-ID: <1323702852.13285.25.camel@twins>
-Subject: [RFC][PATCH] sparc64: remove __ARCH_WANT_UNLOCKED_CTXSW usage
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: sparclinux <sparclinux@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Mon, 12 Dec 2011 16:14:12 +0100
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 12 Dec 2011 10:17:12 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -tip:perf/core 0/8] random tiny perf fixes and cleanups
+Date: Tue, 13 Dec 2011 00:16:49 +0900
+Message-Id: <1323703017-6060-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hello,
 
-As mentioned a while ago, I was looking into why SPARC64 uses
-__ARCH_WANT_UNLOCKED_CTXSW. You thought to remember some AB-BA deadlock
-with the rq->lock so I went through the various sparc64 arch hooks but
-came up empty.
+This is a patchset for what I found during a code review.
+As you can see all of these are simple few-liners.
+Please take a look and consider applying them.
 
-switch_to()
-  flush_tlb_pending()
-    flush_tsb_user
-      mm->context.lock
-
-switch_mm()
-  mm->context.lock
-  get_new_mmu_context()
-    ctx_alloc_lock()
-
-I went through all sites where either mm->context.lock or ctx_alloc_lock
-was used but could not find anything calling back into the scheduler --
-this would have to be a wakeup because everything is ran with IRQs
-disabled.
-
-There's also activate_mm() that takes both these locks and is ran under
-task_lock(), but there too I cannot see any problems with rq->lock.
-
-This investigation has one assumption; that pure assembly functions are
-'clean', ie. they don't take locks and don't go calling try_to_wake_up()
-etc. This because my sparc64 asm is very much gone from memory (some 10+
-years ago I could have maybe followed it).
-
-The only thing resting me is asking you to simply test the below patch
-and report what happens. Hopefully things will simply work.. if not I've
-messed up and need to go look harder :/
+Thanks.
 
 
----
- arch/sparc/include/asm/system_64.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Namhyung Kim (8):
+  perf report: Document '--call-graph' for optional print_limit argument
+  perf symbols: Get rid of duplicated snprintf()
+  perf symbols: Fix error path on symbol__init()
+  perf tools: Fix a memory leak on perf_read_values_destroy
+  perf tools: Remove stale git headlines from top comment
+  perf events: Tidy up perf_event__preprocess_sample
+  perf report: Fix usage string
+  perf evlist: Fix error handling on perf_event__mmap
 
-diff --git a/arch/sparc/include/asm/system_64.h b/arch/sparc/include/asm/system_64.h
-index 10bcabc..715fefa 100644
---- a/arch/sparc/include/asm/system_64.h
-+++ b/arch/sparc/include/asm/system_64.h
-@@ -123,8 +123,6 @@ extern void __flushw_user(void);
- #define flush_user_windows flushw_user
- #define flush_register_windows flushw_all
- 
--/* Don't hold the runqueue lock over context switch */
--#define __ARCH_WANT_UNLOCKED_CTXSW
- #define prepare_arch_switch(next)		\
- do {						\
- 	flushw_all();				\
+ tools/perf/Documentation/perf-report.txt |    5 +++--
+ tools/perf/builtin-report.c              |    8 ++++----
+ tools/perf/util/config.c                 |    7 -------
+ tools/perf/util/event.c                  |   13 +++++++------
+ tools/perf/util/evlist.c                 |    8 ++++++--
+ tools/perf/util/symbol.c                 |   11 +++--------
+ tools/perf/util/usage.c                  |    5 -----
+ tools/perf/util/values.c                 |    1 +
+ 8 files changed, 24 insertions(+), 34 deletions(-)
+
+--
+1.7.6
 
