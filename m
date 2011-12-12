@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab1LLOHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:07:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52540 "EHLO mx2.suse.de"
+	id S1752883Ab1LLOJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:09:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52631 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab1LLOHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:07:52 -0500
-Date: Mon, 12 Dec 2011 15:07:50 +0100
+	id S1752529Ab1LLOJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:09:37 -0500
+Date: Mon, 12 Dec 2011 15:09:35 +0100
 From: Michal Hocko <mhocko@suse.cz>
 To: Hillf Danton <dhillf@gmail.com>
 Cc: Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
@@ -16,66 +16,70 @@ Cc: Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: memcg: keep root group unchanged if fail to create
- new
-Message-ID: <20111212140750.GE14720@tiehlicka.suse.cz>
+Subject: [PATCH] memcg: clean up soft_limit_tree properly new
+Message-ID: <20111212140935.GF14720@tiehlicka.suse.cz>
 References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
  <alpine.LSU.2.00.1112111520510.2297@eggly>
  <20111212131118.GA15249@tiehlicka.suse.cz>
  <CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
+ <20111212140750.GE14720@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
+In-Reply-To: <20111212140750.GE14720@tiehlicka.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-12-11 21:49:18, Hillf Danton wrote:
-[...]
-> From: Hillf Danton <dhillf@gmail.com>
-> Subject: [PATCH] mm: memcg: keep root group unchanged if fail to create new
-> 
-> If the request is to create non-root group and we fail to meet it, we should
-> leave the root unchanged.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+And a follow up patch for the proper clean up:
+---
+>From 4b9f5a1e88496af9f336d1ef37cfdf3754a3ba48 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 12 Dec 2011 15:04:18 +0100
+Subject: [PATCH] memcg: clean up soft_limit_tree properly
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+If we are not able to allocate tree nodes for all NUMA nodes then we
+should better clean up those that were allocated otherwise we will leak
+a memory.
 
-Thanks
-> ---
-> 
-> --- a/mm/memcontrol.c	Fri Dec  9 21:57:40 2011
-> +++ b/mm/memcontrol.c	Mon Dec 12 21:47:14 2011
-> @@ -4848,9 +4848,9 @@ mem_cgroup_create(struct cgroup_subsys *
->  		int cpu;
->  		enable_swap_cgroup();
->  		parent = NULL;
-> -		root_mem_cgroup = memcg;
->  		if (mem_cgroup_soft_limit_tree_init())
->  			goto free_out;
-> +		root_mem_cgroup = memcg;
->  		for_each_possible_cpu(cpu) {
->  			struct memcg_stock_pcp *stock =
->  						&per_cpu(memcg_stock, cpu);
-> @@ -4888,7 +4888,6 @@ mem_cgroup_create(struct cgroup_subsys *
->  	return &memcg->css;
->  free_out:
->  	__mem_cgroup_free(memcg);
-> -	root_mem_cgroup = NULL;
->  	return ERR_PTR(error);
->  }
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6aff93c..838d812 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4874,7 +4874,7 @@ static int mem_cgroup_soft_limit_tree_init(void)
+ 			tmp = -1;
+ 		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
+ 		if (!rtpn)
+-			return 1;
++			goto err_cleanup;
+ 
+ 		soft_limit_tree.rb_tree_per_node[node] = rtpn;
+ 
+@@ -4885,6 +4885,16 @@ static int mem_cgroup_soft_limit_tree_init(void)
+ 		}
+ 	}
+ 	return 0;
++
++err_cleanup:
++	for_each_node_state(node, N_POSSIBLE) {
++		if (!soft_limit_tree.rb_tree_per_node[node])
++			break;
++		kfree(soft_limit_tree.rb_tree_per_node[node]);
++		soft_limit_tree.rb_tree_per_node[node] = NULL;
++	}
++	return 1;
++
+ }
+ 
+ static struct cgroup_subsys_state * __ref
+-- 
+1.7.7.3
 
 -- 
 Michal Hocko
