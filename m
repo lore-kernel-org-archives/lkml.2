@@ -1,180 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1LLISY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 03:18:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59922 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1LLISW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 03:18:22 -0500
-Date: Mon, 12 Dec 2011 00:18:16 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 09/10] input: serio: ams-delta: Toggle keyboard power
- over GPIO
-Message-ID: <20111212081816.GG4682@core.coreip.homeip.net>
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
- <1323634328-856-10-git-send-email-jkrzyszt@tis.icnet.pl>
+	id S1752054Ab1LLIXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 03:23:12 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:56868 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab1LLIXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 03:23:10 -0500
+Message-ID: <4EE5B9C1.5080105@parallels.com>
+Date: Mon, 12 Dec 2011 12:22:25 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323634328-856-10-git-send-email-jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        <cgroups@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>, Linux Containers <containers@lists.osdl.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: How to draw values for /proc/stat
+References: <4EDC8FB1.60407@parallels.com> <1323439411.17673.65.camel@twins> <4EE22179.5090106@parallels.com> <4EE4C350.90509@parallels.com> <20111212093116.96537551.kamezawa.hiroyu@jp.fujitsu.com> <4EE5A7FA.8050707@parallels.com>
+In-Reply-To: <4EE5A7FA.8050707@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 09:12:07PM +0100, Janusz Krzysztofik wrote:
-> Don't use Amstrad Delta custom I/O functions once GPIO interface is
-> available for the underlying hardware.
-> 
-> Depends on patch 8/10 "omapfb: lcd_ams_delta: Drive control lines over
-> GPIO".
-> 
-> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+On 12/12/2011 11:06 AM, Glauber Costa wrote:
+> On 12/12/2011 04:31 AM, KAMEZAWA Hiroyuki wrote:
+>> On Sun, 11 Dec 2011 15:50:56 +0100
+>> Glauber Costa<glommer@parallels.com> wrote:
+>>
+>>> On 12/09/2011 03:55 PM, Glauber Costa wrote:
+>>>> On 12/09/2011 12:03 PM, Peter Zijlstra wrote:
+>>>>> On Mon, 2011-12-05 at 07:32 -0200, Glauber Costa wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> Specially Peter and Paul, but all the others:
+>>>>>>
+>>>>>> As you can see in https://lkml.org/lkml/2011/12/4/178, and in my
+>>>>>> answer
+>>>>>> to that, there is a question - one I've asked before but without that
+>>>>>> much of an audience - of whether /proc files read from process
+>>>>>> living on
+>>>>>> cgroups should display global or per-cgroup resources.
+>>>>>>
+>>>>>> In the past, I was arguing for a knob to control that, but I recently
+>>>>>> started to believe that a knob here will only overcomplicate matters:
+>>>>>> if you live in a cgroup, you should display only the resources you
+>>>>>> can
+>>>>>> possibly use. Global is for whoever is in the main cgroup.
+>>>>>>
+>>>>>> Now, it comes two questions:
+>>>>>> 1) Do you agree with that, for files like /proc/stat ? I think the
+>>>>>> most
+>>>>>> important part is to be consistent inside the system, regardless
+>>>>>> of what
+>>>>>> is done
+>>>>>
+>>>>> Personally I don't give a rats arse about (/proc vs) cgroups :-)
+>>>>> Currently /proc is unaffected by whatever cgroup you happen to be
+>>>>> in and
+>>>>> that seems to make some sort of sense.
+>>>>>
+>>>>> Namespaces seem to be about limiting visibility, cgroups about
+>>>>> controlling resources.
+>>>>>
+>>>>> The two things are hopelessly disjoint atm, but I believe someone was
+>>>>> looking at this mess.
+>>>>
+>>>> I did take a look at this (if anyone else was, I'd like to know so we
+>>>> can share some ideas), but I am not convinced we should do anything to
+>>>> join them anymore. We virtualization people are to the best of my
+>>>> knowledge the only ones doing namespaces. Cgroups, OTOH, got a lot
+>>>> bigger.
+>>>>
+>>>> What I am mostly concerned about now, is how consistent they will be.
+>>>> /proc always being always global indeed does make sense, but my
+>>>> question
+>>>> still stands: if you live in a resource-controlled world, why should
+>>>> you
+>>>> even see resources you will never own ?
+>>>>
+>>>>
+>>>>> IOW a /proc namespace coupled to cgroup scope would do what you want.
+>>>>> Now my head hurts..
+>>>>
+>>>> Mine too. The idea is good, but too broad. Boils down to: How do you
+>>>> couple them? And none of the methods I thought about seemed to make any
+>>>> sense.
+>>>>
+>>>> If we really want to have the values in /proc being opted-in, I think
+>>>> Kamezawa's idea of a mount option is the winner so far.
+>>>>
+>>>
+>>> Ok:
+>>>
+>>> How about the following patch to achieve this ?
+>>
+>> Hmm, What I thought was mount option for procfs. Containers will mount
+>> its own
+>> /proc file systems. Do you have any pros. / cons. ?
+>> IIUC, cgroup can be mounted per subsystems. Then, options can be
+>> passed per
+>> subsystems. It's a mess but we don't need to bring this to procfs.
+>>
+>> How about
+>>
+>> # mount -t procfs proc /container_root/proc -o cgroup_aware
+>>
+>> to show cgroup aware procfs ? I think this will be easy to be used with
+>> namespace/chroot, etc.
+>>
+>
+> Don't think it works.
+>
+> Because whoever mounts the proc filesystem, may not want to be isolated.
+> But we want him to be.
+>
+> As an example from our usecase, procfs is mounted inside a container. We
+> can't assume the container is willing to cooperate. So we need to
+> establish this from the outside. We can of course force options to be
+> always added to a procfs mount if it comes from the container, but it is
+> way more messier than this.
+>
+> per-cgroup knobs works fine for this because the container cannot
+> possibly see it or change it in any circumstance.
+> per-namespace would work as well, but then I don't see how to specify a
+> want/don't want flag in a sane way.
+>
 
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
+There is another aspect of this as well - that I myself was overlooking.
+/proc is not the only place in which this knob to work.
 
-> ---
->  arch/arm/mach-omap1/board-ams-delta.c             |    5 --
->  arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
->  drivers/input/serio/ams_delta_serio.c             |   45 +++++++++++---------
->  3 files changed, 25 insertions(+), 27 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-> index b7422e3..587118c 100644
-> --- a/arch/arm/mach-omap1/board-ams-delta.c
-> +++ b/arch/arm/mach-omap1/board-ams-delta.c
-> @@ -232,11 +232,6 @@ static struct gpio _latch_gpios[] __initconst = {
->  		.label	= "dockit2",
->  	},
->  	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "keybrd_pwr",
-> -	},
-> -	{
->  		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
->  		.flags	= GPIOF_OUT_INIT_LOW,
->  		.label	= "keybrd_dataout",
-> diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> index 1d0706e..004c827 100644
-> --- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> +++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> @@ -28,8 +28,6 @@
->  
->  #if defined (CONFIG_MACH_AMS_DELTA)
->  
-> -#define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
-> -#define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
->  #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
->  #define AMD_DELTA_LATCH2_SCARD_CMDVCC	0x0800
->  
-> diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
-> index d4d08bd..1499c7d 100644
-> --- a/drivers/input/serio/ams_delta_serio.c
-> +++ b/drivers/input/serio/ams_delta_serio.c
-> @@ -92,8 +92,7 @@ static irqreturn_t ams_delta_serio_interrupt(int irq, void *dev_id)
->  static int ams_delta_serio_open(struct serio *serio)
->  {
->  	/* enable keyboard */
-> -	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR,
-> -			AMD_DELTA_LATCH2_KEYBRD_PWR);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 1);
->  
->  	return 0;
->  }
-> @@ -101,9 +100,26 @@ static int ams_delta_serio_open(struct serio *serio)
->  static void ams_delta_serio_close(struct serio *serio)
->  {
->  	/* disable keyboard */
-> -	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR, 0);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 0);
->  }
->  
-> +static struct gpio _gpios[] __initconst_or_module = {
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATA,
-> +		.flags	= GPIOF_DIR_IN,
-> +		.label	= "serio-data",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_CLK,
-> +		.flags	= GPIOF_DIR_IN,
-> +		.label	= "serio-clock",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-> +		.flags	= GPIOF_OUT_INIT_LOW,
-> +		.label	= "serio-power",
-> +	},
-> +};
->  static int __init ams_delta_serio_init(void)
->  {
->  	int err;
-> @@ -123,19 +139,11 @@ static int __init ams_delta_serio_init(void)
->  	strlcpy(ams_delta_serio->phys, "GPIO/serio0",
->  			sizeof(ams_delta_serio->phys));
->  
-> -	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_DATA, "serio-data");
-> +	err = gpio_request_array(_gpios, ARRAY_SIZE(_gpios));
->  	if (err) {
-> -		pr_err("ams_delta_serio: Couldn't request gpio pin for data\n");
-> +		pr_err("ams_delta_serio: Couldn't request gpio pins\n");
->  		goto serio;
->  	}
-> -	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> -
-> -	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_CLK, "serio-clock");
-> -	if (err) {
-> -		pr_err("ams_delta_serio: couldn't request gpio pin for clock\n");
-> -		goto gpio_data;
-> -	}
-> -	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
->  
->  	err = request_irq(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK),
->  			ams_delta_serio_interrupt, IRQ_TYPE_EDGE_RISING,
-> @@ -143,7 +151,7 @@ static int __init ams_delta_serio_init(void)
->  	if (err < 0) {
->  		pr_err("ams_delta_serio: couldn't request gpio interrupt %d\n",
->  				gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
-> -		goto gpio_clk;
-> +		goto gpio;
->  	}
->  	/*
->  	 * Since GPIO register handling for keyboard clock pin is performed
-> @@ -157,10 +165,8 @@ static int __init ams_delta_serio_init(void)
->  	dev_info(&ams_delta_serio->dev, "%s\n", ams_delta_serio->name);
->  
->  	return 0;
-> -gpio_clk:
-> -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
-> -gpio_data:
-> -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> +gpio:
-> +	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
->  serio:
->  	kfree(ams_delta_serio);
->  	return err;
-> @@ -171,7 +177,6 @@ static void __exit ams_delta_serio_exit(void)
->  {
->  	serio_unregister_port(ams_delta_serio);
->  	free_irq(OMAP_GPIO_IRQ(AMS_DELTA_GPIO_PIN_KEYBRD_CLK), 0);
-> -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
-> -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> +	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
->  }
->  module_exit(ams_delta_serio_exit);
-> -- 
-> 1.7.3.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Think of syscalls like sysinfo, for instance. We'd also like this 
+information to come from a cgroup-specific place. Possibly other places 
+as well.
 
--- 
-Dmitry
+This is one more reason for me to believe that if we are going for a 
+switch, it needs to live in the cgroup - and also that "proc_overlay" is 
+quite a bad name - but that's okay since this small patch was just a 
+proof of concept to get the discussion going.
+
+
