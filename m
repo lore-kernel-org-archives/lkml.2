@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1LLRiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:38:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48166 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab1LLRiC (ORCPT
+	id S1753421Ab1LLRjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:39:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37417 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab1LLRjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:38:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE639E2.6060307@zytor.com>
-References: <1323648762-2148-1-git-send-email-keithp@keithp.com>
- <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
- <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com>
- <8639cqjvyn.fsf@sumi.keithp.com> <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com>
- <86sjkpiw8i.fsf@sumi.keithp.com> <CA+55aFzkq-3z3URp75LkVd=Qk1nEk76wDZCrLPKyabNcdieQVA@mail.gmail.com>
- <86mxaxiu34.fsf@sumi.keithp.com> <4EE639E2.6060307@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 12 Dec 2011 09:37:40 -0800
-X-Google-Sender-Auth: GJr9il-4tZLPCUU3BbixMxzR5Nk
-Message-ID: <CA+55aFw_1TMd6Ze5aqiZEyEqb6F=z4kMKWBYk4Wtx7G4-5rtiA@mail.gmail.com>
-Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
- address is invalid"
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Keith Packard <keithp@keithp.com>, Matt Fleming <matt@console-pimps.org>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Dec 2011 12:39:31 -0500
+Message-ID: <1323711558.2583.11.camel@edumazet-laptop>
+Subject: Re: [Slub allocator] There are chances that
+ kmem_cache_cpu->freelist gets lost if the process happens to be rescheduled
+ to a differenet cpu before the local_irq_save() completes in __slab_alloc()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: zhihua che <zhihua.che@gmail.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Date: Mon, 12 Dec 2011 18:39:18 +0100
+In-Reply-To: <alpine.DEB.2.00.1112120922020.28410@router.home>
+References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
+	 <1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <alpine.DEB.2.00.1112120922020.28410@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 9:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Machines with EFI only do.
+Le lundi 12 décembre 2011 à 09:50 -0600, Christoph Lameter a écrit :
 
-Yeah, and they exist, but should basically be considered broken.
+> Correct. Issue was introduced in 2.6.39.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
+> 
 
-EFi without BIOS emulation is such a crazy idiotic crock that it's not
-even funny. It's pure and utter shite.
+Indeed, I reproduced the leak with hackbench and lot of threads.
 
-EFI as a "extended BIOS rewritten in C" is not bad.
+Thanks
 
-EFI as a "new world order" is totally idiotic and crazy, and only
-morons ever believed it was a good idea.
+[PATCH] slub: fix a possible memleak in __slab_alloc()
 
-Sadly that "pure EFI" thing still exists. Some of the early EFI
-proponents really wanted it, and it's still an option for some
-unfathomable reason. The world would be a better place without it.
+Zhihua Che reported a possible memleak in slub allocator on
+CONFIG_PREEMPT=y builds.
 
-                           Linus
+It is possible current thread migrates right before disabling irqs in
+__slab_alloc(). We must check again c->freelist, and perform a normal
+allocation instead of scratching c->freelist.
+
+Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
+
+Reported-by: zhihua che <zhihua.che@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: stable@vger.kernel.org
+---
+ mm/slub.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ed3334d..923d238 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2166,6 +2166,12 @@ redo:
+ 		goto new_slab;
+ 	}
+ 
++#ifdef CONFIG_PREEMPT
++	object = c->freelist;
++	if (object)
++		goto load_freelist;
++#endif
++
+ 	stat(s, ALLOC_SLOWPATH);
+ 
+ 	do {
+
+
