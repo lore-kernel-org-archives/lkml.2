@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab1LLHKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:10:37 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:63655 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab1LLHKf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:10:35 -0500
-X-IronPort-AV: E=Sophos;i="4.71,337,1320624000"; 
-   d="scan'208";a="9407400"
-Subject: Re: [PATCH V3 1/2] xen/granttable: Support sub-page grants
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: ANNIE LI <annie.li@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-In-Reply-To: <4EE57204.4030509@oracle.com>
-References: <1323430321-5465-1-git-send-email-annie.li@oracle.com>
-	 <1323430372-5503-1-git-send-email-annie.li@oracle.com>
-	 <1323452339.20077.92.camel@zakaz.uk.xensource.com>
-	 <4EE57204.4030509@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Mon, 12 Dec 2011 07:10:33 +0000
-Message-ID: <1323673833.20936.65.camel@dagon.hellion.org.uk>
+	id S1752716Ab1LLHKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:10:49 -0500
+Received: from [213.157.87.50] ([213.157.87.50]:40127 "EHLO bitmer.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241Ab1LLHKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:10:47 -0500
+Message-ID: <4EE5A8A0.2010206@bitmer.com>
+Date: Mon, 12 Dec 2011 09:09:20 +0200
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Heikki Krogerus <heikki.krogerus@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>	<CAMP44s3Szzm9iXxghXfNCBjKyUw-nRrG1aEeweKnRCidaxmxEA@mail.gmail.com>	<4EDF5231.6080309@bitmer.com> <CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
+In-Reply-To: <CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 03:16 +0000, ANNIE LI wrote:
-> > Please can you name the arguments here and then refer to them by name in
-> > the comments instead of all this "First parameter", "second one" stuff.
-> >
-> > Similarly for the existing comments sorry I didn't notice this in
-> > previous review.
-> Please check following comments in gnttab_ops, I changed the "First 
-> parameter", "second one" into parameter name. However, it looks not very 
-> consistent with parameters format of function fn since only parameter 
-> type exists, not name.
+On 12/07/2011 08:42 PM, Felipe Contreras wrote:
+> On Wed, Dec 7, 2011 at 1:46 PM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
+>> On 12/05/2011 07:31 PM, Felipe Contreras wrote:
+>>> Should probably have CC'ed linux-omap.
+>>>
+>>> On Mon, Dec 5, 2011 at 7:23 PM, Felipe Contreras
+>>> <felipe.contreras@nokia.com>  wrote:
+>>>> From: Felipe Contreras<felipe.contreras@gmail.com>
+>>>>
+>>>> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
+>>>>
+>>>> This seems to break USB networking stuff.
+>>>>
+>> I don't think revert is needed since CONFIG_CHARGER_ISP1704=y should make it
+>> working. Although I don't know do we really need to drive the ISP1704 into
+>> reset in board-rx51-peripherals.c? Would it be better to leave gpio state as
+>> it was set by the bootloader and let the driver to do reset sequence if
+>> needed?
+>>
+>> http://marc.info/?l=linux-omap&m=130795363204884&w=2
+> Nope, that's actually worst:
+>
+> Unhandled fault: external abort on non-linefetch (0x1028) at 0xfa0ab001
+> Internal error: : 1028 [#1]
+> Modules linked in:
+Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
+non isp1704_charger change has broke it as there hasn't been changes on it.
 
-You can give the parameters names in the function pointers too, that's
-what I was suggesting.
-
-e.g.:
-         int (*map_frames)(unsigned long *frames, unsigned int nr);
-
-Ian.
-
+-- 
+Jarkko
