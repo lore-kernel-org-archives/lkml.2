@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab1LLXis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:38:48 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55470 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab1LLXir (ORCPT
+	id S1753534Ab1LLXjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:39:31 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:24413 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab1LLXja convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:38:47 -0500
-Date: Tue, 13 Dec 2011 00:38:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andres Salomon <dilinger@queued.net>
-cc: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: IRQF_TIMER | IRQF_SHARED ?
-In-Reply-To: <20111212123131.502be350@queued.net>
-Message-ID: <alpine.LFD.2.02.1112130035550.3020@ionos>
-References: <4EE620A5.7080402@LiPPERTEmbedded.de> <20111212123131.502be350@queued.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 12 Dec 2011 18:39:30 -0500
+X-IronPort-AV: E=Sophos;i="4.71,342,1320652800"; 
+   d="scan'208";a="606777871"
+Message-ID: <1323733153.13849.17.camel@lade.trondhjem.org>
+Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: roel <roel.kluin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        sage@newdream.net, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Date: Mon, 12 Dec 2011 18:39:13 -0500
+In-Reply-To: <20111212152856.871a8301.akpm@linux-foundation.org>
+References: <4EE688FC.8090606@gmail.com>
+	 <20111212152856.871a8301.akpm@linux-foundation.org>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 12 Dec 2011 23:39:14.0285 (UTC) FILETIME=[41A139D0:01CCB927]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011, Andres Salomon wrote:
-
-> On Mon, 12 Dec 2011 16:41:25 +0100
-> Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
+On Mon, 2011-12-12 at 15:28 -0800, Andrew Morton wrote: 
+> On Tue, 13 Dec 2011 00:06:36 +0100
+> roel <roel.kluin@gmail.com> wrote:
 > 
-> > But I did not fail to notice that _none_ of the code in
-> > drivers/clocksource/ uses IRQF_SHARED, obviously this must be
-> > deliberate.
+> > The test not SEEK_CUR or not SEEK_SET always evaluates to true
+> > 
+> > Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> > ---
+> >  fs/ceph/file.c   |    2 +-
+> >  fs/cifs/cifsfs.c |    2 +-
+> >  fs/fuse/file.c   |    2 +-
+> >  fs/nfs/file.c    |    2 +-
+> >  4 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+<snip> 
+> > diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+> > index eca56d4..606ef0f 100644
+> > --- a/fs/nfs/file.c
+> > +++ b/fs/nfs/file.c
+> > @@ -147,7 +147,7 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
+> >  	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
+> >  	 * the cached file length
+> >  	 */
+> > -	if (origin != SEEK_SET || origin != SEEK_CUR) {
+> > +	if (origin != SEEK_SET && origin != SEEK_CUR) {
+> >  		struct inode *inode = filp->f_mapping->host;
+> >  
+> >  		int retval = nfs_revalidate_file_size(inode, filp);
 > 
-> Hm, maybe tglx knows?  For my part, I don't think it would be a
-> problem, but I can imagine the reason for not sharing being clock drift
-> or something to that effect.
+> This fix will cause changed runtime behaviour, such as NFS no longer
+> running nfs_revalidate_file_size() for all seek modes.
 
-No, you can share a timer irq. The other drivers don't have the SHARED
-flag set because they are on exclusive irq lines, which is the sane
-thing to do. shared irqs suck and you figure that out once you try to
-use that shared timer irq on a preempt-rt enabled kernel.
+As far as NFS is concerned, it reverts a regression. NFS only used to
+run revalidate_file_size() for SEEK_END prior to commit
+06222e491e663dac939f04b125c9dc52126a75c4. I accept that we now also need
+to run it for SEEK_HOLE and SEEK_DATA, but we've never had to do so for
+SEEK_SET and SEEK_CUR.
 
-Thanks,
+I suspect the same is true of ceph, cifs etc...
 
-	tglx
+Cheers
+  Trond
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
