@@ -1,181 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1LLXNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:13:43 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58782 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab1LLXNi (ORCPT
+	id S1754604Ab1LLXPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:15:20 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51049 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab1LLXNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:13:38 -0500
-Date: Mon, 12 Dec 2011 23:14:14 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
-        oleg@redhat.com, linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: Re: [PATCH][V4] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20111212231414.GB16408@hallyn.com>
-References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
- <1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 12 Dec 2011 18:13:44 -0500
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 20/25] dynamic_debug: add modname arg to exec_query callchain
+Date: Mon, 12 Dec 2011 16:12:46 -0700
+Message-Id: <1323731569-20644-20-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
+References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> In the case of a child pid namespace, rebooting the system does not
-> really makes sense. When the pid namespace is used in conjunction
-> with the other namespaces in order to create a linux container, the
-> reboot syscall leads to some problems.
-> 
-> A container can reboot the host. That can be fixed by dropping
-> the sys_reboot capability but we are unable to correctly poweroff/
-> halt/reboot a container and the container stays stuck at the shutdown
-> time with the container's init process waiting indefinitively.
-> 
-> After several attempts, no solution from userspace was found to reliabily
-> handle the shutdown from a container.
-> 
-> This patch propose to make the init process of the child pid namespace to
-> exit with a signal status set to : SIGINT if the child pid namespace called
-> "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-> When the reboot syscall is called and we are not in the initial
-> pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-> and "RESTART2". Otherwise we return EINVAL.
-> 
-> Returning EINVAL is also an easy way to check if this feature is supported
-> by the kernel when invoking another 'reboot' option like CAD.
-> 
-> By this way the parent process of the child pid namespace knows if
-> it rebooted or not and can take the right decision.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Thanks for pushing on this, Daniel.  It'll be really nice if this can get
-in soon so we can get rid of the utmp watching hack, which at this point is
-the last blocker to being able to use the same disk image for container and
-bare metal installs.
+Pass module name into ddebug_exec_queries(), ddebug_exec_query(), and
+ddebug_parse_query() as separate parameter.  In ddebug_parse_query(),
+the module name is added into the query struct before the query-string
+is parsed.  This allows the query-string to be shorter:
 
-> ---
->  include/linux/pid_namespace.h |    8 +++++++-
->  kernel/pid_namespace.c        |   30 ++++++++++++++++++++++++++++++
->  kernel/sys.c                  |    3 +++
->  3 files changed, 40 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index e7cf666..3279596 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -32,6 +32,7 @@ struct pid_namespace {
->  #endif
->  	gid_t pid_gid;
->  	int hide_pid;
-> +	int reboot;
->  };
->  
->  extern struct pid_namespace init_pid_ns;
-> @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
->  extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
->  extern void free_pid_ns(struct kref *kref);
->  extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
-> +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
->  
->  static inline void put_pid_ns(struct pid_namespace *ns)
->  {
-> @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
->  {
->  }
->  
-> -
->  static inline void zap_pid_ns_processes(struct pid_namespace *ns)
->  {
->  	BUG();
->  }
-> +
-> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	BUG();
-> +}
->  #endif /* CONFIG_PID_NS */
->  
->  extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index a896839..1e93a5a 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -15,6 +15,7 @@
->  #include <linux/acct.h>
->  #include <linux/slab.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/reboot.h>
->  
->  #define BITS_PER_PAGE		(PAGE_SIZE*8)
->  
-> @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
->  		rc = sys_wait4(-1, NULL, __WALL, NULL);
->  	} while (rc != -ECHILD);
->  
-> +	if (pid_ns->reboot)
-> +		current->signal->group_exit_code = pid_ns->reboot;
-> +
->  	acct_exit_ns(pid_ns);
->  	return;
->  }
-> @@ -221,6 +225,32 @@ static struct ctl_table pid_ns_ctl_table[] = {
->  
->  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
->  
-> +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	switch(cmd) {
-> +	case LINUX_REBOOT_CMD_RESTART2:
-> +	case LINUX_REBOOT_CMD_RESTART:
-> +		pid_ns->reboot = SIGHUP;
-> +		break;
-> +
-> +	case LINUX_REBOOT_CMD_POWER_OFF:
-> +	case LINUX_REBOOT_CMD_HALT:
-> +		pid_ns->reboot = SIGINT;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	read_lock(&tasklist_lock);
-> +	force_sig(SIGKILL, pid_ns->child_reaper);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	do_exit(0);
-> +
-> +	/* Not reached */
-> +	return 0;
-> +}
-> +
->  static __init int pid_namespaces_init(void)
->  {
->  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index ddf8155..31acf63 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  	                magic2 != LINUX_REBOOT_MAGIC2C))
->  		return -EINVAL;
->  
-> +	if (task_active_pid_ns(current) != &init_pid_ns)
-> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
-> +
->  	/* Instead of trying to make the power_off code look like
->  	 * halt when pm_power_off is not set do it the easy way.
->  	 */
-> -- 
-> 1.7.5.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+instead of:
+   $modname.dyndbg="module $modname +fp"
+do this:
+   $modname.dyndbg="+fp"
+
+Omitting "module $modname" from the query string is actually required
+for $modname.dyndbg rules; the set-only-once check added in a previous
+patch will throw an error if its added again.  ddebug_query="..." has
+no $modname associated with it, so the query string may include it.
+
+This also fixes redundant "module $modname" otherwise needed to handle
+multiple queries per string:
+
+   $modname.dyndbg="func foo +fp; func bar +fp"
+
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c |   25 ++++++++++++++++---------
+ 1 files changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 4cdcc64..5711628 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -337,7 +337,7 @@ static int check_set(const char **dest, char *src, char *name)
+  * Returns 0 on success, <0 on error.
+  */
+ static int ddebug_parse_query(char *words[], int nwords,
+-			       struct ddebug_query *query)
++			struct ddebug_query *query, const char *modname)
+ {
+ 	unsigned int i;
+ 	int rc;
+@@ -347,6 +347,10 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 		return -EINVAL;
+ 	memset(query, 0, sizeof(*query));
+ 
++	if (modname)
++		/* support $modname.dyndbg=<multiple queries> */
++		query->module = modname;
++
+ 	for (i = 0 ; i < nwords ; i += 2) {
+ 		if (!strcmp(words[i], "func"))
+ 			rc = check_set(&query->function, words[i+1], "func");
+@@ -446,7 +450,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	return 0;
+ }
+ 
+-static int ddebug_exec_query(char *query_string)
++static int ddebug_exec_query(char *query_string, const char *modname)
+ {
+ 	unsigned int flags = 0, mask = 0;
+ 	struct ddebug_query query;
+@@ -457,7 +461,7 @@ static int ddebug_exec_query(char *query_string)
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+ 	if (nwords <= 0)
+ 		return -EINVAL;
+-	if (ddebug_parse_query(words, nwords-1, &query))
++	if (ddebug_parse_query(words, nwords-1, &query, modname))
+ 		return -EINVAL;
+ 	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
+ 		return -EINVAL;
+@@ -473,7 +477,7 @@ static int ddebug_exec_query(char *query_string)
+    last error or number of matching callsites.  Module name is either
+    in param (for boot arg) or perhaps in query string.
+ */
+-static int ddebug_exec_queries(char *query)
++static int ddebug_exec_queries(char *query, const char *modname)
+ {
+ 	char *split;
+ 	int i, errs = 0, exitcode = 0, rc, nfound = 0;
+@@ -490,7 +494,7 @@ static int ddebug_exec_queries(char *query)
+ 		if (verbose)
+ 			pr_info("query %d: \"%s\"\n", i, query);
+ 
+-		rc = ddebug_exec_query(query);
++		rc = ddebug_exec_query(query, modname);
+ 		if (rc < 0) {
+ 			errs++;
+ 			exitcode = rc;
+@@ -656,7 +660,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
+ 
+-	ret = ddebug_exec_queries(tmpbuf);
++	ret = ddebug_exec_queries(tmpbuf, NULL);
+ 	kfree(tmpbuf);
+ 	if (ret < 0)
+ 		return ret;
+@@ -882,7 +886,9 @@ int ddebug_dyndbg_param_cb(char *param, char* val, const char* modname)
+ 	if (verbose)
+ 		pr_info("module: %s %s=\"%s\"\n", modname, param, val);
+ 
+-	ddebug_exec_queries(val ? val : "+p");
++	ddebug_exec_queries((val ? val : "+p"),
++			    !strcmp(modname, "*") ? NULL : modname);
++
+ 	return 0; /* query failure shouldnt stop module load */
+ }
+ 
+@@ -909,7 +915,8 @@ static __init void ddebug_boot_parse_args(void)
+ 		if (verbose)
+ 			pr_info("Param: %s, val: %s\n", param, val);
+ 
+-		ddebug_exec_queries(val ? val : "+p");
++		ddebug_exec_queries((val ? val : "+p"),
++				!strcmp(modname, "*") ? NULL : modname);
+ 	}
+ }
+ 
+@@ -1009,7 +1016,7 @@ static int __init dynamic_debug_init(void)
+ 
+ 	/* ddebug_query boot param got passed -> set it up */
+ 	if (ddebug_setup_string[0] != '\0') {
+-		ret = ddebug_exec_queries(ddebug_setup_string);
++		ret = ddebug_exec_queries(ddebug_setup_string, NULL);
+ 		if (ret < 0)
+ 			pr_warn("Invalid ddebug boot param %s",
+ 				ddebug_setup_string);
+-- 
+1.7.7.3
+
