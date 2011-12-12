@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1LLRep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:34:45 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43374 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751310Ab1LLRem (ORCPT
+	id S1753654Ab1LLRfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:35:05 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44226 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753715Ab1LLRfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:34:42 -0500
-Message-ID: <4EE64935.2000608@xenotime.net>
-Date: Mon, 12 Dec 2011 10:34:29 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 12 Dec 2011 12:35:00 -0500
+X-Sasl-enc: rcLsPHpPuBKAPJL4BOz705jCJpw6GEhbIYWoYJRZf0CB 1323711296
+Date: Mon, 12 Dec 2011 09:33:44 -0800
+From: Greg KH <greg@kroah.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, adobriyan@gmail.com
+Subject: Re: [PATCH] kref: add function for reading kref value
+Message-ID: <20111212173344.GA10162@kroah.com>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+ <20111212150255.GA7506@kroah.com>
+ <CAEnQRZBiVDAHH+uZ=Ugk=UP5qSvvMViGTM-bRWr+E27zivOUug@mail.gmail.com>
+ <1323703934.1765.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CAEnQRZCZdPw9eWVmdvhtF7KCQkYpLMrkhv5qd5xYckxWksN+0w@mail.gmail.com>
+ <1323704494.1765.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CAEnQRZAt0X6cxGLgLUVTB9rzLKVYLEnh=azS9WOyKAkUZEpj4g@mail.gmail.com>
 MIME-Version: 1.0
-To: Martyn Welch <martyn.welch@ge.com>
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: VME: PIO2: Add GPIOLIB dependancy
-References: <4EE638EA.6010909@xenotime.net> <20111212170301.26724.40502.stgit@ES-BJ21R4J>
-In-Reply-To: <20111212170301.26724.40502.stgit@ES-BJ21R4J>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEnQRZAt0X6cxGLgLUVTB9rzLKVYLEnh=azS9WOyKAkUZEpj4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 09:04 AM, Martyn Welch wrote:
-> The PIO2 driver errors when GPIOLIB, on which it depends, is not enabled.
+On Mon, Dec 12, 2011 at 06:42:59PM +0200, Daniel Baluta wrote:
+> On Mon, Dec 12, 2011 at 5:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > Le lundi 12 décembre 2011 à 17:39 +0200, Daniel Baluta a écrit :
+> >
+> >> Ok, for the moment it seems to be a bad idea. But my intention is
+> >> to integrate kref to networking code, and then to write a general
+> >> debugging tool for refs.
+> >>
+> >> Tracking down reference count problems is hard, and this tool can
+> >> really help everyone.
+> >
+> > I dont think kref will help you that much, because its used everywhere.
+> >
+> > Adding a general debugging tool will provide too much noise.
+> >
+> > Instead, we (network dev) add debugging points where we want.
 > 
-> Add dependancy when selecting the PIO2.
+> Yes, but you have to do this each time you start debugging, for a
+> particular referenced counted object.
 > 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+> We must find a clever solution to avoid the noise. (e.g use
+> /proc, /sysfs, /debugfs options to trigger dumping info for
+> some/all objects with a certain state).
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Then use the dynamic debug infrastructure, which is there to help you
+try to handle this type of debugging on-the-fly.
 
-Thanks.
+But again, it's not a kref issue, sorry.
 
-> ---
-> 
-> Sorry, missed the email on the 6th.
-> 
->  drivers/staging/vme/devices/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> 
-> diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
-> index 8f5d286..55ec30c 100644
-> --- a/drivers/staging/vme/devices/Kconfig
-> +++ b/drivers/staging/vme/devices/Kconfig
-> @@ -9,6 +9,7 @@ config VME_USER
->  
->  config VME_PIO2
->  	tristate "GE PIO2 VME"
-> +	depends on GPIOLIB
->  	help
->  	  Say Y here to include support for the GE PIO2. The PIO2 is a 6U VME
->  	  slave card, implementing 32 solid-state relay switched IO lines, in
-> 
-> 
-> --
-> Martyn Welch (Principal Software Engineer)   |   Registered in England and
-> GE Intelligent Platforms                     |   Wales (3828642) at 100
-> T +44(0)127322748                            |   Barbirolli Square, Manchester,
-> E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
