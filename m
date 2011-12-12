@@ -1,74 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1LLH0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:26:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57756 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab1LLH0K convert rfc822-to-8bit (ORCPT
+	id S1752656Ab1LLH2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:28:54 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56822 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1LLH2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:26:10 -0500
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=windows-1252
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20111211151620.GC28756@alea.gnuu.de>
-Date: Mon, 12 Dec 2011 08:26:07 +0100
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <83BC42D5-9424-4137-BB9E-78E7C5BBFC63@suse.de>
-References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20111211151620.GC28756@alea.gnuu.de>
-To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
-X-Mailer: Apple Mail (2.1084)
+	Mon, 12 Dec 2011 02:28:52 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20111205182010.GV14515@moon>
+	<20111206140833.3b43fbeb.akpm@linux-foundation.org>
+	<20111206221515.GP29781@moon> <20111206225315.GA20459@moon>
+	<20111207090259.e2296dd3.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111207063308.GC20459@moon> <20111207070718.GA21678@moon>
+Date: Sun, 11 Dec 2011 23:30:21 -0800
+In-Reply-To: <20111207070718.GA21678@moon> (Cyrill Gorcunov's message of "Wed,
+	7 Dec 2011 11:07:18 +0400")
+Message-ID: <m1boreckmq.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18b5AD6Xw2e3QYohzFll5Lx1PNG5JY5DBk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: openvz.org]
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Cyrill Gorcunov <gorcunov@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat v2
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Cyrill Gorcunov <gorcunov@gmail.com> writes:
 
-On 11.12.2011, at 16:16, Jörg Sommer wrote:
-
-> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
->> On 22.11.2011, at 21:04, Jörg Sommer wrote:
->>> Jörg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
->>>> I'm trying to build the kernel with the git commit-id
->>>> 31555213f03bca37d2c02e10946296052f4ecfcd, but it fails
->>>> 
->>>> CHK     include/linux/version.h
->>>> HOSTCC  scripts/mod/modpost.o
->>>> CHK     include/generated/utsrelease.h
->>>> UPD     include/generated/utsrelease.h
->>>> HOSTLD  scripts/mod/modpost
->>>> GEN     include/generated/bounds.h
->>>> CC      arch/powerpc/kernel/asm-offsets.s
->>>> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function ‘compute_tlbie_rb’:
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error: ‘HPTE_V_SECONDARY’ undeclared (first use in this function)
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note: each undeclared identifier is reported only once for each function it appears in
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error: ‘HPTE_V_1TB_SEG’ undeclared (first use in this function)
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error: ‘HPTE_V_LARGE’ undeclared (first use in this function)
->>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warning: right shift count >= width of type [enabled by default]
->>>> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
->>>> make[2]: *** [prepare0] Fehler 2
->>>> make[1]: *** [deb-pkg] Fehler 2
->>>> make: *** [deb-pkg] Fehler 2
->>> 
->>> I'm still having this problem. I can' build
->>> 6fe4c6d466e95d31164f14b1ac4aefb51f0f4f82. Are there any patches to
->>> make the kernel builds and do not oops [1] on PowerPC?
+> On Wed, Dec 07, 2011 at 10:33:08AM +0400, Cyrill Gorcunov wrote:
 >> 
->> The failures above should be fixed by now.
-> 
-> I've pulled git://git.kernel.org/pub/scm/virt/kvm/kvm.git
-> (a41d08d13f903da5c633fc58ee074156f05ab3ce), but this tree doesn't contain
-> a suitable commit. Where can I find it?
+>> No problem, I'll update (These segments are filled by binfmt handlers).
+>> 
+>
+> This one should fit.
 
-Please try:
+How extensively have you tested this.  I remember a few other occasions
+where adding elements to a line in a proc file have resulted in breaking
+readers.
 
-  git://github.com/agraf/linux-2.6.git kvm-ppc-next
+I expect it is much safer to add this to /proc/<pid>/status rather than
+/proc/<pid>/stat.
 
-That's my WIP tree. I still have a few more patches I want to collect before shoving everything through automated testing and pushing it on to Avi.
+Eric
 
 
-Alex
-
+>
+> 	Cyrill
+> ---
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: [PATCH] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat v4
+>
+> These members are involved into calculation of program
+> data segment (which might be seen in /proc/<pid>/statm)
+> and into brk() call, so in a sake of restore we need
+> these entries to be set exactly to the same value the
+> process had at dumpimg time.
+>
+> While setting these entries back to a running task
+> is supposed to be done via prctl interface (which is
+> not addressed in this patch) the export of these values
+> are done via /proc/$pid/stat, which already have start_code,
+> end_code and start_stack entries.
+>
+> v2:
+>  - Kees and Alexey pointed out that "1" hack is unnecessary,
+>    so make it to have plain (mm && permitted) ? mm->member : 0
+>    form.
+>
+> v3:
+>  - Andrew pointed that documentation update is missed.
+>    Chagelog is updated as well.
+>
+> v4:
+>  - Update proc.txt to address concerns from Kees and Kame.
+>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> ---
+>  Documentation/filesystems/proc.txt |    3 +++
+>  fs/proc/array.c                    |    7 +++++--
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6.git/Documentation/filesystems/proc.txt
+> ===================================================================
+> --- linux-2.6.git.orig/Documentation/filesystems/proc.txt
+> +++ linux-2.6.git/Documentation/filesystems/proc.txt
+> @@ -305,6 +305,9 @@ Table 1-4: Contents of the stat files (a
+>    blkio_ticks   time spent waiting for block IO
+>    gtime         guest time of the task in jiffies
+>    cgtime        guest time of the task children in jiffies
+> +  start_data    address above which program data+bss is placed
+> +  end_data      address below which program data+bss is placed
+> +  start_brk     address above which program heap can be expaned with brk() call
+>  ..............................................................................
+>  
+>  The /proc/PID/maps file containing the currently mapped memory regions and
+> Index: linux-2.6.git/fs/proc/array.c
+> ===================================================================
+> --- linux-2.6.git.orig/fs/proc/array.c
+> +++ linux-2.6.git/fs/proc/array.c
+> @@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
+>  
+>  	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
+>  %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
+> -%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
+> +%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+>  		pid_nr_ns(pid, ns),
+>  		tcomm,
+>  		state,
+> @@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
+>  		task->policy,
+>  		(unsigned long long)delayacct_blkio_ticks(task),
+>  		cputime_to_clock_t(gtime),
+> -		cputime_to_clock_t(cgtime));
+> +		cputime_to_clock_t(cgtime),
+> +		(mm && permitted) ? mm->start_data : 0,
+> +		(mm && permitted) ? mm->end_data : 0,
+> +		(mm && permitted) ? mm->start_brk : 0);
+>  	if (mm)
+>  		mmput(mm);
+>  	return 0;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
