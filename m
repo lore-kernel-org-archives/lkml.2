@@ -1,34 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab1LLO4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:56:31 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43597
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753376Ab1LLO42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:56:28 -0500
-Date: Mon, 12 Dec 2011 09:56:27 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: sedat.dilek@gmail.com
-Cc: Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: XFS status update for November 2011
-Message-ID: <20111212145627.GA32011@infradead.org>
-References: <20111212144938.GA25014@infradead.org>
- <CA+icZUX4Owo1M5iR++cnNm99NUBsqgoRC7s68RBHweuVNM3Ctw@mail.gmail.com>
+	id S1753412Ab1LLPAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:00:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15378 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753247Ab1LLPAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 10:00:01 -0500
+Date: Mon, 12 Dec 2011 15:59:49 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH -mm] slub: document setting min order with
+ debug_guardpage_minorder > 0
+Message-ID: <20111212145948.GA2380@redhat.com>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
+ <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
+ <alpine.DEB.2.00.1112071407090.27360@chino.kir.corp.google.com>
+ <20111208073316.GA2402@redhat.com>
+ <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+icZUX4Owo1M5iR++cnNm99NUBsqgoRC7s68RBHweuVNM3Ctw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 03:52:17PM +0100, Sedat Dilek wrote:
-> November or December?
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+English is hard (definitely harder than C language :-), so please correct
+me, if I wrote something wrong.
 
-It covers November.  I'll send out the December status in early January.
+ Documentation/ABI/testing/sysfs-kernel-slab |    4 +++-
+ Documentation/vm/slub.txt                   |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-kernel-slab b/Documentation/ABI/testing/sysfs-kernel-slab
+index 8b093f8..d84ca80 100644
+--- a/Documentation/ABI/testing/sysfs-kernel-slab
++++ b/Documentation/ABI/testing/sysfs-kernel-slab
+@@ -345,7 +345,9 @@ Description:
+ 		allocated.  It is writable and can be changed to increase the
+ 		number of objects per slab.  If a slab cannot be allocated
+ 		because of fragmentation, SLUB will retry with the minimum order
+-		possible depending on its characteristics.
++		possible depending on its characteristics. 
++		When debug_guardpage_minorder > 0 parameter is specified, the
++		minimum possible order is used and cannot be changed.
+ 
+ What:		/sys/kernel/slab/cache/order_fallback
+ Date:		April 2008
+diff --git a/Documentation/vm/slub.txt b/Documentation/vm/slub.txt
+index f464f47..dbf02ad 100644
+--- a/Documentation/vm/slub.txt
++++ b/Documentation/vm/slub.txt
+@@ -131,7 +131,9 @@ slub_min_objects.
+ slub_max_order specified the order at which slub_min_objects should no
+ longer be checked. This is useful to avoid SLUB trying to generate
+ super large order pages to fit slub_min_objects of a slab cache with
+-large object sizes into one high order page.
++large object sizes into one high order page. Setting parameter
++debug_guardpage_minorder > 0 forces setting slub_max_order to 0, what
++cause minimum possible order of slabs allocation.
+ 
+ SLUB Debug output
+ -----------------
+-- 
+1.7.1
 
