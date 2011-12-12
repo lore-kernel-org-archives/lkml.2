@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1LLPSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:18:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33919 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab1LLPRW (ORCPT
+	id S1752409Ab1LLPVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:21:39 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:38496 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab1LLPVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:17:22 -0500
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] perf symbols: Fix error path on symbol__init()
-Date: Tue, 13 Dec 2011 00:16:52 +0900
-Message-Id: <1323703017-6060-4-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1323703017-6060-1-git-send-email-namhyung@gmail.com>
-References: <1323703017-6060-1-git-send-email-namhyung@gmail.com>
+	Mon, 12 Dec 2011 10:21:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111212150255.GA7506@kroah.com>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+	<20111212150255.GA7506@kroah.com>
+Date: Mon, 12 Dec 2011 17:21:37 +0200
+X-Google-Sender-Auth: rtq4shAq540-jB9dV0O9fraONQM
+Message-ID: <CAEnQRZBiVDAHH+uZ=Ugk=UP5qSvvMViGTM-bRWr+E27zivOUug@mail.gmail.com>
+Subject: Re: [PATCH] kref: add function for reading kref value
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, adobriyan@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The order of freeing comm_list and dso_list should be
-reversed.
+On Mon, Dec 12, 2011 at 5:02 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Dec 12, 2011 at 02:44:52PM +0200, Daniel Baluta wrote:
+>> We can easily get kref refcount value by accesing
+>> kref->refcount but it is better to have a function
+>> for this.
+>
+> No, you should NEVER need the value of the kref, if you do, you are
+> doing something wrong.
+>
+> What code needs this patch?
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- tools/perf/util/symbol.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I plan to replace raw refcount patterns from net/ with kref, and
+I have noticed that there are some parts of code who need access
+to kref->refcount value.
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e54b13d4c357..215d50f2042e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2604,10 +2604,10 @@ int symbol__init(void)
- 	symbol_conf.initialized = true;
- 	return 0;
- 
--out_free_dso_list:
--	strlist__delete(symbol_conf.dso_list);
- out_free_comm_list:
- 	strlist__delete(symbol_conf.comm_list);
-+out_free_dso_list:
-+	strlist__delete(symbol_conf.dso_list);
- 	return -1;
- }
- 
--- 
-1.7.6
+e.g:
 
+core/neighbour.c:152:			if (atomic_read(&n->refcnt) == 1 &&
+core/neighbour.c:801:			if (atomic_read(&n->refcnt) == 1 &&
+sched/cls_u32.c:459:	if (ht->refcnt == 1) {
+
+
+thanks,
+Daniel.
