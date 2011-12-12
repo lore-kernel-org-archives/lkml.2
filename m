@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1LLSzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:55:23 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63819 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1LLSzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:55:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <tip-890890cb8e415e1e7a61bfe3c8e246f710196824@git.kernel.org>
-References: <20111211181319.GA17097@p183.telecom.by> <tip-890890cb8e415e1e7a61bfe3c8e246f710196824@git.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 12 Dec 2011 10:54:58 -0800
-X-Google-Sender-Auth: PQ__iFQomq97mi5zSdOay5CD2i8
-Message-ID: <CA+55aFwKaOwLm2U6iA1_ytdYUynt2x90yUxFaXkapkrWt2P-Gg@mail.gmail.com>
-Subject: Re: [tip:x86/asm] x86/i386: Use less assembly in strlen(), speed
- things up a bit
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        adobriyan@gmail.com, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753873Ab1LLS4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:56:39 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:54308 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753365Ab1LLS4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 13:56:38 -0500
+Message-ID: <1323716197.19538.3.camel@joe2Laptop>
+Subject: Re: [PATCH 2/2] acerhdf: Message logging neatening
+From: Joe Perches <joe@perches.com>
+To: Peter Feuerer <peter@piie.net>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 12 Dec 2011 10:56:37 -0800
+In-Reply-To: <cone.1323714410.432860.1894.1000@zopiie>
+References: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com>
+	 <96a258354ce375bf80259f783506bbd7191b520d.1322593277.git.joe@perches.com>
+	 <cone.1323714410.432860.1894.1000@zopiie>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 10:37 AM, tip-bot for Alexey Dobriyan
-<adobriyan@gmail.com> wrote:
->
-> x86/i386: Use less assembly in strlen(), speed things up a bit
+On Mon, 2011-12-12 at 19:26 +0100, Peter Feuerer wrote:
+> > @@ -605,8 +603,8 @@ static int acerhdf_check_hardware(void)
+> >  	}
+> >  
+> >  	if (!bios_cfg) {
+> > -		pr_err("unknown (unsupported) BIOS version %s/%s/%s, "
+> > -			"please report, aborting!\n", vendor, product, version);
+> > +		pr_err("unknown (unsupported) BIOS version %s/%s/%s, please report, aborting!\n",
+> > +		       vendor, product, version);
+> 
+> disagree, as it exceeds 80 chars.
 
-We could probably remove the thing entirely, and just use the generic
-strlen. Some of the rep instruction usage is just purely historic,
-there's little point.
+Format strings should be coalesced.
+checkpatch ignores these long lines.
 
-Using "repne; scasb" is possibly worth it when inlined. And especially
-with the change in this patch-set, where inlining also combines with
-things like expression simplification, and then things like
-"strlen(s)+1" (common for sizing allocations) the compiler can
-actually remove the "-1" part entirely. Then the advantage of 'repne
-scas' is that it's short.
-
-But for out-of-line, we might actually be better off with just a
-traditional loop. Not because we can do multiple bytes in a go (most
-kernel strings are likely short enough that it's not a big deal), but
-simply because 'repne scas' is not generally all that fast.
-
-I dunno. strlen() usually isn't very hot, so it probably doesn't
-matter. The really hot paths tend to do something like computing a
-hash at the same time as checking the length of the string or need
-something more complex anyway (ie the "hash and find '\0' or '/' in a
-pathname" that path walking does). Pure strlen() is reasonably rare.
-
-So it probably doesn't matter. The patch looks like a nice cleanup.
-
-                      Linus
