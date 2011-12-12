@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1LLRfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:35:05 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44226 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753715Ab1LLRfA (ORCPT
+	id S1753800Ab1LLRfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:35:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40454 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab1LLRfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:35:00 -0500
-X-Sasl-enc: rcLsPHpPuBKAPJL4BOz705jCJpw6GEhbIYWoYJRZf0CB 1323711296
-Date: Mon, 12 Dec 2011 09:33:44 -0800
-From: Greg KH <greg@kroah.com>
-To: Daniel Baluta <dbaluta@ixiacom.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, adobriyan@gmail.com
-Subject: Re: [PATCH] kref: add function for reading kref value
-Message-ID: <20111212173344.GA10162@kroah.com>
-References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
- <20111212150255.GA7506@kroah.com>
- <CAEnQRZBiVDAHH+uZ=Ugk=UP5qSvvMViGTM-bRWr+E27zivOUug@mail.gmail.com>
- <1323703934.1765.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CAEnQRZCZdPw9eWVmdvhtF7KCQkYpLMrkhv5qd5xYckxWksN+0w@mail.gmail.com>
- <1323704494.1765.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CAEnQRZAt0X6cxGLgLUVTB9rzLKVYLEnh=azS9WOyKAkUZEpj4g@mail.gmail.com>
+	Mon, 12 Dec 2011 12:35:17 -0500
+Date: Mon, 12 Dec 2011 09:34:53 -0800
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-317df650c588bb9091b1fa0b5d726fe485aad88e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, robert.richter@amd.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, robert.richter@amd.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1322229925-10075-1-git-send-email-robert.richter@amd.com>
+References: <1322229925-10075-1-git-send-email-robert.richter@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf script: Implement option for system-wide profiling
+Git-Commit-ID: 317df650c588bb9091b1fa0b5d726fe485aad88e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEnQRZAt0X6cxGLgLUVTB9rzLKVYLEnh=azS9WOyKAkUZEpj4g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 12 Dec 2011 09:35:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 06:42:59PM +0200, Daniel Baluta wrote:
-> On Mon, Dec 12, 2011 at 5:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > Le lundi 12 décembre 2011 à 17:39 +0200, Daniel Baluta a écrit :
-> >
-> >> Ok, for the moment it seems to be a bad idea. But my intention is
-> >> to integrate kref to networking code, and then to write a general
-> >> debugging tool for refs.
-> >>
-> >> Tracking down reference count problems is hard, and this tool can
-> >> really help everyone.
-> >
-> > I dont think kref will help you that much, because its used everywhere.
-> >
-> > Adding a general debugging tool will provide too much noise.
-> >
-> > Instead, we (network dev) add debugging points where we want.
-> 
-> Yes, but you have to do this each time you start debugging, for a
-> particular referenced counted object.
-> 
-> We must find a clever solution to avoid the noise. (e.g use
-> /proc, /sysfs, /debugfs options to trigger dumping info for
-> some/all objects with a certain state).
+Commit-ID:  317df650c588bb9091b1fa0b5d726fe485aad88e
+Gitweb:     http://git.kernel.org/tip/317df650c588bb9091b1fa0b5d726fe485aad88e
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Fri, 25 Nov 2011 15:05:25 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 12 Dec 2011 08:44:00 -0200
 
-Then use the dynamic debug infrastructure, which is there to help you
-try to handle this type of debugging on-the-fly.
+perf script: Implement option for system-wide profiling
 
-But again, it's not a kref issue, sorry.
+The option is documented in man perf-script but was not yet implemented:
 
-greg k-h
+       -a
+           Force system-wide collection. Scripts run without a
+           <command> normally use -a by default, while scripts run
+           with a <command> normally don't - this option allows the
+           latter to be run in system-wide mode.
+
+As with perf record you now can profile in system-wide mode for the
+runtime of a given command, e.g.:
+
+ # perf script -a syscall-counts sleep 2
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Link: http://lkml.kernel.org/r/1322229925-10075-1-git-send-email-robert.richter@amd.com
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-script.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index ccbfd56..ea71c5e 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -24,6 +24,7 @@ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ static bool			no_callchain;
+ static bool			show_full_info;
++static bool			system_wide;
+ static const char		*cpu_list;
+ static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ 
+@@ -1105,6 +1106,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
++	OPT_BOOLEAN('a', "all-cpus", &system_wide,
++		     "system-wide collection from all CPUs"),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+ 		   "only display events for these comms"),
+@@ -1134,7 +1137,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_session *session;
+ 	char *script_path = NULL;
+ 	const char **__argv;
+-	bool system_wide;
+ 	int i, j, err;
+ 
+ 	setup_scripting();
+@@ -1202,15 +1204,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		}
+ 
+ 		if (!pid) {
+-			system_wide = true;
+ 			j = 0;
+ 
+ 			dup2(live_pipe[1], 1);
+ 			close(live_pipe[0]);
+ 
+-			if (!is_top_script(argv[0]))
++			if (is_top_script(argv[0])) {
++				system_wide = true;
++			} else if (!system_wide) {
+ 				system_wide = !have_cmd(argc - rep_args,
+ 							&argv[rep_args]);
++			}
+ 
+ 			__argv = malloc((argc + 6) * sizeof(const char *));
+ 			if (!__argv)
+@@ -1258,10 +1262,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 		script_path = rep_script_path;
+ 
+ 	if (script_path) {
+-		system_wide = false;
+ 		j = 0;
+ 
+-		if (rec_script_path)
++		if (!rec_script_path)
++			system_wide = false;
++		else if (!system_wide)
+ 			system_wide = !have_cmd(argc - 1, &argv[1]);
+ 
+ 		__argv = malloc((argc + 2) * sizeof(const char *));
