@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab1LLKF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 05:05:28 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35150 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab1LLKF1 (ORCPT
+	id S1752165Ab1LLKKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 05:10:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58312 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751105Ab1LLKKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 05:05:27 -0500
-Date: Mon, 12 Dec 2011 10:05:14 +0000
+	Mon, 12 Dec 2011 05:10:00 -0500
+Date: Mon, 12 Dec 2011 18:09:56 +0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>, qi.wang@intel.com,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        yong.y.wang@intel.com, kok.howg.ewe@intel.com,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        joel.clark@intel.com
-Subject: Re: [alsa-devel] [PATCH 3/3] sound/soc/lapis: add platform driver
-Message-ID: <20111212100513.GA5017@sirena.org.uk>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
- <1321848532-8784-3-git-send-email-tomoya.rohm@gmail.com>
- <20111121114524.GE3784@opensource.wolfsonmicro.com>
- <CANKRQnivyNXNZPnaUOHwpXpJz+kCz6gOwfqYNwkcOo5EpsSvZQ@mail.gmail.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: alsa-devel@alsa-project.org, Dong Aisheng-B29396 <B29396@freescale.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v2] Export symbols 'mxs_saif_put_mclk()' and
+ 'mxs_saif_get_mclk()'
+Message-ID: <20111212100954.GD31568@opensource.wolfsonmicro.com>
+References: <1323683044-11694-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CANKRQnivyNXNZPnaUOHwpXpJz+kCz6gOwfqYNwkcOo5EpsSvZQ@mail.gmail.com>
-X-Cookie: Where does it go when you flush?
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1323683044-11694-1-git-send-email-LW@KARO-electronics.de>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 05:28:13PM +0900, Tomoya MORINAGA wrote:
-
-> struct snd_soc_ops {
-> ...
-> };
-
-> On the other hand, tegra_i2s.c describes like below.
-
-> static const struct snd_soc_dai_ops tegra_i2s_dai_ops = {
-> ...
-> };
-
-> Which is true as modern driver ? or case by case ?
-
-The latter.  With things like this it would be *really* helpful if you
-could take a step back and think about what the differences mean and why
-they are different.
-
+On Mon, Dec 12, 2011 at 10:44:04AM +0100, Lothar Waﬂmann wrote:
+> Fixes the following errors with MXS sound support built as module:
+> |ERROR: "mxs_saif_put_mclk" [sound/soc/mxs/snd-soc-mxs-sgtl5000.ko] undefined!
+> |ERROR: "mxs_saif_get_mclk" [sound/soc/mxs/snd-soc-mxs-sgtl5000.ko] undefined!
 > 
-> >> +#define      I2S_CH0_MCLK            (12288000) /* Master Clock Frequency[Hz] */
-> > This looks like it should be board specific?
-> Should our platform driver use "clk_get()" ?
-> If no, how should our driver get the value ?
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
 
-Again, with things like this it would be really helpful if you could
-attempt to answer questions for yourself.  Have you looked at how other
-platforms configure clock rates from machine drivers?
+This looks fine but doesn't seem to apply easily to anything immediately
+- can you rebase against current code please?
