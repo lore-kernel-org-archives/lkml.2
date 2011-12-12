@@ -1,204 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1LLA7W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 19:59:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63194 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab1LLA7V convert rfc822-to-8bit (ORCPT
+	id S1752745Ab1LLBLi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 20:11:38 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55808 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab1LLBLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 19:59:21 -0500
+	Sun, 11 Dec 2011 20:11:36 -0500
+Message-ID: <4EE554BA.9040408@gmail.com>
+Date: Sun, 11 Dec 2011 19:11:22 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1323614784-2924-1-git-send-email-tm@tao.ma>
-References: <1323614784-2924-1-git-send-email-tm@tao.ma>
-Date: Mon, 12 Dec 2011 09:59:20 +0900
-Message-ID: <CAEwNFnCXJuH53ks=qPdHkm_hrcm+Nsh7f5APQx6BgQEQBKC_yQ@mail.gmail.com>
-Subject: Re: [PATCH V2] vmscan/trace: Add 'active' and 'file' info to trace_mm_vmscan_lru_isolate.
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] irq: convert generic-chip to use irq_domain
+References: <1323470689-6200-1-git-send-email-robherring2@gmail.com> <20111211160025.GA9572@S2100-06.ap.freescale.net>
+In-Reply-To: <20111211160025.GA9572@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tao,
+Shawn,
 
-On Sun, Dec 11, 2011 at 11:46 PM, Tao Ma <tm@tao.ma> wrote:
-> From: Tao Ma <boyu.mt@taobao.com>
->
-> In trace_mm_vmscan_lru_isolate, we don't output 'active' and 'file'
-> information to the trace event and it is a bit inconvenient for the
-> user to get the real information(like pasted below).
-> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->
-> So this patch adds these 2 info to the trace event and it now looks like:
-> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 active=1 file=0
->
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> ---
->  include/trace/events/vmscan.h |   25 +++++++++++++++++--------
->  mm/memcontrol.c               |    2 +-
->  mm/vmscan.c                   |    6 +++---
->  3 files changed, 21 insertions(+), 12 deletions(-)
->
-> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-> index edc4b3d..82bc49c 100644
-> --- a/include/trace/events/vmscan.h
-> +++ b/include/trace/events/vmscan.h
-> @@ -266,9 +266,10 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->                unsigned long nr_lumpy_taken,
->                unsigned long nr_lumpy_dirty,
->                unsigned long nr_lumpy_failed,
-> -               isolate_mode_t isolate_mode),
-> +               isolate_mode_t isolate_mode,
-> +               int active, int file),
->
-> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
-> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file),
->
->        TP_STRUCT__entry(
->                __field(int, order)
-> @@ -279,6 +280,8 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->                __field(unsigned long, nr_lumpy_dirty)
->                __field(unsigned long, nr_lumpy_failed)
->                __field(isolate_mode_t, isolate_mode)
-> +               __field(int, active)
-> +               __field(int, file)
->        ),
->
->        TP_fast_assign(
-> @@ -290,9 +293,11 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->                __entry->nr_lumpy_dirty = nr_lumpy_dirty;
->                __entry->nr_lumpy_failed = nr_lumpy_failed;
->                __entry->isolate_mode = isolate_mode;
-> +               __entry->active = active;
-> +               __entry->file = file;
->        ),
->
-> -       TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu",
-> +       TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu active=%d file=%d",
->                __entry->isolate_mode,
->                __entry->order,
->                __entry->nr_requested,
-> @@ -300,7 +305,9 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->                __entry->nr_taken,
->                __entry->nr_lumpy_taken,
->                __entry->nr_lumpy_dirty,
-> -               __entry->nr_lumpy_failed)
-> +               __entry->nr_lumpy_failed,
-> +               __entry->active,
-> +               __entry->file)
->  );
->
->  DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
-> @@ -312,9 +319,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
->                unsigned long nr_lumpy_taken,
->                unsigned long nr_lumpy_dirty,
->                unsigned long nr_lumpy_failed,
-> -               isolate_mode_t isolate_mode),
-> +               isolate_mode_t isolate_mode,
-> +               int active, int file),
->
-> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
->
->  );
->
-> @@ -327,9 +335,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
->                unsigned long nr_lumpy_taken,
->                unsigned long nr_lumpy_dirty,
->                unsigned long nr_lumpy_failed,
-> -               isolate_mode_t isolate_mode),
-> +               isolate_mode_t isolate_mode,
-> +               int active, int file),
->
-> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
->
->  );
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6aff93c..246fbce 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1249,7 +1249,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->        *scanned = scan;
->
->        trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
-> -                                     0, 0, 0, mode);
-> +                                     0, 0, 0, mode, active, file);
->
->        return nr_taken;
->  }
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index f54a05b..97955ca 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1103,7 +1103,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
->  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->                struct list_head *src, struct list_head *dst,
->                unsigned long *scanned, int order, isolate_mode_t mode,
-> -               int file)
-> +               int active, int file)
->  {
->        unsigned long nr_taken = 0;
->        unsigned long nr_lumpy_taken = 0;
-> @@ -1221,7 +1221,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->                        nr_to_scan, scan,
->                        nr_taken,
->                        nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
-> -                       mode);
-> +                       mode, active, file);
->        return nr_taken;
->  }
->
-> @@ -1237,7 +1237,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
->        if (file)
->                lru += LRU_FILE;
->        return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
-> -                                                               mode, file);
-> +                                                       mode, active, file);
+On 12/11/2011 10:00 AM, Shawn Guo wrote:
+> Hi Rob,
+> 
+> I installed the patch and played it a little bit, and I some feedback
+> below.
 
-I guess you want to count exact scanning number of which lru list.
-But It's impossible now since we do lumpy reclaim so that trace's
-result is mixed by active/inactive list scanning.
-And I don't like adding new argument for just trace although it's trivial.
+Thanks!
 
-I think 'mode' is more proper rather than  specific 'active'.
-The 'mode' can achieve your goal without passing new argument "active".
+> * It breaks some existing irq_chip_generic users like imx5, which
+>   is currently numbering irq from 0.  For such users, irq_alloc_descs()
+>   will fail because it's asked to search irq #0 starting from irq #1.
+>   Yes, I know numbering irq from 0 is a bad idea and really needs to
+>   get fixed.  But is it your intention to break such users and force
+>   them get fixed with this patch?
 
-In addition to, current mmotm has various modes.
-So sometime we can get more specific result rather than vauge 'active'.
+I was trying not to break things and allow the existing irq base.
+
+My problem is irq 0-15 are unallocated, 16-159 are the GIC. So when I
+try to allocate 8 irqdescs for gpio, I don't really want irq_alloc_descs
+to pick 0-15. Ideally we would just globally reserve 0-15 on ARM, but
+this will cause problems. So starting at 1 was at least slightly better
+than 0.
+
+I think I'll just skip irq_alloc_descs call when the irq_base is >= 0.
+
+> * I thought your patch is taking care of all irqdomain stuff inside
+>   irq_chip_generic in a way transparent to its users.  But it really
+>   took me some time to figure out that users still need to populate
+>   the .of_node for irq_domain encapsulated in irq_chip_generic.
+
+Sorry about that. It would have been evident in my follow on patches for
+pl061 gpio.
+
+> * If I understand irq_chip_generic correctly, it only supports up to
+>   32 irqs in a chip.  The imx5 tzic supports 128 interrupt lines, and
+>   the current driver implements it as 4 generic irq chips.  But from
+>   hardware and device tree point of view, it's really just one
+>   controller, so we have only one tzic node in dts, and hence we only
+>   have the same one .of_node for 4 irq domains.  I'm afraid such
+>   implementation will break irq_create_of_mapping()?
+>   (For gpio interrupt controller, it should fit perfectly.)
+> 
+
+Yeah, that's a problem that needs addressing. You can override the
+domain ops with a custom dt_translate function. Perhaps this can be done
+generically:
+
+	struct irq_chip_generic *gc;
+
+	list_for_each_entry(gc, &gc_list, list) {
+		if (gc->domain != d || d->of_node != controller)
+			continue;
+		
+		// Got a match, fill in data.
+
+		return 0;
+	}
+
+	return -EINVAL;
 
 
-/* Isolate inactive pages */
-#define ISOLATE_INACTIVE        ((__force fmode_t)0x1)
-/* Isolate active pages */
-#define ISOLATE_ACTIVE          ((__force fmode_t)0x2)
-/* Isolate clean file */
-#define ISOLATE_CLEAN           ((__force fmode_t)0x4)
-/* Isolate unmapped file */
-#define ISOLATE_UNMAPPED        ((__force fmode_t)0x8)
+There's still the problem that hwirq is not going to be 0-127 for the
+AVIC as you probably want. For that you can initialize hwirq_base for
+each domain. The AVIC code is still free to override parts of the domain
+setup.
 
-
--- 
-Kind regards,
-Minchan Kim
+Rob
