@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1LLOtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:49:41 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43553
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752274Ab1LLOtj (ORCPT
+	id S1753315Ab1LLOwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:52:04 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58849 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab1LLOwC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:49:39 -0500
-Date: Mon, 12 Dec 2011 09:49:38 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: XFS status update for November 2011
-Message-ID: <20111212144938.GA25014@infradead.org>
+	Mon, 12 Dec 2011 09:52:02 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Jonathan Corbet" <corbet@lwn.net>,
+        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
+        "Chunsang Jeong" <chunsang.jeong@linaro.org>
+Subject: Re: [PATCH 03/11] mm: mmzone: introduce zone_pfn_same_memmap()
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <1321634598-16859-4-git-send-email-m.szyprowski@samsung.com>
+ <20111212141953.GD3277@csn.ul.ie> <op.v6dr4pj43l0zgt@mpn-glaptop>
+ <20111212144030.GF3277@csn.ul.ie>
+Date: Mon, 12 Dec 2011 15:51:55 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v6dswtfw3l0zgt@mpn-glaptop>
+In-Reply-To: <20111212144030.GF3277@csn.ul.ie>
+User-Agent: Opera Mail/11.60 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-November saw stabilization of the Linux 3.2 release candidates, including
-a few fixes for XFS.  In addition a lot of bug fixes were backported to
-the 3.0 long term stable and 3.1-stable releases for users not on
-bleeding edge kernels.
+> On Fri, Nov 18, 2011 at 05:43:10PM +0100, Marek Szyprowski wrote:
+>> From: Michal Nazarewicz <mina86@mina86.com>
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 6afae0e..09c9702 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -111,7 +111,10 @@ skip:
+>>
+>>  next:
+>>  		pfn += isolated;
+>> -		page += isolated;
+>> +		if (zone_pfn_same_memmap(pfn - isolated, pfn))
+>> +			page += isolated;
+>> +		else
+>> +			page = pfn_to_page(pfn);
+>>  	}
 
-At the same time development for Linux 3.3 went on at a fast pace, although
-no pages were merged into the development tree yet.  The highlights are:
+On Mon, 12 Dec 2011 15:19:53 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+> Is this necessary?
+>
+> We are isolating pages, the largest of which is a MAX_ORDER_NR_PAGES
+> page.  [...]
 
- - further versions of the patches to log all file size updates instead of
-   relying the the flaky VM writeback code for them
- - an initial version of SEEK_HOLE/SEEK_DATA support
- - removal of the old non-delaylog logging code, and cleanups resulting
-   from the removal
- - large updates for the quota code
+On Mon, 12 Dec 2011 15:40:30 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+> To be clear, I'm referring to a single page being isolated here. It may
+> or may not be a high-order page but it's still going to be less then
+> MAX_ORDER_NR_PAGES so you should be able check when a new block is
+> entered and pfn_to_page is necessary.
 
-Userspace development was even more busy:
+Do you mean something like:
 
-Xfsprogs saw the rushed 3.1.7 release which contains Debian packaging fixes,
-a polish translation update and a xfs_repair fix.  In the meantime a lot of
-xfs_repair fixes were posted but mostly not reviewed and commit yet.
+if (same pageblock)
+	just do arithmetic;
+else
+	use pfn_to_page;
 
-Xfsdump grew support for using pthreads to write backup streams to multiple
-tapes in parallel, and SGI_XFSDUMP_SKIP_FILE which has been deprecated in
-favor of the nodump flag has finally been removed.
+?
 
-Xfstests saw an enormous amount of updates.  The fsstress tool saw major
-updates to exercise even more system calls, and found numerous bugs in
-all major Linux filesystems, additional ENOSPC tests, a new test for
-btrfs-specific functionality and the usual amount of bug fixes and small
-cleanups.  Also a series to clean up the very large filesystem testing,
-including extending the support to ext4 was posted but not committed yet.
+I've discussed it with Dave and he suggested that approach as an
+optimisation since in some configurations zone_pfn_same_memmap()
+is always true thus compiler will strip the else part, whereas
+same pageblock test will be false on occasions regardless of kernel
+configuration.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
