@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1LLN0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 08:26:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42986 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab1LLN0R (ORCPT
+	id S1753374Ab1LLN0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 08:26:30 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46300 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab1LLN0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 08:26:17 -0500
+	Mon, 12 Dec 2011 08:26:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/3] perf script: Implement option for system-wide profiling
-Date: Mon, 12 Dec 2011 11:26:08 -0200
-Message-Id: <1323696369-14688-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/3] perf script: Fix mem leaks and NULL pointer checks around strdup()s
+Date: Mon, 12 Dec 2011 11:26:07 -0200
+Message-Id: <1323696369-14688-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1323696369-14688-1-git-send-email-acme@infradead.org>
 References: <1323696369-14688-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@amd.com>
 
-The option is documented in man perf-script but was not yet implemented:
+Fix mem leaks and missing NULL pointer checks after strdup().
 
-       -a
-           Force system-wide collection. Scripts run without a
-           <command> normally use -a by default, while scripts run
-           with a <command> normally don't - this option allows the
-           latter to be run in system-wide mode.
+And get_script_path() did not free __script_root in case of continue.
 
-As with perf record you now can profile in system-wide mode for the
-runtime of a given command, e.g.:
-
- # perf script -a syscall-counts sleep 2
+Introduce a helper function get_script_root().
 
 Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1322229925-10075-1-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1322217520-3287-1-git-send-email-robert.richter@amd.com
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/builtin-script.c |   48 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 29 insertions(+), 19 deletions(-)
 
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ccbfd56..ea71c5e 100644
+index 619d6dc..ccbfd56 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -24,6 +24,7 @@ static u64			nr_unordered;
- extern const struct option	record_options[];
- static bool			no_callchain;
- static bool			show_full_info;
-+static bool			system_wide;
- static const char		*cpu_list;
- static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- 
-@@ -1105,6 +1106,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('f', "fields", NULL, "str",
- 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
-+	OPT_BOOLEAN('a', "all-cpus", &system_wide,
-+		     "system-wide collection from all CPUs"),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
- 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
- 		   "only display events for these comms"),
-@@ -1134,7 +1137,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 	struct perf_session *session;
- 	char *script_path = NULL;
- 	const char **__argv;
--	bool system_wide;
- 	int i, j, err;
- 
- 	setup_scripting();
-@@ -1202,15 +1204,17 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+@@ -693,7 +693,8 @@ static int parse_output_fields(const struct option *opt __used,
+ 			type = PERF_TYPE_RAW;
+ 		else {
+ 			fprintf(stderr, "Invalid event type in field string.\n");
+-			return -EINVAL;
++			rc = -EINVAL;
++			goto out;
  		}
  
- 		if (!pid) {
--			system_wide = true;
- 			j = 0;
+ 		if (output[type].user_set)
+@@ -935,6 +936,24 @@ static int read_script_info(struct script_desc *desc, const char *filename)
+ 	return 0;
+ }
  
- 			dup2(live_pipe[1], 1);
- 			close(live_pipe[0]);
++static char *get_script_root(struct dirent *script_dirent, const char *suffix)
++{
++	char *script_root, *str;
++
++	script_root = strdup(script_dirent->d_name);
++	if (!script_root)
++		return NULL;
++
++	str = (char *)ends_with(script_root, suffix);
++	if (!str) {
++		free(script_root);
++		return NULL;
++	}
++
++	*str = '\0';
++	return script_root;
++}
++
+ static int list_available_scripts(const struct option *opt __used,
+ 				  const char *s __used, int unset __used)
+ {
+@@ -946,7 +965,6 @@ static int list_available_scripts(const struct option *opt __used,
+ 	struct script_desc *desc;
+ 	char first_half[BUFSIZ];
+ 	char *script_root;
+-	char *str;
  
--			if (!is_top_script(argv[0]))
-+			if (is_top_script(argv[0])) {
-+				system_wide = true;
-+			} else if (!system_wide) {
- 				system_wide = !have_cmd(argc - rep_args,
- 							&argv[rep_args]);
-+			}
+ 	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
  
- 			__argv = malloc((argc + 6) * sizeof(const char *));
- 			if (!__argv)
-@@ -1258,10 +1262,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		script_path = rep_script_path;
+@@ -962,16 +980,14 @@ static int list_available_scripts(const struct option *opt __used,
+ 			continue;
  
- 	if (script_path) {
--		system_wide = false;
- 		j = 0;
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+-			script_root = strdup(script_dirent.d_name);
+-			str = (char *)ends_with(script_root, REPORT_SUFFIX);
+-			if (str) {
+-				*str = '\0';
++			script_root = get_script_root(&script_dirent, REPORT_SUFFIX);
++			if (script_root) {
+ 				desc = script_desc__findnew(script_root);
+ 				snprintf(script_path, MAXPATHLEN, "%s/%s",
+ 					 lang_path, script_dirent.d_name);
+ 				read_script_info(desc, script_path);
++				free(script_root);
+ 			}
+-			free(script_root);
+ 		}
+ 	}
  
--		if (rec_script_path)
-+		if (!rec_script_path)
-+			system_wide = false;
-+		else if (!system_wide)
- 			system_wide = !have_cmd(argc - 1, &argv[1]);
+@@ -993,8 +1009,7 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 	char script_path[MAXPATHLEN];
+ 	DIR *scripts_dir, *lang_dir;
+ 	char lang_path[MAXPATHLEN];
+-	char *str, *__script_root;
+-	char *path = NULL;
++	char *__script_root;
  
- 		__argv = malloc((argc + 2) * sizeof(const char *));
+ 	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
+ 
+@@ -1010,23 +1025,18 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 			continue;
+ 
+ 		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+-			__script_root = strdup(script_dirent.d_name);
+-			str = (char *)ends_with(__script_root, suffix);
+-			if (str) {
+-				*str = '\0';
+-				if (strcmp(__script_root, script_root))
+-					continue;
++			__script_root = get_script_root(&script_dirent, suffix);
++			if (__script_root && !strcmp(script_root, __script_root)) {
++				free(__script_root);
+ 				snprintf(script_path, MAXPATHLEN, "%s/%s",
+ 					 lang_path, script_dirent.d_name);
+-				path = strdup(script_path);
+-				free(__script_root);
+-				break;
++				return strdup(script_path);
+ 			}
+ 			free(__script_root);
+ 		}
+ 	}
+ 
+-	return path;
++	return NULL;
+ }
+ 
+ static bool is_top_script(const char *script_path)
 -- 
 1.7.8.rc0.35.gee6df
 
