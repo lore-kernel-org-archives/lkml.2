@@ -1,243 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab1LLChE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 21:37:04 -0500
-Received: from home.keithp.com ([63.227.221.253]:33709 "EHLO keithp.com"
+	id S1752827Ab1LLCif (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 21:38:35 -0500
+Received: from mga03.intel.com ([143.182.124.21]:52748 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab1LLChB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 21:37:01 -0500
-From: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org
-Cc: Keith Packard <keithp@keithp.com>, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed address is invalid"
-Date: Sun, 11 Dec 2011 16:12:42 -0800
-Message-Id: <1323648762-2148-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1752756Ab1LLCie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 21:38:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="84619040"
+Subject: Re: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression -
+ Linux-3.x
+From: Lin Ming <ming.m.lin@intel.com>
+To: wallak@free.fr
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-acpi <linux-acpi@vger.kernel.org>, lenb <lenb@kernel.org>
+In-Reply-To: <CAF1ivSZX37HRyxJX_rdkZ4pVrxjCZeM39mAs4ZKcqWCYShxaxQ@mail.gmail.com>
+References: <1323297487.4edfeacfc49ff@imp.free.fr>
+	 <CAF1ivSZX37HRyxJX_rdkZ4pVrxjCZeM39mAs4ZKcqWCYShxaxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Dec 2011 10:38:31 +0800
+Message-ID: <1323657511.17515.11.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hangs my MacBook Air at boot time; I get no console messages at
-all. I reverted this on top of -rc5 and my machine boots again.
+On Mon, 2011-12-12 at 10:26 +0800, Lin Ming wrote:
+> ---------- Forwarded message ----------
+> From:  <wallak@free.fr>
+> Date: Thu, Dec 8, 2011 at 6:38 AM
+> Subject: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression
+> - Linux-3.x
+> To: linux-kernel@vger.kernel.org
+> 
+> 
+> We have a regression on the ACPI stack of the last linux kernel line 3.x (3.1.4,
+> 3.2-rc4...). The ACPI "_PDC" chunk is not executed on some computers (e.g. Dell
+> X300; the function acpi_processor_set_pdc() is not called). This issue yield to
+> an uninitialized state of some ACPI variables.
+> 
+> A patch is available below. This patch come back to the previous linux behavior,
+> and works fine.
+> 
+> Best Regards,
+> Wallak.
+> 
+> --- linux-3.1.4-mdf/drivers/acpi/processor_core.c.orig  2011-12-07
+> 23:12:57.000000000 +0100
+> +++ linux-3.1.4-mdf/drivers/acpi/processor_core.c       2011-12-07
+> 23:13:39.000000000 +0100
+> @@ -223,8 +223,8 @@
+>        type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
+>        cpuid = acpi_get_cpuid(handle, type, acpi_id);
+> 
+> -       if (cpuid == -1)
+> -               return false;
+> +       if ((cpuid == -1) && (num_possible_cpus() > 1))
 
-This reverts commit e8c7106280a305e1ff2a3a8a4dfce141469fb039.
+Hi Wallak,
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Huang Ying <huang.ying.caritas@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1321621751-3650-1-git-send-email-matt@console
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+BIOS may define multiple CPU handles even for UP
+processor(see below).
+
+processor_physically_present(acpi_handle handle) will be called for each
+CPU handles.
+
+We should only return valid value for CPU0 on UP processor.
+With your patch, processor_physically_present will return true for all
+CPU handles(CPU0, CPU1, CPU2, CPU3). This is not we want.
+
+I think below is the correct fix.
+Could you help to test it?
+
+Thanks.
+
+>From 5c6de7311ced7a1febf85fdcc08b6116bcfe8138 Mon Sep 17 00:00:00 2001
+From: Lin Ming <ming.m.lin@intel.com>
+Date: Mon, 12 Dec 2011 10:04:53 +0800
+Subject: [PATCH] ACPI: processor: fix acpi_get_cpuid for UP processor
+
+For UP processor, it is likely that no _MAT method or MADT table defined.
+So currently acpi_get_cpuid(...) always return -1 for UP processor.
+This is wrong. It should return valid value for CPU0.
+
+In the other hand, BIOS may define multiple CPU handles even for UP
+processor, for example
+
+        Scope (_PR)
+        {
+            Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+            Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+            Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+            Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+        }
+
+We should only return valid value for CPU0's acpi handle.
+And return invalid value for others.
+
+http://marc.info/?t=132329819900003&r=1&w=2
+
+Reported-by: wallak@free.fr
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- arch/x86/include/asm/e820.h    |    8 --------
- arch/x86/include/asm/efi.h     |    5 +++++
- arch/x86/kernel/e820.c         |    3 +--
- arch/x86/kernel/setup.c        |   21 +--------------------
- arch/x86/platform/efi/efi.c    |   29 +++++++++++------------------
- arch/x86/platform/efi/efi_64.c |   17 +++++++++++++++++
- 6 files changed, 35 insertions(+), 48 deletions(-)
+ drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
+ 1 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index c954703..908b969 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -53,13 +53,6 @@
-  */
- #define E820_RESERVED_KERN        128
- 
--/*
-- * Address ranges that need to be mapped by the kernel direct
-- * mapping. This is used to make sure regions such as
-- * EFI_RUNTIME_SERVICES_DATA are directly mapped. See setup_arch().
-- */
--#define E820_RESERVED_EFI         129
--
- #ifndef __ASSEMBLY__
- #include <linux/types.h>
- struct e820entry {
-@@ -122,7 +115,6 @@ static inline void early_memtest(unsigned long start, unsigned long end)
- }
- #endif
- 
--extern unsigned long e820_end_pfn(unsigned long limit_pfn, unsigned type);
- extern unsigned long e820_end_of_ram_pfn(void);
- extern unsigned long e820_end_of_low_ram_pfn(void);
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index b8d8bfc..7093e4a 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -33,6 +33,8 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
- #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
- 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
- 
-+#define efi_ioremap(addr, size, type)		ioremap_cache(addr, size)
-+
- #else /* !CONFIG_X86_32 */
- 
- extern u64 efi_call0(void *fp);
-@@ -82,6 +84,9 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
- 	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
- 
-+extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
-+				 u32 type);
-+
- #endif /* CONFIG_X86_32 */
- 
- extern int add_efi_memmap;
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 65ffd11..303a0e4 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -135,7 +135,6 @@ static void __init e820_print_type(u32 type)
- 		printk(KERN_CONT "(usable)");
- 		break;
- 	case E820_RESERVED:
--	case E820_RESERVED_EFI:
- 		printk(KERN_CONT "(reserved)");
- 		break;
- 	case E820_ACPI:
-@@ -784,7 +783,7 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
- /*
-  * Find the highest page frame number we have available
-  */
--unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
-+static unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
- {
- 	int i;
- 	unsigned long last_pfn = 0;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 9a9e40f..cf0ef98 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -691,8 +691,6 @@ early_param("reservelow", parse_reservelow);
- 
- void __init setup_arch(char **cmdline_p)
- {
--	unsigned long end_pfn;
--
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
-@@ -934,24 +932,7 @@ void __init setup_arch(char **cmdline_p)
- 	init_gbpages();
- 
- 	/* max_pfn_mapped is updated here */
--	end_pfn = max_low_pfn;
--
--#ifdef CONFIG_X86_64
--	/*
--	 * There may be regions after the last E820_RAM region that we
--	 * want to include in the kernel direct mapping, such as
--	 * EFI_RUNTIME_SERVICES_DATA.
--	 */
--	if (efi_enabled) {
--		unsigned long efi_end;
--
--		efi_end = e820_end_pfn(MAXMEM>>PAGE_SHIFT, E820_RESERVED_EFI);
--		if (efi_end > max_low_pfn)
--			end_pfn = efi_end;
--	}
--#endif
--
--	max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
- 	max_pfn_mapped = max_low_pfn_mapped;
- 
- #ifdef CONFIG_X86_64
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c9718a1..37718f0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -323,13 +323,10 @@ static void __init do_add_efi_memmap(void)
- 		case EFI_UNUSABLE_MEMORY:
- 			e820_type = E820_UNUSABLE;
- 			break;
--		case EFI_RUNTIME_SERVICES_DATA:
--			e820_type = E820_RESERVED_EFI;
--			break;
- 		default:
- 			/*
- 			 * EFI_RESERVED_TYPE EFI_RUNTIME_SERVICES_CODE
--			 * EFI_MEMORY_MAPPED_IO
-+			 * EFI_RUNTIME_SERVICES_DATA EFI_MEMORY_MAPPED_IO
- 			 * EFI_MEMORY_MAPPED_IO_PORT_SPACE EFI_PAL_CODE
- 			 */
- 			e820_type = E820_RESERVED;
-@@ -674,21 +671,10 @@ void __init efi_enter_virtual_mode(void)
- 		end_pfn = PFN_UP(end);
- 		if (end_pfn <= max_low_pfn_mapped
- 		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped)) {
-+			&& end_pfn <= max_pfn_mapped))
- 			va = __va(md->phys_addr);
--
--			if (!(md->attribute & EFI_MEMORY_WB)) {
--				addr = (u64) (unsigned long)va;
--				npages = md->num_pages;
--				memrange_efi_to_native(&addr, &npages);
--				set_memory_uc(addr, npages);
--			}
--		} else {
--			if (!(md->attribute & EFI_MEMORY_WB))
--				va = ioremap_nocache(md->phys_addr, size);
--			else
--				va = ioremap_cache(md->phys_addr, size);
--		}
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 3a0428e..3372900 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+ 	apic_id = map_mat_entry(handle, type, acpi_id);
+ 	if (apic_id == -1)
+ 		apic_id = map_madt_entry(type, acpi_id);
+-	if (apic_id == -1)
+-		return apic_id;
++	if (apic_id == -1) {
++		/*
++		 * On UP processor, there is no _MAT or MADT table.
++		 * So above apic_id is always set to -1.
++		 *
++		 * BIOS may define multiple CPU handles even for UP processor.
++		 * For example,
++		 *
++		 * Scope (_PR)
++                 * {
++		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
++		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
++		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
++		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
++		 * }
++		 *
++		 * Ignores apic_id and always return 0 for CPU0's handle.
++		 * Return -1 for other CPU's handle.
++		 */ 
++		if (acpi_id == 0)
++			return acpi_id;
 +		else
-+			va = efi_ioremap(md->phys_addr, size, md->type);
- 
- 		md->virt_addr = (u64) (unsigned long) va;
- 
-@@ -698,6 +684,13 @@ void __init efi_enter_virtual_mode(void)
- 			continue;
- 		}
- 
-+		if (!(md->attribute & EFI_MEMORY_WB)) {
-+			addr = md->virt_addr;
-+			npages = md->num_pages;
-+			memrange_efi_to_native(&addr, &npages);
-+			set_memory_uc(addr, npages);
-+		}
-+
- 		systab = (u64) (unsigned long) efi_phys.systab;
- 		if (md->phys_addr <= systab && systab < end) {
- 			systab += md->virt_addr - md->phys_addr;
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 312250c..ac3aa54 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -80,3 +80,20 @@ void __init efi_call_phys_epilog(void)
- 	local_irq_restore(efi_flags);
- 	early_code_mapping_set_exec(0);
- }
-+
-+void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
-+				 u32 type)
-+{
-+	unsigned long last_map_pfn;
-+
-+	if (type == EFI_MEMORY_MAPPED_IO)
-+		return ioremap(phys_addr, size);
-+
-+	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
-+	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
-+		unsigned long top = last_map_pfn << PAGE_SHIFT;
-+		efi_ioremap(top, size - (top - phys_addr), type);
++			return apic_id;
 +	}
-+
-+	return (void __iomem *)__va(phys_addr);
-+}
+ 
+ #ifdef CONFIG_SMP
+ 	for_each_possible_cpu(i) {
 -- 
-1.7.7.3
+1.7.2.5
+
+
+
+> +               return false;
+> 
+>        return true;
+>  }
+
+
 
