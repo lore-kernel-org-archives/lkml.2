@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1LLTO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 14:14:28 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51552 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab1LLTO1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 14:14:27 -0500
+	id S1753901Ab1LLTPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 14:15:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47943 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753367Ab1LLTPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 14:15:34 -0500
+Date: Mon, 12 Dec 2011 20:15:32 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: kosaki.motohiro@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH v3] mm: simplify find_vma_prev
+Message-ID: <20111212191531.GA23874@tiehlicka.suse.cz>
+References: <1323466526.27746.29.camel@joe2Laptop>
+ <1323470921-12931-1-git-send-email-kosaki.motohiro@gmail.com>
+ <20111212132616.GB15249@tiehlicka.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLFk9Af+b4PAx_j+1QhApBsFdXyZY1aK08fb_6_dTiBEDQ@mail.gmail.com>
-References: <20111210132220.083204833@linutronix.de>
-	<alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
-	<alpine.LFD.2.02.1112102144370.3020@ionos>
-	<alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
-	<20111211103047.GA19299@elte.hu>
-	<alpine.LFD.2.02.1112111459270.3020@ionos>
-	<20111211155347.GA1297@elte.hu>
-	<CAOJsxLHTuN43AGA7C02MtETzJU87y9cRaWRg6e9ER7NxOK2w-Q@mail.gmail.com>
-	<20111212172059.GC23870@elte.hu>
-	<CAOJsxLFk9Af+b4PAx_j+1QhApBsFdXyZY1aK08fb_6_dTiBEDQ@mail.gmail.com>
-Date: Mon, 12 Dec 2011 21:14:25 +0200
-X-Google-Sender-Auth: hZGTUN6YiMAPfQVr2xRC-LP_QuE
-Message-ID: <CAOJsxLH8ToLUdDhc=ZiYAmJ+Dfc5LPxAenDnM4D_2i-mn4zDzA@mail.gmail.com>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111212132616.GB15249@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 7:20 PM, Ingo Molnar <mingo@elte.hu> wrote:
->>> I'm seeing 1.5 usecs per character for this little benchmark:
->>
->> Interesting - what do you see with the top -b measurement i
->> posted - can you see similar slowdowns?
+On Mon 12-12-11 14:26:16, Michal Hocko wrote:
+> On Fri 09-12-11 17:48:40, kosaki.motohiro@gmail.com wrote:
+> > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > 
+> > commit 297c5eee37 (mm: make the vma list be doubly linked) added
+> > vm_prev member into vm_area_struct. Therefore we can simplify
+> > find_vma_prev() by using it. Also, this change help to improve
+> > page fault performance because it has strong locality of reference.
+> > 
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > ---
+> >  mm/mmap.c |   36 ++++++++----------------------------
+> >  1 files changed, 8 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/mm/mmap.c b/mm/mmap.c
+> > index eae90af..b9c0241 100644
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -1603,39 +1603,19 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+> >  
+> >  EXPORT_SYMBOL(find_vma);
+> >  
+> > -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
+> > +/*
+> > + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
+> > + * Note: pprev is set to NULL when return value is NULL.
+> > + */
+> >  struct vm_area_struct *
+> >  find_vma_prev(struct mm_struct *mm, unsigned long addr,
+> >  			struct vm_area_struct **pprev)
+> >  {
+> > -	struct vm_area_struct *vma = NULL, *prev = NULL;
+> > -	struct rb_node *rb_node;
+> > -	if (!mm)
+> > -		goto out;
+> > -
+> > -	/* Guard against addr being lower than the first VMA */
+> > -	vma = mm->mmap;
+> 
+> Why have you removed this guard? Previously we had pprev==NULL and
+> returned mm->mmap.
+> This seems like a semantic change without any explanation. Could you
+> clarify?
 
-On Mon, Dec 12, 2011 at 8:40 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> ssh-4.2# time top -d 0.01 -n 10 -b
->
-> [snip]
->
-> real    0m2.935
-> user    0m0.006s
-> sys     0m0.049s
->
-> That's 9.7 usecs per character which is roughly 6x slowdown.
->
-> It seems to be related to interrupt handling because if I bump up
-> TIMER_INTEVAL_NS to 10 msec:
+Scratch that. I have misread the code. find_vma will return mm->mmap if
+the given address is bellow all vmas. Sorry about noise.
 
-[snip]
+The only concern left would be the caching. Are you sure this will not
+break some workloads which benefit from mmap_cache usage and would
+interfere with find_vma_prev callers now? Anyway this could be fixed
+trivially.
 
-Looking at drivers/tty/serial/8250.c, we have:
-
-static void serial8250_console_putchar(struct uart_port *port, int ch)
-{
-        struct uart_8250_port *up =
-                container_of(port, struct uart_8250_port, port);
-
-        wait_for_xmitr(up, UART_LSR_THRE);
-        serial_out(up, UART_TX, ch);
-}
-
-in tools/kvm/hw/serial.c::serial8250_out() we do:
-
-        case UART_TX:
-                if (!(dev->lcr & UART_LCR_DLAB)) {
-                        char *addr = data;
-
-                        if (!(dev->mcr & UART_MCR_LOOP))
-                                term_putc(CONSOLE_8250, addr, size, dev->id);
-                        /* else FIXME: Inject data into rcv path for LOOP */
-
-                        if (++dev->txcnt == 16)
-                                dev->lsr &= ~(UART_LSR_TEMT | UART_LSR_THRE);
-                        break;
-
-which clears UART_LSR_THRE after 16 characters. UART_LSR_THRE is only
-enabled in serial8250__update_consoles() and serial8250_update_irq()
-which are completely bound by TIMER_INTERVAL_NS.
-
-                        Pekka
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
