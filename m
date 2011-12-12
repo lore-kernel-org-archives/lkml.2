@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1LLSCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:02:49 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39314
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751373Ab1LLSCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:02:45 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 4/4] Drivers: hv: Support building the vmbus driver as part of the kernel
-Date: Mon, 12 Dec 2011 09:29:19 -0800
-Message-Id: <1323710959-29655-4-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1323710959-29655-1-git-send-email-kys@microsoft.com>
-References: <1323710931-29616-1-git-send-email-kys@microsoft.com>
- <1323710959-29655-1-git-send-email-kys@microsoft.com>
+	id S1753833Ab1LLSDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:03:30 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:47045 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753443Ab1LLSD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 13:03:26 -0500
+X-Authenticated: #1490710
+X-Provags-ID: V01U2FsdGVkX192NI0KuxN2uMZgCOzgaZztDKqgWAoZWJ/xfGhD8k
+	fY5DqnyXwOZCkT
+Date: Mon, 12 Dec 2011 19:03:23 +0100 (CET)
+From: Johannes Schindelin <Johannes.Schindelin@gmx.de>
+X-X-Sender: gene099@bonsai2
+To: Namhyung Kim <namhyung@gmail.com>
+cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 5/8] perf tools: Remove stale git headlines from top
+ comment
+In-Reply-To: <1323703017-6060-6-git-send-email-namhyung@gmail.com>
+Message-ID: <alpine.DEB.1.00.1112121902580.2615@bonsai2>
+References: <1323703017-6060-1-git-send-email-namhyung@gmail.com> <1323703017-6060-6-git-send-email-namhyung@gmail.com>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support building the vmbus driver as part of the kernel. 
+Hi,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/vmbus_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, 13 Dec 2011, Namhyung Kim wrote:
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index aafee6b..1d3d809 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -793,5 +793,5 @@ static void __exit vmbus_exit(void)
- MODULE_LICENSE("GPL");
- MODULE_VERSION(HV_DRV_VERSION);
- 
--module_init(hv_acpi_init);
-+subsys_initcall(hv_acpi_init);
- module_exit(vmbus_exit);
--- 
-1.7.4.1
+> These files are parts of PERF not GIT, although they're
+> coming from there :)
 
+And for some reason, the Copyright vanishes with that? Just a question.
+
+Ciao,
+Johannes
