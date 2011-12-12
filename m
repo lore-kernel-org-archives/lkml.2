@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab1LLMpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 07:45:42 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:48347 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752274Ab1LLMpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 07:45:39 -0500
-Date: Mon, 12 Dec 2011 06:45:38 -0600
-From: Robin Holt <holt@sgi.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Robin Holt <holt@sgi.com>, Greg Kroah-Hartmann <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: question about link_mem_sections()
-Message-ID: <20111212124538.GC2547@sgi.com>
-References: <CAPXgP10gRKAgo1ExkvLyNqceKpGujcov90umPQCRiNJ=qTwU_A@mail.gmail.com>
+	id S1752943Ab1LLMsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 07:48:09 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59442 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab1LLMsF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 07:48:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP10gRKAgo1ExkvLyNqceKpGujcov90umPQCRiNJ=qTwU_A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LSU.2.00.1112111520510.2297@eggly>
+References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
+	<alpine.LSU.2.00.1112111520510.2297@eggly>
+Date: Mon, 12 Dec 2011 20:48:02 +0800
+Message-ID: <CAJd=RBBKsRYq3Y4gaGJMHM3kMJUH_jggf3pFVJK+noD-vpCRCg@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcg: keep root group unchanged if fail to create new
+From: Hillf Danton <dhillf@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Balbir Singh <bsingharora@gmail.com>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 01:35:50PM +0100, Kay Sievers wrote:
-> Robin,
-> 
-> you added find_memory_block_hinted() with:
->   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=63d027a63888e993545d10fdfe4107d543f01bca
-> 
-> I try to understand what's going on here, because we need to switch
-> away from 'struct sysdev'.
-> 
-> In the loop over the node data you call find_memory_block_hinted() in
-> a row, which might all take a reference. At the end of the section you
-> drop only the last reference of the iteration. The code before your
-> change dropped all references inside the loop.
-> 
-> Could you please explain the intended behaviour?
-> 
-> If all is right, we should at least move the now wrong comment where is belongs.
+Hello Hugh
 
-Take a look at that commit's parent's parent:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=c25d1dfbd403209025df41a737f82ce8f43d93f5
+On Mon, Dec 12, 2011 at 7:39 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Sun, 11 Dec 2011, Hillf Danton wrote:
+>
+>> If the request is not to create root group and we fail to meet it,
+>> we'd leave the root unchanged.
+>
+> I didn't understand that at first: please say "we should" rather
+> than "we'd", which I take to be an abbreviation for "we would".
+>
 
-This adds the kset_find_obj_hinted() function.  That function expects
-the kobject_get to have already been done on the object passed in and
-will release that reference when it advances to the next object.
+Thanks for correcting me.
 
-Within the loop of the link_mem_sections(), we need to retain the
-kobject_get reference between calls to find_memory_block_hinted() and
-rely upon that functions call to kset_find_obj_hinted() to release all
-but the last reference.
+>
+> I wonder what was going through the author's mind when he wrote it
+> that way?  I wonder if it's one of those bugs that creeps in when
+> you start from a perfectly functional patch, then make refinements
+> to suit feedback from reviewers.
+>
 
-I hope that explains things.  If not, please feel free to ping me again.
+Actually no such a perfectly functional patch, but I also wonder if
+you are likely to post and/or share your current todo list if any,
+then many could learn the right direction, and in turn you comment
+and pull acceptable works in that direction, like Linus.
 
-Thanks,
-Robin
+Hillf
