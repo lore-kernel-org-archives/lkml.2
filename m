@@ -1,43 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1LLCsz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 21:48:55 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38074 "EHLO
+	id S1752842Ab1LLCwj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 21:52:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58485 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab1LLCsw (ORCPT
+	with ESMTP id S1752779Ab1LLCwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 21:48:52 -0500
+	Sun, 11 Dec 2011 21:52:37 -0500
+Message-ID: <4EE56C66.5000909@gmail.com>
+Date: Sun, 11 Dec 2011 20:52:22 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1323614784-2924-1-git-send-email-tm@tao.ma>
-References: <1323614784-2924-1-git-send-email-tm@tao.ma>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Sun, 11 Dec 2011 21:48:31 -0500
-X-Google-Sender-Auth: JV6Rq6s2_03OJnaQbgvcJx3JoxU
-Message-ID: <CAHGf_=oLm3euUt3drzF1v77mVRsAKbYcrd0rWGD_zOu1Q_G6Ew@mail.gmail.com>
-Subject: Re: [PATCH V2] vmscan/trace: Add 'active' and 'file' info to trace_mm_vmscan_lru_isolate.
-To: Tao Ma <tm@tao.ma>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] irq: convert generic-chip to use irq_domain
+References: <1323470689-6200-1-git-send-email-robherring2@gmail.com> <20111211160025.GA9572@S2100-06.ap.freescale.net> <4EE554BA.9040408@gmail.com>
+In-Reply-To: <4EE554BA.9040408@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Tao Ma <boyu.mt@taobao.com>
->
-> In trace_mm_vmscan_lru_isolate, we don't output 'active' and 'file'
-> information to the trace event and it is a bit inconvenient for the
-> user to get the real information(like pasted below).
-> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->
-> So this patch adds these 2 info to the trace event and it now looks like:
-> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 active=1 file=0
+On 12/11/2011 07:11 PM, Rob Herring wrote:
+> Shawn,
+> 
+> On 12/11/2011 10:00 AM, Shawn Guo wrote:
+>> Hi Rob,
+>>
+>> I installed the patch and played it a little bit, and I some feedback
+>> below.
+> 
+> Thanks!
+> 
+>> * It breaks some existing irq_chip_generic users like imx5, which
+>>   is currently numbering irq from 0.  For such users, irq_alloc_descs()
+>>   will fail because it's asked to search irq #0 starting from irq #1.
+>>   Yes, I know numbering irq from 0 is a bad idea and really needs to
+>>   get fixed.  But is it your intention to break such users and force
+>>   them get fixed with this patch?
+> 
+> I was trying not to break things and allow the existing irq base.
+> 
+> My problem is irq 0-15 are unallocated, 16-159 are the GIC. So when I
+> try to allocate 8 irqdescs for gpio, I don't really want irq_alloc_descs
+> to pick 0-15. Ideally we would just globally reserve 0-15 on ARM, but
+> this will cause problems. So starting at 1 was at least slightly better
+> than 0.
+> 
+> I think I'll just skip irq_alloc_descs call when the irq_base is >= 0.
+> 
+>> * I thought your patch is taking care of all irqdomain stuff inside
+>>   irq_chip_generic in a way transparent to its users.  But it really
+>>   took me some time to figure out that users still need to populate
+>>   the .of_node for irq_domain encapsulated in irq_chip_generic.
+> 
+> Sorry about that. It would have been evident in my follow on patches for
+> pl061 gpio.
+> 
+>> * If I understand irq_chip_generic correctly, it only supports up to
+>>   32 irqs in a chip.  The imx5 tzic supports 128 interrupt lines, and
+>>   the current driver implements it as 4 generic irq chips.  But from
+>>   hardware and device tree point of view, it's really just one
+>>   controller, so we have only one tzic node in dts, and hence we only
+>>   have the same one .of_node for 4 irq domains.  I'm afraid such
+>>   implementation will break irq_create_of_mapping()?
+>>   (For gpio interrupt controller, it should fit perfectly.)
+>>
+> 
+> Yeah, that's a problem that needs addressing. You can override the
+> domain ops with a custom dt_translate function. Perhaps this can be done
+> generically:
+> 
+> 	struct irq_chip_generic *gc;
+> 
+> 	list_for_each_entry(gc, &gc_list, list) {
+> 		if (gc->domain != d || d->of_node != controller)
+> 			continue;
+> 		
+> 		// Got a match, fill in data.
+> 
+> 		return 0;
+> 	}
+> 
+> 	return -EINVAL;
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Actually, there's a much simpler fix:
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 200ce83..3832ac6 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -135,6 +135,9 @@ int irq_domain_simple_dt_translate(struct irq_domain *d,
+                return -EINVAL;
+        if (intsize < 1)
+                return -EINVAL;
++       if ((intspec[0] < d->hwirq_base) ||
++           (intspec[0] >= d->hwirq_base + d->nr_irq))
++               return -EINVAL;
+
+        *out_hwirq = intspec[0];
+        *out_type = IRQ_TYPE_NONE;
+
+
+Rob
+
+> 
+> There's still the problem that hwirq is not going to be 0-127 for the
+> AVIC as you probably want. For that you can initialize hwirq_base for
+> each domain. The AVIC code is still free to override parts of the domain
+> setup.
+> 
+> Rob
+
