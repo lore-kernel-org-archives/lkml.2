@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab1LLXSm (ORCPT <rfc822;w@1wt.eu>);
+	id S1754724Ab1LLXSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:18:45 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54540 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754503Ab1LLXSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Dec 2011 18:18:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42879 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab1LLXNP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:13:15 -0500
-From: jim.cromie@gmail.com
-To: jbaron@redhat.com
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 06/25] dynamic_debug: replace strcpy with strlcpy, in ddebug_setup_query()
-Date: Mon, 12 Dec 2011 16:12:32 -0700
-Message-Id: <1323731569-20644-6-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
-References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [PATCH -mm] slub: document setting min order with debug_guardpage_minorder > 0
+Date: Tue, 13 Dec 2011 00:21:41 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com> <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com> <20111212145948.GA2380@redhat.com>
+In-Reply-To: <20111212145948.GA2380@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112130021.41429.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+On Monday, December 12, 2011, Stanislaw Gruszka wrote:
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> ---
+> English is hard (definitely harder than C language :-), so please correct
+> me, if I wrote something wrong.
+> 
+>  Documentation/ABI/testing/sysfs-kernel-slab |    4 +++-
+>  Documentation/vm/slub.txt                   |    4 +++-
+>  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-kernel-slab b/Documentation/ABI/testing/sysfs-kernel-slab
+> index 8b093f8..d84ca80 100644
+> --- a/Documentation/ABI/testing/sysfs-kernel-slab
+> +++ b/Documentation/ABI/testing/sysfs-kernel-slab
+> @@ -345,7 +345,9 @@ Description:
+>  		allocated.  It is writable and can be changed to increase the
+>  		number of objects per slab.  If a slab cannot be allocated
+>  		because of fragmentation, SLUB will retry with the minimum order
+> -		possible depending on its characteristics.
+> +		possible depending on its characteristics. 
 
-replace strcpy with strlcpy, and add define for the size constant.
+Added trailing whitespace (please remove).
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- lib/dynamic_debug.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+> +		When debug_guardpage_minorder > 0 parameter is specified, the
+> +		minimum possible order is used and cannot be changed.
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 8c88b89..101e2e5 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -525,14 +525,16 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
- 
- #endif
- 
--static __initdata char ddebug_setup_string[1024];
-+#define DDEBUG_STRING_SIZE 1024
-+static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
-+
- static __init int ddebug_setup_query(char *str)
- {
- 	if (strlen(str) >= 1024) {
- 		pr_warn("ddebug boot param string too large\n");
- 		return 0;
- 	}
--	strcpy(ddebug_setup_string, str);
-+	strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
- 	return 1;
- }
- 
--- 
-1.7.7.3
+Well, I'm not sure what you wanted to say, actually?  How does one change
+debug_guardpage_minorder (or specify it), for example?  Is it a kernel
+command-line switch?
 
+Also I'm not sure what "cannot be changed" is supposed to mean.  Does it
+mean that /sys/cache/slab/cache/order has no effect in that case?
+
+>  
+>  What:		/sys/kernel/slab/cache/order_fallback
+>  Date:		April 2008
+> diff --git a/Documentation/vm/slub.txt b/Documentation/vm/slub.txt
+> index f464f47..dbf02ad 100644
+> --- a/Documentation/vm/slub.txt
+> +++ b/Documentation/vm/slub.txt
+> @@ -131,7 +131,9 @@ slub_min_objects.
+>  slub_max_order specified the order at which slub_min_objects should no
+>  longer be checked. This is useful to avoid SLUB trying to generate
+>  super large order pages to fit slub_min_objects of a slab cache with
+> -large object sizes into one high order page.
+> +large object sizes into one high order page. Setting parameter
+> +debug_guardpage_minorder > 0 forces setting slub_max_order to 0, what
+> +cause minimum possible order of slabs allocation.
+>  
+>  SLUB Debug output
+>  -----------------
+> 
+
+Rafael
