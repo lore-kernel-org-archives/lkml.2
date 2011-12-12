@@ -1,207 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1LLRTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:19:52 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31152 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab1LLRTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:19:51 -0500
-Date: Mon, 12 Dec 2011 12:17:40 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>, Peter Jones <pjones@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -v3] ibft: Fix finding IBFT ACPI table on UEFI
-Message-ID: <20111212171740.GA26407@phenom.dumpdata.com>
-References: <4EE073BB.6080403@oracle.com>
- <20111208142958.GA4096@andromeda.dapyr.net>
- <4EE0EB51.5010900@oracle.com>
- <20111208190808.GA25433@andromeda.dapyr.net>
- <4EE12975.5090506@oracle.com>
+	id S1753538Ab1LLRUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:20:21 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34675 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753227Ab1LLRUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:20:18 -0500
+Date: Mon, 12 Dec 2011 17:20:15 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 02/11] mm: compaction: introduce
+ isolate_{free,migrate}pages_range().
+Message-ID: <20111212172015.GL3277@csn.ul.ie>
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <1321634598-16859-3-git-send-email-m.szyprowski@samsung.com>
+ <20111212140728.GC3277@csn.ul.ie>
+ <op.v6dub1ms3l0zgt@mpn-glaptop>
+ <20111212163052.GK3277@csn.ul.ie>
+ <op.v6dx7bo43l0zgt@mpn-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4EE12975.5090506@oracle.com>
+In-Reply-To: <op.v6dx7bo43l0zgt@mpn-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4EE6376B.01A7,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 01:17:41PM -0800, Yinghai Lu wrote:
+On Mon, Dec 12, 2011 at 05:46:13PM +0100, Michal Nazarewicz wrote:
+> On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Found one system with UEFI/iBFT, kernel does not detect the iBFT during
-> iscsi_ibft module loading.
+> >On Mon, Dec 12, 2011 at 04:22:39PM +0100, Michal Nazarewicz wrote:
+> >>> <SNIP>
+> >>>
+> >>>>+		if (!pfn_valid_within(pfn))
+> >>>>+			goto skip;
+> >>>
+> >>>The flow of this function in general with gotos of skipped and next
+> >>>is confusing in comparison to the existing function. For example,
+> >>>if this PFN is not valid, and no freelist is provided, then we call
+> >>>__free_page() on a PFN that is known to be invalid.
+> >>>
+> >>>>+		++nr_scanned;
+> >>>>+
+> >>>>+		if (!PageBuddy(page)) {
+> >>>>+skip:
+> >>>>+			if (freelist)
+> >>>>+				goto next;
+> >>>>+			for (; start < pfn; ++start)
+> >>>>+				__free_page(pfn_to_page(pfn));
+> >>>>+			return 0;
+> >>>>+		}
+> >>>
+> >>>So if a PFN is valid and !PageBuddy and no freelist is provided, we
+> >>>call __free_page() on it regardless of reference count. That does not
+> >>>sound safe.
+> >>
+> >>Sorry about that.  It's a bug in the code which was caught later on.  The
+> >>code should read ???__free_page(pfn_to_page(start))???.
 > 
-> Root cause: on x86 (UEFI), we are calling of find_ibft_region() much earlier
-> 	- specifically in setup_arch() before ACPI is enabled.
+> On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+> >That will call free on valid PFNs but why is it safe to call
+> >__free_page() at all?  You say later that CMA requires that all
+> >pages in the range be valid but if the pages are in use, that does
+> >not mean that calling __free_page() is safe. I suspect you have not
+> >seen a problem because the pages in the range were free as expected
+> >and not in use because of MIGRATE_ISOLATE.
+> 
+> All pages from [start, pfn) have passed through the loop body which
+> means that they are valid and they have been removed from buddy (for
+> caller's use). Also, because of split_free_page(), all of those pages
+> have been split into 0-order pages. 
 
+Ah, I see. Even though you are not putting the pages on a freelist, the
+function still returns with an elevated reference count and it's up to
+the caller to find them again.
 
-I get this when compiling with make allmodconfig:
+> Therefore, in error recovery, to
+> undo what the loop has done so far, we put give back to buddy by
+> calling __free_page() on each 0-order page.
+> 
 
- BUILD   arch/x86/boot/bzImage
-Setup is 16636 bytes (padded to 16896 bytes).
-System is 4680 kB
-CRC 88f70464
-Kernel: arch/x86/boot/bzImage is ready  (#2)
-ERROR: "acpi_table_parse" [drivers/firmware/iscsi_ibft.ko] undefined!
-make[3]: *** [__modpost] Error 1
-make[2]: *** [modules] Error 2
+Ok.
 
+> >>>> 		/* Found a free page, break it into order-0 pages */
+> >>>> 		isolated = split_free_page(page);
+> >>>> 		total_isolated += isolated;
+> >>>>-		for (i = 0; i < isolated; i++) {
+> >>>>-			list_add(&page->lru, freelist);
+> >>>>-			page++;
+> >>>>+		if (freelist) {
+> >>>>+			struct page *p = page;
+> >>>>+			for (i = isolated; i; --i, ++p)
+> >>>>+				list_add(&p->lru, freelist);
+> >>>> 		}
+> >>>>
+> >>>>-		/* If a page was split, advance to the end of it */
+> >>>>-		if (isolated) {
+> >>>>-			blockpfn += isolated - 1;
+> >>>>-			cursor += isolated - 1;
+> >>>>-		}
+> >>>>+next:
+> >>>>+		pfn += isolated;
+> >>>>+		page += isolated;
+> >>>
+> >>>The name isolated is now confusing because it can mean either
+> >>>pages isolated or pages scanned depending on context. Your patch
+> >>>appears to be doing a lot more than is necessary to convert
+> >>>isolate_freepages_block into isolate_freepages_range and at this point,
+> >>>it's unclear why you did that.
+> >>
+> >>When CMA uses this function, it requires all pages in the range to be valid
+> >>and free. (Both conditions should be met but you never know.)
+> 
+> To be clear, I meant that the CMA expects pages to be in buddy when the function
+> is called but after the function finishes, all the pages in the range are removed
+> from buddy.  This, among other things, is why the call to split_free_page() is
+> necessary.
+> 
 
-on 64-bit Fedora Core 16.
+Understood.
 
-> 
-> Try to split acpi checking code out and call that later
-> 
-> At that time ACPI iBFT already get permanent mapped with ioremap.
-> So isa_virt_to_bus() will get wrong phys from right virt address.
-> We could just skip that phys address printing.
-> 
-> For legacy one, print the found address early.
-> 
-> -v2: update comments and description according to Konrad.
-> -v3: fix problem about module use case that is found by Konrad.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  drivers/firmware/iscsi_ibft.c      |   43 +++++++++++++++++++++++++++++++++++--
->  drivers/firmware/iscsi_ibft_find.c |   26 +---------------------
->  2 files changed, 43 insertions(+), 26 deletions(-)
-> 
-> Index: linux-2.6/drivers/firmware/iscsi_ibft.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/firmware/iscsi_ibft.c
-> +++ linux-2.6/drivers/firmware/iscsi_ibft.c
-> @@ -746,6 +746,38 @@ static void __exit ibft_exit(void)
->  	ibft_cleanup();
->  }
->  
-> +#ifdef CONFIG_ACPI
-> +static const struct {
-> +	char *sign;
-> +} ibft_signs[] = {
-> +	/*
-> +	 * One spec says "IBFT", the other says "iBFT". We have to check
-> +	 * for both.
-> +	 */
-> +	{ ACPI_SIG_IBFT },
-> +	{ "iBFT" },
-> +};
-> +
-> +static int __init acpi_find_ibft(struct acpi_table_header *header)
-> +{
-> +	ibft_addr = (struct acpi_table_ibft *)header;
-> +
-> +	return 0;
-> +}
-> +
-> +static void __init acpi_find_ibft_region(void)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
-> +		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
-> +}
-> +#else
-> +static void __init acpi_find_ibft_region(void)
-> +{
-> +}
-> +#endif
-> +
->  /*
->   * ibft_init() - creates sysfs tree entries for the iBFT data.
->   */
-> @@ -753,9 +785,16 @@ static int __init ibft_init(void)
->  {
->  	int rc = 0;
->  
-> +	/*
-> +	   As on UEFI systems the setup_arch()/find_ibft_region()
-> +	   is called before ACPI tables are parsed and it only does
-> +	   legacy finding.
-> +	*/
-> +	if (!ibft_addr)
-> +		acpi_find_ibft_region();
-> +
->  	if (ibft_addr) {
-> -		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
-> -		       (u64)isa_virt_to_bus(ibft_addr));
-> +		pr_info("iBFT detected.\n");
->  
->  		rc = ibft_check_device();
->  		if (rc)
-> Index: linux-2.6/drivers/firmware/iscsi_ibft_find.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/firmware/iscsi_ibft_find.c
-> +++ linux-2.6/drivers/firmware/iscsi_ibft_find.c
-> @@ -45,13 +45,6 @@ EXPORT_SYMBOL_GPL(ibft_addr);
->  static const struct {
->  	char *sign;
->  } ibft_signs[] = {
-> -#ifdef CONFIG_ACPI
-> -	/*
-> -	 * One spec says "IBFT", the other says "iBFT". We have to check
-> -	 * for both.
-> -	 */
-> -	{ ACPI_SIG_IBFT },
-> -#endif
->  	{ "iBFT" },
->  	{ "BIFT" },	/* Broadcom iSCSI Offload */
->  };
-> @@ -62,14 +55,6 @@ static const struct {
->  #define VGA_MEM 0xA0000 /* VGA buffer */
->  #define VGA_SIZE 0x20000 /* 128kB */
->  
-> -#ifdef CONFIG_ACPI
-> -static int __init acpi_find_ibft(struct acpi_table_header *header)
-> -{
-> -	ibft_addr = (struct acpi_table_ibft *)header;
-> -	return 0;
-> -}
-> -#endif /* CONFIG_ACPI */
-> -
->  static int __init find_ibft_in_mem(void)
->  {
->  	unsigned long pos;
-> @@ -94,6 +79,7 @@ static int __init find_ibft_in_mem(void)
->  				 * the table cannot be valid. */
->  				if (pos + len <= (IBFT_END-1)) {
->  					ibft_addr = (struct acpi_table_ibft *)virt;
-> +					pr_info("iBFT found at 0x%lx.\n", pos);
->  					goto done;
->  				}
->  			}
-> @@ -108,20 +94,12 @@ done:
->   */
->  unsigned long __init find_ibft_region(unsigned long *sizep)
->  {
-> -#ifdef CONFIG_ACPI
-> -	int i;
-> -#endif
->  	ibft_addr = NULL;
->  
-> -#ifdef CONFIG_ACPI
-> -	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
-> -		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
-> -#endif /* CONFIG_ACPI */
-> -
->  	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
->  	 * only use ACPI for this */
->  
-> -	if (!ibft_addr && !efi_enabled)
-> +	if (!efi_enabled)
->  		find_ibft_in_mem();
->  
->  	if (ibft_addr) {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Mel Gorman
+SUSE Labs
