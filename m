@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1LLHYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:24:06 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59894 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab1LLHYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:24:02 -0500
-Message-ID: <1323674637.2576.17.camel@edumazet-laptop>
-Subject: Re: Switch per cpu partial page support off for debugging
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 12 Dec 2011 08:23:57 +0100
-In-Reply-To: <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
-References: <alpine.DEB.2.00.1111230923260.16544@router.home>
-	 <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
+	id S1753162Ab1LLHYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:24:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5923 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752110Ab1LLHYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:24:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95096270"
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Berck E. Nash" <flyboy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
+References: <4EE2BC33.80902@gmail.com>
+	 <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
+	 <20111211075713.GA20790@elte.hu>
+	 <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+Organization: Intel
+Date: Sun, 11 Dec 2011 23:23:22 -0800
+Message-ID: <1323674602.4170.5.camel@sbsiddha-mobl2>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 12 décembre 2011 à 09:16 +0200, Pekka Enberg a écrit :
-> On Wed, 23 Nov 2011, Christoph Lameter wrote:
-> > Eric saw an issue with accounting of slabs during validation. Its not
-> > possible to determine accurately how many per cpu partial slabs exist at
-> > any time so this switches off per cpu partial pages during debug.
-> >
-> > Subject: Switch per cpu partial page support off for debugging
-> >
-> > Otherwise we have accounting issues.
-> >
-> > Signed-off-by: Christoph Lameter <cl@linux.com>
-> >
-> >
-> > ---
-> > mm/slub.c |    4 +++-
-> > 1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> > Index: linux-2.6/mm/slub.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
-> > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
-> > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
-> > 	 *    per node list when we run out of per cpu objects. We only fetch 50%
-> > 	 *    to keep some capacity around for frees.
-> > 	 */
-> > -	if (s->size >= PAGE_SIZE)
-> > +	if (kmem_cache_debug(s))
-> > +		s->cpu_partial = 0;
-> > +	else if (s->size >= PAGE_SIZE)
-> > 		s->cpu_partial = 2;
-> > 	else if (s->size >= 1024)
-> > 		s->cpu_partial = 6;
-> 
-> Looks OK to me. CC'ing Eric and David.
+On Sun, 2011-12-11 at 13:43 -0800, Yinghai Lu wrote:
+> -v4: according to Ingo, for x2apic pre-enabled system, if intr-remap can not
+>         be enabled, try to disable x2apic instead of panic and request to
+>         specify nox2apic for next boot. 
 
-This seems fine to me, thanks.
+If bios has not exported any DMAR tables but enabled x2apic pre-boot, it
+is tricky for the OS to disable x2apic and continue with xapic for
+number of reasons. For example, if chipset has already enabled
+interrupt-remapping (which is typically recommended to be enabled before
+x2apic) but didn't provide DMAR tables, then there is no way OS can
+disable interrupt-remapping in this case.
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+So even though the cpu might be back in xapic mode, but external
+interrupts won't work.
 
+thanks,
+suresh
 
