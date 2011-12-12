@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1LLFWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 00:22:16 -0500
+	id S1753277Ab1LLFWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 00:22:05 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:59165 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab1LLFWN (ORCPT
+	with ESMTP id S1753186Ab1LLFV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 00:22:13 -0500
+	Mon, 12 Dec 2011 00:21:59 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 28/29] Staging: comedi: fix printk issue in contec_pci_dio.c
-Date: Mon, 12 Dec 2011 10:49:40 +0530
-Message-Id: <1323667181-17252-28-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 25/29] Staging: comedi: fix brace coding style issue in cb_pcidda.c
+Date: Mon, 12 Dec 2011 10:49:37 +0530
+Message-Id: <1323667181-17252-25-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,53 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the contec_pci_dio.c file that fixes up a
-printk warning found by the checkpatch.pl tool.
+This is a patch to the cb_pcidda.c file that fixes up a brace
+warning found by the checkpatch.pl tool.
 
 Converted printks to dev_dbg().
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/contec_pci_dio.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidda.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/contec_pci_dio.c b/drivers/staging/comedi/drivers/contec_pci_dio.c
-index db73638..e3659bd 100644
---- a/drivers/staging/comedi/drivers/contec_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/contec_pci_dio.c
-@@ -196,8 +196,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
+diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
+index abba220..1bc52a8 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidda.c
++++ b/drivers/staging/comedi/drivers/cb_pcidda.c
+@@ -423,19 +423,19 @@ static int cb_pcidda_detach(struct comedi_device *dev)
+ static int cb_pcidda_ai_cmd(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s)
  {
+-	printk("cb_pcidda_ai_cmd\n");
+-	printk("subdev: %d\n", cmd->subdev);
+-	printk("flags: %d\n", cmd->flags);
+-	printk("start_src: %d\n", cmd->start_src);
+-	printk("start_arg: %d\n", cmd->start_arg);
+-	printk("scan_begin_src: %d\n", cmd->scan_begin_src);
+-	printk("convert_src: %d\n", cmd->convert_src);
+-	printk("convert_arg: %d\n", cmd->convert_arg);
+-	printk("scan_end_src: %d\n", cmd->scan_end_src);
+-	printk("scan_end_arg: %d\n", cmd->scan_end_arg);
+-	printk("stop_src: %d\n", cmd->stop_src);
+-	printk("stop_arg: %d\n", cmd->stop_arg);
+-	printk("chanlist_len: %d\n", cmd->chanlist_len);
++	dev_dbg(dev->hw_dev, "cb_pcidda_ai_cmd\n");
++	dev_dbg(dev->hw_dev, "subdev: %d\n", cmd->subdev);
++	dev_dbg(dev->hw_dev, "flags: %d\n", cmd->flags);
++	dev_dbg(dev->hw_dev, "start_src: %d\n", cmd->start_src);
++	dev_dbg(dev->hw_dev, "start_arg: %d\n", cmd->start_arg);
++	dev_dbg(dev->hw_dev, "scan_begin_src: %d\n", cmd->scan_begin_src);
++	dev_dbg(dev->hw_dev, "convert_src: %d\n", cmd->convert_src);
++	dev_dbg(dev->hw_dev, "convert_arg: %d\n", cmd->convert_arg);
++	dev_dbg(dev->hw_dev, "scan_end_src: %d\n", cmd->scan_end_src);
++	dev_dbg(dev->hw_dev, "scan_end_arg: %d\n", cmd->scan_end_arg);
++	dev_dbg(dev->hw_dev, "stop_src: %d\n", cmd->stop_src);
++	dev_dbg(dev->hw_dev, "stop_arg: %d\n", cmd->stop_arg);
++	dev_dbg(dev->hw_dev, "chanlist_len: %d\n", cmd->chanlist_len);
+ }
+ #endif
  
--	printk("contec_do_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	dev_dbg(dev->hw_dev, "contec_do_insn_bits called\n");
-+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
- 
- 	if (insn->n != 2)
- 		return -EINVAL;
-@@ -205,8 +205,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 	if (data[0]) {
- 		s->state &= ~data[0];
- 		s->state |= data[0] & data[1];
--		printk("  out: %d on %lx\n", s->state,
--		       dev->iobase + thisboard->out_offs);
-+		dev_dbg(dev->hw_dev, "out: %d on %lx\n", s->state,
-+			dev->iobase + thisboard->out_offs);
- 		outw(s->state, dev->iobase + thisboard->out_offs);
- 	}
- 	return 2;
-@@ -217,8 +217,8 @@ static int contec_di_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
- {
- 
--	printk("contec_di_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	dev_dbg(dev->hw_dev, "contec_di_insn_bits called\n");
-+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
- 
- 	if (insn->n != 2)
- 		return -EINVAL;
 -- 
 1.7.0.4
 
