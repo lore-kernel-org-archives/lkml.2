@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab1LLCxY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 21:53:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779Ab1LLCxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 21:53:23 -0500
-Message-ID: <4EE56C67.2060909@redhat.com>
-Date: Mon, 12 Dec 2011 10:52:23 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1752847Ab1LLDAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 22:00:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55712 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab1LLDAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 22:00:05 -0500
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        "David S. Miller" <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 04/62] mips: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-5-git-send-email-amwang@redhat.com> <20111209160639.GA30988@linux-mips.org>
-In-Reply-To: <20111209160639.GA30988@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1323648762-2148-1-git-send-email-keithp@keithp.com>
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 11 Dec 2011 18:59:43 -0800
+X-Google-Sender-Auth: JObhGBmhf6lPoyXPDVnWV3MgsdA
+Message-ID: <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
+ address is invalid"
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年12月10日 00:06, Ralf Baechle 写道:
-> On Sun, Nov 27, 2011 at 01:26:44PM +0800, Cong Wang wrote:
->
-> Acked-by: Ralf Baechle<ralf@linux-mips.org>
->
-> I assume you want to merge this patch as part of a single series?
->
+On Sun, Dec 11, 2011 at 4:12 PM, Keith Packard <keithp@keithp.com> wrote:
+> This hangs my MacBook Air at boot time; I get no console messages at
+> all. I reverted this on top of -rc5 and my machine boots again.
 
-I put all the patches into a single tree which is in linux-next now. :)
+Interesting. Current -git works for me on my 11" Macbook Air. Which
+should be identical to yours. This is the 4GB RAM, 128GB disk version,
+no?
 
-Thanks for review!
+But I'm running OpenSUSE, and you're running Debian, right? And our
+kernel configs are probably wildly different, since I tend to try to
+boot a fairly minimal set.
+
+That said, if you've verified that if fails for you, I guess we should
+revert regardless. Matt, any suggestions for tests to do?
+
+                       Linus
