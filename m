@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab1LLWrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:47:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61622 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab1LLWrj convert rfc822-to-8bit (ORCPT
+	id S1754598Ab1LLWru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:47:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59957 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab1LLWro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:47:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111212215818.GP3366@decadent.org.uk>
-References: <1319461948.31243.31.camel@deadeye> <CAB=NE6Vt91tHCBj7sJHjUCaDZZPqox+omcQjsEj54vQAtbY2bw@mail.gmail.com>
- <20111212215818.GP3366@decadent.org.uk>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 12 Dec 2011 14:47:14 -0800
-X-Google-Sender-Auth: kkrGuuYfBN687rc-zBIkc8oJ_vM
-Message-ID: <CAB=NE6Wb9ySk6a1gB-edyF_uRe=-ESehUNbUa+n0g2WYGJXnqw@mail.gmail.com>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
- built in-tree
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 17:47:44 -0500
+X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=pH78MhJE8zsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=C9o07-ltnvv7o_bANBAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323730061.1377.13.camel@gandalf.stny.rr.com>
+Subject: Re: Busy-waiting with interrupts disabled
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: USB list <linux-usb@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Dec 2011 17:47:41 -0500
+In-Reply-To: <Pine.LNX.4.44L0.1112121617400.1864-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1112121617400.1864-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 1:58 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Mon, Dec 12, 2011 at 01:40:44PM -0800, Luis R. Rodriguez wrote:
->> On Mon, Oct 24, 2011 at 6:12 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
->> > Use of the GPL or a compatible licence doesn't necessarily make the code
->> > any good.  We already consider staging modules to be suspect, and this
->> > should also be true for out-of-tree modules which may receive very
->> > little review.
->> >
->> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->> > ---
->> > Debian has been carrying this for the last few kernel versions.  The
->> > recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
->> > that this might be more generally useful.
->>
->> This indeed seems like a good idea to advocate getting things upstream
->> (not just staging) but what about the case where we have upstream
->> drivers from future kernels backported to older kernels and the newer
->> driver is simply provided as a feature for users who may need new
->> features / chipset support on their old distribution kernel?
->
-> They continue to work without any loss of functionality.  (After the
-> follow-up patches to keep dynamic debugging and lock debugging
-> working.)
+On Mon, 2011-12-12 at 17:12 -0500, Alan Stern wrote:
+> How long is it okay to busy-wait with interrupts disabled?  Are there 
+> any clear-cut guidelines?
+> 
+> My feeling is that for ordinary desktop use, 1-2 ms should be about the
+> limit, but other people may feel differently.  (There's one spot in
+> ehci-hcd where the delay can last up to 250 ms, which does seem rather
 
-Great!
+"250 ms", holy freaking OUCH! Batman!
 
->> It seems this taint flag will be used for driers backported through
->> compat-wireless, the compat kernel module or any other backported
->> driver, even if it is indeed upstream and whereby kernel developer
->> *do* commit to actually fixing issues. In our experience
->> compat-wireless bugs *are real bugs*, not backport bugs so we do look
->> into them. In our latest linux-next.git based release for example
->> backport code consists only of 1.3804% of the code.
->
-> Now you can look for (O) after the module name in a BUG/Oops message
-> and you can tell whether the user really had the original or
-> compat-wireless version of the driver.
->
-> It is really up to each distributor or developer how they treat
-> bug reports with the O taint.  When handling Debian bug reports I
-> won't automatically reject such a tainted kernel but I will look
-> carefully at the module list.
 
-I'm working on getting my companies to abandon 802.11 proprietary
-drivers for good. For Station mode of operation this is pretty much
-mission complete. For AP products.. this is work in progress. The out
-of tree flag is a good utility one can use to help justify working
-upstream but if we treat any future-kernel-backported-driver equally
-to any out of tree crap piece of shit driver, it seems to do unjustice
-to the value of a properly upstream backported driver. I will note
-that I put a lot of effort to ensure that the backport effort is
-upstream-centric in an *extremely* upstream-biased way, see how I
-label extra patches for tarballs [1]. If your patches are not upstream
-the only way you get into these tarballs are by providing patches into
-these directories:
+> excessive.  Fortunately it never takes that long unless the hardware is
+> broken.)
+> 
+> No doubt the RT people would say the upper bound should be on the order
+> of a few microseconds or less.  I'd be happy to change ehci-hcd, which
+> has several delays in the 1-2 ms range -- but they tend to be nested
+> inside routines that are called within the scope of spinlock_irq, which
+> means a fair amount of rewriting would be needed.
+> 
+> Any thoughts or recommendations?
 
-  * pending-stable/ stable fixes from linux-next.git not yet on a stable release
-  * linux-next-cherry-picks/ patches upstream but that won't go to the
-stable release that we want to cherry pick
-  * linux-next-pending/ patches posted on the public development
-mailing list, patch not yet merged due to the maintainer being away on
-vacation or whatever
-  * crap/ patches not even posted publicly yet
+Note that in -rt, spinlocks are really mutexes (unless they are
+raw_spinlocks, which you shouldn't do). Thus, if your spin is with
+spinlock_irq, it wont affect -rt, as it will not have interrupts
+disabled.
 
-Each tarball used also gets pegged with a letter if *any* patch from
-any of these directories gets applied. The compat module, upon being
-loaded, will also print the kernel ring buffer the exact release,
-whether extra patches were provided, the upstream git tree used as
-base and so on.
+But I could imagine that such a long latency could manifest itself into
+something nasty (lots of interrupts queued up and such) that normal
+desktop users might see a hiccup or two.
 
-So -- although from a technical perspective this may mean Debian /
-other kernel developers may ignore the taint flag for compat-wireless
-it'd sure be nice to avoid it for them all together. Just can't think
-of a way to do it yet... If you agree should we continue to think of a
-way if its possible?
+-- Steve
 
-[1] http://wireless.kernel.org/en/users/Download/stable#Legend
 
-  Luis
