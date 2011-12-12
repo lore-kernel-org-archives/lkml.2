@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1LLWuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:50:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58851 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab1LLWuK convert rfc822-to-8bit (ORCPT
+	id S1754586Ab1LLWwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:52:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57163 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab1LLWwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:50:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAB=NE6Wb9ySk6a1gB-edyF_uRe=-ESehUNbUa+n0g2WYGJXnqw@mail.gmail.com>
-References: <1319461948.31243.31.camel@deadeye> <CAB=NE6Vt91tHCBj7sJHjUCaDZZPqox+omcQjsEj54vQAtbY2bw@mail.gmail.com>
- <20111212215818.GP3366@decadent.org.uk> <CAB=NE6Wb9ySk6a1gB-edyF_uRe=-ESehUNbUa+n0g2WYGJXnqw@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 12 Dec 2011 14:49:49 -0800
-X-Google-Sender-Auth: rVBqkaIpYAsensQYx8hhrFb2JXM
-Message-ID: <CAB=NE6W_aP2rY=6CAd4xYLM8wmiUxrzBqZhCZPEksVMsDQ9jAg@mail.gmail.com>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
- built in-tree
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 17:52:09 -0500
+Date: Mon, 12 Dec 2011 14:52:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, xemul@parallels.com,
+        drosenberg@vsecurity.com, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, bfields@fieldses.org, jbottomley@parallels.com,
+        devel@openvz.org
+Subject: Re: [PATCH 1/2] SYSCTL: root unregister routine introduced
+Message-Id: <20111212145208.75490b41.akpm@linux-foundation.org>
+In-Reply-To: <20111212175000.7084.94219.stgit@localhost6.localdomain6>
+References: <20111212174709.7084.54702.stgit@localhost6.localdomain6>
+	<20111212175000.7084.94219.stgit@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 2:47 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
-> On Mon, Dec 12, 2011 at 1:58 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
->> On Mon, Dec 12, 2011 at 01:40:44PM -0800, Luis R. Rodriguez wrote:
->>> On Mon, Oct 24, 2011 at 6:12 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
->>> > Use of the GPL or a compatible licence doesn't necessarily make the code
->>> > any good.  We already consider staging modules to be suspect, and this
->>> > should also be true for out-of-tree modules which may receive very
->>> > little review.
->>> >
->>> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->>> > ---
->>> > Debian has been carrying this for the last few kernel versions.  The
->>> > recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
->>> > that this might be more generally useful.
->>>
->>> This indeed seems like a good idea to advocate getting things upstream
->>> (not just staging) but what about the case where we have upstream
->>> drivers from future kernels backported to older kernels and the newer
->>> driver is simply provided as a feature for users who may need new
->>> features / chipset support on their old distribution kernel?
->>
->> They continue to work without any loss of functionality.  (After the
->> follow-up patches to keep dynamic debugging and lock debugging
->> working.)
->
-> Great!
->
->>> It seems this taint flag will be used for driers backported through
->>> compat-wireless, the compat kernel module or any other backported
->>> driver, even if it is indeed upstream and whereby kernel developer
->>> *do* commit to actually fixing issues. In our experience
->>> compat-wireless bugs *are real bugs*, not backport bugs so we do look
->>> into them. In our latest linux-next.git based release for example
->>> backport code consists only of 1.3804% of the code.
->>
->> Now you can look for (O) after the module name in a BUG/Oops message
->> and you can tell whether the user really had the original or
->> compat-wireless version of the driver.
->>
->> It is really up to each distributor or developer how they treat
->> bug reports with the O taint.  When handling Debian bug reports I
->> won't automatically reject such a tainted kernel but I will look
->> carefully at the module list.
->
-> I'm working on getting my companies to abandon 802.11 proprietary
-> drivers for good. For Station mode of operation this is pretty much
-> mission complete. For AP products.. this is work in progress. The out
-> of tree flag is a good utility one can use to help justify working
-> upstream but if we treat any future-kernel-backported-driver equally
-> to any out of tree crap piece of shit driver, it seems to do unjustice
-> to the value of a properly upstream backported driver. I will note
-> that I put a lot of effort to ensure that the backport effort is
-> upstream-centric in an *extremely* upstream-biased way, see how I
-> label extra patches for tarballs [1]. If your patches are not upstream
-> the only way you get into these tarballs are by providing patches into
-> these directories:
->
->  * pending-stable/ stable fixes from linux-next.git not yet on a stable release
->  * linux-next-cherry-picks/ patches upstream but that won't go to the
-> stable release that we want to cherry pick
->  * linux-next-pending/ patches posted on the public development
-> mailing list, patch not yet merged due to the maintainer being away on
-> vacation or whatever
->  * crap/ patches not even posted publicly yet
->
-> Each tarball used also gets pegged with a letter if *any* patch from
-> any of these directories gets applied. The compat module, upon being
-> loaded, will also print the kernel ring buffer the exact release,
-> whether extra patches were provided, the upstream git tree used as
-> base and so on.
->
-> So -- although from a technical perspective this may mean Debian /
-> other kernel developers may ignore the taint flag for compat-wireless
-> it'd sure be nice to avoid it for them all together. Just can't think
-> of a way to do it yet... If you agree should we continue to think of a
-> way if its possible?
->
-> [1] http://wireless.kernel.org/en/users/Download/stable#Legend
+On Mon, 12 Dec 2011 21:50:00 +0300
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-How about a way to peg a driver as a backport from future kernels?
-Like maybe MODULE_COMPAT() ?
+> This routine is required for SUNRPC sysctl's, which are going to be allocated,
+> processed and destroyed per network namespace context.
+> IOW, new sysctl root will be registered on network namespace creation and
+> thus have to unregistered before network namespace destruction.
+> 
 
-  Luis
+It's a bit suspicious that such a mature subsystem as sysctl newly
+needs its internals exported like this.  Either a) the net namespaces
+work is doing something which hasn't been done before or b) it is doing
+something wrong.
+
+So, please explain further so we can confirm that it is a) and not b).
+
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1701,6 +1701,13 @@ void register_sysctl_root(struct ctl_table_root *root)
+>  	spin_unlock(&sysctl_lock);
+>  }
+>  
+> +void unregister_sysctl_root(struct ctl_table_root *root)
+> +{
+> +	spin_lock(&sysctl_lock);
+> +	list_del(&root->root_list);
+> +	spin_unlock(&sysctl_lock);
+> +}
+> +
+
+This requires the addition of a declaration to include/linux/sysctl.h.
+
+Once that is done and review is complete, I'd suggest that these two
+patches be joined into a single patch, and that patch become part of
+whatever patch series it is which needs them.
+
