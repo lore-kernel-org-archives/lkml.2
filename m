@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab1LLGWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 01:22:21 -0500
-Received: from tundra.namei.org ([65.99.196.166]:49914 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab1LLGWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 01:22:19 -0500
-Date: Mon, 12 Dec 2011 17:22:10 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, Kentaro Takeda <takedakn@nttdata.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] tomoyo: add missing rcu_dereference()
-In-Reply-To: <20111209003042.GA17905@www.outflux.net>
-Message-ID: <alpine.LRH.2.00.1112121721590.4694@tundra.namei.org>
-References: <20111209003042.GA17905@www.outflux.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751986Ab1LLGgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 01:36:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61617 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab1LLGgm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 01:36:42 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <j8fvka$fu0$1@dough.gmane.org>
+References: <j881g5$tdf$1@dough.gmane.org> <alpine.DEB.2.00.1110252325090.20273@chino.kir.corp.google.com>
+ <j8fvka$fu0$1@dough.gmane.org>
+From: =?UTF-8?Q?Mat=C3=ADas_Aguirre?= <matiasaguirre@gmail.com>
+Date: Mon, 12 Dec 2011 04:36:20 -0200
+Message-ID: <CA+tb8OUHNbhVN_KiEkqXJW1apFoExRM5Vrn=ES5SF3sFoGOMfA@mail.gmail.com>
+Subject: Re: wifi iwlagn fails to authenticate after wake from suspend
+To: Gene Smith <gds@chartertn.net>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Dec 2011, Kees Cook wrote:
+Hi,
 
-> Adds a missed rcu_dereference() around real_parent.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Sat, Oct 29, 2011 at 2:32 AM, Gene Smith <gds@chartertn.net> wrote:
+> David Rientjes wrote, On 10/26/2011 02:27 AM:
+>> So we need to bisect between 2.4.38 and 3.0.0? :)  I'm running ubuntu
+>> 11.10 on a home laptop so I'll give this a try as well when I can if I can
+>> put up with unity for that long.
 
-Applied to
-git://selinuxproject.org/~jmorris/linux-security next
+I've bisected the problem and narrowed the bug to changeset 73b78a2272
+(http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=73b78a22720087d2d384bdd49e9c25500ba73edd).
 
+Here's a patch, that applies against 3.2-rc5, that fixed the error for me:
 
--- 
-James Morris
-<jmorris@namei.org>
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c
+b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index bacc06c..01d5d38 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -1297,7 +1297,7 @@ int iwl_alive_start(struct iwl_priv *priv)
+                                         BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+                if (ret)
+                        return ret;
+-       } else {
++       } else if (priv->cfg->bt_params) {
+                /*
+                 * default is 2-wire BT coexexistence support
+                 */
