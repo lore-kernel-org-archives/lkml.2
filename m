@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab1LLJJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 04:09:44 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:45593 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750748Ab1LLJJk (ORCPT
+	id S1751948Ab1LLJK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 04:10:59 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:56878 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1LLJKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 04:09:40 -0500
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Mon, 12 Dec 2011 10:09:10 +0100
-Subject: RE: [PATCHv2 01/10] xshm: Shared Memory layout for ST-E M7400
- driver.
-Thread-Topic: [PATCHv2 01/10] xshm: Shared Memory layout for ST-E M7400
- driver.
-Thread-Index: Acy2gUTapoPFivvsTV23yGR5QYy13gCK+nBA
-Message-ID: <81C3A93C17462B4BBD7E272753C105791FB0D6BA6E@EXDCVYMBSTM005.EQ1STM.local>
-References: <1323439648-22697-1-git-send-email-sjur.brandeland@stericsson.com>
- <1323439648-22697-2-git-send-email-sjur.brandeland@stericsson.com>
- <201112091445.56224.arnd@arndb.de>
-In-Reply-To: <201112091445.56224.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 12 Dec 2011 04:10:55 -0500
+Message-ID: <20197.50444.333155.552035@ipc1.ka-ro>
+Date: Mon, 12 Dec 2011 10:10:36 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, alsa-devel@alsa-project.org,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [alsa-devel] [PATCH 2/5] ASoC: mxs: add .owner to struct
+ snd_soc_card
+In-Reply-To: <20111211025358.GB2800@opensource.wolfsonmicro.com>
+References: <cover.1323436034.git.LW@KARO-electronics.de>
+	<555be1750dd09586d5eede6457f72310890274b0.1323436034.git.LW@KARO-electronics.de>
+	<20111209141203.GH3327@pengutronix.de>
+	<20194.7382.414612.182139@ipc1.ka-ro>
+	<20111211025358.GB2800@opensource.wolfsonmicro.com>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBC99mcN017499
 
-Hi Arnd,
+Hi,
 
-> >  include/linux/xshm/xshm_ipctoc.h |  160
-> ++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 160 insertions(+), 0 deletions(-)
-> >  create mode 100644 include/linux/xshm/xshm_ipctoc.h
+Mark Brown writes:
+> On Fri, Dec 09, 2011 at 03:36:06PM +0100, Lothar WaÃŸmann wrote:
+> > Wolfram Sang writes:
 > 
-> Generally, the include/linux path is for interfaces between modules, while
-> hardware data structures should be in the same directory as the driver using
-> them to provide an abstract interface.
-
-Sure, I'll move this file to drivers/xshm.
-
-> > +#pragma pack(1)
+> > > I can't find any other instance setting owner in snd_soc_card?
 > 
-> Better remove the #pragma. Marking data structures as packed when they
-> are already packed to start with only leads to worse optimizations in the
-> compiler, but does not have a functional impact.
+> > Then that other uses are most probably faulty too.
+> 
+> This needs to be fixed up generally, not just for a specific driver.
+>
+There are 84 drivers affected by this. I did not check though whether
+all of them are compilable as module.
+I could provide a patch for all of these, but I can at most do a
+compile testing for some of them.
 
-Ok, I'll remove the #pragma in the next patch-set.
 
-Regards,
-Sjur
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Lothar WaÃŸmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | PascalstraÃŸe 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+GeschÃ¤ftsfÃ¼hrer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
