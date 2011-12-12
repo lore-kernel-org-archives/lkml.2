@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1LLMsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 07:48:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59442 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab1LLMsF convert rfc822-to-8bit (ORCPT
+	id S1752992Ab1LLMs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 07:48:59 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58338 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab1LLMs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 07:48:05 -0500
+	Mon, 12 Dec 2011 07:48:57 -0500
+Date: Mon, 12 Dec 2011 13:48:42 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] rtc: Kconfig: Place RTC_DRV_IMXDI and RTC_MXC
+ under "on-CPU RTC drivers"
+Message-ID: <20111212124841.GF3485@pengutronix.de>
+References: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+ <1323693187-3466-1-git-send-email-fabio.estevam@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1112111520510.2297@eggly>
-References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
-	<alpine.LSU.2.00.1112111520510.2297@eggly>
-Date: Mon, 12 Dec 2011 20:48:02 +0800
-Message-ID: <CAJd=RBBKsRYq3Y4gaGJMHM3kMJUH_jggf3pFVJK+noD-vpCRCg@mail.gmail.com>
-Subject: Re: [PATCH] mm: memcg: keep root group unchanged if fail to create new
-From: Hillf Danton <dhillf@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Balbir Singh <bsingharora@gmail.com>, David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0H629O+sVkh21xTi"
+Content-Disposition: inline
+In-Reply-To: <1323693187-3466-1-git-send-email-fabio.estevam@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hugh
 
-On Mon, Dec 12, 2011 at 7:39 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Sun, 11 Dec 2011, Hillf Danton wrote:
->
->> If the request is not to create root group and we fail to meet it,
->> we'd leave the root unchanged.
->
-> I didn't understand that at first: please say "we should" rather
-> than "we'd", which I take to be an abbreviation for "we would".
->
+--0H629O+sVkh21xTi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for correcting me.
+On Mon, Dec 12, 2011 at 10:33:06AM -0200, Fabio Estevam wrote:
+> RTC_DRV_IMXDI and RTC_MXC are on-chip RTC modules, so move them under=20
+> "on-CPU RTC drivers" selection menu.
+>=20
+> While at it change the dependency of RTC_DRV_IMXDI from ARCH_MX25 to SOC_=
+IMX25.
+>=20
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
->
-> I wonder what was going through the author's mind when he wrote it
-> that way?  I wonder if it's one of those bugs that creeps in when
-> you start from a perfectly functional patch, then make refinements
-> to suit feedback from reviewers.
->
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Actually no such a perfectly functional patch, but I also wonder if
-you are likely to post and/or share your current todo list if any,
-then many could learn the right direction, and in turn you comment
-and pull acceptable works in that direction, like Linus.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Hillf
+--0H629O+sVkh21xTi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7l+CkACgkQD27XaX1/VRt0DACeKBJorxYdu1y5l/NK9EIZ0i8V
+UqQAnRN0KOsWprRmSNPfkVm1FCcmvISJ
+=uOvq
+-----END PGP SIGNATURE-----
+
+--0H629O+sVkh21xTi--
