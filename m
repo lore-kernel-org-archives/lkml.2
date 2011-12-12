@@ -1,147 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1LLQqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:46:20 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63277 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1LLQqQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:46:16 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Mel Gorman" <mel@csn.ul.ie>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 02/11] mm: compaction: introduce
- isolate_{free,migrate}pages_range().
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-3-git-send-email-m.szyprowski@samsung.com>
- <20111212140728.GC3277@csn.ul.ie> <op.v6dub1ms3l0zgt@mpn-glaptop>
- <20111212163052.GK3277@csn.ul.ie>
-Date: Mon, 12 Dec 2011 17:46:13 +0100
+	id S1753235Ab1LLQr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:47:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab1LLQr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 11:47:57 -0500
+Message-ID: <4EE63039.4040004@redhat.com>
+Date: Mon, 12 Dec 2011 14:47:53 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v6dx7bo43l0zgt@mpn-glaptop>
-In-Reply-To: <20111212163052.GK3277@csn.ul.ie>
-User-Agent: Opera Mail/11.60 (Linux)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 3.2-rc5] media fixes
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
+Hi Linus,
 
-> On Mon, Dec 12, 2011 at 04:22:39PM +0100, Michal Nazarewicz wrote:
->> > <SNIP>
->> >
->> >>+		if (!pfn_valid_within(pfn))
->> >>+			goto skip;
->> >
->> >The flow of this function in general with gotos of skipped and next
->> >is confusing in comparison to the existing function. For example,
->> >if this PFN is not valid, and no freelist is provided, then we call
->> >__free_page() on a PFN that is known to be invalid.
->> >
->> >>+		++nr_scanned;
->> >>+
->> >>+		if (!PageBuddy(page)) {
->> >>+skip:
->> >>+			if (freelist)
->> >>+				goto next;
->> >>+			for (; start < pfn; ++start)
->> >>+				__free_page(pfn_to_page(pfn));
->> >>+			return 0;
->> >>+		}
->> >
->> >So if a PFN is valid and !PageBuddy and no freelist is provided, we
->> >call __free_page() on it regardless of reference count. That does not
->> >sound safe.
->>
->> Sorry about that.  It's a bug in the code which was caught later on.  The
->> code should read ???__free_page(pfn_to_page(start))???.
+Please pull from:
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> That will call free on valid PFNs but why is it safe to call
-> __free_page() at all?  You say later that CMA requires that all
-> pages in the range be valid but if the pages are in use, that does
-> not mean that calling __free_page() is safe. I suspect you have not
-> seen a problem because the pages in the range were free as expected
-> and not in use because of MIGRATE_ISOLATE.
+For a couple fixes for media drivers.
+The changes are:
+	- ati_remote (new driver for 3.2): Fix the scancode tables;
+	- af9015: fix some issues with firmware load;
+	- au0828: (trivial) add device ID's for some devices;
+	- omap3 and s5p: several small fixes;
+	- Update MAINTAINERS entry to cover /drivers/staging/media and
+	  media DocBook;
+	- a few other small trivial fixes.
 
-All pages from [start, pfn) have passed through the loop body which
-means that they are valid and they have been removed from buddy (for
-caller's use).  Also, because of split_free_page(), all of those pages
-have been split into 0-order pages.  Therefore, in error recovery, to
-undo what the loop has done so far, we put give back to buddy by
-calling __free_page() on each 0-order page.
+Thanks!
+Mauro
 
->> >> 		/* Found a free page, break it into order-0 pages */
->> >> 		isolated = split_free_page(page);
->> >> 		total_isolated += isolated;
->> >>-		for (i = 0; i < isolated; i++) {
->> >>-			list_add(&page->lru, freelist);
->> >>-			page++;
->> >>+		if (freelist) {
->> >>+			struct page *p = page;
->> >>+			for (i = isolated; i; --i, ++p)
->> >>+				list_add(&p->lru, freelist);
->> >> 		}
->> >>
->> >>-		/* If a page was split, advance to the end of it */
->> >>-		if (isolated) {
->> >>-			blockpfn += isolated - 1;
->> >>-			cursor += isolated - 1;
->> >>-		}
->> >>+next:
->> >>+		pfn += isolated;
->> >>+		page += isolated;
->> >
->> >The name isolated is now confusing because it can mean either
->> >pages isolated or pages scanned depending on context. Your patch
->> >appears to be doing a lot more than is necessary to convert
->> >isolate_freepages_block into isolate_freepages_range and at this point,
->> >it's unclear why you did that.
->>
->> When CMA uses this function, it requires all pages in the range to be valid
->> and free. (Both conditions should be met but you never know.)
+-
 
-To be clear, I meant that the CMA expects pages to be in buddy when the function
-is called but after the function finishes, all the pages in the range are removed
- from buddy.  This, among other things, is why the call to split_free_page() is
-necessary.
+The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
 
-> It seems racy but I guess you are depending on MIGRATE_ISOLATE to keep
-> things sane which is fine. However, I strongly suspect that if there
-> is a race and a page is in use, then you will need to retry the
-> migration step. Calling __free_page does not look right because
-> something still has a reference to the page.
->
->> This change
->> adds a second way isolate_freepages_range() works, which is when freelist is
->> not specified, abort on invalid or non-free page, but continue as usual if
->> freelist is provided.
->
-> Ok, I think you should be able to do that by not calling split_free_page
-> or adding to the list if !freelist with a comment explaining why the
-> pages are left on the buddy lists for the caller to figure out. Bail if
-> a page-in-use is found and have the caller check that the return value
-> of isolate_freepages_block == end_pfn - start_pfn.
+   Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+
+Anssi Hannula (1):
+       [media] ati_remote: switch to single-byte scancodes
+
+Antti Palosaari (3):
+       [media] af9015: limit I2C access to keep FW happy
+       [media] tda18218: fix 6 MHz default IF frequency
+       [media] mxl5007t: fix reg read
+
+Dan Carpenter (1):
+       [media] V4L: mt9t112: use after free in mt9t112_probe()
+
+Dmitry Artamonow (1):
+       [media] omap3isp: fix compilation of ispvideo.c
+
+Gary Thomas (1):
+       [media] omap_vout: Fix compile error in 3.1
+
+Guennadi Liakhovetski (2):
+       [media] V4L: soc-camera: fix compiler warnings on 64-bit platforms
+       [media] V4L: mt9m111: fix uninitialised mutex
+
+Janusz Krzysztofik (1):
+       [media] V4L: omap1_camera: fix missing <linux/module.h> include
+
+Joe Perches (1):
+       [media] [trivial] omap24xxcam-dma: Fix logical test
+
+Marek Szyprowski (1):
+       [media] media: video: s5p-tv: fix build break
+
+Mauro Carvalho Chehab (1):
+       MAINTAINERS: Update media entries
+
+Michael Krufky (3):
+       [media] au0828: add missing USB ID 2040:7260
+       [media] au0828: add missing USB ID 2040:7213
+       [media] au0828: add missing models 72101, 72201 & 72261 to the model matrix
+
+Peter Korsgaard (1):
+       [media] s5p_mfc_enc: fix s/H264/H263/ typo
+
+Randy Dunlap (1):
+       [media] media/staging: fix allyesconfig build error
+
+Sylwester Nawrocki (10):
+       [media] s5p-fimc: Fix wrong pointer dereference when unregistering sensors
+       [media] s5p-fimc: Fix error in the capture subdev deinitialization
+       [media] s5p-fimc: Fix initialization for proper system suspend support
+       [media] s5p-fimc: Fix buffer dequeue order issue
+       [media] s5p-fimc: Allow probe() to succeed with null platform data
+       [media] s5p-fimc: Adjust pixel height alignments according to the IP revision
+       [media] s5p-fimc: Fail driver probing when sensor configuration is wrong
+       [media] s5p-fimc: Use correct fourcc for RGB565 colour format
+       [media] m5mols: Fix set_fmt to return proper pixel format code
+       [media] s5p-fimc: Fix camera input configuration in subdev operations
+
+Thomas Jarosch (1):
+       [media] m5mols: Fix logic in sanity check
+
+Tomi Valkeinen (1):
+       [media] omap_vout: fix crash if no driver for a display
+
+  MAINTAINERS                                      |    2 +
+  drivers/media/common/tuners/mxl5007t.c           |    3 +-
+  drivers/media/common/tuners/tda18218.c           |    2 +-
+  drivers/media/dvb/dvb-usb/af9015.c               |   97 ++++++++++++++++
+  drivers/media/dvb/dvb-usb/af9015.h               |    7 +
+  drivers/media/rc/ati_remote.c                    |  111 +++++++++----------
+  drivers/media/rc/keymaps/rc-ati-x10.c            |   96 ++++++++--------
+  drivers/media/rc/keymaps/rc-medion-x10.c         |  128 +++++++++++-----------
+  drivers/media/rc/keymaps/rc-snapstream-firefly.c |  114 ++++++++++----------
+  drivers/media/video/au0828/au0828-cards.c        |    7 +
+  drivers/media/video/m5mols/m5mols.h              |    2 -
+  drivers/media/video/m5mols/m5mols_core.c         |   22 ++--
+  drivers/media/video/mt9m111.c                    |    1 +
+  drivers/media/video/mt9t112.c                    |    4 +-
+  drivers/media/video/omap/omap_vout.c             |    9 ++
+  drivers/media/video/omap1_camera.c               |    1 +
+  drivers/media/video/omap24xxcam-dma.c            |    2 +-
+  drivers/media/video/omap3isp/ispvideo.c          |    1 +
+  drivers/media/video/ov6650.c                     |    2 +-
+  drivers/media/video/s5p-fimc/fimc-capture.c      |   14 ++-
+  drivers/media/video/s5p-fimc/fimc-core.c         |   24 ++--
+  drivers/media/video/s5p-fimc/fimc-core.h         |    2 +
+  drivers/media/video/s5p-fimc/fimc-mdevice.c      |   43 +++++---
+  drivers/media/video/s5p-fimc/fimc-reg.c          |   15 ++-
+  drivers/media/video/s5p-mfc/s5p_mfc_enc.c        |    2 +-
+  drivers/media/video/s5p-tv/mixer_video.c         |    1 +
+  drivers/media/video/sh_mobile_ceu_camera.c       |   34 ++++--
+  drivers/media/video/sh_mobile_csi2.c             |    4 +-
+  drivers/media/video/soc_camera.c                 |    3 +-
+  drivers/staging/media/as102/as102_drv.c          |    4 +-
+  drivers/staging/media/as102/as102_drv.h          |    3 +-
+  include/media/soc_camera.h                       |    7 +-
+  32 files changed, 461 insertions(+), 306 deletions(-)
+
