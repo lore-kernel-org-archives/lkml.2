@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab1LLWlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:41:06 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63049 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1LLWlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:41:02 -0500
-Message-ID: <4EE682F3.9070905@gmail.com>
-Date: Mon, 12 Dec 2011 23:40:51 +0100
-From: roel <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1754581Ab1LLWma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:42:30 -0500
+Received: from verein.lst.de ([213.95.11.211]:47654 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754558Ab1LLWm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 17:42:29 -0500
+Date: Mon, 12 Dec 2011 23:42:27 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xfs: fix acl count validation in xfs_acl_from_disk()
+Message-ID: <20111212224227.GA17461@lst.de>
+References: <1323726952-22963-1-git-send-email-xi.wang@gmail.com>
 MIME-Version: 1.0
-To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        moderated for non-subscribers <ocfs2-devel@oss.oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ocfs2: Misplaced parens in unlikley
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323726952-22963-1-git-send-email-xi.wang@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix misplaced parentheses
+On Mon, Dec 12, 2011 at 04:55:52PM -0500, Xi Wang wrote:
+> Commit fa8b18ed didn't prevent the integer overflow and possible
+> memory corruption.  "count" can go negative and bypass the check.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- fs/ocfs2/dlmglue.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks, this looks good to me.
 
-diff --git a/fs/ocfs2/dlmglue.c b/fs/ocfs2/dlmglue.c
-index 81a4cd2..274529c 100644
---- a/fs/ocfs2/dlmglue.c
-+++ b/fs/ocfs2/dlmglue.c
-@@ -456,7 +456,7 @@ static void ocfs2_update_lock_stats(struct ocfs2_lock_res *res, int level,
- 	stats->ls_gets++;
- 	stats->ls_total += ktime_to_ns(kt);
- 	/* overflow */
--	if (unlikely(stats->ls_gets) == 0) {
-+	if (unlikely(stats->ls_gets == 0)) {
- 		stats->ls_gets++;
- 		stats->ls_total = ktime_to_ns(kt);
- 	}
+Reviewed-by: Christoph Hellwig <hch@lst.de>
