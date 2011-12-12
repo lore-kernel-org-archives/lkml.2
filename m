@@ -1,118 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1LLPvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:51:49 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:32989 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab1LLPvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:51:47 -0500
-Date: Mon, 12 Dec 2011 15:51:43 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-Subject: Re: [PATCH 03/11] mm: mmzone: introduce zone_pfn_same_memmap()
-Message-ID: <20111212155143.GJ3277@csn.ul.ie>
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-4-git-send-email-m.szyprowski@samsung.com>
- <20111212141953.GD3277@csn.ul.ie>
- <op.v6dr4pj43l0zgt@mpn-glaptop>
- <20111212144030.GF3277@csn.ul.ie>
- <op.v6dswtfw3l0zgt@mpn-glaptop>
+	id S1752915Ab1LLPzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:55:10 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43450 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab1LLPzI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 10:55:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <op.v6dswtfw3l0zgt@mpn-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1323701322.1806.24.camel@wwguy-ubuntu>
+References: <j881g5$tdf$1@dough.gmane.org> <alpine.DEB.2.00.1110252325090.20273@chino.kir.corp.google.com>
+ <j8fvka$fu0$1@dough.gmane.org> <CA+tb8OUHNbhVN_KiEkqXJW1apFoExRM5Vrn=ES5SF3sFoGOMfA@mail.gmail.com>
+ <1323701322.1806.24.camel@wwguy-ubuntu>
+From: =?UTF-8?Q?Mat=C3=ADas_Aguirre?= <matiasaguirre@gmail.com>
+Date: Mon, 12 Dec 2011 13:49:25 -0200
+Message-ID: <CA+tb8OX9+xn=G6i+ncQjGMd4MvnjHh1t3ZbuX6Ki1eZCjNhj4A@mail.gmail.com>
+Subject: Re: wifi iwlagn fails to authenticate after wake from suspend
+To: wwguy <wey-yi.w.guy@intel.com>
+Cc: Gene Smith <gds@chartertn.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 03:51:55PM +0100, Michal Nazarewicz wrote:
-> >On Fri, Nov 18, 2011 at 05:43:10PM +0100, Marek Szyprowski wrote:
-> >>From: Michal Nazarewicz <mina86@mina86.com>
-> >>diff --git a/mm/compaction.c b/mm/compaction.c
-> >>index 6afae0e..09c9702 100644
-> >>--- a/mm/compaction.c
-> >>+++ b/mm/compaction.c
-> >>@@ -111,7 +111,10 @@ skip:
-> >>
-> >> next:
-> >> 		pfn += isolated;
-> >>-		page += isolated;
-> >>+		if (zone_pfn_same_memmap(pfn - isolated, pfn))
-> >>+			page += isolated;
-> >>+		else
-> >>+			page = pfn_to_page(pfn);
-> >> 	}
-> 
-> On Mon, 12 Dec 2011 15:19:53 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> >Is this necessary?
-> >
-> >We are isolating pages, the largest of which is a MAX_ORDER_NR_PAGES
-> >page.  [...]
-> 
-> On Mon, 12 Dec 2011 15:40:30 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> >To be clear, I'm referring to a single page being isolated here. It may
-> >or may not be a high-order page but it's still going to be less then
-> >MAX_ORDER_NR_PAGES so you should be able check when a new block is
-> >entered and pfn_to_page is necessary.
-> 
-> Do you mean something like:
-> 
-> if (same pageblock)
-> 	just do arithmetic;
-> else
-> 	use pfn_to_page;
-> 
+On Mon, Dec 12, 2011 at 12:48 PM, wwguy <wey-yi.w.guy@intel.com> wrote:
+> this is not right, you stop the bt coex for non-combo device.
+> maybe you system has issue with BT, we seen this happen on some cases.
+> try the following module parameter and see if help
+>
+> $sudo modprobe iwlagn bt_coex_active=0
 
-something like the following untested snippet.
+bt_coex_active=0 fixed this issue, thanks Wey
 
-/*
- * Resolve pfn_to_page every MAX_ORDER_NR_PAGES to handle the case where
- * memmap is not contiguous such as with SPARSEMEM memory model without
- * VMEMMAP
- */
-pfn += isolated;
-page += isolated;
-if ((pfn & ~(MAX_ORDER_NR_PAGES-1)) == 0)
-	page = pfn_to_page(pfn);
-
-That would be closer to what other PFN walkers do
-
-> ?
-> 
-> I've discussed it with Dave and he suggested that approach as an
-> optimisation since in some configurations zone_pfn_same_memmap()
-> is always true thus compiler will strip the else part, whereas
-> same pageblock test will be false on occasions regardless of kernel
-> configuration.
-> 
-
-Ok, while I recognise it's an optimisation, it's a very small
-optimisation and I'm not keen on introducing something new for
-CMA that has been coped with in the past by always walking PFNs in
-pageblock-sized ranges with pfn_valid checks where necessary.
-
-See setup_zone_migrate_reserve as one example where pfn_to_page is
-only called once per pageblock and calls pageblock_is_reserved()
-for examining pages within a pageblock. Still, if you really want
-the helper, at least keep it in compaction.c as there should be no
-need to have it in mmzone.h
 
 -- 
-Mel Gorman
-SUSE Labs
+Matías Aguirre
