@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1LLXNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:13:55 -0500
+	id S1754515Ab1LLXNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:13:38 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:42879 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab1LLXNm (ORCPT
+	with ESMTP id S1754297Ab1LLXNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:13:42 -0500
+	Mon, 12 Dec 2011 18:13:33 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>, Thomas Renninger <trenn@suse.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.dyndbg instead of pnp.debug
-Date: Mon, 12 Dec 2011 16:12:45 -0700
-Message-Id: <1323731569-20644-19-git-send-email-jim.cromie@gmail.com>
+        Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 15/25] dynamic_debug: add trim_prefix() to provide source-root relative paths
+Date: Mon, 12 Dec 2011 16:12:41 -0700
+Message-Id: <1323731569-20644-15-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
 References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
@@ -24,107 +23,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-based upon https://lkml.org/lkml/2010/9/15/398
+trim_prefix(path) skips past the absolute source path root, and
+returns the pointer to the relative path from there.  It is used to
+shorten the displayed path in $DBGMT/dynamic_debug/control via
+ddebug_proc_show(), and in ddebug_change() to allow relative filenames
+to be used in applied queries.  For example:
 
-This patch splits control of pnp debug messages for 2 configs:
+  ~# echo file kernel/freezer.c +p > $DBGMT/dynamic_debug/control
 
-CONFIG_DYNAMIC_DEBUG:
-  use pnp.dyndbg, using pnp.debug will warn
-!CONFIG_DYNAMIC_DEBUG:
-  use pnp.debug, using pnp.dyndbg will warn
+  kernel/freezer.c:128 [freezer]cancel_freezing p "  clean up: %s\012"
 
-2 separate boot options is perhaps suboptimal, but dyndbg is a 'fake'
-parameter, and is special enough that adapting one to another is both
-more suboptimal and harder to explain succinctly.
-
-Thomas' original comments, still pertinent:
-
-I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with
-this or at some time. Only advantage having it is: If you are
-restricted and your kernel must not exceed X bytes, you cannot compile
-in PNP debug messages only, but you have to compile in all debug
-messages.
+trim_prefix(path) insures common prefix before trimming it, so
+out-of-tree module paths are shown as full absolute paths.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-CC: Thomas Renninger <trenn@suse.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>
 ---
- Documentation/kernel-parameters.txt |   14 ++++++++------
- drivers/pnp/base.h                  |    8 ++++++--
- drivers/pnp/core.c                  |   12 ++++++++++++
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ Documentation/dynamic-debug-howto.txt |    7 ++++---
+ lib/dynamic_debug.c                   |   18 +++++++++++++++---
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..81c27b1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2123,12 +2123,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Override pmtimer IOPort with a hex value.
- 			e.g. pmtmr=0x508
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index f959909..378b5d1 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -144,11 +144,12 @@ func
+     func svc_tcp_accept
  
--	pnp.debug=1	[PNP]
--			Enable PNP debug messages (depends on the
--			CONFIG_PNP_DEBUG_MESSAGES option).  Change at run-time
--			via /sys/module/pnp/parameters/debug.  We always show
--			current resource usage; turning this on also shows
--			possible settings and some assignment information.
-+	pnp.debug=1	[PNP] Enable PNP debug messages
-+		        (depends on CONFIG_PNP_DEBUG_MESSAGES and
-+			!CONFIG_DYNAMIC_DEBUG options.  If latter, use
-+			pnp.dyndbg instead).  Change at run-time via
-+			/sys/module/pnp/parameters/debug.  We always
-+			show current resource usage; turning this on
-+			also shows possible settings and some
-+			assignment information.
+ file
+-    The given string is compared against either the full
+-    pathname or the basename of the source file of each
+-    callsite.  Examples:
++    The given string is compared against either the full pathname, the
++    src-root relative pathname, or the basename of the source file of
++    each callsite.  Examples:
  
- 	pnpacpi=	[ACPI]
- 			{ off }
-diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
-index fa4e0a5..28e98aa 100644
---- a/drivers/pnp/base.h
-+++ b/drivers/pnp/base.h
-@@ -173,12 +173,16 @@ struct pnp_resource *pnp_add_bus_resource(struct pnp_dev *dev,
- 					  resource_size_t start,
- 					  resource_size_t end);
+     file svcsock.c
++    file kernel/freezer.c
+     file /usr/src/packages/BUILD/sgi-enhancednfs-1.4/default/net/sunrpc/svcsock.c
  
--extern int pnp_debug;
--
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define pnp_dbg(dev, format, arg...)					\
-+	({ dev_dbg(dev, format, ## arg); 0; })
-+#else
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-+extern int pnp_debug;
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (pnp_debug) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #else
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (0) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #endif
-+#endif
-diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-index cb6ce42..838d82c 100644
---- a/drivers/pnp/core.c
-+++ b/drivers/pnp/core.c
-@@ -219,6 +219,18 @@ subsys_initcall(pnp_init);
+ module
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 6e5b9a3..cb078d4 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -69,6 +69,17 @@ static inline const char *basename(const char *path)
+ 	return tail ? tail+1 : path;
+ }
  
- int pnp_debug;
- 
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+static int __init pnp_debug_setup(char *__unused)
++/* Return the path relative to source root */
++static inline const char *trim_prefix(const char *path)
 +{
-+	pr_info("DYNAMIC_DEBUG enabled, use pnp.dyndbg instead\n");
-+	return 1;
++	int skip = strlen(__FILE__) - strlen("lib/dynamic_debug.c");
++
++	if (strncmp(path, __FILE__, skip))
++		skip = 0; /* prefix mismatch, don't skip */
++
++	return path + skip;
 +}
-+__setup("pnp.debug", pnp_debug_setup);
 +
-+#else
-+
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
- module_param_named(debug, pnp_debug, int, 0644);
- #endif
-+
-+#endif
+ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
+ 	{ _DPRINTK_FLAGS_PRINT, 'p' },
+ 	{ _DPRINTK_FLAGS_INCL_MODNAME, 'm' },
+@@ -125,7 +136,8 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			/* match against the source filename */
+ 			if (query->filename &&
+ 			    strcmp(query->filename, dp->filename) &&
+-			    strcmp(query->filename, basename(dp->filename)))
++			    strcmp(query->filename, basename(dp->filename)) &&
++			    strcmp(query->filename, trim_prefix(dp->filename)))
+ 				continue;
+ 
+ 			/* match against the function */
+@@ -154,7 +166,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			dp->flags = newflags;
+ 			if (verbose)
+ 				pr_info("changed %s:%d [%s]%s =%s\n",
+-					dp->filename, dp->lineno,
++					trim_prefix(dp->filename), dp->lineno,
+ 					dt->mod_name, dp->function,
+ 					ddebug_describe_flags(dp, flagbuf,
+ 							sizeof(flagbuf)));
+@@ -714,7 +726,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 	}
+ 
+ 	seq_printf(m, "%s:%u [%s]%s =%s \"",
+-		dp->filename, dp->lineno,
++		trim_prefix(dp->filename), dp->lineno,
+ 		iter->table->mod_name, dp->function,
+ 		ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
+ 	seq_escape(m, dp->format, "\t\r\n\"");
 -- 
 1.7.7.3
 
