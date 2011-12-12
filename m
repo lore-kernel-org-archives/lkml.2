@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab1LLWda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:33:30 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:56094 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab1LLWd2 convert rfc822-to-8bit (ORCPT
+	id S1754500Ab1LLWeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:34:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32779 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab1LLWeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:33:28 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Lukas Czerner <lczerner@redhat.com>
-CC: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jiayingz@google.com" <jiayingz@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Mon, 12 Dec 2011 17:32:57 -0500
-Subject: RE: [PATCH]tracepoint: add drop_transaction/update_superblock_end
- to jbd2
-Thread-Topic: [PATCH]tracepoint: add drop_transaction/update_superblock_end
- to jbd2
-Thread-Index: AcyvU0XPZJhiiHsvTb6Tp5XxhYabWAJynv8A
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47D9@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
- <alpine.LFD.2.00.1111301227200.4662@dhcp-27-109.brq.redhat.com>
-In-Reply-To: <alpine.LFD.2.00.1111301227200.4662@dhcp-27-109.brq.redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 17:34:10 -0500
+Message-ID: <4EE6815E.8090905@gmail.com>
+Date: Mon, 12 Dec 2011 23:34:06 +0100
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1112120243
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/tile: misplaced parens near likely
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This patch adds trace_jbd2_drop_transaction and trace_jbd2_update_superblock_end
->> because there are similar tracepoints in jbd and they are needed in jbd2 as well.
->>
->> Seiji
->
->Looks good, thanks.
->
->Reviewed-by: Lukas Czerner <lczerner@redhat.com>
->
->>
->>
->>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Parentheses were missing.
 
-Are there anyone else who can review my patch?
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ arch/tile/lib/spinlock_32.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Seiji
+This is what it should be, right?
+
+diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
+index cb0999f..b16ac49 100644
+--- a/arch/tile/lib/spinlock_32.c
++++ b/arch/tile/lib/spinlock_32.c
+@@ -144,7 +144,7 @@ void arch_read_unlock(arch_rwlock_t *rwlock)
+ 	for (;;) {
+ 		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
+ 		val = __insn_tns((int *)&rwlock->lock);
+-		if (likely(val & 1) == 0) {
++		if (likely((val & 1) == 0)) {
+ 			rwlock->lock = val - (1 << _RD_COUNT_SHIFT);
+ 			__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
+ 			break;
