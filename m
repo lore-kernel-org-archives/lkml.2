@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab1LLERH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 23:17:07 -0500
-Received: from mga03.intel.com ([143.182.124.21]:57065 "EHLO mga03.intel.com"
+	id S1752199Ab1LLEXB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 23:23:01 -0500
+Received: from mga14.intel.com ([143.182.124.37]:57512 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab1LLERD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 23:17:03 -0500
+	id S1752046Ab1LLEW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 23:22:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="84635495"
+   d="scan'208";a="46176601"
 Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Li, Shaohua" <shaohua.li@intel.com>
+From: Shaohua Li <shaohua.li@intel.com>
+To: "Shi, Alex" <alex.shi@intel.com>
 Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
         "penberg@kernel.org" <penberg@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <1323657793.22361.383.camel@sli10-conroe>
+In-Reply-To: <1323663251.16790.6115.camel@debian>
 References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
 	 <alpine.DEB.2.00.1112020842280.10975@router.home>
 	 <1323076965.16790.670.camel@debian>
@@ -25,53 +25,52 @@ References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
 	 <1323234673.22361.372.camel@sli10-conroe>
 	 <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com>
 	 <1323657793.22361.383.camel@sli10-conroe>
+	 <1323663251.16790.6115.camel@debian>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Dec 2011 12:14:11 +0800
-Message-ID: <1323663251.16790.6115.camel@debian>
+Date: Mon, 12 Dec 2011 12:35:14 +0800
+Message-ID: <1323664514.22361.385.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 10:43 +0800, Li, Shaohua wrote:
-> On Wed, 2011-12-07 at 15:28 +0800, David Rientjes wrote:
-> > On Wed, 7 Dec 2011, Shaohua Li wrote:
-> > 
-> > > interesting. I did similar experiment before (try to sort the page
-> > > according to free number), but it appears quite hard. The free number of
-> > > a page is dynamic, eg more slabs can be freed when the page is in
-> > > partial list. And in netperf test, the partial list could be very very
-> > > long. Can you post your patch, I definitely what to look at it.
-> > 
-> > It was over a couple of years ago and the slub code has changed 
-> > significantly since then, but you can see the general concept of the "slab 
-> > thrashing" problem with netperf and my solution back then:
-> > 
-> > 	http://marc.info/?l=linux-kernel&m=123839191416478
-> > 	http://marc.info/?l=linux-kernel&m=123839203016592
-> > 	http://marc.info/?l=linux-kernel&m=123839202916583
-> > 
-> > I also had a separate patchset that, instead of this approach, would just 
-> > iterate through the partial list in get_partial_node() looking for 
-> > anything where the number of free objects met a certain threshold, which 
-> > still defaulted to 25% and instantly picked it.  The overhead was taking 
-> > slab_lock() for each page, but that was nullified by the performance 
-> > speedup of using the alloc fastpath a majority of the time for both 
-> > kmalloc-256 and kmalloc-2k when in the past it had only been able to serve 
-> > one or two allocs.  If no partial slab met the threshold, the slab_lock() 
-> > is held of the partial slab with the most free objects and returned 
-> > instead.
-> With the per-cpu partial list, I didn't see any workload which is still
-> suffering from the list lock, 
-
-The merge error that you fixed in 3.2-rc1 for hackbench regression is
-due to add slub to node partial head. And data of hackbench show node
-partial is still heavy used in allocation. 
-
-/sys/kernel/slab/kmalloc-256/alloc_fastpath:225208640 
-/sys/kernel/slab/kmalloc-256/alloc_from_partial:5276300 
-/sys/kernel/slab/kmalloc-256/alloc_from_pcp:8326041 
-
+On Mon, 2011-12-12 at 12:14 +0800, Shi, Alex wrote:
+> On Mon, 2011-12-12 at 10:43 +0800, Li, Shaohua wrote:
+> > On Wed, 2011-12-07 at 15:28 +0800, David Rientjes wrote:
+> > > On Wed, 7 Dec 2011, Shaohua Li wrote:
+> > > 
+> > > > interesting. I did similar experiment before (try to sort the page
+> > > > according to free number), but it appears quite hard. The free number of
+> > > > a page is dynamic, eg more slabs can be freed when the page is in
+> > > > partial list. And in netperf test, the partial list could be very very
+> > > > long. Can you post your patch, I definitely what to look at it.
+> > > 
+> > > It was over a couple of years ago and the slub code has changed 
+> > > significantly since then, but you can see the general concept of the "slab 
+> > > thrashing" problem with netperf and my solution back then:
+> > > 
+> > > 	http://marc.info/?l=linux-kernel&m=123839191416478
+> > > 	http://marc.info/?l=linux-kernel&m=123839203016592
+> > > 	http://marc.info/?l=linux-kernel&m=123839202916583
+> > > 
+> > > I also had a separate patchset that, instead of this approach, would just 
+> > > iterate through the partial list in get_partial_node() looking for 
+> > > anything where the number of free objects met a certain threshold, which 
+> > > still defaulted to 25% and instantly picked it.  The overhead was taking 
+> > > slab_lock() for each page, but that was nullified by the performance 
+> > > speedup of using the alloc fastpath a majority of the time for both 
+> > > kmalloc-256 and kmalloc-2k when in the past it had only been able to serve 
+> > > one or two allocs.  If no partial slab met the threshold, the slab_lock() 
+> > > is held of the partial slab with the most free objects and returned 
+> > > instead.
+> > With the per-cpu partial list, I didn't see any workload which is still
+> > suffering from the list lock, 
+> 
+> The merge error that you fixed in 3.2-rc1 for hackbench regression is
+> due to add slub to node partial head. And data of hackbench show node
+> partial is still heavy used in allocation. 
+The patch is already in base kernel, did you mean even with it you still
+saw the list locking issue with latest kernel?
 
