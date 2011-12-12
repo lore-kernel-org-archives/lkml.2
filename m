@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1LLX3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:29:12 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63765 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab1LLX3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:29:07 -0500
-Date: Mon, 12 Dec 2011 23:29:03 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-Message-ID: <20111212232903.GC2616@gallagher>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753449Ab1LLXdC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:33:02 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57161 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402Ab1LLXc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 18:32:59 -0500
+Message-ID: <1323732772.4078.113.camel@work-vm>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+From: john stultz <johnstul@us.ibm.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
+Date: Mon, 12 Dec 2011 15:32:52 -0800
+In-Reply-To: <4EE68C31.1030207@fb.com>
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>
+	 <1323718578-1157-3-git-send-email-asharma@fb.com>
+	 <1323731361.4078.102.camel@work-vm> <4EE68C31.1030207@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11121223-9360-0000-0000-00000174C17F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Mon, 2011-12-12 at 15:20 -0800, Arun Sharma wrote:
+> On 12/12/11 3:09 PM, john stultz wrote:
+> > On Mon, 2011-12-12 at 11:36 -0800, Arun Sharma wrote:
+> >> From: Kumar Sundararajan<kumar@fb.com>
+> >>
+> >> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..)
+> >> via a new vsyscall. We also add a direct vsyscall that returns
+> >> time in ns (RFC: the direct vsyscall doesn't have a corresponding
+> >> regular syscall, although clock_gettime() is pretty close).
+> >
+> > I'm still not super psyched about providing a vdso-only API.
+> >
+> > If a nanosecond interface like thread_cpu_time() is actually a big win
+> > over clock_gettime(CLOCK_THREAD_CPUTIME,...) it seems it should have its
+> > own syscall as well, no?
+> 
+> The win is relatively small when we're dealing with syscalls. But with 
+> vsyscalls, it starts showing up in micro benchmarks.
+> 
+> Happy to post patches for regular syscalls (assuming I can get them 
+> allocated :).
+> 
+> >
+> > Possibly something like clock_gettime_ns(), which would return the same
+> > values as clock_gettime() but in nanoseconds rather then a timespec?
+> >
+> 
+> If we're doing non-POSIXy things there, how about allocating one syscall 
+> per clock instead of multiplexing them through a single syscall?
+> 
+> This would be a nice to have (clock_gettime_ns() should get us most of 
+> the perf benefit).
 
-I'm still going through these and trying to digest them but a couple of 
-quick questions/comments.
+Well, it makes it a little easier to extend if we get a new clockid,
+rather then having to add a whole new syscall. Keeps parity between the
+timespec and ns interfaces.
 
-Jamie
+Is it just that you're concerned about the clockid switch costs being
+too high?
 
-On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
-> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> new file mode 100644
-> index 0000000..e40c436
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> @@ -0,0 +1,114 @@
-> +This binding is a work-in-progress, and are based on some experimental
-> +work by benh[1].
-> +
-> +Sources of clock signal can be represented by any node in the device
-> +tree.  Those nodes are designated as clock providers.  Clock consumer
-> +nodes use a phandle and clock specifier pair to connect clock provider
-> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
-> +specifier is an array of one more more cells identifying the clock
-> +output on a device.  The length of a clock specifier is defined by the
-> +value of a #clock-cells property in the clock provider node.
-> +
-> +[1] http://patchwork.ozlabs.org/patch/31551/
-> +
-> +==Clock providers==
-> +
-> +Required properties:
-> +#clock-cells:	   Number of cells in a clock specifier; typically will be
-> +		   set to 1
+thanks
+-john
 
-I'm not sure I fully understand what the extra cells actually mean for 
-clocks.  I think the first integer is the clock output to use but some 
-of the versatile and highbank ones only have a phandle or is it more 
-implementation defined?  The clock-output-names description hints at 
-recommended, so I find this a little confusing, but that could just be 
-me!
 
-> +Optional properties:
-> +clock-output-names: Recommended to be a list of strings of clock output signal
-> +		    names indexed by the first cell in the clock specifier.
-> +		    However, the meaning of clock-output-name is domain
-> +		    specific to the clock provider, and is only provided to
-> +		    encourage using the same meaning for the majority of clock
-> +		    providers.  This format may not work for clock providers
-> +		    using a complex clock specifier format.  In those cases it
-> +		    is recommended to omit this property and create a binding
-> +		    specific names property.
-> +
-> +		   Clock consumer nodes must never directly reference
-> +		   the provider's clock-output-name property.
-> +
-> +For example:
-> +
-> +    oscillator {
-> +        #clock-cells = <1>;
-> +        clock-output-names = "ckil", "ckih";
-> +    };
-> +
-> +- this node defines a device with two clock outputs, the first named
-> +  "ckil" and the second named "ckih".  Consumer nodes always reference
-> +  clocks by index. The names should reflect the clock output signal
-> +  names for the device.
-> +
-> +==Clock consumers==
-> +
-> +Required properties:
-> +clocks:		List of phandle and clock specifier pairs, one pair
-> +		for each clock input to the device.
-
-Some of the highbank and versatile devicetree nodes have clocks 
-properties that aren't a pair e.g. versatile timer has
-"clocks = <&tim_clk>;".  
-
-> +clock-names:	List of clock input name strings sorted in the same
-> +		order as the clocks property.  Consumers drivers
-> +		will use clock-names to match clock input names
-> +		with clocks specifiers.
-
-The versatile and highbank patches appears to omit this required 
-property in several nodes.  So is this really optional?
-
-Jamie
