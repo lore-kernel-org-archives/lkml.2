@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1LLOmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:42:54 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32859 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752693Ab1LLOmt (ORCPT
+	id S1753243Ab1LLOtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:49:09 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57772 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab1LLOtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:42:49 -0500
-Message-ID: <4EE612E3.1010801@evidence.eu.com>
-Date: Mon, 12 Dec 2011 15:42:43 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Mon, 12 Dec 2011 09:49:05 -0500
+Message-ID: <4EE6145C.9070606@gmail.com>
+Date: Mon, 12 Dec 2011 09:49:00 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH RESEND 0/8] serial: 8250: support hw-based RS485 direction
- control
-References: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-In-Reply-To: <1323450440-414-1-git-send-email-w.sang@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH v3] mm: simplify find_vma_prev
+References: <1323466526.27746.29.camel@joe2Laptop> <1323470921-12931-1-git-send-email-kosaki.motohiro@gmail.com> <20111212132616.GB15249@tiehlicka.suse.cz>
+In-Reply-To: <20111212132616.GB15249@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 09/12/2011 18:07, Wolfram Sang ha scritto:
-> Some 8250-variants control the direction pin for RS485 in hardware. Linux has
-> RS485 support these days, so update the 8250-driver to adhere to that.
+(12/12/11 8:26 AM), Michal Hocko wrote:
+> On Fri 09-12-11 17:48:40, kosaki.motohiro@gmail.com wrote:
+>> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>>
+>> commit 297c5eee37 (mm: make the vma list be doubly linked) added
+>> vm_prev member into vm_area_struct. Therefore we can simplify
+>> find_vma_prev() by using it. Also, this change help to improve
+>> page fault performance because it has strong locality of reference.
+>>
+>> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>> ---
+>>   mm/mmap.c |   36 ++++++++----------------------------
+>>   1 files changed, 8 insertions(+), 28 deletions(-)
+>>
+>> diff --git a/mm/mmap.c b/mm/mmap.c
+>> index eae90af..b9c0241 100644
+>> --- a/mm/mmap.c
+>> +++ b/mm/mmap.c
+>> @@ -1603,39 +1603,19 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+>>
+>>   EXPORT_SYMBOL(find_vma);
+>>
+>> -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
+>> +/*
+>> + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
+>> + * Note: pprev is set to NULL when return value is NULL.
+>> + */
+>>   struct vm_area_struct *
+>>   find_vma_prev(struct mm_struct *mm, unsigned long addr,
+>>   			struct vm_area_struct **pprev)
+>>   {
+>> -	struct vm_area_struct *vma = NULL, *prev = NULL;
+>> -	struct rb_node *rb_node;
+>> -	if (!mm)
+>> -		goto out;
+>> -
+>> -	/* Guard against addr being lower than the first VMA */
+>> -	vma = mm->mmap;
 >
-> Code is based on 3.2-rc4, tested on a OMAP-based custom board with a 16V2750.
-> A git tree can be found here:
->
-> 	git://git.pengutronix.de/git/wsa/linux-2.6.git 8250_rs485
->
-> There is no code change since the initial post of this series. I updated some
-> of the patch descriptions, though. A kind-of-ack from Claudio can be found here
-> [1]. Please consider for inclusion.
+> Why have you removed this guard? Previously we had pprev==NULL and
+> returned mm->mmap.
+> This seems like a semantic change without any explanation. Could you
+> clarify?
 
+IIUC, find_vma_prev() is module unexported and none of known caller use
+pprev==NULL. Thus, I thought it can be also simplified. Am I missing 
+something?
 
-Hi Wolfram,
-
-	since the code has not been changed, my opinion remains that it is fine 
-and it should enter mainline.
-
-Best regards,
-
-	Claudio
