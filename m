@@ -1,130 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab1LLXTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:19:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51049 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab1LLXNL (ORCPT
+	id S1753541Ab1LLXUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:20:36 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:34999 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751732Ab1LLXUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:13:11 -0500
-From: jim.cromie@gmail.com
-To: jbaron@redhat.com
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH 04/25] dynamic_debug: make dynamic-debug supersede DEBUG ccflag
-Date: Mon, 12 Dec 2011 16:12:30 -0700
-Message-Id: <1323731569-20644-4-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
-References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
+	Mon, 12 Dec 2011 18:20:34 -0500
+Message-ID: <4EE68C31.1030207@fb.com>
+Date: Mon, 12 Dec 2011 15:20:17 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: john stultz <johnstul@us.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>  <1323718578-1157-3-git-send-email-asharma@fb.com> <1323731361.4078.102.camel@work-vm>
+In-Reply-To: <1323731361.4078.102.camel@work-vm>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+On 12/12/11 3:09 PM, john stultz wrote:
+> On Mon, 2011-12-12 at 11:36 -0800, Arun Sharma wrote:
+>> From: Kumar Sundararajan<kumar@fb.com>
+>>
+>> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..)
+>> via a new vsyscall. We also add a direct vsyscall that returns
+>> time in ns (RFC: the direct vsyscall doesn't have a corresponding
+>> regular syscall, although clock_gettime() is pretty close).
+>
+> I'm still not super psyched about providing a vdso-only API.
+>
+> If a nanosecond interface like thread_cpu_time() is actually a big win
+> over clock_gettime(CLOCK_THREAD_CPUTIME,...) it seems it should have its
+> own syscall as well, no?
 
-if CONFIG_DYNAMIC_DEBUG is defined, honor it over DEBUG, so that
-pr_debug()s are controllable, instead of always-on.  When DEBUG is
-also defined, change _DPRINTK_FLAGS_DEFAULT to enable printing by
-default.
+The win is relatively small when we're dealing with syscalls. But with 
+vsyscalls, it starts showing up in micro benchmarks.
 
-Also adding _DPRINTK_FLAGS_INCL_MODNAME would be nice, but there are
-numerous cases of pr_debug(NAME ": ...), which would result in double
-printing of module-name.  So defer this until things settle.
+Happy to post patches for regular syscalls (assuming I can get them 
+allocated :).
 
-CC: Joe Perches <joe@perches.com>
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- include/linux/device.h        |    8 ++++----
- include/linux/dynamic_debug.h |    4 ++++
- include/linux/netdevice.h     |    8 ++++----
- include/linux/printk.h        |    8 ++++----
- 4 files changed, 16 insertions(+), 12 deletions(-)
+>
+> Possibly something like clock_gettime_ns(), which would return the same
+> values as clock_gettime() but in nanoseconds rather then a timespec?
+>
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 3136ede..c9468c1 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -872,14 +872,14 @@ int _dev_info(const struct device *dev, const char *fmt, ...)
- 
- #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
- 
--#if defined(DEBUG)
--#define dev_dbg(dev, format, arg...)		\
--	dev_printk(KERN_DEBUG, dev, format, ##arg)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define dev_dbg(dev, format, ...)		     \
- do {						     \
- 	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
- } while (0)
-+#elif defined(DEBUG)
-+#define dev_dbg(dev, format, arg...)		\
-+	dev_printk(KERN_DEBUG, dev, format, ##arg)
- #else
- #define dev_dbg(dev, format, arg...)				\
- ({								\
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index f71a6b04..29ea09a 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -26,7 +26,11 @@ struct _ddebug {
- #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
- #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
- #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
-+#if defined DEBUG
-+#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
-+#else
- #define _DPRINTK_FLAGS_DEFAULT 0
-+#endif
- 	unsigned int flags:8;
- } __attribute__((aligned(8)));
- 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index cbeb586..f8b71a3c 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2643,14 +2643,14 @@ int netdev_info(const struct net_device *dev, const char *format, ...);
- #define MODULE_ALIAS_NETDEV(device) \
- 	MODULE_ALIAS("netdev-" device)
- 
--#if defined(DEBUG)
--#define netdev_dbg(__dev, format, args...)			\
--	netdev_printk(KERN_DEBUG, __dev, format, ##args)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define netdev_dbg(__dev, format, args...)			\
- do {								\
- 	dynamic_netdev_dbg(__dev, format, ##args);		\
- } while (0)
-+#elif defined(DEBUG)
-+#define netdev_dbg(__dev, format, args...)			\
-+	netdev_printk(KERN_DEBUG, __dev, format, ##args)
- #else
- #define netdev_dbg(__dev, format, args...)			\
- ({								\
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index f0e22f7..f9abd93 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -180,13 +180,13 @@ extern void dump_stack(void) __cold;
- #endif
- 
- /* If you are writing a driver, please use dev_dbg instead */
--#if defined(DEBUG)
--#define pr_debug(fmt, ...) \
--	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
- #define pr_debug(fmt, ...) \
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-+#elif defined(DEBUG)
-+#define pr_debug(fmt, ...) \
-+	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
--- 
-1.7.7.3
+If we're doing non-POSIXy things there, how about allocating one syscall 
+per clock instead of multiplexing them through a single syscall?
 
+This would be a nice to have (clock_gettime_ns() should get us most of 
+the perf benefit).
+
+-Arun
