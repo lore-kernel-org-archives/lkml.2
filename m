@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab1LLLOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:14:08 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49767 "EHLO mx3.mail.elte.hu"
+	id S1752617Ab1LLLOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:14:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41310 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386Ab1LLLOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:14:05 -0500
-Date: Mon, 12 Dec 2011 12:12:22 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-Message-ID: <20111212111222.GA21121@elte.hu>
-References: <20111210132220.083204833@linutronix.de>
- <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
- <alpine.LFD.2.02.1112102144370.3020@ionos>
- <alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
- <20111211103047.GA19299@elte.hu>
- <alpine.LFD.2.02.1112111459270.3020@ionos>
- <20111211155347.GA1297@elte.hu>
- <1323667836.4190.4.camel@lappy>
+	id S1751386Ab1LLLOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 06:14:30 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+Date: Mon, 12 Dec 2011 12:15:56 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Peter Zijlstra <peterz@infradead.org>, gregkh@suse.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu
+References: <20111210104341.592561407@chello.nl> <1323684748.16764.62.camel@twins> <CACVXFVNUGTu-gF=jkNg37cmc1wKFvycYojs96VS8eowyLsJ8fg@mail.gmail.com>
+In-Reply-To: <CACVXFVNUGTu-gF=jkNg37cmc1wKFvycYojs96VS8eowyLsJ8fg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323667836.4190.4.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112121215.56645.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Montag, 12. Dezember 2011, 11:32:58 schrieb Ming Lei:
+> On Mon, Dec 12, 2011 at 6:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > I don't know the driver model, and I don't plan to start learning it
+> > now. But if what you said is possible its broken and no memory barriers
+> > will fix it.
+> 
+> IMO, you don't need to learn it, and my example is very simple and common
+> kref usage in device drivers, :-)
+> 
+> Could we only focus on it and see what is problem? and why won't memory
+> barrier fix it?
 
-* Sasha Levin <levinsasha928@gmail.com> wrote:
+You don't have a CPU ordering problem. If CPU A can do a kfree() you need to
+make sure CPU B doesn't get a pointer to that object. Basically your race is:
 
-> 50k cycles for every single byte is pretty much as good as it 
-> will get with serial console. See slide #5 in Marcelo's KVM 
-> Forum 2010 presentation[1] where he timed a heavyweight exit 
-> to about 40k cycles.
+CPU A							CPU B
 
-> [1]
-> http://www.linux-kvm.org/wiki/images/e/ea/2010-forum-mtosatti_walkthrough_entry_exit.pdf
+p = a;
+								p = a;
+p->counter--;
+if (!p->counter) kfree(p);
+a = NULL;
+								p->counter++;
 
-But what we do here is a PIO exit. That, according to Marcelo's 
-measurements, is about 10K cycles, back to back. [*]
+This is not an ordering problem. You have a real critical section here.
+It doesn't matter when CPU B sees the decrement.
+You must make sure there are no pointers to objects you might free
+if you intend to use the pointers without locks.
 
-So where does the extra overhead come from?
-
-We shouldn't care that there's virtio-console - the goal of 
-tools/kvm it speed everything up as much as possible, so we 
-should not jump to the next IO abstraction unless we know where 
-every cycle was spent with simpler IO models ...
-
-Thanks,
-
-	Ingo
-
-[*] Also, those 10K cycles include some significant Qemu 
-    overhead - a couple of thousand cycles - that should be much 
-    lower in the tools/kvm case.
-
+	Regards
+		Oliver
