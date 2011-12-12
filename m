@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab1LLHSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:18:09 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58868 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752448Ab1LLHSE (ORCPT
+	id S1753017Ab1LLHXC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:23:02 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36721 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab1LLHXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:18:04 -0500
-Date: Mon, 12 Dec 2011 09:17:47 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Christoph Lameter <cl@linux.com>
-cc: David Rientjes <rientjes@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: slub: Lockout validation scans during freeing of object
-In-Reply-To: <alpine.DEB.2.00.1111230922210.16544@router.home>
-Message-ID: <alpine.LFD.2.02.1112120917230.2555@tux.localdomain>
-References: <alpine.DEB.2.00.1111230922210.16544@router.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Mon, 12 Dec 2011 02:23:01 -0500
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 30/30] Staging: comedi: fix printk issue in jr3_pci.c
+Date: Mon, 12 Dec 2011 12:52:19 +0530
+Message-Id: <1323674539-19307-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Nov 2011, Christoph Lameter wrote:
+This is a patch to the jr3_pci.c file that fixes up a
+printk warning found by the checkpatch.pl tool.
 
-> Eric tested this one.
->
->
-> Subject: slub: Lockout validation scans during freeing of object
->
-> Slab validation can run right now while the slab free paths prepare
-> the redzone fields etc around the objects in preparation of the
-> actual freeing of the object. This can lead to false positives.
->
-> Take the node lock unconditionally during free so that the validation
-> can examine objects without them being disturbed by freeing operations.
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
->
-> ---
-> mm/slub.c |   12 ++++++++++--
-> 1 file changed, 10 insertions(+), 2 deletions(-)
->
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2011-11-22 10:42:19.000000000 -0600
-> +++ linux-2.6/mm/slub.c	2011-11-22 10:44:34.000000000 -0600
-> @@ -2391,8 +2391,15 @@ static void __slab_free(struct kmem_cach
->
-> 	stat(s, FREE_SLOWPATH);
->
-> -	if (kmem_cache_debug(s) && !free_debug_processing(s, page, x, addr))
-> -		return;
-> +	if (kmem_cache_debug(s)) {
-> +
-> +		/* Lock out any concurrent validate_slab calls */
-> +		n = get_node(s, page_to_nid(page));
-> +		spin_lock_irqsave(&n->list_lock, flags);
-> +
-> +		if (!free_debug_processing(s, page, x, addr))
-> +			goto out;
-> +	}
->
-> 	do {
-> 		prior = page->freelist;
-> @@ -2471,6 +2478,7 @@ static void __slab_free(struct kmem_cach
-> 			stat(s, FREE_ADD_PARTIAL);
-> 		}
-> 	}
-> +out:
-> 	spin_unlock_irqrestore(&n->list_lock, flags);
-> 	return;
+Added KERN_facility levels for printks.
 
-Ditto.
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/jr3_pci.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
+index 2a97894..6a79ba1 100644
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -593,24 +593,24 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
+ 					min_full_scale =
+ 					    get_min_full_scales(channel);
+ 					printk("Obtained Min. Full Scales:\n");
+-					printk("%i   ", (min_full_scale).fx);
+-					printk("%i   ", (min_full_scale).fy);
+-					printk("%i   ", (min_full_scale).fz);
+-					printk("%i   ", (min_full_scale).mx);
+-					printk("%i   ", (min_full_scale).my);
+-					printk("%i   ", (min_full_scale).mz);
+-					printk("\n");
++					printk(KERN_DEBUG "%i ", (min_full_scale).fx);
++					printk(KERN_CONT "%i ", (min_full_scale).fy);
++					printk(KERN_CONT "%i ", (min_full_scale).fz);
++					printk(KERN_CONT "%i ", (min_full_scale).mx);
++					printk(KERN_CONT "%i ", (min_full_scale).my);
++					printk(KERN_CONT "%i ", (min_full_scale).mz);
++					printk(KERN_CONT "\n");
+ 
+ 					max_full_scale =
+ 					    get_max_full_scales(channel);
+ 					printk("Obtained Max. Full Scales:\n");
+-					printk("%i   ", (max_full_scale).fx);
+-					printk("%i   ", (max_full_scale).fy);
+-					printk("%i   ", (max_full_scale).fz);
+-					printk("%i   ", (max_full_scale).mx);
+-					printk("%i   ", (max_full_scale).my);
+-					printk("%i   ", (max_full_scale).mz);
+-					printk("\n");
++					printk(KERN_DEBUG "%i ", (max_full_scale).fx);
++					printk(KERN_CONT "%i ", (max_full_scale).fy);
++					printk(KERN_CONT "%i ", (max_full_scale).fz);
++					printk(KERN_CONT "%i ", (max_full_scale).mx);
++					printk(KERN_CONT "%i ", (max_full_scale).my);
++					printk(KERN_CONT "%i ", (max_full_scale).mz);
++					printk(KERN_CONT "\n");
+ 
+ 					set_full_scales(channel,
+ 							max_full_scale);
+-- 
+1.7.0.4
+
