@@ -1,89 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab1LLDpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 22:45:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46411 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab1LLDpV convert rfc822-to-8bit (ORCPT
+	id S1753051Ab1LLDsy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 22:48:54 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36926 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab1LLDsw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 22:45:21 -0500
+	Sun, 11 Dec 2011 22:48:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323608131.16764.19.camel@twins>
-References: <1323559734-3488-1-git-send-email-eranian@google.com>
-	<1323559734-3488-3-git-send-email-eranian@google.com>
-	<20111211080138.GB20790@elte.hu>
-	<1323608131.16764.19.camel@twins>
-Date: Sun, 11 Dec 2011 19:45:20 -0800
-Message-ID: <CABPqkBQjCg6V66=z6bvosC0OXCy4FxVFNBWw_XWU=0TPmU1N4g@mail.gmail.com>
-Subject: Re: [PATCH 2/4] perf_event: add PERF_COUNT_HW_REF_CPU_CYCLES generic
- PMU event
-From: Stephane Eranian <eranian@google.com>
+In-Reply-To: <1323636148.16764.44.camel@twins>
+References: <20111210104341.592561407@chello.nl>
+	<20111210104840.295857663@chello.nl>
+	<CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
+	<1323529084.16764.5.camel@twins>
+	<CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
+	<1323546551.2822.14.camel@laptop>
+	<CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
+	<1323607627.16764.13.camel@twins>
+	<CACVXFVOYj+Mmph8WGQUdcGS8t-GPr9y3crPuz0SrBCtOmCvstQ@mail.gmail.com>
+	<1323617738.16764.21.camel@twins>
+	<1323636148.16764.44.camel@twins>
+Date: Mon, 12 Dec 2011 11:48:51 +0800
+Message-ID: <CACVXFVMDEeDBkAdv=AkRZuOH1sNdMGjR3PeHYMVLhwR+FB8gOg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+From: Ming Lei <tom.leiming@gmail.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com
-Content-Type: text/plain; charset=UTF-8
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 4:55 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sun, 2011-12-11 at 09:01 +0100, Ingo Molnar wrote:
->> > + Â  Â  PERF_COUNT_HW_REF_CPU_CYCLES Â  Â  Â  Â  Â  Â = 9,
+On Mon, Dec 12, 2011 at 4:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sun, 2011-12-11 at 16:35 +0100, Peter Zijlstra wrote:
+>> On Sun, 2011-12-11 at 20:59 +0800, Ming Lei wrote:
+>> >
+>> > The implicit rule about kref is that use should make sure
+>> > that kref can not be touched once it is released.
 >>
->> Btw., that was what 'bus cycles' tried to do a long time ago:
->> the constant, non-variable baseline heartbeat of the system.
+>> The only transition for with order makes any difference what so ever is
+>> 1 -> 0, you just said that should be done by external means (I agree and
+>> have argued thusly), therefore any memory barriers outside of these
+>> external means are superfluous.
+>>
+>> Thus the proposed patch is correct.
 >
-> This isn't about that. Its about exposing the third fixed purpose
-> counter. Intel, in their infinite wisdom, created a fixed purpose
-> counter for which there is no equivalent in the general purpose events.
+> Also, this was an entirely different issue than was raised in the
+> original changelog. Memory barriers in general are about ordering
+> visibility between multiple operations done on one cpu vs them being
+> visible on another.
+
+For kref, maybe it is still multiple operations done on one cpu vs them
+being visible on another, but seems a bit implicit, see the common kref
+usage below:
+
+CPU0				CPU1
+					A:kref_init(&obj->ref)
+
+B:kref_get(&obj->ref)
+C:access obj			E:access obj
+					F:kref_put(&ojb->ref)
+D:kref_put(obj->ref)
+
+There is one smp_mb between E and F on CPU1, and we still need
+another one between B and C  on CPU 0 to keep the order. Otherwise,
+CPU1 may observe out of order about B and C, then make obj released
+(F)too early,  and cause OOPS on CPU 0.
+
 >
-Peter is correct.
-
-> Our fixed purpose counter support is predicated on the assumption that
-> there is, and simply maps any event code to also include the fixed
-> purpose counter if appropriate.
+> The important point being that there need to be multiple operations on
+> one cpu in order for them to be able to make a difference. And the whole
+> issue in the past few emails only had a single operation on each cpu.
+> Therefore memory barriers are completely irrelevant.
 >
-True.
+> Ever so more because atomic_t is atomic on the variable regardless of
+> visibility by a second party.
 
-> There not being an event to map from has thus far avoided exposing this
-> third fixed purpose event.
+Maybe not, see above.
+
 >
-> The problem with remapping BUS_CYCLES is that BUS_CYCLES (now) is
-> something you can program on the {2,4,8} general purpose counters,
-> whereas this new thing can only ever be ran from the 1 fixed purpose
-> counter.
+> Anyway, one more way to illustrate my point; there's three distinct
+> phases in the life cycle of a kref managed object: insert, lookup and
+> removal. They are as follows:
 >
-Fixed counter event do NOT have encodings. By constructions, this is
-not needed. So far, perf_events was able to access 2 of the 3 fixed counter
-events ONLY because they could ALSO be measured on generic counters.
-In fact, the event scheduling algorithm as it stood until the AMD changes, put
-those events on generic counters first, then fixed counters if needed.
-But fixed counter 2 (counting unhalted_ref_cycles) is different. It cannot be
-measured on generic counters.
+> INSERT:
+>        obj = alloc_obj();
+>        init_obj(obj);
+>          kref_set(&obj->ref, 1);
+>
+>        LOCK
+>        insert(obj);
+>        UNLOCK
+>
+> LOOKUP:
+>        LOCK
+>        obj = lookup(key);
+>        if (obj)
+>          kref_get();
+>        UNLOCK
+>
+>        ...
+>
+>        kref_put(); /* assuming obj != NULL */
+>
+> REMOVAL: /* assumes obj was acquired using a preceding LOOKUP */
+>        LOCK
+>        remove(obj);
+>        UNLOCK
+>
+>        kref_sub(&obj->ref, 2); /* lookup + insert */
 
-BUS_CYCLES maps to an encoding for generic counters and it does count
-clock ticks but not at the same rate as unhalted_reference_cycles (i.e., fixed
-counter 2). In general bus_cycles counts at about 266Mhz  but could be higher
-on some systems.
-$ perf stat -e bus-cycles noploop 1
-noploop for 1 seconds
- Performance counter stats for 'noploop 1':
-         266062586 bus-cycles
+Looks like should be kref_sub(1) since LOOKUP may handle by itself.
 
-Although there is a fixed ratio between that bus_cycles
-(cpu_clk_unhalted:ref_p or bus)
-and unhalted_reference_cycles, getting to it may not be easy. And then, if
-you knew it, it could be kind of ugly to special case this event to adjust it
-to count core ref cycles.
+>
+> Before the insert() our obj isn't visible to other CPUs doing lookup(),
+> therefore there can be no concurrency on the kref, after insert the
+> insert's UNLOCK + lookup's LOCK provide the full memory barrier
 
-The patch chooses an encoding for the event, which means we can now name it.
-The kernel then knows about that event (mapping table) and can avoid expanding
-its list of supported counters to the generic counters.
+We can't assume any lock about kref usage, because kref is often used
+in lockless scenario.
 
-I think expanding the list of generic HW events with this new one is
-the simplest
-way to make it available to tools. Users of raw events (like me) can also
-use it via the raw encoding.
+> separating the last write to the object and the first read of it.
+>
+> Multiple lookup()s can be concurrent with each other and the last
+> remove(). Concurrent lookups are completely non-interesting since they
+> can't ever trigger the ->0 transition.
+>
+> A lookup interleaved with a removal is serialized on the lock around our
+> data-structure, after the removal no new lookups will succeed, and thus
+> no new kref_get()s will be issued and all that happens is decrements
+> until we hit 0.
+>
+> The issue from the original changelog was that within a lookup, reads
+> and writes to the obj might be re-ordered with the acquisition of the
+> refcount. IOW. something like:
+>
+>  LOCK
+>  obj = lookup(); /* lets assume obj != NULL */
+>  kref_get(&obj->ref);
+>  UNLOCK
+>
+>  value = obj->member;
+>
+>  kref_put(&obj->ref);
+>
+> Now, under our memory model, the read from obj->member can both happen,
+> or be observed to happen before the increment from kref_get() is
+> processed.
+
+It should be the problem if another CPU observed that write/read obj
+is done before kref_get.
+
+> I completely fail to see how that is an issue, nor when it is, why kref
+> should care. If you rely on that, you're doing something weird and
+> exotic and had better place the appropriate memory barriers yourself.
+>
+>
+
+
+thanks,
+-- 
+Ming Lei
