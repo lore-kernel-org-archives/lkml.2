@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab1LLWo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:44:26 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16796 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab1LLWoW (ORCPT
+	id S1754596Ab1LLWod (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:44:33 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:44344 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab1LLWo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:44:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 12 Dec 2011 14:44:09 -0800
-Date: Mon, 12 Dec 2011 14:44:09 -0800
-From: Robert Morell <rmorell@nvidia.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Sumit Semwal <sumit.semwal@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jesse.barker@linaro.org" <jesse.barker@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "daniel@ffwll.ch" <daniel@ffwll.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-Message-ID: <20111212224408.GD4355@morell.nvidia.com>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
- <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
- <201112051718.48324.arnd@arndb.de>
- <20111209225056.GL7969@morell.nvidia.com>
- <4EE33EC2.6050508@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE33EC2.6050508@redhat.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Dec 2011 17:44:29 -0500
+Date: Tue, 13 Dec 2011 09:44:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pjones@redhat.com
+Subject: Re: Re-add ibft tree to linux-next please
+Message-Id: <20111213094419.4c0ea2403c6d09751612892a@canb.auug.org.au>
+In-Reply-To: <20111212145330.GA16278@andromeda.dapyr.net>
+References: <20111212145330.GA16278@andromeda.dapyr.net>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Dec_2011_09_44_19_+1100_9LabR7rrOdi5PTm9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 10, 2011 at 03:13:06AM -0800, Mauro Carvalho Chehab wrote:
-> On 09-12-2011 20:50, Robert Morell wrote:
-> > On Mon, Dec 05, 2011 at 09:18:48AM -0800, Arnd Bergmann wrote:
-> >> On Friday 02 December 2011, Sumit Semwal wrote:
-> >>> This is the first step in defining a dma buffer sharing mechanism.
-> >>
-> > [...]
-> >>
-> >>> +	return dmabuf;
-> >>> +}
-> >>> +EXPORT_SYMBOL(dma_buf_export);
-> >>
-> >> I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
-> >> because it's really a low-level function that I would expect
-> >> to get used by in-kernel subsystems providing the feature to
-> >> users and having back-end drivers, but it's not the kind of thing
-> >> we want out-of-tree drivers to mess with.
-> >
-> > Is this really necessary?  If this is intended to be a
-> > lowest-common-denominator between many drivers to allow buffer sharing,
-> > it seems like it needs to be able to be usable by all drivers.
-> >
-> > If the interface is not accessible then I fear many drivers will be
-> > forced to continue to roll their own buffer sharing mechanisms (which is
-> > exactly what we're trying to avoid here, needless to say).
-> 
-> Doing a buffer sharing with something that is not GPL is not fun, as, if any
-> issue rises there, it would be impossible to discover if the problem is either
-> at the closed-source driver or at the open source one. At the time I was using
-> the Nvidia proprietary driver, it was very common to have unexplained issues
-> caused likely by bad code there at the buffer management code, causing X
-> applications and extensions (like xv) to break.
+--Signature=_Tue__13_Dec_2011_09_44_19_+1100_9LabR7rrOdi5PTm9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Konrad,
+
+On Mon, 12 Dec 2011 10:53:30 -0400 Konrad Rzeszutek Wilk <konrad@kernel.org=
+> wrote:
 >
-> We should really make this EXPORT_SYMBOL_GPL(), in order to be able to latter
-> debug future share buffer issues, when needed.
+> I've one patch for the iBFT and since I am the co-maintainer of said tree,
+> please add this tree to your awesome build system:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft.git
+>=20
+> The branch is "linux-next"
 
-Sorry, I don't buy this argument.  Making these exports GPL-only is not
-likely to cause anybody to open-source their driver, but will rather
-just cause them to use yet more closed-source code that is even less
-debuggable than this would be, to those without access to the source.
+OK, I have added that from today.  There is currently nothing in that
+branch, right?
 
-Thanks,
-Robert
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-> Regards,
-> Mauro
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Tue__13_Dec_2011_09_44_19_+1100_9LabR7rrOdi5PTm9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO5oPDAAoJEECxmPOUX5FEaBwP/0lzObQioyNwX+QkNWO4Quh6
+UpbVQY1IWH7lvm6VVcljHfU7woqLam1pOqEh0/1tJfixuyjd+2Y85bmfvZ8yLPJ5
+7ExkrjMYLdZhniDxbWID62V/dd2Y3Ti58a5XjRdGvTZPkrK0yZdPqaVmNtZFLJK9
+fBWw6Db+RFA5iIlPdm2CM0h243uLRpnxJs3ApixziM8si+XRmUvFH92eYDbUysdS
+WyUGihF9/a2Z5Z33R/RxuPyhEXhJZprSv2reTI/LaxdX8Co9yyZP7TknMIWZOkBm
+MA6xPEQipYpPYFFzn8OhPfIXLd/QcAHbevPAYZDt8XajtaCdgjqNEuKOjsPaHQae
+LQT1ywFehhINUc/0cGSM0t1wKn536Y8AULdCnn5y1VWP8Es6DrTDSR5/oXliqeUi
+MlZ4buuiMHX4UNXhW13OA+cmzWemRL15IbCarjSkVf8ZSDxS8agl9fHIBRJQevxN
+OoaBbDEM5ybba3SJi4PPcMlFvhRcFsf9qaWarpX/fOjxcG3cXwRcYIDF1yQkAVOJ
+saIe7R65Jl+N3I3Hd59OOMSMuegk9GvJLiaMjqtc3grVGNc+Cbw1Nc8hNRBRXEiA
+c1CmLhNsGZxX0Y4ijsVDilwWyK3tvjqf1MRKg33IEtaJbKcZftmz9077hq528uas
+fRFyneOby1JRdYWwS2JR
+=uNIw
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Dec_2011_09_44_19_+1100_9LabR7rrOdi5PTm9--
