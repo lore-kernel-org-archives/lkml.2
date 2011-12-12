@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1LLOwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:52:04 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58849 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab1LLOwC convert rfc822-to-8bit (ORCPT
+	id S1753368Ab1LLOwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:52:20 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50791 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab1LLOwS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:52:02 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>
-Subject: Re: [PATCH 03/11] mm: mmzone: introduce zone_pfn_same_memmap()
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-4-git-send-email-m.szyprowski@samsung.com>
- <20111212141953.GD3277@csn.ul.ie> <op.v6dr4pj43l0zgt@mpn-glaptop>
- <20111212144030.GF3277@csn.ul.ie>
-Date: Mon, 12 Dec 2011 15:51:55 +0100
+	Mon, 12 Dec 2011 09:52:18 -0500
 MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20111212144938.GA25014@infradead.org>
+References: <20111212144938.GA25014@infradead.org>
+Date: Mon, 12 Dec 2011 15:52:17 +0100
+Message-ID: <CA+icZUX4Owo1M5iR++cnNm99NUBsqgoRC7s68RBHweuVNM3Ctw@mail.gmail.com>
+Subject: Re: XFS status update for November 2011
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v6dswtfw3l0zgt@mpn-glaptop>
-In-Reply-To: <20111212144030.GF3277@csn.ul.ie>
-User-Agent: Opera Mail/11.60 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Nov 18, 2011 at 05:43:10PM +0100, Marek Szyprowski wrote:
->> From: Michal Nazarewicz <mina86@mina86.com>
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index 6afae0e..09c9702 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -111,7 +111,10 @@ skip:
->>
->>  next:
->>  		pfn += isolated;
->> -		page += isolated;
->> +		if (zone_pfn_same_memmap(pfn - isolated, pfn))
->> +			page += isolated;
->> +		else
->> +			page = pfn_to_page(pfn);
->>  	}
+November or December?
 
-On Mon, 12 Dec 2011 15:19:53 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> Is this necessary?
+- Sedat -
+
+On Mon, Dec 12, 2011 at 3:49 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> November saw stabilization of the Linux 3.2 release candidates, including
+> a few fixes for XFS.  In addition a lot of bug fixes were backported to
+> the 3.0 long term stable and 3.1-stable releases for users not on
+> bleeding edge kernels.
 >
-> We are isolating pages, the largest of which is a MAX_ORDER_NR_PAGES
-> page.  [...]
-
-On Mon, 12 Dec 2011 15:40:30 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> To be clear, I'm referring to a single page being isolated here. It may
-> or may not be a high-order page but it's still going to be less then
-> MAX_ORDER_NR_PAGES so you should be able check when a new block is
-> entered and pfn_to_page is necessary.
-
-Do you mean something like:
-
-if (same pageblock)
-	just do arithmetic;
-else
-	use pfn_to_page;
-
-?
-
-I've discussed it with Dave and he suggested that approach as an
-optimisation since in some configurations zone_pfn_same_memmap()
-is always true thus compiler will strip the else part, whereas
-same pageblock test will be false on occasions regardless of kernel
-configuration.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+> At the same time development for Linux 3.3 went on at a fast pace, although
+> no pages were merged into the development tree yet.  The highlights are:
+>
+>  - further versions of the patches to log all file size updates instead of
+>   relying the the flaky VM writeback code for them
+>  - an initial version of SEEK_HOLE/SEEK_DATA support
+>  - removal of the old non-delaylog logging code, and cleanups resulting
+>   from the removal
+>  - large updates for the quota code
+>
+> Userspace development was even more busy:
+>
+> Xfsprogs saw the rushed 3.1.7 release which contains Debian packaging fixes,
+> a polish translation update and a xfs_repair fix.  In the meantime a lot of
+> xfs_repair fixes were posted but mostly not reviewed and commit yet.
+>
+> Xfsdump grew support for using pthreads to write backup streams to multiple
+> tapes in parallel, and SGI_XFSDUMP_SKIP_FILE which has been deprecated in
+> favor of the nodump flag has finally been removed.
+>
+> Xfstests saw an enormous amount of updates.  The fsstress tool saw major
+> updates to exercise even more system calls, and found numerous bugs in
+> all major Linux filesystems, additional ENOSPC tests, a new test for
+> btrfs-specific functionality and the usual amount of bug fixes and small
+> cleanups.  Also a series to clean up the very large filesystem testing,
+> including extending the support to ext4 was posted but not committed yet.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
