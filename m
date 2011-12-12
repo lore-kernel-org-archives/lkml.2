@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1LLWQD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:16:03 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:51263 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754185Ab1LLWQA (ORCPT
+	id S1754467Ab1LLWQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:16:27 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55944 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab1LLWQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:16:00 -0500
-Message-ID: <4EE67CB5.7000404@fb.com>
-Date: Mon, 12 Dec 2011 14:14:13 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 17:16:26 -0500
+Message-ID: <4EE67D35.5000307@gmail.com>
+Date: Mon, 12 Dec 2011 23:16:21 +0100
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Andy Lutomirski <luto@MIT.EDU>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-References: <1323718578-1157-1-git-send-email-asharma@fb.com>   <1323718578-1157-3-git-send-email-asharma@fb.com>  <1323720791.2583.23.camel@edumazet-laptop> <4EE66FE9.1050202@fb.com> <1323725243.2583.27.camel@edumazet-laptop>
-In-Reply-To: <1323725243.2583.27.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: slab: too much allocated in bootstrap head arrays?
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/11 1:27 PM, Eric Dumazet wrote:
+In mm/slab.c kmem_cache_init() at /* 4) Replace the bootstrap head arrays */
+it kmallocs *ptr and memcpy's with sizeof(struct arraycache_init). Is this
+correct or should it maybe be with sizeof(struct arraycache) instead?
 
-> This only works if CONFIG_X86_L1_CACHE_SHIFT=6
->
-> Some configurations have 128 bytes cache lines
->
+Please review, i.e. this change:
+---
+It appears we allocated and copied too much.
 
-I could still handle this case based on compile time math.
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ mm/slab.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> But really most modern distros have NR_CPUS>  64
-
-Is 256 the new 64? :)
-
-That'll require 3 more VVAR pages, most of which would be unused on the 
-vast majority of the systems (assuming 32 CPUs or less).
-
-Having the number of VVAR pages configurable at boot time would solve 
-this problem nicely. I think that should be a separate patch.
-
-  -Arun
+diff --git a/mm/slab.c b/mm/slab.c
+index 83311c9a..6978cbf 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1617,11 +1617,11 @@ void __init kmem_cache_init(void)
+ 	{
+ 		struct array_cache *ptr;
+ 
+-		ptr = kmalloc(sizeof(struct arraycache_init), GFP_NOWAIT);
++		ptr = kmalloc(sizeof(struct arraycache), GFP_NOWAIT);
+ 
+ 		BUG_ON(cpu_cache_get(&cache_cache) != &initarray_cache.cache);
+ 		memcpy(ptr, cpu_cache_get(&cache_cache),
+-		       sizeof(struct arraycache_init));
++		       sizeof(struct arraycache));
+ 		/*
+ 		 * Do not assume that spinlocks can be initialized via memcpy:
+ 		 */
+@@ -1629,12 +1629,12 @@ void __init kmem_cache_init(void)
+ 
+ 		cache_cache.array[smp_processor_id()] = ptr;
+ 
+-		ptr = kmalloc(sizeof(struct arraycache_init), GFP_NOWAIT);
++		ptr = kmalloc(sizeof(struct arraycache), GFP_NOWAIT);
+ 
+ 		BUG_ON(cpu_cache_get(malloc_sizes[INDEX_AC].cs_cachep)
+ 		       != &initarray_generic.cache);
+ 		memcpy(ptr, cpu_cache_get(malloc_sizes[INDEX_AC].cs_cachep),
+-		       sizeof(struct arraycache_init));
++		       sizeof(struct arraycache));
+ 		/*
+ 		 * Do not assume that spinlocks can be initialized via memcpy:
+ 		 */
