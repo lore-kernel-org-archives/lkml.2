@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1LLR2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:28:23 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46355 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab1LLR2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:28:21 -0500
-Date: Mon, 12 Dec 2011 18:26:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
- address is invalid"
-Message-ID: <20111212172630.GF23870@elte.hu>
-References: <1323648762-2148-1-git-send-email-keithp@keithp.com>
- <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
- <1323684086.3669.16.camel@mfleming-mobl1.ger.corp.intel.com>
- <4EE63552.5000704@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE63552.5000704@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753735Ab1LLR2l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:28:41 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42158
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753564Ab1LLR2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:28:33 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 3/4] Drivers: hv: Get rid of an unnecessary check in hv.c
+Date: Mon, 12 Dec 2011 09:29:18 -0800
+Message-Id: <1323710959-29655-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1323710959-29655-1-git-send-email-kys@microsoft.com>
+References: <1323710931-29616-1-git-send-email-kys@microsoft.com>
+ <1323710959-29655-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In preparation for eventually supporting kexec in Linux VMs on Hyper-V,
+get rid of an unnecessary check in hv_init().
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/hv/hv.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-> On 12/12/2011 02:01 AM, Matt Fleming wrote:
-> > 
-> > At this late -rc stage I agree it makes sense to revert this. The
-> > CONFIG_X86_32 oops that the patch fixes has been around for years and no
-> > one seems to have encountered it (until now), whereas this new
-> > regression is likely to affect many more users.
-> > 
-> 
-> Agreed on both accounts.
-> 
-> For the revert:
-> 
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
-> 
-> ... or we can push it in the next x86/urgent batch.
+diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
+index f8a77d0..12aa97f 100644
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -164,11 +164,6 @@ int hv_init(void)
+ 
+ 	max_leaf = query_hypervisor_info();
+ 
+-	rdmsrl(HV_X64_MSR_GUEST_OS_ID, hv_context.guestid);
+-
+-	if (hv_context.guestid != 0)
+-		goto cleanup;
+-
+ 	/* Write our OS info */
+ 	wrmsrl(HV_X64_MSR_GUEST_OS_ID, HV_LINUX_GUEST_ID);
+ 	hv_context.guestid = HV_LINUX_GUEST_ID;
+-- 
+1.7.4.1
 
-I've pushed it int x86/urgent and will send it to Linus later 
-today (if he has not applied it meanwhile).
-
-Thanks,
-
-	Ingo
