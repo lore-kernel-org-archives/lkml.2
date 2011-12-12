@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1LLQLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:11:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19613 "EHLO mx1.redhat.com"
+	id S1753249Ab1LLQNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:13:35 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:18207 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab1LLQLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:11:42 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87ty56taup.fsf@rustcorp.com.au>
-References: <87ty56taup.fsf@rustcorp.com.au> <87obvfogc6.fsf@rustcorp.com.au> <8739csq5ac.fsf@rustcorp.com.au> <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk> <2657.1323456206@redhat.com> <30007.1323526114@redhat.com> <26644.1323652900@redhat.com> 
-To: Rusty Russell <rusty@ozlabs.org>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        arjan.van.de.ven@intel.com, alan.cox@intel.com,
-        Jon Masters <jcm@jonmasters.org>
-Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
-Date: Mon, 12 Dec 2011 16:11:27 +0000
-Message-ID: <21605.1323706287@redhat.com>
+	id S1751145Ab1LLQNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 11:13:34 -0500
+Message-ID: <4EE62824.9090807@parallels.com>
+Date: Mon, 12 Dec 2011 20:13:24 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/4] SUNRPC: pass network namespace context to sockaddr
+ construction routines
+References: <20111207111716.17273.63010.stgit@localhost6.localdomain6> <20111208204648.GB32505@fieldses.org>
+In-Reply-To: <20111208204648.GB32505@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@ozlabs.org> wrote:
+09.12.2011 00:46, J. Bruce Fields пишет:
+> On Wed, Dec 07, 2011 at 03:20:07PM +0300, Stanislav Kinsbursky wrote:
+>> This is another precursor patch set aimed to remove hard-coded "init_net"
+>> reference from SUNRPC sockaddr convertion and construction routines.
+>
+> ACK--all look straightforward.  (Only complaint would be that this isn't
+> terribly interesting till we see how these are used.)
+>
 
-> OK, then you need to generate stripped modules as part of the build,
-> too.  It's a bit of a pain, sure, but hardly a showstopper.
+Actually, all is simple. These init_net pointers will be replaced later by 
+"transports, clients and others" network namespace contexts.
+I have some more patches for NFS layer. But I don't see any sense to sent them 
+now since no "virtualization" patches were commited yet.
+So, currently, I'm trying to finalize "SUNRPC per network namespace" task, and 
+soon I'll send a patch set making SUNRPC sysctl's network-namespace-aware. It is 
+a little bit tricky and ugly from my pow, so any ideas are welcome.
 
-They'd have to be maximally stripped so that mkinitrd doesn't do anything to
-them, but you'd then get the debuginfo from them into the packaging if you're
-on some distribution or other.  And you also provide an option to not strip
-them if whoever wants them unstripped.
+> --b.
+>
+>
+>>
+>> The following series consists of:
+>>
+>> ---
+>>
+>> Stanislav Kinsbursky (4):
+>>        SUNRPC: use passed network namespace context in rpc_parse_scope_id()
+>>        SUNRPC: use passed network namespace context in rpc_pton6()
+>>        SUNRPC: use passed network namespace context in rpc_pton()
+>>        SUNRPC: use passed network namespace context in rpc_uaddr2sockaddr()
+>>
+>>
+>>   fs/nfs/dns_resolve.c        |    4 ++--
+>>   fs/nfs/nfs4filelayoutdev.c  |    2 +-
+>>   fs/nfs/nfs4namespace.c      |    2 +-
+>>   fs/nfs/super.c              |    4 ++--
+>>   fs/nfsd/nfs4state.c         |    2 +-
+>>   fs/nfsd/nfsctl.c            |    2 +-
+>>   include/linux/sunrpc/clnt.h |    4 ++--
+>>   net/sunrpc/addr.c           |   24 +++++++++++++-----------
+>>   net/sunrpc/rpcb_clnt.c      |    2 +-
+>>   net/sunrpc/svcauth_unix.c   |    2 +-
+>>   10 files changed, 25 insertions(+), 23 deletions(-)
+>>
+>> --
+>> Signature
 
-> A signature contains a magic marker
 
-I don't like this particularly - you can't guarantee that this won't be
-generated by the assembler quite by accident.  You should find the end of the
-ELF and work from there.  It should be a simple matter of parsing the header
-and the section table only, right?  Then you can look at the file offset +
-length of the last section in the file.  At that point, assuming this isn't
-coincident with the actual end of the file, you can try parsing what's
-thereafter as a signature.  If it is actual PGP, then an RFC4880 parser should
-recognise it as valid, and a signature packet should be seen.
-
-> A signature contains a magic marker: it signs everything up to the
-> magic marker (ie. just append them):
-> 	SUM=`md5sum drivers/block/loop.ko | cut -d\  -f1`; echo "@Module signature:$SUM" >> drivers/block/loop.ko
-
-That's not a useful signature, but I suspect you're just showing this as an
-example.
-
-> We can have false positives, but at worst that make us report EINVAL
-> (bad signature) instead of ENOENT (no signature).
-
-EKEYREJECTED please; that way it's the same as RHEL does now.
-
-> Took me longer to figure out the damn crypto API
-
-You don't actually need to use that.  The crypto API for the moment doesn't do
-crytographic signature verification.
-
-Look at:
-
-	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/devel
-
->From tag cryptokeys-2011-12-07.  That's my crypto signature verification stuff
-in the kernel.  You can build on that.  The last patch in the sequence has
-some of the bits you need for actually generating the signature, though rather
-than editing the ELF, you'd just append all the signatures you actually need.
-
-The following file:
-
-http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=blob;f=kernel/module-verify-sig.c;h=ced56816b2c47307a36cce0c6f829ea23fc5f2e6;hb=d71374f23e3a8c88c3ae20f62f04fb07a641f805
-
-has an example of how it can be used, but it's basically:
-
-	struct crypto_key_verify_context *mod_sig;
-	u8 *sig = <signature data>;
-	size_t sig_size = <signature data size>;
-
-	/* Find the crypto key for the module signature
-	 * - !!! if this tries to load the required hash algorithm module,
-	 *       we will deadlock!!!
-	 */
-	mod_sig = verify_sig_begin(modsign_keyring, sig, sig_size);
-	if (IS_ERR(mod_sig))
-		...
-
-returns -EBADMSG if none of its parsers recognise the signature, -ENOPKG if
-the signature is recognised, but we can't handle it (for instance if it's an
-unsupported hash algorithm), -ENOKEY if we recognise it, but there's no key
-available or -EKEYREJECTED if we recognised it, found the matching key, but
-the key couldn't be used to verify the signature for some reason.
-
-	/* Call repeatedly to shovel data into the crypto hash */
-	verify_sig_add_data(mod_sig, dataptr, datasize);
-
-	/* Call to finalise and actually perform the verification */
-	ret = verify_sig_end(mod_sig, sig, sig_size);
-
-or:
-
-	/* Call to cancel the verification */
-	verify_sig_cancel(mod_sig);
-
-This does all the work for you.
-
-David
+-- 
+Best regards,
+Stanislav Kinsbursky
