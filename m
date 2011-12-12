@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1LLR2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:28:01 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13384 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753326Ab1LLR17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:27:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="84845213"
-Date: Mon, 12 Dec 2011 18:33:03 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Philip Rakity <prakity@marvell.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] power: max8925. remove support for irq bits that do not
- exist
-Message-ID: <20111212173303.GS13952@sortiz-mobl>
-References: <86216CAF-2B76-4C5E-8077-68D535FEDBB9@marvell.com>
- <CAN1soZx1DU3eYwOJvMNF5jdNorkfWuLpBwk5eV5VA89Bw5d4rg@mail.gmail.com>
- <20111125190933.GA13179@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111125190933.GA13179@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753658Ab1LLR2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:28:18 -0500
+Received: from billgribble.com ([65.99.215.30]:59180 "EHLO
+	mail.billgribble.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab1LLR2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:28:15 -0500
+Message-ID: <1323710873.3638.2.camel@debian.lii>
+Subject: Re: Mystery clicking under keyboard, 3.x only, SSD only
+From: Bill Gribble <grib@billgribble.com>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 12 Dec 2011 12:27:53 -0500
+In-Reply-To: <4EE635A2.8080705@gmail.com>
+References: <20111211142451.63febb26@pequin> <4EE635A2.8080705@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-3+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+On Mon, 2011-12-12 at 23:10 +0600, Alexander E. Patrakov wrote:
+> This clicking can be related to the events when the device goes to deep 
+> powersaving levels. Fluctuations in the consumed current can lead to 
+> audible clicks due to bad screening of audio wires, loose ferrite cores 
+> in the coils, magnetostriction effect, etc.
+> 
+> You can test this theory by running several copies of "yes > /dev/null" 
+> and thus eating 100% CPU. If this eliminates the clicking effect, then 
+> my guess is correct and you have to disable some of the deepest 
+> powersaving states to remove the clicks.
 
-On Fri, Nov 25, 2011 at 11:09:33PM +0400, Anton Vorontsov wrote:
-> MFD guys: OK to go through battery GIT tree?
-Yes.
+Got it in one!  Causing 100% CPU utilization does indeed stop the
+clicking.  I will look for power saving settings that I can control. 
 
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Thanks,
+Bill Gribble
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
