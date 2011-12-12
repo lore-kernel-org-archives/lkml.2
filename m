@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab1LLLXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:23:24 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46892 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab1LLLXX (ORCPT
+	id S1752701Ab1LLLYy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:24:54 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:53503 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752169Ab1LLLYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:23:23 -0500
-Date: Mon, 12 Dec 2011 15:23:18 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-Message-ID: <20111212112318.GG2199@moon>
-References: <20111210132220.083204833@linutronix.de>
- <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
- <alpine.LFD.2.02.1112102144370.3020@ionos>
- <alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
- <20111211103047.GA19299@elte.hu>
- <alpine.LFD.2.02.1112111459270.3020@ionos>
- <20111211155347.GA1297@elte.hu>
- <1323667836.4190.4.camel@lappy>
- <20111212111222.GA21121@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111212111222.GA21121@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Dec 2011 06:24:53 -0500
+Subject: Re: [PATCH 08/10] omapfb: lcd_ams_delta: Drive control lines over
+ GPIO
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+In-Reply-To: <1323634328-856-9-git-send-email-jkrzyszt@tis.icnet.pl>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
+	 <1323634328-856-9-git-send-email-jkrzyszt@tis.icnet.pl>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-HrrbFEKLHQnNz2ugs0wK"
+Date: Mon, 12 Dec 2011 13:24:47 +0200
+Message-ID: <1323689087.3852.19.camel@deskari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 12:12:22PM +0100, Ingo Molnar wrote:
-> 
-> * Sasha Levin <levinsasha928@gmail.com> wrote:
-> 
-> > 50k cycles for every single byte is pretty much as good as it 
-> > will get with serial console. See slide #5 in Marcelo's KVM 
-> > Forum 2010 presentation[1] where he timed a heavyweight exit 
-> > to about 40k cycles.
-> 
-> > [1]
-> > http://www.linux-kvm.org/wiki/images/e/ea/2010-forum-mtosatti_walkthrough_entry_exit.pdf
-> 
-> But what we do here is a PIO exit. That, according to Marcelo's 
-> measurements, is about 10K cycles, back to back. [*]
-> 
-> So where does the extra overhead come from?
-> 
-> We shouldn't care that there's virtio-console - the goal of 
-> tools/kvm it speed everything up as much as possible, so we 
-> should not jump to the next IO abstraction unless we know where 
-> every cycle was spent with simpler IO models ...
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> [*] Also, those 10K cycles include some significant Qemu 
->     overhead - a couple of thousand cycles - that should be much 
->     lower in the tools/kvm case.
-> 
 
-FWIW, last time I was mcount'ing calltrace -- we spend a lot of time
-due to timer signals, ie because of
+--=-HrrbFEKLHQnNz2ugs0wK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-#define TIMER_INTERVAL_NS 1000000	/* 1 msec */
+On Sun, 2011-12-11 at 21:12 +0100, Janusz Krzysztofik wrote:
+> Don't use Amstrad Delta custom I/O functions any longer, use GPIO API
+> instead.
+>=20
+> Depends on patch 5/10 "MTD: NAND: ams-delta: Use GPIO instead of custom
+> I/O".
+>=20
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> ---
+>  arch/arm/mach-omap1/board-ams-delta.c             |   10 -------
+>  arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
+>  drivers/video/omap/lcd_ams_delta.c                |   27 +++++++++++++++=
+-----
+>  3 files changed, 20 insertions(+), 19 deletions(-)
 
-so, do we really need it being that hight? This poll includes
-enquiry if there some symbol a user typed in console. Maybe
-we should reduce this rate?
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-	Cyrill
+ Tomi
+
+
+--=-HrrbFEKLHQnNz2ugs0wK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJO5eR/AAoJEPo9qoy8lh71y4AP/36ymwGQfo0/xUblq852gGHK
+tddm2t7IxPa246K8pshBAskSuCLlmL9lDmjj3r5NWnU4HxHxfLtoRRjfyCBS+RtV
+YvKaWwHIdbx5fpiIsMiWlmuqHdZGST3RGPSqR/k/niT+PSHnk25iCIdOvCi9TM9/
+b4/uKGvR0A6bC2Q1JmhWVaTt2jsYtsCbYSd/vd2EAqxd/QwU6MI/q92YxWG8k3Np
+fSGSvRC3Y6eCJIwav5SF1+dX4Wnr/d1etWWJ696etdG1AU6/hxp3zHcNQd0LBqyd
+THRvM05HsLmETf4dcQFy4CIS13F41gkjaR8OtqEpJ6wYrWd8ygmSdv6GdCpR4Z8/
+Y5zcBcPrwI9/2MgqdoRblqGfuaYPZ6V1kdMHrZlk4Jz3UUluiTBdEQy0bBneiSqp
+yGAxx6goIYcTc94NIp8hr5+DH7qmNcroMRkhgEbGaerF01+p0gwj+Xe5ER4rW8Az
+nQgfTpWk3mUohTWs92XYIlrpjvWv5AnuNTfEe7yzcetIUw3y4b4wbriTzZA/a/ir
+8UqKyFnduoTu2BAUOSsZrzok2/diRAvuvqQC0ByEf7yewg/uwFUyv5YhclHTUXOP
+MBZwDY7U2VXEbF+lLagrAud/dsDR7OA+rfi3izWBcvJ3RI0z0i9cBTEbrxEzIUvQ
+1rjc4B7YLHQ/HMw3JSfk
+=ca/Q
+-----END PGP SIGNATURE-----
+
+--=-HrrbFEKLHQnNz2ugs0wK--
+
