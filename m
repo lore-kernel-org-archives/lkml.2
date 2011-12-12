@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1LLTa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 14:30:58 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44779 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753227Ab1LLTa5 (ORCPT
+	id S1753943Ab1LLTbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 14:31:45 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64179 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab1LLTbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 14:30:57 -0500
-X-Sasl-enc: I7PJ1ZI9sKgau0+wEBreJGAL1/qhYCl9h3Mlg6OHvDHH 1323718251
-Date: Mon, 12 Dec 2011 11:30:40 -0800
-From: Greg KH <greg@kroah.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Ming Lei <tom.leiming@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        gregkh@suse.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, ostrikov@nvidia.com, adobriyan@gmail.com,
-        eric.dumazet@gmail.com, mingo@elte.hu
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-Message-ID: <20111212193040.GA13131@kroah.com>
-References: <20111210104341.592561407@chello.nl>
- <1323680078.16764.45.camel@twins>
- <CACVXFVPOsUrEEDT=iMZyrvaX3G_XqWpVOJyz24=FPTtB_9J9HQ@mail.gmail.com>
- <201112121120.16326.oneukum@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112121120.16326.oneukum@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Dec 2011 14:31:43 -0500
+Message-ID: <1323718298.2583.21.camel@edumazet-laptop>
+Subject: Re: [Slub allocator] There are chances that
+ kmem_cache_cpu->freelist gets lost if the process happens to be rescheduled
+ to a differenet cpu before the local_irq_save() completes in __slab_alloc()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: zhihua che <zhihua.che@gmail.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Date: Mon, 12 Dec 2011 20:31:38 +0100
+In-Reply-To: <alpine.DEB.2.00.1112121252430.31975@router.home>
+References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
+	  <1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <alpine.DEB.2.00.1112120922020.28410@router.home>
+	 <1323711558.2583.11.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1112121252430.31975@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 11:20:16AM +0100, Oliver Neukum wrote:
-> Am Montag, 12. Dezember 2011, 10:57:31 schrieb Ming Lei:
-> > On Mon, Dec 12, 2011 at 4:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Mon, 2011-12-12 at 11:48 +0800, Ming Lei wrote:
-> > >> For kref, maybe it is still multiple operations done on one cpu vs them
-> > >> being visible on another, but seems a bit implicit, see the common kref
-> > >> usage below:
-> > >>
-> > >> CPU0                            CPU1
-> > >>                                         A:kref_init(&obj->ref)
-> > >
-> > > how does CPU0 get a ref to obj?
-> > 
-> > Suppose open/close/read/.. context is run on CPU0, and driver .probe/.release
-> > context(hotplug context) is run on CPU1. There are a few examples on
-> > usb driver(eg. usb-skeleton.c, ...)
+Le lundi 12 décembre 2011 à 12:53 -0600, Christoph Lameter a écrit :
+> On Mon, 12 Dec 2011, Eric Dumazet wrote:
 > 
-> USB generally relies on an implied barrier just as:
+> > Indeed, I reproduced the leak with hackbench and lot of threads.
 > 
->         /* we can register the device now, as it is ready */
->         retval = usb_register_dev(interface, &skel_class);
+> Ran it here and did not see anything. But obviously this is an issue.
+> Strange that no one noticed earlier. Usage of CONFIG_PREEMPT must not be
+> that frequent.
 > 
-> Generally reference counting cannot help you if kfree() is involved
 
-So, Oliver, you don't have any objection to this patch removing the
-barriers in kref, right?  Originally you added them, I just wanted to
-make sure before I applied this.
+Yes, probably :(
 
-thanks,
+All I did was using hackbench with 4000 threads on my 16 cpu machine,
 
-greg k-h
+while :; do hackbench 100 process 2000 ; done
+
+I got about one leak (freelist chain, so several objects leaked) per
+second.
+
+
+
