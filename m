@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1LLSFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:05:06 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24445 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751373Ab1LLSFA (ORCPT
+	id S1753755Ab1LLSGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:06:37 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17479 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab1LLSGb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:05:00 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19fQ2kPjiA4NvXnFrHh+9b6
-Date: Mon, 12 Dec 2011 10:04:56 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/10] GPIO: gpio-generic: Move initialization up to
- postcore
-Message-ID: <20111212180456.GF31337@atomide.com>
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
- <1323634328-856-2-git-send-email-jkrzyszt@tis.icnet.pl>
+	Mon, 12 Dec 2011 13:06:31 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 12 Dec 2011 10:06:30 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Date: Mon, 12 Dec 2011 10:06:24 -0800
+Subject: RE: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+Thread-Topic: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+Thread-Index: Acy2zhmnOhmg0O7wS22l5686+/0BXgCKgvHw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17518607C1@HQMAIL01.nvidia.com>
+References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
+	<1323382390-14892-2-git-send-email-swarren@nvidia.com>
+	<CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
+ <CACRpkdahqb0qMVcKF9NBT5pwRgK4FOob5ABtb7ids9Bhh5XbZg@mail.gmail.com>
+In-Reply-To: <CACRpkdahqb0qMVcKF9NBT5pwRgK4FOob5ABtb7ids9Bhh5XbZg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323634328-856-2-git-send-email-jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111211 11:41]:
-> This will allow boards with custom memory mapped GPIO ports to set up
-> and use those port pins while initializing devices from arch init.
-
-Care to explain a bit more why you need to initialize those devices
-early on?
-
-Usually moving things earlier and earlier is an endless loop 
-adding more and more nasty dependencies..
-
-I'd rather see things getting initialized later as regular
-device drivers so we have decent kernel error messages when
-something goes wrong without having to enable debug_ll.
-
-Regards,
-
-Tony
-
-
-> Created against linux-3.2-rc5.
+Linus Walleij wrote at Friday, December 09, 2011 4:56 PM:
+> On Fri, Dec 9, 2011 at 6:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
 > 
-> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> ---
->  drivers/gpio/gpio-generic.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > Hence, there's no point parsing it from device tree; we end up with exactly
+> > the same data in the driver, yet have spent a bunch of time parsing it out
+> > from device tree instead of just embedding it into the kernel binary.
 > 
-> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-> index 4e24436..a6eaf38 100644
-> --- a/drivers/gpio/gpio-generic.c
-> +++ b/drivers/gpio/gpio-generic.c
-> @@ -528,7 +528,7 @@ static int __init bgpio_platform_init(void)
->  {
->  	return platform_driver_register(&bgpio_driver);
->  }
-> -module_init(bgpio_platform_init);
-> +postcore_initcall(bgpio_platform_init);
->  
->  static void __exit bgpio_platform_exit(void)
->  {
-> -- 
-> 1.7.3.4
+> For me there are two points:
 > 
+> - Avoiding clash with kernel maintainers who hate firmware-like tables and
+>   binary data filling up the kernel. Some certain other guy bearing my
+>   name comes to mind.
+
+Well, one of the nice things here is that everything to conctrol the HW
+is in the driver, unlike on other systems without all this data that
+have to rely on opaque BIOS/ACPI/EFI/... hooks.
+
+> - Footprint: the majority of the stuff in your driver ends up in non-discardable
+>   memory, and will be kept around. Since we have this concept of a
+>   single zImage for a number of say ARMv7 systems, and since pin
+>   controllers can be pretty hard to load from modules, *all* of them
+>   may have to be compiled-in. If every driver for every board takes this
+>   approach I am afraid it will be end up with a measurable footprint.
+
+Perhaps what we need is a way to build all these drivers as modules, but
+still link them into the kernel so they're statically available during
+early boot, but allow them to be unloaded like modules after the system
+has booted and determined they aren't needed.
+
+This would have the advantage of getting rid of the unused driver code
+as well, whereas putting the data into DT only handles ensuring the data
+for other SoCs isn't present in the kernel after boot.
+
+-- 
+nvpublic
+
