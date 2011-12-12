@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1LLHsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:48:51 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:9359 "EHLO relay.sw.ru"
+	id S1751845Ab1LLHsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:48:55 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:20125 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab1LLHsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:48:39 -0500
+	id S1753063Ab1LLHsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:48:51 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
         kirill@shutemov.name, avagin@parallels.com, devel@openvz.org,
         eric.dumazet@gmail.com, cgroups@vger.kernel.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v9 2/9] foundations of per-cgroup memory pressure controlling.
-Date: Mon, 12 Dec 2011 11:47:02 +0400
-Message-Id: <1323676029-5890-3-git-send-email-glommer@parallels.com>
+Subject: [PATCH v9 6/9] tcp buffer limitation: per-cgroup limit
+Date: Mon, 12 Dec 2011 11:47:06 +0400
+Message-Id: <1323676029-5890-7-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1323676029-5890-1-git-send-email-glommer@parallels.com>
 References: <1323676029-5890-1-git-send-email-glommer@parallels.com>
@@ -24,436 +24,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces all uses of struct sock fields' memory_pressure,
-memory_allocated, sockets_allocated, and sysctl_mem to acessor
-macros. Those macros can either receive a socket argument, or a mem_cgroup
-argument, depending on the context they live in.
+This patch uses the "tcp.limit_in_bytes" field of the kmem_cgroup to
+effectively control the amount of kernel memory pinned by a cgroup.
 
-Since we're only doing a macro wrapping here, no performance impact at all is
-expected in the case where we don't have cgroups disabled.
+This value is ignored in the root cgroup, and in all others,
+caps the value specified by the admin in the net namespaces'
+view of tcp_sysctl_mem.
+
+If namespaces are being used, the admin is allowed to set a
+value bigger than cgroup's maximum, the same way it is allowed
+to set pretty much unlimited values in a real box.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 Reviewed-by: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Eric W. Biederman <ebiederm@xmission.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
 ---
- include/net/sock.h    |   96 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/net/tcp.h     |    3 +-
- net/core/sock.c       |   57 +++++++++++++++++------------
- net/ipv4/proc.c       |    6 ++--
- net/ipv4/tcp_input.c  |   12 +++---
- net/ipv4/tcp_ipv4.c   |    4 +-
- net/ipv4/tcp_output.c |    2 +-
- net/ipv4/tcp_timer.c  |    2 +-
- net/ipv6/tcp_ipv6.c   |    2 +-
- 9 files changed, 145 insertions(+), 39 deletions(-)
+ Documentation/cgroups/memory.txt |    1 +
+ include/net/tcp_memcontrol.h     |    2 +
+ net/ipv4/sysctl_net_ipv4.c       |   14 ++++
+ net/ipv4/tcp_memcontrol.c        |  137 +++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 152 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index abb6e0f..5f43fd9 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -53,6 +53,7 @@
- #include <linux/security.h>
- #include <linux/slab.h>
- #include <linux/uaccess.h>
-+#include <linux/memcontrol.h>
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 687dea5..1c9779a 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -78,6 +78,7 @@ Brief summary of control files.
  
- #include <linux/filter.h>
- #include <linux/rculist_nulls.h>
-@@ -863,6 +864,99 @@ static inline void sk_refcnt_debug_release(const struct sock *sk)
- #define sk_refcnt_debug_release(sk) do { } while (0)
- #endif /* SOCK_REFCNT_DEBUG */
+  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+ 				   independent of user limits
++ memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
  
-+static inline bool sk_has_memory_pressure(const struct sock *sk)
-+{
-+	return sk->sk_prot->memory_pressure != NULL;
-+}
-+
-+static inline bool sk_under_memory_pressure(const struct sock *sk)
-+{
-+	if (!sk->sk_prot->memory_pressure)
-+		return false;
-+	return !!*sk->sk_prot->memory_pressure;
-+}
-+
-+static inline void sk_leave_memory_pressure(struct sock *sk)
-+{
-+	int *memory_pressure = sk->sk_prot->memory_pressure;
-+
-+	if (memory_pressure && *memory_pressure)
-+		*memory_pressure = 0;
-+}
-+
-+static inline void sk_enter_memory_pressure(struct sock *sk)
-+{
-+	if (sk->sk_prot->enter_memory_pressure)
-+		sk->sk_prot->enter_memory_pressure(sk);
-+}
-+
-+static inline long sk_prot_mem_limits(const struct sock *sk, int index)
-+{
-+	long *prot = sk->sk_prot->sysctl_mem;
-+	return prot[index];
-+}
-+
-+static inline long
-+sk_memory_allocated(const struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	return atomic_long_read(prot->memory_allocated);
-+}
-+
-+static inline long
-+sk_memory_allocated_add(struct sock *sk, int amt)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	return atomic_long_add_return(amt, prot->memory_allocated);
-+}
-+
-+static inline void
-+sk_memory_allocated_sub(struct sock *sk, int amt)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	atomic_long_sub(amt, prot->memory_allocated);
-+}
-+
-+static inline void sk_sockets_allocated_dec(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	percpu_counter_dec(prot->sockets_allocated);
-+}
-+
-+static inline void sk_sockets_allocated_inc(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	percpu_counter_inc(prot->sockets_allocated);
-+}
-+
-+static inline int
-+sk_sockets_allocated_read_positive(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+
-+	return percpu_counter_sum_positive(prot->sockets_allocated);
-+}
-+
-+static inline int
-+proto_sockets_allocated_sum_positive(struct proto *prot)
-+{
-+	return percpu_counter_sum_positive(prot->sockets_allocated);
-+}
-+
-+static inline long
-+proto_memory_allocated(struct proto *prot)
-+{
-+	return atomic_long_read(prot->memory_allocated);
-+}
-+
-+static inline bool
-+proto_memory_pressure(struct proto *prot)
-+{
-+	if (!prot->memory_pressure)
-+		return false;
-+	return !!*prot->memory_pressure;
-+}
-+
+ 1. History
  
- #ifdef CONFIG_PROC_FS
- /* Called with local bh disabled */
-@@ -1670,7 +1764,7 @@ static inline struct page *sk_stream_alloc_page(struct sock *sk)
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+index 5f5e158..3512082 100644
+--- a/include/net/tcp_memcontrol.h
++++ b/include/net/tcp_memcontrol.h
+@@ -14,4 +14,6 @@ struct tcp_memcontrol {
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
++unsigned long long tcp_max_memory(const struct mem_cgroup *memcg);
++void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx);
+ #endif /* _TCP_MEMCG_H */
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index bbd67ab..fe9bf91 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -24,6 +24,7 @@
+ #include <net/cipso_ipv4.h>
+ #include <net/inet_frag.h>
+ #include <net/ping.h>
++#include <net/tcp_memcontrol.h>
  
- 	page = alloc_pages(sk->sk_allocation, 0);
- 	if (!page) {
--		sk->sk_prot->enter_memory_pressure(sk);
-+		sk_enter_memory_pressure(sk);
- 		sk_stream_moderate_sndbuf(sk);
- 	}
- 	return page;
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index bb18c4d..f080e0b 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -44,6 +44,7 @@
- #include <net/dst.h>
+ static int zero;
+ static int tcp_retr1_max = 255;
+@@ -182,6 +183,9 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ 	int ret;
+ 	unsigned long vec[3];
+ 	struct net *net = current->nsproxy->net_ns;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	struct mem_cgroup *memcg;
++#endif
  
- #include <linux/seq_file.h>
-+#include <linux/memcontrol.h>
+ 	ctl_table tmp = {
+ 		.data = &vec,
+@@ -198,6 +202,16 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ 	if (ret)
+ 		return ret;
  
- extern struct inet_hashinfo tcp_hashinfo;
- 
-@@ -285,7 +286,7 @@ static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
- 	}
- 
- 	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
--	    atomic_long_read(&tcp_memory_allocated) > sysctl_tcp_mem[2])
-+	    sk_memory_allocated(sk) > sk_prot_mem_limits(sk, 2))
- 		return true;
- 	return false;
- }
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 4ed7b1d..c441d37 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1288,7 +1288,7 @@ struct sock *sk_clone(const struct sock *sk, const gfp_t priority)
- 		newsk->sk_wq = NULL;
- 
- 		if (newsk->sk_prot->sockets_allocated)
--			percpu_counter_inc(newsk->sk_prot->sockets_allocated);
-+			sk_sockets_allocated_inc(newsk);
- 
- 		if (sock_flag(newsk, SOCK_TIMESTAMP) ||
- 		    sock_flag(newsk, SOCK_TIMESTAMPING_RX_SOFTWARE))
-@@ -1679,28 +1679,28 @@ int __sk_mem_schedule(struct sock *sk, int size, int kind)
- 	long allocated;
- 
- 	sk->sk_forward_alloc += amt * SK_MEM_QUANTUM;
--	allocated = atomic_long_add_return(amt, prot->memory_allocated);
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
 +
-+	allocated = sk_memory_allocated_add(sk, amt);
- 
- 	/* Under limit. */
--	if (allocated <= prot->sysctl_mem[0]) {
--		if (prot->memory_pressure && *prot->memory_pressure)
--			*prot->memory_pressure = 0;
-+	if (allocated <= sk_prot_mem_limits(sk, 0)) {
-+		sk_leave_memory_pressure(sk);
- 		return 1;
- 	}
- 
- 	/* Under pressure. */
--	if (allocated > prot->sysctl_mem[1])
--		if (prot->enter_memory_pressure)
--			prot->enter_memory_pressure(sk);
-+	if (allocated > sk_prot_mem_limits(sk, 1))
-+		sk_enter_memory_pressure(sk);
- 
- 	/* Over hard limit. */
--	if (allocated > prot->sysctl_mem[2])
-+	if (allocated > sk_prot_mem_limits(sk, 2))
- 		goto suppress_allocation;
- 
- 	/* guarantee minimum buffer size under pressure */
- 	if (kind == SK_MEM_RECV) {
- 		if (atomic_read(&sk->sk_rmem_alloc) < prot->sysctl_rmem[0])
- 			return 1;
++	tcp_prot_mem(memcg, vec[0], 0);
++	tcp_prot_mem(memcg, vec[1], 1);
++	tcp_prot_mem(memcg, vec[2], 2);
++	rcu_read_unlock();
++#endif
 +
- 	} else { /* SK_MEM_SEND */
- 		if (sk->sk_type == SOCK_STREAM) {
- 			if (sk->sk_wmem_queued < prot->sysctl_wmem[0])
-@@ -1710,13 +1710,13 @@ int __sk_mem_schedule(struct sock *sk, int size, int kind)
- 				return 1;
- 	}
+ 	net->ipv4.sysctl_tcp_mem[0] = vec[0];
+ 	net->ipv4.sysctl_tcp_mem[1] = vec[1];
+ 	net->ipv4.sysctl_tcp_mem[2] = vec[2];
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index bfb0c2b..e353390 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -6,6 +6,19 @@
+ #include <linux/memcontrol.h>
+ #include <linux/module.h>
  
--	if (prot->memory_pressure) {
-+	if (sk_has_memory_pressure(sk)) {
- 		int alloc;
- 
--		if (!*prot->memory_pressure)
-+		if (!sk_under_memory_pressure(sk))
- 			return 1;
--		alloc = percpu_counter_read_positive(prot->sockets_allocated);
--		if (prot->sysctl_mem[2] > alloc *
-+		alloc = sk_sockets_allocated_read_positive(sk);
-+		if (sk_prot_mem_limits(sk, 2) > alloc *
- 		    sk_mem_pages(sk->sk_wmem_queued +
- 				 atomic_read(&sk->sk_rmem_alloc) +
- 				 sk->sk_forward_alloc))
-@@ -1739,7 +1739,9 @@ suppress_allocation:
- 
- 	/* Alas. Undo changes. */
- 	sk->sk_forward_alloc -= amt * SK_MEM_QUANTUM;
--	atomic_long_sub(amt, prot->memory_allocated);
++static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft);
++static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
++			    const char *buffer);
 +
-+	sk_memory_allocated_sub(sk, amt);
++static struct cftype tcp_files[] = {
++	{
++		.name = "kmem.tcp.limit_in_bytes",
++		.write_string = tcp_cgroup_write,
++		.read_u64 = tcp_cgroup_read,
++		.private = RES_LIMIT,
++	},
++};
 +
- 	return 0;
- }
- EXPORT_SYMBOL(__sk_mem_schedule);
-@@ -1750,15 +1752,13 @@ EXPORT_SYMBOL(__sk_mem_schedule);
-  */
- void __sk_mem_reclaim(struct sock *sk)
+ static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
  {
--	struct proto *prot = sk->sk_prot;
--
--	atomic_long_sub(sk->sk_forward_alloc >> SK_MEM_QUANTUM_SHIFT,
--		   prot->memory_allocated);
-+	sk_memory_allocated_sub(sk,
-+				sk->sk_forward_alloc >> SK_MEM_QUANTUM_SHIFT);
- 	sk->sk_forward_alloc &= SK_MEM_QUANTUM - 1;
+ 	return container_of(cg_proto, struct tcp_memcontrol, cg_proto);
+@@ -34,7 +47,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
  
--	if (prot->memory_pressure && *prot->memory_pressure &&
--	    (atomic_long_read(prot->memory_allocated) < prot->sysctl_mem[0]))
--		*prot->memory_pressure = 0;
-+	if (sk_under_memory_pressure(sk) &&
-+	    (sk_memory_allocated(sk) < sk_prot_mem_limits(sk, 0)))
-+		sk_leave_memory_pressure(sk);
- }
- EXPORT_SYMBOL(__sk_mem_reclaim);
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+-		return 0;
++		goto create_files;
  
-@@ -2474,16 +2474,27 @@ static char proto_method_implemented(const void *method)
- {
- 	return method == NULL ? 'n' : 'y';
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 
+@@ -57,7 +70,9 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	cg_proto->sockets_allocated = &tcp->tcp_sockets_allocated;
+ 	cg_proto->memcg = memcg;
+ 
+-	return 0;
++create_files:
++	return cgroup_add_files(cgrp, ss, tcp_files,
++				ARRAY_SIZE(tcp_files));
  }
-+static long sock_prot_memory_allocated(struct proto *proto)
+ EXPORT_SYMBOL(tcp_init_cgroup);
+ 
+@@ -66,6 +81,7 @@ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct cg_proto *cg_proto;
+ 	struct tcp_memcontrol *tcp;
++	u64 val;
+ 
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+@@ -73,5 +89,122 @@ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 	percpu_counter_destroy(&tcp->tcp_sockets_allocated);
++
++	val = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
++
++	if (val != RESOURCE_MAX)
++		jump_label_dec(&memcg_socket_limit_enabled);
+ }
+ EXPORT_SYMBOL(tcp_destroy_cgroup);
++
++static int tcp_update_limit(struct mem_cgroup *memcg, u64 val)
 +{
-+	return proto->memory_allocated != NULL ? proto_memory_allocated(proto): -1L;
++	struct net *net = current->nsproxy->net_ns;
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++	u64 old_lim;
++	int i;
++	int ret;
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return -EINVAL;
++
++	if (val > RESOURCE_MAX)
++		val = RESOURCE_MAX;
++
++	tcp = tcp_from_cgproto(cg_proto);
++
++	old_lim = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_LIMIT);
++	ret = res_counter_set_limit(&tcp->tcp_memory_allocated, val);
++	if (ret)
++		return ret;
++
++	for (i = 0; i < 3; i++)
++		tcp->tcp_prot_mem[i] = min_t(long, val >> PAGE_SHIFT,
++					     net->ipv4.sysctl_tcp_mem[i]);
++
++	if (val == RESOURCE_MAX && old_lim != RESOURCE_MAX)
++		jump_label_dec(&memcg_socket_limit_enabled);
++	else if (old_lim == RESOURCE_MAX && val != RESOURCE_MAX)
++		jump_label_inc(&memcg_socket_limit_enabled);
++
++	return 0;
 +}
 +
-+static char *sock_prot_memory_pressure(struct proto *proto)
++static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
++			    const char *buffer)
 +{
-+	return proto->memory_pressure != NULL ?
-+	proto_memory_pressure(proto) ? "yes" : "no" : "NI";
-+}
- 
- static void proto_seq_printf(struct seq_file *seq, struct proto *proto)
- {
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	unsigned long long val;
++	int ret = 0;
 +
- 	seq_printf(seq, "%-9s %4u %6d  %6ld   %-3s %6u   %-3s  %-10s "
- 			"%2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c\n",
- 		   proto->name,
- 		   proto->obj_size,
- 		   sock_prot_inuse_get(seq_file_net(seq), proto),
--		   proto->memory_allocated != NULL ? atomic_long_read(proto->memory_allocated) : -1L,
--		   proto->memory_pressure != NULL ? *proto->memory_pressure ? "yes" : "no" : "NI",
-+		   sock_prot_memory_allocated(proto),
-+		   sock_prot_memory_pressure(proto),
- 		   proto->max_header,
- 		   proto->slab == NULL ? "no" : "yes",
- 		   module_name(proto->owner),
-diff --git a/net/ipv4/proc.c b/net/ipv4/proc.c
-index 466ea8b..91be152 100644
---- a/net/ipv4/proc.c
-+++ b/net/ipv4/proc.c
-@@ -56,17 +56,17 @@ static int sockstat_seq_show(struct seq_file *seq, void *v)
- 
- 	local_bh_disable();
- 	orphans = percpu_counter_sum_positive(&tcp_orphan_count);
--	sockets = percpu_counter_sum_positive(&tcp_sockets_allocated);
-+	sockets = proto_sockets_allocated_sum_positive(&tcp_prot);
- 	local_bh_enable();
- 
- 	socket_seq_show(seq);
- 	seq_printf(seq, "TCP: inuse %d orphan %d tw %d alloc %d mem %ld\n",
- 		   sock_prot_inuse_get(net, &tcp_prot), orphans,
- 		   tcp_death_row.tw_count, sockets,
--		   atomic_long_read(&tcp_memory_allocated));
-+		   proto_memory_allocated(&tcp_prot));
- 	seq_printf(seq, "UDP: inuse %d mem %ld\n",
- 		   sock_prot_inuse_get(net, &udp_prot),
--		   atomic_long_read(&udp_memory_allocated));
-+		   proto_memory_allocated(&udp_prot));
- 	seq_printf(seq, "UDPLITE: inuse %d\n",
- 		   sock_prot_inuse_get(net, &udplite_prot));
- 	seq_printf(seq, "RAW: inuse %d\n",
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 52b5c2d..b64b5e8 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -322,7 +322,7 @@ static void tcp_grow_window(struct sock *sk, const struct sk_buff *skb)
- 	/* Check #1 */
- 	if (tp->rcv_ssthresh < tp->window_clamp &&
- 	    (int)tp->rcv_ssthresh < tcp_space(sk) &&
--	    !tcp_memory_pressure) {
-+	    !sk_under_memory_pressure(sk)) {
- 		int incr;
- 
- 		/* Check #2. Increase window, if skb with such overhead
-@@ -411,8 +411,8 @@ static void tcp_clamp_window(struct sock *sk)
- 
- 	if (sk->sk_rcvbuf < sysctl_tcp_rmem[2] &&
- 	    !(sk->sk_userlocks & SOCK_RCVBUF_LOCK) &&
--	    !tcp_memory_pressure &&
--	    atomic_long_read(&tcp_memory_allocated) < sysctl_tcp_mem[0]) {
-+	    !sk_under_memory_pressure(sk) &&
-+	    sk_memory_allocated(sk) < sk_prot_mem_limits(sk, 0)) {
- 		sk->sk_rcvbuf = min(atomic_read(&sk->sk_rmem_alloc),
- 				    sysctl_tcp_rmem[2]);
- 	}
-@@ -4864,7 +4864,7 @@ static int tcp_prune_queue(struct sock *sk)
- 
- 	if (atomic_read(&sk->sk_rmem_alloc) >= sk->sk_rcvbuf)
- 		tcp_clamp_window(sk);
--	else if (tcp_memory_pressure)
-+	else if (sk_under_memory_pressure(sk))
- 		tp->rcv_ssthresh = min(tp->rcv_ssthresh, 4U * tp->advmss);
- 
- 	tcp_collapse_ofo_queue(sk);
-@@ -4930,11 +4930,11 @@ static int tcp_should_expand_sndbuf(const struct sock *sk)
- 		return 0;
- 
- 	/* If we are under global TCP memory pressure, do not expand.  */
--	if (tcp_memory_pressure)
-+	if (sk_under_memory_pressure(sk))
- 		return 0;
- 
- 	/* If we are under soft global TCP memory pressure, do not expand.  */
--	if (atomic_long_read(&tcp_memory_allocated) >= sysctl_tcp_mem[0])
-+	if (sk_memory_allocated(sk) >= sk_prot_mem_limits(sk, 0))
- 		return 0;
- 
- 	/* If we filled the congestion window, do not expand.  */
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index a744315..d1f4bf8 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1915,7 +1915,7 @@ static int tcp_v4_init_sock(struct sock *sk)
- 	sk->sk_rcvbuf = sysctl_tcp_rmem[1];
- 
- 	local_bh_disable();
--	percpu_counter_inc(&tcp_sockets_allocated);
-+	sk_sockets_allocated_inc(sk);
- 	local_bh_enable();
- 
- 	return 0;
-@@ -1971,7 +1971,7 @@ void tcp_v4_destroy_sock(struct sock *sk)
- 		tp->cookie_values = NULL;
- 	}
- 
--	percpu_counter_dec(&tcp_sockets_allocated);
-+	sk_sockets_allocated_dec(sk);
- }
- EXPORT_SYMBOL(tcp_v4_destroy_sock);
- 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 980b98f..b378490 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1919,7 +1919,7 @@ u32 __tcp_select_window(struct sock *sk)
- 	if (free_space < (full_space >> 1)) {
- 		icsk->icsk_ack.quick = 0;
- 
--		if (tcp_memory_pressure)
-+		if (sk_under_memory_pressure(sk))
- 			tp->rcv_ssthresh = min(tp->rcv_ssthresh,
- 					       4U * tp->advmss);
- 
-diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
-index 2e0f0af..d6ddacb 100644
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -261,7 +261,7 @@ static void tcp_delack_timer(unsigned long data)
- 	}
- 
- out:
--	if (tcp_memory_pressure)
-+	if (sk_under_memory_pressure(sk))
- 		sk_mem_reclaim(sk);
- out_unlock:
- 	bh_unlock_sock(sk);
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 36131d1..e666768 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1995,7 +1995,7 @@ static int tcp_v6_init_sock(struct sock *sk)
- 	sk->sk_rcvbuf = sysctl_tcp_rmem[1];
- 
- 	local_bh_disable();
--	percpu_counter_inc(&tcp_sockets_allocated);
-+	sk_sockets_allocated_inc(sk);
- 	local_bh_enable();
- 
- 	return 0;
++	switch (cft->private) {
++	case RES_LIMIT:
++		/* see memcontrol.c */
++		ret = res_counter_memparse_write_strategy(buffer, &val);
++		if (ret)
++			break;
++		ret = tcp_update_limit(memcg, val);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
++static u64 tcp_read_stat(struct mem_cgroup *memcg, int type, u64 default_val)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return default_val;
++
++	tcp = tcp_from_cgproto(cg_proto);
++	return res_counter_read_u64(&tcp->tcp_memory_allocated, type);
++}
++
++static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	u64 val;
++
++	switch (cft->private) {
++	case RES_LIMIT:
++		val = tcp_read_stat(memcg, RES_LIMIT, RESOURCE_MAX);
++		break;
++	default:
++		BUG();
++	}
++	return val;
++}
++
++unsigned long long tcp_max_memory(const struct mem_cgroup *memcg)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup((struct mem_cgroup *)memcg);
++	if (!cg_proto)
++		return 0;
++
++	tcp = tcp_from_cgproto(cg_proto);
++	return res_counter_read_u64(&tcp->tcp_memory_allocated, RES_LIMIT);
++}
++
++void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return;
++
++	tcp = tcp_from_cgproto(cg_proto);
++
++	tcp->tcp_prot_mem[idx] = val;
++}
 -- 
 1.7.6.4
 
