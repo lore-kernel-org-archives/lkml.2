@@ -1,95 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab1LLARN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 19:17:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39629 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab1LLARK (ORCPT
+	id S1752688Ab1LLARy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 19:17:54 -0500
+Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:22300 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab1LLARv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 19:17:10 -0500
-Date: Sun, 11 Dec 2011 16:17:03 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Gary King <gking@nvidia.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v6 04/10] arm/tegra: prepare early init for multiple
- tegra variants
-Message-ID: <20111212001703.GA26598@quad.lixom.net>
-References: <1323348254-29072-1-git-send-email-pdeschrijver@nvidia.com>
- <1323348254-29072-5-git-send-email-pdeschrijver@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323348254-29072-5-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Dec 2011 19:17:51 -0500
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+To: akpm@linux-foundation.org
+Cc: serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
+Subject: [PATCH][V4] Add reboot_pid_ns to handle the reboot syscall
+Date: Mon, 12 Dec 2011 01:17:44 +0100
+Message-Id: <1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
+References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 02:43:47PM +0200, Peter De Schrijver wrote:
-> This patch splits the early init code in a common and a tegra20 specific part.
-> L2 cache initialization is generalized and discovers the cache associativity
-> at runtime. Also use arm_pm_restart instead of arm_arch_reset and reset the
-> the system using the PMC reset feature rather then the CAR system reset.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  arch/arm/mach-tegra/board-dt.c        |   10 +++++---
->  arch/arm/mach-tegra/board-harmony.c   |    2 +-
->  arch/arm/mach-tegra/board-paz00.c     |    2 +-
->  arch/arm/mach-tegra/board-seaboard.c  |    6 ++--
->  arch/arm/mach-tegra/board-trimslice.c |    2 +-
->  arch/arm/mach-tegra/board.h           |    2 +-
->  arch/arm/mach-tegra/clock.c           |    5 ----
->  arch/arm/mach-tegra/common.c          |   34 ++++++++++++++++++++------------
->  8 files changed, 34 insertions(+), 29 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-> index 6a460a2..ef9843c 100644
-> --- a/arch/arm/mach-tegra/board-dt.c
-> +++ b/arch/arm/mach-tegra/board-dt.c
-> @@ -133,7 +133,8 @@ static void __init tegra_dt_init(void)
->  		"Unknown platform! Pinmuxing not initialized\n");
->  }
->  
-> -static const char * tegra_dt_board_compat[] = {
-> +#ifdef CONFIG_ARCH_TEGRA_2x_SOC
-> +static const char *tegra20_dt_board_compat[] = {
->  	"compulab,trimslice",
->  	"nvidia,harmony",
->  	"compal,paz00",
-> @@ -142,13 +143,14 @@ static const char * tegra_dt_board_compat[] = {
->  	NULL
->  };
->  
-> -DT_MACHINE_START(TEGRA_DT, "nVidia Tegra (Flattened Device Tree)")
-> +DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
->  	.map_io		= tegra_map_common_io,
-> -	.init_early	= tegra_init_early,
-> +	.init_early	= tegra20_init_early,
->  	.init_irq	= tegra_dt_init_irq,
->  	.handle_irq	= gic_handle_irq,
->  	.timer		= &tegra_timer,
->  	.init_machine	= tegra_dt_init,
->  	.restart	= tegra_assert_system_reset,
-> -	.dt_compat	= tegra_dt_board_compat,
-> +	.dt_compat	= tegra20_dt_board_compat,
->  MACHINE_END
-> +#endif
+In the case of a child pid namespace, rebooting the system does not
+really makes sense. When the pid namespace is used in conjunction
+with the other namespaces in order to create a linux container, the
+reboot syscall leads to some problems.
 
-As previously mentioned by Stephen, please split up in separate
-patches.
+A container can reboot the host. That can be fixed by dropping
+the sys_reboot capability but we are unable to correctly poweroff/
+halt/reboot a container and the container stays stuck at the shutdown
+time with the container's init process waiting indefinitively.
 
-But also, I would prefer to see one board-dt for tegra20 and one for
-tegra30 (board-dt-t20 and board-dt-t30, or whatnot). They wouldn't be
-sharing much code anyway, I would rather see a limited amount of code
-duplication than excessive ifdefs in one file.
+After several attempts, no solution from userspace was found to reliabily
+handle the shutdown from a container.
 
+This patch propose to make the init process of the child pid namespace to
+exit with a signal status set to : SIGINT if the child pid namespace called
+"halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
+When the reboot syscall is called and we are not in the initial
+pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
+and "RESTART2". Otherwise we return EINVAL.
 
--Olof
+Returning EINVAL is also an easy way to check if this feature is supported
+by the kernel when invoking another 'reboot' option like CAD.
+
+By this way the parent process of the child pid namespace knows if
+it rebooted or not and can take the right decision.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/pid_namespace.h |    8 +++++++-
+ kernel/pid_namespace.c        |   30 ++++++++++++++++++++++++++++++
+ kernel/sys.c                  |    3 +++
+ 3 files changed, 40 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index e7cf666..3279596 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -32,6 +32,7 @@ struct pid_namespace {
+ #endif
+ 	gid_t pid_gid;
+ 	int hide_pid;
++	int reboot;
+ };
+ 
+ extern struct pid_namespace init_pid_ns;
+@@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+ extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
+ extern void free_pid_ns(struct kref *kref);
+ extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
++extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
+ 
+ static inline void put_pid_ns(struct pid_namespace *ns)
+ {
+@@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
+ {
+ }
+ 
+-
+ static inline void zap_pid_ns_processes(struct pid_namespace *ns)
+ {
+ 	BUG();
+ }
++
++static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
++{
++	BUG();
++}
+ #endif /* CONFIG_PID_NS */
+ 
+ extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index a896839..1e93a5a 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -15,6 +15,7 @@
+ #include <linux/acct.h>
+ #include <linux/slab.h>
+ #include <linux/proc_fs.h>
++#include <linux/reboot.h>
+ 
+ #define BITS_PER_PAGE		(PAGE_SIZE*8)
+ 
+@@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+ 		rc = sys_wait4(-1, NULL, __WALL, NULL);
+ 	} while (rc != -ECHILD);
+ 
++	if (pid_ns->reboot)
++		current->signal->group_exit_code = pid_ns->reboot;
++
+ 	acct_exit_ns(pid_ns);
+ 	return;
+ }
+@@ -221,6 +225,32 @@ static struct ctl_table pid_ns_ctl_table[] = {
+ 
+ static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+ 
++int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
++{
++	switch(cmd) {
++	case LINUX_REBOOT_CMD_RESTART2:
++	case LINUX_REBOOT_CMD_RESTART:
++		pid_ns->reboot = SIGHUP;
++		break;
++
++	case LINUX_REBOOT_CMD_POWER_OFF:
++	case LINUX_REBOOT_CMD_HALT:
++		pid_ns->reboot = SIGINT;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	read_lock(&tasklist_lock);
++	force_sig(SIGKILL, pid_ns->child_reaper);
++	read_unlock(&tasklist_lock);
++
++	do_exit(0);
++
++	/* Not reached */
++	return 0;
++}
++
+ static __init int pid_namespaces_init(void)
+ {
+ 	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
+diff --git a/kernel/sys.c b/kernel/sys.c
+index ddf8155..31acf63 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	                magic2 != LINUX_REBOOT_MAGIC2C))
+ 		return -EINVAL;
+ 
++	if (task_active_pid_ns(current) != &init_pid_ns)
++		return reboot_pid_ns(task_active_pid_ns(current), cmd);
++
+ 	/* Instead of trying to make the power_off code look like
+ 	 * halt when pm_power_off is not set do it the easy way.
+ 	 */
+-- 
+1.7.5.4
+
