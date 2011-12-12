@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1LLFVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 00:21:50 -0500
+	id S1753268Ab1LLFV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 00:21:57 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:59165 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1LLFVo (ORCPT
+	with ESMTP id S1753250Ab1LLFVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 00:21:44 -0500
+	Mon, 12 Dec 2011 00:21:53 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 22/29] Staging: comedi: fix printk issue in cb_pcidas.c
-Date: Mon, 12 Dec 2011 10:49:34 +0530
-Message-Id: <1323667181-17252-22-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 24/29] Staging: comedi: fix printk issue in cb_pcidas64.c
+Date: Mon, 12 Dec 2011 10:49:36 +0530
+Message-Id: <1323667181-17252-24-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,62 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidas.c file that fixes up a
+This is a patch to the cb_pcidas64.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
-Converted printks to dev_<levels>..
+Converted printks to dev_<levels> and Removed unnecessary
+printk statements.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcidas.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas64.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 757c96a..7e4ffcf 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -855,7 +855,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
- 	unsigned int source = data[1];
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index b68c587..c9e8c47 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -1881,8 +1881,6 @@ static int detach(struct comedi_device *dev)
+ {
+ 	unsigned int i;
  
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
+-
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+ 	if (priv(dev)) {
+@@ -2092,7 +2090,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
+ 	else
+ 		num_calibration_sources = 8;
  	if (source >= num_calibration_sources) {
 -		printk("invalid calibration source: %i\n", source);
-+		dev_err(dev->hw_dev, "invalid calibration source: %i\n",
++		dev_dbg(dev->hw_dev, "invalid calibration source: %i\n",
 +			source);
  		return -EINVAL;
  	}
  
-@@ -1547,7 +1548,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
- 	spin_lock_irqsave(&dev->spinlock, flags);
- 	devpriv->adc_fifo_bits |= DAEMIE | DAHFIE;
- #ifdef CB_PCIDAS_DEBUG
--	printk("comedi: adc_fifo_bits are 0x%x\n", devpriv->adc_fifo_bits);
-+	dev_dbg(dev->hw_dev, "comedi: adc_fifo_bits are 0x%x\n",
-+		devpriv->adc_fifo_bits);
- #endif
- 	/*  enable and clear interrupts */
- 	outw(devpriv->adc_fifo_bits | DAEMI | DAHFI,
-@@ -1557,7 +1559,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
- 	devpriv->ao_control_bits |= DAC_START | DACEN | DAC_EMPTY;
- 	outw(devpriv->ao_control_bits, devpriv->control_status + DAC_CSR);
- #ifdef CB_PCIDAS_DEBUG
--	printk("comedi: sent 0x%x to dac control\n", devpriv->ao_control_bits);
-+	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to dac control\n",
-+		devpriv->ao_control_bits);
- #endif
- 	spin_unlock_irqrestore(&dev->spinlock, flags);
+@@ -2923,7 +2922,7 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
+ 		}
  
-@@ -1585,8 +1588,9 @@ static irqreturn_t cb_pcidas_interrupt(int irq, void *d)
+ 		if (num_samples < 0) {
+-			printk(" cb_pcidas64: bug! num_samples < 0\n");
++			dev_err(dev->hw_dev, "cb_pcidas64: bug! num_samples < 0\n");
+ 			break;
+ 		}
  
- 	s5933_status = inl(devpriv->s5933_config + AMCC_OP_REG_INTCSR);
- #ifdef CB_PCIDAS_DEBUG
--	printk("intcsr 0x%x\n", s5933_status);
--	printk("mbef 0x%x\n", inl(devpriv->s5933_config + AMCC_OP_REG_MBEF));
-+	dev_dbg(dev->hw_dev, "intcsr 0x%x\n", s5933_status);
-+	dev_dbg(dev->hw_dev, "mbef 0x%x\n",
-+		inl(devpriv->s5933_config + AMCC_OP_REG_MBEF));
- #endif
- 
- 	if ((INTCSR_INTR_ASSERTED & s5933_status) == 0)
 -- 
 1.7.0.4
 
