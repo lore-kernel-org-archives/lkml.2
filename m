@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab1LLPAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:00:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab1LLPAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:00:01 -0500
-Date: Mon, 12 Dec 2011 15:59:49 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH -mm] slub: document setting min order with
- debug_guardpage_minorder > 0
-Message-ID: <20111212145948.GA2380@redhat.com>
-References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
- <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
- <alpine.DEB.2.00.1112071407090.27360@chino.kir.corp.google.com>
- <20111208073316.GA2402@redhat.com>
- <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com>
+	id S1751280Ab1LLPGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:06:01 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48755 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751062Ab1LLPGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 10:06:00 -0500
+X-Sasl-enc: OyjcZbrQ+QS5tehcqjd4BVSyBwHbsjgfmZqUTjB19GHc 1323702359
+Date: Mon, 12 Dec 2011 07:02:55 -0800
+From: Greg KH <greg@kroah.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kref: add function for reading kref value
+Message-ID: <20111212150255.GA7506@kroah.com>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-English is hard (definitely harder than C language :-), so please correct
-me, if I wrote something wrong.
+On Mon, Dec 12, 2011 at 02:44:52PM +0200, Daniel Baluta wrote:
+> We can easily get kref refcount value by accesing
+> kref->refcount but it is better to have a function
+> for this.
 
- Documentation/ABI/testing/sysfs-kernel-slab |    4 +++-
- Documentation/vm/slub.txt                   |    4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+No, you should NEVER need the value of the kref, if you do, you are
+doing something wrong.
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-slab b/Documentation/ABI/testing/sysfs-kernel-slab
-index 8b093f8..d84ca80 100644
---- a/Documentation/ABI/testing/sysfs-kernel-slab
-+++ b/Documentation/ABI/testing/sysfs-kernel-slab
-@@ -345,7 +345,9 @@ Description:
- 		allocated.  It is writable and can be changed to increase the
- 		number of objects per slab.  If a slab cannot be allocated
- 		because of fragmentation, SLUB will retry with the minimum order
--		possible depending on its characteristics.
-+		possible depending on its characteristics. 
-+		When debug_guardpage_minorder > 0 parameter is specified, the
-+		minimum possible order is used and cannot be changed.
- 
- What:		/sys/kernel/slab/cache/order_fallback
- Date:		April 2008
-diff --git a/Documentation/vm/slub.txt b/Documentation/vm/slub.txt
-index f464f47..dbf02ad 100644
---- a/Documentation/vm/slub.txt
-+++ b/Documentation/vm/slub.txt
-@@ -131,7 +131,9 @@ slub_min_objects.
- slub_max_order specified the order at which slub_min_objects should no
- longer be checked. This is useful to avoid SLUB trying to generate
- super large order pages to fit slub_min_objects of a slab cache with
--large object sizes into one high order page.
-+large object sizes into one high order page. Setting parameter
-+debug_guardpage_minorder > 0 forces setting slub_max_order to 0, what
-+cause minimum possible order of slabs allocation.
- 
- SLUB Debug output
- -----------------
--- 
-1.7.1
+What code needs this patch?
 
+greg k-h
