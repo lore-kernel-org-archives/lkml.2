@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1LLPcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:32:32 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:47388 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab1LLPc2 (ORCPT
+	id S1752349Ab1LLPjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:39:15 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:62322 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1LLPjN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:32:28 -0500
-Message-ID: <4EE61E6D.4070401@gmail.com>
-Date: Mon, 12 Dec 2011 10:31:57 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 10:39:13 -0500
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Andrew Morton (commit_signer:15/23=65%)" <akpm@linux-foundation.org>,
-        "Hugh Dickins (commit_signer:7/23=30%)" <hughd@google.com>,
-        "Peter Zijlstra (commit_signer:4/23=17%)" <a.p.zijlstra@chello.nl>,
-        "Shaohua Li (commit_signer:3/23=13%)" <shaohua.li@intel.com>
-Subject: Re: [PATCH v3] mm: simplify find_vma_prev
-References: <1323466526.27746.29.camel@joe2Laptop> <1323470921-12931-1-git-send-email-kosaki.motohiro@gmail.com> <20111212094930.9d4716e1.kamezawa.hiroyu@jp.fujitsu.com> <20111212182711.3a072358.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111212182711.3a072358.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1323703934.1765.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+	<20111212150255.GA7506@kroah.com>
+	<CAEnQRZBiVDAHH+uZ=Ugk=UP5qSvvMViGTM-bRWr+E27zivOUug@mail.gmail.com>
+	<1323703934.1765.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Mon, 12 Dec 2011 17:39:12 +0200
+Message-ID: <CAEnQRZCZdPw9eWVmdvhtF7KCQkYpLMrkhv5qd5xYckxWksN+0w@mail.gmail.com>
+Subject: Re: [PATCH] kref: add function for reading kref value
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, adobriyan@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/12/11 4:27 AM), KAMEZAWA Hiroyuki wrote:
-> On Mon, 12 Dec 2011 09:49:30 +0900
-> KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->
->> On Fri,  9 Dec 2011 17:48:40 -0500
->> kosaki.motohiro@gmail.com wrote:
+On Mon, Dec 12, 2011 at 5:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 12 décembre 2011 à 17:21 +0200, Daniel Baluta a écrit :
+>> On Mon, Dec 12, 2011 at 5:02 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Mon, Dec 12, 2011 at 02:44:52PM +0200, Daniel Baluta wrote:
+>> >> We can easily get kref refcount value by accesing
+>> >> kref->refcount but it is better to have a function
+>> >> for this.
+>> >
+>> > No, you should NEVER need the value of the kref, if you do, you are
+>> > doing something wrong.
+>> >
+>> > What code needs this patch?
 >>
->>> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->>>
->>> commit 297c5eee37 (mm: make the vma list be doubly linked) added
->>> vm_prev member into vm_area_struct. Therefore we can simplify
->>> find_vma_prev() by using it. Also, this change help to improve
->>> page fault performance because it has strong locality of reference.
->>>
->>> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>> I plan to replace raw refcount patterns from net/ with kref, and
+>> I have noticed that there are some parts of code who need access
+>> to kref->refcount value.
 >>
->> Reviewed-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> e.g:
+>>
+>> core/neighbour.c:152:                 if (atomic_read(&n->refcnt) == 1 &&
+>> core/neighbour.c:801:                 if (atomic_read(&n->refcnt) == 1 &&
+>> sched/cls_u32.c:459:  if (ht->refcnt == 1) {
 >>
 >
-> Hmm, your work remind me of a patch I tried in past.
-> Here is a refleshed one...how do you think ?
+> Well, its not a good idea.
 >
-> ==
->  From c0261936fc01322d06425731d33f38b2021e8067 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 12 Dec 2011 18:31:19 +0900
-> Subject: [PATCH] per thread vma cache.
+> kref adds nothing here.
 >
-> This is a toy patch. How do you think ?
->
-> This is a patch for per-thread mmap_cache without heavy atomic ops.
->
-> I'm sure overhead of find_vma() is pretty small in usual application
-> and this will not show good improvement. But I think, if we need
-> to have cache of vma, it should be per thread rather than per mm.
 
-Agreed. per-thread is better.
+Ok, for the moment it seems to be a bad idea. But my intention is
+to integrate kref to networking code, and then to write a general
+debugging tool for refs.
 
+Tracking down reference count problems is hard, and this tool can
+really help everyone.
 
-> This patch adds thread->mmap_cache, a pointer for vm_area_struct
-> and update it appropriately. Because we have no refcnt on vm_area_struct,
-> thread->mmap_cache may be a stale pointer. This patch detects stale
-> pointer by checking
->
->      - thread->mmap_cache is one of SLABs in vm_area_cachep.
->      - thread->mmap_cache->vm_mm == mm.
->
-> vma->vm_mm will be cleared before kmem_cache_free() by this patch.
-
-Do you mean the cache can make mishit with unrelated vma when freed vma 
-was reused?
-If so, it is most tricky part of this patch, I strongly hope you write
-a comment more.
-
-Thank you.
-
+thanks,
+Daniel.
