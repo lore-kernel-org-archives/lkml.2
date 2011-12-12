@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab1LLP33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 10:29:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38187 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab1LLP31 (ORCPT
+	id S1752684Ab1LLP3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 10:29:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab1LLP3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 10:29:27 -0500
-Date: Mon, 12 Dec 2011 16:29:20 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-Message-ID: <20111212152920.GY4585@pengutronix.de>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
- <20111209010147.GH7913@S2100-06.ap.freescale.net>
- <4EE18403.30604@nvidia.com>
- <20111209043220.GJ7913@S2100-06.ap.freescale.net>
- <4EE192DC.3080209@nvidia.com>
- <20111209051413.GK7913@S2100-06.ap.freescale.net>
- <20111209110807.GG27267@pengutronix.de>
- <CACRpkdYpq1phHTTLy875xSr-upiW5BmvKMPO_d-niG+-J14t9w@mail.gmail.com>
- <20111212143750.GA27267@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111212143750.GA27267@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 12 Dec 2011 10:29:44 -0500
+Message-ID: <1323703737.21400.3.camel@twins>
+Subject: Re: [PATCH] kref: add function for reading kref value
+From: Peter Zijlstra <peterz@infradead.org>
+To: Greg KH <greg@kroah.com>
+Cc: Daniel Baluta <dbaluta@ixiacom.com>, linux-kernel@vger.kernel.org
+Date: Mon, 12 Dec 2011 16:28:57 +0100
+In-Reply-To: <20111212150255.GA7506@kroah.com>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+	 <20111212150255.GA7506@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 03:37:50PM +0100, Sascha Hauer wrote:
-> On Sat, Dec 10, 2011 at 01:18:43AM +0100, Linus Walleij wrote:
-> > On Fri, Dec 9, 2011 at 12:08 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > 
-> > > I still think it should be "I'm board Y, please set all my pins up for me"
-> > 
-> > This is basically what the current pinmux hog concept does.
-> > 
-> > > Drivers should not be bothered with pin muxing *at all*.
-> > 
-> > Not if they are simple. Like - set them up once and for all and
-> > then forget about it.
-> > 
-> > It gets problematic when we get to sleep states and the system
-> > need to reconfigure all pins on say idle or deep sleep.
+On Mon, 2011-12-12 at 07:02 -0800, Greg KH wrote:
+> On Mon, Dec 12, 2011 at 02:44:52PM +0200, Daniel Baluta wrote:
+> > We can easily get kref refcount value by accesing
+> > kref->refcount but it is better to have a function
+> > for this.
 > 
-> If you need to reconfigure your pins in deep sleep and you control
-> the pins in the driver this seems to suggest that your device won't
-> suspend properly if the driver is not loaded?
-If the pins have to be inactive (for some definition of inactive) for
-sleep it should work well without the driver loaded, shouldn't it?
+> No, you should NEVER need the value of the kref, if you do, you are
+> doing something wrong.
+> 
+> What code needs this patch?
 
-Best regards
-Uwe
+I very much agree with Greg, those sites that know wth they're doing are
+way better off open-coding it like they do now. (I only looked at the
+neihgbour.c one, which is creative but not evidently wrong).
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Providing a kref_read() function however, suggests its actually a sane
+thing to do, its not.
