@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1LLHOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:14:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63255 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab1LLHOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:14:05 -0500
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 04/11] kvm tools: move rbtree.o to util/
-Date: Mon, 12 Dec 2011 15:15:48 +0800
-Message-Id: <1323674155-17570-5-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1323674155-17570-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1323674155-17570-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-12 15:13:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-12 15:13:21,
-	Serialize complete at 2011-12-12 15:13:21
+	id S1753106Ab1LLHOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:14:43 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59040 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752955Ab1LLHOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:14:40 -0500
+Date: Mon, 12 Dec 2011 09:14:20 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Christoph Lameter <cl@linux.com>
+cc: David Rientjes <rientjes@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: slub: Fix per cpu partial statistics
+In-Reply-To: <alpine.DEB.2.00.1111230924500.16544@router.home>
+Message-ID: <alpine.LFD.2.02.1112120913000.2555@tux.localdomain>
+References: <alpine.DEB.2.00.1111230924500.16544@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rbtree.o is just a lib for kvm.
+On Wed, 23 Nov 2011, Christoph Lameter wrote:
+> Subject: slub: Fix per cpu partial statistics
+>
+> Support for SO_OBJECTS was not properly added to show_slab_objects().
+>
+> If SO_OBJECTS is not set then the number of slab pages needs to be
+> returned and not the number of objects in the partial slabs as now.
+>
+> We do not have that number so just return 1 until we find a better
+> way to determine that.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+>
+> ---
+> mm/slub.c |   10 +++++++---
+> 1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2011-11-22 13:42:23.000000000 -0600
+> +++ linux-2.6/mm/slub.c	2011-11-22 13:47:52.000000000 -0600
+> @@ -4451,8 +4451,8 @@ static ssize_t show_slab_objects(struct
+> 				continue;
+>
+> 			if (c->page) {
+> -					if (flags & SO_TOTAL)
+> -						x = c->page->objects;
+> +				if (flags & SO_TOTAL)
+> +					x = c->page->objects;
+> 				else if (flags & SO_OBJECTS)
+> 					x = c->page->inuse;
+> 				else
+> @@ -4464,7 +4464,11 @@ static ssize_t show_slab_objects(struct
+> 			page = c->partial;
+>
+> 			if (page) {
+> -				x = page->pobjects;
+> +				if (flags & SO_OBJECTS)
+> +					x = page->pobjects;
+> +				else
+> +					/* Assume one */
+> +					x = 1;
+>                                 total += x;
+>                                 nodes[c->node] += x;
+> 			}
+>
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- tools/kvm/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Looks OK to me. David, Eric?
 
-diff --git a/tools/kvm/Makefile b/tools/kvm/Makefile
-index b0bb266..9ddc3b3 100644
---- a/tools/kvm/Makefile
-+++ b/tools/kvm/Makefile
-@@ -75,7 +75,7 @@ OBJS	+= net/uip/buf.o
- OBJS	+= net/uip/csum.o
- OBJS	+= net/uip/dhcp.o
- OBJS	+= kvm-cmd.o
--OBJS	+= rbtree.o
-+OBJS	+= util/rbtree.o
- OBJS	+= util/threadpool.o
- OBJS	+= util/parse-options.o
- OBJS	+= util/rbtree-interval.o
-@@ -240,7 +240,7 @@ builtin-help.d: $(KVM_INCLUDE)/common-cmds.h
- 
- $(OBJS):
- 
--rbtree.o: ../../lib/rbtree.c
-+util/rbtree.o: ../../lib/rbtree.c
- 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
- 
- %.o: %.c
--- 
-1.7.4.4
-
+ 			Pekka
