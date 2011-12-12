@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1LLSPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:15:32 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43883 "EHLO mx2.mail.elte.hu"
+	id S1753835Ab1LLSRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:17:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49603 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab1LLSPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:15:31 -0500
-Date: Mon, 12 Dec 2011 19:13:43 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Johannes Schindelin <Johannes.Schindelin@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 5/8] perf tools: Remove stale git headlines from top
- comment
-Message-ID: <20111212181343.GA2399@elte.hu>
-References: <1323703017-6060-1-git-send-email-namhyung@gmail.com>
- <1323703017-6060-6-git-send-email-namhyung@gmail.com>
- <alpine.DEB.1.00.1112121902580.2615@bonsai2>
+	id S1752870Ab1LLSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 13:17:04 -0500
+Message-ID: <4EE64501.4070809@redhat.com>
+Date: Mon, 12 Dec 2011 20:16:33 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.00.1112121902580.2615@bonsai2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu> <alpine.LFD.2.02.1112111459270.3020@ionos> <20111211155347.GA1297@elte.hu> <1323667836.4190.4.camel@lappy> <20111212111222.GA21121@elte.hu> <20111212112052.30a568f7@pyramind.ukuu.org.uk>
+In-Reply-To: <20111212112052.30a568f7@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/12/2011 01:20 PM, Alan Cox wrote:
+> > [*] Also, those 10K cycles include some significant Qemu 
+> >     overhead - a couple of thousand cycles - that should be much 
+> >     lower in the tools/kvm case.
+>
+> Are all the traps going into qemu
 
-* Johannes Schindelin <Johannes.Schindelin@gmx.de> wrote:
+Only the ones that go to devices modelled in userspace.
 
-> Hi,
-> 
-> On Tue, 13 Dec 2011, Namhyung Kim wrote:
-> 
-> > These files are parts of PERF not GIT, although they're
-> > coming from there :)
-> 
-> And for some reason, the Copyright vanishes with that? Just a question.
+>  - is KVM still that braindead ?
 
-No way does it vanish - we are proud of that heritage.
+It has only been this way.
 
-Kim, removing copyrights is a big no-no. Even if we wanted to do 
-it (we don't) legally it can typically only be done when 
-something has been 100% rewritten and independently authored - 
-which is clearly not the case here.
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
-
-	Ingo
