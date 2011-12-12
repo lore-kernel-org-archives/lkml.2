@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab1LLFYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 00:24:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59165 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab1LLFUm (ORCPT
+	id S1752908Ab1LLFZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 00:25:21 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63344 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab1LLFUb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 00:20:42 -0500
-From: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 09/29] Staging: comedi: fix printk issue in daqboard2000.c
-Date: Mon, 12 Dec 2011 10:49:21 +0530
-Message-Id: <1323667181-17252-9-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
+	Mon, 12 Dec 2011 00:20:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111209111205.04780196@pyramind.ukuu.org.uk>
+References: <1323410421-10465-1-git-send-email-sonic.adi@gmail.com>
+	<1323410421-10465-2-git-send-email-sonic.adi@gmail.com>
+	<20111209111205.04780196@pyramind.ukuu.org.uk>
+Date: Mon, 12 Dec 2011 13:20:29 +0800
+Message-ID: <CAJxxZ0OPPHeusg-u89i5SOsSeVTH44jP3_x5BbJ8w=nB-Qh5Pw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for
+ hardware automatic CTS.
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the daqboard2000.c file that fixes up a printk
-warning found by the checkpatch.pl tool.
+Hi Alan,
 
-Converted printks to dev_dbg().
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/daqboard2000.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+On Fri, Dec 9, 2011 at 7:12 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> +#ifdef CONFIG_SERIAL_BFIN_CTSRTS
+>>                       uart->port.flags |= ASYNC_CTS_FLOW;
+>> +#endif
+>
+> As an aside could the cts/hard cts etc be passed as properties to the
+> platform device rather than ifdeffed ?
+>
+> Alan
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index 9958bd5..270d5d8 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -506,7 +506,7 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
- 
- static void daqboard2000_resetLocalBus(struct comedi_device *dev)
- {
--	printk("daqboard2000_resetLocalBus\n");
-+	dev_dbg(dev->hw_dev, "daqboard2000_resetLocalBus\n");
- 	writel(DAQBOARD2000_SECRLocalBusHi, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRLocalBusLo, devpriv->plx + 0x6c);
-@@ -515,7 +515,7 @@ static void daqboard2000_resetLocalBus(struct comedi_device *dev)
- 
- static void daqboard2000_reloadPLX(struct comedi_device *dev)
- {
--	printk("daqboard2000_reloadPLX\n");
-+	dev_dbg(dev->hw_dev, "daqboard2000_reloadPLX\n");
- 	writel(DAQBOARD2000_SECRReloadLo, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRReloadHi, devpriv->plx + 0x6c);
-@@ -526,7 +526,7 @@ static void daqboard2000_reloadPLX(struct comedi_device *dev)
- 
- static void daqboard2000_pulseProgPin(struct comedi_device *dev)
- {
--	printk("daqboard2000_pulseProgPin 1\n");
-+	dev_dbg(dev->hw_dev, "daqboard2000_pulseProgPin 1\n");
- 	writel(DAQBOARD2000_SECRProgPinHi, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRProgPinLo, devpriv->plx + 0x6c);
--- 
-1.7.0.4
+As Mike mentioned, these Macros are used to keep the code smaller when
+user doesn't want to enable UART flow control feature.
 
+I will sent out V2 against the latest kernel next tree.
+
+
+Sonic
