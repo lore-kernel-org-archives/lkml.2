@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1LLHYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:24:01 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5923 "EHLO mga01.intel.com"
+	id S1753214Ab1LLH0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:26:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57756 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110Ab1LLHYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:24:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95096270"
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "Berck E. Nash" <flyboy@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-References: <4EE2BC33.80902@gmail.com>
-	 <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
-	 <20111211075713.GA20790@elte.hu>
-	 <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Sun, 11 Dec 2011 23:23:22 -0800
-Message-ID: <1323674602.4170.5.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752448Ab1LLH0K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:26:10 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20111211151620.GC28756@alea.gnuu.de>
+Date: Mon, 12 Dec 2011 08:26:07 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <83BC42D5-9424-4137-BB9E-78E7C5BBFC63@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20111211151620.GC28756@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-11 at 13:43 -0800, Yinghai Lu wrote:
-> -v4: according to Ingo, for x2apic pre-enabled system, if intr-remap can not
->         be enabled, try to disable x2apic instead of panic and request to
->         specify nox2apic for next boot. 
 
-If bios has not exported any DMAR tables but enabled x2apic pre-boot, it
-is tricky for the OS to disable x2apic and continue with xapic for
-number of reasons. For example, if chipset has already enabled
-interrupt-remapping (which is typically recommended to be enabled before
-x2apic) but didn't provide DMAR tables, then there is no way OS can
-disable interrupt-remapping in this case.
+On 11.12.2011, at 16:16, Jörg Sommer wrote:
 
-So even though the cpu might be back in xapic mode, but external
-interrupts won't work.
+> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
+>> On 22.11.2011, at 21:04, Jörg Sommer wrote:
+>>> Jörg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
+>>>> I'm trying to build the kernel with the git commit-id
+>>>> 31555213f03bca37d2c02e10946296052f4ecfcd, but it fails
+>>>> 
+>>>> CHK     include/linux/version.h
+>>>> HOSTCC  scripts/mod/modpost.o
+>>>> CHK     include/generated/utsrelease.h
+>>>> UPD     include/generated/utsrelease.h
+>>>> HOSTLD  scripts/mod/modpost
+>>>> GEN     include/generated/bounds.h
+>>>> CC      arch/powerpc/kernel/asm-offsets.s
+>>>> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function ‘compute_tlbie_rb’:
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error: ‘HPTE_V_SECONDARY’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note: each undeclared identifier is reported only once for each function it appears in
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error: ‘HPTE_V_1TB_SEG’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error: ‘HPTE_V_LARGE’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warning: right shift count >= width of type [enabled by default]
+>>>> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
+>>>> make[2]: *** [prepare0] Fehler 2
+>>>> make[1]: *** [deb-pkg] Fehler 2
+>>>> make: *** [deb-pkg] Fehler 2
+>>> 
+>>> I'm still having this problem. I can' build
+>>> 6fe4c6d466e95d31164f14b1ac4aefb51f0f4f82. Are there any patches to
+>>> make the kernel builds and do not oops [1] on PowerPC?
+>> 
+>> The failures above should be fixed by now.
+> 
+> I've pulled git://git.kernel.org/pub/scm/virt/kvm/kvm.git
+> (a41d08d13f903da5c633fc58ee074156f05ab3ce), but this tree doesn't contain
+> a suitable commit. Where can I find it?
 
-thanks,
-suresh
+Please try:
+
+  git://github.com/agraf/linux-2.6.git kvm-ppc-next
+
+That's my WIP tree. I still have a few more patches I want to collect before shoving everything through automated testing and pushing it on to Avi.
+
+
+Alex
 
