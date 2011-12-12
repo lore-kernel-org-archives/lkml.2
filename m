@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab1LLRgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:36:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab1LLRgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:36:33 -0500
-Date: Mon, 12 Dec 2011 18:30:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH RFC 0/5] uprobes: kill xol vma
-Message-ID: <20111212173019.GA25226@redhat.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com>
+	id S1753562Ab1LLRiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:38:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48166 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab1LLRiC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:38:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128190614.GA4602@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EE639E2.6060307@zytor.com>
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com>
+ <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
+ <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com>
+ <8639cqjvyn.fsf@sumi.keithp.com> <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com>
+ <86sjkpiw8i.fsf@sumi.keithp.com> <CA+55aFzkq-3z3URp75LkVd=Qk1nEk76wDZCrLPKyabNcdieQVA@mail.gmail.com>
+ <86mxaxiu34.fsf@sumi.keithp.com> <4EE639E2.6060307@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 12 Dec 2011 09:37:40 -0800
+X-Google-Sender-Auth: GJr9il-4tZLPCUU3BbixMxzR5Nk
+Message-ID: <CA+55aFw_1TMd6Ze5aqiZEyEqb6F=z4kMKWBYk4Wtx7G4-5rtiA@mail.gmail.com>
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
+ address is invalid"
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Keith Packard <keithp@keithp.com>, Matt Fleming <matt@console-pimps.org>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28, Oleg Nesterov wrote:
+On Mon, Dec 12, 2011 at 9:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> On top of this series, not for inclusion yet, just to explain what
-> I mean. May be someone can test it ;)
->
-> This series kills xol_vma. Instead we use the per_cpu-like xol slots.
->
-> This is much more simple and efficient. And this of course solves
-> many problems we currently have with xol_vma.
->
-> For example, we simply can not trust it. We do not know what actually
-> we are going to execute in UTASK_SSTEP mode. An application can unmap
-> this area and then do mmap(PROT_EXEC|PROT_WRITE, MAP_FIXED) to fool
-> uprobes.
->
-> The only disadvantage is that this adds a bit more arch-dependant
-> code.
->
-> The main question, can this work?
+> Machines with EFI only do.
 
-OK, it almost works.
+Yeah, and they exist, but should basically be considered broken.
 
-But, this way we can't probe the compat tasks. A __USER32_CS task can't
-access the fix_to_virt() area, so it can't use uprobe_xol_slots[].
+EFi without BIOS emulation is such a crazy idiotic crock that it's not
+even funny. It's pure and utter shite.
 
-Many thanks to Josh who noticed this.
+EFI as a "extended BIOS rewritten in C" is not bad.
 
-I'll try to think more, but so far I do not see any simple solution.
+EFI as a "new world order" is totally idiotic and crazy, and only
+morons ever believed it was a good idea.
 
-Oleg.
+Sadly that "pure EFI" thing still exists. Some of the early EFI
+proponents really wanted it, and it's still an option for some
+unfathomable reason. The world would be a better place without it.
 
+                           Linus
