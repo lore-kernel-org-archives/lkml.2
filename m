@@ -1,149 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1LLBmY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 20:42:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36865 "EHLO mga09.intel.com"
+	id S1752794Ab1LLBqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 20:46:34 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53768 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab1LLBmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 20:42:21 -0500
+	id S1752755Ab1LLBqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 20:46:31 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="86079750"
-Subject: Re: iwlagn regression in v3.1.5
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: Udo Steinberg <udo@hypervisor.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EE50266.4050208@udo.edu>
-References: <4EE4AEF4.2080702@udo.edu> <4EE4DB55.4090804@udo.edu>
-	 <20111211174138.79e51fe8@x220.fritz.box>  <4EE4E152.2070204@udo.edu>
-	 <1323627815.1806.19.camel@wwguy-ubuntu>  <4EE50266.4050208@udo.edu>
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="84610675"
+Subject: [patch v3]numa: add a sysctl to control interleave allocation
+ granularity from each node to improve I/O performance
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
+        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
+        lee.schermerhorn@hp.com, David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 11 Dec 2011 17:35:37 -0800
-Message-ID: <1323653737.1806.21.camel@wwguy-ubuntu>
+Date: Mon, 12 Dec 2011 09:58:45 +0800
+Message-ID: <1323655125.22361.376.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andjej,
+If mem plicy is interleaves, we will allocated pages from nodes in a round
+robin way. This surely can do interleave fairly, but not optimal.
 
+Say the pages will be used for I/O later. Interleave allocation for two pages
+are allocated from two nodes, so the pages are not physically continuous. Later
+each page needs one segment for DMA scatter-gathering. But maxium hardware
+segment number is limited. The non-continuous pages will use up maxium
+hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
+pages from one node hasn't such issue. The memory allocator pcp list makes
+we can get physically continuous pages in several alloc quite likely.
 
-Could you please load the module with debug=0x1082 and send me the log.
+Below patch adds a sysctl to control the allocation granularity from each node.
+The default behavior isn't changed.
 
-$sudo modprobe iwlagn debug=0x1082
+Run a sequential read workload which accesses disk sdc - sdf. The test uses
+a LSI SAS1068E card. iostat -x -m 5 shows:
 
-Thanks
-Wey
+without numactl --interleave=0,1:
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+sdc              13.40     0.00  259.00    0.00    67.05     0.00   530.19     5.00   19.38   3.86 100.00
+sdd              13.00     0.00  249.00    0.00    64.95     0.00   534.21     5.05   19.73   4.02 100.00
+sde              13.60     0.00  258.60    0.00    67.40     0.00   533.78     4.96   18.98   3.87 100.00
+sdf              13.00     0.00  261.60    0.00    67.50     0.00   528.44     5.24   19.77   3.82 100.00
 
-On Sun, 2011-12-11 at 11:20 -0800, Andrej Gelenberg wrote:
-> Hi,
-> 
-> some info to the AP i use:
-> 
-> Technaxx Router-150 Wifi-N based on ranik soc
-> 
-> $ iw dev wlan0 station dump
-> Station xx:xx..xx:xx (on wlan0)
->          inactive time:  6603 ms
->          rx bytes:       377786468
->          rx packets:     443535
->          tx bytes:       15677515
->          tx packets:     155009
->          tx retries:     2723757
->          tx failed:      51495
->          signal:         -72 dBm
->          signal avg:     -71 dBm
->          tx bitrate:     135.0 MBit/s MCS 6 40Mhz short GI
->          authorized:     yes
->          authenticated:  yes
->          preamble:       long
->          WMM/WME:        yes
->          MFP:            no
-> 
-> $ iwconfig wlan0
-> wlan0     IEEE 802.11abgn  ESSID:"xxx"
->            Mode:Managed  Frequency:2.437 GHz  Access Point: xx:xx..xx:xx
->            Bit Rate=121.5 Mb/s   Tx-Power=15 dBm
->            Retry  long limit:7   RTS thr:off   Fragment thr:off
->            Power Management:off
->            Link Quality=42/70  Signal level=-68 dBm
->            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
->            Tx excessive retries:51520  Invalid misc:3567 Missed beacon:0
-> 
-> some dmesg output:
-> 
-> [  903.748514] wlan0: authenticate with xx:xx..xx:xx (try 1)
-> [  903.750991] wlan0: authenticated
-> [  903.753357] wlan0: associate with xx:xx..xx:xx (try 1)
-> [  903.759482] wlan0: RX AssocResp from xx:xx..xx:xx (capab=0xc31 
-> status=0 aid=1)
-> [  903.759487] wlan0: associated
-> 
-> $ iwlist wlan0 scan
-> 
->            Cell 06 - Address: xx:xx..xx:xx
->                      Channel:6
->                      Frequency:2.437 GHz (Channel 6)
->                      Quality=45/70  Signal level=-65 dBm
->                      Encryption key:on
->                      ESSID:"xxx"
->                      Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 9 Mb/s
->                                18 Mb/s; 36 Mb/s; 54 Mb/s
->                      Bit Rates:6 Mb/s; 12 Mb/s; 24 Mb/s; 48 Mb/s
->                      Mode:Master
->                      Extra:tsf=0000005666eac197
->                      Extra: Last beacon: 33ms ago
->                      IE: Unknown: 000873757065726B7568
->                      IE: Unknown: 010882848B961224486C
->                      IE: Unknown: 030106
->                      IE: Unknown: 2A0100
->                      IE: Unknown: 32040C183060
->                      IE: Unknown: 
-> 2D1A7E1117FF000000010000000000000000000000000C0000000000
->                      IE: Unknown: 
-> 3D1606070500000000000000000000000000000000000000
->                      IE: Unknown: 3E0100
->                      IE: IEEE 802.11i/WPA2 Version 1
->                          Group Cipher : CCMP
->                          Pairwise Ciphers (1) : CCMP
->                          Authentication Suites (1) : PSK
->                      IE: Unknown: 
-> DD180050F2020101800003A4000027A4000042435E0062322F00
->                      IE: Unknown: 0B05020012127A
->                      IE: Unknown: 4A0E14000A002C01C800140005001900
->                      IE: Unknown: 7F0101
->                      IE: Unknown: DD07000C4307000000
->                      IE: Unknown: 0706465220010D10
->                      IE: Unknown: 
-> DD1E00904C337E1117FF000000010000000000000000000000000C0000000000
->                      IE: Unknown: 
-> DD1A00904C3406070500000000000000000000000000000000000000
-> 
-> Regards,
-> Andrej Gelenberg
-> 
-> On 12/11/2011 07:23 PM, wwguy wrote:
-> > On Sun, 2011-12-11 at 08:58 -0800, Andrej Gelenberg wrote:
-> >> Hi,
-> >>
-> >> this is pretty mean regression for the stable kernel. You may the fix
-> >> only for cards, which need it and not for all of them.
-> >
-> > Could you elaborate more on the failure case and setup. this patch is to
-> > address HT40 related problem which cause the iwlwifi firmware crash.
-> >
-> > Thanks
-> > Wey
-> >>>
-> >
-> >
-> 
+with numactl --interleave=0,1:
+sdc               6.80     0.00  419.60    0.00    64.90     0.00   316.77    14.17   34.04   2.38 100.00
+sdd               6.00     0.00  423.40    0.00    65.58     0.00   317.23    17.33   41.14   2.36 100.00
+sde               5.60     0.00  419.60    0.00    64.90     0.00   316.77    17.29   40.94   2.38 100.00
+sdf               5.20     0.00  417.80    0.00    64.17     0.00   314.55    16.69   39.42   2.39 100.00
+
+with numactl --interleave=0,1 and below patch, setting numa_interleave_granularity to 3
+(setting it to 1 gives similar result in this hardware, I only recorded the data with 3):
+sdc              13.00     0.00  261.20    0.00    68.20     0.00   534.74     5.05   19.19   3.83 100.00
+sde              13.40     0.00  259.00    0.00    67.85     0.00   536.52     4.85   18.80   3.86 100.00
+sdf              13.00     0.00  260.60    0.00    68.20     0.00   535.97     4.85   18.61   3.84 100.00
+sdd              13.20     0.00  251.60    0.00    66.00     0.00   537.23     4.95   19.45   3.97 100.00
+
+The avgrq-sz is increased a lot. performance boost a little too.
+
+V3: the new sysctl uses allocation size to determine if switching node as suggested by David.
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ Documentation/sysctl/vm.txt |   15 +++++++++++++++
+ include/linux/mempolicy.h   |    2 +-
+ include/linux/sched.h       |    1 +
+ kernel/sysctl.c             |   10 ++++++++++
+ mm/mempolicy.c              |   40 ++++++++++++++++++++++++++++++++--------
+ mm/slab.c                   |    5 +++--
+ mm/slub.c                   |    3 ++-
+ 7 files changed, 64 insertions(+), 12 deletions(-)
+
+Index: linux/include/linux/sched.h
+===================================================================
+--- linux.orig/include/linux/sched.h	2011-12-12 09:21:15.000000000 +0800
++++ linux/include/linux/sched.h	2011-12-12 09:35:40.000000000 +0800
+@@ -1506,6 +1506,7 @@ struct task_struct {
+ #endif
+ #ifdef CONFIG_NUMA
+ 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
++	int il_allocated_pages;
+ 	short il_next;
+ 	short pref_node_fork;
+ #endif
+Index: linux/mm/mempolicy.c
+===================================================================
+--- linux.orig/mm/mempolicy.c	2011-12-12 09:21:15.000000000 +0800
++++ linux/mm/mempolicy.c	2011-12-12 09:35:40.000000000 +0800
+@@ -97,6 +97,18 @@
+ 
+ #include "internal.h"
+ 
++unsigned int il_granularity_pages_order __read_mostly;
++static inline int il_granularity_pages(void)
++{
++	/*
++	 * 0 means switching interleave node for every allocation (not just
++	 * every page), so we don't change old behavior
++	 */
++	if (il_granularity_pages_order == 0)
++		return 0;
++	return 1 << il_granularity_pages_order;
++}
++
+ /* Internal flags */
+ #define MPOL_MF_DISCONTIG_OK (MPOL_MF_INTERNAL << 0)	/* Skip checks for continuous vmas */
+ #define MPOL_MF_INVERT (MPOL_MF_INTERNAL << 1)		/* Invert check for nodemask */
+@@ -341,6 +353,7 @@ static void mpol_rebind_nodemask(struct
+ 			current->il_next = first_node(tmp);
+ 		if (current->il_next >= MAX_NUMNODES)
+ 			current->il_next = numa_node_id();
++		current->il_allocated_pages = 0;
+ 	}
+ }
+ 
+@@ -743,8 +756,10 @@ static long do_set_mempolicy(unsigned sh
+ 	current->mempolicy = new;
+ 	mpol_set_task_struct_flag();
+ 	if (new && new->mode == MPOL_INTERLEAVE &&
+-	    nodes_weight(new->v.nodes))
++	    nodes_weight(new->v.nodes)) {
+ 		current->il_next = first_node(new->v.nodes);
++		current->il_allocated_pages = 0;
++	}
+ 	task_unlock(current);
+ 	if (mm)
+ 		up_write(&mm->mmap_sem);
+@@ -1548,17 +1563,23 @@ static struct zonelist *policy_zonelist(
+ }
+ 
+ /* Do dynamic interleaving for a process */
+-static unsigned interleave_nodes(struct mempolicy *policy)
++static unsigned interleave_nodes(struct mempolicy *policy, int order)
+ {
+ 	unsigned nid, next;
+ 	struct task_struct *me = current;
+ 
+ 	nid = me->il_next;
++	me->il_allocated_pages += 1 << order;
++	if (me->il_allocated_pages < il_granularity_pages())
++		return nid;
++
+ 	next = next_node(nid, policy->v.nodes);
+ 	if (next >= MAX_NUMNODES)
+ 		next = first_node(policy->v.nodes);
+-	if (next < MAX_NUMNODES)
++	if (next < MAX_NUMNODES) {
+ 		me->il_next = next;
++		me->il_allocated_pages = 0;
++	}
+ 	return nid;
+ }
+ 
+@@ -1570,7 +1591,7 @@ static unsigned interleave_nodes(struct
+  * task can change it's policy.  The system default policy requires no
+  * such protection.
+  */
+-unsigned slab_node(struct mempolicy *policy)
++unsigned slab_node(struct mempolicy *policy, int order)
+ {
+ 	if (!policy || policy->flags & MPOL_F_LOCAL)
+ 		return numa_node_id();
+@@ -1583,7 +1604,7 @@ unsigned slab_node(struct mempolicy *pol
+ 		return policy->v.preferred_node;
+ 
+ 	case MPOL_INTERLEAVE:
+-		return interleave_nodes(policy);
++		return interleave_nodes(policy, order);
+ 
+ 	case MPOL_BIND: {
+ 		/*
+@@ -1629,6 +1650,7 @@ static unsigned offset_il_node(struct me
+ static inline unsigned interleave_nid(struct mempolicy *pol,
+ 		 struct vm_area_struct *vma, unsigned long addr, int shift)
+ {
++	BUG_ON(shift < PAGE_SHIFT);
+ 	if (vma) {
+ 		unsigned long off;
+ 
+@@ -1639,12 +1661,13 @@ static inline unsigned interleave_nid(st
+ 		 * pages, we need to shift off the always 0 bits to get
+ 		 * a useful offset.
+ 		 */
+-		BUG_ON(shift < PAGE_SHIFT);
++		if ((shift - PAGE_SHIFT) < il_granularity_pages_order)
++			shift = PAGE_SHIFT + il_granularity_pages_order;
+ 		off = vma->vm_pgoff >> (shift - PAGE_SHIFT);
+ 		off += (addr - vma->vm_start) >> shift;
+ 		return offset_il_node(pol, vma, off);
+ 	} else
+-		return interleave_nodes(pol);
++		return interleave_nodes(pol, shift - PAGE_SHIFT);
+ }
+ 
+ /*
+@@ -1901,7 +1924,8 @@ struct page *alloc_pages_current(gfp_t g
+ 	 * nor system default_policy
+ 	 */
+ 	if (pol->mode == MPOL_INTERLEAVE)
+-		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
++		page = alloc_page_interleave(gfp, order,
++			interleave_nodes(pol, order));
+ 	else
+ 		page = __alloc_pages_nodemask(gfp, order,
+ 				policy_zonelist(gfp, pol, numa_node_id()),
+Index: linux/kernel/sysctl.c
+===================================================================
+--- linux.orig/kernel/sysctl.c	2011-12-12 09:21:15.000000000 +0800
++++ linux/kernel/sysctl.c	2011-12-12 09:35:40.000000000 +0800
+@@ -109,6 +109,9 @@ extern int sysctl_nr_trim_pages;
+ #ifdef CONFIG_BLOCK
+ extern int blk_iopoll_enabled;
+ #endif
++#ifdef CONFIG_NUMA
++extern unsigned int il_granularity_pages_order;
++#endif
+ 
+ /* Constants used for minimum and  maximum */
+ #ifdef CONFIG_LOCKUP_DETECTOR
+@@ -1313,6 +1316,13 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= numa_zonelist_order_handler,
+ 	},
++	{
++		.procname	= "numa_interleave_granularity",
++		.data		= &il_granularity_pages_order,
++		.maxlen		= sizeof(il_granularity_pages_order),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
+ #endif
+ #if (defined(CONFIG_X86_32) && !defined(CONFIG_UML))|| \
+    (defined(CONFIG_SUPERH) && defined(CONFIG_VSYSCALL))
+Index: linux/Documentation/sysctl/vm.txt
+===================================================================
+--- linux.orig/Documentation/sysctl/vm.txt	2011-12-12 09:21:15.000000000 +0800
++++ linux/Documentation/sysctl/vm.txt	2011-12-12 09:35:40.000000000 +0800
+@@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/
+ - swappiness
+ - vfs_cache_pressure
+ - zone_reclaim_mode
++- numa_interleave_granularity
+ 
+ ==============================================================
+ 
+@@ -698,4 +699,18 @@ Allowing regular swap effectively restri
+ node unless explicitly overridden by memory policies or cpuset
+ configurations.
+ 
++==============================================================
++
++numa_interleave_granularity:
++
++In numa interleave mempolicy, page allocation switches from one node to
++another after (1 << numa_interleave_granularity) pages allocated from the
++node. It allows to change memory allocation granularity from each node
++in interleave mode. Big granularity allows to allocate physical continuous
++memory from each node. This can benefit I/O device doing DMA. On the other
++hand, big granularity could potentially cause memory imbalance between nodes.
++
++The default value is 0, which is a little special. It means allocation
++switches interleave node for every allocation (not just every page).
++
+ ============ End of Document =================================
+Index: linux/include/linux/mempolicy.h
+===================================================================
+--- linux.orig/include/linux/mempolicy.h	2011-12-12 09:21:15.000000000 +0800
++++ linux/include/linux/mempolicy.h	2011-12-12 09:35:40.000000000 +0800
+@@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(st
+ extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
+ extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
+ 				const nodemask_t *mask);
+-extern unsigned slab_node(struct mempolicy *policy);
++extern unsigned slab_node(struct mempolicy *policy, int order);
+ 
+ extern enum zone_type policy_zone;
+ 
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2011-12-12 09:21:15.000000000 +0800
++++ linux/mm/slub.c	2011-12-12 09:35:40.000000000 +0800
+@@ -1603,7 +1603,8 @@ static struct page *get_any_partial(stru
+ 		return NULL;
+ 
+ 	get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++	zonelist = node_zonelist(slab_node(current->mempolicy, oo_order(s->oo)),
++			flags);
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 		struct kmem_cache_node *n;
+ 
+Index: linux/mm/slab.c
+===================================================================
+--- linux.orig/mm/slab.c	2011-12-12 09:21:15.000000000 +0800
++++ linux/mm/slab.c	2011-12-12 09:35:40.000000000 +0800
+@@ -3271,7 +3271,7 @@ static void *alternate_node_alloc(struct
+ 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
+ 		nid_alloc = cpuset_slab_spread_node();
+ 	else if (current->mempolicy)
+-		nid_alloc = slab_node(current->mempolicy);
++		nid_alloc = slab_node(current->mempolicy, cachep->gfporder);
+ 	put_mems_allowed();
+ 	if (nid_alloc != nid_here)
+ 		return ____cache_alloc_node(cachep, flags, nid_alloc);
+@@ -3300,7 +3300,8 @@ static void *fallback_alloc(struct kmem_
+ 		return NULL;
+ 
+ 	get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++	zonelist = node_zonelist(slab_node(current->mempolicy,
++		cache->gfporder), flags);
+ 	local_flags = flags & (GFP_CONSTRAINT_MASK|GFP_RECLAIM_MASK);
+ 
+ retry:
 
 
