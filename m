@@ -1,170 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1LLWuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:50:10 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:33860 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753184Ab1LLWuI (ORCPT
+	id S1754609Ab1LLWuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:50:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58851 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1LLWuK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:50:08 -0500
-Message-ID: <4EE6850F.5070002@fb.com>
-Date: Mon, 12 Dec 2011 14:49:51 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 17:50:10 -0500
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-References: <1323718578-1157-1-git-send-email-asharma@fb.com> <1323718578-1157-3-git-send-email-asharma@fb.com> <CAObL_7F8v1PT0FQ=GNcNmJKWkzQ7DfkQ9ym2EeR0TgFKiZPPaw@mail.gmail.com>
-In-Reply-To: <CAObL_7F8v1PT0FQ=GNcNmJKWkzQ7DfkQ9ym2EeR0TgFKiZPPaw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <CAB=NE6Wb9ySk6a1gB-edyF_uRe=-ESehUNbUa+n0g2WYGJXnqw@mail.gmail.com>
+References: <1319461948.31243.31.camel@deadeye> <CAB=NE6Vt91tHCBj7sJHjUCaDZZPqox+omcQjsEj54vQAtbY2bw@mail.gmail.com>
+ <20111212215818.GP3366@decadent.org.uk> <CAB=NE6Wb9ySk6a1gB-edyF_uRe=-ESehUNbUa+n0g2WYGJXnqw@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Mon, 12 Dec 2011 14:49:49 -0800
+X-Google-Sender-Auth: rVBqkaIpYAsensQYx8hhrFb2JXM
+Message-ID: <CAB=NE6W_aP2rY=6CAd4xYLM8wmiUxrzBqZhCZPEksVMsDQ9jAg@mail.gmail.com>
+Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
+ built in-tree
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Greg KH <greg@kroah.com>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/11 12:15 PM, Andrew Lutomirski wrote:
-
-> This seems like a neat idea, but I'm a little worried about the
-> implementation.  Surely someone with 4k+ cpus will complain when the
-> percpu vvar data exceeds a page and crashes.  I have no personal
-> objection to a dynamically-sized vvar area, but it might need more
-> careful handling.
-
-I'm for disabling the vsyscall when the data doesn't fit in a couple of 
-pages.
-
+On Mon, Dec 12, 2011 at 2:47 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> On Mon, Dec 12, 2011 at 1:58 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> On Mon, Dec 12, 2011 at 01:40:44PM -0800, Luis R. Rodriguez wrote:
+>>> On Mon, Oct 24, 2011 at 6:12 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>>> > Use of the GPL or a compatible licence doesn't necessarily make the code
+>>> > any good.  We already consider staging modules to be suspect, and this
+>>> > should also be true for out-of-tree modules which may receive very
+>>> > little review.
+>>> >
+>>> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+>>> > ---
+>>> > Debian has been carrying this for the last few kernel versions.  The
+>>> > recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
+>>> > that this might be more generally useful.
+>>>
+>>> This indeed seems like a good idea to advocate getting things upstream
+>>> (not just staging) but what about the case where we have upstream
+>>> drivers from future kernels backported to older kernels and the newer
+>>> driver is simply provided as a feature for users who may need new
+>>> features / chipset support on their old distribution kernel?
+>>
+>> They continue to work without any loss of functionality.  (After the
+>> follow-up patches to keep dynamic debugging and lock debugging
+>> working.)
 >
-> I also wonder if there a problem with information leaking.  If there
-> was an entire per-cpu vvar page (perhaps mapped differently on each
-> cpu) then nothing interesting would leak.  But that could add
-> overhead.
+> Great!
 >
-
-The timing based attacks depend on the granularity of timestamps. I feel 
-what's available here is too coarse grained to be useful. Happy to
-disable the code at compile time for those cases. Are there 
-CONFIG_HIGH_SECURITY type of options I could use for this purpose?
-
-
->> diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
->> index 0fd7a4a..e36e1c1 100644
->> --- a/arch/x86/include/asm/vvar.h
->> +++ b/arch/x86/include/asm/vvar.h
->> @@ -47,5 +47,6 @@
->>   DECLARE_VVAR(0, volatile unsigned long, jiffies)
->>   DECLARE_VVAR(16, int, vgetcpu_mode)
->>   DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
->> +DECLARE_VVAR(2048, struct vcpu_data, vcpu_data)
+>>> It seems this taint flag will be used for driers backported through
+>>> compat-wireless, the compat kernel module or any other backported
+>>> driver, even if it is indeed upstream and whereby kernel developer
+>>> *do* commit to actually fixing issues. In our experience
+>>> compat-wireless bugs *are real bugs*, not backport bugs so we do look
+>>> into them. In our latest linux-next.git based release for example
+>>> backport code consists only of 1.3804% of the code.
+>>
+>> Now you can look for (O) after the module name in a BUG/Oops message
+>> and you can tell whether the user really had the original or
+>> compat-wireless version of the driver.
+>>
+>> It is really up to each distributor or developer how they treat
+>> bug reports with the O taint.  When handling Debian bug reports I
+>> won't automatically reject such a tainted kernel but I will look
+>> carefully at the module list.
 >
-> Any reason this isn't page-aligned?  Offset 2048 seems like an odd place.
+> I'm working on getting my companies to abandon 802.11 proprietary
+> drivers for good. For Station mode of operation this is pretty much
+> mission complete. For AP products.. this is work in progress. The out
+> of tree flag is a good utility one can use to help justify working
+> upstream but if we treat any future-kernel-backported-driver equally
+> to any out of tree crap piece of shit driver, it seems to do unjustice
+> to the value of a properly upstream backported driver. I will note
+> that I put a lot of effort to ensure that the backport effort is
+> upstream-centric in an *extremely* upstream-biased way, see how I
+> label extra patches for tarballs [1]. If your patches are not upstream
+> the only way you get into these tarballs are by providing patches into
+> these directories:
 >
-
-I meant it to be 128 + sizeof(struct vsyscall_gtod_data) so we fit 
-everything in one page if CONFIG_NR_CPUS is small enough.
-
-I'll fix it up in the next rev.
-
->>   notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
->>   {
->>         long ret;
->> -       asm("syscall" : "=a" (ret) :
->> -           "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
->> +       asm volatile("syscall" : "=a" (ret) :
->> +                    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
->>         return ret;
->>   }
+>  * pending-stable/ stable fixes from linux-next.git not yet on a stable release
+>  * linux-next-cherry-picks/ patches upstream but that won't go to the
+> stable release that we want to cherry pick
+>  * linux-next-pending/ patches posted on the public development
+> mailing list, patch not yet merged due to the maintainer being away on
+> vacation or whatever
+>  * crap/ patches not even posted publicly yet
 >
-> Huh?  This should probably be a separate patch (and probably not a
-> -stable candidate, since it would take amazing compiler stupidity to
-> generate anything other than the obvious code).  The memory clobber
-> may also be enough to make this officially safe.
-
-Yes - this should be a separate patch. gcc-4.4 likes to get rid of the 
-instruction in __do_thread_cpu_time without the asm volatile (in spite 
-of the memory clobber).
-
-
->> +       if (vp->tsc_unstable) {
->> +               struct timespec ts;
->> +               vdso_fallback_gettime(CLOCK_THREAD_CPUTIME_ID,&ts);
->> +               return timespec_to_ns(&ts);
->> +       }
+> Each tarball used also gets pegged with a letter if *any* patch from
+> any of these directories gets applied. The compat module, upon being
+> loaded, will also print the kernel ring buffer the exact release,
+> whether extra patches were provided, the upstream git tree used as
+> base and so on.
 >
-> Yuck -- another flag indicating whether we're using the tsc.
-
-I renamed it to thread_cputime_disabled to deal with NR_CPUS > 64.
-
+> So -- although from a technical perspective this may mean Debian /
+> other kernel developers may ignore the taint flag for compat-wireless
+> it'd sure be nice to avoid it for them all together. Just can't think
+> of a way to do it yet... If you agree should we continue to think of a
+> way if its possible?
 >
->> +
->> +       do {
->> +               native_read_tscp(&p);
->
-> Do all 64-bit cpus have rdtscp?  ISTR older Intel machines don't have it.
->
+> [1] http://wireless.kernel.org/en/users/Download/stable#Legend
 
-Yeah - I ran into this one when testing with KVM on a rdtscp capable 
-CPU. Will disable the vsyscall when the CPU doesn't support rdtscp.
+How about a way to peg a driver as a backport from future kernels?
+Like maybe MODULE_COMPAT() ?
 
->> --- a/arch/x86/vdso/vdso.lds.S
->> +++ b/arch/x86/vdso/vdso.lds.S
->> @@ -25,6 +25,8 @@ VERSION {
->>                 __vdso_getcpu;
->>                 time;
->>                 __vdso_time;
->> +               thread_cpu_time;
->> +               __vdso_thread_cpu_time;
->>         local: *;
->>         };
->>   }
->
-> Why do we have the non-__vdso versions?  IMO anything that actually
-> uses them is likely to be confused.  They have the same names as the
-> glibc wrappers, but the glibc wrappers have different return value and
-> errno semantics.  I'd say just use __vdso.
-
-I'm not familiar with the history of __vdso_foo vs foo. Happy to get rid 
-of the non __vdso versions.
-
->
-> Also, what's wrong with just adding the functionality to __vdso_clock_gettime?
->
-
-Performance. Most of this is client dependent (whether it expects time 
-in nanoseconds or timespec).
-
-Baseline: 		19.34 secs
-vclock_gettime: 	4.74 secs
-thread_cpu_time:	3.62 secs
-
-Our use case prefers nanoseconds, so the conversion to timespec and back 
-adds overhead. Also, having a direct entry point vs going through the 
-switch in clock_gettime() adds some cycles.
-
-I have some people here asking me if they could get CLOCK_REALTIME and 
-CLOCK_MONOTONIC also in nanoseconds for the same reason.
-
-
->> +struct vcpu_data {
->> +       struct vpercpu_data vpercpu[NR_CPUS];
->> +       unsigned int tsc_khz;
->
-> I think this also duplicates some of the gtod_data stuff, at least in
-> the case that TSC works for gtod.
->
-
-vgotd.h seems to be clock source independent. This vsyscall is usable 
-only on systems with tsc_unstable == 0. Also, there is only one instance 
-of mult and shift there, whereas we save it on a per-cpu basis in the 
-VVAR page.
-
-Thanks for the review and comments!
-
-  -Arun
+  Luis
