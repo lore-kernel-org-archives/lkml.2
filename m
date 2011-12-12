@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1LLSRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:17:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49603 "EHLO mx1.redhat.com"
+	id S1753862Ab1LLSRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:17:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28967 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab1LLSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:17:04 -0500
-Message-ID: <4EE64501.4070809@redhat.com>
-Date: Mon, 12 Dec 2011 20:16:33 +0200
+	id S1752870Ab1LLSRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 13:17:12 -0500
+Message-ID: <4EE64512.3080709@redhat.com>
+Date: Mon, 12 Dec 2011 20:16:50 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
@@ -35,7 +35,7 @@ Only the ones that go to devices modelled in userspace.
 
 >  - is KVM still that braindead ?
 
-It has only been this way.
+How would you do it?
 
 -- 
 error compiling committee.c: too many arguments to function
