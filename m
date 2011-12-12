@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1LLXpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:45:04 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:37275 "EHLO d1.icnet.pl"
+	id S1754236Ab1LLXpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:45:19 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:10724 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab1LLXo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:44:59 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 01/10] GPIO: gpio-generic: Move initialization up to postcore
-Date: Tue, 13 Dec 2011 00:44:01 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl> <201112130005.35386.jkrzyszt@tis.icnet.pl> <20111212231519.GK32251@atomide.com>
-In-Reply-To: <20111212231519.GK32251@atomide.com>
-MIME-Version: 1.0
-Message-Id: <201112130044.02007.jkrzyszt@tis.icnet.pl>
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1753807Ab1LLXpO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 18:45:14 -0500
+X-IronPort-AV: E=Sophos;i="4.71,342,1320652800"; 
+   d="scan'208";a="606778954"
+Message-ID: <1323733511.13849.19.camel@lade.trondhjem.org>
+Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: roel <roel.kluin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        sage@newdream.net, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Date: Mon, 12 Dec 2011 18:45:11 -0500
+In-Reply-To: <1323733153.13849.17.camel@lade.trondhjem.org>
+References: <4EE688FC.8090606@gmail.com>
+	 <20111212152856.871a8301.akpm@linux-foundation.org>
+	 <1323733153.13849.17.camel@lade.trondhjem.org>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 12 Dec 2011 23:45:13.0105 (UTC) FILETIME=[1780D010:01CCB928]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 of December 2011 at 00:15:20, Tony Lindgren wrote:
-> 
-> Might be worth checking if some board specific __initcall helps here
-> too?
+On Mon, 2011-12-12 at 18:39 -0500, Trond Myklebust wrote:
 
-If I only knew how I could insert a board specific __initcall between 
-two points from where the generic-gpio first, then the 8250 driver, are 
-called.
+> As far as NFS is concerned, it reverts a regression. NFS only used to
+> run revalidate_file_size() for SEEK_END prior to commit
+> 06222e491e663dac939f04b125c9dc52126a75c4. I accept that we now also need
+> to run it for SEEK_HOLE and SEEK_DATA, but we've never had to do so for
+> SEEK_SET and SEEK_CUR.
 
-Any hints?
+BTW: The regression exists in 3.1, so this is probably a stable
+candidate...
 
-Thanks,
-Janusz
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
