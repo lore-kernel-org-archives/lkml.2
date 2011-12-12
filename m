@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1LLUly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 15:41:54 -0500
-Received: from lunge.queued.net ([173.255.254.236]:59498 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab1LLUlx (ORCPT
+	id S1754085Ab1LLUpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 15:45:04 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63885 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab1LLUpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 15:41:53 -0500
-X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 15:41:53 EST
-Date: Mon, 12 Dec 2011 12:31:31 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: IRQF_TIMER | IRQF_SHARED ?
-Message-ID: <20111212123131.502be350@queued.net>
-In-Reply-To: <4EE620A5.7080402@LiPPERTEmbedded.de>
-References: <4EE620A5.7080402@LiPPERTEmbedded.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 12 Dec 2011 15:45:01 -0500
+X-Authority-Analysis: v=2.0 cv=HeWWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=KjFivuMxOpgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=SYQUmQGG0F-Fj21cm1sA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323722699.1377.9.camel@gandalf.stny.rr.com>
+Subject: Re: trace_printk is doing weird things with my arguments
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 12 Dec 2011 15:44:59 -0500
+In-Reply-To: <20111212203214.GB3603@localhost.localdomain>
+References: <20111212185947.GA3603@localhost.localdomain>
+	 <1323719838.1377.5.camel@gandalf.stny.rr.com>
+	 <20111212203214.GB3603@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 16:41:25 +0100
-Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
-
-> Hi Andres,
+On Mon, 2011-12-12 at 15:32 -0500, Josef Bacik wrote:
 > 
-> one of our customers tripped over the fact that the MFGPT driver
-> won't share its IRQ with anyone else. (MFGPT defaulted to same IRQ as
-> audio, MFGPT driver loaded first, audio fails.) *No big deal!* They
-> don't actually need MFGPT and will simply disable it. It just made me
-> wonder ...
-> 
-> Why would it be such a bad idea to use IRQF_TIMER | IRQF_SHARED (see
-> patch below)? mfgpt_tick() already does properly return IRQ_NONE when
-> it feels unresponsible. I tested it with either driver loaded first
-> and it seemed to work (well, at least audio worked, don't know how to
-> explicitly test cs5535-clockevt).
+> That worked perfectly.  So will I have this problem when I got to turn these
+> things into tracepoints or will those work out right?  Thanks,
 
-Just loading cs5535-clockevt should start the periodic timer.  On my
-XO-1, IRQ 7 starts firing immediately.
+The TP_fast_assign() is exactly how things are copied into the ring
+buffer. If you have all the necessary data copied then, and don't
+dereference it in TP_printk(), then you are fine.
 
+IOW,
 
-> 
-> I thought about latencies of IRQ sharing being unacceptable for a
-> timer, but ...
-> - If MFGPT is loaded first there is no additional latency, is there?
-> Audio recieves its IRQs only as 2nd in list but that's not a problem.
-> - If MFGPT is loaded second - well, there is a latency, but without
-> sharing the IRQ the driver failed to load at all, so that's still an
-> improvement.
-> 
-> But I did not fail to notice that _none_ of the code in
-> drivers/clocksource/ uses IRQF_SHARED, obviously this must be
-> deliberate.
+	TP_fast_assign( entry->id = ptr->id),
+	TP_printk ("id: %lx", entry->id)
 
-Hm, maybe tglx knows?  For my part, I don't think it would be a
-problem, but I can imagine the reason for not sharing being clock drift
-or something to that effect.
+will work, but
+
+	TP_fast_assign(entry->ptr = ptr),
+	TP_printk("id: %lx", entry->ptr->id)
+
+will not.
 
 
-> 
-> So, what's so bad about IRQF_TIMER | IRQF_SHARED?
-> 
-> Any education would be welcome, even if combined with flame. :-)
-> 
-> Thanks and best regards,
-> Jens
-> 
-> --- linux-3.2-rc4/drivers/clocksource/cs5535-clockevt.c
-> +++ shared_mfgpt_irq/drivers/clocksource/cs5535-clockevt.c
-> @@ -133,7 +133,7 @@ static irqreturn_t mfgpt_tick(int irq, v
-> 
->  static struct irqaction mfgptirq  = {
->  	.handler = mfgpt_tick,
-> -	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER,
-> +	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER |
-> IRQF_SHARED, .name = DRV_NAME,
->  };
-> 
-> _
-> 
+-- Steve
+
+
