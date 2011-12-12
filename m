@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1LLOZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:25:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48927 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752557Ab1LLOZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:25:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101262236"
-Date: Mon, 12 Dec 2011 15:30:43 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tps65910: Handle clear-mask correctly
-Message-ID: <20111212143043.GF13952@sortiz-mobl>
-References: <marcus.folkesson@gmail.com>
- <1321969191-8604-1-git-send-email-marcus.folkesson@gmail.com>
- <1321969191-8604-2-git-send-email-marcus.folkesson@gmail.com>
+	id S1752982Ab1LLO2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:28:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56147 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab1LLO2n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:28:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321969191-8604-2-git-send-email-marcus.folkesson@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 12 Dec 2011 22:28:43 +0800
+Message-ID: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
+Subject: [Slub allocator] There are chances that kmem_cache_cpu->freelist gets
+ lost if the process happens to be rescheduled to a differenet cpu before the
+ local_irq_save() completes in __slab_alloc()
+From: zhihua che <zhihua.che@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcus,
+Hi, everyone
 
-On Tue, Nov 22, 2011 at 02:39:51PM +0100, Marcus Folkesson wrote:
-> The function is not actually cleaing the bitmask.
+        I'm reading code of version 3.1.5 and I guess I come across a
+memory leak involving with slub allocating process. I image a case
+like below.
 
-This looks like a valid fix, and all the tps65910_clear_bits() callers seem to
-expect that behaviour. Graeme, I'm going to try to push this one for 3.2,
-unless you object to it.
+        Process p0 running on cpu0 is requesting a small piece of
+memory by calling slab_alloc(). It finds that the c0->freelist is null
+and resorts to __slab_alloc(), where c0 is a pointer of kmem_cache_cpu
+corresponding to cpu0. Unfortunately, scheduling happens right the
+moment and p0 is now running on a different cpu1. P0 then disables the
+local interrupts of cpu1 at the beginning of __slab_alloc() (line
+2057),  and retrieves a different pointer of kmem_cache_cpu, c1,
+corresponding to cpu1(line 2064). P0 continues executing to line 2116
+where c1->freelist is assigned a new value while there is no any check
+to it before at all!!! So I think there are chances that memory leak
+could happen if scheduling happens right before line 2057.
 
-Cheers,
-Samuel.
+2057 local_irq_disable();  /* scheduling happens before here */
 
-> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-> ---
->  drivers/mfd/tps65910.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index 6f5b8cf..c1da84b 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -120,7 +120,7 @@ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
->  		goto out;
->  	}
->  
-> -	data &= mask;
-> +	data &= ~mask;
->  	err = tps65910_i2c_write(tps65910, reg, 1, &data);
->  	if (err)
->  		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
-> -- 
-> 1.7.5.4
-> 
+2064 c = this_cpu_ptr(s->cpu_slab);
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+2114 load_freelist:
+2115         VM_BUG_ON(!page->frozen);
+2116         c->freelist = get_freepointer(s, object);  /* memory leak
+happens here */
+
+         I wonder if I think in a wrong way.
+
+         Furthermore, I find in the earlier version like 2.6.38.8, the
+local interrupts have been disabled in slab_alloc() before the control
+enters the __slab_alloc(), so I think the memory leak is not present
+in the earlier versions.
