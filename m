@@ -1,156 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab1LLWHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:07:41 -0500
-Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:56115
-	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754244Ab1LLWHj (ORCPT
+	id S1754456Ab1LLWLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:11:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39499 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab1LLWLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:07:39 -0500
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 17:07:38 EST
-Message-ID: <4EE6792A.8070901@free.fr>
-Date: Mon, 12 Dec 2011 22:59:06 +0100
-From: Wallak <wallak@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0.1) Gecko/20111122 Firefox/8.0.1 SeaMonkey/2.5
+	Mon, 12 Dec 2011 17:11:36 -0500
+Message-ID: <4EE67C0F.10900@gmail.com>
+Date: Tue, 13 Dec 2011 09:11:27 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi <linux-acpi@vger.kernel.org>, lenb <lenb@kernel.org>
-Subject: Re: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression
- - Linux-3.x
-References: <1323297487.4edfeacfc49ff@imp.free.fr>  <CAF1ivSZX37HRyxJX_rdkZ4pVrxjCZeM39mAs4ZKcqWCYShxaxQ@mail.gmail.com> <1323657511.17515.11.camel@minggr>
-In-Reply-To: <1323657511.17515.11.camel@minggr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'H Hartley Sweeten'" <hsweeten@visionengravers.com>
+Subject: Re: [PATCH] backlight: ep93xx_bl: remove duplicated header include
+References: <001201ccb8a2$ca235e30$5e6a1a90$%han@samsung.com>
+In-Reply-To: <001201ccb8a2$ca235e30$5e6a1a90$%han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lin Ming,
+On 12/12/11 18:51, Jingoo Han wrote:
 
-This last patch, modifying the behavior of acpi_get_cpuid(), works fine 
-on my non SMP enabled kernel. The test was done on a Dell X300, 
-acpi_processor_set_pdc() was properly called, without the changes done 
-by my previous patch.
-
-Best Regards,
-Wallak.
-
-Lin Ming wrote:
-> On Mon, 2011-12-12 at 10:26 +0800, Lin Ming wrote:
->> ---------- Forwarded message ----------
->> From:<wallak@free.fr>
->> Date: Thu, Dec 8, 2011 at 6:38 AM
->> Subject: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression
->> - Linux-3.x
->> To: linux-kernel@vger.kernel.org
->>
->>
->> We have a regression on the ACPI stack of the last linux kernel line 3.x (3.1.4,
->> 3.2-rc4...). The ACPI "_PDC" chunk is not executed on some computers (e.g. Dell
->> X300; the function acpi_processor_set_pdc() is not called). This issue yield to
->> an uninitialized state of some ACPI variables.
->>
->> A patch is available below. This patch come back to the previous linux behavior,
->> and works fine.
->>
->> Best Regards,
->> Wallak.
->>
->> --- linux-3.1.4-mdf/drivers/acpi/processor_core.c.orig  2011-12-07
->> 23:12:57.000000000 +0100
->> +++ linux-3.1.4-mdf/drivers/acpi/processor_core.c       2011-12-07
->> 23:13:39.000000000 +0100
->> @@ -223,8 +223,8 @@
->>         type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
->>         cpuid = acpi_get_cpuid(handle, type, acpi_id);
->>
->> -       if (cpuid == -1)
->> -               return false;
->> +       if ((cpuid == -1)&&  (num_possible_cpus()>  1))
-> Hi Wallak,
->
-> BIOS may define multiple CPU handles even for UP
-> processor(see below).
->
-> processor_physically_present(acpi_handle handle) will be called for each
-> CPU handles.
->
-> We should only return valid value for CPU0 on UP processor.
-> With your patch, processor_physically_present will return true for all
-> CPU handles(CPU0, CPU1, CPU2, CPU3). This is not we want.
->
-> I think below is the correct fix.
-> Could you help to test it?
->
-> Thanks.
->
-> > From 5c6de7311ced7a1febf85fdcc08b6116bcfe8138 Mon Sep 17 00:00:00 2001
-> From: Lin Ming<ming.m.lin@intel.com>
-> Date: Mon, 12 Dec 2011 10:04:53 +0800
-> Subject: [PATCH] ACPI: processor: fix acpi_get_cpuid for UP processor
->
-> For UP processor, it is likely that no _MAT method or MADT table defined.
-> So currently acpi_get_cpuid(...) always return -1 for UP processor.
-> This is wrong. It should return valid value for CPU0.
->
-> In the other hand, BIOS may define multiple CPU handles even for UP
-> processor, for example
->
->          Scope (_PR)
->          {
->              Processor (CPU0, 0x00, 0x00000410, 0x06) {}
->              Processor (CPU1, 0x01, 0x00000410, 0x06) {}
->              Processor (CPU2, 0x02, 0x00000410, 0x06) {}
->              Processor (CPU3, 0x03, 0x00000410, 0x06) {}
->          }
->
-> We should only return valid value for CPU0's acpi handle.
-> And return invalid value for others.
->
-> http://marc.info/?t=132329819900003&r=1&w=2
->
-> Reported-by: wallak@free.fr
-> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+> This patch removes duplicated module header for EP93xx backlight
+> driver.
+> drivers/video/backlight/ep93xx_bl.c: module.h is included more
+> than once.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->   drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
->   1 files changed, 24 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> index 3a0428e..3372900 100644
-> --- a/drivers/acpi/processor_core.c
-> +++ b/drivers/acpi/processor_core.c
-> @@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
->   	apic_id = map_mat_entry(handle, type, acpi_id);
->   	if (apic_id == -1)
->   		apic_id = map_madt_entry(type, acpi_id);
-> -	if (apic_id == -1)
-> -		return apic_id;
-> +	if (apic_id == -1) {
-> +		/*
-> +		 * On UP processor, there is no _MAT or MADT table.
-> +		 * So above apic_id is always set to -1.
-> +		 *
-> +		 * BIOS may define multiple CPU handles even for UP processor.
-> +		 * For example,
-> +		 *
-> +		 * Scope (_PR)
-> +                 * {
-> +		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
-> +		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
-> +		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
-> +		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
-> +		 * }
-> +		 *
-> +		 * Ignores apic_id and always return 0 for CPU0's handle.
-> +		 * Return -1 for other CPU's handle.
-> +		 */
-> +		if (acpi_id == 0)
-> +			return acpi_id;
-> +		else
-> +			return apic_id;
-> +	}
->
->   #ifdef CONFIG_SMP
->   	for_each_possible_cpu(i) {
+>  drivers/video/backlight/ep93xx_bl.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+> index c74a6f4..4893dff 100644
+> --- a/drivers/video/backlight/ep93xx_bl.c
+> +++ b/drivers/video/backlight/ep93xx_bl.c
+> @@ -10,10 +10,8 @@
+>   * This driver controls the pulse width modulated brightness control output,
+>   * BRIGHT, on the Cirrus EP9307, EP9312, and EP9315 processors.
+>   */
+> -
+
+
+Please don't remove the blank line between the header comment and the
+first include.
+
+~Ryan
+
+>  #include <linux/module.h>
+>  #include <linux/platform_device.h>
+> -#include <linux/module.h>
+>  #include <linux/io.h>
+>  #include <linux/fb.h>
+>  #include <linux/backlight.h>
+
 
