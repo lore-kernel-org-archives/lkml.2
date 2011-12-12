@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab1LLRpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:45:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab1LLRpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:45:43 -0500
-Message-ID: <4EE63DC1.3010104@redhat.com>
-Date: Mon, 12 Dec 2011 15:45:37 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753814Ab1LLRqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:46:03 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:6747
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753514Ab1LLRp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:45:58 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1447M1432Nzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-FB-SS: 13,
+From: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: Dept_Infinipath <Dept_Infinipath@qlogic.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Dec 2011 09:45:16 -0800
+Subject: RE: [PATCH] IB/ipath: Use kcalloc instead of kzalloc to allocate
+ array
+Thread-Topic: [PATCH] IB/ipath: Use kcalloc instead of kzalloc to allocate
+ array
+Thread-Index: Acy3OlJSd0CDHZUSTWG7mrgVotLAbwBuzYgg
+Message-ID: <35AAF1E4A771E142979F27B51793A48888856EE839@AVEXMB1.qlogic.org>
+References: <1322600880.1534.304.camel@localhost.localdomain>
+In-Reply-To: <1322600880.1534.304.camel@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for 3.2-rc5] media fixes
-References: <4EE63039.4040004@redhat.com> <4EE63985.30001@samsung.com>
-In-Reply-To: <4EE63985.30001@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBCHkZuv020705
 
-On 12-12-2011 15:27, Sylwester Nawrocki wrote:
-> Hi Mauro,
+> Subject: [PATCH] IB/ipath: Use kcalloc instead of kzalloc to allocate
+> array
 >
-> On 12/12/2011 05:47 PM, Mauro Carvalho Chehab wrote:
->> Hi Linus,
->>
->> Please pull from:
->>    git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
->>
->> For a couple fixes for media drivers.
->> The changes are:
->>      - ati_remote (new driver for 3.2): Fix the scancode tables;
->>      - af9015: fix some issues with firmware load;
->>      - au0828: (trivial) add device ID's for some devices;
->>      - omap3 and s5p: several small fixes;
->>      - Update MAINTAINERS entry to cover /drivers/staging/media and
->>        media DocBook;
->>      - a few other small trivial fixes.
->>
->> Thanks!
->> Mauro
-> [...]
+> The advantage of kcalloc is, that will prevent integer overflows which
+> could
+> result from the multiplication of number of elements and size and it is
+> also
+> a bit nicer to read.
 >
->>
->> Sylwester Nawrocki (10):
->>        [media] s5p-fimc: Fix wrong pointer dereference when unregistering sensors
->>        [media] s5p-fimc: Fix error in the capture subdev deinitialization
->>        [media] s5p-fimc: Fix initialization for proper system suspend support
->>        [media] s5p-fimc: Fix buffer dequeue order issue
->>        [media] s5p-fimc: Allow probe() to succeed with null platform data
->>        [media] s5p-fimc: Adjust pixel height alignments according to the IP
->> revision
->>        [media] s5p-fimc: Fail driver probing when sensor configuration is wrong
->>        [media] s5p-fimc: Use correct fourcc for RGB565 colour format
->>        [media] m5mols: Fix set_fmt to return proper pixel format code
->>        [media] s5p-fimc: Fix camera input configuration in subdev operations
+> The semantic patch that makes this change is available
+> in https://lkml.org/lkml/2011/11/25/107
 >
-> There is one more quite important patch left out:
->
-> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commitdiff/817069678ab57150b21cd0705e2f3a3b2b6509f4
->
-> It was included in my recent pull request. It would be good to have in v3.2
-> too. Are you planning to add it to a next pull request to Linus ?
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-Not likely, but it might be possible.
+Thanks for the patch!
 
-I'll be out the rest of this week due to a travel for a series of meetings
-at the office.
+Acked-by: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
 
-I might not be able to prepare another pull request until next week. After
-having it done, I should wait for a couple days for it to be at -next, but
-then it will almost be Xmas. Let's see.
 
-Regards,
-Mauro
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
