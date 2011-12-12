@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab1LLMzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 07:55:47 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40125 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1LLMzq convert rfc822-to-8bit (ORCPT
+	id S1753129Ab1LLM6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 07:58:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40173 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab1LLM6e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 07:55:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAfyv35=J_BhxXBF-FrV0DfW1h6eo6MxXMpB2d4+WseujXAeoA@mail.gmail.com>
-References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
-	<CAAfyv35=J_BhxXBF-FrV0DfW1h6eo6MxXMpB2d4+WseujXAeoA@mail.gmail.com>
-Date: Mon, 12 Dec 2011 14:55:45 +0200
-Message-ID: <CAEnQRZAoWC9KiD00n7UihT1Urj=bM18=xFEaXckSDukO0fEmFQ@mail.gmail.com>
-Subject: Re: [PATCH] kref: add function for reading kref value
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Dec 2011 07:58:34 -0500
+Message-ID: <1323694657.13285.12.camel@twins>
+Subject: Re: [PATCH 2/4] perf_event: add PERF_COUNT_HW_REF_CPU_CYCLES
+ generic PMU event
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@infradead.org,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com
+Date: Mon, 12 Dec 2011 13:57:37 +0100
+In-Reply-To: <1323559734-3488-3-git-send-email-eranian@google.com>
+References: <1323559734-3488-1-git-send-email-eranian@google.com>
+	 <1323559734-3488-3-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 2:51 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
-> On Mon, Dec 12, 2011 at 1:44 PM, Daniel Baluta <dbaluta@ixiacom.com> wrote:
->> We can easily get kref refcount value by accesing
->> kref->refcount but it is better to have a function
->> for this.
->>
->> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
->> ---
->>  include/linux/kref.h |    1 +
->>  lib/kref.c           |    9 +++++++++
->>  2 files changed, 10 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/kref.h b/include/linux/kref.h
->> index d4a62ab..cd1b04a 100644
->> --- a/include/linux/kref.h
->> +++ b/include/linux/kref.h
->> @@ -22,6 +22,7 @@ struct kref {
->>  };
->>
->>  void kref_init(struct kref *kref);
->> +atomic_t kref_read(struct kref *kref);
->>  void kref_get(struct kref *kref);
->>  int kref_put(struct kref *kref, void (*release) (struct kref *kref));
->>  int kref_sub(struct kref *kref, unsigned int count,
->> diff --git a/lib/kref.c b/lib/kref.c
->> index 3efb882..48aaf2a 100644
->> --- a/lib/kref.c
->> +++ b/lib/kref.c
->> @@ -25,6 +25,15 @@ void kref_init(struct kref *kref)
->>        smp_mb();
->>  }
->>
->> +/**
->> + * kref_read - read refcount for object
->> + * @kref: object.
->> + */
->> +void kref_read(struct kref *kref)
->> +{
->> +       return atomic_read(&kref->refcount);
->> +}
-> Return void? Shouldn't be: atomic_t. Did you compile your code before
-> submission???
+On Sun, 2011-12-11 at 00:28 +0100, Stephane Eranian wrote:
+> This event counts the number of reference core cpu cycles.
+> Reference means that the event increments at a constant rate which
+> is not subject to core CPU frequency adjustments. The event may
+> not count when the processor is in halted (low power) state.
+> As such, it may not be equivalent to wall clock time. However,
+> when the processor is not halted state, the event keeps
+> a constant correlation with wall clock time.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  include/linux/perf_event.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 564769c..0885561 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -54,6 +54,7 @@ enum perf_hw_id {
+>  	PERF_COUNT_HW_BUS_CYCLES		= 6,
+>  	PERF_COUNT_HW_STALLED_CYCLES_FRONTEND	= 7,
+>  	PERF_COUNT_HW_STALLED_CYCLES_BACKEND	= 8,
+> +	PERF_COUNT_HW_REF_CPU_CYCLES		= 9,
+>  
+>  	PERF_COUNT_HW_MAX,			/* non-ABI */
+>  };
 
-You are right. I'll send again with the correct version.
+Does it make sense to add this to the 'generic' events? Are other archs
+going to use this?
 
-thanks,
-Daniel.
+That is, I already queued patch 1, I'm just wondering if the generic bit
+makes sense, Even BUS_CYCLES seems to be a questionable 'generic' event,
+but that's history and we can't fix it.
