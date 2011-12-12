@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab1LLXNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:13:14 -0500
+	id S1754555Ab1LLXSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:18:42 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:42879 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab1LLXNG (ORCPT
+	with ESMTP id S1753676Ab1LLXNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:13:06 -0500
+	Mon, 12 Dec 2011 18:13:15 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
         Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 02/25] dynamic_debug: fix whitespace complaints from scripts/cleanfile
-Date: Mon, 12 Dec 2011 16:12:28 -0700
-Message-Id: <1323731569-20644-2-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 06/25] dynamic_debug: replace strcpy with strlcpy, in ddebug_setup_query()
+Date: Mon, 12 Dec 2011 16:12:32 -0700
+Message-Id: <1323731569-20644-6-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
 References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
@@ -23,61 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
+replace strcpy with strlcpy, and add define for the size constant.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+ lib/dynamic_debug.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index dcdade3..e487d13 100644
+index 8c88b89..101e2e5 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -187,7 +187,7 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
- 		if (!*buf)
- 			break;	/* oh, it was trailing whitespace */
+@@ -525,14 +525,16 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
  
--		/* Run `end' over a word, either whitespace separated or quoted */
-+		/* find `end' of word, whitespace separated or quoted */
- 		if (*buf == '"' || *buf == '\'') {
- 			int quote = *buf++;
- 			for (end = buf ; *end && *end != quote ; end++)
-@@ -199,8 +199,8 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
- 				;
- 			BUG_ON(end == buf);
- 		}
--		/* Here `buf' is the start of the word, `end' is one past the end */
+ #endif
  
-+		/* `buf' is start of word, `end' is one past its end */
- 		if (nwords == maxwords)
- 			return -EINVAL;	/* ran out of words[] before bytes */
- 		if (*end)
-@@ -452,7 +452,8 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
- 					desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
--		pos += snprintf(buf + pos, remaining(pos), "%d:", desc->lineno);
-+		pos += snprintf(buf + pos, remaining(pos), "%d:",
-+					desc->lineno);
- 	if (pos - pos_after_tid)
- 		pos += snprintf(buf + pos, remaining(pos), " ");
- 	if (pos >= PREFIX_SIZE)
-@@ -708,10 +709,11 @@ static const struct seq_operations ddebug_proc_seqops = {
- };
- 
- /*
-- * File_ops->open method for <debugfs>/dynamic_debug/control.  Does the seq_file
-- * setup dance, and also creates an iterator to walk the _ddebugs.
-- * Note that we create a seq_file always, even for O_WRONLY files
-- * where it's not needed, as doing so simplifies the ->release method.
-+ * File_ops->open method for <debugfs>/dynamic_debug/control.  Does
-+ * the seq_file setup dance, and also creates an iterator to walk the
-+ * _ddebugs.  Note that we create a seq_file always, even for O_WRONLY
-+ * files where it's not needed, as doing so simplifies the ->release
-+ * method.
-  */
- static int ddebug_proc_open(struct inode *inode, struct file *file)
+-static __initdata char ddebug_setup_string[1024];
++#define DDEBUG_STRING_SIZE 1024
++static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
++
+ static __init int ddebug_setup_query(char *str)
  {
+ 	if (strlen(str) >= 1024) {
+ 		pr_warn("ddebug boot param string too large\n");
+ 		return 0;
+ 	}
+-	strcpy(ddebug_setup_string, str);
++	strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
+ 	return 1;
+ }
+ 
 -- 
 1.7.7.3
 
