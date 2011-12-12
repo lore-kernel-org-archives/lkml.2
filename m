@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1LLXjb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:39:31 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:24413 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab1LLXja convert rfc822-to-8bit (ORCPT
+	id S1753507Ab1LLXll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:41:41 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40628 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab1LLXlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:39:30 -0500
-X-IronPort-AV: E=Sophos;i="4.71,342,1320652800"; 
-   d="scan'208";a="606777871"
-Message-ID: <1323733153.13849.17.camel@lade.trondhjem.org>
-Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: roel <roel.kluin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        sage@newdream.net, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org
-Date: Mon, 12 Dec 2011 18:39:13 -0500
-In-Reply-To: <20111212152856.871a8301.akpm@linux-foundation.org>
-References: <4EE688FC.8090606@gmail.com>
-	 <20111212152856.871a8301.akpm@linux-foundation.org>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 12 Dec 2011 23:39:14.0285 (UTC) FILETIME=[41A139D0:01CCB927]
+	Mon, 12 Dec 2011 18:41:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1323732772.4078.113.camel@work-vm>
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>
+ <1323718578-1157-3-git-send-email-asharma@fb.com> <1323731361.4078.102.camel@work-vm>
+ <4EE68C31.1030207@fb.com> <1323732772.4078.113.camel@work-vm>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 12 Dec 2011 15:41:18 -0800
+X-Google-Sender-Auth: _Fk0R42vMDN9eJiw6LmRshknrY4
+Message-ID: <CAObL_7H_2H3f=+UwJ_DEGAVYbQY_ekj+a+BQf6qyFrtU4mqnAw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+To: john stultz <johnstul@us.ibm.com>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 15:28 -0800, Andrew Morton wrote: 
-> On Tue, 13 Dec 2011 00:06:36 +0100
-> roel <roel.kluin@gmail.com> wrote:
-> 
-> > The test not SEEK_CUR or not SEEK_SET always evaluates to true
-> > 
-> > Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> > ---
-> >  fs/ceph/file.c   |    2 +-
-> >  fs/cifs/cifsfs.c |    2 +-
-> >  fs/fuse/file.c   |    2 +-
-> >  fs/nfs/file.c    |    2 +-
-> >  4 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-<snip> 
-> > diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-> > index eca56d4..606ef0f 100644
-> > --- a/fs/nfs/file.c
-> > +++ b/fs/nfs/file.c
-> > @@ -147,7 +147,7 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
-> >  	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
-> >  	 * the cached file length
-> >  	 */
-> > -	if (origin != SEEK_SET || origin != SEEK_CUR) {
-> > +	if (origin != SEEK_SET && origin != SEEK_CUR) {
-> >  		struct inode *inode = filp->f_mapping->host;
-> >  
-> >  		int retval = nfs_revalidate_file_size(inode, filp);
-> 
-> This fix will cause changed runtime behaviour, such as NFS no longer
-> running nfs_revalidate_file_size() for all seek modes.
+On Mon, Dec 12, 2011 at 3:32 PM, john stultz <johnstul@us.ibm.com> wrote:
+> On Mon, 2011-12-12 at 15:20 -0800, Arun Sharma wrote:
+>> On 12/12/11 3:09 PM, john stultz wrote:
+>> > On Mon, 2011-12-12 at 11:36 -0800, Arun Sharma wrote:
+>> >> From: Kumar Sundararajan<kumar@fb.com>
+>> >>
+>> >> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..)
+>> >> via a new vsyscall. We also add a direct vsyscall that returns
+>> >> time in ns (RFC: the direct vsyscall doesn't have a corresponding
+>> >> regular syscall, although clock_gettime() is pretty close).
+>> >
+>> > I'm still not super psyched about providing a vdso-only API.
+>> >
+>> > If a nanosecond interface like thread_cpu_time() is actually a big win
+>> > over clock_gettime(CLOCK_THREAD_CPUTIME,...) it seems it should have its
+>> > own syscall as well, no?
+>>
+>> The win is relatively small when we're dealing with syscalls. But with
+>> vsyscalls, it starts showing up in micro benchmarks.
+>>
+>> Happy to post patches for regular syscalls (assuming I can get them
+>> allocated :).
+>>
+>> >
+>> > Possibly something like clock_gettime_ns(), which would return the same
+>> > values as clock_gettime() but in nanoseconds rather then a timespec?
+>> >
+>>
+>> If we're doing non-POSIXy things there, how about allocating one syscall
+>> per clock instead of multiplexing them through a single syscall?
+>>
+>> This would be a nice to have (clock_gettime_ns() should get us most of
+>> the perf benefit).
+>
+> Well, it makes it a little easier to extend if we get a new clockid,
+> rather then having to add a whole new syscall. Keeps parity between the
+> timespec and ns interfaces.
+>
+> Is it just that you're concerned about the clockid switch costs being
+> too high?
 
-As far as NFS is concerned, it reverts a regression. NFS only used to
-run revalidate_file_size() for SEEK_END prior to commit
-06222e491e663dac939f04b125c9dc52126a75c4. I accept that we now also need
-to run it for SEEK_HOLE and SEEK_DATA, but we've never had to do so for
-SEEK_SET and SEEK_CUR.
+>From my (old, from memory) measurements, the switch cost is very very
+low if it's predicted correctly, and the main case where it's likely
+to be mispredicted is when it hasn't been called in awhile, in which
+case either probably no one cares or the cache misses will dominate.
 
-I suspect the same is true of ceph, cifs etc...
+How worried are you about introducing a year 2554 bug?  Python says:
 
-Cheers
-  Trond
+>>> dateutil.parser.parse('1/1/1970') + datetime.timedelta(seconds = 2**64 // 1000000000)
+datetime.datetime(2554, 7, 21, 23, 34, 33)
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+--Andy
