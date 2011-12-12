@@ -1,208 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab1LLIwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 03:52:13 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:48912 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1LLIwM (ORCPT
+	id S1751803Ab1LLIzc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 03:55:32 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59397 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab1LLIza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 03:52:12 -0500
-X-SENDER-IP: [85.230.170.8]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao9CAOe/5U5V5qoIPGdsb2JhbAA8B4lOoScZAQEBATcygXIBLS8TAQ8YGGoKGgoJiAq0RhSIJ4MyBIx5KI0qjE4
-X-IronPort-AV: E=Sophos;i="4.71,337,1320620400"; 
-   d="scan'208";a="10172184"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] Input: bcm5974 - Fix USB autosuspend
-Date: Mon, 12 Dec 2011 10:06:04 +0100
-Message-Id: <1323680764-2155-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.8
+	Mon, 12 Dec 2011 03:55:30 -0500
+Date: Mon, 12 Dec 2011 09:55:23 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] rtc: Kconfig: Place RTC_DRV_IMXDI and RTC_MXC under
+ "on-CPU RTC drivers"
+Message-ID: <20111212085523.GB3485@pengutronix.de>
+References: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
+Content-Disposition: inline
+In-Reply-To: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Garrett <mjg@redhat.com>
 
-The bcm5974 code takes a USB autosuspend reference on device open and
-releases it on device close. This means that the hardware won't sleep
-when anything holds it open. This is sensible for input devices that
-don't support remote wakeups on normal use (like most mice), but this
-hardware trigger wakeups on touch and so can suspend transparently to
-the user. Doing so allows the USB host controller to sleep when the
-machine is idle, giving measurable power savings.
+--O5XBE6gyVG5Rl6Rj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[rydberg@euromail.se: removal of open/close]
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/mouse/bcm5974.c |   74 +++++++++++------------------------------
- 1 files changed, 20 insertions(+), 54 deletions(-)
 
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index 5ec617e..178be2b 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -221,7 +221,7 @@ struct bcm5974 {
- 	struct input_dev *input;	/* input dev */
- 	struct bcm5974_config cfg;	/* device configuration */
- 	struct mutex pm_mutex;		/* serialize access to open/suspend */
--	int opened;			/* 1: opened, 0: closed */
-+	int started;			/* 1: started, 0: paused */
- 	struct urb *bt_urb;		/* button usb request block */
- 	struct bt_data *bt_data;	/* button transferred data */
- 	struct urb *tp_urb;		/* trackpad usb request block */
-@@ -631,6 +631,7 @@ static void bcm5974_irq_button(struct urb *urb)
- 
- 	switch (urb->status) {
- 	case 0:
-+		usb_mark_last_busy(dev->udev);
- 		break;
- 	case -EOVERFLOW:
- 	case -ECONNRESET:
-@@ -660,6 +661,7 @@ static void bcm5974_irq_trackpad(struct urb *urb)
- 
- 	switch (urb->status) {
- 	case 0:
-+		usb_mark_last_busy(dev->udev);
- 		break;
- 	case -EOVERFLOW:
- 	case -ECONNRESET:
-@@ -708,6 +710,9 @@ static int bcm5974_start_traffic(struct bcm5974 *dev)
- {
- 	int error;
- 
-+	if (dev->started)
-+		return 0;
-+
- 	error = bcm5974_wellspring_mode(dev, true);
- 	if (error) {
- 		dprintk(1, "bcm5974: mode switch failed\n");
-@@ -722,6 +727,7 @@ static int bcm5974_start_traffic(struct bcm5974 *dev)
- 	if (error)
- 		goto err_kill_bt;
- 
-+	dev->started = 1;
- 	return 0;
- 
- err_kill_bt:
-@@ -734,54 +740,12 @@ err_out:
- 
- static void bcm5974_pause_traffic(struct bcm5974 *dev)
- {
-+	if (!dev->started)
-+		return;
- 	usb_kill_urb(dev->tp_urb);
- 	usb_kill_urb(dev->bt_urb);
- 	bcm5974_wellspring_mode(dev, false);
--}
--
--/*
-- * The code below implements open/close and manual suspend/resume.
-- * All functions may be called in random order.
-- *
-- * Opening a suspended device fails with EACCES - permission denied.
-- *
-- * Failing a resume leaves the device resumed but closed.
-- */
--static int bcm5974_open(struct input_dev *input)
--{
--	struct bcm5974 *dev = input_get_drvdata(input);
--	int error;
--
--	error = usb_autopm_get_interface(dev->intf);
--	if (error)
--		return error;
--
--	mutex_lock(&dev->pm_mutex);
--
--	error = bcm5974_start_traffic(dev);
--	if (!error)
--		dev->opened = 1;
--
--	mutex_unlock(&dev->pm_mutex);
--
--	if (error)
--		usb_autopm_put_interface(dev->intf);
--
--	return error;
--}
--
--static void bcm5974_close(struct input_dev *input)
--{
--	struct bcm5974 *dev = input_get_drvdata(input);
--
--	mutex_lock(&dev->pm_mutex);
--
--	bcm5974_pause_traffic(dev);
--	dev->opened = 0;
--
--	mutex_unlock(&dev->pm_mutex);
--
--	usb_autopm_put_interface(dev->intf);
-+	dev->started = 0;
- }
- 
- static int bcm5974_suspend(struct usb_interface *iface, pm_message_t message)
-@@ -790,8 +754,7 @@ static int bcm5974_suspend(struct usb_interface *iface, pm_message_t message)
- 
- 	mutex_lock(&dev->pm_mutex);
- 
--	if (dev->opened)
--		bcm5974_pause_traffic(dev);
-+	bcm5974_pause_traffic(dev);
- 
- 	mutex_unlock(&dev->pm_mutex);
- 
-@@ -801,12 +764,11 @@ static int bcm5974_suspend(struct usb_interface *iface, pm_message_t message)
- static int bcm5974_resume(struct usb_interface *iface)
- {
- 	struct bcm5974 *dev = usb_get_intfdata(iface);
--	int error = 0;
-+	int error;
- 
- 	mutex_lock(&dev->pm_mutex);
- 
--	if (dev->opened)
--		error = bcm5974_start_traffic(dev);
-+	error = bcm5974_start_traffic(dev);
- 
- 	mutex_unlock(&dev->pm_mutex);
- 
-@@ -870,6 +832,9 @@ static int bcm5974_probe(struct usb_interface *iface,
- 			 dev->tp_data, dev->cfg.tp_datalen,
- 			 bcm5974_irq_trackpad, dev, 1);
- 
-+	/* Required for autosuspend */
-+	iface->needs_remote_wakeup = 1;
-+
- 	/* create bcm5974 device */
- 	usb_make_path(udev, dev->phys, sizeof(dev->phys));
- 	strlcat(dev->phys, "/input0", sizeof(dev->phys));
-@@ -883,9 +848,6 @@ static int bcm5974_probe(struct usb_interface *iface,
- 
- 	input_set_drvdata(input_dev, dev);
- 
--	input_dev->open = bcm5974_open;
--	input_dev->close = bcm5974_close;
--
- 	setup_events_to_report(input_dev, cfg);
- 
- 	error = input_register_device(dev->input);
-@@ -895,6 +857,10 @@ static int bcm5974_probe(struct usb_interface *iface,
- 	/* save our data pointer in this interface device */
- 	usb_set_intfdata(iface, dev);
- 
-+	error = bcm5974_start_traffic(dev);
-+	if (error)
-+		goto err_free_buffer;
-+
- 	return 0;
- 
- err_free_buffer:
--- 
-1.7.8
+> +config RTC_MXC
 
+RTC_DRV_MXC for consistency while we are here?
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--O5XBE6gyVG5Rl6Rj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7lwXsACgkQD27XaX1/VRsbAgCdH5xIoCRCc/d7O9aF6URML0Hq
+urgAoI0u3Z21N0I6IvABQOm04ZNLC/+d
+=Epby
+-----END PGP SIGNATURE-----
+
+--O5XBE6gyVG5Rl6Rj--
