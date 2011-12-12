@@ -1,221 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab1LLB1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 20:27:09 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:46364 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752618Ab1LLB1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 20:27:05 -0500
-Message-ID: <4EE55851.7040807@tao.ma>
-Date: Mon, 12 Dec 2011 09:26:41 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V2] vmscan/trace: Add 'active' and 'file' info to trace_mm_vmscan_lru_isolate.
-References: <1323614784-2924-1-git-send-email-tm@tao.ma>	<CAEwNFnCXJuH53ks=qPdHkm_hrcm+Nsh7f5APQx6BgQEQBKC_yQ@mail.gmail.com>	<4EE55684.30204@tao.ma> <CAEwNFnAApCLfnd3AgyEeao4dPT9nwY4CKWDJrXQ9pwiAQcj85Q@mail.gmail.com>
-In-Reply-To: <CAEwNFnAApCLfnd3AgyEeao4dPT9nwY4CKWDJrXQ9pwiAQcj85Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752799Ab1LLBmY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 20:42:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36865 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692Ab1LLBmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 20:42:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="86079750"
+Subject: Re: iwlagn regression in v3.1.5
+From: wwguy <wey-yi.w.guy@intel.com>
+To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Cc: Udo Steinberg <udo@hypervisor.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4EE50266.4050208@udo.edu>
+References: <4EE4AEF4.2080702@udo.edu> <4EE4DB55.4090804@udo.edu>
+	 <20111211174138.79e51fe8@x220.fritz.box>  <4EE4E152.2070204@udo.edu>
+	 <1323627815.1806.19.camel@wwguy-ubuntu>  <4EE50266.4050208@udo.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 11 Dec 2011 17:35:37 -0800
+Message-ID: <1323653737.1806.21.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 09:23 AM, Minchan Kim wrote:
-> On Mon, Dec 12, 2011 at 10:19 AM, Tao Ma <tm@tao.ma> wrote:
->> On 12/12/2011 08:59 AM, Minchan Kim wrote:
->>> Hi Tao,
->>>
->>> On Sun, Dec 11, 2011 at 11:46 PM, Tao Ma <tm@tao.ma> wrote:
->>>> From: Tao Ma <boyu.mt@taobao.com>
->>>>
->>>> In trace_mm_vmscan_lru_isolate, we don't output 'active' and 'file'
->>>> information to the trace event and it is a bit inconvenient for the
->>>> user to get the real information(like pasted below).
->>>> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
->>>> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->>>>
->>>> So this patch adds these 2 info to the trace event and it now looks like:
->>>> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
->>>> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 active=1 file=0
->>>>
->>>> Cc: Mel Gorman <mel@csn.ul.ie>
->>>> Cc: Rik van Riel <riel@redhat.com>
->>>> Cc: Johannes Weiner <hannes@cmpxchg.org>
->>>> Cc: Christoph Hellwig <hch@infradead.org>
->>>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>> Cc: Andrea Arcangeli <aarcange@redhat.com>
->>>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>>> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
->>>> ---
->>>>  include/trace/events/vmscan.h |   25 +++++++++++++++++--------
->>>>  mm/memcontrol.c               |    2 +-
->>>>  mm/vmscan.c                   |    6 +++---
->>>>  3 files changed, 21 insertions(+), 12 deletions(-)
->>>>
->>>> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
->>>> index edc4b3d..82bc49c 100644
->>>> --- a/include/trace/events/vmscan.h
->>>> +++ b/include/trace/events/vmscan.h
->>>> @@ -266,9 +266,10 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->>>>                unsigned long nr_lumpy_taken,
->>>>                unsigned long nr_lumpy_dirty,
->>>>                unsigned long nr_lumpy_failed,
->>>> -               isolate_mode_t isolate_mode),
->>>> +               isolate_mode_t isolate_mode,
->>>> +               int active, int file),
->>>>
->>>> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
->>>> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file),
->>>>
->>>>        TP_STRUCT__entry(
->>>>                __field(int, order)
->>>> @@ -279,6 +280,8 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->>>>                __field(unsigned long, nr_lumpy_dirty)
->>>>                __field(unsigned long, nr_lumpy_failed)
->>>>                __field(isolate_mode_t, isolate_mode)
->>>> +               __field(int, active)
->>>> +               __field(int, file)
->>>>        ),
->>>>
->>>>        TP_fast_assign(
->>>> @@ -290,9 +293,11 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->>>>                __entry->nr_lumpy_dirty = nr_lumpy_dirty;
->>>>                __entry->nr_lumpy_failed = nr_lumpy_failed;
->>>>                __entry->isolate_mode = isolate_mode;
->>>> +               __entry->active = active;
->>>> +               __entry->file = file;
->>>>        ),
->>>>
->>>> -       TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu",
->>>> +       TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu active=%d file=%d",
->>>>                __entry->isolate_mode,
->>>>                __entry->order,
->>>>                __entry->nr_requested,
->>>> @@ -300,7 +305,9 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
->>>>                __entry->nr_taken,
->>>>                __entry->nr_lumpy_taken,
->>>>                __entry->nr_lumpy_dirty,
->>>> -               __entry->nr_lumpy_failed)
->>>> +               __entry->nr_lumpy_failed,
->>>> +               __entry->active,
->>>> +               __entry->file)
->>>>  );
->>>>
->>>>  DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
->>>> @@ -312,9 +319,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
->>>>                unsigned long nr_lumpy_taken,
->>>>                unsigned long nr_lumpy_dirty,
->>>>                unsigned long nr_lumpy_failed,
->>>> -               isolate_mode_t isolate_mode),
->>>> +               isolate_mode_t isolate_mode,
->>>> +               int active, int file),
->>>>
->>>> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
->>>> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
->>>>
->>>>  );
->>>>
->>>> @@ -327,9 +335,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
->>>>                unsigned long nr_lumpy_taken,
->>>>                unsigned long nr_lumpy_dirty,
->>>>                unsigned long nr_lumpy_failed,
->>>> -               isolate_mode_t isolate_mode),
->>>> +               isolate_mode_t isolate_mode,
->>>> +               int active, int file),
->>>>
->>>> -       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
->>>> +       TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, active, file)
->>>>
->>>>  );
->>>>
->>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>>> index 6aff93c..246fbce 100644
->>>> --- a/mm/memcontrol.c
->>>> +++ b/mm/memcontrol.c
->>>> @@ -1249,7 +1249,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->>>>        *scanned = scan;
->>>>
->>>>        trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
->>>> -                                     0, 0, 0, mode);
->>>> +                                     0, 0, 0, mode, active, file);
->>>>
->>>>        return nr_taken;
->>>>  }
->>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>>> index f54a05b..97955ca 100644
->>>> --- a/mm/vmscan.c
->>>> +++ b/mm/vmscan.c
->>>> @@ -1103,7 +1103,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
->>>>  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->>>>                struct list_head *src, struct list_head *dst,
->>>>                unsigned long *scanned, int order, isolate_mode_t mode,
->>>> -               int file)
->>>> +               int active, int file)
->>>>  {
->>>>        unsigned long nr_taken = 0;
->>>>        unsigned long nr_lumpy_taken = 0;
->>>> @@ -1221,7 +1221,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->>>>                        nr_to_scan, scan,
->>>>                        nr_taken,
->>>>                        nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
->>>> -                       mode);
->>>> +                       mode, active, file);
->>>>        return nr_taken;
->>>>  }
->>>>
->>>> @@ -1237,7 +1237,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
->>>>        if (file)
->>>>                lru += LRU_FILE;
->>>>        return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
->>>> -                                                               mode, file);
->>>> +                                                       mode, active, file);
->>>
->>> I guess you want to count exact scanning number of which lru list.
->>> But It's impossible now since we do lumpy reclaim so that trace's
->>> result is mixed by active/inactive list scanning.
->>> And I don't like adding new argument for just trace although it's trivial.
->> yeah, I know we do lumpy reclaim, but it has no hint about whether it is
->> a file or anon lru. So I think we at least need a 'file=[0/1]' in this
->> trace event.
->>>
->>> I think 'mode' is more proper rather than  specific 'active'.
->>> The 'mode' can achieve your goal without passing new argument "active".
->> sorry, but how can we find the real relationship between 'mode' and
->> 'active'? I am not quite familiar with this field. So if you can
->> explicit describe it, I am fine to drop this field.
-> 
-> 
-> mode is following as,
-> 
-> /* Isolate inactive pages */
-> #define ISOLATE_INACTIVE        ((__force fmode_t)0x1)
-> /* Isolate active pages */
-> #define ISOLATE_ACTIVE          ((__force fmode_t)0x2)
-> /* Isolate clean file */
-> #define ISOLATE_CLEAN           ((__force fmode_t)0x4)
-> /* Isolate unmapped file */
-> #define ISOLATE_UNMAPPED        ((__force fmode_t)0x8)
-> 
-> For example,
-> 
-> If mode is 0x1, it means we are isolating inactive.
-> If mode is 0x2, it means we are isolating active.
-> If mode is 0x4|0x2, it mean we are isolating clear pages in active list.
-> If mode is 0x8|0x2, it mean we are isolate unmapped page in active list.
-cool, thanks for the detailed explanation.
-So I will drop this field, and only add 'file' to the trace event.
+Hi Andjej,
+
+
+Could you please load the module with debug=0x1082 and send me the log.
+
+$sudo modprobe iwlagn debug=0x1082
 
 Thanks
-Tao
+Wey
+
+On Sun, 2011-12-11 at 11:20 -0800, Andrej Gelenberg wrote:
+> Hi,
+> 
+> some info to the AP i use:
+> 
+> Technaxx Router-150 Wifi-N based on ranik soc
+> 
+> $ iw dev wlan0 station dump
+> Station xx:xx..xx:xx (on wlan0)
+>          inactive time:  6603 ms
+>          rx bytes:       377786468
+>          rx packets:     443535
+>          tx bytes:       15677515
+>          tx packets:     155009
+>          tx retries:     2723757
+>          tx failed:      51495
+>          signal:         -72 dBm
+>          signal avg:     -71 dBm
+>          tx bitrate:     135.0 MBit/s MCS 6 40Mhz short GI
+>          authorized:     yes
+>          authenticated:  yes
+>          preamble:       long
+>          WMM/WME:        yes
+>          MFP:            no
+> 
+> $ iwconfig wlan0
+> wlan0     IEEE 802.11abgn  ESSID:"xxx"
+>            Mode:Managed  Frequency:2.437 GHz  Access Point: xx:xx..xx:xx
+>            Bit Rate=121.5 Mb/s   Tx-Power=15 dBm
+>            Retry  long limit:7   RTS thr:off   Fragment thr:off
+>            Power Management:off
+>            Link Quality=42/70  Signal level=-68 dBm
+>            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>            Tx excessive retries:51520  Invalid misc:3567 Missed beacon:0
+> 
+> some dmesg output:
+> 
+> [  903.748514] wlan0: authenticate with xx:xx..xx:xx (try 1)
+> [  903.750991] wlan0: authenticated
+> [  903.753357] wlan0: associate with xx:xx..xx:xx (try 1)
+> [  903.759482] wlan0: RX AssocResp from xx:xx..xx:xx (capab=0xc31 
+> status=0 aid=1)
+> [  903.759487] wlan0: associated
+> 
+> $ iwlist wlan0 scan
+> 
+>            Cell 06 - Address: xx:xx..xx:xx
+>                      Channel:6
+>                      Frequency:2.437 GHz (Channel 6)
+>                      Quality=45/70  Signal level=-65 dBm
+>                      Encryption key:on
+>                      ESSID:"xxx"
+>                      Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 9 Mb/s
+>                                18 Mb/s; 36 Mb/s; 54 Mb/s
+>                      Bit Rates:6 Mb/s; 12 Mb/s; 24 Mb/s; 48 Mb/s
+>                      Mode:Master
+>                      Extra:tsf=0000005666eac197
+>                      Extra: Last beacon: 33ms ago
+>                      IE: Unknown: 000873757065726B7568
+>                      IE: Unknown: 010882848B961224486C
+>                      IE: Unknown: 030106
+>                      IE: Unknown: 2A0100
+>                      IE: Unknown: 32040C183060
+>                      IE: Unknown: 
+> 2D1A7E1117FF000000010000000000000000000000000C0000000000
+>                      IE: Unknown: 
+> 3D1606070500000000000000000000000000000000000000
+>                      IE: Unknown: 3E0100
+>                      IE: IEEE 802.11i/WPA2 Version 1
+>                          Group Cipher : CCMP
+>                          Pairwise Ciphers (1) : CCMP
+>                          Authentication Suites (1) : PSK
+>                      IE: Unknown: 
+> DD180050F2020101800003A4000027A4000042435E0062322F00
+>                      IE: Unknown: 0B05020012127A
+>                      IE: Unknown: 4A0E14000A002C01C800140005001900
+>                      IE: Unknown: 7F0101
+>                      IE: Unknown: DD07000C4307000000
+>                      IE: Unknown: 0706465220010D10
+>                      IE: Unknown: 
+> DD1E00904C337E1117FF000000010000000000000000000000000C0000000000
+>                      IE: Unknown: 
+> DD1A00904C3406070500000000000000000000000000000000000000
+> 
+> Regards,
+> Andrej Gelenberg
+> 
+> On 12/11/2011 07:23 PM, wwguy wrote:
+> > On Sun, 2011-12-11 at 08:58 -0800, Andrej Gelenberg wrote:
+> >> Hi,
+> >>
+> >> this is pretty mean regression for the stable kernel. You may the fix
+> >> only for cards, which need it and not for all of them.
+> >
+> > Could you elaborate more on the failure case and setup. this patch is to
+> > address HT40 related problem which cause the iwlwifi firmware crash.
+> >
+> > Thanks
+> > Wey
+> >>>
+> >
+> >
+> 
+
+
