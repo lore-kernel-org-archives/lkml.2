@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1LLRso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:48:44 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59037 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab1LLRsl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:48:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <1309427470-605-4-git-send-email-balbi@ti.com>
-References: <1309427470-605-1-git-send-email-balbi@ti.com>
-	<1309427470-605-4-git-send-email-balbi@ti.com>
-Date: Mon, 12 Dec 2011 19:48:41 +0200
-Message-ID: <CAMP44s03Cj+V_L8GKyWLMuCGQ5Fg9nZ+Uxm5DpwVVF3YY0RSqA@mail.gmail.com>
-Subject: Re: [PATCH 3/7] mfd: twl4030-irq: drop the kthread
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753765Ab1LLRtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:49:12 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47968 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753381Ab1LLRtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:49:11 -0500
+Message-ID: <1323712147.19538.2.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
+From: Joe Perches <joe@perches.com>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Karel Zak <kzak@redhat.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
+Date: Mon, 12 Dec 2011 09:49:07 -0800
+In-Reply-To: <4EE63D43.50706@cfl.rr.com>
+References: <cover.1322709471.git.psusi@cfl.rr.com>
+	 <4ED6F320.5060709@cfl.rr.com> <20111208123038.GA16493@nb.redhat.com>
+	 <4EE0C814.2000807@cfl.rr.com> <20111208151650.GB16934@nb.redhat.com>
+	 <4EE0D6E6.9000807@cfl.rr.com> <20111208155844.GA9281@redhat.com>
+	 <4EE0E085.8000907@cfl.rr.com> <20111208162847.GB9281@redhat.com>
+	 <4EE17815.6050806@cfl.rr.com> <20111212145330.GB29180@redhat.com>
+	 <4EE63D43.50706@cfl.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 12:51 PM, Felipe Balbi <balbi@ti.com> wrote:
-> ... and use threaded IRQ infrastructure. Later
-> patches will come dropping both workqueues and
-> setting the nested thread flag.
+On Mon, 2011-12-12 at 12:43 -0500, Phillip Susi wrote:
+> On 12/12/2011 09:53 AM, Vivek Goyal wrote:
+[]
+> > - Can we rename BLKPG_RES_PARTITION to BLKPG_RESIZE_PARTITION. It is
+> >   easier to read.
+> BLKPG_DELETE_PARTITION is also easier to read, but the existing code
+> went with DEL.  I prefer to stay consistent with the existing code and
+> also use a 3 letter name.
 
-...
+RES is most commonly used for RESOURCE.
 
->  static irqreturn_t handle_twl4030_pih(int irq, void *devid)
->  {
-> -       /* Acknowledge, clear *AND* mask the interrupt... */
-> -       disable_irq_nosync(irq);
-> -       complete(devid);
+If it really needs to be 3 letters, and I don't think
+it does, perhaps BLKPG_RSZ_PARTITION
 
-...
+> diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
+> index faf8a45..103da38 100644
+> --- a/include/linux/blkpg.h
+> +++ b/include/linux/blkpg.h
+> @@ -40,6 +40,7 @@ struct blkpg_ioctl_arg {
+>  /* The subfunctions (for the op field) */
+>  #define BLKPG_ADD_PARTITION	1
+>  #define BLKPG_DEL_PARTITION	2
+> +#define BLKPG_RES_PARTITION	3
 
-> -       status = request_irq(irq_num, handle_twl4030_pih, IRQF_DISABLED,
-> -                               "TWL4030-PIH", &irq_event);
-> +       status = request_threaded_irq(irq_num, NULL, handle_twl4030_pih,
-> +                       IRQF_DISABLED, "TWL4030-PIH", NULL);
 
-FTR, in this reorganization this code was dropped
-disable_irq_nosync(irq), which means the irq's would never be cleared.
-IRQF_ONESHOT should have been on the flags.
-
-But Neil Brown already found the issue and fixed it :)
-http://article.gmane.org/gmane.linux.kernel/1220705
-
--- 
-Felipe Contreras
