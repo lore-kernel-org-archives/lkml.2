@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab1LLXuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:50:52 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:19230 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab1LLXur convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:50:47 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2fh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
+	id S1754587Ab1LLXvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:51:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60989 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753746Ab1LLXvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 18:51:05 -0500
+Date: Mon, 12 Dec 2011 15:49:18 -0800
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <greg@kroah.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: RE: [PATCH 0000/0004] Drivers: hv: Fixes
-Thread-Topic: [PATCH 0000/0004] Drivers: hv: Fixes
-Thread-Index: AQHMuR3eJNDtMgmXLEuW8HXGtO7nyJXY3dMA
-Date: Mon, 12 Dec 2011 23:50:44 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AD80006@TK5EX14MBXC126.redmond.corp.microsoft.com>
+        "ohering@suse.com" <ohering@suse.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 4/4] Drivers: hv: Support building the vmbus driver as
+ part of the kernel
+Message-ID: <20111212234918.GA20625@suse.de>
 References: <1323710931-29616-1-git-send-email-kys@microsoft.com>
- <20111212222801.GA16054@kroah.com>
-In-Reply-To: <20111212222801.GA16054@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+ <1323710959-29655-1-git-send-email-kys@microsoft.com>
+ <1323710959-29655-4-git-send-email-kys@microsoft.com>
+ <20111212222712.GA13510@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481AD7FDDF@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AD7FDDF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Monday, December 12, 2011 5:28 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com
-> Subject: Re: [PATCH 0000/0004] Drivers: hv: Fixes
+On Mon, Dec 12, 2011 at 11:44:30PM +0000, KY Srinivasan wrote:
 > 
-> On Mon, Dec 12, 2011 at 09:28:51AM -0800, K. Y. Srinivasan wrote:
-> > Some fixes to the vmbus driver:
-> >
-> > 	1. Fix a memory leak in a failure path.
-> >
-> > 	2. Make vmbus driver unloadable.
-> >
-> > 	3. Get rid of an unnecessary check in hv_init()
-> > 	   in preparation for supporting kexec().
-> >
-> > 	4. Make it possible to build the vmbus driver as part of the
-> > 	   kernel. This patch was submitted earlier, but seems to have been
-> > 	   lost.
 > 
-> No, it was not lost, it was applied to my driver-core-next tree a while
-> ago.  Because of this, I had to hand-edit patch 2 above and skip patch 4
-> here.
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Monday, December 12, 2011 5:27 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> > Haiyang Zhang
+> > Subject: Re: [PATCH 4/4] Drivers: hv: Support building the vmbus driver as part of
+> > the kernel
+> > 
+> > On Mon, Dec 12, 2011 at 09:29:19AM -0800, K. Y. Srinivasan wrote:
+> > > Support building the vmbus driver as part of the kernel.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > 
+> > This was already applied to my tree, I don't know why you missed it...
+> 
+> Thanks Greg. I pulled down your tree yesterday (staging.git) and checked out
+> the staging-next branch and did not find the fix needed to build this driver
+> as part of the kernel. I will check again.
 
-Thanks Greg. I will check to see why I got some stale bits yesterday.
-
-Regards,
-
-K. Y
-
+That is because I'm not applying these patches to the staging.git tree,
+as the commit messages you get show...
 
