@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1LLR2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:28:36 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42159
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753610Ab1LLR2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:28:33 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/4] Drivers: hv: Fix a memory leak
-Date: Mon, 12 Dec 2011 09:29:16 -0800
-Message-Id: <1323710959-29655-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1323710931-29616-1-git-send-email-kys@microsoft.com>
-References: <1323710931-29616-1-git-send-email-kys@microsoft.com>
+	id S1753747Ab1LLR31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:29:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40387 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547Ab1LLR3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:29:23 -0500
+Message-ID: <4EE639E2.6060307@zytor.com>
+Date: Mon, 12 Dec 2011 09:29:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Keith Packard <keithp@keithp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
+ address is invalid"
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com> <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com> <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com> <8639cqjvyn.fsf@sumi.keithp.com> <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com> <86sjkpiw8i.fsf@sumi.keithp.com> <CA+55aFzkq-3z3URp75LkVd=Qk1nEk76wDZCrLPKyabNcdieQVA@mail.gmail.com> <86mxaxiu34.fsf@sumi.keithp.com>
+In-Reply-To: <86mxaxiu34.fsf@sumi.keithp.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a memory leak in a failure path in vmbus_process_offer().
-Fix it.
+On 12/12/2011 09:21 AM, Keith Packard wrote:
+> On Mon, 12 Dec 2011 08:50:52 -0800, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> 
+>> Ahh. And the reason it works for me is that I don't even have 
+>> "CONFIG_EFI" enabled, much less EFI debugging. So I never trigger
+>> the buggy code at all.
+> 
+> I foolishly assumed that an EFI machine required CONFIG_EFI...
+> 
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/channel_mgmt.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Machines with EFI only do.
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 12b85ff..b91af50 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -287,6 +287,7 @@ static void vmbus_process_offer(struct work_struct *work)
- 		spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
- 		list_del(&newchannel->listentry);
- 		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
-+		kfree(newchannel->device_obj);
- 
- 		free_channel(newchannel);
- 	} else {
+Machines which support BIOS emulation don't (and are generally better
+off booted in that mode...)
+
+It depends mostly if you have and EFI or a BIOS bootloader.
+
+	-hpa
+
+
 -- 
-1.7.4.1
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
