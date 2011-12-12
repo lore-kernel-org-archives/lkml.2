@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab1LLIY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 03:24:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32858 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab1LLIY6 (ORCPT
+	id S1752003Ab1LLI2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 03:28:16 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50988 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1LLI2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 03:24:58 -0500
+	Mon, 12 Dec 2011 03:28:14 -0500
 MIME-Version: 1.0
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Mon, 12 Dec 2011 09:16:47 +0100
-Message-ID: <CAH9NwWdpRH-fsF0wAk-R1NDTv4C0nPeo6Zha_Q=8f2FSYFvabQ@mail.gmail.com>
-Subject: [PATCH RESEND] cs5535-mfd: fix section mismatch
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: rpurdie@rpsys.net, dilinger@queued.net
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20111121114524.GE3784@opensource.wolfsonmicro.com>
+References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1321848532-8784-3-git-send-email-tomoya.rohm@gmail.com>
+	<20111121114524.GE3784@opensource.wolfsonmicro.com>
+Date: Mon, 12 Dec 2011 17:28:13 +0900
+Message-ID: <CANKRQnivyNXNZPnaUOHwpXpJz+kCz6gOwfqYNwkcOo5EpsSvZQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] sound/soc/lapis: add platform driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silence following warnings:
-WARNING: drivers/mfd/cs5535-mfd.o(.data+0x20): Section mismatch in
-reference from the variable cs5535_mfd_drv to the function
-.devinit.text:cs5535_mfd_probe()
-The variable cs5535_mfd_drv references
-the function __devinit cs5535_mfd_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+Searching git log,
+tegra_i2s.c seems modern.
+I have a question.
 
-WARNING: drivers/mfd/cs5535-mfd.o(.data+0x28): Section mismatch in
-reference from the variable cs5535_mfd_drv to the function
-.devexit.text:cs5535_mfd_remove()
-The variable cs5535_mfd_drv references
-the function __devexit cs5535_mfd_remove()
-If the reference is valid then annotate the
-variable with __exit* (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+According to platfom.txt, describes like below.
+struct snd_soc_ops {
+...
+};
 
-Rename the variable from *_drv to *_driver so
-modpost ignore the OK references to __devinit/__devexit
-functions.
+On the other hand, tegra_i2s.c describes like below.
 
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Acked-by: Andres Salomon <dilinger@queued.net>
---
-diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
-index 155fa04..e488a78 100644
---- a/drivers/mfd/cs5535-mfd.c
-+++ b/drivers/mfd/cs5535-mfd.c
-@@ -179,7 +179,7 @@ static struct pci_device_id cs5535_mfd_pci_tbl[] = {
- };
- MODULE_DEVICE_TABLE(pci, cs5535_mfd_pci_tbl);
+static const struct snd_soc_dai_ops tegra_i2s_dai_ops = {
+...
+};
 
--static struct pci_driver cs5535_mfd_drv = {
-+static struct pci_driver cs5535_mfd_driver = {
-       .name = DRV_NAME,
-       .id_table = cs5535_mfd_pci_tbl,
-       .probe = cs5535_mfd_probe,
-@@ -188,12 +188,12 @@ static struct pci_driver cs5535_mfd_drv = {
+Which is true as modern driver ? or case by case ?
 
- static int __init cs5535_mfd_init(void)
- {
--       return pci_register_driver(&cs5535_mfd_drv);
-+       return pci_register_driver(&cs5535_mfd_driver);
- }
 
- static void __exit cs5535_mfd_exit(void)
- {
--       pci_unregister_driver(&cs5535_mfd_drv);
-+       pci_unregister_driver(&cs5535_mfd_driver);
- }
+>> +#define      I2S_CH0_MCLK            (12288000) /* Master Clock Frequency[Hz] */
+> This looks like it should be board specific?
+Should our platform driver use "clk_get()" ?
+If no, how should our driver get the value ?
 
- module_init(cs5535_mfd_init);
+thanks in advance.
+
+tomoya
