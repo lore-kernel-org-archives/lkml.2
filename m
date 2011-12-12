@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab1LLLCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:02:08 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53590 "EHLO
-	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751710Ab1LLLCF (ORCPT
+	id S1752553Ab1LLLGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:06:55 -0500
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:36041 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab1LLLGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:02:05 -0500
-Date: Mon, 12 Dec 2011 11:02:36 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-Message-ID: <20111212110236.755eda81@pyramind.ukuu.org.uk>
-In-Reply-To: <1323687592.16450.0.camel@lappy>
-References: <20111210132220.083204833@linutronix.de>
-	<alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
-	<alpine.LFD.2.02.1112102144370.3020@ionos>
-	<alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
-	<20111211103047.GA19299@elte.hu>
-	<alpine.LFD.2.02.1112111459270.3020@ionos>
-	<20111212102750.469f0d9f@pyramind.ukuu.org.uk>
-	<1323687592.16450.0.camel@lappy>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Dec 2011 06:06:51 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: Mon, 12 Dec 2011 11:06:44 +0000
+From: Tony Finch <dot@dotat.at>
+X-X-Sender: fanf2@hermes-2.csi.cam.ac.uk
+To: Michal Marek <mmarek@suse.cz>
+cc: Mike Frysinger <vapier@gentoo.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] unifdef: drop unused errno.h include
+In-Reply-To: <20111210135456.GB22866@sepie.suse.cz>
+Message-ID: <alpine.LSU.2.00.1112121040090.5322@hermes-2.csi.cam.ac.uk>
+References: <1323210410-27111-1-git-send-email-vapier@gentoo.org> <20111210135456.GB22866@sepie.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You can emulate a chip with a 64byte or so FIFO. You can do I/O cycle
-> > prediction in the kernel part and you can use the empty bit as a clue
-> > (which is what most serial<->ethernet widgetry does).
-> 
-> The performance problems here aren't the same performance problems you
-> have on real hardware. The problem here is that it costs 40k cycles for
-> the guest to access the emulated chip.
+On Tue, Dec 06, 2011 at 05:26:50PM -0500, Mike Frysinger wrote:
+>
+> This is the only header on my system that ends up requiring kernel
+> headers, so if the kernel headers aren't available, we end up being
+> unable to install kernel headers :).
 
-How much of that 40K cycles is bouncing back and forth into emulation
-layers and how much of it is the kernel trap ?
- 
+I have some sympathy for this problem but I tend to think that it's
+unreasonable to expect unifdef to work with an incomplete compiler
+installation.
+
+> Since this file doesn't actually use anything from errno.h, drop
+> the include so it at least makes us a bit more robust on glibc.
+
+The Linux kernel currently has unifdef-2.5. Version 2.6 has better error
+handling so it uses the declaration of errno but not any of the E*
+values. I could perhaps rejig it to avoid this if it really is important
+to be able to bootsrap a system with incomplete headers.
+
+Tony.
+-- 
+f.anthony.n.finch  <dot@dotat.at>  http://dotat.at/
+Lundy, Fastnet, Irish Sea: West, backing south for a time, 5 or 6, increasing
+7 to severe gale 9. Moderate or rough, occasionally very rough or high. Rain
+or squally wintry showers. Good, occasionally poor.
