@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1LLXvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:51:20 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:41353 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab1LLXvS (ORCPT
+	id S1754297Ab1LLXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:53:09 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:32970 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab1LLXxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:51:18 -0500
-Date: Mon, 12 Dec 2011 18:51:13 -0500 (EST)
-Message-Id: <20111212.185113.1211685406728953774.davem@davemloft.net>
-To: artisdom@gmail.com
-Cc: jpirko@redhat.com, jwboyer@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipip, sit: copy parms.name after register_netdevice
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111208104619.GA20150@ted-OptiPlex-380>
-References: <CAM7b5hyXkRTUwnE-NwXEff-34WjRfMSBDf2itMVhdJGi4XoA=g@mail.gmail.com>
-	<20111207.235602.1465915988125994516.davem@davemloft.net>
-	<20111208104619.GA20150@ted-OptiPlex-380>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 12 Dec 2011 18:53:04 -0500
+Message-ID: <1323733973.4078.116.camel@work-vm>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 12 Dec 2011 15:52:53 -0800
+In-Reply-To: <CAObL_7H_2H3f=+UwJ_DEGAVYbQY_ekj+a+BQf6qyFrtU4mqnAw@mail.gmail.com>
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>
+	 <1323718578-1157-3-git-send-email-asharma@fb.com>
+	 <1323731361.4078.102.camel@work-vm> <4EE68C31.1030207@fb.com>
+	 <1323732772.4078.113.camel@work-vm>
+	 <CAObL_7H_2H3f=+UwJ_DEGAVYbQY_ekj+a+BQf6qyFrtU4mqnAw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 12 Dec 2011 15:51:15 -0800 (PST)
+Mime-Version: 1.0
+x-cbid: 11121223-1780-0000-0000-000001955AD7
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000240; HX=3.00000179; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00095590; UDB=6.00024989; UTC=2011-12-12
+ 23:53:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ted Feng <artisdom@gmail.com>
-Date: Thu, 8 Dec 2011 18:46:21 +0800
+On Mon, 2011-12-12 at 15:41 -0800, Andrew Lutomirski wrote:
+> On Mon, Dec 12, 2011 at 3:32 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > Is it just that you're concerned about the clockid switch costs being
+> > too high?
+> 
+> From my (old, from memory) measurements, the switch cost is very very
+> low if it's predicted correctly, and the main case where it's likely
+> to be mispredicted is when it hasn't been called in awhile, in which
+> case either probably no one cares or the cache misses will dominate.
+> 
+> How worried are you about introducing a year 2554 bug?  Python says:
+> 
+> >>> dateutil.parser.parse('1/1/1970') + datetime.timedelta(seconds = 2**64 // 1000000000)
+> datetime.datetime(2554, 7, 21, 23, 34, 33)
 
-> From: Ted Feng <artisdom@gmail.com>
-> 
-> Same fix as 731abb9cb2 for ipip and sit tunnel.
-> Commit 1c5cae815d removed an explicit call to dev_alloc_name in
-> ipip_tunnel_locate and ipip6_tunnel_locate, because register_netdevice
-> will now create a valid name, however the tunnel keeps a copy of the
-> name in the private parms structure. Fix this by copying the name back
-> after register_netdevice has successfully returned.
-> 
-> This shows up if you do a simple tunnel add, followed by a tunnel show:
-> 
-> $ sudo ip tunnel add mode ipip remote 10.2.20.211
-> $ ip tunnel
-> tunl0: ip/ip  remote any  local any  ttl inherit  nopmtudisc
-> tunl%d: ip/ip  remote 10.2.20.211  local any  ttl inherit
-> $ sudo ip tunnel add mode sit remote 10.2.20.212
-> $ ip tunnel
-> sit0: ipv6/ip  remote any  local any  ttl 64  nopmtudisc 6rd-prefix 2002::/16
-> sit%d: ioctl 89f8 failed: No such device
-> sit%d: ipv6/ip  remote 10.2.20.212  local any  ttl inherit
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Ted Feng <artisdom@gmail.com>
+Not very. :) 
 
-Applied.
+Worse case the syscall can expose a nsec_t or something that can be
+bumped to u128 when that becomes common.
+
+thanks
+-john
+
