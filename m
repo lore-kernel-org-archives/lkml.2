@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1LLO2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:28:45 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56147 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1LLO2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:28:43 -0500
+	id S1753205Ab1LLO3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:29:12 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:59708 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab1LLO3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:29:10 -0500
+Date: Mon, 12 Dec 2011 14:29:07 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 04/11] mm: compaction: export some of the functions
+Message-ID: <20111212142906.GE3277@csn.ul.ie>
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <1321634598-16859-5-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Date: Mon, 12 Dec 2011 22:28:43 +0800
-Message-ID: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
-Subject: [Slub allocator] There are chances that kmem_cache_cpu->freelist gets
- lost if the process happens to be rescheduled to a differenet cpu before the
- local_irq_save() completes in __slab_alloc()
-From: zhihua che <zhihua.che@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1321634598-16859-5-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, everyone
+On Fri, Nov 18, 2011 at 05:43:11PM +0100, Marek Szyprowski wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+> 
+> This commit exports some of the functions from compaction.c file
+> outside of it adding their declaration into internal.h header
+> file so that other mm related code can use them.
+> 
+> This forced compaction.c to always be compiled (as opposed to being
+> compiled only if CONFIG_COMPACTION is defined) but as to avoid
+> introducing code that user did not ask for, part of the compaction.c
+> is now wrapped in on #ifdef.
+> 
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  mm/Makefile     |    3 +-
+>  mm/compaction.c |  112 +++++++++++++++++++++++--------------------------------
+>  mm/internal.h   |   35 +++++++++++++++++
+>  3 files changed, 83 insertions(+), 67 deletions(-)
+> 
+> diff --git a/mm/Makefile b/mm/Makefile
+> index 50ec00e..24ed801 100644
+> --- a/mm/Makefile
+> +++ b/mm/Makefile
+> @@ -13,7 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+>  			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+>  			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
+>  			   page_isolation.o mm_init.o mmu_context.o percpu.o \
+> -			   $(mmu-y)
+> +			   $(mmu-y) compaction.o
 
-        I'm reading code of version 3.1.5 and I guess I come across a
-memory leak involving with slub allocating process. I image a case
-like below.
+That should be
 
-        Process p0 running on cpu0 is requesting a small piece of
-memory by calling slab_alloc(). It finds that the c0->freelist is null
-and resorts to __slab_alloc(), where c0 is a pointer of kmem_cache_cpu
-corresponding to cpu0. Unfortunately, scheduling happens right the
-moment and p0 is now running on a different cpu1. P0 then disables the
-local interrupts of cpu1 at the beginning of __slab_alloc() (line
-2057),  and retrieves a different pointer of kmem_cache_cpu, c1,
-corresponding to cpu1(line 2064). P0 continues executing to line 2116
-where c1->freelist is assigned a new value while there is no any check
-to it before at all!!! So I think there are chances that memory leak
-could happen if scheduling happens right before line 2057.
+compaction.o $(mmu-y)
 
-2057 local_irq_disable();  /* scheduling happens before here */
+for consistency.
 
-2064 c = this_cpu_ptr(s->cpu_slab);
+Overall, this patch implies that CMA is always compiled in. Why
+not just make CMA depend on COMPACTION to keep things simplier? For
+example, if you enable CMA and do not enable COMPACTION, you lose
+things like the vmstat counters that can aid debugging. In fact, as
+parts of compaction.c are using defines like COMPACTBLOCKS, I'm not
+even sure compaction.c can compile without CONFIG_COMPACTION because
+of the vmstat stuff.
 
-2114 load_freelist:
-2115         VM_BUG_ON(!page->frozen);
-2116         c->freelist = get_freepointer(s, object);  /* memory leak
-happens here */
-
-         I wonder if I think in a wrong way.
-
-         Furthermore, I find in the earlier version like 2.6.38.8, the
-local interrupts have been disabled in slab_alloc() before the control
-enters the __slab_alloc(), so I think the memory leak is not present
-in the earlier versions.
+-- 
+Mel Gorman
+SUSE Labs
