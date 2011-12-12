@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab1LLQZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:25:14 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:41476 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751190Ab1LLQZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:25:12 -0500
-Message-ID: <4EE638EA.6010909@xenotime.net>
-Date: Mon, 12 Dec 2011 09:24:58 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1753260Ab1LLQ1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:27:48 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:47630 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab1LLQ1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 11:27:47 -0500
+Message-ID: <4EE62B78.9030000@parallels.com>
+Date: Mon, 12 Dec 2011 20:27:36 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Martyn Welch <martyn.welch@ge.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 6 (staging/vme)
-References: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au> <4EDE820E.5040006@xenotime.net>
-In-Reply-To: <4EDE820E.5040006@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/4] SUNRPC: pass network namespace context to sockaddr
+ construction routines
+References: <20111207111716.17273.63010.stgit@localhost6.localdomain6> <20111208204648.GB32505@fieldses.org> <4EE62824.9090807@parallels.com> <20111212161542.GH18185@fieldses.org>
+In-Reply-To: <20111212161542.GH18185@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 12:58 PM, Randy Dunlap wrote:
-> On 12/05/2011 08:44 PM, Stephen Rothwell wrote:
->> Hi all,
+12.12.2011 20:15, J. Bruce Fields пишет:
+> On Mon, Dec 12, 2011 at 08:13:24PM +0400, Stanislav Kinsbursky wrote:
+>> 09.12.2011 00:46, J. Bruce Fields пишет:
+>>> On Wed, Dec 07, 2011 at 03:20:07PM +0300, Stanislav Kinsbursky wrote:
+>>>> This is another precursor patch set aimed to remove hard-coded "init_net"
+>>>> reference from SUNRPC sockaddr convertion and construction routines.
+>>>
+>>> ACK--all look straightforward.  (Only complaint would be that this isn't
+>>> terribly interesting till we see how these are used.)
+>>>
 >>
->> Changes since 20111205:
-> 
-> 
-> When CONFIG_GPIOLIB is not enabled:
-> 
-> drivers/staging/vme/devices/vme_pio2.h:237:19: error: field 'gc' has incomplete type
+>> Actually, all is simple. These init_net pointers will be replaced
+>> later by "transports, clients and others" network namespace
+>> contexts.
+>> I have some more patches for NFS layer. But I don't see any sense to
+>> sent them now since no "virtualization" patches were commited yet.
+>> So, currently, I'm trying to finalize "SUNRPC per network namespace"
+>> task, and soon I'll send a patch set making SUNRPC sysctl's
+>> network-namespace-aware. It is a little bit tricky and ugly from my
+>> pow, so any ideas are welcome.
+>
+> No ideas.... What's the ugly part?
+>
+> --b.
 
-
-This error is still in linux-next of 20111212.
+I have some "idée fixe", that all this file system parts of SUNRPC (and NFS) 
+layers have to made per network namespace context in the same manner as sysfs 
+done. I.e. it's content should depends on mount point creator network namespace 
+context instead of "current" one.
+But proc (and sysctl's as well) doesn't allow to make it so simple like sysfs does.
+So, currently sysctl's code is about 30 lines. With my patches in will be 
+approximately 3-4 times longer.
+But this "dependence on mount point creator network namespace" goal is achieved.
+Anyway, I'll cleanup this code and send path set soon.
 
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Best regards,
+Stanislav Kinsbursky
