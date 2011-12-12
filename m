@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab1LLLGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:06:55 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:36041 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1LLLGv (ORCPT
+	id S1752589Ab1LLLHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:07:04 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44624 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab1LLLG7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:06:51 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Date: Mon, 12 Dec 2011 11:06:44 +0000
-From: Tony Finch <dot@dotat.at>
-X-X-Sender: fanf2@hermes-2.csi.cam.ac.uk
-To: Michal Marek <mmarek@suse.cz>
-cc: Mike Frysinger <vapier@gentoo.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] unifdef: drop unused errno.h include
-In-Reply-To: <20111210135456.GB22866@sepie.suse.cz>
-Message-ID: <alpine.LSU.2.00.1112121040090.5322@hermes-2.csi.cam.ac.uk>
-References: <1323210410-27111-1-git-send-email-vapier@gentoo.org> <20111210135456.GB22866@sepie.suse.cz>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 12 Dec 2011 06:06:59 -0500
+Message-ID: <1323687948.16764.74.camel@twins>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
+In-Reply-To: <CACVXFVNUGTu-gF=jkNg37cmc1wKFvycYojs96VS8eowyLsJ8fg@mail.gmail.com>
+References: <20111210104341.592561407@chello.nl>
+	 <20111210104840.295857663@chello.nl>
+	 <CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
+	 <1323529084.16764.5.camel@twins>
+	 <CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
+	 <1323546551.2822.14.camel@laptop>
+	 <CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
+	 <1323607627.16764.13.camel@twins>
+	 <CACVXFVOYj+Mmph8WGQUdcGS8t-GPr9y3crPuz0SrBCtOmCvstQ@mail.gmail.com>
+	 <1323617738.16764.21.camel@twins> <1323636148.16764.44.camel@twins>
+	 <CACVXFVMDEeDBkAdv=AkRZuOH1sNdMGjR3PeHYMVLhwR+FB8gOg@mail.gmail.com>
+	 <1323680078.16764.45.camel@twins>
+	 <CACVXFVPOsUrEEDT=iMZyrvaX3G_XqWpVOJyz24=FPTtB_9J9HQ@mail.gmail.com>
+	 <1323684748.16764.62.camel@twins>
+	 <CACVXFVNUGTu-gF=jkNg37cmc1wKFvycYojs96VS8eowyLsJ8fg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 12 Dec 2011 12:05:48 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 3.2.1- 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 05:26:50PM -0500, Mike Frysinger wrote:
->
-> This is the only header on my system that ends up requiring kernel
-> headers, so if the kernel headers aren't available, we end up being
-> unable to install kernel headers :).
+On Mon, 2011-12-12 at 18:32 +0800, Ming Lei wrote:
+> On Mon, Dec 12, 2011 at 6:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > I don't know the driver model, and I don't plan to start learning it
+> > now. But if what you said is possible its broken and no memory barriers
+> > will fix it.
+> 
+> IMO, you don't need to learn it, and my example is very simple and common
+> kref usage in device drivers, :-)
 
-I have some sympathy for this problem but I tend to think that it's
-unreasonable to expect unifdef to work with an incomplete compiler
-installation.
+One needs to know the callchains and device driver core code leading up
+to those .open, .close, .read, .probe and .release callbacks. That's a
+lot of code.
 
-> Since this file doesn't actually use anything from errno.h, drop
-> the include so it at least makes us a bit more robust on glibc.
+Also, non of that is relevant. The kref interface is very simple.
+kref_set cannot and should not have any concurrency.
 
-The Linux kernel currently has unifdef-2.5. Version 2.6 has better error
-handling so it uses the declaration of errno but not any of the E*
-values. I could perhaps rejig it to avoid this if it really is important
-to be able to bootsrap a system with incomplete headers.
+It it not for kref_set() to finalize the object (there is no requirement
+kref_set is the last operation before you publish the object).
 
-Tony.
--- 
-f.anthony.n.finch  <dot@dotat.at>  http://dotat.at/
-Lundy, Fastnet, Irish Sea: West, backing south for a time, 5 or 6, increasing
-7 to severe gale 9. Moderate or rough, occasionally very rough or high. Rain
-or squally wintry showers. Good, occasionally poor.
+As per Oliver's reply, your USB example uses usb_register_dev() to
+pushlish the object and that includes the LOCK and UNLOCK from my
+example; it also illustrates you do need to know the entire device model
+in order to talk sensibly about these callbacks you mentioned.
+
+You already said that external means should be used to ensure no
+kref_get() is issued after the final kref_put(). This too is only
+possible if you use locks one way or another and I bet that if you go
+look at the device model you'll find plenty around device_unregister().
+
+These two constraints alone are enough to remove both memory barriers
+from the kref code.
+
+
