@@ -1,45 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab1LLQ2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:28:17 -0500
-Received: from mailgw9.se.ericsson.net ([193.180.251.57]:56361 "EHLO
-	mailgw9.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab1LLQ2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:28:15 -0500
-X-AuditID: c1b4fb39-b7b3eae00000252a-c5-4ee62b9d93d3
-Message-ID: <4EE62B78.8090608@ericsson.com>
-Date: Mon, 12 Dec 2011 17:27:36 +0100
-From: Erik Hugne <erik.hugne@ericsson.com>
-Organization: Ericsson AB
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1753370Ab1LLQa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:30:58 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:33750 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab1LLQa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 11:30:56 -0500
+Date: Mon, 12 Dec 2011 16:30:52 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 02/11] mm: compaction: introduce
+ isolate_{free,migrate}pages_range().
+Message-ID: <20111212163052.GK3277@csn.ul.ie>
+References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
+ <1321634598-16859-3-git-send-email-m.szyprowski@samsung.com>
+ <20111212140728.GC3277@csn.ul.ie>
+ <op.v6dub1ms3l0zgt@mpn-glaptop>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kobject/kset symbols not exported
-References: <4EE6237A.9010901@ericsson.com>
-In-Reply-To: <4EE6237A.9010901@ericsson.com>
-X-Forwarded-Message-Id: <4EE6237A.9010901@ericsson.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <op.v6dub1ms3l0zgt@mpn-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The top level module_kset, defined at:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=include/linux/module.h;h=3cb7839a60b96ffc6e4fe9b28d0ddf491275b2f6;hb=HEAD#l630
+On Mon, Dec 12, 2011 at 04:22:39PM +0100, Michal Nazarewicz wrote:
+> > <SNIP>
+> >
+> >>+		if (!pfn_valid_within(pfn))
+> >>+			goto skip;
+> >
+> >The flow of this function in general with gotos of skipped and next
+> >is confusing in comparison to the existing function. For example,
+> >if this PFN is not valid, and no freelist is provided, then we call
+> >__free_page() on a PFN that is known to be invalid.
+> >
+> >>+		++nr_scanned;
+> >>+
+> >>+		if (!PageBuddy(page)) {
+> >>+skip:
+> >>+			if (freelist)
+> >>+				goto next;
+> >>+			for (; start < pfn; ++start)
+> >>+				__free_page(pfn_to_page(pfn));
+> >>+			return 0;
+> >>+		}
+> >
+> >So if a PFN is valid and !PageBuddy and no freelist is provided, we
+> >call __free_page() on it regardless of reference count. That does not
+> >sound safe.
+> 
+> Sorry about that.  It's a bug in the code which was caught later on.  The
+> code should read ???__free_page(pfn_to_page(start))???.
+> 
 
-Does not have a symbol exported at:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=kernel/params.c;h=65aae11eb93f1fab5a4673ca9e9d4df9f2582e8e;hb=HEAD#l908
+That will call free on valid PFNs but why is it safe to call
+__free_page() at all?  You say later that CMA requires that all
+pages in the range be valid but if the pages are in use, that does
+not mean that calling __free_page() is safe. I suspect you have not
+seen a problem because the pages in the range were free as expected
+and not in use because of MIGRATE_ISOLATE.
 
-The same applies to two kobject related functions:
+> >> 		/* Found a free page, break it into order-0 pages */
+> >> 		isolated = split_free_page(page);
+> >> 		total_isolated += isolated;
+> >>-		for (i = 0; i < isolated; i++) {
+> >>-			list_add(&page->lru, freelist);
+> >>-			page++;
+> >>+		if (freelist) {
+> >>+			struct page *p = page;
+> >>+			for (i = isolated; i; --i, ++p)
+> >>+				list_add(&p->lru, freelist);
+> >> 		}
+> >>
+> >>-		/* If a page was split, advance to the end of it */
+> >>-		if (isolated) {
+> >>-			blockpfn += isolated - 1;
+> >>-			cursor += isolated - 1;
+> >>-		}
+> >>+next:
+> >>+		pfn += isolated;
+> >>+		page += isolated;
+> >
+> >The name isolated is now confusing because it can mean either
+> >pages isolated or pages scanned depending on context. Your patch
+> >appears to be doing a lot more than is necessary to convert
+> >isolate_freepages_block into isolate_freepages_range and at this point,
+> >it's unclear why you did that.
+> 
+> When CMA uses this function, it requires all pages in the range to be valid
+> and free. (Both conditions should be met but you never know.) 
 
-extern struct kobject *kset_find_obj(struct kset *, const char *);
-extern struct kobject *kset_find_obj_hinted(struct kset *, const char *,
-struct kobject *);
+It seems racy but I guess you are depending on MIGRATE_ISOLATE to keep
+things sane which is fine. However, I strongly suspect that if there
+is a race and a page is in use, then you will need to retry the
+migration step. Calling __free_page does not look right because
+something still has a reference to the page.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=include/linux/kobject.h;h=ad81e1c51487def091ffea196d36c1ee005f7698;hb=HEAD#l193
+> This change
+> adds a second way isolate_freepages_range() works, which is when freelist is
+> not specified, abort on invalid or non-free page, but continue as usual if
+> freelist is provided.
+> 
 
-This makes them inaccessible to modules. Is this intentional?
+Ok, I think you should be able to do that by not calling split_free_page
+or adding to the list if !freelist with a comment explaining why the
+pages are left on the buddy lists for the caller to figure out. Bail if
+a page-in-use is found and have the caller check that the return value
+of isolate_freepages_block == end_pfn - start_pfn.
 
-//E
+> I can try and restructure this function a bit so that there are fewer ???gotos???,
+> but without the above change, CMA won't really be able to use it effectively
+> (it would have to provide a freelist and then validate if pages on it are
+> added in order).
+> 
+
+Please do and double check that __free_page logic too.
+
+-- 
+Mel Gorman
+SUSE Labs
