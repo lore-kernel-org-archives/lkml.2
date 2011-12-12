@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1LLJXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 04:23:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56172 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1LLJW6 (ORCPT
+	id S1752188Ab1LLJZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 04:25:39 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:42697 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab1LLJZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 04:22:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Subject: Re: [PATCH] procfs: do not confuse jiffies with cputime64_t
-Date: Mon, 12 Dec 2011 09:22:13 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <m28vmi7ip3.fsf@igel.home>
-In-Reply-To: <m28vmi7ip3.fsf@igel.home>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 12 Dec 2011 04:25:38 -0500
+X-IronPort-AV: E=Sophos;i="4.71,337,1320624000"; 
+   d="scan'208";a="9410021"
+Subject: Re: [Xen-devel] [PATCH 5/6] xen/xenbus-frontend: Make error message
+ more clear
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Bastian Blank <waldi@debian.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Date: Mon, 12 Dec 2011 09:25:37 +0000
+In-Reply-To: <1323541791-18006-6-git-send-email-waldi@debian.org>
+References: <1323541791-18006-1-git-send-email-waldi@debian.org>
+	 <1323541791-18006-6-git-send-email-waldi@debian.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112120922.13633.arnd@arndb.de>
-X-Provags-ID: V02:K0:JLOchBcr4a0+bi2poreYcUHoNrdRxt0khoAJ3PV5BfK
- ZTmK5i3bKn6Wzi/JqGzdx65skCcBebnp1LDCm5b2gxIeAmWQoR
- +wrdvPwZ5zv05rx/Io5xFqxU6+CRdCoQaOKAdE2lPmzneP9Vuj
- G1oHyWZmKwFULrdv0RQKEoGZN3NrL0eP2Hk9gGr0ex+kZo8GAN
- IqXhydY7waOqx1zUieNfW1IER8YZppmXQT/Loh/OkVih02FZAo
- nQBtTWP1WFZNkscYGfYc+EW7IliHXDLPtiMNqkdBa1OfOGu4P1
- kVyKzw6R3RBCece56iwbu5yGjq/6hiJegZkmjoJ+fOz+th5kG9
- iwSkPf+TM1717PPkAz8g=
+Message-ID: <1323681937.20077.97.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 December 2011, Andreas Schwab wrote:
-> @@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
->                 /* !NO_HZ so we can rely on cpustat.iowait */
->                 iowait = kstat_cpu(cpu).cpustat.iowait;
->         else
-> -               iowait = nsecs_to_jiffies64(1000 * iowait_time);
-> +               iowait = jiffies64_to_cputime64(nsecs_to_jiffies64(1000 * iowait_time));
+On Sat, 2011-12-10 at 18:29 +0000, Bastian Blank wrote:
+> Add the work frontend to the error message because we now also have a
+> backend device.
+> 
+> Signed-off-by: Bastian Blank <waldi@debian.org>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+> ---
+>  drivers/xen/xenbus/xenbus_dev_frontend.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/xen/xenbus/xenbus_dev_frontend.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
+> index fb30cff..9f6be7d 100644
+> --- a/drivers/xen/xenbus/xenbus_dev_frontend.c
+> +++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
+> @@ -611,7 +611,7 @@ static int __init xenbus_init(void)
 >  
->         return iowait;
+>  	err = misc_register(&xenbus_dev);
+>  	if (err)
+> -		printk(KERN_ERR "Could not register xenbus device\n");
+> +		printk(KERN_ERR "Could not register xenbus frontend device\n");
+>  	return err;
+>  }
+>  
 
-Hmm, shouldn't this be using nsecs_to_cputime64()? For some reason however, that function
-is (incorrectly?) defined as 
 
-include/asm-generic/cputime.h:#define nsecs_to_cputime64(__ct)  nsecs_to_jiffies64(__ct)
-
-and only used in one place, in
-
-kernel/sched.c: if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
-kernel/sched.c: if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
-
-I'm not sure what the correct solution is, but I would assume that ia64 and powerpc
-should fix their definitions of nsecs_to_cputime64() anyway.
-
-	Arnd
