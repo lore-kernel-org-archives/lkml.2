@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab1LLVdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 16:33:42 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49999 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab1LLVdk convert rfc822-to-8bit (ORCPT
+	id S1754158Ab1LLVg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 16:36:28 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56209 "EHLO
+	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753415Ab1LLVg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 16:33:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323725243.2583.27.camel@edumazet-laptop>
-References: <1323718578-1157-1-git-send-email-asharma@fb.com>
- <1323718578-1157-3-git-send-email-asharma@fb.com> <1323720791.2583.23.camel@edumazet-laptop>
- <4EE66FE9.1050202@fb.com> <1323725243.2583.27.camel@edumazet-laptop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 12 Dec 2011 13:33:18 -0800
-X-Google-Sender-Auth: fyMFIeXQlkMUDos-iKDV0y7uE28
-Message-ID: <CAObL_7GtAd+-JvohjvNZjPuGL0B9dX2vjwnQ2DZNwoqkq-qAzA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	Mon, 12 Dec 2011 16:36:27 -0500
+Date: Mon, 12 Dec 2011 21:36:52 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+Message-ID: <20111212213652.0855c892@pyramind.ukuu.org.uk>
+In-Reply-To: <4EE64512.3080709@redhat.com>
+References: <20111210132220.083204833@linutronix.de>
+	<alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
+	<alpine.LFD.2.02.1112102144370.3020@ionos>
+	<alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
+	<20111211103047.GA19299@elte.hu>
+	<alpine.LFD.2.02.1112111459270.3020@ionos>
+	<20111211155347.GA1297@elte.hu>
+	<1323667836.4190.4.camel@lappy>
+	<20111212111222.GA21121@elte.hu>
+	<20111212112052.30a568f7@pyramind.ukuu.org.uk>
+	<4EE64512.3080709@redhat.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 1:27 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le lundi 12 décembre 2011 à 13:19 -0800, Arun Sharma a écrit :
->> On 12/12/11 12:13 PM, Eric Dumazet wrote:
->>
->> >> +
->> >> +struct vcpu_data {
->> >> +  struct vpercpu_data vpercpu[NR_CPUS];
->> >> +  unsigned int tsc_khz;
->> >> +  unsigned int tsc_unstable;
->> >> +};
->> >
->> > Thats a showstopper.
->> >
->> > Try to compile the thing with NR_CPUS=4096 ?
->> >
->>
->> I get a link time error:
->>
->> ld: section .data..percpu [0000000001ac2000 -> 0000000001ad48ff]
->> overlaps section .vvar [0000000001ac0000 -> 0000000001b0083f]
->>
->> which I consider better than runtime memory corruption :)
->>
->> I could add a BUILD_BUG_ON() that tries to catch this earlier in the
->> compile process.
->>
->> Re: Fixing the build for NR_CPUS > 64
->>
->> How about something along the lines of the following:
->>
->> From: Arun Sharma <asharma@fb.com>
->> Date: Mon, 12 Dec 2011 13:13:43 -0800
->> Subject: [PATCH] Handle NR_CPUS > 64
->>
->> ---
->
-> This only works if CONFIG_X86_L1_CACHE_SHIFT=6
->
-> Some configurations have 128 bytes cache lines
->
-> But really most modern distros have NR_CPUS > 64
->
->
->
+On Mon, 12 Dec 2011 20:16:50 +0200
+Avi Kivity <avi@redhat.com> wrote:
 
-I kind of like the idea of a per-cpu vvar page.
+> On 12/12/2011 01:20 PM, Alan Cox wrote:
+> > > [*] Also, those 10K cycles include some significant Qemu 
+> > >     overhead - a couple of thousand cycles - that should be much 
+> > >     lower in the tools/kvm case.
+> >
+> > Are all the traps going into qemu
+> 
+> Only the ones that go to devices modelled in userspace.
+> 
+> >  - is KVM still that braindead ?
+> 
+> How would you do it?
 
-Pros:
-- It could be used for very fast and simple userspace TLS.
-- Things like gettid() could become vsyscalls.
-- Thread time, process time, etc.
-- I would use it for my nefarious asynchronous sysret idea.
-- The kernel could use the same infrastructure to replace swapgs.
-This might not be a win -- swapgs is probably very highly optimized on
-modern cpus.
-- Other than the core implementation, everything that uses it would be
-very easy to understand.
+See my posting from years back about this...
 
-Cons:
-- Uses a page, a pte, and everything higher up the page table hierarchy per cpu.
-- Takes up a tlb slot.
-- Getting it to work with Xen might be interesting.
+Your trap handler returns the kernel a predictor tree (say a 1 page tree)
+of the next expected ins out and actions - where the action is either
+store, or trap out.
 
---Andy
+Each kernel trap then boils down to
+
+Does this trap match an entry in the top of our predictor tree. Ie is it
+an in/out (or equivalent mmio) that the driver has given us expected
+behaviour for.
+
+We could of course have several for different ranges of devices
+
+	no - hit emulator and return position in predictor tree we failed
+		at plus tree buffer if needed
+
+	yes - follow the tree node
+
+	For IN
+		copy predicted byte/word/dword to tree buffer
+		move along tree
+		return
+
+	For Out
+		store store byte/word/dword in tree buffer
+		(one of which can be used for discard)
+		move along the tree
+		return
+
+Thats enough to do things like write predictors for the kernel console
+emulating the serial fifo, to script PIO IDE transfers etc
+
+The kernel side is miniscule and generic, the user space can migrate to
+doing this where it pays off and not where it doesn't.
+
+
+Alan
