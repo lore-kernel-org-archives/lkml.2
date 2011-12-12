@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1LLULD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 15:11:03 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:44009 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab1LLUKd (ORCPT
+	id S1754047Ab1LLUNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 15:13:19 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41527 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab1LLUNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 15:10:33 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, j.glisse@gmail.com,
-        dri-devel@lists.freedesktop.org
-Cc: bskeggs@redhat.com, thellstrom@vmware.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] drm/ttm/dma: Optimize when free-ing the recycled page pool.
-Date: Mon, 12 Dec 2011 15:09:29 -0500
-Message-Id: <1323720569-15435-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
-References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4EE65FB5.0074,ss=1,re=0.000,fgs=0
+	Mon, 12 Dec 2011 15:13:17 -0500
+Message-ID: <1323720791.2583.23.camel@edumazet-laptop>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Andy Lutomirski <luto@MIT.EDU>
+Date: Mon, 12 Dec 2011 21:13:11 +0100
+In-Reply-To: <1323718578-1157-3-git-send-email-asharma@fb.com>
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>
+	 <1323718578-1157-3-git-send-email-asharma@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We would free the page pool - even if it was for cached pages
-(which are deleted from the pool - so there are no free pages).
+Le lundi 12 décembre 2011 à 11:36 -0800, Arun Sharma a écrit :
+> From: Kumar Sundararajan <kumar@fb.com>
+> 
 
-Also we also missed the opportunity to batch the amount of pages
-to free (similar to how ttm_page_alloc.c does it). This reintroduces
-the code that was lost during rebasing.
+...
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+> +
+> +struct vcpu_data {
+> +	struct vpercpu_data vpercpu[NR_CPUS];
+> +	unsigned int tsc_khz;
+> +	unsigned int tsc_unstable;
+> +};
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index e57aa24..156ddcd 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -949,7 +949,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 	struct dma_page *d_page, *next;
- 	enum pool_type type;
- 	bool is_cached = false;
--	unsigned count = 0, i, npages;
-+	unsigned count = 0, i, npages = 0;
- 	unsigned long irq_flags;
- 
- 	type = ttm_to_type(ttm->page_flags, ttm->caching_state);
-@@ -971,13 +971,16 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 	pool->npages_in_use -= count;
- 	if (is_cached) {
- 		pool->nfrees += count;
--		npages = count;
- 	} else {
- 		pool->npages_free += count;
- 		list_splice(&ttm_dma->pages_list, &pool->free_list);
- 		npages = count;
- 		if (pool->npages_free > _manager->options.max_size) {
- 			npages = pool->npages_free - _manager->options.max_size;
-+			/* free at least NUM_PAGES_TO_ALLOC number of pages
-+			 * to reduce calls to set_memory_wb */
-+			if (npages < NUM_PAGES_TO_ALLOC)
-+				npages = NUM_PAGES_TO_ALLOC;
- 		}
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
-@@ -1001,7 +1004,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 		ttm_dma->dma_address[i] = 0;
- 	}
- 
--	/* shrink pool if necessary */
-+	/* shrink pool if necessary (only on !is_cached pools)*/
- 	if (npages)
- 		ttm_dma_page_pool_free(pool, npages);
- 	ttm->state = tt_unpopulated;
--- 
-1.7.7.3
+Thats a showstopper.
+
+Try to compile the thing with NR_CPUS=4096 ?
+
 
