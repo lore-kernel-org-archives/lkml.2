@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab1LLKdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 05:33:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42662 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab1LLKc7 (ORCPT
+	id S1752161Ab1LLKjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 05:39:22 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:22553 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab1LLKjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 05:32:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323684748.16764.62.camel@twins>
-References: <20111210104341.592561407@chello.nl>
-	<20111210104840.295857663@chello.nl>
-	<CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
-	<1323529084.16764.5.camel@twins>
-	<CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-	<1323546551.2822.14.camel@laptop>
-	<CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
-	<1323607627.16764.13.camel@twins>
-	<CACVXFVOYj+Mmph8WGQUdcGS8t-GPr9y3crPuz0SrBCtOmCvstQ@mail.gmail.com>
-	<1323617738.16764.21.camel@twins>
-	<1323636148.16764.44.camel@twins>
-	<CACVXFVMDEeDBkAdv=AkRZuOH1sNdMGjR3PeHYMVLhwR+FB8gOg@mail.gmail.com>
-	<1323680078.16764.45.camel@twins>
-	<CACVXFVPOsUrEEDT=iMZyrvaX3G_XqWpVOJyz24=FPTtB_9J9HQ@mail.gmail.com>
-	<1323684748.16764.62.camel@twins>
-Date: Mon, 12 Dec 2011 18:32:58 +0800
-Message-ID: <CACVXFVNUGTu-gF=jkNg37cmc1wKFvycYojs96VS8eowyLsJ8fg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-From: Ming Lei <tom.leiming@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Dec 2011 05:39:20 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-fb-4ee5d9d64bbe
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: sameo@linux.intel.com
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com, dg77.kim@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] MFD: MAX77693: add initial MAX77693 MFD driver
+Date: Mon, 12 Dec 2011 19:39:09 +0900
+Message-id: <1323686351-24907-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+DLP-Filter: Pass
+X-Brightmail-Tracker: AAAAAQAAAZE=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 6:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+MAX77693 is sub PMIC(Power Management IC) working with other main PMIC.
+It has several features:
+-PMIC
+-MUIC(Micro USB Interface Controller)
+-Camera flash LED control
+-Haptic motor control
 
-> I don't know the driver model, and I don't plan to start learning it
-> now. But if what you said is possible its broken and no memory barriers
-> will fix it.
+This patch adds initial basis for several devices.
+---
+Changes for v2:
+    - with comments from Mark
+	- use devm_kzalloc rather than kzalloc
+	- print device ID read from device
 
-IMO, you don't need to learn it, and my example is very simple and common
-kref usage in device drivers, :-)
+Donggeun Kim (2):
+  MFD: MAX77693: add MAX77693 MFD driver
+  MFD: MAX77693: add IRQ handler
 
-Could we only focus on it and see what is problem? and why won't memory
-barrier fix it?
+ drivers/mfd/Kconfig                  |   12 ++
+ drivers/mfd/Makefile                 |    1 +
+ drivers/mfd/max77693-irq.c           |  307 ++++++++++++++++++++++++++++++++++
+ drivers/mfd/max77693.c               |  255 ++++++++++++++++++++++++++++
+ include/linux/mfd/max77693-private.h |  221 ++++++++++++++++++++++++
+ include/linux/mfd/max77693.h         |   38 ++++
+ 6 files changed, 834 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/max77693-irq.c
+ create mode 100644 drivers/mfd/max77693.c
+ create mode 100644 include/linux/mfd/max77693-private.h
+ create mode 100644 include/linux/mfd/max77693.h
 
-Anyway, device drivers are the most consumers of kref...
-
-thanks,
 -- 
-Ming Lei
+1.7.4.1
+
