@@ -1,55 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab1LLWG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:06:59 -0500
-Received: from lunge.queued.net ([173.255.254.236]:54156 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab1LLWG6 convert rfc822-to-8bit (ORCPT
+	id S1754442Ab1LLWHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:07:41 -0500
+Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:56115
+	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754244Ab1LLWHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:06:58 -0500
-Date: Mon, 12 Dec 2011 14:06:56 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: martin-eric.racine@iki.fi
-Cc: Jens Rottmann <JRottmann@lippertembedded.de>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: IRQF_TIMER | IRQF_SHARED ?
-Message-ID: <20111212140656.4c5e396f@queued.net>
-In-Reply-To: <CAPZXPQdOrFPVR5rQzg1+ZxhU-p9SotHNft85okunB0YmUFA2Xg@mail.gmail.com>
-References: <4EE620A5.7080402@LiPPERTEmbedded.de>
-	<20111212123131.502be350@queued.net>
-	<CAPZXPQdOrFPVR5rQzg1+ZxhU-p9SotHNft85okunB0YmUFA2Xg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 17:07:39 -0500
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 17:07:38 EST
+Message-ID: <4EE6792A.8070901@free.fr>
+Date: Mon, 12 Dec 2011 22:59:06 +0100
+From: Wallak <wallak@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0.1) Gecko/20111122 Firefox/8.0.1 SeaMonkey/2.5
+MIME-Version: 1.0
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-acpi <linux-acpi@vger.kernel.org>, lenb <lenb@kernel.org>
+Subject: Re: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression
+ - Linux-3.x
+References: <1323297487.4edfeacfc49ff@imp.free.fr>  <CAF1ivSZX37HRyxJX_rdkZ4pVrxjCZeM39mAs4ZKcqWCYShxaxQ@mail.gmail.com> <1323657511.17515.11.camel@minggr>
+In-Reply-To: <1323657511.17515.11.camel@minggr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 23:00:01 +0200
-Martin-Éric Racine <martin-eric.racine@iki.fi> wrote:
+Hi Lin Ming,
 
-> 12. joulukuuta 2011 22.31 Andres Salomon <dilinger@queued.net>
-> kirjoitti:
-> > On Mon, 12 Dec 2011 16:41:25 +0100
-> > Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
-> >> one of our customers tripped over the fact that the MFGPT driver
-> >> won't share its IRQ with anyone else. (MFGPT defaulted to same IRQ
-> >> as audio, MFGPT driver loaded first, audio fails.) *No big deal!*
-> >> They don't actually need MFGPT and will simply disable it. It just
-> >> made me wonder ...
-> >>
-> >> Why would it be such a bad idea to use IRQF_TIMER | IRQF_SHARED
-> >> (see patch below)? mfgpt_tick() already does properly return
-> >> IRQ_NONE when it feels unresponsible. I tested it with either
-> >> driver loaded first and it seemed to work (well, at least audio
-> >> worked, don't know how to explicitly test cs5535-clockevt).
-> >
-> > Just loading cs5535-clockevt should start the periodic timer.  On my
-> > XO-1, IRQ 7 starts firing immediately.
-> 
-> Could it be a good idea to inform udev maintainers of this?
-> 
+This last patch, modifying the behavior of acpi_get_cpuid(), works fine 
+on my non SMP enabled kernel. The test was done on a Dell X300, 
+acpi_processor_set_pdc() was properly called, without the changes done 
+by my previous patch.
 
-It *would* be nice to get it auto-loading..
+Best Regards,
+Wallak.
+
+Lin Ming wrote:
+> On Mon, 2011-12-12 at 10:26 +0800, Lin Ming wrote:
+>> ---------- Forwarded message ----------
+>> From:<wallak@free.fr>
+>> Date: Thu, Dec 8, 2011 at 6:38 AM
+>> Subject: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression
+>> - Linux-3.x
+>> To: linux-kernel@vger.kernel.org
+>>
+>>
+>> We have a regression on the ACPI stack of the last linux kernel line 3.x (3.1.4,
+>> 3.2-rc4...). The ACPI "_PDC" chunk is not executed on some computers (e.g. Dell
+>> X300; the function acpi_processor_set_pdc() is not called). This issue yield to
+>> an uninitialized state of some ACPI variables.
+>>
+>> A patch is available below. This patch come back to the previous linux behavior,
+>> and works fine.
+>>
+>> Best Regards,
+>> Wallak.
+>>
+>> --- linux-3.1.4-mdf/drivers/acpi/processor_core.c.orig  2011-12-07
+>> 23:12:57.000000000 +0100
+>> +++ linux-3.1.4-mdf/drivers/acpi/processor_core.c       2011-12-07
+>> 23:13:39.000000000 +0100
+>> @@ -223,8 +223,8 @@
+>>         type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
+>>         cpuid = acpi_get_cpuid(handle, type, acpi_id);
+>>
+>> -       if (cpuid == -1)
+>> -               return false;
+>> +       if ((cpuid == -1)&&  (num_possible_cpus()>  1))
+> Hi Wallak,
+>
+> BIOS may define multiple CPU handles even for UP
+> processor(see below).
+>
+> processor_physically_present(acpi_handle handle) will be called for each
+> CPU handles.
+>
+> We should only return valid value for CPU0 on UP processor.
+> With your patch, processor_physically_present will return true for all
+> CPU handles(CPU0, CPU1, CPU2, CPU3). This is not we want.
+>
+> I think below is the correct fix.
+> Could you help to test it?
+>
+> Thanks.
+>
+> > From 5c6de7311ced7a1febf85fdcc08b6116bcfe8138 Mon Sep 17 00:00:00 2001
+> From: Lin Ming<ming.m.lin@intel.com>
+> Date: Mon, 12 Dec 2011 10:04:53 +0800
+> Subject: [PATCH] ACPI: processor: fix acpi_get_cpuid for UP processor
+>
+> For UP processor, it is likely that no _MAT method or MADT table defined.
+> So currently acpi_get_cpuid(...) always return -1 for UP processor.
+> This is wrong. It should return valid value for CPU0.
+>
+> In the other hand, BIOS may define multiple CPU handles even for UP
+> processor, for example
+>
+>          Scope (_PR)
+>          {
+>              Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+>              Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+>              Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+>              Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+>          }
+>
+> We should only return valid value for CPU0's acpi handle.
+> And return invalid value for others.
+>
+> http://marc.info/?t=132329819900003&r=1&w=2
+>
+> Reported-by: wallak@free.fr
+> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
+> ---
+>   drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++--
+>   1 files changed, 24 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+> index 3a0428e..3372900 100644
+> --- a/drivers/acpi/processor_core.c
+> +++ b/drivers/acpi/processor_core.c
+> @@ -173,8 +173,30 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+>   	apic_id = map_mat_entry(handle, type, acpi_id);
+>   	if (apic_id == -1)
+>   		apic_id = map_madt_entry(type, acpi_id);
+> -	if (apic_id == -1)
+> -		return apic_id;
+> +	if (apic_id == -1) {
+> +		/*
+> +		 * On UP processor, there is no _MAT or MADT table.
+> +		 * So above apic_id is always set to -1.
+> +		 *
+> +		 * BIOS may define multiple CPU handles even for UP processor.
+> +		 * For example,
+> +		 *
+> +		 * Scope (_PR)
+> +                 * {
+> +		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+> +		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+> +		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+> +		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+> +		 * }
+> +		 *
+> +		 * Ignores apic_id and always return 0 for CPU0's handle.
+> +		 * Return -1 for other CPU's handle.
+> +		 */
+> +		if (acpi_id == 0)
+> +			return acpi_id;
+> +		else
+> +			return apic_id;
+> +	}
+>
+>   #ifdef CONFIG_SMP
+>   	for_each_possible_cpu(i) {
+
