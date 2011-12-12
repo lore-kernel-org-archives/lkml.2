@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1LLD25 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 22:28:57 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:2725 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab1LLD2i (ORCPT
+	id S1752994Ab1LLD2w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 22:28:52 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:19009 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab1LLD2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 22:28:38 -0500
+	Sun, 11 Dec 2011 22:28:37 -0500
 X-SpamScore: 2
 X-BigFish: VS2(zzzz1202hzz8275bhz2ei87h2a8h668h839hb79i61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-SS: 0,
 X-FB-DOMAIN-IP-MATCH: fail
 From: Bob Liu <lliubbo@gmail.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <sonic.adi@gmail.com>, <uclinux-dist-devel@blackfin.uclinux.org>,
-        <vapier@gentoo.org>, Scott Jiang <scott.jiang.linux@gmail.com>,
-        Bob Liu <lliubbo@gmail.com>
-Subject: [PATCH 05/11] blackfin: config: update def config for all boards
-Date: Mon, 12 Dec 2011 11:28:27 +0800
-Message-ID: <1323660513-9620-5-git-send-email-lliubbo@gmail.com>
+        <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
+        Scott Jiang <scott.jiang.linux@gmail.com>
+Subject: [PATCH 02/11] blackfin: bf533-stamp: add missed patches for new asoc driver
+Date: Mon, 12 Dec 2011 11:28:24 +0800
+Message-ID: <1323660513-9620-2-git-send-email-lliubbo@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323660513-9620-1-git-send-email-lliubbo@gmail.com>
 References: <1323660513-9620-1-git-send-email-lliubbo@gmail.com>
@@ -29,394 +30,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Jiang <scott.jiang.linux@gmail.com>
+ASoC drivers changed between 2.6.37 and 3.0, but we didn't apply these changes
+in bf533 board file.
 
-Config name for spi controller driver has been modified in previous commit,
-so update default config accordingly.
+So apply missed patches for asoc since 2.6.37 together.
 
 Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
 Signed-off-by: Bob Liu <lliubbo@gmail.com>
 ---
- arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
- arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
- arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
- arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    2 +-
- arch/blackfin/configs/BF527-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF537-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF538-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF548-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF561-ACVILON_defconfig     |    2 +-
- arch/blackfin/configs/BF561-EZKIT-SMP_defconfig   |    2 +-
- arch/blackfin/configs/BF561-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BlackStamp_defconfig        |    2 +-
- arch/blackfin/configs/CM-BF527_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF533_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF537E_defconfig         |    2 +-
- arch/blackfin/configs/CM-BF537U_defconfig         |    2 +-
- arch/blackfin/configs/CM-BF548_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF561_defconfig          |    2 +-
- arch/blackfin/configs/DNP5370_defconfig           |    2 +-
- arch/blackfin/configs/H8606_defconfig             |    2 +-
- arch/blackfin/configs/IP0X_defconfig              |    2 +-
- arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
- arch/blackfin/configs/SRV1_defconfig              |    2 +-
- arch/blackfin/configs/TCM-BF518_defconfig         |    2 +-
- arch/blackfin/configs/TCM-BF537_defconfig         |    2 +-
- 27 files changed, 27 insertions(+), 27 deletions(-)
+ arch/blackfin/mach-bf533/boards/stamp.c |  168 +++++++++++++++++++++++++++++--
+ 1 files changed, 160 insertions(+), 8 deletions(-)
 
-diff --git a/arch/blackfin/configs/BF518F-EZBRD_defconfig b/arch/blackfin/configs/BF518F-EZBRD_defconfig
-index 5edcb58..0b7039c 100644
---- a/arch/blackfin/configs/BF518F-EZBRD_defconfig
-+++ b/arch/blackfin/configs/BF518F-EZBRD_defconfig
-@@ -80,7 +80,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF526-EZBRD_defconfig b/arch/blackfin/configs/BF526-EZBRD_defconfig
-index 2e54957..5553205 100644
---- a/arch/blackfin/configs/BF526-EZBRD_defconfig
-+++ b/arch/blackfin/configs/BF526-EZBRD_defconfig
-@@ -97,7 +97,7 @@ CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_WATCHDOG=y
-diff --git a/arch/blackfin/configs/BF527-AD7160-EVAL_defconfig b/arch/blackfin/configs/BF527-AD7160-EVAL_defconfig
-index ad0881b..d95658f 100644
---- a/arch/blackfin/configs/BF527-AD7160-EVAL_defconfig
-+++ b/arch/blackfin/configs/BF527-AD7160-EVAL_defconfig
-@@ -68,7 +68,7 @@ CONFIG_I2C_ALGOBIT=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=400
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-index 8465b3e..498f64a 100644
---- a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-+++ b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-@@ -105,7 +105,7 @@ CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF527-EZKIT_defconfig b/arch/blackfin/configs/BF527-EZKIT_defconfig
-index 5e7321b..72e0317 100644
---- a/arch/blackfin/configs/BF527-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF527-EZKIT_defconfig
-@@ -99,7 +99,7 @@ CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF533-EZKIT_defconfig b/arch/blackfin/configs/BF533-EZKIT_defconfig
-index a7eb54b..2f075e0 100644
---- a/arch/blackfin/configs/BF533-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF533-EZKIT_defconfig
-@@ -81,7 +81,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF533-STAMP_defconfig b/arch/blackfin/configs/BF533-STAMP_defconfig
-index b90d379..ab38a82 100644
---- a/arch/blackfin/configs/BF533-STAMP_defconfig
-+++ b/arch/blackfin/configs/BF533-STAMP_defconfig
-@@ -84,7 +84,7 @@ CONFIG_I2C=m
- CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_GPIO=m
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF537-STAMP_defconfig b/arch/blackfin/configs/BF537-STAMP_defconfig
-index 0053625..5c802d6 100644
---- a/arch/blackfin/configs/BF537-STAMP_defconfig
-+++ b/arch/blackfin/configs/BF537-STAMP_defconfig
-@@ -94,7 +94,7 @@ CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_BLACKFIN_TWI=m
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF538-EZKIT_defconfig b/arch/blackfin/configs/BF538-EZKIT_defconfig
-index 580bf42..972aa62 100644
---- a/arch/blackfin/configs/BF538-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF538-EZKIT_defconfig
-@@ -101,7 +101,7 @@ CONFIG_I2C=m
- CONFIG_I2C_BLACKFIN_TWI=m
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF548-EZKIT_defconfig b/arch/blackfin/configs/BF548-EZKIT_defconfig
-index 0e6d841..7a1e3bf 100644
---- a/arch/blackfin/configs/BF548-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF548-EZKIT_defconfig
-@@ -113,7 +113,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF561-ACVILON_defconfig b/arch/blackfin/configs/BF561-ACVILON_defconfig
-index 77a27e3..0fdc4ec 100644
---- a/arch/blackfin/configs/BF561-ACVILON_defconfig
-+++ b/arch/blackfin/configs/BF561-ACVILON_defconfig
-@@ -85,7 +85,7 @@ CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_PCA_PLATFORM=y
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_SPI_SPIDEV=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
-diff --git a/arch/blackfin/configs/BF561-EZKIT-SMP_defconfig b/arch/blackfin/configs/BF561-EZKIT-SMP_defconfig
-index f5ed34e..78adbbf 100644
---- a/arch/blackfin/configs/BF561-EZKIT-SMP_defconfig
-+++ b/arch/blackfin/configs/BF561-EZKIT-SMP_defconfig
-@@ -84,7 +84,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BF561-EZKIT_defconfig b/arch/blackfin/configs/BF561-EZKIT_defconfig
-index d7ff2ae..d3cd0f5 100644
---- a/arch/blackfin/configs/BF561-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF561-EZKIT_defconfig
-@@ -86,7 +86,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/BlackStamp_defconfig b/arch/blackfin/configs/BlackStamp_defconfig
-index 8501431..7b982d0 100644
---- a/arch/blackfin/configs/BlackStamp_defconfig
-+++ b/arch/blackfin/configs/BlackStamp_defconfig
-@@ -80,7 +80,7 @@ CONFIG_I2C=m
- CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_GPIO=m
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_SPI_SPIDEV=m
- # CONFIG_HWMON is not set
- CONFIG_WATCHDOG=y
-diff --git a/arch/blackfin/configs/CM-BF527_defconfig b/arch/blackfin/configs/CM-BF527_defconfig
-index dbf750c..c280a50 100644
---- a/arch/blackfin/configs/CM-BF527_defconfig
-+++ b/arch/blackfin/configs/CM-BF527_defconfig
-@@ -88,7 +88,7 @@ CONFIG_I2C_CHARDEV=m
- CONFIG_I2C_BLACKFIN_TWI=m
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_WATCHDOG=y
-diff --git a/arch/blackfin/configs/CM-BF533_defconfig b/arch/blackfin/configs/CM-BF533_defconfig
-index 07ffbda..c940a1e 100644
---- a/arch/blackfin/configs/CM-BF533_defconfig
-+++ b/arch/blackfin/configs/CM-BF533_defconfig
-@@ -57,7 +57,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- # CONFIG_HWMON is not set
- # CONFIG_USB_SUPPORT is not set
- CONFIG_MMC=y
-diff --git a/arch/blackfin/configs/CM-BF537E_defconfig b/arch/blackfin/configs/CM-BF537E_defconfig
-index 707cbf8..2e47df7 100644
---- a/arch/blackfin/configs/CM-BF537E_defconfig
-+++ b/arch/blackfin/configs/CM-BF537E_defconfig
-@@ -78,7 +78,7 @@ CONFIG_SERIAL_BFIN_UART1=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_USB_GADGET=m
-diff --git a/arch/blackfin/configs/CM-BF537U_defconfig b/arch/blackfin/configs/CM-BF537U_defconfig
-index 4596935..6da629f 100644
---- a/arch/blackfin/configs/CM-BF537U_defconfig
-+++ b/arch/blackfin/configs/CM-BF537U_defconfig
-@@ -72,7 +72,7 @@ CONFIG_SERIAL_BFIN_UART1=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_USB_GADGET=y
-diff --git a/arch/blackfin/configs/CM-BF548_defconfig b/arch/blackfin/configs/CM-BF548_defconfig
-index 9f1d084..349922b 100644
---- a/arch/blackfin/configs/CM-BF548_defconfig
-+++ b/arch/blackfin/configs/CM-BF548_defconfig
-@@ -89,7 +89,7 @@ CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- # CONFIG_HWMON is not set
- CONFIG_WATCHDOG=y
- CONFIG_BFIN_WDT=y
-diff --git a/arch/blackfin/configs/CM-BF561_defconfig b/arch/blackfin/configs/CM-BF561_defconfig
-index 6c7b215..0456dea 100644
---- a/arch/blackfin/configs/CM-BF561_defconfig
-+++ b/arch/blackfin/configs/CM-BF561_defconfig
-@@ -78,7 +78,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- CONFIG_USB_GADGET=m
-diff --git a/arch/blackfin/configs/DNP5370_defconfig b/arch/blackfin/configs/DNP5370_defconfig
-index b192acf..89162d0 100644
---- a/arch/blackfin/configs/DNP5370_defconfig
-+++ b/arch/blackfin/configs/DNP5370_defconfig
-@@ -78,7 +78,7 @@ CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_SPI_SPIDEV=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
-diff --git a/arch/blackfin/configs/H8606_defconfig b/arch/blackfin/configs/H8606_defconfig
-index 06e9f49..a26436b 100644
---- a/arch/blackfin/configs/H8606_defconfig
-+++ b/arch/blackfin/configs/H8606_defconfig
-@@ -68,7 +68,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_SPI_SPIDEV=y
- CONFIG_WATCHDOG=y
- CONFIG_SOUND=m
-diff --git a/arch/blackfin/configs/IP0X_defconfig b/arch/blackfin/configs/IP0X_defconfig
-index 5e797cf..6479915 100644
---- a/arch/blackfin/configs/IP0X_defconfig
-+++ b/arch/blackfin/configs/IP0X_defconfig
-@@ -70,7 +70,7 @@ CONFIG_SERIAL_BFIN_CONSOLE=y
- # CONFIG_LEGACY_PTYS is not set
- CONFIG_HW_RANDOM=y
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- # CONFIG_HWMON is not set
- CONFIG_WATCHDOG=y
- CONFIG_USB=y
-diff --git a/arch/blackfin/configs/PNAV-10_defconfig b/arch/blackfin/configs/PNAV-10_defconfig
-index a566a2f..8fd9b44 100644
---- a/arch/blackfin/configs/PNAV-10_defconfig
-+++ b/arch/blackfin/configs/PNAV-10_defconfig
-@@ -84,7 +84,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_FB=y
- CONFIG_FIRMWARE_EDID=y
- CONFIG_BACKLIGHT_LCD_SUPPORT=y
-diff --git a/arch/blackfin/configs/SRV1_defconfig b/arch/blackfin/configs/SRV1_defconfig
-index 12e66cd..0520c16 100644
---- a/arch/blackfin/configs/SRV1_defconfig
-+++ b/arch/blackfin/configs/SRV1_defconfig
-@@ -71,7 +71,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_HWMON=m
- CONFIG_WATCHDOG=y
- CONFIG_BFIN_WDT=y
-diff --git a/arch/blackfin/configs/TCM-BF518_defconfig b/arch/blackfin/configs/TCM-BF518_defconfig
-index d496ae9..e4ed865 100644
---- a/arch/blackfin/configs/TCM-BF518_defconfig
-+++ b/arch/blackfin/configs/TCM-BF518_defconfig
-@@ -92,7 +92,7 @@ CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_BLACKFIN_TWI=y
- CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ=100
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- CONFIG_GPIOLIB=y
- CONFIG_GPIO_SYSFS=y
- # CONFIG_HWMON is not set
-diff --git a/arch/blackfin/configs/TCM-BF537_defconfig b/arch/blackfin/configs/TCM-BF537_defconfig
-index 65f6421..c1f45f1 100644
---- a/arch/blackfin/configs/TCM-BF537_defconfig
-+++ b/arch/blackfin/configs/TCM-BF537_defconfig
-@@ -70,7 +70,7 @@ CONFIG_SERIAL_BFIN_UART1=y
- # CONFIG_LEGACY_PTYS is not set
- # CONFIG_HW_RANDOM is not set
- CONFIG_SPI=y
--CONFIG_SPI_BFIN=y
-+CONFIG_SPI_BFIN5XX=y
- # CONFIG_HWMON is not set
- CONFIG_WATCHDOG=y
- CONFIG_BFIN_WDT=y
+diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
+index d12d4de..2ba4d0b 100644
+--- a/arch/blackfin/mach-bf533/boards/stamp.c
++++ b/arch/blackfin/mach-bf533/boards/stamp.c
+@@ -541,27 +541,150 @@ static struct platform_device bfin_dpmc = {
+ 	},
+ };
+ 
++#if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE) || \
++	defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE) \
++	|| defined(CONFIG_SND_BF5XX_AC97) || \
++	defined(CONFIG_SND_BF5XX_AC97_MODULE)
++
++#include <asm/bfin_sport.h>
++
++#define SPORT_REQ(x) \
++	[x] = {P_SPORT##x##_TFS, P_SPORT##x##_DTPRI, P_SPORT##x##_TSCLK, \
++		P_SPORT##x##_RFS, P_SPORT##x##_DRPRI, P_SPORT##x##_RSCLK, 0}
++
++static const u16 bfin_snd_pin[][7] = {
++	SPORT_REQ(0),
++	SPORT_REQ(1),
++};
++
++static struct bfin_snd_platform_data bfin_snd_data[] = {
++	{
++		.pin_req = &bfin_snd_pin[0][0],
++	},
++	{
++		.pin_req = &bfin_snd_pin[1][0],
++	},
++};
++
++#define BFIN_SND_RES(x) \
++	[x] = { \
++		{ \
++			.start = SPORT##x##_TCR1, \
++			.end = SPORT##x##_TCR1, \
++			.flags = IORESOURCE_MEM \
++		}, \
++		{ \
++			.start = CH_SPORT##x##_RX, \
++			.end = CH_SPORT##x##_RX, \
++			.flags = IORESOURCE_DMA, \
++		}, \
++		{ \
++			.start = CH_SPORT##x##_TX, \
++			.end = CH_SPORT##x##_TX, \
++			.flags = IORESOURCE_DMA, \
++		}, \
++		{ \
++			.start = IRQ_SPORT##x##_ERROR, \
++			.end = IRQ_SPORT##x##_ERROR, \
++			.flags = IORESOURCE_IRQ, \
++		} \
++	}
++
++static struct resource bfin_snd_resources[][4] = {
++	BFIN_SND_RES(0),
++	BFIN_SND_RES(1),
++};
++#endif
++
+ #if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE)
++static struct platform_device bfin_i2s_pcm = {
++	.name = "bfin-i2s-pcm-audio",
++	.id = -1,
++};
++#endif
++
++#if defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE)
++static struct platform_device bfin_tdm_pcm = {
++	.name = "bfin-tdm-pcm-audio",
++	.id = -1,
++};
++#endif
++
++#if defined(CONFIG_SND_BF5XX_AC97) || defined(CONFIG_SND_BF5XX_AC97_MODULE)
++static struct platform_device bfin_ac97_pcm = {
++	.name = "bfin-ac97-pcm-audio",
++	.id = -1,
++};
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_AD73311) || \
++	defined(CONFIG_SND_BF5XX_SOC_AD73311_MODULE)
++static const unsigned ad73311_gpio[] = {
++	GPIO_PF4,
++};
++
++static struct platform_device bfin_ad73311_machine = {
++	.name = "bfin-snd-ad73311",
++	.id = 1,
++	.dev = {
++		.platform_data = (void *)ad73311_gpio,
++	},
++};
++#endif
++
++#if defined(CONFIG_SND_SOC_AD73311) || defined(CONFIG_SND_SOC_AD73311_MODULE)
++static struct platform_device bfin_ad73311_codec_device = {
++	.name = "ad73311",
++	.id = -1,
++};
++#endif
++
++#if defined(CONFIG_SND_SOC_AD74111) || defined(CONFIG_SND_SOC_AD74111_MODULE)
++static struct platform_device bfin_ad74111_codec_device = {
++	.name = "ad74111",
++	.id = -1,
++};
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_I2S) || \
++	defined(CONFIG_SND_BF5XX_SOC_I2S_MODULE)
+ static struct platform_device bfin_i2s = {
+ 	.name = "bfin-i2s",
+ 	.id = CONFIG_SND_BF5XX_SPORT_NUM,
+-	/* TODO: add platform data here */
++	.num_resources =
++		ARRAY_SIZE(bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM]),
++	.resource = bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM],
++	.dev = {
++		.platform_data = &bfin_snd_data[CONFIG_SND_BF5XX_SPORT_NUM],
++	},
+ };
+ #endif
+ 
+-#if defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE)
++#if defined(CONFIG_SND_BF5XX_SOC_TDM) || \
++	defined(CONFIG_SND_BF5XX_SOC_TDM_MODULE)
+ static struct platform_device bfin_tdm = {
+ 	.name = "bfin-tdm",
+ 	.id = CONFIG_SND_BF5XX_SPORT_NUM,
+-	/* TODO: add platform data here */
++	.num_resources =
++		ARRAY_SIZE(bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM]),
++	.resource = bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM],
++	.dev = {
++		.platform_data = &bfin_snd_data[CONFIG_SND_BF5XX_SPORT_NUM],
++	},
+ };
+ #endif
+ 
+-#if defined(CONFIG_SND_BF5XX_AC97) || defined(CONFIG_SND_BF5XX_AC97_MODULE)
++#if defined(CONFIG_SND_BF5XX_SOC_AC97) || \
++	defined(CONFIG_SND_BF5XX_SOC_AC97_MODULE)
+ static struct platform_device bfin_ac97 = {
+ 	.name = "bfin-ac97",
+ 	.id = CONFIG_SND_BF5XX_SPORT_NUM,
+-	/* TODO: add platform data here */
++	.num_resources =
++		ARRAY_SIZE(bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM]),
++	.resource = bfin_snd_resources[CONFIG_SND_BF5XX_SPORT_NUM],
++	.dev = {
++		.platform_data = &bfin_snd_data[CONFIG_SND_BF5XX_SPORT_NUM],
++	},
+ };
+ #endif
+ 
+@@ -597,7 +720,8 @@ static struct platform_device *stamp_devices[] __initdata = {
+ #endif
+ #endif
+ 
+-#if defined(CONFIG_SERIAL_BFIN_SPORT) || defined(CONFIG_SERIAL_BFIN_SPORT_MODULE)
++#if defined(CONFIG_SERIAL_BFIN_SPORT) || \
++	defined(CONFIG_SERIAL_BFIN_SPORT_MODULE)
+ #ifdef CONFIG_SERIAL_BFIN_SPORT0_UART
+ 	&bfin_sport0_uart_device,
+ #endif
+@@ -619,14 +743,42 @@ static struct platform_device *stamp_devices[] __initdata = {
+ #endif
+ 
+ #if defined(CONFIG_SND_BF5XX_I2S) || defined(CONFIG_SND_BF5XX_I2S_MODULE)
+-	&bfin_i2s,
++	&bfin_i2s_pcm,
+ #endif
+ 
+ #if defined(CONFIG_SND_BF5XX_TDM) || defined(CONFIG_SND_BF5XX_TDM_MODULE)
+-	&bfin_tdm,
++	&bfin_tdm_pcm,
+ #endif
+ 
+ #if defined(CONFIG_SND_BF5XX_AC97) || defined(CONFIG_SND_BF5XX_AC97_MODULE)
++	&bfin_ac97_pcm,
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_AD73311) || \
++	defined(CONFIG_SND_BF5XX_SOC_AD73311_MODULE)
++	&bfin_ad73311_machine,
++#endif
++
++#if defined(CONFIG_SND_SOC_AD73311) || defined(CONFIG_SND_SOC_AD73311_MODULE)
++	&bfin_ad73311_codec_device,
++#endif
++
++#if defined(CONFIG_SND_SOC_AD74111) || defined(CONFIG_SND_SOC_AD74111_MODULE)
++	&bfin_ad74111_codec_device,
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_I2S) || \
++	defined(CONFIG_SND_BF5XX_SOC_I2S_MODULE)
++	&bfin_i2s,
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_TDM) || \
++	defined(CONFIG_SND_BF5XX_SOC_TDM_MODULE)
++	&bfin_tdm,
++#endif
++
++#if defined(CONFIG_SND_BF5XX_SOC_AC97) || \
++	defined(CONFIG_SND_BF5XX_SOC_AC97_MODULE)
+ 	&bfin_ac97,
+ #endif
+ };
 -- 
 1.7.0.4
 
