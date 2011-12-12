@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab1LLOJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:09:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52631 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab1LLOJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:09:37 -0500
-Date: Mon, 12 Dec 2011 15:09:35 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] memcg: clean up soft_limit_tree properly new
-Message-ID: <20111212140935.GF14720@tiehlicka.suse.cz>
-References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
- <alpine.LSU.2.00.1112111520510.2297@eggly>
- <20111212131118.GA15249@tiehlicka.suse.cz>
- <CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
- <20111212140750.GE14720@tiehlicka.suse.cz>
+	id S1752878Ab1LLONW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:13:22 -0500
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:45801 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752360Ab1LLONU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:13:20 -0500
+Date: Mon, 12 Dec 2011 09:12:55 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: David Howells <dhowells@redhat.com>
+Cc: =?us-ascii?B?PT9JU08tODg1OS0yP1E/QXJrYWRpdXN6X01pPUI2a2lld2ljej89?= 
+	<a.miskiewicz@gmail.com>,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan@linux.intel.com, alan@lxorguk.ukuu.org.uk
+Subject: Re: [GIT PULL] Crypto keys and module signing
+Message-ID: <20111212141255.GA1105@elliptictech.com>
+References: <CA+MtwOEHYu1z8TLXv7jwCKfgavaGX7EWXmxq2xs6b0jbujy35g@mail.gmail.com>
+ <28442.1323269262@redhat.com>
+ <21891.1323521411@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111212140750.GE14720@tiehlicka.suse.cz>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <21891.1323521411@redhat.com>
+Organization: Elliptic Technologies Inc.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a follow up patch for the proper clean up:
----
->From 4b9f5a1e88496af9f336d1ef37cfdf3754a3ba48 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 12 Dec 2011 15:04:18 +0100
-Subject: [PATCH] memcg: clean up soft_limit_tree properly
+On 2011-12-10 12:50 +0000, David Howells wrote:
+> Arkadiusz Miśkiewicz <a.miskiewicz@gmail.com> wrote:
+> > and prehaps kernel could load keys from initramfs?
+> 
+> How do you trust the keys?  If you have a TPM, then yes you can do that.
 
-If we are not able to allocate tree nodes for all NUMA nodes then we
-should better clean up those that were allocated otherwise we will leak
-a memory.
+Exactly the same way you trust the kernel image itself.  If you can't
+trust the integrity of your initramfs (and thus the keys stored within
+it), then you also cannot trust the integrity of the kernel image and
+thus this whole signing exercise is moot.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..838d812 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4874,7 +4874,7 @@ static int mem_cgroup_soft_limit_tree_init(void)
- 			tmp = -1;
- 		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
- 		if (!rtpn)
--			return 1;
-+			goto err_cleanup;
- 
- 		soft_limit_tree.rb_tree_per_node[node] = rtpn;
- 
-@@ -4885,6 +4885,16 @@ static int mem_cgroup_soft_limit_tree_init(void)
- 		}
- 	}
- 	return 0;
-+
-+err_cleanup:
-+	for_each_node_state(node, N_POSSIBLE) {
-+		if (!soft_limit_tree.rb_tree_per_node[node])
-+			break;
-+		kfree(soft_limit_tree.rb_tree_per_node[node]);
-+		soft_limit_tree.rb_tree_per_node[node] = NULL;
-+	}
-+	return 1;
-+
- }
- 
- static struct cgroup_subsys_state * __ref
+Cheers,
 -- 
-1.7.7.3
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
