@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab1LLNsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 08:48:19 -0500
-Received: from ni.piap.pl ([195.187.100.4]:45350 "EHLO ni.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab1LLNsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 08:48:17 -0500
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Oliver Neukum <oliver@neukum.name>, lkml <linux-kernel@vger.kernel.org>
-References: <m3liqiylz4.fsf@t19.piap.pl> <201112121424.31255.oneukum@suse.de>
-Date: Mon, 12 Dec 2011 14:48:14 +0100
-In-Reply-To: <201112121424.31255.oneukum@suse.de> (Oliver Neukum's message of
-	"Mon, 12 Dec 2011 14:24:31 +0100")
+	id S1752680Ab1LLNtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 08:49:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51645 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1LLNtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 08:49:19 -0500
 MIME-Version: 1.0
-Message-ID: <m3hb15zysh.fsf@t19.piap.pl>
-Content-Type: text/plain; charset=us-ascii
-Subject: Re: [PATCH] Add PCI IDs for Motorola H24 HSPA USB module.
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20111212 #5986898, check: 20111212 clean
+In-Reply-To: <20111212131118.GA15249@tiehlicka.suse.cz>
+References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
+	<alpine.LSU.2.00.1112111520510.2297@eggly>
+	<20111212131118.GA15249@tiehlicka.suse.cz>
+Date: Mon, 12 Dec 2011 21:49:18 +0800
+Message-ID: <CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcg: keep root group unchanged if fail to create new
+From: Hillf Danton <dhillf@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oliver Neukum <oneukum@suse.de> writes:
+On Mon, Dec 12, 2011 at 9:11 PM, Michal Hocko <mhocko@suse.cz> wrote:
+>
+> Hillf could you update the patch please?
+>
+Hi Michal,
 
->> Add PCI IDs for Motorola H24 HSPA USB module.
+Please review again, thanks.
+Hillf
 
-> Why does it need so many IDs?
+===CUT HERE===
+From: Hillf Danton <dhillf@gmail.com>
+Subject: [PATCH] mm: memcg: keep root group unchanged if fail to create new
 
-It has several configurations, each with a different ID.
+If the request is to create non-root group and we fail to meet it, we should
+leave the root unchanged.
 
-> Also please send to linux-usb, not lkml.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
 
-Will send a copy.
--- 
-Krzysztof Halasa
-
-Research Institute for Automation and Measurements
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
+--- a/mm/memcontrol.c	Fri Dec  9 21:57:40 2011
++++ b/mm/memcontrol.c	Mon Dec 12 21:47:14 2011
+@@ -4848,9 +4848,9 @@ mem_cgroup_create(struct cgroup_subsys *
+ 		int cpu;
+ 		enable_swap_cgroup();
+ 		parent = NULL;
+-		root_mem_cgroup = memcg;
+ 		if (mem_cgroup_soft_limit_tree_init())
+ 			goto free_out;
++		root_mem_cgroup = memcg;
+ 		for_each_possible_cpu(cpu) {
+ 			struct memcg_stock_pcp *stock =
+ 						&per_cpu(memcg_stock, cpu);
+@@ -4888,7 +4888,6 @@ mem_cgroup_create(struct cgroup_subsys *
+ 	return &memcg->css;
+ free_out:
+ 	__mem_cgroup_free(memcg);
+-	root_mem_cgroup = NULL;
+ 	return ERR_PTR(error);
+ }
