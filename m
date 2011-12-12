@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab1LLQlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:41:52 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58645 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751091Ab1LLQlt (ORCPT
+	id S1752848Ab1LLQnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:43:03 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:63220 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1LLQnA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:41:49 -0500
-X-Sasl-enc: 4szgDI7DBQ2SeENrzZdAyUmFeg0tSY/f6Nc3aTo5vfB8 1323708108
-Subject: Re: chroot(2) and bind mounts as non-root
-From: Colin Walters <walters@verbum.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
-        morgan@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        luto@mit.edu, kzak@redhat.com, Steve Grubb <sgrubb@redhat.com>
-Date: Mon, 12 Dec 2011 11:41:28 -0500
-In-Reply-To: <20111210052945.GA14931@hallyn.com>
-References: <1323280461.10724.13.camel@lenny>
-	 <20111210052945.GA14931@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323708089.29338.39.camel@lenny>
-Mime-Version: 1.0
+	Mon, 12 Dec 2011 11:43:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1323704494.1765.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1323693892-11570-1-git-send-email-dbaluta@ixiacom.com>
+	<20111212150255.GA7506@kroah.com>
+	<CAEnQRZBiVDAHH+uZ=Ugk=UP5qSvvMViGTM-bRWr+E27zivOUug@mail.gmail.com>
+	<1323703934.1765.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CAEnQRZCZdPw9eWVmdvhtF7KCQkYpLMrkhv5qd5xYckxWksN+0w@mail.gmail.com>
+	<1323704494.1765.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Mon, 12 Dec 2011 18:42:59 +0200
+X-Google-Sender-Auth: 73i49780ew_hhqOHDydPkUZ9P5k
+Message-ID: <CAEnQRZAt0X6cxGLgLUVTB9rzLKVYLEnh=azS9WOyKAkUZEpj4g@mail.gmail.com>
+Subject: Re: [PATCH] kref: add function for reading kref value
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, adobriyan@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-10 at 05:29 +0000, Serge E. Hallyn wrote:
+On Mon, Dec 12, 2011 at 5:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 12 décembre 2011 à 17:39 +0200, Daniel Baluta a écrit :
+>
+>> Ok, for the moment it seems to be a bad idea. But my intention is
+>> to integrate kref to networking code, and then to write a general
+>> debugging tool for refs.
+>>
+>> Tracking down reference count problems is hard, and this tool can
+>> really help everyone.
+>
+> I dont think kref will help you that much, because its used everywhere.
+>
+> Adding a general debugging tool will provide too much noise.
+>
+> Instead, we (network dev) add debugging points where we want.
 
-> First, 	what you are after is an explicit goal of user namespaces:  to
-> be able to change the environment without risk of fooling privileged
-> setuid programs with that environment. 
+Yes, but you have to do this each time you start debugging, for a
+particular referenced counted object.
 
-Hmm...so I looked at the user namespace stuff
-( https://wiki.ubuntu.com/UserNamespace ) and it kind of scares me in
-terms of complexity.  I think I understand the intersection of cgroups,
-capabilities, and SELinux as they are today; this would be a whole new
-set of options.  But that's an aside.
+We must find a clever solution to avoid the noise. (e.g use
+/proc, /sysfs, /debugfs options to trigger dumping info for
+some/all objects with a certain state).
 
->  And, thereby, to allow unprivileged
-> users to clone namespaces and, in new namespaces, freely muck with the
-> resources they own or create.  However, they're not quite usable yet.
+Usecase:
 
-So I'm assuming the actual high level goal of user namespaces is more
-secure "containers" where you can run a mostly unmodified General
-Purpose Linux system which includes setuid binaries, creating new users
-etc., right?
+At some point we need to know all objects with refcount X,
+and their history of get/put operations.
 
-If that's the case then my use case is much smaller - I don't need to be
-able to run setuid binaries, or in fact change user ids at all.
+For us it would have been very useful when debugging dev
+refcnts problems. With the current implementation kernel
+only dumped info at dev.c:5429:
 
-A tool like this would make my life *so* much better that I'm trying
-hard to use existing kernel features.
+printk(KERN_EMERG "unregister_netdevice: "
+       waiting for %s to become free. Usage "
+       count = %d\n",
+       dev->name, atomic_read(&dev->refcnt));
 
-> So regarding your use of securebits: You are preventing a setuid-root
-> program from automatically acquiring capabilities, which is a good
-> start.  However, a setuid-root program will still execute as root (or
-> a setuid-mysql program as setuid-mysql).  That means it will own
-> root (or mysql) files while it is running. 
-
-Oh, very good point.  I should have noticed that =/
-
-But it was pretty trivial to modify my tool to make a MS_NOSUID bind
-mount over /:
-
-      mount (NULL, "/", "none", MS_PRIVATE | MS_REMOUNT | MS_NOSUID,
-NULL);
-
-That's hopefully enough to plug that hole (right?), albeit not in a
-beautiful way.  I would be happier with a prctl to turn off suid
-binaries entirely.
-
-Oh...ok, digging farther back in here from the thread Andy started I see
-Eric proposed a patch for exactly this:
-
-https://lkml.org/lkml/2009/12/30/265
-
-Ok, I've now read most of the back threads for this - I should have
-searched farther back for previous discussion, sorry.
-
->  Second, programs with file capabilities -a
-> more finegrained alternative to setuid-root - will still run with
-> privilege.  You could prevent that by not allowing xattrs I suppose.
-
-Looks to me like the MS_NOSUID bind mount prevents acquisition of file
-capabilities too.
-
-I experimented with dropping all capabilities from the capability
-bounding set, but the API seems a bit lame in that CAP_LAST_CAP is
-encoded in the kernel capability.h, but if an old binary is run on a new
-kernel, I might silently fail to drop a newly added capability.  Right?
-Steve Grubb's "libcap-ng" appears to not handle this scenario at all;
-Steve, am I missing something?
-
-Anyways, in the big picture here I think this tool is now pretty safe to
-install suid root, since we rely on MS_NOSUID to close all privilege
-escalation mechanisms today from plugging in a USB drive, which is
-effectively "user controls arbitrary filesystem layout".
-
-But getting in Eric's patch for disabling suid binaries from a process
-tree would be really nice.  Alan, do you still object?  Your main issue
-seemed to be that it should be in a LSM, but the suid issue does span
-existing LSMs.  And as far as adding restrictions introduces new attack
-vectors, pretty much all of those are abusing suid binaries, precisely
-what we just want to axe off entirely.
-
-
+Daniel.
