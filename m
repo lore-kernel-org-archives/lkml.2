@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1LLWGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:06:14 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33452 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754242Ab1LLWGF (ORCPT
+	id S1754304Ab1LLWG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:06:59 -0500
+Received: from lunge.queued.net ([173.255.254.236]:54156 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab1LLWG6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:06:05 -0500
-X-Sasl-enc: zZ8LpdjB20PW4/9zFJfJ4GtQhmgZoYkHQE6vk0t+dVuS 1323727563
-Date: Mon, 12 Dec 2011 14:05:37 -0800
-From: Greg KH <greg@kroah.com>
-To: jim.cromie@gmail.com
-Cc: jbaron@redhat.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/24 ] dynamic debug enhancements: multi-queries during
- mod-init
-Message-ID: <20111212220537.GB1641@kroah.com>
-References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>
- <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
- <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Dec 2011 17:06:58 -0500
+Date: Mon, 12 Dec 2011 14:06:56 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: martin-eric.racine@iki.fi
+Cc: Jens Rottmann <JRottmann@lippertembedded.de>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: Re: IRQF_TIMER | IRQF_SHARED ?
+Message-ID: <20111212140656.4c5e396f@queued.net>
+In-Reply-To: <CAPZXPQdOrFPVR5rQzg1+ZxhU-p9SotHNft85okunB0YmUFA2Xg@mail.gmail.com>
+References: <4EE620A5.7080402@LiPPERTEmbedded.de>
+	<20111212123131.502be350@queued.net>
+	<CAPZXPQdOrFPVR5rQzg1+ZxhU-p9SotHNft85okunB0YmUFA2Xg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 12:11:10PM -0700, jim.cromie@gmail.com wrote:
-> 0001-kernel-module.c-fix-compile-err-warnings-under-ifdef.patch
-> 0002-dynamic_debug-fix-whitespace-complaints-from-scripts.patch
-> 0003-dynamic_debug-drop-enabled-field-from-struct-_ddebug.patch
-> 0004-dynamic_debug-make-dynamic-debug-supersede-DEBUG-ccf.patch
-> 0005-dynamic_debug-change-verbosity-at-runtime.patch
-> 0006-dynamic_debug-replace-strcpy-with-strlcpy-in-ddebug_.patch
-> 0007-dynamic_debug-pr_err-call-should-not-depend-upon-ver.patch
-> 0008-dynamic_debug-drop-explicit-NULL-checks.patch
-> 0009-dynamic_debug-describe_flags-with-pmflt_.patch
-> 0010-dynamic_debug-tighten-up-error-checking-on-debug-que.patch
-> 0011-dynamic_debug-early-return-if-_ddebug-table-is-empty.patch
-> 0012-dynamic_debug-reduce-lineno-field-to-a-saner-18-bits.patch
-> 0013-dynamic_debug-chop-off-comments-in-ddebug_tokenize.patch
-> 0014-dynamic_debug-enlarge-command-query-write-buffer.patch
-> 0015-dynamic_debug-add-trim_prefix-to-provide-source-root.patch
-> 0016-dynamic_debug-factor-vpr_info_dq-out-of-ddebug_parse.patch
-> 0017-dynamic_debug-process-multiple-debug-queries-on-a-li.patch
-> 0018-dynamic_debug-Introduce-global-fake-module-param-mod.patch
-> 0019-pnp-if-CONFIG_DYNAMIC_DEBUG-use-pnp.dyndbg-instead-o.patch
-> 0020-dynamic_debug-add-modname-arg-to-exec_query-callchai.patch
-> 0021-kernel-module-replace-DEBUGP-with-pr_debug.patch
-> 0022-dynamic_debug-protect-dyndbg-fake-module-param-name-.patch
-> 0023-dynamic_debug-update-Documentation-kernel-parameters.patch
-> 0024-dynamic_debug-remove-unneeded-includes.patch
+On Mon, 12 Dec 2011 23:00:01 +0200
+Martin-Éric Racine <martin-eric.racine@iki.fi> wrote:
+
+> 12. joulukuuta 2011 22.31 Andres Salomon <dilinger@queued.net>
+> kirjoitti:
+> > On Mon, 12 Dec 2011 16:41:25 +0100
+> > Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
+> >> one of our customers tripped over the fact that the MFGPT driver
+> >> won't share its IRQ with anyone else. (MFGPT defaulted to same IRQ
+> >> as audio, MFGPT driver loaded first, audio fails.) *No big deal!*
+> >> They don't actually need MFGPT and will simply disable it. It just
+> >> made me wonder ...
+> >>
+> >> Why would it be such a bad idea to use IRQF_TIMER | IRQF_SHARED
+> >> (see patch below)? mfgpt_tick() already does properly return
+> >> IRQ_NONE when it feels unresponsible. I tested it with either
+> >> driver loaded first and it seemed to work (well, at least audio
+> >> worked, don't know how to explicitly test cs5535-clockevt).
+> >
+> > Just loading cs5535-clockevt should start the periodic timer.  On my
+> > XO-1, IRQ 7 starts firing immediately.
+> 
+> Could it be a good idea to inform udev maintainers of this?
 > 
 
-Now that is just about the most unhelpful 00/XX email I've seen in a
-long time.
-
-Jason, I'm going to wait for you to test these and forward them on to me
-if you really want me to apply any of them.
-
-greg k-h
+It *would* be nice to get it auto-loading..
