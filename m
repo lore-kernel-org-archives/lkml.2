@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab1LLXK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 18:10:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43065 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab1LLXKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 18:10:54 -0500
-Message-ID: <4EE689D5.4070600@zytor.com>
-Date: Mon, 12 Dec 2011 15:10:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753498Ab1LLXLP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 18:11:15 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58771 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab1LLXLN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 18:11:13 -0500
+Date: Mon, 12 Dec 2011 23:11:49 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Colin Walters <walters@verbum.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
+        morgan@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        luto@mit.edu, kzak@redhat.com, Steve Grubb <sgrubb@redhat.com>
+Subject: Re: chroot(2) and bind mounts as non-root
+Message-ID: <20111212231149.GA16408@hallyn.com>
+References: <1323280461.10724.13.camel@lenny>
+ <20111210052945.GA14931@hallyn.com>
+ <1323708089.29338.39.camel@lenny>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Mike Waychison <mikew@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH] x86, efi: Break up large initrd reads
-References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com>  <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECE5803.3060203@gmail.com>  <1322168216.24448.61.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECEF144.8020303@gmail.com> <1322210899.24448.66.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1322210899.24448.66.camel@mfleming-mobl1.ger.corp.intel.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323708089.29338.39.camel@lenny>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2011 12:48 AM, Matt Fleming wrote:
-> On Fri, 2011-11-25 at 02:37 +0100, Maarten Lankhorst wrote:
->> The efi boot stub tries to read the entire initrd in 1 go,
->> however some efi implementations hang if too much if asked
->> to read too much data at the same time. After some
->> experimentation I found out that my asrock p67 board will
->> hang if asked to read chunks of 4mb, so use a safe value.
->>
->> From elilo source code:
->> /*
->>  * We load by chunks rather than a single big read because
->>  * early versions of EFI had troubles loading files
->>  * from floppies in a single big request.  Breaking
->>  * the read down into chunks of 4KB fixed that
->>  * problem. While this problem has been fixed, we still prefer
->>  * this method because it tells us whether or not we're making
->>  * forward progress.
->>  */
->>
->> While the comment says 4KB, it's using 4 * EFI_PAGE_SIZE (16KB),
->> so I went by the safest route of following elilo here.
->>
+Quoting Colin Walters (walters@verbum.org):
+> But it was pretty trivial to modify my tool to make a MS_NOSUID bind
+> mount over /:
+> 
+>       mount (NULL, "/", "none", MS_PRIVATE | MS_REMOUNT | MS_NOSUID,
+> NULL);
+> 
+> That's hopefully enough to plug that hole (right?), albeit not in a
 
-I'm going to NAK this, because I think the performance impact is too
-severe.  I would like to set the cap at 1 MiB for now, unless we can
-identify platforms where *that* is known to fail.
+Heh, yeah I think that suffices :)
 
-Maarten, would you be willing to rev your patch?  Furthermore, please
-make the maximum chunksize a define.
+...
 
-	-hpa
+> Looks to me like the MS_NOSUID bind mount prevents acquisition of file
+> capabilities too.
 
+Yup.
+
+> I experimented with dropping all capabilities from the capability
+> bounding set, but the API seems a bit lame in that CAP_LAST_CAP is
+> encoded in the kernel capability.h, but if an old binary is run on a new
+> kernel, I might silently fail to drop a newly added capability.  Right?
+
+Look at the cap_get_bound.3 manpage, and look for CAP_IS_SUPPORTED.
+If you start at CAP_LAST_CAP and keep going up/down depending on whether
+it was support or not it shouldn't take too long to find the last
+valid value.  Not ideal, but should be reliable.
+
+> Steve Grubb's "libcap-ng" appears to not handle this scenario at all;
+> Steve, am I missing something?
+> 
+> Anyways, in the big picture here I think this tool is now pretty safe to
+> install suid root, since we rely on MS_NOSUID to close all privilege
+
+I haven't taken a critical look at the mount code but other than that
+it seems reasonable and useful to me!  Thanks.
+
+> escalation mechanisms today from plugging in a USB drive, which is
+> effectively "user controls arbitrary filesystem layout".
+> 
+> But getting in Eric's patch for disabling suid binaries from a process
+> tree would be really nice.  Alan, do you still object?  Your main issue
+> seemed to be that it should be in a LSM, but the suid issue does span
+> existing LSMs.  And as far as adding restrictions introduces new attack
+> vectors, pretty much all of those are abusing suid binaries, precisely
+> what we just want to axe off entirely.
+
+-serge
