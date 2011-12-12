@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab1LLKRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 05:17:12 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:38603 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab1LLKRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 05:17:11 -0500
-X-Auth-Info: 3xzxgDGLsm+YSxyw3YrjMm8xG4FYpR/F69s+G8kvf0Y=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] procfs: do not confuse jiffies with cputime64_t
-References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
-X-Yow: RELATIVES!!
-Date: Mon, 12 Dec 2011 11:17:06 +0100
-In-Reply-To: <201112120922.13633.arnd@arndb.de> (Arnd Bergmann's message of
-	"Mon, 12 Dec 2011 09:22:13 +0000")
-Message-ID: <m2wra2f61p.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+	id S1752329Ab1LLKSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 05:18:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38215 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab1LLKSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 05:18:50 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+Date: Mon, 12 Dec 2011 11:20:16 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Peter Zijlstra <peterz@infradead.org>, gregkh@suse.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu
+References: <20111210104341.592561407@chello.nl> <1323680078.16764.45.camel@twins> <CACVXFVPOsUrEEDT=iMZyrvaX3G_XqWpVOJyz24=FPTtB_9J9HQ@mail.gmail.com>
+In-Reply-To: <CACVXFVPOsUrEEDT=iMZyrvaX3G_XqWpVOJyz24=FPTtB_9J9HQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112121120.16326.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+Am Montag, 12. Dezember 2011, 10:57:31 schrieb Ming Lei:
+> On Mon, Dec 12, 2011 at 4:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2011-12-12 at 11:48 +0800, Ming Lei wrote:
+> >> For kref, maybe it is still multiple operations done on one cpu vs them
+> >> being visible on another, but seems a bit implicit, see the common kref
+> >> usage below:
+> >>
+> >> CPU0                            CPU1
+> >>                                         A:kref_init(&obj->ref)
+> >
+> > how does CPU0 get a ref to obj?
+> 
+> Suppose open/close/read/.. context is run on CPU0, and driver .probe/.release
+> context(hotplug context) is run on CPU1. There are a few examples on
+> usb driver(eg. usb-skeleton.c, ...)
 
-> On Monday 12 December 2011, Andreas Schwab wrote:
->> @@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
->>                 /* !NO_HZ so we can rely on cpustat.iowait */
->>                 iowait = kstat_cpu(cpu).cpustat.iowait;
->>         else
->> -               iowait = nsecs_to_jiffies64(1000 * iowait_time);
->> +               iowait = jiffies64_to_cputime64(nsecs_to_jiffies64(1000 * iowait_time));
->>  
->>         return iowait;
->
-> Hmm, shouldn't this be using nsecs_to_cputime64()? For some reason however, that function
-> is (incorrectly?) defined as 
->
-> include/asm-generic/cputime.h:#define nsecs_to_cputime64(__ct)  nsecs_to_jiffies64(__ct)
->
-> and only used in one place, in
->
-> kernel/sched.c: if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
-> kernel/sched.c: if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
->
-> I'm not sure what the correct solution is, but I would assume that ia64 and powerpc
-> should fix their definitions of nsecs_to_cputime64() anyway.
+USB generally relies on an implied barrier just as:
 
-There is no definition of nsecs_to_cputime64 on ia64/powerpc64 with
-CONFIG_VIRT_CPU_ACCOUNTING yet, probably because
-CONFIG_IRQ_TIME_ACCOUNTING is x86-only.
+        /* we can register the device now, as it is ready */
+        retval = usb_register_dev(interface, &skel_class);
 
-Andreas.
+Generally reference counting cannot help you if kfree() is involved
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+	Regards
+		Oliver
