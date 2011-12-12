@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964Ab1LLJoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 04:44:17 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:59351 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1LLJoQ (ORCPT
+	id S1752047Ab1LLJsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 04:48:36 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50014 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750748Ab1LLJsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 04:44:16 -0500
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: alsa-devel@alsa-project.org
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH v2] Export symbols 'mxs_saif_put_mclk()' and 'mxs_saif_get_mclk()'
-Date: Mon, 12 Dec 2011 10:44:04 +0100
-Message-Id: <1323683044-11694-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
+	Mon, 12 Dec 2011 04:48:35 -0500
+Date: Mon, 12 Dec 2011 17:48:28 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
+Message-ID: <20111212094827.GA31568@opensource.wolfsonmicro.com>
+References: <1323422140-31332-1-git-send-email-dg77.kim@samsung.com>
+ <1323422140-31332-2-git-send-email-dg77.kim@samsung.com>
+ <20111209095855.GA1876@sirena.org.uk>
+ <4EE5C330.8060902@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EE5C330.8060902@samsung.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following errors with MXS sound support built as module:
-|ERROR: "mxs_saif_put_mclk" [sound/soc/mxs/snd-soc-mxs-sgtl5000.ko] undefined!
-|ERROR: "mxs_saif_get_mclk" [sound/soc/mxs/snd-soc-mxs-sgtl5000.ko] undefined!
+On Mon, Dec 12, 2011 at 06:02:40PM +0900, Donggeun Kim wrote:
+> On 2011년 12월 09일 18:58, Mark Brown wrote:
+> > On Fri, Dec 09, 2011 at 06:15:39PM +0900, Donggeun Kim wrote:
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- sound/soc/mxs/mxs-saif.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> >> +	if (max77693_read_reg(i2c, MAX77693_PMIC_REG_PMIC_ID2, &reg_data) < 0) {
 
-diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
-index 487d2ff..ec66a29 100644
---- a/sound/soc/mxs/mxs-saif.c
-+++ b/sound/soc/mxs/mxs-saif.c
-@@ -221,6 +221,7 @@ int mxs_saif_put_mclk(unsigned int saif_id)
- 	saif->mclk_in_use = 0;
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(mxs_saif_put_mclk);
- 
- /*
-  * Get MCLK and set clock rate, then enable it
-@@ -274,7 +275,7 @@ int mxs_saif_get_mclk(unsigned int saif_id, unsigned int mclk,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(mxs_saif_get_mclk);
- 
- /*
-  * SAIF DAI format configuration.
--- 
-1.5.6.5
+> > I'd suggest also verifying that the ID register has the expected value.
+> > If there's a chip reision register logging it can be helpful.
 
+> The all expected values for the register are not specified at datasheet.
+> The perpose of the read function is simply checking the existence of the
+> device so that the following operations are stopped for error case.
+
+With a name like "ID" it's clearly chip idenfication - you should at
+least be displaying the value if it might change as it's likely to be
+useful for diagnostics.
