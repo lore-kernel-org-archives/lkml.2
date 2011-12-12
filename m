@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1LLQPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 11:15:47 -0500
-Received: from fieldses.org ([174.143.236.118]:58945 "EHLO fieldses.org"
+	id S1753351Ab1LLQSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 11:18:16 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:14007 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab1LLQPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 11:15:45 -0500
-Date: Mon, 12 Dec 2011 11:15:42 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+	id S1751203Ab1LLQSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 11:18:15 -0500
+Message-ID: <4EE6293D.2020903@parallels.com>
+Date: Mon, 12 Dec 2011 20:18:05 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
@@ -17,42 +20,42 @@ Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
         James Bottomley <jbottomley@parallels.com>,
         "davem@davemloft.net" <davem@davemloft.net>,
         "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/4] SUNRPC: pass network namespace context to sockaddr
- construction routines
-Message-ID: <20111212161542.GH18185@fieldses.org>
-References: <20111207111716.17273.63010.stgit@localhost6.localdomain6>
- <20111208204648.GB32505@fieldses.org>
- <4EE62824.9090807@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Subject: Re: [PATCH 1/4] SUNRPC: use passed network namespace context in rpc_parse_scope_id()
+References: <20111207111716.17273.63010.stgit@localhost6.localdomain6> <20111207112016.17273.44510.stgit@localhost6.localdomain6> <20111208204749.GC32505@fieldses.org> <4EE625E1.7000502@parallels.com> <20111212160722.GF18185@fieldses.org>
+In-Reply-To: <20111212160722.GF18185@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EE62824.9090807@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 08:13:24PM +0400, Stanislav Kinsbursky wrote:
-> 09.12.2011 00:46, J. Bruce Fields пишет:
-> >On Wed, Dec 07, 2011 at 03:20:07PM +0300, Stanislav Kinsbursky wrote:
-> >>This is another precursor patch set aimed to remove hard-coded "init_net"
-> >>reference from SUNRPC sockaddr convertion and construction routines.
-> >
-> >ACK--all look straightforward.  (Only complaint would be that this isn't
-> >terribly interesting till we see how these are used.)
-> >
-> 
-> Actually, all is simple. These init_net pointers will be replaced
-> later by "transports, clients and others" network namespace
-> contexts.
-> I have some more patches for NFS layer. But I don't see any sense to
-> sent them now since no "virtualization" patches were commited yet.
-> So, currently, I'm trying to finalize "SUNRPC per network namespace"
-> task, and soon I'll send a patch set making SUNRPC sysctl's
-> network-namespace-aware. It is a little bit tricky and ugly from my
-> pow, so any ideas are welcome.
+12.12.2011 20:07, J. Bruce Fields пишет:
+> On Mon, Dec 12, 2011 at 08:03:45PM +0400, Stanislav Kinsbursky wrote:
+>> 09.12.2011 00:47, J. Bruce Fields пишет:
+>>> On Wed, Dec 07, 2011 at 03:20:16PM +0300, Stanislav Kinsbursky wrote:
+>>>> Use incomming network context in rpc_parse_scope_id() instead of hard-coded
+>>>
+>>> Changelogs are a little confusing; I might have said "allow
+>>> rpc_parse_cope_id() caller to pass in network context instead of using
+>>> hard-code "init_net"."
+>>
+>> Probably, you variant is better. My English is not good enough to
+>> write descriptive and, in the same time, clear and short comments to
+>> patches.
+>
+> Uh, and mine's got a problm or two as well.  ("hard-code" should be
+> "hard-coded" in the above.)
+>
+> My main complaint was just that "incoming network context" sounds like
+> it refers to the network context associated with an incoming rpc
+> request.  But actually all you're doing is using the network context
+> passed in by the caller.
+>
+> --b.
 
-No ideas.... What's the ugly part?
+Yep, agreed.
+I'll resend next patch set version with better comments.
 
---b.
+-- 
+Best regards,
+Stanislav Kinsbursky
