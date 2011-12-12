@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1LLOtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:49:09 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57772 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab1LLOtF (ORCPT
+	id S1753317Ab1LLOtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:49:41 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43553
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752274Ab1LLOtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:49:05 -0500
-Message-ID: <4EE6145C.9070606@gmail.com>
-Date: Mon, 12 Dec 2011 09:49:00 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 09:49:39 -0500
+Date: Mon, 12 Dec 2011 09:49:38 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: XFS status update for November 2011
+Message-ID: <20111212144938.GA25014@infradead.org>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH v3] mm: simplify find_vma_prev
-References: <1323466526.27746.29.camel@joe2Laptop> <1323470921-12931-1-git-send-email-kosaki.motohiro@gmail.com> <20111212132616.GB15249@tiehlicka.suse.cz>
-In-Reply-To: <20111212132616.GB15249@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/12/11 8:26 AM), Michal Hocko wrote:
-> On Fri 09-12-11 17:48:40, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->>
->> commit 297c5eee37 (mm: make the vma list be doubly linked) added
->> vm_prev member into vm_area_struct. Therefore we can simplify
->> find_vma_prev() by using it. Also, this change help to improve
->> page fault performance because it has strong locality of reference.
->>
->> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->> ---
->>   mm/mmap.c |   36 ++++++++----------------------------
->>   1 files changed, 8 insertions(+), 28 deletions(-)
->>
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index eae90af..b9c0241 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -1603,39 +1603,19 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
->>
->>   EXPORT_SYMBOL(find_vma);
->>
->> -/* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
->> +/*
->> + * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
->> + * Note: pprev is set to NULL when return value is NULL.
->> + */
->>   struct vm_area_struct *
->>   find_vma_prev(struct mm_struct *mm, unsigned long addr,
->>   			struct vm_area_struct **pprev)
->>   {
->> -	struct vm_area_struct *vma = NULL, *prev = NULL;
->> -	struct rb_node *rb_node;
->> -	if (!mm)
->> -		goto out;
->> -
->> -	/* Guard against addr being lower than the first VMA */
->> -	vma = mm->mmap;
->
-> Why have you removed this guard? Previously we had pprev==NULL and
-> returned mm->mmap.
-> This seems like a semantic change without any explanation. Could you
-> clarify?
+November saw stabilization of the Linux 3.2 release candidates, including
+a few fixes for XFS.  In addition a lot of bug fixes were backported to
+the 3.0 long term stable and 3.1-stable releases for users not on
+bleeding edge kernels.
 
-IIUC, find_vma_prev() is module unexported and none of known caller use
-pprev==NULL. Thus, I thought it can be also simplified. Am I missing 
-something?
+At the same time development for Linux 3.3 went on at a fast pace, although
+no pages were merged into the development tree yet.  The highlights are:
 
+ - further versions of the patches to log all file size updates instead of
+   relying the the flaky VM writeback code for them
+ - an initial version of SEEK_HOLE/SEEK_DATA support
+ - removal of the old non-delaylog logging code, and cleanups resulting
+   from the removal
+ - large updates for the quota code
+
+Userspace development was even more busy:
+
+Xfsprogs saw the rushed 3.1.7 release which contains Debian packaging fixes,
+a polish translation update and a xfs_repair fix.  In the meantime a lot of
+xfs_repair fixes were posted but mostly not reviewed and commit yet.
+
+Xfsdump grew support for using pthreads to write backup streams to multiple
+tapes in parallel, and SGI_XFSDUMP_SKIP_FILE which has been deprecated in
+favor of the nodump flag has finally been removed.
+
+Xfstests saw an enormous amount of updates.  The fsstress tool saw major
+updates to exercise even more system calls, and found numerous bugs in
+all major Linux filesystems, additional ENOSPC tests, a new test for
+btrfs-specific functionality and the usual amount of bug fixes and small
+cleanups.  Also a series to clean up the very large filesystem testing,
+including extending the support to ext4 was posted but not committed yet.
