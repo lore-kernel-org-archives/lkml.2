@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab1LLOP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:15:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3182 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681Ab1LLOP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:15:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95209091"
-Date: Mon, 12 Dec 2011 15:20:58 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant 801
-Message-ID: <20111212142058.GE13952@sortiz-mobl>
-References: <cover.1321507421.git.viresh.kumar@st.com>
- <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com>
- <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com>
- <4EC9D175.2070008@st.com>
- <20111121145116.GA32137@sirena.org.uk>
- <4ECB1BA6.4050803@st.com>
+	id S1752995Ab1LLOT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:19:28 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34154 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab1LLOTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:19:24 -0500
+Date: Mon, 12 Dec 2011 15:19:13 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
+        X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, MCE: Drain mcelog buffer
+Message-ID: <20111212141913.GC6799@aftab>
+References: <1323353332-5671-1-git-send-email-bp@amd64.org>
+ <1323353332-5671-3-git-send-email-bp@amd64.org>
+ <0207C53569FE594381A4F2EB66570B2A018EFB7762@orsmsx508.amr.corp.intel.com>
+ <20111209182448.GA29629@gere.osrc.amd.com>
+ <0207C53569FE594381A4F2EB66570B2A018EFB77AE@orsmsx508.amr.corp.intel.com>
+ <20111209191819.GA17086@aftab>
+ <0207C53569FE594381A4F2EB66570B2A018EFB7A7D@orsmsx508.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ECB1BA6.4050803@st.com>
+In-Reply-To: <0207C53569FE594381A4F2EB66570B2A018EFB7A7D@orsmsx508.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Fri, Dec 09, 2011 at 02:08:59PM -0800, Luck, Tony wrote:
+> > Well, off the top of my head, we could probably _not_ delete the already
+> > logged MCEs (bool keep arg, or similar) and when the last one registers,
+> > it passes keep=false and cleans them up. And since we probably know
+> > which one is the last - order is enforced by the initcalls order -
+> > we're done.
+> 
+> Knowing when the last one has come is hard if there are modules as well
+> as built-in registrants.  We could save the whole list, and deliver a
+> copy of the history of the world so far to each as they register (never
+> deleting anything). But that sounds odd - why should a module loaded
+> 6 months after system boot expect to see everything.
 
-On Tue, Nov 22, 2011 at 09:18:54AM +0530, Viresh Kumar wrote:
-> On 11/21/2011 8:21 PM, Mark Brown wrote:
-> >> > I assumed stmpe_set_bits will only affect bits which are 1
-> >> > in mask and i was wrong. :(
-> > That does look like a straight bug in stmpe_set_bits() which ought to be
-> > fixed regardless of anything else.
-> > 
-> 
-> I think so. I will fix it in a separate patch.
-> 
-> >>> > >  (2) for other devices, adds an an unnecessary read (within stmpe_set_bits()),
-> >>> > >      which wasn't there before.
-> >> > Correct.
-> >>> > > Please rework to something like:
-> > Looking at the code in stmpe.c it might be as well to convert to regmap
-> > which would if nothing else save a bunch of custom code in the driver
-> > and let you use the cache code to eliminate the read.  Probably that
-> > will help eliminate reads in other places too.
-> 
-> Ya, i already got this feedback from Rabin. I am a bit busy right now and so
-> requested sameo to accept this patchset as it is. I will update drivers to use
-> regmap as soon as i get some time.
-Ok, so I reverted your first 2 patches patchset since it seems it was
-problematic. Now, I think Rabin's concern on your patch #5 seems valid, and
-I'd like you to fix it before applying this patchset.
+Well, currently the buffer overflows at the 32th entry so something that
+registers 6 months after system boot will probably see unrelated errors
+from 6 months ago depending on the error rate.
 
-Cheers,
-Samuel.
+> I think if we ensure that the cpu decoder gets first chance to register,
+> we should be OK with giving it all the pended stuff. We can defer doing
+> something more complicated until the point that someone has a real use
+> case.
+
+Agreed, and this is currently the case on AMD and Intel, AFAICT, where
+the i7 or sb edac module registers. We can always change it later if
+required.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
