@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab1LLOXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:23:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53624 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab1LLOXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:23:22 -0500
-From: Richard Weinberger <rw@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Richard Weinberger <rw@linutronix.de>
-Subject: [PATCH -rt] printk: Disable migration instead of preemption
-Date: Mon, 12 Dec 2011 14:35:56 +0100
-Message-Id: <1323696956-11445-1-git-send-email-rw@linutronix.de>
-X-Mailer: git-send-email 1.7.7
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753149Ab1LLOZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:25:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:48927 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557Ab1LLOZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 09:25:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101262236"
+Date: Mon, 12 Dec 2011 15:30:43 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tps65910: Handle clear-mask correctly
+Message-ID: <20111212143043.GF13952@sortiz-mobl>
+References: <marcus.folkesson@gmail.com>
+ <1321969191-8604-1-git-send-email-marcus.folkesson@gmail.com>
+ <1321969191-8604-2-git-send-email-marcus.folkesson@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321969191-8604-2-git-send-email-marcus.folkesson@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need do disable preemption in vprintk(),
-disable_migrate() is sufficient.
-This fixes also a the following bug in -rt:
+Hi Marcus,
 
-[   14.759233] BUG: sleeping function called from invalid context
-at /home/rw/linux-rt/kernel/rtmutex.c:645
-[   14.759235] in_atomic(): 1, irqs_disabled(): 0, pid: 547, name: bash
-[   14.759244] Pid: 547, comm: bash Not tainted 3.0.12-rt29+ #3
-[   14.759246] Call Trace:
-[   14.759301]  [<ffffffff8106fade>] __might_sleep+0xeb/0xf0
-[   14.759318]  [<ffffffff810ad784>] rt_spin_lock_fastlock.constprop.9+0x21/0x43
-[   14.759336]  [<ffffffff8161fef0>] rt_spin_lock+0xe/0x10
-[   14.759354]  [<ffffffff81347ad1>] serial8250_console_write+0x81/0x121
-[   14.759366]  [<ffffffff8107ecd3>] __call_console_drivers+0x7c/0x93
-[   14.759369]  [<ffffffff8107ef31>] _call_console_drivers+0x5c/0x60
-[   14.759372]  [<ffffffff8107f7e5>] console_unlock+0x147/0x1a2
-[   14.759374]  [<ffffffff8107fd33>] vprintk+0x3ea/0x462
-[   14.759383]  [<ffffffff816160e0>] printk+0x51/0x53
-[   14.759399]  [<ffffffff811974e4>] ? proc_reg_poll+0x9a/0x9a
-[   14.759403]  [<ffffffff81335b42>] __handle_sysrq+0x50/0x14d
-[   14.759406]  [<ffffffff81335c8a>] write_sysrq_trigger+0x4b/0x53
-[   14.759408]  [<ffffffff81335c3f>] ? __handle_sysrq+0x14d/0x14d
-[   14.759410]  [<ffffffff81197583>] proc_reg_write+0x9f/0xbe
-[   14.759426]  [<ffffffff811497ec>] vfs_write+0xac/0xf3
-[   14.759429]  [<ffffffff8114a9b3>] ? fget_light+0x3a/0x9b
-[   14.759431]  [<ffffffff811499db>] sys_write+0x4a/0x6e
-[   14.759438]  [<ffffffff81625d52>] system_call_fastpath+0x16/0x1b
+On Tue, Nov 22, 2011 at 02:39:51PM +0100, Marcus Folkesson wrote:
+> The function is not actually cleaing the bitmask.
 
-Signed-off-by: Richard Weinberger <rw@linutronix.de>
----
- kernel/printk.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This looks like a valid fix, and all the tps65910_clear_bits() callers seem to
+expect that behaviour. Graeme, I'm going to try to push this one for 3.2,
+unless you object to it.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index a50af4e..13d0825 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -898,7 +898,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 	boot_delay_msec();
- 	printk_delay();
- 
--	preempt_disable();
-+	migrate_disable();
- 	/* This stops the holder of console_sem just where we want him */
- 	raw_local_irq_save(flags);
- 	this_cpu = smp_processor_id();
-@@ -1029,7 +1029,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- out_restore_irqs:
- 	raw_local_irq_restore(flags);
- 
--	preempt_enable();
-+	migrate_enable();
- 	return printed_len;
- }
- EXPORT_SYMBOL(printk);
+Cheers,
+Samuel.
+
+> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+> ---
+>  drivers/mfd/tps65910.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> index 6f5b8cf..c1da84b 100644
+> --- a/drivers/mfd/tps65910.c
+> +++ b/drivers/mfd/tps65910.c
+> @@ -120,7 +120,7 @@ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
+>  		goto out;
+>  	}
+>  
+> -	data &= mask;
+> +	data &= ~mask;
+>  	err = tps65910_i2c_write(tps65910, reg, 1, &data);
+>  	if (err)
+>  		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
+> -- 
+> 1.7.5.4
+> 
+
 -- 
-1.7.7
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
