@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1LLG56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 01:57:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58278 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751005Ab1LLG55 (ORCPT
+	id S1752289Ab1LLHHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:07:03 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:37890
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750962Ab1LLHG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 01:57:57 -0500
-Date: Mon, 12 Dec 2011 14:57:52 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH v3] sound/soc/lapis: add machine driver v3 updated
-Message-ID: <20111212065751.GA20343@opensource.wolfsonmicro.com>
-References: <1323428632-29309-1-git-send-email-tomoya.rohm@gmail.com>
- <20111209122457.GA29492@opensource.wolfsonmicro.com>
- <CANKRQnj+x=QDgAoAi7MBq9Kjvin8kO8OjMrDJSZFW5+4Mz89pQ@mail.gmail.com>
+	Mon, 12 Dec 2011 02:06:59 -0500
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-serial@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 2/2 v2] serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for hardware automatic CTS.
+Date: Mon, 12 Dec 2011 14:59:51 +0800
+Message-ID: <1323673191-9210-2-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1323673191-9210-1-git-send-email-sonic.adi@gmail.com>
+References: <1323673191-9210-1-git-send-email-sonic.adi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANKRQnj+x=QDgAoAi7MBq9Kjvin8kO8OjMrDJSZFW5+4Mz89pQ@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 03:56:47PM +0900, Tomoya MORINAGA wrote:
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-> I just started developing plat form driver.
-> According to platform.txt, soc/pxa/pxa2xx-pcm.c is shown as example.
-> Can I believes this description ?
-> If the driver is not modern, let me know the modern platform driver.
+Blackfin uart supports automatic CTS trigger when hardware flow control is enabled.
+No need to start and top tx in CTS interrupt. So, remote ASYNC_CTS_FLOW flag.
 
-It's pretty old but there's not been many updates in the world of
-platform drivers.  In general if you're looking for modern drivers git
-log is your friend - look for things that are being actively worked on.
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/tty/serial/bfin_uart.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index a6c1c08..6bb3698 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -116,11 +116,20 @@ static void bfin_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ static irqreturn_t bfin_serial_mctrl_cts_int(int irq, void *dev_id)
+ {
+ 	struct bfin_serial_port *uart = dev_id;
+-	unsigned int status;
+-
+-	status = bfin_serial_get_mctrl(&uart->port);
++	unsigned int status = bfin_serial_get_mctrl(&uart->port);
+ #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
++	struct tty_struct *tty = uart->port.state->port.tty;
++
+ 	UART_CLEAR_SCTS(uart);
++	if (tty->hw_stopped) {
++		if (status) {
++			tty->hw_stopped = 0;
++			uart_write_wakeup(&uart->port);
++		}
++	} else {
++		if (!status)
++			tty->hw_stopped = 1;
++	}
+ #endif
+ 	uart_handle_cts_change(&uart->port, status & TIOCM_CTS);
+ 
+@@ -1358,7 +1367,9 @@ static int bfin_serial_probe(struct platform_device *pdev)
+ 			uart->cts_pin = -1;
+ 		else {
+ 			uart->cts_pin = res->start;
++#ifdef CONFIG_SERIAL_BFIN_CTSRTS
+ 			uart->port.flags |= ASYNC_CTS_FLOW;
++#endif
+ 		}
+ 
+ 		res = platform_get_resource(pdev, IORESOURCE_IO, 1);
+-- 
+1.7.0.4
+
+
