@@ -1,376 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1LLR5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:57:22 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:35001 "EHLO
+	id S1753681Ab1LLR5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:57:31 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:35052 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab1LLR5U (ORCPT
+	with ESMTP id S1753381Ab1LLR5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:57:20 -0500
+	Mon, 12 Dec 2011 12:57:21 -0500
 From: Pawel Moll <pawel.moll@arm.com>
 To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH 1/2] params: <level>_initcall-like kernel parameters
-Date: Mon, 12 Dec 2011 17:57:06 +0000
-Message-Id: <1323712627-17353-1-git-send-email-pawel.moll@arm.com>
+Subject: [PATCH 2/2] virtio-mmio: Devices parameter parsing
+Date: Mon, 12 Dec 2011 17:57:07 +0000
+Message-Id: <1323712627-17353-2-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323712401.2391.93.camel@hornet.cambridge.arm.com>
+In-Reply-To: <1323712627-17353-1-git-send-email-pawel.moll@arm.com>
 References: <1323712401.2391.93.camel@hornet.cambridge.arm.com>
-X-OriginalArrivalTime: 12 Dec 2011 17:57:14.0703 (UTC) FILETIME=[7B017DF0:01CCB8F7]
-X-MC-Unique: 111121217571602901
+ <1323712627-17353-1-git-send-email-pawel.moll@arm.com>
+X-OriginalArrivalTime: 12 Dec 2011 17:57:16.0766 (UTC) FILETIME=[7C3C47E0:01CCB8F7]
+X-MC-Unique: 111121217571804201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBCHvY7V020792
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBCHvrKf020800
 
-This patch adds a set of macros that can be used to declare
-kernel parameters to be parsed _before_ initcalls at a chosen
-level are executed. Such parameters are marked using existing
-"flags" field of the "kernel_param" structure.
+This patch adds an option to instantiate guest virtio-mmio devices
+basing on a kernel command line (or module) parameter, for example:
 
-Linker macro collating init calls had to be modified in order
-to add additional symbols between levels that are later used
-by the init code to split the calls into blocks.
+	virtio_mmio.devices=0x100@0x100b0000:48
 
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
- include/asm-generic/vmlinux.lds.h |   35 ++++++++------------
- include/linux/moduleparam.h       |   59 ++++++++++++++++++++++++++++----
- init/main.c                       |   66 +++++++++++++++++++++++++++++++++---
- kernel/module.c                   |    3 +-
- kernel/params.c                   |    9 ++++-
- 5 files changed, 135 insertions(+), 37 deletions(-)
+ Documentation/kernel-parameters.txt |   17 ++++
+ drivers/virtio/Kconfig              |   11 +++
+ drivers/virtio/virtio_mmio.c        |  163 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 191 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index b5e2e4c..c4ad0b1 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -615,30 +615,23 @@
- 		*(.init.setup)						\
- 		VMLINUX_SYMBOL(__setup_end) = .;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a0c5c5f..c155d13 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -110,6 +110,7 @@ parameter is applicable:
+ 	USB	USB support is enabled.
+ 	USBHID	USB Human Interface Device support is enabled.
+ 	V4L	Video For Linux support is enabled.
++	VMMIO   Driver for memory mapped virtio devices is enabled.
+ 	VGA	The VGA console has been enabled.
+ 	VT	Virtual terminal support is enabled.
+ 	WDT	Watchdog support is enabled.
+@@ -2720,6 +2721,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	video=		[FB] Frame buffer configuration
+ 			See Documentation/fb/modedb.txt.
  
--#define INITCALLS							\
--	*(.initcallearly.init)						\
--	VMLINUX_SYMBOL(__early_initcall_end) = .;			\
--  	*(.initcall0.init)						\
--  	*(.initcall0s.init)						\
--  	*(.initcall1.init)						\
--  	*(.initcall1s.init)						\
--  	*(.initcall2.init)						\
--  	*(.initcall2s.init)						\
--  	*(.initcall3.init)						\
--  	*(.initcall3s.init)						\
--  	*(.initcall4.init)						\
--  	*(.initcall4s.init)						\
--  	*(.initcall5.init)						\
--  	*(.initcall5s.init)						\
--	*(.initcallrootfs.init)						\
--  	*(.initcall6.init)						\
--  	*(.initcall6s.init)						\
--  	*(.initcall7.init)						\
--  	*(.initcall7s.init)
-+#define INIT_CALLS_LEVEL(level)						\
-+		VMLINUX_SYMBOL(__initcall##level##_start) = .;		\
-+		*(.initcall##level##.init)				\
-+		*(.initcall##level##s.init)				\
- 
- #define INIT_CALLS							\
- 		VMLINUX_SYMBOL(__initcall_start) = .;			\
--		INITCALLS						\
-+		*(.initcallearly.init)					\
-+		INIT_CALLS_LEVEL(0)					\
-+		INIT_CALLS_LEVEL(1)					\
-+		INIT_CALLS_LEVEL(2)					\
-+		INIT_CALLS_LEVEL(3)					\
-+		INIT_CALLS_LEVEL(4)					\
-+		INIT_CALLS_LEVEL(5)					\
-+		INIT_CALLS_LEVEL(rootfs)				\
-+		INIT_CALLS_LEVEL(6)					\
-+		INIT_CALLS_LEVEL(7)					\
- 		VMLINUX_SYMBOL(__initcall_end) = .;
- 
- #define CON_INITCALL							\
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 7939f63..7f4c9b5 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -48,7 +48,14 @@ struct kernel_param_ops {
- };
- 
- /* Flag bits for kernel_param.flags */
--#define KPARAM_ISBOOL		2
-+#define KPARAM_ISBOOL		(1 << 1)
-+#define KPARAM_ISLEVEL		(1 << 2)
-+#define KPARAM_LEVEL_SHIFT	3
-+#define KPARAM_LEVEL_MASK	(7 << KPARAM_LEVEL_SHIFT)
++	virtio_mmio.device=
++			[VMMIO] Memory mapped virtio (platform) device.
 +
-+#define __kparam_isbool(arg)	(__same_type((arg), bool) ? KPARAM_ISBOOL : 0)
-+#define __kparam_isboolp(arg)	(__same_type((arg), bool *) ? KPARAM_ISBOOL : 0)
-+#define __kparam_level(level)	(KPARAM_ISLEVEL | (level) << KPARAM_LEVEL_SHIFT)
- 
- struct kernel_param {
- 	const char *name;
-@@ -132,7 +139,42 @@ struct kparam_array
-  */
- #define module_param_cb(name, ops, arg, perm)				      \
- 	__module_param_call(MODULE_PARAM_PREFIX,			      \
--			    name, ops, arg, __same_type((arg), bool *), perm)
-+			    name, ops, arg, __kparam_isboolp(arg), perm)
++				<size>@<baseaddr>:<irq>[:<id>]
++			where:
++				<size>     := size (can use standard suffixes
++						like K, M and G)
++				<baseaddr> := physical base address
++				<irq>      := interrupt number (as passed to
++						request_irq())
++				<id>       := (optional) platform device id
++			example:
++				virtio_mmio.device=1K@0x100b0000:48:7
 +
-+/**
-+ * <level>_param_cb - general callback for a module/cmdline parameter
-+ *                    to be evaluated before certain initcall level
-+ * @name: a valid C identifier which is the parameter name.
-+ * @ops: the set & get operations for this parameter.
-+ * @perm: visibility in sysfs.
++			Can be used multiple times for multiple devices.
++
+ 	vga=		[BOOT,X86-32] Select a particular video mode
+ 			See Documentation/x86/boot.txt and
+ 			Documentation/svga.txt.
+diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
+index 1a61939..f38b17a 100644
+--- a/drivers/virtio/Kconfig
++++ b/drivers/virtio/Kconfig
+@@ -46,4 +46,15 @@ config VIRTIO_BALLOON
+ 
+  	 If unsure, say N.
+ 
++config VIRTIO_MMIO_CMDLINE_DEVICES
++	bool "Memory mapped virtio devices parameter parsing"
++	depends on VIRTIO_MMIO
++	---help---
++	 Allow virtio-mmio devices instantiation via the kernel command line
++	 or module parameters. Be aware that using incorrect parameters (base
++	 address in particular) can crash your system - you have been warned.
++	 See Documentation/kernel-parameters.txt for details.
++
++	 If unsure, say 'N'.
++
+ endmenu
+diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+index 7317dc2..eab0007 100644
+--- a/drivers/virtio/virtio_mmio.c
++++ b/drivers/virtio/virtio_mmio.c
+@@ -6,6 +6,50 @@
+  * This module allows virtio devices to be used over a virtual, memory mapped
+  * platform device.
+  *
++ * The guest device(s) may be instantiated in one of three equivalent ways:
 + *
-+ * The ops can have NULL set or get functions.
-+ */
-+#define __level_param_cb(level, name, ops, arg, perm)			      \
-+	__module_param_call(MODULE_PARAM_PREFIX,			      \
-+			    name, ops, arg,				      \
-+			    __kparam_isboolp(arg) | __kparam_level(level), perm)
++ * 1. Static platform device in board's code, eg.:
++ *
++ *	static struct platform_device v2m_virtio_device = {
++ *		.name = "virtio-mmio",
++ *		.id = -1,
++ *		.num_resources = 2,
++ *		.resource = (struct resource []) {
++ *			{
++ *				.start = 0x1001e000,
++ *				.end = 0x1001e0ff,
++ *				.flags = IORESOURCE_MEM,
++ *			}, {
++ *				.start = 42 + 32,
++ *				.end = 42 + 32,
++ *				.flags = IORESOURCE_IRQ,
++ *			},
++ *		}
++ *	};
++ *
++ * 2. Device Tree node, eg.:
++ *
++ *		virtio_block@1e000 {
++ *			compatible = "virtio,mmio";
++ *			reg = <0x1e000 0x100>;
++ *			interrupts = <42>;
++ *		}
++ *
++ * 3. Kernel module (or command line) parameter. Can be used more than once -
++ *    one device will be created for each one. Syntax:
++ *
++ *		[virtio_mmio.]device=<size>@<baseaddr>:<irq>[:<id>]
++ *    where:
++ *		<size>     := size (can use standard suffixes like K, M or G)
++ *		<baseaddr> := physical base address
++ *		<irq>      := interrupt number (as passed to request_irq())
++ *		<id>       := (optional) platform device id
++ *    eg.:
++ *		virtio_mmio.device=0x100@0x100b0000:48 \
++ *				virtio_mmio.device=1K@0x1001e000:74
++ *
++ *
++ *
+  * Registers layout (all 32-bit wide):
+  *
+  * offset d. name             description
+@@ -42,6 +86,8 @@
+  * See the COPYING file in the top-level directory.
+  */
+ 
++#define pr_fmt(fmt) "virtio-mmio: " fmt
 +
-+#define core_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(1, name, ops, arg, perm)
+ #include <linux/highmem.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+@@ -443,6 +489,122 @@ static int __devexit virtio_mmio_remove(struct platform_device *pdev)
+ 
+ 
+ 
++/* Devices list parameter */
 +
-+#define postcore_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(2, name, ops, arg, perm)
++#if defined(CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES)
 +
-+#define arch_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(3, name, ops, arg, perm)
-+
-+#define subsys_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(4, name, ops, arg, perm)
-+
-+#define fs_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(5, name, ops, arg, perm)
-+
-+#define device_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(6, name, ops, arg, perm)
-+
-+#define late_param_cb(name, ops, arg, perm)				      \
-+	__level_param_cb(7, name, ops, arg, perm)
- 
- /* On alpha, ia64 and ppc64 relocations to global data cannot go into
-    read-only sections (which is part of respective UNIX ABI on these
-@@ -146,7 +188,7 @@ struct kparam_array
- 
- /* This is the fundamental function for registering boot/module
-    parameters. */
--#define __module_param_call(prefix, name, ops, arg, isbool, perm)	\
-+#define __module_param_call(prefix, name, ops, arg, flags, perm)	\
- 	/* Default value instead of permissions? */			\
- 	static int __param_perm_check_##name __attribute__((unused)) =	\
- 	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
-@@ -155,8 +197,7 @@ struct kparam_array
- 	static struct kernel_param __moduleparam_const __param_##name	\
- 	__used								\
-     __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
--	= { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,	\
--	    { arg } }
-+	= { __param_str_##name, ops, perm, flags, { arg } }
- 
- /* Obsolete - use module_param_cb() */
- #define module_param_call(name, set, get, arg, perm)			\
-@@ -164,7 +205,7 @@ struct kparam_array
- 		 { (void *)set, (void *)get };				\
- 	__module_param_call(MODULE_PARAM_PREFIX,			\
- 			    name, &__param_ops_##name, arg,		\
--			    __same_type(arg, bool *),			\
-+			    __kparam_isboolp(arg),			\
- 			    (perm) + sizeof(__check_old_set_param(set))*0)
- 
- /* We don't get oldget: it's often a new-style param_get_uint, etc. */
-@@ -246,7 +287,7 @@ static inline void __kernel_param_unlock(void)
- #define core_param(name, var, type, perm)				\
- 	param_check_##type(name, &(var));				\
- 	__module_param_call("", name, &param_ops_##type,		\
--			    &var, __same_type(var, bool), perm)
-+			    &var, __kparam_isbool(var), perm)
- #endif /* !MODULE */
- 
- /**
-@@ -292,6 +333,8 @@ extern int parse_args(const char *name,
- 		      char *args,
- 		      const struct kernel_param *params,
- 		      unsigned num,
-+		      u16 flags_mask,
-+		      u16 flags,
- 		      int (*unknown)(char *param, char *val));
- 
- /* Called by module remove. */
-@@ -402,7 +445,7 @@ extern int param_get_invbool(char *buffer, const struct kernel_param *kp);
- 	__module_param_call(MODULE_PARAM_PREFIX, name,			\
- 			    &param_array_ops,				\
- 			    .arr = &__param_arr_##name,			\
--			    __same_type(array[0], bool), perm);		\
-+			    __kparam_isbool(array[0]), perm);		\
- 	__MODULE_PARM_TYPE(name, "array of " #type)
- 
- extern struct kernel_param_ops param_array_ops;
-diff --git a/init/main.c b/init/main.c
-index 217ed23..a7838c8 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -407,7 +407,7 @@ static int __init do_early_param(char *param, char *val)
- 
- void __init parse_early_options(char *cmdline)
- {
--	parse_args("early options", cmdline, NULL, 0, do_early_param);
-+	parse_args("early options", cmdline, NULL, 0, 0, 0, do_early_param);
- }
- 
- /* Arch code calls this early on, or if not, just before other parsing. */
-@@ -511,7 +511,7 @@ asmlinkage void __init start_kernel(void)
- 	parse_early_param();
- 	parse_args("Booting kernel", static_command_line, __start___param,
- 		   __stop___param - __start___param,
--		   &unknown_bootoption);
-+		   KPARAM_ISLEVEL, 0, &unknown_bootoption);
- 
- 	jump_label_init();
- 
-@@ -708,16 +708,70 @@ int __init_or_module do_one_initcall(initcall_t fn)
- }
- 
- 
--extern initcall_t __initcall_start[], __initcall_end[], __early_initcall_end[];
-+extern initcall_t __initcall_start[];
-+extern initcall_t __initcall0_start[];
-+extern initcall_t __initcall1_start[];
-+extern initcall_t __initcall2_start[];
-+extern initcall_t __initcall3_start[];
-+extern initcall_t __initcall4_start[];
-+extern initcall_t __initcall5_start[];
-+extern initcall_t __initcall6_start[];
-+extern initcall_t __initcall7_start[];
-+extern initcall_t __initcall_end[];
-+
-+static initcall_t *initcall_levels[] __initdata = {
-+	__initcall0_start,
-+	__initcall1_start,
-+	__initcall2_start,
-+	__initcall3_start,
-+	__initcall4_start,
-+	__initcall5_start,
-+	__initcall6_start,
-+	__initcall7_start,
-+	__initcall_end,
++static struct device vm_cmdline_parent = {
++	.init_name = "virtio-mmio-cmdline",
 +};
 +
-+static char *initcall_level_names[] __initdata = {
-+	"core parameters",
-+	"postcore parameters",
-+	"arch parameters",
-+	"subsys parameters",
-+	"fs parameters",
-+	"device parameters",
-+	"late parameters",
-+};
++static int vm_cmdline_parent_registered;
++static int vm_cmdline_id;
 +
-+static int __init ignore_unknown_bootoption(char *param, char *val)
++static int vm_cmdline_set(const char *device,
++		const struct kernel_param *kp)
 +{
++	int err;
++	struct resource resources[2] = {};
++	char *str;
++	long long int base;
++	int processed, consumed = 0;
++	struct platform_device *pdev;
++
++	resources[0].flags = IORESOURCE_MEM;
++	resources[1].flags = IORESOURCE_IRQ;
++
++	resources[0].end = memparse(device, &str) - 1;
++
++	processed = sscanf(str, "@%lli:%u%n:%d%n",
++			&base, &resources[1].start, &consumed,
++			&vm_cmdline_id, &consumed);
++
++	if (processed < 2 || processed > 3 || str[consumed])
++		return -EINVAL;
++
++	resources[0].start = base;
++	resources[0].end += base;
++	resources[1].end = resources[1].start;
++
++	if (!vm_cmdline_parent_registered) {
++		err = device_register(&vm_cmdline_parent);
++		if (err) {
++			pr_err("Failed to register parent device!\n");
++			return err;
++		}
++		vm_cmdline_parent_registered = 1;
++	}
++
++	pr_info("Registering device virtio-mmio.%d at 0x%llx-0x%llx, IRQ %d.\n",
++		       vm_cmdline_id++,
++		       (unsigned long long)resources[0].start,
++		       (unsigned long long)resources[0].end,
++		       (int)resources[1].start);
++
++	pdev = platform_device_register_resndata(&vm_cmdline_parent,
++			"virtio-mmio", vm_cmdline_id++,
++			resources, ARRAY_SIZE(resources), NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
 +	return 0;
 +}
- 
--static void __init do_initcalls(void)
-+static void __init do_initcall_level(int level)
- {
-+	extern const struct kernel_param __start___param[], __stop___param[];
- 	initcall_t *fn;
- 
--	for (fn = __early_initcall_end; fn < __initcall_end; fn++)
-+	strcpy(static_command_line, saved_command_line);
-+	parse_args(initcall_level_names[level],
-+			static_command_line, __start___param,
-+			__stop___param - __start___param,
-+			KPARAM_ISLEVEL | KPARAM_LEVEL_MASK,
-+			__kparam_level(level),
-+			ignore_unknown_bootoption);
 +
-+	for (fn = initcall_levels[level]; fn < initcall_levels[level + 1];
-+			fn++)
- 		do_one_initcall(*fn);
- }
- 
-+static void __init do_initcalls(void)
++static int vm_cmdline_get_device(struct device *dev, void *data)
 +{
-+	int level;
++	char *buffer = data;
++	unsigned int len = strlen(buffer);
++	struct platform_device *pdev = to_platform_device(dev);
 +
-+	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
-+		do_initcall_level(level);
++	snprintf(buffer + len, PAGE_SIZE - len, "0x%llx@0x%llx:%llu:%d\n",
++			pdev->resource[0].end - pdev->resource[0].start + 1ULL,
++			(unsigned long long)pdev->resource[0].start,
++			(unsigned long long)pdev->resource[1].start,
++			pdev->id);
++	return 0;
 +}
 +
- /*
-  * Ok, the machine is now initialized. None of the devices
-  * have been touched yet, but the CPU subsystem is up and
-@@ -741,7 +795,7 @@ static void __init do_pre_smp_initcalls(void)
- {
- 	initcall_t *fn;
++static int vm_cmdline_get(char *buffer, const struct kernel_param *kp)
++{
++	buffer[0] = '\0';
++	device_for_each_child(&vm_cmdline_parent, buffer,
++			vm_cmdline_get_device);
++	return strlen(buffer) + 1;
++}
++
++static struct kernel_param_ops vm_cmdline_param_ops = {
++	.set = vm_cmdline_set,
++	.get = vm_cmdline_get,
++};
++
++device_param_cb(device, &vm_cmdline_param_ops, NULL, S_IRUSR);
++
++static int vm_unregister_cmdline_device(struct device *dev,
++		void *data)
++{
++	platform_device_unregister(to_platform_device(dev));
++
++	return 0;
++}
++
++static void vm_unregister_cmdline_devices(void)
++{
++	if (vm_cmdline_parent_registered) {
++		device_for_each_child(&vm_cmdline_parent, NULL,
++				vm_unregister_cmdline_device);
++		device_unregister(&vm_cmdline_parent);
++		vm_cmdline_parent_registered = 0;
++	}
++}
++
++#else
++
++static void vm_unregister_cmdline_devices(void)
++{
++}
++
++#endif
++
+ /* Platform driver */
  
--	for (fn = __initcall_start; fn < __early_initcall_end; fn++)
-+	for (fn = __initcall_start; fn < __initcall0_start; fn++)
- 		do_one_initcall(*fn);
+ static struct of_device_id virtio_mmio_match[] = {
+@@ -469,6 +631,7 @@ static int __init virtio_mmio_init(void)
+ static void __exit virtio_mmio_exit(void)
+ {
+ 	platform_driver_unregister(&virtio_mmio_driver);
++	vm_unregister_cmdline_devices();
  }
  
-diff --git a/kernel/module.c b/kernel/module.c
-index 178333c..66d3e75 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2893,7 +2893,8 @@ static struct module *load_module(void __user *umod,
- 	mutex_unlock(&module_mutex);
- 
- 	/* Module is ready to execute: parsing args may do that. */
--	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
-+	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
-+			 0, 0, NULL);
- 	if (err < 0)
- 		goto unlink;
- 
-diff --git a/kernel/params.c b/kernel/params.c
-index 65aae11..ddde6a7 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -94,6 +94,8 @@ static int parse_one(char *param,
- 		     char *val,
- 		     const struct kernel_param *params,
- 		     unsigned num_params,
-+		     int flags_mask,
-+		     int flags,
- 		     int (*handle_unknown)(char *param, char *val))
- {
- 	unsigned int i;
-@@ -102,6 +104,8 @@ static int parse_one(char *param,
- 	/* Find parameter */
- 	for (i = 0; i < num_params; i++) {
- 		if (parameq(param, params[i].name)) {
-+			if ((params[i].flags & flags_mask) != flags)
-+				return 0;
- 			/* No one handled NULL, so do it here. */
- 			if (!val && params[i].ops->set != param_set_bool)
- 				return -EINVAL;
-@@ -180,6 +184,8 @@ int parse_args(const char *name,
- 	       char *args,
- 	       const struct kernel_param *params,
- 	       unsigned num,
-+	       u16 flags_mask,
-+	       u16 flags,
- 	       int (*unknown)(char *param, char *val))
- {
- 	char *param, *val;
-@@ -195,7 +201,8 @@ int parse_args(const char *name,
- 
- 		args = next_arg(args, &param, &val);
- 		irq_was_disabled = irqs_disabled();
--		ret = parse_one(param, val, params, num, unknown);
-+		ret = parse_one(param, val, params, num,
-+				flags_mask, flags, unknown);
- 		if (irq_was_disabled && !irqs_disabled()) {
- 			printk(KERN_WARNING "parse_args(): option '%s' enabled "
- 					"irq's!\n", param);
+ module_init(virtio_mmio_init);
 -- 
 1.7.5.4
 
