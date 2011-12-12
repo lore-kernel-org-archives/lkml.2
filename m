@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab1LLHXC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:23:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36721 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1LLHXB (ORCPT
+	id S1753210Ab1LLHYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:24:06 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59894 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab1LLHYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:23:01 -0500
-From: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 30/30] Staging: comedi: fix printk issue in jr3_pci.c
-Date: Mon, 12 Dec 2011 12:52:19 +0530
-Message-Id: <1323674539-19307-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 12 Dec 2011 02:24:02 -0500
+Message-ID: <1323674637.2576.17.camel@edumazet-laptop>
+Subject: Re: Switch per cpu partial page support off for debugging
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 12 Dec 2011 08:23:57 +0100
+In-Reply-To: <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
+References: <alpine.DEB.2.00.1111230923260.16544@router.home>
+	 <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the jr3_pci.c file that fixes up a
-printk warning found by the checkpatch.pl tool.
+Le lundi 12 décembre 2011 à 09:16 +0200, Pekka Enberg a écrit :
+> On Wed, 23 Nov 2011, Christoph Lameter wrote:
+> > Eric saw an issue with accounting of slabs during validation. Its not
+> > possible to determine accurately how many per cpu partial slabs exist at
+> > any time so this switches off per cpu partial pages during debug.
+> >
+> > Subject: Switch per cpu partial page support off for debugging
+> >
+> > Otherwise we have accounting issues.
+> >
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> >
+> >
+> > ---
+> > mm/slub.c |    4 +++-
+> > 1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > Index: linux-2.6/mm/slub.c
+> > ===================================================================
+> > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
+> > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
+> > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
+> > 	 *    per node list when we run out of per cpu objects. We only fetch 50%
+> > 	 *    to keep some capacity around for frees.
+> > 	 */
+> > -	if (s->size >= PAGE_SIZE)
+> > +	if (kmem_cache_debug(s))
+> > +		s->cpu_partial = 0;
+> > +	else if (s->size >= PAGE_SIZE)
+> > 		s->cpu_partial = 2;
+> > 	else if (s->size >= 1024)
+> > 		s->cpu_partial = 6;
+> 
+> Looks OK to me. CC'ing Eric and David.
 
-Added KERN_facility levels for printks.
+This seems fine to me, thanks.
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/jr3_pci.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-index 2a97894..6a79ba1 100644
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -593,24 +593,24 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
- 					min_full_scale =
- 					    get_min_full_scales(channel);
- 					printk("Obtained Min. Full Scales:\n");
--					printk("%i   ", (min_full_scale).fx);
--					printk("%i   ", (min_full_scale).fy);
--					printk("%i   ", (min_full_scale).fz);
--					printk("%i   ", (min_full_scale).mx);
--					printk("%i   ", (min_full_scale).my);
--					printk("%i   ", (min_full_scale).mz);
--					printk("\n");
-+					printk(KERN_DEBUG "%i ", (min_full_scale).fx);
-+					printk(KERN_CONT "%i ", (min_full_scale).fy);
-+					printk(KERN_CONT "%i ", (min_full_scale).fz);
-+					printk(KERN_CONT "%i ", (min_full_scale).mx);
-+					printk(KERN_CONT "%i ", (min_full_scale).my);
-+					printk(KERN_CONT "%i ", (min_full_scale).mz);
-+					printk(KERN_CONT "\n");
- 
- 					max_full_scale =
- 					    get_max_full_scales(channel);
- 					printk("Obtained Max. Full Scales:\n");
--					printk("%i   ", (max_full_scale).fx);
--					printk("%i   ", (max_full_scale).fy);
--					printk("%i   ", (max_full_scale).fz);
--					printk("%i   ", (max_full_scale).mx);
--					printk("%i   ", (max_full_scale).my);
--					printk("%i   ", (max_full_scale).mz);
--					printk("\n");
-+					printk(KERN_DEBUG "%i ", (max_full_scale).fx);
-+					printk(KERN_CONT "%i ", (max_full_scale).fy);
-+					printk(KERN_CONT "%i ", (max_full_scale).fz);
-+					printk(KERN_CONT "%i ", (max_full_scale).mx);
-+					printk(KERN_CONT "%i ", (max_full_scale).my);
-+					printk(KERN_CONT "%i ", (max_full_scale).mz);
-+					printk(KERN_CONT "\n");
- 
- 					set_full_scales(channel,
- 							max_full_scale);
--- 
-1.7.0.4
 
