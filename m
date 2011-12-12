@@ -1,52 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1LLSbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:31:43 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58926 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab1LLSbl (ORCPT
+	id S1753785Ab1LLScX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:32:23 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.18.14]:33101 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab1LLScT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:31:41 -0500
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-From: Pekka Enberg <penberg@kernel.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-In-Reply-To: <4EE645B0.9090501@redhat.com>
-References: <20111210132220.083204833@linutronix.de>
-	 <alpine.LFD.2.02.1112101715500.10936@tux.localdomain>
-	 <alpine.LFD.2.02.1112102144370.3020@ionos>
-	 <alpine.LFD.2.02.1112111014500.1663@tux.localdomain>
-	 <20111211103047.GA19299@elte.hu> <alpine.LFD.2.02.1112111459270.3020@ionos>
-	 <20111211155347.GA1297@elte.hu>
-	 <CAOJsxLHTuN43AGA7C02MtETzJU87y9cRaWRg6e9ER7NxOK2w-Q@mail.gmail.com>
-	 <4EE645B0.9090501@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 12 Dec 2011 20:31:38 +0200
-Message-ID: <1323714698.1428.299.camel@jaguar>
+	Mon, 12 Dec 2011 13:32:19 -0500
+X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 13:32:19 EST
+References: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com> <96a258354ce375bf80259f783506bbd7191b520d.1322593277.git.joe@perches.com>
+Message-ID: <cone.1323714410.432860.1894.1000@zopiie>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Joe Perches <joe@perches.com>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] acerhdf: Message logging neatening
+Date: Mon, 12 Dec 2011 19:26:50 +0100
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; format=flowed; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 20:19 +0200, Avi Kivity wrote:
-> On 12/12/2011 01:19 PM, Pekka Enberg wrote:
-> > On Sun, Dec 11, 2011 at 5:53 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> > > Okay, but look at it from another angle: the top output i
-> > > generate is about 300k characters. 5000 msecs to execute it
-> > > means 16 usecs overhead per character - or about 50k cycles - on
-> > > a top of the class x86 CPU.
-> >
-> > I'm seeing 1.5 usecs per character for this little benchmark:
+Hi Joe,
+
+thanks for sending this patch, I've got some comments on it.
+
+
+Joe Perches writes:
+> Use pr_warn not pr_warning.
+
+Don't see any line, where you changed this…
+
+
+> Coalesce formats.
+> Argument aligning.
+> Remove superfluous parentheses.
+
+Discussed inline.
+
+
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/platform/x86/acerhdf.c |   19 ++++++++-----------
+>  1 files changed, 8 insertions(+), 11 deletions(-)
 > 
-> No interrupts, right?  Things look differently with one interrupt per
-> character and none. 
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index 833c0ec..639db4d 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -262,12 +262,11 @@ static void acerhdf_change_fanstate(int state)
+>  	unsigned char cmd;
+>  
+>  	if (verbose)
+> -		pr_notice("fan %s\n", (state == ACERHDF_FAN_OFF) ?
+> -				"OFF" : "ON");
+> +		pr_notice("fan %s\n", state == ACERHDF_FAN_OFF ? "OFF" : "ON");
 
-No interrupts. I was simply trying to measure PIO overhead to see how
-bad the 15 usec per character Ingo measured really is.
+In my opinion the one with brackets is easier to read.
 
-			Pekka
 
+>  	if ((state != ACERHDF_FAN_OFF) && (state != ACERHDF_FAN_AUTO)) {
+>  		pr_err("invalid fan state %d requested, setting to auto!\n",
+> -			state);
+> +		       state);
+
+Is it written somewhere to use spaces instead of a tab in such cases? I like 
+tab more. (1)
+
+
+>  		state = ACERHDF_FAN_AUTO;
+>  	}
+>  
+> @@ -282,19 +281,18 @@ static void acerhdf_check_param(struct thermal_zone_device *thermal)
+>  {
+>  	if (fanon > ACERHDF_MAX_FANON) {
+>  		pr_err("fanon temperature too high, set to %d\n",
+> -				ACERHDF_MAX_FANON);
+> +		       ACERHDF_MAX_FANON);
+
+see (1). - but maybe one tab shall be removed.
+
+
+>  		fanon = ACERHDF_MAX_FANON;
+>  	}
+>  
+>  	if (kernelmode && prev_interval != interval) {
+>  		if (interval > ACERHDF_MAX_INTERVAL) {
+>  			pr_err("interval too high, set to %d\n",
+> -				ACERHDF_MAX_INTERVAL);
+> +			       ACERHDF_MAX_INTERVAL);
+
+see (1).
+
+
+>  			interval = ACERHDF_MAX_INTERVAL;
+>  		}
+>  		if (verbose)
+> -			pr_notice("interval changed to: %d\n",
+> -					interval);
+> +			pr_notice("interval changed to: %d\n", interval);
+
+I agree on this.
+
+
+>  		thermal->polling_delay = interval*1000;
+>  		prev_interval = interval;
+>  	}
+> @@ -605,8 +603,8 @@ static int acerhdf_check_hardware(void)
+>  	}
+>  
+>  	if (!bios_cfg) {
+> -		pr_err("unknown (unsupported) BIOS version %s/%s/%s, "
+> -			"please report, aborting!\n", vendor, product, version);
+> +		pr_err("unknown (unsupported) BIOS version %s/%s/%s, please report, aborting!\n",
+> +		       vendor, product, version);
+
+disagree, as it exceeds 80 chars.
+
+
+>  		return -EINVAL;
+>  	}
+>  
+> @@ -616,8 +614,7 @@ static int acerhdf_check_hardware(void)
+>  	 */
+>  	if (!kernelmode) {
+>  		pr_notice("Fan control off, to enable do:\n");
+> -		pr_notice("echo -n \"enabled\" > "
+> -			"/sys/class/thermal/thermal_zone0/mode\n");
+> +		pr_notice("echo -n \"enabled\" > /sys/class/thermal/thermal_zone0/mode\n");
+
+disagree, as it exceeds 80 chars when using tabstop=8.
+
+
+>  	}
+>  
+>  	return 0;
+> -- 
+> 1.7.6.405.gc1be0
+> 
+
+--
+kind regards,
+--peter;
