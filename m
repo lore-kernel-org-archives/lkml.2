@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1LLHp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:45:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49924 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1LLHpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:45:54 -0500
-Date: Sun, 11 Dec 2011 23:45:47 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        Naveen Kumar G <naveen.gaddipati@stericsson.com>,
-        Sundar Iyer <sundar.iyer@stericsson.com>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: keyboard: Staticise non-exported symbols
-Message-ID: <20111212074547.GC4682@core.coreip.homeip.net>
-References: <1323394677.3740.2.camel@phoenix>
- <1323394752.3740.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323394752.3740.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752477Ab1LLHsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:48:38 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:2906 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab1LLHsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:48:35 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
+        gthelen@google.com, netdev@vger.kernel.org, linux-mm@kvack.org,
+        kirill@shutemov.name, avagin@parallels.com, devel@openvz.org,
+        eric.dumazet@gmail.com, cgroups@vger.kernel.org
+Subject: [PATCH v9 0/9] Request for inclusion: per-cgroup tcp memory pressure controls
+Date: Mon, 12 Dec 2011 11:47:00 +0400
+Message-Id: <1323676029-5890-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 09:39:12AM +0800, Axel Lin wrote:
-> These symbols are not used outside it's driver so no need to
-> make the symbol global.
-> 
+Hi,
 
-Applied, thank you Axel.
+This series fixes all the few comments raised in the last round,
+and seem to have acquired consensus from the memcg side.
+
+Dave, do you think it is acceptable now from the networking PoV?
+In case positive, would you prefer merging this trough your tree,
+or acking this so a cgroup maintainer can do it?
+
+
+Thanks
+
+Glauber Costa (9):
+  Basic kernel memory functionality for the Memory Controller
+  foundations of per-cgroup memory pressure controlling.
+  socket: initial cgroup code.
+  tcp memory pressure controls
+  per-netns ipv4 sysctl_tcp_mem
+  tcp buffer limitation: per-cgroup limit
+  Display current tcp memory allocation in kmem cgroup
+  Display current tcp failcnt in kmem cgroup
+  Display maximum tcp memory allocation in kmem cgroup
+
+ Documentation/cgroups/memory.txt |   46 ++++++-
+ include/linux/memcontrol.h       |   23 ++++
+ include/net/netns/ipv4.h         |    1 +
+ include/net/sock.h               |  244 +++++++++++++++++++++++++++++++++-
+ include/net/tcp.h                |    4 +-
+ include/net/tcp_memcontrol.h     |   19 +++
+ init/Kconfig                     |   11 ++
+ mm/memcontrol.c                  |  191 +++++++++++++++++++++++++-
+ net/core/sock.c                  |  112 ++++++++++++----
+ net/ipv4/Makefile                |    1 +
+ net/ipv4/af_inet.c               |    2 +
+ net/ipv4/proc.c                  |    6 +-
+ net/ipv4/sysctl_net_ipv4.c       |   65 ++++++++-
+ net/ipv4/tcp.c                   |   11 +--
+ net/ipv4/tcp_input.c             |   12 +-
+ net/ipv4/tcp_ipv4.c              |   14 ++-
+ net/ipv4/tcp_memcontrol.c        |  272 ++++++++++++++++++++++++++++++++++++++
+ net/ipv4/tcp_output.c            |    2 +-
+ net/ipv4/tcp_timer.c             |    2 +-
+ net/ipv6/af_inet6.c              |    2 +
+ net/ipv6/tcp_ipv6.c              |    8 +-
+ 21 files changed, 973 insertions(+), 75 deletions(-)
+ create mode 100644 include/net/tcp_memcontrol.h
+ create mode 100644 net/ipv4/tcp_memcontrol.c
 
 -- 
-Dmitry
+1.7.6.4
+
