@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab1LLWCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:02:46 -0500
+	id S1754405Ab1LLWCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:02:38 -0500
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:64127 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab1LLWCl (ORCPT
+	with ESMTP id S1754042Ab1LLWC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:02:41 -0500
+	Mon, 12 Dec 2011 17:02:26 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Cc: Mike Turquette <mturquette@ti.com>, Sascha Hauer <kernel@pengutronix.de>,
@@ -14,9 +14,9 @@ Cc: Mike Turquette <mturquette@ti.com>, Sascha Hauer <kernel@pengutronix.de>,
         Shawn Guo <shawn.guo@freescale.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [RFC v2 8/9] dt/arm: versatile add clock parsing
-Date: Mon, 12 Dec 2011 15:02:08 -0700
-Message-Id: <1323727329-4989-8-git-send-email-grant.likely@secretlab.ca>
+Subject: [RFC v2 7/9] arm/dt: Common plat-versatile support for icst and sp804 based system clocks
+Date: Mon, 12 Dec 2011 15:02:07 -0700
+Message-Id: <1323727329-4989-7-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
 References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
@@ -24,283 +24,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: <grant.likely@secretlab.ca>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Mike Turquette <mturquette@ti.com>
 ---
- arch/arm/boot/dts/versatile-ab.dts     |   79 ++++++++++++++++++++++++++++++++
- arch/arm/mach-versatile/core.c         |   39 +--------------
- arch/arm/mach-versatile/versatile_dt.c |   39 +++++++++++++++-
- 3 files changed, 119 insertions(+), 38 deletions(-)
+ arch/arm/plat-versatile/clock.c              |  130 ++++++++++++++++++++++++++
+ arch/arm/plat-versatile/include/plat/clock.h |    3 +
+ 2 files changed, 133 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/versatile-ab.dts b/arch/arm/boot/dts/versatile-ab.dts
-index 0b32925..d29fc2b 100644
---- a/arch/arm/boot/dts/versatile-ab.dts
-+++ b/arch/arm/boot/dts/versatile-ab.dts
-@@ -8,6 +8,10 @@
- 	#size-cells = <1>;
- 	interrupt-parent = <&vic>;
- 
-+	clocks = <&ref24_clk>;
-+	clock-names = "apb_pclk";
-+	clock-ranges;
-+
- 	aliases {
- 		serial0 = &uart0;
- 		serial1 = &uart1;
-@@ -19,6 +23,42 @@
- 		reg = <0x0 0x08000000>;
- 	};
- 
-+	clocks {
-+		ref24_clk: ref24clk {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <24000000>;
-+		};
-+
-+		tim_clk: timclk {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <1000000>;
-+		};
-+
-+		ref_clk: refclk {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <32000>;
-+		};
-+	};
-+
-+	sys@10000000 {
-+		compatible = "arm,versatile-sys-regs";
-+		reg = <0x10000000 0x100>;
-+
-+		osc4_clk: clock {
-+			compatible = "idt,ics307";
-+			#clock-cells = <1>;
-+			idt,ref-clock-freq = <24000000>;
-+			idt,vco-div-range = <12 519>;
-+			idt,ref-div-range = <3 129>;
-+
-+			arm,reg-vco-offset = <0x1c>;
-+			arm,reg-lock-offset = <0x20>;
-+		};
-+	};
-+
- 	flash@34000000 {
- 		compatible = "arm,versatile-flash";
- 		reg = <0x34000000 0x4000000>;
-@@ -53,6 +93,7 @@
- 		#address-cells = <1>;
- 		#size-cells = <1>;
- 		ranges;
-+		clock-ranges;
- 
- 		vic: intc@10140000 {
- 			compatible = "arm,versatile-vic";
-@@ -108,6 +149,8 @@
- 			compatible = "arm,pl110", "arm,primecell";
- 			reg = <0x10120000 0x1000>;
- 			interrupts = <16>;
-+			clocks = <&osc4_clk 0>;
-+			clock-names = "apb_pclk";
- 		};
- 
- 		sctl@101e0000 {
-@@ -121,6 +164,36 @@
- 			interrupts = <0>;
- 		};
- 
-+		timer@101e2000 {
-+			compatible = "arm,sp804";
-+			reg = <0x101e2000 0x1000>;
-+			clocks = <&tim_clk>;
-+			interrupts = <4>;
-+			linux,clockevents-device;
-+		};
-+
-+		timer@101e2020 {
-+			compatible = "arm,sp804";
-+			reg = <0x101e2020 0x1000>;
-+			clocks = <&tim_clk>;
-+			interrupts = <4>;
-+		};
-+
-+		timer@101e3000 {
-+			compatible = "arm,sp804";
-+			reg = <0x101e3000 0x1000>;
-+			clocks = <&tim_clk>;
-+			interrupts = <5>;
-+			linux,clock-source;
-+		};
-+
-+		timer@101e3020 {
-+			compatible = "arm,sp804";
-+			reg = <0x101e3020 0x1000>;
-+			clocks = <&tim_clk>;
-+			interrupts = <5>;
-+		};
-+
- 		gpio0: gpio@101e4000 {
- 			compatible = "arm,pl061", "arm,primecell";
- 			reg = <0x101e4000 0x1000>;
-@@ -165,6 +238,8 @@
- 			#size-cells = <1>;
- 			ranges = <0 0x10000000 0x10000>;
- 
-+			clock-ranges;
-+
- 			aaci@4000 {
- 				compatible = "arm,primecell";
- 				reg = <0x4000 0x1000>;
-@@ -180,12 +255,16 @@
- 				reg = <0x6000 0x1000>;
- 				interrupt-parent = <&sic>;
- 				interrupts = <3>;
-+				clocks = <&ref24_clk>;
-+				clock-names = "KMIREFCLK";
- 			};
- 			kmi@7000 {
- 				compatible = "arm,pl050", "arm,primecell";
- 				reg = <0x7000 0x1000>;
- 				interrupt-parent = <&sic>;
- 				interrupts = <4>;
-+				clocks = <&ref24_clk>;
-+				clock-names = "KMIREFCLK";
- 			};
- 		};
- 	};
-diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
-index 47f4531..7b4e00a 100644
---- a/arch/arm/mach-versatile/core.c
-+++ b/arch/arm/mach-versatile/core.c
-@@ -26,6 +26,7 @@
- #include <linux/interrupt.h>
- #include <linux/irqdomain.h>
- #include <linux/of_address.h>
-+#include <linux/of_clk.h>
- #include <linux/of_platform.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/clcd.h>
-@@ -647,44 +648,11 @@ static struct amba_device *amba_devs[] __initdata = {
- /*
-  * Lookup table for attaching a specific name and platform_data pointer to
-  * devices as they get created by of_platform_populate().  Ideally this table
-- * would not exist, but the current clock implementation depends on some devices
-- * having a specific name.
-+ * would not exist, but some devices still need platform data.
-  */
- struct of_dev_auxdata versatile_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MMCI0_BASE, "fpga:05", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_KMI0_BASE, "fpga:06", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_KMI1_BASE, "fpga:07", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART3_BASE, "fpga:09", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MMCI1_BASE, "fpga:0b", NULL),
--
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_CLCD_BASE, "dev:20", &clcd_plat_data),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART0_BASE, "dev:f1", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART1_BASE, "dev:f2", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_UART2_BASE, "dev:f3", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SSP_BASE, "dev:f4", NULL),
- 
--#if 0
--	/*
--	 * These entries are unnecessary because no clocks referencing
--	 * them.  I've left them in for now as place holders in case
--	 * any of them need to be added back, but they should be
--	 * removed before actually committing this patch.  --gcl
--	 */
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_AACI_BASE, "fpga:04", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCI1_BASE, "fpga:0a", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SMC_BASE, "dev:00", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_MPMC_BASE, "dev:10", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_DMAC_BASE, "dev:30", NULL),
--
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCTL_BASE, "dev:e0", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_WATCHDOG_BASE, "dev:e1", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO0_BASE, "dev:e4", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO1_BASE, "dev:e5", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO2_BASE, "dev:e6", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_GPIO3_BASE, "dev:e7", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_RTC_BASE, "dev:e8", NULL),
--	OF_DEV_AUXDATA("arm,primecell", VERSATILE_SCI_BASE, "dev:f0", NULL),
--#endif
-+	OF_DEV_AUXDATA("arm,primecell", VERSATILE_CLCD_BASE, NULL, &clcd_plat_data),
- 	{}
- };
- #endif
-@@ -799,4 +767,3 @@ static void __init versatile_timer_init(void)
- struct sys_timer versatile_timer = {
- 	.init		= versatile_timer_init,
- };
--
-diff --git a/arch/arm/mach-versatile/versatile_dt.c b/arch/arm/mach-versatile/versatile_dt.c
-index 54e037c..26c9705 100644
---- a/arch/arm/mach-versatile/versatile_dt.c
-+++ b/arch/arm/mach-versatile/versatile_dt.c
-@@ -21,14 +21,49 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#include <linux/io.h>
- #include <linux/init.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
+diff --git a/arch/arm/plat-versatile/clock.c b/arch/arm/plat-versatile/clock.c
+index 98a9dd8..2b0682a 100644
+--- a/arch/arm/plat-versatile/clock.c
++++ b/arch/arm/plat-versatile/clock.c
+@@ -13,9 +13,15 @@
+ #include <linux/errno.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
 +#include <linux/of_clk.h>
 +#include <linux/slab.h>
+ #include <linux/mutex.h>
+ 
+ #include <asm/hardware/icst.h>
++#include <asm/hardware/timer-sp.h>
++#include <asm/mach/time.h>
+ 
+ #include <mach/clkdev.h>
+ 
+@@ -93,3 +99,127 @@ const struct clk_ops icst_clk_default_ops = {
+ 	.setvco	= icst_clk_setvco,
+ };
+ EXPORT_SYMBOL(icst_clk_default_ops);
 +
-+#include <plat/sched_clock.h>
-+#include <mach/hardware.h>
-+#include <mach/clkdev.h>
-+#include <asm/irq.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
- #include "core.h"
- 
-+static void __init versatile_dt_init_early(void)
++#ifdef CONFIG_OF
++static struct icst_params __initdata icst307_default_params = {
++	.vco_max = ICST307_VCO_MAX,
++	.vco_min = ICST307_VCO_MIN,
++	.s2div = icst307_s2div,
++	.idx2s = icst307_idx2s,
++};
++
++static struct icst_params __initdata icst525_5v_default_params = {
++	.vco_max = ICST525_VCO_MAX_5V,
++	.vco_min = ICST525_VCO_MIN,
++	.s2div = icst525_s2div,
++	.idx2s = icst525_idx2s,
++};
++
++static struct icst_params __initdata icst525_3v_default_params = {
++	.vco_max = ICST525_VCO_MAX_3V,
++	.vco_min = ICST525_VCO_MIN,
++	.s2div = icst525_s2div,
++	.idx2s = icst525_idx2s,
++};
++
++struct icst_of_clk {
++	struct clk clk;
++	struct clk ref;
++	struct icst_params params;
++};
++
++static struct clk *icst_clk_src_get(struct of_phandle_args *args, void *data)
 +{
-+	void __iomem *sys = __io_address(VERSATILE_SYS_BASE);
-+	u32 val;
-+
-+	/*
-+	 * TODO: DT generalization of early init code; the ARM Versatile,
-+	 * Realview, Integrator, and VExpress boards are pretty similar here.
-+	 * All call versatile_sched_clock_init(), and need to configure the
-+	 * correct clock input to the sp804 timers
-+	 */
-+	versatile_sched_clock_init(sys + VERSATILE_SYS_24MHz_OFFSET, 24000000);
-+
-+	/*
-+	 * set clock frequency to the sp804 timers:
-+	 * VERSATILE_REFCLK is 32KHz
-+	 * VERSATILE_TIMCLK is 1MHz
-+	 */
-+	sys = __io_address(VERSATILE_SCTL_BASE);
-+	val = readl(sys);
-+	val |= (VERSATILE_TIMCLK << VERSATILE_TIMER1_EnSel);
-+	val |= (VERSATILE_TIMCLK << VERSATILE_TIMER2_EnSel);
-+	val |= (VERSATILE_TIMCLK << VERSATILE_TIMER3_EnSel);
-+	val |= (VERSATILE_TIMCLK << VERSATILE_TIMER4_EnSel);
-+	writel(val, sys);
++	struct icst_of_clk *icst = data;
++	return &icst->clk;
 +}
 +
- static void __init versatile_dt_init(void)
- {
- 	of_platform_populate(NULL, of_default_bus_match_table,
-@@ -43,9 +78,9 @@ static const char *versatile_dt_match[] __initconst = {
++struct of_device_id versatile_dt_icst_match[] __initdata = {
++	{ .compatible="idt,ics307", .data=&icst307_default_params, },
++	{ .compatible="idt,ics525-5v", .data=&icst525_5v_default_params, },
++	{ .compatible="idt,ics525-3.3v", .data=&icst525_3v_default_params, },
++	{ /* sentinel */ }
++};
++
++void __init versatile_dt_icst_clk_setup(struct device_node *np)
++{
++	const struct of_device_id *match;
++	struct icst_of_clk *icst;
++	const struct icst_params *params;
++	u32 ref, vd_range[2], rd_range[2], vco_offset, lock_offset;
++	__iomem void * base;
++
++	/*
++	 * Only try to drive clocks that we know how to control.
++	 * ie. attached to an ARM Versatile block of system registers
++	 */
++	if (!of_device_is_compatible(np->parent, "arm,versatile-sys-regs"))
++		return;
++
++	match = of_match_node(versatile_dt_icst_match, np);
++	if (!match)
++		return;
++	params = match->data;
++
++	icst = kzalloc(sizeof(*icst), GFP_KERNEL);
++	if (!icst)
++		return;
++	icst->params = *params; /* Copy the default params */
++
++	base = of_iomap(np->parent, 0);
++	if (!base || of_property_read_u32(np, "idt,ref-clock-freq", &ref) ||
++	    of_property_read_u32(np, "arm,reg-vco-offset", &vco_offset) ||
++	    of_property_read_u32(np, "arm,reg-lock-offset", &lock_offset) ||
++	    of_property_read_u32_array(np, "idt,vco-div-range", vd_range, 2) ||
++	    of_property_read_u32_array(np, "idt,ref-div-range", rd_range, 2)) {
++		pr_err("ERROR: Unable to set up clock %s\n", np->full_name);
++		goto err_setup;
++	}
++
++	icst->params.ref = ref;
++	icst->params.vd_min = vd_range[0];
++	icst->params.vd_max = vd_range[1];
++	icst->params.rd_min = rd_range[0];
++	icst->params.rd_max = rd_range[1];
++	icst->clk.ops = &icst_clk_default_ops;
++	icst->clk.vcoreg = base + vco_offset;
++	icst->clk.lockreg = base + lock_offset;
++	icst->clk.params = &icst->params;
++
++	icst->ref.rate = ref;
++
++	if (of_clk_add_provider(np, icst_clk_src_get, icst))
++		goto err_setup;
++
++	return;
++
++ err_setup:
++	kfree(icst);
++}
++
++static struct of_device_id versatile_dt_clk_match_table[] __initdata = {
++	{ .compatible = "idt,ics307", .data = versatile_dt_icst_clk_setup, },
++	{ .compatible = "idt,ics525", .data = versatile_dt_icst_clk_setup, },
++	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
++	{}
++};
++
++/*
++ * Set up timer interrupt, and return the current time in seconds.
++ */
++static void __init versatile_dt_timer_init(void)
++{
++	struct device_node *np;
++
++	of_clk_init(versatile_dt_clk_match_table);
++
++	pr_debug("%s(): Looking for sp804 clocks\n", __func__);
++	for_each_compatible_node(np, NULL, "arm,sp804")
++		sp804_dt_setup(np);
++}
++
++struct sys_timer versatile_dt_timer = {
++	.init		= versatile_dt_timer_init,
++};
++
++#endif
+diff --git a/arch/arm/plat-versatile/include/plat/clock.h b/arch/arm/plat-versatile/include/plat/clock.h
+index 5749f79..ca81bfe 100644
+--- a/arch/arm/plat-versatile/include/plat/clock.h
++++ b/arch/arm/plat-versatile/include/plat/clock.h
+@@ -42,5 +42,8 @@ static inline void __clk_put(struct clk *clk)
+ #define __clk_put(clk) do { } while (0)
+ #endif
  
- DT_MACHINE_START(VERSATILE_PB, "ARM-Versatile (Device Tree Support)")
- 	.map_io		= versatile_map_io,
--	.init_early	= versatile_init_early,
-+	.init_early	= versatile_dt_init_early,
- 	.init_irq	= versatile_init_irq,
--	.timer		= &versatile_timer,
-+	.timer		= &versatile_dt_timer,
- 	.init_machine	= versatile_dt_init,
- 	.dt_compat	= versatile_dt_match,
- MACHINE_END
++#ifdef CONFIG_OF
++extern struct sys_timer versatile_dt_timer;
++#endif
+ 
+ #endif
 -- 
 1.7.5.4
 
