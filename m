@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab1LLOXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 09:23:11 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45983 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab1LLOXI convert rfc822-to-8bit (ORCPT
+	id S1753233Ab1LLOXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 09:23:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53624 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab1LLOXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 09:23:08 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Mel Gorman" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 01/11] mm: page_alloc: handle MIGRATE_ISOLATE in
- free_pcppages_bulk()
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-2-git-send-email-m.szyprowski@samsung.com>
- <20111212134235.GB3277@csn.ul.ie>
-Date: Mon, 12 Dec 2011 15:23:02 +0100
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v6drko0p3l0zgt@mpn-glaptop>
-In-Reply-To: <20111212134235.GB3277@csn.ul.ie>
-User-Agent: Opera Mail/11.60 (Linux)
+	Mon, 12 Dec 2011 09:23:22 -0500
+From: Richard Weinberger <rw@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, Richard Weinberger <rw@linutronix.de>
+Subject: [PATCH -rt] printk: Disable migration instead of preemption
+Date: Mon, 12 Dec 2011 14:35:56 +0100
+Message-Id: <1323696956-11445-1-git-send-email-rw@linutronix.de>
+X-Mailer: git-send-email 1.7.7
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Nov 18, 2011 at 05:43:08PM +0100, Marek Szyprowski wrote:
->> From: Michal Nazarewicz <mina86@mina86.com>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 9dd443d..58d1a2e 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -628,6 +628,18 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->>  			page = list_entry(list->prev, struct page, lru);
->>  			/* must delete as __free_one_page list manipulates */
->>  			list_del(&page->lru);
->> +
->> +			/*
->> +			 * When page is isolated in set_migratetype_isolate()
->> +			 * function it's page_private is not changed since the
->> +			 * function has no way of knowing if it can touch it.
->> +			 * This means that when a page is on PCP list, it's
->> +			 * page_private no longer matches the desired migrate
->> +			 * type.
->> +			 */
->> +			if (get_pageblock_migratetype(page) == MIGRATE_ISOLATE)
->> +				set_page_private(page, MIGRATE_ISOLATE);
->> +
+There is no need do disable preemption in vprintk(),
+disable_migrate() is sufficient.
+This fixes also a the following bug in -rt:
 
-On Mon, 12 Dec 2011 14:42:35 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> How much of a problem is this in practice?
+[   14.759233] BUG: sleeping function called from invalid context
+at /home/rw/linux-rt/kernel/rtmutex.c:645
+[   14.759235] in_atomic(): 1, irqs_disabled(): 0, pid: 547, name: bash
+[   14.759244] Pid: 547, comm: bash Not tainted 3.0.12-rt29+ #3
+[   14.759246] Call Trace:
+[   14.759301]  [<ffffffff8106fade>] __might_sleep+0xeb/0xf0
+[   14.759318]  [<ffffffff810ad784>] rt_spin_lock_fastlock.constprop.9+0x21/0x43
+[   14.759336]  [<ffffffff8161fef0>] rt_spin_lock+0xe/0x10
+[   14.759354]  [<ffffffff81347ad1>] serial8250_console_write+0x81/0x121
+[   14.759366]  [<ffffffff8107ecd3>] __call_console_drivers+0x7c/0x93
+[   14.759369]  [<ffffffff8107ef31>] _call_console_drivers+0x5c/0x60
+[   14.759372]  [<ffffffff8107f7e5>] console_unlock+0x147/0x1a2
+[   14.759374]  [<ffffffff8107fd33>] vprintk+0x3ea/0x462
+[   14.759383]  [<ffffffff816160e0>] printk+0x51/0x53
+[   14.759399]  [<ffffffff811974e4>] ? proc_reg_poll+0x9a/0x9a
+[   14.759403]  [<ffffffff81335b42>] __handle_sysrq+0x50/0x14d
+[   14.759406]  [<ffffffff81335c8a>] write_sysrq_trigger+0x4b/0x53
+[   14.759408]  [<ffffffff81335c3f>] ? __handle_sysrq+0x14d/0x14d
+[   14.759410]  [<ffffffff81197583>] proc_reg_write+0x9f/0xbe
+[   14.759426]  [<ffffffff811497ec>] vfs_write+0xac/0xf3
+[   14.759429]  [<ffffffff8114a9b3>] ? fget_light+0x3a/0x9b
+[   14.759431]  [<ffffffff811499db>] sys_write+0x4a/0x6e
+[   14.759438]  [<ffffffff81625d52>] system_call_fastpath+0x16/0x1b
 
-IIRC, this lead to allocation being made from area marked as isolated
-or some such.
+Signed-off-by: Richard Weinberger <rw@linutronix.de>
+---
+ kernel/printk.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> [...] I'd go as far to say that it would be preferable to drain the
-> per-CPU lists after you set pageblocks MIGRATE_ISOLATE. The IPIs also have
-> overhead but it will be incurred for the rare rather than the common case.
-
-I'll look into that.
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index a50af4e..13d0825 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -898,7 +898,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 	boot_delay_msec();
+ 	printk_delay();
+ 
+-	preempt_disable();
++	migrate_disable();
+ 	/* This stops the holder of console_sem just where we want him */
+ 	raw_local_irq_save(flags);
+ 	this_cpu = smp_processor_id();
+@@ -1029,7 +1029,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ out_restore_irqs:
+ 	raw_local_irq_restore(flags);
+ 
+-	preempt_enable();
++	migrate_enable();
+ 	return printed_len;
+ }
+ EXPORT_SYMBOL(printk);
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+1.7.7
+
