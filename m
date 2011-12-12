@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1LLR0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:26:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50829 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab1LLR0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:26:04 -0500
-Date: Mon, 12 Dec 2011 18:24:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Arun Sharma <asharma@fb.com>, David Ahern <dsahern@gmail.com>,
-        devel@openvz.org, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/3] perf/core fixes and improvements
-Message-ID: <20111212172404.GE23870@elte.hu>
-References: <1323696369-14688-1-git-send-email-acme@infradead.org>
+	id S1753532Ab1LLR1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:27:34 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36766 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab1LLR1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:27:33 -0500
+Date: Mon, 12 Dec 2011 09:27:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, cgroups@vger.kernel.org,
+        bsingharora@gmail.com, devel@openvz.org,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 1/3] nitpick: make simple functions inline
+Message-ID: <20111212172725.GA25802@google.com>
+References: <1323614738-7405-1-git-send-email-glommer@parallels.com>
+ <1323614738-7405-3-git-send-email-glommer@parallels.com>
+ <4EE4FCBB.9050600@gmail.com>
+ <4EE51646.3030900@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323696369-14688-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <4EE51646.3030900@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+On Sun, Dec 11, 2011 at 09:44:54PM +0100, Glauber Costa wrote:
+> On 12/11/2011 07:55 PM, KOSAKI Motohiro wrote:
+> > Can you please tell us which compiler failed automatic inlining?
+> > I suspect gcc is enough sane and we don't need this patch.
+> 
+> Of course we don't need, that's the very definition of a "nitpick".
+> This patch is directed towards the reader, not the compiler. Maintainers
+> are free to take it or not, although I believe being explicit is better.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://github.com/acmel/linux.git perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Andrew Vagin (1):
->   perf tools: Add ability to synthesize event according to a sample
-> 
-> Robert Richter (2):
->   perf script: Fix mem leaks and NULL pointer checks around strdup()s
->   perf script: Implement option for system-wide profiling
-> 
->  tools/perf/builtin-script.c |   63 +++++++++++++++++++++-------------
->  tools/perf/util/event.h     |    3 ++
->  tools/perf/util/evsel.c     |   79 +++++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/session.h   |    8 ++++
->  4 files changed, 129 insertions(+), 24 deletions(-)
+These days, I don't think adding inline buys us much (other than
+explicit cases where always_inline or noinline is necessary).  gcc
+already does good enough job for inlining and 'inline' hint seems more
+to hinder rather than help and I don't really see what it buys for
+code readers either, so I won't be taking this one.
 
-Pulled, thanks a lot Arnaldo!
+Thanks.
 
-	Ingo
+-- 
+tejun
