@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab1LLSs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 13:48:57 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54304 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753438Ab1LLSsz convert rfc822-to-8bit (ORCPT
+	id S1753565Ab1LLSxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 13:53:48 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:21635 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753184Ab1LLSxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 13:48:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="46398165"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Mon, 12 Dec 2011 10:48:52 -0800
-Subject: RE: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
- WARN_ON()
-Thread-Topic: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
- WARN_ON()
-Thread-Index: Acy45u6rvyeczNRlQ4u2K/evnn5cKQAFPqJQAACH85A=
-Message-ID: <0207C53569FE594381A4F2EB66570B2A018EFB83C4@orsmsx508.amr.corp.intel.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C57DC0D10@USINDEVS01.corp.hds.com>
- <20111212155827.GR1669@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 13:53:47 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: VzCCgXIVM1mWvsEaYhEjorhKgLpA6Q2bx2g7PJEH.ekdCEw
+ mbjXSb7hlWot491..tFeFI_2ba5HJo3dRRT1WA4V0apariuYjI75DCR4DRVJ
+ 80z2w__J6AL4RXWgOOkg94_19ATfXWLcqz1g_2TwjyZfcbLMjjquZRfmHsEM
+ BK07PdJO.cHMByY8lv1vigvAYXsH3RgaUH5PuaF3ovkjhZ2BC276hKRLyd9I
+ GdRRaF.F1_dINMxLCQxQ7FChqBnX_DK3O_wSrOB1y12RZXD.J2tVanGO3D4w
+ mKf8204h.9W3SkMybK6WivboHpi2si9Bjh5YY68J0_Z.j8pFyI_FmDeoTR25
+ sHxHrgPo51FsEn3193n2bXw2z2C4VP3R7g0Gp7x8BxpYfeA--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 12 Dec 2011 12:53:45 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: zhihua che <zhihua.che@gmail.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
+ gets lost if the process happens to be rescheduled to a differenet cpu before
+ the local_irq_save() completes in __slab_alloc()
+In-Reply-To: <1323711558.2583.11.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1112121252430.31975@router.home>
+References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>  <1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.DEB.2.00.1112120922020.28410@router.home> <1323711558.2583.11.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> if (reason == KMSG_DUMP_PANIC) {
-> 	if(is_spin_locked(&psinfo->buf_lock))
-> 		pr_err("lock is taken.\n");
-> else {
-> 	spin_lock_irqsave(&psinfo->buf_lock, flags);
-> }
->
-> However, this won't work for this reason.
->  - printk() must not be called in serialized path because deadlock of logbuf_lock may cause.
+On Mon, 12 Dec 2011, Eric Dumazet wrote:
 
-There is also the issue that kmsg has already computed the addresses
-of useful pieces in __log_buf at this point - so any printk() we
-add here is not going to be saved into pstore.  So a user relying
-on pstore to see what happened, won't see any messages we add here.
+> Indeed, I reproduced the leak with hackbench and lot of threads.
 
--Tony
+Ran it here and did not see anything. But obviously this is an issue.
+Strange that no one noticed earlier. Usage of CONFIG_PREEMPT must not be
+that frequent.
+
