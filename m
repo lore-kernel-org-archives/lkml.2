@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab1LLNGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 08:06:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45972 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab1LLNGI convert rfc822-to-8bit (ORCPT
+	id S1753147Ab1LLNH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 08:07:57 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:44448 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab1LLNH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 08:06:08 -0500
-Message-ID: <1323695116.13285.14.camel@twins>
-Subject: Re: [PATCH tip] sched/trivial: Remove cfs bandwidth period check in
- tg_set_cfs_period()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Mon, 12 Dec 2011 14:05:16 +0100
-In-Reply-To: <20111210135925.GA14593@linux.vnet.ibm.com>
-References: <20111210135925.GA14593@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 12 Dec 2011 08:07:56 -0500
+X-Auth-Info: h5XEJP4Sdlx8mnvSzS8wJvZ9tLKi2CXL1KWOc59yEVI=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        "Artem S. Tashkinov" <t.artem@mailcity.com>,
+        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v3] procfs: do not confuse jiffies with cputime64_t
+References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
+	<m21usavwi0.fsf_-_@igel.home>
+	<20111212124333.GC14720@tiehlicka.suse.cz>
+X-Yow: Boys, you have ALL been selected to LEAVE th' PLANET in 15 minutes!!
+Date: Mon, 12 Dec 2011 14:07:53 +0100
+In-Reply-To: <20111212124333.GC14720@tiehlicka.suse.cz> (Michal Hocko's
+	message of "Mon, 12 Dec 2011 13:43:33 +0100")
+Message-ID: <m2wra2uedy.fsf_-_@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-10 at 19:29 +0530, Kamalesh Babulal wrote:
-> sched: Remove cfs bandwidth period check in tg_set_cfs_period()
-> 
-> Remove cfs bandwidth period check from tg_set_cfs_period.
-> Invalid bandwidth period's lower/upper limits are denoted
-> by min_cfs_quota_period/max_cfs_quota_period repsectively,
-> and are checked against valid period in tg_set_cfs_bandwidth().
-> 
-> Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-> -- 
->  kernel/sched/core.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 3c5b21e..57cf3ab 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -7689,9 +7689,6 @@ int tg_set_cfs_period(struct task_group *tg, long cfs_period_us)
->         period = (u64)cfs_period_us * NSEC_PER_USEC;
->         quota = tg->cfs_bandwidth.quota;
->  
-> -       if (period <= 0)
-> -               return -EINVAL;
-> -
->         return tg_set_cfs_bandwidth(tg, period, quota);
->  } 
+get_{idle,iowait}_time are supposed to return cputime64_t values, not
+jiffies.  Add usecs_to_cputime64 for this.
 
-There's a number of funnies here... it checks an unsigned value for <=
-0, which suggests it wanted to check cfs_period_us, which is a signed
-value.
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+---
+ arch/ia64/include/asm/cputime.h    |    1 +
+ arch/powerpc/include/asm/cputime.h |    2 ++
+ arch/s390/include/asm/cputime.h    |    2 ++
+ fs/proc/stat.c                     |    4 ++--
+ include/asm-generic/cputime.h      |    1 +
+ 5 files changed, 8 insertions(+), 2 deletions(-)
 
-tg_set_cfs_bandwidth() has the same problem, at that point everything is
-unsigned and all below zero checks will fail.
+diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
+index 6073b18..5a274af 100644
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -60,6 +60,7 @@ typedef u64 cputime64_t;
+  */
+ #define cputime_to_usecs(__ct)		((__ct) / NSEC_PER_USEC)
+ #define usecs_to_cputime(__usecs)	((__usecs) * NSEC_PER_USEC)
++#define usecs_to_cputime64(__usecs)	usecs_to_cputime(__usecs)
+ 
+ /*
+  * Convert cputime <-> seconds
+diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
+index 33a3580..fa3f921 100644
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -150,6 +150,8 @@ static inline cputime_t usecs_to_cputime(const unsigned long us)
+ 	return ct;
+ }
+ 
++#define usecs_to_cputime64(us)		usecs_to_cputime(us)
++
+ /*
+  * Convert cputime <-> seconds
+  */
+diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
+index 0814348..b9acaaa 100644
+--- a/arch/s390/include/asm/cputime.h
++++ b/arch/s390/include/asm/cputime.h
+@@ -87,6 +87,8 @@ usecs_to_cputime(const unsigned int m)
+ 	return (cputime_t) m * 4096;
+ }
+ 
++#define usecs_to_cputime64(m)		usecs_to_cputime(m)
++
+ /*
+  * Convert cputime to milliseconds and back.
+  */
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 2a30d67..0855e6f 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
+ 		idle = kstat_cpu(cpu).cpustat.idle;
+ 		idle = cputime64_add(idle, arch_idle_time(cpu));
+ 	} else
+-		idle = nsecs_to_jiffies64(1000 * idle_time);
++		idle = usecs_to_cputime64(idle_time);
+ 
+ 	return idle;
+ }
+@@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
+ 		/* !NO_HZ so we can rely on cpustat.iowait */
+ 		iowait = kstat_cpu(cpu).cpustat.iowait;
+ 	else
+-		iowait = nsecs_to_jiffies64(1000 * iowait_time);
++		iowait = usecs_to_cputime64(iowait_time);
+ 
+ 	return iowait;
+ }
+diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
+index 62ce682..12a1764 100644
+--- a/include/asm-generic/cputime.h
++++ b/include/asm-generic/cputime.h
+@@ -40,6 +40,7 @@ typedef u64 cputime64_t;
+  */
+ #define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct)
+ #define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs)
++#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
+ 
+ /*
+  * Convert cputime to seconds and back.
+-- 
+1.7.8
 
-Please reconsider things and see if this patch is still the right one.
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
