@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1LLI5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 03:57:20 -0500
-Received: from [205.233.59.134] ([205.233.59.134]:54869 "EHLO
-	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab1LLI5T convert rfc822-to-8bit (ORCPT
+	id S1752050Ab1LLI6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 03:58:15 -0500
+Received: from 5.mo2.mail-out.ovh.net ([87.98.181.248]:32965 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751125Ab1LLI6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 03:57:19 -0500
-Message-ID: <1323680190.16764.48.camel@twins>
-Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu, Oliver Neukum <oneukum@suse.de>
-Date: Mon, 12 Dec 2011 09:56:30 +0100
-In-Reply-To: <CACVXFVMDEeDBkAdv=AkRZuOH1sNdMGjR3PeHYMVLhwR+FB8gOg@mail.gmail.com>
-References: <20111210104341.592561407@chello.nl>
-	 <20111210104840.295857663@chello.nl>
-	 <CACVXFVPKgg98UBDaCC9eU605mRYrtCiPH6+zQLcvdY2Hp4LMYg@mail.gmail.com>
-	 <1323529084.16764.5.camel@twins>
-	 <CACVXFVNMAtJBdNK6Yb6C34=Ke93X3AOkWq022_n4GTUMEn2HJw@mail.gmail.com>
-	 <1323546551.2822.14.camel@laptop>
-	 <CACVXFVNAAXAWtTncahb=sADHxmZOmdDOJA1FUX8Qt4ZR3To_qg@mail.gmail.com>
-	 <1323607627.16764.13.camel@twins>
-	 <CACVXFVOYj+Mmph8WGQUdcGS8t-GPr9y3crPuz0SrBCtOmCvstQ@mail.gmail.com>
-	 <1323617738.16764.21.camel@twins> <1323636148.16764.44.camel@twins>
-	 <CACVXFVMDEeDBkAdv=AkRZuOH1sNdMGjR3PeHYMVLhwR+FB8gOg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 12 Dec 2011 03:58:11 -0500
+Date: Mon, 12 Dec 2011 09:47:31 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: rtc-linux@googlegroups.com
+Cc: a.zummo@towertech.it, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [rtc-linux] [PATCH] rtc: Kconfig: Place RTC_DRV_IMXDI and
+ RTC_MXC under "on-CPU RTC drivers"
+Message-ID: <20111212084731.GT23884@game.jcrosoft.org>
+References: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323548042-25432-1-git-send-email-festevam@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13878968152895499185
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 11:48 +0800, Ming Lei wrote:
-> >  LOCK
-> >  obj = lookup(); /* lets assume obj != NULL */
-> >  kref_get(&obj->ref);
-> >  UNLOCK
-> >
-> >  value = obj->member;
-> >
-> >  kref_put(&obj->ref);
-> >
-> > Now, under our memory model, the read from obj->member can both happen,
-> > or be observed to happen before the increment from kref_get() is
-> > processed.
+On 18:14 Sat 10 Dec     , Fabio Estevam wrote:
+> RTC_DRV_IMXDI and RTC_MXC are on-chip RTC modules, so move them under 
+> "on-CPU RTC drivers" selection menu.
 > 
-> It should be the problem if another CPU observed that write/read obj
-> is done before kref_get. 
+> While at it change the dependency of RTC_DRV_IMXDI from ARCH_MX25 to SOC_IMX25.
+is it freescale IP or third party IP?
 
-WHY?!?!?!
+Best Regards,
+J.
