@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab1LLNH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 08:07:57 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:44448 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab1LLNH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 08:07:56 -0500
-X-Auth-Info: h5XEJP4Sdlx8mnvSzS8wJvZ9tLKi2CXL1KWOc59yEVI=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v3] procfs: do not confuse jiffies with cputime64_t
-References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
-	<m21usavwi0.fsf_-_@igel.home>
-	<20111212124333.GC14720@tiehlicka.suse.cz>
-X-Yow: Boys, you have ALL been selected to LEAVE th' PLANET in 15 minutes!!
-Date: Mon, 12 Dec 2011 14:07:53 +0100
-In-Reply-To: <20111212124333.GC14720@tiehlicka.suse.cz> (Michal Hocko's
-	message of "Mon, 12 Dec 2011 13:43:33 +0100")
-Message-ID: <m2wra2uedy.fsf_-_@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+	id S1753100Ab1LLNLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 08:11:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48962 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752565Ab1LLNLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 08:11:20 -0500
+Date: Mon, 12 Dec 2011 14:11:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: memcg: keep root group unchanged if fail to create
+ new
+Message-ID: <20111212131118.GA15249@tiehlicka.suse.cz>
+References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
+ <alpine.LSU.2.00.1112111520510.2297@eggly>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1112111520510.2297@eggly>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_{idle,iowait}_time are supposed to return cputime64_t values, not
-jiffies.  Add usecs_to_cputime64 for this.
+On Sun 11-12-11 15:39:43, Hugh Dickins wrote:
+> On Sun, 11 Dec 2011, Hillf Danton wrote:
+> 
+> > If the request is not to create root group and we fail to meet it,
+> > we'd leave the root unchanged.
+> 
+> I didn't understand that at first: please say "we should" rather
+> than "we'd", which I take to be an abbreviation for "we would".
+> 
+> > 
+> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> 
+> Yes indeed, well caught:
+> Acked-by: Hugh Dickins <hughd@google.com>
+> 
+> I wonder what was going through the author's mind when he wrote it
+> that way?  I wonder if it's one of those bugs that creeps in when
+> you start from a perfectly functional patch, then make refinements
+> to suit feedback from reviewers.
+> 
+> On which topic: wouldn't this patch be better just to move the
+> "root_mem_cgroup = memcg;" two lines lower down (and of course
+> remove free_out's "root_mem_cgroup = NULL;" as you already did)?
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
----
- arch/ia64/include/asm/cputime.h    |    1 +
- arch/powerpc/include/asm/cputime.h |    2 ++
- arch/s390/include/asm/cputime.h    |    2 ++
- fs/proc/stat.c                     |    4 ++--
- include/asm-generic/cputime.h      |    1 +
- 5 files changed, 8 insertions(+), 2 deletions(-)
+Yes would look nicer.
 
-diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
-index 6073b18..5a274af 100644
---- a/arch/ia64/include/asm/cputime.h
-+++ b/arch/ia64/include/asm/cputime.h
-@@ -60,6 +60,7 @@ typedef u64 cputime64_t;
-  */
- #define cputime_to_usecs(__ct)		((__ct) / NSEC_PER_USEC)
- #define usecs_to_cputime(__usecs)	((__usecs) * NSEC_PER_USEC)
-+#define usecs_to_cputime64(__usecs)	usecs_to_cputime(__usecs)
- 
- /*
-  * Convert cputime <-> seconds
-diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-index 33a3580..fa3f921 100644
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -150,6 +150,8 @@ static inline cputime_t usecs_to_cputime(const unsigned long us)
- 	return ct;
- }
- 
-+#define usecs_to_cputime64(us)		usecs_to_cputime(us)
-+
- /*
-  * Convert cputime <-> seconds
-  */
-diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-index 0814348..b9acaaa 100644
---- a/arch/s390/include/asm/cputime.h
-+++ b/arch/s390/include/asm/cputime.h
-@@ -87,6 +87,8 @@ usecs_to_cputime(const unsigned int m)
- 	return (cputime_t) m * 4096;
- }
- 
-+#define usecs_to_cputime64(m)		usecs_to_cputime(m)
-+
- /*
-  * Convert cputime to milliseconds and back.
-  */
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 2a30d67..0855e6f 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
- 		idle = kstat_cpu(cpu).cpustat.idle;
- 		idle = cputime64_add(idle, arch_idle_time(cpu));
- 	} else
--		idle = nsecs_to_jiffies64(1000 * idle_time);
-+		idle = usecs_to_cputime64(idle_time);
- 
- 	return idle;
- }
-@@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
- 		/* !NO_HZ so we can rely on cpustat.iowait */
- 		iowait = kstat_cpu(cpu).cpustat.iowait;
- 	else
--		iowait = nsecs_to_jiffies64(1000 * iowait_time);
-+		iowait = usecs_to_cputime64(iowait_time);
- 
- 	return iowait;
- }
-diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index 62ce682..12a1764 100644
---- a/include/asm-generic/cputime.h
-+++ b/include/asm-generic/cputime.h
-@@ -40,6 +40,7 @@ typedef u64 cputime64_t;
-  */
- #define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct)
- #define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs)
-+#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
- 
- /*
-  * Convert cputime to seconds and back.
+> I can't see mem_cgroup_soft_limit_tree_init() relying on
+> root_mem_cgroup at all.
+
+It doesn't but it still needs some love to handle error case properly
+AFAICS. We do not deallocate softlimit trees for nodes that succeeded.
+
+[...]
+
+Hilf could you update the patch please?
 -- 
-1.7.8
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
