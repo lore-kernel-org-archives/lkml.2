@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab1LLEgM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 23:36:12 -0500
-Received: from mga14.intel.com ([143.182.124.37]:44257 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab1LLEgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 23:36:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="46178742"
-Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <1323663921.16790.6118.camel@debian>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
-	 <alpine.DEB.2.00.1112020842280.10975@router.home>
-	 <1323076965.16790.670.camel@debian>
-	 <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com>
-	 <1323234673.22361.372.camel@sli10-conroe>
-	 <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com>
-	 <1323657793.22361.383.camel@sli10-conroe>
-	 <1323663251.16790.6115.camel@debian>
-	 <1323664514.22361.385.camel@sli10-conroe>
-	 <1323663921.16790.6118.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Dec 2011 12:48:24 +0800
-Message-ID: <1323665304.22361.392.camel@sli10-conroe>
+	id S1752306Ab1LLElu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 23:41:50 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:35060 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab1LLEls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 23:41:48 -0500
+Date: Mon, 12 Dec 2011 15:41:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20111212154139.9c8aaa79884568ca461cb3f6@canb.auug.org.au>
+In-Reply-To: <20111212152601.e03fe38dc6606f70d86a1cef@canb.auug.org.au>
+References: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
+	<20111208214744.19117662.akpm@linux-foundation.org>
+	<20111212152601.e03fe38dc6606f70d86a1cef@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 12:25 +0800, Alex,Shi wrote:
-> On Mon, 2011-12-12 at 12:35 +0800, Li, Shaohua wrote:
-> > On Mon, 2011-12-12 at 12:14 +0800, Shi, Alex wrote:
-> > > On Mon, 2011-12-12 at 10:43 +0800, Li, Shaohua wrote:
-> > > > On Wed, 2011-12-07 at 15:28 +0800, David Rientjes wrote:
-> > > > > On Wed, 7 Dec 2011, Shaohua Li wrote:
-> > > > > 
-> > > > > > interesting. I did similar experiment before (try to sort the page
-> > > > > > according to free number), but it appears quite hard. The free number of
-> > > > > > a page is dynamic, eg more slabs can be freed when the page is in
-> > > > > > partial list. And in netperf test, the partial list could be very very
-> > > > > > long. Can you post your patch, I definitely what to look at it.
-> > > > > 
-> > > > > It was over a couple of years ago and the slub code has changed 
-> > > > > significantly since then, but you can see the general concept of the "slab 
-> > > > > thrashing" problem with netperf and my solution back then:
-> > > > > 
-> > > > > 	http://marc.info/?l=linux-kernel&m=123839191416478
-> > > > > 	http://marc.info/?l=linux-kernel&m=123839203016592
-> > > > > 	http://marc.info/?l=linux-kernel&m=123839202916583
-> > > > > 
-> > > > > I also had a separate patchset that, instead of this approach, would just 
-> > > > > iterate through the partial list in get_partial_node() looking for 
-> > > > > anything where the number of free objects met a certain threshold, which 
-> > > > > still defaulted to 25% and instantly picked it.  The overhead was taking 
-> > > > > slab_lock() for each page, but that was nullified by the performance 
-> > > > > speedup of using the alloc fastpath a majority of the time for both 
-> > > > > kmalloc-256 and kmalloc-2k when in the past it had only been able to serve 
-> > > > > one or two allocs.  If no partial slab met the threshold, the slab_lock() 
-> > > > > is held of the partial slab with the most free objects and returned 
-> > > > > instead.
-> > > > With the per-cpu partial list, I didn't see any workload which is still
-> > > > suffering from the list lock, 
-> > > 
-> > > The merge error that you fixed in 3.2-rc1 for hackbench regression is
-> > > due to add slub to node partial head. And data of hackbench show node
-> > > partial is still heavy used in allocation. 
-> > The patch is already in base kernel, did you mean even with it you still
-> > saw the list locking issue with latest kernel?
-> > 
-> 
-> Yes, list_lock still hurt performance. It will be helpful if you can do
-> some optimize for it. 
-please post data and the workload. In my test, I didn't see the locking
-takes significant time with perf. the slub stat you posted in last mail
-shows most allocation goes the fast path.
+--Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
+
+On Mon, 12 Dec 2011 15:26:01 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On Thu, 8 Dec 2011 21:47:44 -0800 Andrew Morton <akpm@linux-foundation.or=
+g> wrote:
+> >
+> > I suppose this is a good enough fix for that:
+> >=20
+> >  include/linux/mempolicy.h |   10 ----------
+> >  mm/mempolicy.c            |   12 ++++++++++++
+> >  2 files changed, 12 insertions(+), 10 deletions(-)
+>=20
+> OK, I applied this to the akpm tree today.
+
+Actually I applied this:  (put the inlines the the correct file):
+
+ include/linux/mempolicy.h |   10 ----------
+ kernel/cpuset.c           |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index d2589e2..7978eec 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -253,11 +253,6 @@ static inline int vma_migratable(struct vm_area_struct=
+ *vma)
+ 	return 1;
+ }
+=20
+-static inline bool task_has_mempolicy(struct task_struct *task)
+-{
+-	return task->mempolicy;
+-}
+-
+ #else
+=20
+ struct mempolicy {};
+@@ -384,11 +379,6 @@ static inline int mpol_to_str(char *buffer, int maxlen=
+, struct mempolicy *pol,
+ 	return 0;
+ }
+=20
+-static inline bool task_has_mempolicy(struct task_struct *task)
+-{
+-	return false;
+-}
+-
+ #endif /* CONFIG_NUMA */
+ #endif /* __KERNEL__ */
+=20
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index ba5dfe5..540ef69 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -938,6 +938,18 @@ static void cpuset_migrate_mm(struct mm_struct *mm, co=
+nst nodemask_t *from,
+ 	guarantee_online_mems(task_cs(tsk),&tsk->mems_allowed);
+ }
+=20
++#ifdef CONFIG_NUMA
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return task->mempolicy;
++}
++#else
++static inline bool task_has_mempolicy(struct task_struct *task)
++{
++	return false;
++}
++#endif
++
+ /*
+  * cpuset_change_task_nodemask - change task's mems_allowed and mempolicy
+  * @tsk: the task to change
+--=20
+1.7.7.3
+
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO5YYDAAoJEECxmPOUX5FEOaMP/jdzDbmQf0mHLlhkIxCEiEsh
+LIu1yGqYUgRvRkfPOhB3sE/Cv1YlbqAMU5hpIOw/+gEQ1IiMCasl7sD371P3Hr+f
+a0umCJV3Br0xYi9awGKYyhX0KSnCTN/x7HeVQuy2+JpE2KnixKiAZU0aDjwPbs+z
+5PGalGk8p7SIjHdnZ5xs0pJMInNdjRFpwC5mBRfsiabjIQCOuCm850AJ5/VUqNI0
+EABrH/kpKMHzJwmxkVGf+6YMyxjbSfSQdLKWGD4rKB7+QKRk/DyVZTPM+2s3oWYS
+Ay96kI1Q0avVu5NGUyRLYQP+kx0MvT+UqGO0F5Qs4I5a9UKaCcZashJ+iAhCuhau
+n4c8XoNLoUGVwYHgasuP5Ige/UCSA9aO0oe6Szn/aC1pz/c2NIEigHTKaaa7ZGdp
+mkDBLczNW9A4uf2bBdfI4GzmH6Pgnp2y+23qZDvi5S7SnPh6c4rqUF522suYE8Az
+1WcanyrWV5pz4anewJVkydF87XKVPDg7EvkZyQXqoenqs0q9Y72FxMLjqYOulTfm
+JIoDZQWx4jy/MD9lSdAy+Gg8GWcFPqfHI0oEkcXpJomfgrUx4T37n0La0yzwAAQs
+4ck4eDmQgfWF0N6kNonCobeYnQ3875BVaB+JHhFdDD+3OCSGXyNyD1DZNwQc8yDa
+G+DPLJoRYlpZ8tTtP2yW
+=/iT7
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN--
