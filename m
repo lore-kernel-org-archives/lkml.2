@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1LLRDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:03:43 -0500
-Received: from mga14.intel.com ([143.182.124.37]:38188 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab1LLRDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:03:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="84834632"
-Date: Mon, 12 Dec 2011 18:08:46 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Donggeun Kim <dg77.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        gregkh@suse.de, akpm@linux-foundation.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
-Message-ID: <20111212170846.GO13952@sortiz-mobl>
-References: <1322125938-6944-2-git-send-email-dg77.kim@samsung.com>
- <1322125938-6944-3-git-send-email-dg77.kim@samsung.com>
+	id S1753411Ab1LLREO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:04:14 -0500
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:43805 "EHLO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab1LLREK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:04:10 -0500
+Subject: [PATCH] Staging: VME: PIO2: Add GPIOLIB dependancy
+To: rdunlap@xenotime.net, gregkh@suse.de
+From: Martyn Welch <martyn.welch@ge.com>
+Cc: devel@driverdev.osuosl.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 Dec 2011 17:04:06 +0000
+Message-ID: <20111212170301.26724.40502.stgit@ES-BJ21R4J>
+In-Reply-To: <4EE638EA.6010909@xenotime.net>
+References: <4EE638EA.6010909@xenotime.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322125938-6944-3-git-send-email-dg77.kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+The PIO2 driver errors when GPIOLIB, on which it depends, is not enabled.
 
-On Thu, Nov 24, 2011 at 06:12:18PM +0900, Donggeun Kim wrote:
-> The MUIC function in MAX8997 device can be used as
-> a USB port detector and switch.
-> This patch supports the MUIC feature of MAX8997.
+Add dependancy when selecting the PIO2.
 
-I'm queueing this one to my for-next branch as it depends on your previous MFD
-patch.
-I'm also cc'ing Arnd in case he has some objections.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+---
 
-Cheers,
-Samuel.
+Sorry, missed the email on the 6th.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+ drivers/staging/vme/devices/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+
+diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
+index 8f5d286..55ec30c 100644
+--- a/drivers/staging/vme/devices/Kconfig
++++ b/drivers/staging/vme/devices/Kconfig
+@@ -9,6 +9,7 @@ config VME_USER
+ 
+ config VME_PIO2
+ 	tristate "GE PIO2 VME"
++	depends on GPIOLIB
+ 	help
+ 	  Say Y here to include support for the GE PIO2. The PIO2 is a 6U VME
+ 	  slave card, implementing 32 solid-state relay switched IO lines, in
+
+
+--
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
