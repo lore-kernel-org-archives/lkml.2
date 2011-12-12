@@ -1,159 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab1LLBy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 20:54:58 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:50341 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab1LLByz (ORCPT
+	id S1752787Ab1LLCGT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 21:06:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60427 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab1LLCGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 20:54:55 -0500
-X-AuditID: cbfee60d-b7b42ae0000013b6-9a-4ee55ee885e0
-Date: Mon, 12 Dec 2011 01:54:48 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2 1/6] max17042: Move power suppply registration to a
- worker thread
-To: "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "Jason.Wortham@maxim-ic.com" <Jason.Wortham@maxim-ic.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20111212014141375@myungjoo.ham
-Msgkey: 20111212014141375@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20111212014141375@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <17667221.478131323654888104.JavaMail.weblogic@epml26>
-DLP-Filter: Pass
-X-Brightmail-Tracker: AAAAAQAAAZE=
-X-CFilter-Loop: Reflected
+	Sun, 11 Dec 2011 21:06:17 -0500
+Date: Mon, 12 Dec 2011 13:06:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, Jerome Glisse <jglisse@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20111212130608.9684ebb0a98ee767e4b3d040@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Dec_2011_13_06_08_+1100_hO3O5YO0.2ThBoJW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBC1tOmg015450
 
-Sender : dirk.brandewie@gmail.com<dirk.brandewie@gmail.com>
-Date : 2011-12-10 03:08 (GMT+09:00)
-Title : [PATCH v2 1/6] max17042: Move power suppply registration to a worker thread
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> 
-> This patch move the final registration of the battery to a worker
-> thread in preperation for adding the POR proceedure recommended by
-> maxim. This is needed since the Maxim init proceedure requires two
-> long delays totaling 850ms. This patch will reduce the impact on
-> system boot time.  The battery will not be available to the power
-> supply subsystem until the init proceedure is complete
-> 
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+--Signature=_Mon__12_Dec_2011_13_06_08_+1100_hO3O5YO0.2ThBoJW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The commit message is not updated for v2 patchset. 
+Hi Dave,
 
-Besides, (sorry to report this now, I've just reminded this.) MAX17042 has a POR status bit according to the manual describing STATUS register (0x00). You need to do POR reset only when it is actually POR to MAX17042, not to CPU. At normal CPU shutdown/boot-up, POR procedure is not required as MAX17042 is not "rebooted". It is required only when the battery is suspected to be replaced. Thus, I tihink scheduling work and waiting for init_complete is required if POR is true.
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/nouveau/nouveau_sgdma.c between commit a10e9e1dbb39
+("drm/nouveau: fix oopses caused by clear being called on unpopulated
+ttms") from Linus' tree and commit 649bf3ca7734 ("drm/ttm: merge
+ttm_backend and ttm_tt V5") from the drm tree.
 
-Cheers!
-MyungJoo
+I have no idea how to fix this up, so I just used the version from the
+drm tree.
 
-> ---
->  drivers/power/max17042_battery.c |   48 ++++++++++++++++++++++++++------------
->  1 files changed, 33 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-> index 9f0183c..16f3934 100644
-> --- a/drivers/power/max17042_battery.c
-> +++ b/drivers/power/max17042_battery.c
-> @@ -34,6 +34,8 @@ struct max17042_chip {
->  	struct i2c_client *client;
->  	struct power_supply battery;
->  	struct max17042_platform_data *pdata;
-> +	struct work_struct work;
-> +	int    init_complete;
->  };
->  
->  static int max17042_write_reg(struct i2c_client *client, u8 reg, u16 value)
-> @@ -86,6 +88,9 @@ static int max17042_get_property(struct power_supply *psy,
->  	struct max17042_chip *chip = container_of(psy,
->  				struct max17042_chip, battery);
->  
-> +	if (!chip->init_complete)
-> +		return -EAGAIN;
-> +
->  	switch (psp) {
->  	case POWER_SUPPLY_PROP_PRESENT:
->  		val->intval = max17042_read_reg(chip->client,
-> @@ -180,6 +185,31 @@ static int max17042_get_property(struct power_supply *psy,
->  	return 0;
->  }
->  
-> +static void max17042_init_worker(struct work_struct *work)
-> +{
-> +	struct max17042_chip *chip = container_of(work,
-> +				struct max17042_chip, work);
-> +	struct i2c_client *client = chip->client;
-> +	int ret;
-> +
-> +
-> +	/* Initialize registers according to values from the platform data */
-> +	if (chip->pdata->init_data)
-> +		max17042_set_reg(client, chip->pdata->init_data,
-> +				 chip->pdata->num_init_data);
-> +
-> +	if (!chip->pdata->enable_current_sense) {
-> +		max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
-> +		max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
-> +		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
-> +	} else {
-> +		if (chip->pdata->r_sns == 0)
-> +			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
-> +	}
-> +
-> +	chip->init_complete = 1;
-> +}
-> +
->  static int __devinit max17042_probe(struct i2c_client *client,
->  			const struct i2c_device_id *id)
->  {
-> @@ -214,24 +244,12 @@ static int __devinit max17042_probe(struct i2c_client *client,
->  	if (ret) {
->  		dev_err(&client->dev, "failed: power supply register\n");
->  		kfree(chip);
-> -		return ret;
-> -	}
-> -
-> -	/* Initialize registers according to values from the platform data */
-> -	if (chip->pdata->init_data)
-> -		max17042_set_reg(client, chip->pdata->init_data,
-> -				 chip->pdata->num_init_data);
-> -
-> -	if (!chip->pdata->enable_current_sense) {
-> -		max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
-> -		max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
-> -		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
->  	} else {
-> -		if (chip->pdata->r_sns == 0)
-> -			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
-> +		INIT_WORK(&chip->work, max17042_init_worker);
-> +		schedule_work(&chip->work);
->  	}
->  
-> -	return 0;
-> +	return ret;
->  }
->  
->  static int __devexit max17042_remove(struct i2c_client *client)
-> -- 
-> 1.7.7.3
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__12_Dec_2011_13_06_08_+1100_hO3O5YO0.2ThBoJW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO5WGQAAoJEECxmPOUX5FEWH0P/j1Na4TemQcXp+GHizwk7vmp
+joPIviU13MQWJUYcwfx2EUunF0uLvqlZUM3+TPhde237pVE2BxZLKx3Gg+HYGTRU
+TbBauGLzyjOnuC/NSDdVQpicRKMY7y7W1/gi3/+WZQE4eTPuIE+GR5YA/gc02JMj
+gmfp1Kubn+/Z7e9JoFMq+QY77QStYQtXoCcUBziJpKhunjObdB/qa82Q0HAMTi1h
+vatUTB8WmWx+pmvFJ5uxAWlxHqHQbY09s7ojQoKG2Ik2AF159wGkH3fkMyiA5mC8
+7gzXxA3G9BEtH7GrXOTWWTD3igGOHebiNOGREWrb9/AgkZ7q2fr+MiOqFPxweiX5
+Z3haZ7oQQHLMlb/d0Of3nSseKCig+F8H8QASq+RjZ59GmjgO1a9jvKRMR0g6FLnk
+TAHrbdCCpeWDcxXAHDuN2XVv2bGZUQJRiq+zM3r8tjXtp1Pob0ZHE8GPaTUj8AT7
+m2ejWRsTlHmQvDcmSyUtNXSHIQKj7L7xjM3kBz3DIJLxGbdFM8lphyMLSkjukjaf
+K7WEbZtH2b0OgmNDZ1U26FUMpeCiQYG5Wrb5tc9R/YUuRe25FaNWuuFEEZQJVXMa
+rVVXAsWYly+/sg7aIRH3a4QkD4mNPvMr6wMWteDJ4bQXLXhl6c1kSqluRr/osHSJ
+6osW2lhbOeadpGprWSEh
+=3xMl
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__12_Dec_2011_13_06_08_+1100_hO3O5YO0.2ThBoJW--
