@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab1LLD27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 22:28:59 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:4569
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752940Ab1LLD2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 22:28:39 -0500
-X-SpamScore: 2
-X-BigFish: VS2(zzzz1202hzz8275bhz2ei87h2a8h668h839hb79i)
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Bob Liu <lliubbo@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <sonic.adi@gmail.com>, <uclinux-dist-devel@blackfin.uclinux.org>,
-        <vapier@gentoo.org>, Steven Miao <realmz6@gmail.com>,
-        Bob Liu <lliubbo@gmail.com>
-Subject: [PATCH 07/11] blackfin: smp: fix msg queue overflow issue
-Date: Mon, 12 Dec 2011 11:28:29 +0800
-Message-ID: <1323660513-9620-7-git-send-email-lliubbo@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1323660513-9620-1-git-send-email-lliubbo@gmail.com>
-References: <1323660513-9620-1-git-send-email-lliubbo@gmail.com>
+	id S1753098Ab1LLDaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 22:30:55 -0500
+Received: from home.keithp.com ([63.227.221.253]:39356 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051Ab1LLDaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Dec 2011 22:30:52 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed address is invalid"
+In-Reply-To: <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com> <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com>
+User-Agent: Notmuch/0.10.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 11 Dec 2011 19:31:30 -0800
+Message-ID: <867h22jwj1.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Miao <realmz6@gmail.com>
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-disable preemption when icache flush and use wait mode cross call, hold the msg
-queue lock while handle cross function call to avoid overflow
+On Sun, 11 Dec 2011 18:59:43 -0800, Linus Torvalds <torvalds@linux-foundati=
+on.org> wrote:
 
-Signed-off-by: Steven Miao <realmz6@gmail.com>
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
----
- arch/blackfin/mach-common/smp.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+> Interesting. Current -git works for me on my 11" Macbook Air. Which
+> should be identical to yours. This is the 4GB RAM, 128GB disk version,
+> no?
 
-diff --git a/arch/blackfin/mach-common/smp.c b/arch/blackfin/mach-common/smp.c
-index d346405..ac8f8a4 100644
---- a/arch/blackfin/mach-common/smp.c
-+++ b/arch/blackfin/mach-common/smp.c
-@@ -193,14 +193,10 @@ static irqreturn_t ipi_handler_int1(int irq, void *dev_instance)
- 			scheduler_ipi();
- 			break;
- 		case BFIN_IPI_CALL_FUNC:
--			spin_unlock_irqrestore(&msg_queue->lock, flags);
- 			ipi_call_function(cpu, msg);
--			spin_lock_irqsave(&msg_queue->lock, flags);
- 			break;
- 		case BFIN_IPI_CPU_STOP:
--			spin_unlock_irqrestore(&msg_queue->lock, flags);
- 			ipi_cpu_stop(cpu);
--			spin_lock_irqsave(&msg_queue->lock, flags);
- 			break;
- 		default:
- 			printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%lx\n",
-@@ -482,8 +478,10 @@ void smp_icache_flush_range_others(unsigned long start, unsigned long end)
- 	smp_flush_data.start = start;
- 	smp_flush_data.end = end;
- 
--	if (smp_call_function(&ipi_flush_icache, &smp_flush_data, 0))
-+	preempt_disable();
-+	if (smp_call_function(&ipi_flush_icache, &smp_flush_data, 1))
- 		printk(KERN_WARNING "SMP: failed to run I-cache flush request on other CPUs\n");
-+	preempt_enable();
- }
- EXPORT_SYMBOL_GPL(smp_icache_flush_range_others);
- 
--- 
-1.7.0.4
+Mine does have the larger disk (256GB), otherwise they should be identical.
 
+> But I'm running OpenSUSE, and you're running Debian, right? And our
+> kernel configs are probably wildly different, since I tend to try to
+> boot a fairly minimal set.
 
+I've got an ancient kernel config that has been culted along for several
+years; I do build a ton of useless modules, but I boot without an
+initrd, so it seems like there shouldn't be many differences by the time
+this crashes.
+
+> That said, if you've verified that if fails for you, I guess we should
+> revert regardless. Matt, any suggestions for tests to do?
+
+Of course I'd be willing to do whatever tests someone would like to
+suggest; just that I don't know how to get a netconsole on this machine,
+which makes it pretty hard to figure anything out before the screen
+lights up.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTuV1kjYtFsjWk68qAQhfSxAAt2gkvNBzAF5AU8FrKL0odayF3BrfD7QJ
+5pN2AAQjcWoK93x+TgbjoOVIaCtzTRJ/sHTMSxGpEKamQSOEbvuKw5Vh6NZalETT
+ZZEjUIhTz87tUuXi9v9kUhZblLpwpAuzv4HzoIDJazyTnZw8q0LB6Bc1hoBcffYl
+G7X8zumenqUQZulKiEeqoffITN01QB6zwWAIOPjAiprEvrgdERD7XNyZpjbKAkXK
++NNLOrxExY5GF7ZeD6GvcASgmDR519ie6+xFDi8IbTMmESqQYq3QvfMzvT4mgIMO
+1F3SPnbnNdFS2ntH2hKdb0G7qODHRsvZZq4qpcw+EGdVGzryZ8RPQdmJxzONJsc8
+sf1R65TSn2C3uwGHdJttgaWSC04zdd67Hjd99SQNnlhNIbtTpTy1OpD40IBED/Ck
+Vfw7/K25qDbyrSyAHaXjIzEAtHZNsxcKYY7TpIe54WbYon8e4bnHK+46Y2hZ4ZUA
+SpIjBwr9lMl43JEs99SowAtoFI9qZpfNlzN6tLP1uH7r4NStKHnyy7gG/4LSz7Eb
+NwEoYzdb2Rkr4vj/jfIpy8y5JZbO7Hhy9+qahL7cQ6934YwD072we5dV4V9Qk1kM
+KPv8dNi8ZEGcg5n9yfthPVEegoRWRK4DtHu3ERldNCkIkoHV1gCC9Mc/i3KOzXFM
+znSzS7jL7Xc=
+=5mi0
+-----END PGP SIGNATURE-----
+--=-=-=--
