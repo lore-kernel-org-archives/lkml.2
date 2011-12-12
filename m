@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1LLHtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 02:49:23 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40297 "EHLO relay.sw.ru"
+	id S1753253Ab1LLHtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 02:49:49 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24446 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1LLHtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 02:49:01 -0500
+	id S1753049Ab1LLHsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 02:48:51 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
         kirill@shutemov.name, avagin@parallels.com, devel@openvz.org,
         eric.dumazet@gmail.com, cgroups@vger.kernel.org,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v9 9/9] Display maximum tcp memory allocation in kmem cgroup
-Date: Mon, 12 Dec 2011 11:47:09 +0400
-Message-Id: <1323676029-5890-10-git-send-email-glommer@parallels.com>
+Subject: [PATCH v9 7/9] Display current tcp memory allocation in kmem cgroup
+Date: Mon, 12 Dec 2011 11:47:07 +0400
+Message-Id: <1323676029-5890-8-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1323676029-5890-1-git-send-email-glommer@parallels.com>
 References: <1323676029-5890-1-git-send-email-glommer@parallels.com>
@@ -24,58 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces kmem.tcp.max_usage_in_bytes file, living in the
-kmem_cgroup filesystem. The root cgroup will display a value equal
-to RESOURCE_MAX. This is to avoid introducing any locking schemes in
-the network paths when cgroups are not being actively used.
-
-All others, will see the maximum memory ever used by this cgroup.
+This patch introduces kmem.tcp.usage_in_bytes file, living in the
+kmem_cgroup filesystem. It is a simple read-only file that displays the
+amount of kernel memory currently consumed by the cgroup.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 Reviewed-by: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
- net/ipv4/tcp_memcontrol.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ Documentation/cgroups/memory.txt |    1 +
+ net/ipv4/tcp_memcontrol.c        |   21 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 1c9779a..6922b6c 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -79,6 +79,7 @@ Brief summary of control files.
+  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+ 				   independent of user limits
+  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
++ memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
+ 
+ 1. History
+ 
 diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index d438fba..171d7b6 100644
+index e353390..9481f23 100644
 --- a/net/ipv4/tcp_memcontrol.c
 +++ b/net/ipv4/tcp_memcontrol.c
-@@ -29,6 +29,12 @@ static struct cftype tcp_files[] = {
- 		.trigger = tcp_cgroup_reset,
+@@ -17,6 +17,11 @@ static struct cftype tcp_files[] = {
  		.read_u64 = tcp_cgroup_read,
+ 		.private = RES_LIMIT,
  	},
 +	{
-+		.name = "kmem.tcp.max_usage_in_bytes",
-+		.private = RES_MAX_USAGE,
-+		.trigger = tcp_cgroup_reset,
++		.name = "kmem.tcp.usage_in_bytes",
 +		.read_u64 = tcp_cgroup_read,
++		.private = RES_USAGE,
 +	},
  };
  
  static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
-@@ -205,7 +211,8 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
- 		val = tcp_read_usage(memcg);
+@@ -167,6 +172,19 @@ static u64 tcp_read_stat(struct mem_cgroup *memcg, int type, u64 default_val)
+ 	return res_counter_read_u64(&tcp->tcp_memory_allocated, type);
+ }
+ 
++static u64 tcp_read_usage(struct mem_cgroup *memcg)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return atomic_long_read(&tcp_memory_allocated) << PAGE_SHIFT;
++
++	tcp = tcp_from_cgproto(cg_proto);
++	return res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
++}
++
+ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+@@ -176,6 +194,9 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 	case RES_LIMIT:
+ 		val = tcp_read_stat(memcg, RES_LIMIT, RESOURCE_MAX);
  		break;
- 	case RES_FAILCNT:
--		val = tcp_read_stat(memcg, RES_FAILCNT, 0);
-+	case RES_MAX_USAGE:
-+		val = tcp_read_stat(memcg, cft->private, 0);
- 		break;
++	case RES_USAGE:
++		val = tcp_read_usage(memcg);
++		break;
  	default:
  		BUG();
-@@ -226,6 +233,9 @@ static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event)
- 	tcp = tcp_from_cgproto(cg_proto);
- 
- 	switch (event) {
-+	case RES_MAX_USAGE:
-+		res_counter_reset_max(&tcp->tcp_memory_allocated);
-+		break;
- 	case RES_FAILCNT:
- 		res_counter_reset_failcnt(&tcp->tcp_memory_allocated);
- 		break;
+ 	}
 -- 
 1.7.6.4
 
