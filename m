@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1LLWAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:00:47 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34656 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab1LLWAp (ORCPT
+	id S1754308Ab1LLWA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:00:56 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:33375 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280Ab1LLWAw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:00:45 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: Mike Turquette <mturquette@ti.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Initial DT clock bindings
-Date: Mon, 12 Dec 2011 15:00:27 -0700
-Message-Id: <1323727236-4811-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 12 Dec 2011 17:00:52 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 12 Dec 2011 16:52:18 -0500
+Subject: RE: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+Thread-Topic: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit
+ tracepoints
+Thread-Index: AcxOS+higUwf0B+dQeOFVLnSyEpgsRqx47Qw
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+ <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+In-Reply-To: <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1112120233
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Hi,
 
-Here's my second posting of initial device tree bindings for clocks.  I'm
-a lot happier with how this is looking now, and Versatile is pretty much
-entirely converted.  In fact, the realview, integrator and vexpress platforms
-are pretty close now too.  Just for fun I went and converted Highbank also.
+I'm interested in these tracepoints.
+But this patch removed from -mm tree for some reason.
 
-There is still stuff to clean up, and I want to add test cases for the new
-clock framework, but otherwise I think it is pretty complete.  There are
-some changes to the binding documentation that you'll want to pay attention
-to.
+http://www.spinics.net/lists/mm-commits/msg85707.html
 
-This series is based on v3.2-rc5 plus the of_parse_phandle_args() patches
-that I posted a couple of hours ago.
+Do you plan to update it and push to upstream?
 
+>@@ -859,7 +860,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+> 	 */
+> 	exit_idle();
+> 	irq_enter();
+>+	trace_irq_vector_entry(LOCAL_TIMER_VECTOR);
+> 	local_apic_timer_interrupt();
+>+	trace_irq_vector_exit(LOCAL_TIMER_VECTOR);
+> 	irq_exit();
 
- .../devicetree/bindings/clock/clock-bindings.txt   |  114 +++++++++++
- .../devicetree/bindings/clock/fixed-clock.txt      |   21 ++
- arch/arm/Kconfig                                   |    1 +
- arch/arm/boot/dts/highbank.dts                     |   32 +++-
- arch/arm/boot/dts/testcases/tests-phandle.dtsi     |    2 +
- arch/arm/boot/dts/versatile-ab.dts                 |   79 ++++++++
- arch/arm/common/timer-sp.c                         |   72 ++++++-
- arch/arm/include/asm/hardware/timer-sp.h           |    2 +
- arch/arm/mach-highbank/clock.c                     |   19 --
- arch/arm/mach-highbank/core.h                      |    1 -
- arch/arm/mach-highbank/highbank.c                  |   13 +-
- arch/arm/mach-highbank/include/mach/clkdev.h       |   11 +
- arch/arm/mach-integrator/impd1.c                   |   30 +---
- arch/arm/mach-integrator/include/mach/clkdev.h     |   19 --
- arch/arm/mach-integrator/integrator_cp.c           |   21 +--
- arch/arm/mach-realview/core.c                      |   22 +--
- arch/arm/mach-realview/include/mach/clkdev.h       |   10 -
- arch/arm/mach-versatile/core.c                     |   61 +------
- arch/arm/mach-versatile/include/mach/clkdev.h      |   10 -
- arch/arm/mach-versatile/versatile_dt.c             |   39 ++++-
- arch/arm/mach-vexpress/include/mach/clkdev.h       |    9 -
- arch/arm/mach-zynq/include/mach/clkdev.h           |   10 -
- arch/arm/plat-versatile/clock.c                    |  151 ++++++++++++++
- arch/arm/plat-versatile/include/plat/clock.h       |   34 ++++
- drivers/clk/clkdev.c                               |    9 +
- drivers/of/Kconfig                                 |    6 +
- drivers/of/Makefile                                |    1 +
- drivers/of/base.c                                  |   36 ++++
- drivers/of/clock.c                                 |  208 ++++++++++++++++++++
- drivers/of/selftest.c                              |   29 +++
- include/linux/of.h                                 |    3 +
- include/linux/of_clk.h                             |   41 ++++
- 32 files changed, 893 insertions(+), 223 deletions(-)
+It would be better if you add "regs" to the argument of trace_irq_vector_entry()/ trace_irq_vector_exit().
 
+With "regs", we are able to know what part of the system CPUs execute periodically. 
+This information really helps us find a root cause of system slowdown or hung up.
+
+Seiji
