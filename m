@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab1LLWcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 17:32:23 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33632 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754326Ab1LLWb5 (ORCPT
+	id S1754337Ab1LLWda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 17:33:30 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:56094 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab1LLWd2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 17:31:57 -0500
-X-Sasl-enc: ZXCigaUM/rug42EfxGBeaDJJk/fji+/yDyQdFBaoUhcx 1323729116
-Date: Mon, 12 Dec 2011 14:27:12 -0800
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 4/4] Drivers: hv: Support building the vmbus driver as
- part of the kernel
-Message-ID: <20111212222712.GA13510@kroah.com>
-References: <1323710931-29616-1-git-send-email-kys@microsoft.com>
- <1323710959-29655-1-git-send-email-kys@microsoft.com>
- <1323710959-29655-4-git-send-email-kys@microsoft.com>
+	Mon, 12 Dec 2011 17:33:28 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Lukas Czerner <lczerner@redhat.com>
+CC: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "jiayingz@google.com" <jiayingz@google.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 12 Dec 2011 17:32:57 -0500
+Subject: RE: [PATCH]tracepoint: add drop_transaction/update_superblock_end
+ to jbd2
+Thread-Topic: [PATCH]tracepoint: add drop_transaction/update_superblock_end
+ to jbd2
+Thread-Index: AcyvU0XPZJhiiHsvTb6Tp5XxhYabWAJynv8A
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47D9@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
+ <alpine.LFD.2.00.1111301227200.4662@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1111301227200.4662@dhcp-27-109.brq.redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323710959-29655-4-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1112120243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 09:29:19AM -0800, K. Y. Srinivasan wrote:
-> Support building the vmbus driver as part of the kernel. 
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+>> This patch adds trace_jbd2_drop_transaction and trace_jbd2_update_superblock_end
+>> because there are similar tracepoints in jbd and they are needed in jbd2 as well.
+>>
+>> Seiji
+>
+>Looks good, thanks.
+>
+>Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+>
+>>
+>>
+>>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 
-This was already applied to my tree, I don't know why you missed it...
+Are there anyone else who can review my patch?
 
-greg k-h
+Seiji
