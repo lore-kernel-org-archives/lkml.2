@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1LLLlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:41:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:52075 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681Ab1LLLlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:41:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="46267456"
-Date: Mon, 12 Dec 2011 12:46:18 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Afzal Mohammed <afzal@ti.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, nsekhar@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 0/2] PMIC TPS65910 fixes
-Message-ID: <20111212114618.GB13952@sortiz-mobl>
-References: <1320758615-29085-1-git-send-email-afzal@ti.com>
+	id S1752775Ab1LLLsn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:48:43 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:37401 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752274Ab1LLLsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 06:48:38 -0500
+Message-ID: <4EE5EA04.9090307@st.com>
+Date: Mon, 12 Dec 2011 17:18:20 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320758615-29085-1-git-send-email-afzal@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rabin Vincent <rabin@rab.in>, Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 0/2] mfd/stmpe: Add SPI interface support
+References: <cover.1320735864.git.viresh.kumar@st.com> <CAH+eYFAsLVU8A=m1Y1xm2YDRXhL1EGzxB-OcNQNd+w0tjMBZPA@mail.gmail.com> <4EBCF8FC.5020504@st.com> <CAH+eYFCvoy2eubAQkXROZVC7eNph58ohtdsP1pETLuS-6QExtQ@mail.gmail.com> <4EBD08E7.3080608@st.com> <20111212113617.GA13952@sortiz-mobl>
+In-Reply-To: <20111212113617.GA13952@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mohamed,
+On 12/12/2011 5:06 PM, Samuel Ortiz wrote:
+> Ok, but I really hope you will be able to get back at it. I applied your
+> patchset to my for-next branch for now.
 
-On Tue, Nov 08, 2011 at 06:53:35PM +0530, Afzal Mohammed wrote:
-> Hi,
-> 
-> This series applies over Kyle Manna's v3 patch series,
-> https://lkml.org/lkml/2011/11/3/257,
-> with changes as per comments on
-> his/her 1/6 "mfd: TPS65910: Handle non-existent devices"
-Kyle has not updated the patchset, afaik. So your patches don't apply on top
-of my for-next branch. Please rebase them.
-
-Cheers,
-Samuel.
+I will surely like to do it as soon as i get some time.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+viresh
