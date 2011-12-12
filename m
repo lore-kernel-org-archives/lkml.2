@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1LLVD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 16:03:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab1LLVDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 16:03:55 -0500
-Date: Mon, 12 Dec 2011 22:03:28 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: t cheney <cdmalord@gmail.com>
-Cc: gdb <gdb@sourceware.org>, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        crash-catcher@lists.fedorahosted.org
-Subject: Re: [PATCH 1/1] x86: Add process memory layout to coredump file
-Message-ID: <20111212210328.GA29248@host2.jankratochvil.net>
-References: <CAE04G=Bu4WnU9SYU9u3-ap6OrBEjWONK8TA8bYBy5OSCCzzDqg@mail.gmail.com>
- <CAE04G=D_OzrDRUOj-iVPJY5sNTLMfUKAeikks8TWMYOWvh6HeA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE04G=D_OzrDRUOj-iVPJY5sNTLMfUKAeikks8TWMYOWvh6HeA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754159Ab1LLVEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 16:04:36 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43311 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754042Ab1LLVEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 16:04:35 -0500
+Subject: Re: [PATCH 1/2] mtd/nand : set Nand flash page address to FBAR and
+ FPAR correctly
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: shuo.liu@freescale.com
+Cc: dwmw2@infradead.org, Artem.Bityutskiy@nokia.com, scottwood@freescale.com,
+        linux-mtd@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        leoli@freescale.com
+Date: Mon, 12 Dec 2011 23:04:25 +0200
+In-Reply-To: <1323423775-26951-1-git-send-email-shuo.liu@freescale.com>
+References: <1323423775-26951-1-git-send-email-shuo.liu@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323723871.2297.9.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Dec 2011 15:10:00 +0100, t cheney wrote:
-> This patch just add memory layout(same as /proc/pid/maps) to
-> coredump file. The layout is appended to corenote segment with
-> flag NT_MAPS=7.
+On Fri, 2011-12-09 at 17:42 +0800, shuo.liu@freescale.com wrote:
+> From: Liu Shuo <b35362@freescale.com>
+> 
+> If we use the Nand flash chip whose number of pages in a block is greater
+> than 64(for large page), we must treat the low bit of FBAR as being the
+> high bit of the page address due to the limitation of FCM, it simply uses
+> the low 6-bits (for large page) of the combined block/page address as the
+> FPAR component, rather than considering the actual block size.
 
-FYI this has been solved by ABRT - Automated Bug-Reporting Tool
-	https://fedorahosted.org/abrt/
-	(it is distro-neutral despite its homepage)
+Pushed this one to l2-mtd-2.6.git, thanks!
 
-Core file is there a subdirectory where the core file is just one of the many
-associated files:
-/var/spool/abrt/ccpp-*:
-	abrt_version analyzer architecture cmdline component coredump count
-	dso_list environ executable hostname kernel maps os_release package
-	pid pwd reason time uid username uuid var_log_messages
+Artem.
 
-More info files are being continually added, such as /proc/PID/fd{,info}/
-mapping at the crash dump time etc.  You would need to add many more core file
-notes to make the core files useful for later analysis.
-
-
-Regards,
-Jan
