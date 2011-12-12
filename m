@@ -1,118 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab1LLLNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 06:13:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49262 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1LLLNV convert rfc822-to-8bit (ORCPT
+	id S1752633Ab1LLLNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 06:13:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47057 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1LLLNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 06:13:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANFwon04fJe9z+5wKXp55Kp-SX+FZyAhnNcAH9zi6zBd++GSFg@mail.gmail.com>
-References: <CANFwon04fJe9z+5wKXp55Kp-SX+FZyAhnNcAH9zi6zBd++GSFg@mail.gmail.com>
-Date: Mon, 12 Dec 2011 20:13:20 +0900
-Message-ID: <CABiHV1ShpvmA0r0wJtepnWyQ2ZT3hXtYFdKMUaZ=axTgC7uR0Q@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111111 release (Android
- support OK)
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 06:13:40 -0500
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal routine fails
+Date: Mon, 12 Dec 2011 16:48:42 +0530
+Message-Id: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 14, 2011 at 2:15 PM, Hui Zhu <teawater@gmail.com> wrote:
-> KGTP is a realtime and lightweight Linux Kernel GDB debugger and tracer.
->
-> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
-> current machine or remote machine can debug and trace Linux through
-> GDB tracepoint without stopping the Linux Kernel.
-> And even if the board doesn't have GDB on it and doesn't have
-> interface for remote debug. It can debug the Linux Kernel using
-> offline debug.
-> Now, it supports X86-32, X86-64, MIPS and ARM.
->
-> Now, KGTP 20111111 release.
->
-> The change of this release is:
-> Add a doc for use KGTP with Android in
-> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid
-> post_handler will make kprobes-optimization cannot be used. So make
-> gtp_kp_post_handler be call only when tpe->step is true.
-> Make rdtsc_current to x86 special.
-> Register easy Kprobe handler to speed up it when no tracepoint access
-> $cooked_clock, $cooked_rdtsc or "pc_pe" tvariable.
-> Fix a bug of ARM build.
-> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
->
-> According to the comments of Christoph.  I make a patch for Linux
-> Kernel and make it looks OK with checkpatch.pl.  The file gtp.patch is
-> include in the source of KGTP code.
-Dear Hui Zhu,
+It has been observed that a number of USB HDD's do not respond correctly
+to SCSI mode sense command(retrieve caching pages) which results in their
+Write Cache being discarded by queue requests i.e., WCE if left set to
+'0'(disabled).
+This results in a number of Filesystem corruptions, when the device
+is unplugged abruptly.
 
-Recently, I synchronized KGTP kernel source with svn 838 to test
-built-in kernel
-after adjusting recent bug-fix. I still had a compilation error.
-Please, adjust the below patch content to support  X86/ARM
-architecture normally.
+So, in order to identify the devices correctly - give it
+a last try using ATA_16 after failure from normal routine.
+Introduce a mechanism to store write-cache type using /sys/class/
+interface, so that the normal code continues to function without errors.
 
-==========
->From 39d58cc7dab8df5e57fa106e8e7f00e562b45212 Mon Sep 17 00:00:00 2001
-From: Geunsik Lim <geunsik.lim@samsung.com>
-Date: Mon, 10 Dec 2011 18:08:03 +0900
-Subject: [PATCH] Modify perf related func interface.
-
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Signed-off-by: Nam-Jae Jeon <namjae.jeon@samsung.com>
 ---
- lib/gtp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/sd.c          |   49 +++++++++++++++++++++++++++++++++++++++++++-
+ include/scsi/scsi.h        |   32 ++++++++++++++++++++++++++++
+ include/scsi/scsi_device.h |    2 +
+ 3 files changed, 82 insertions(+), 1 deletions(-)
 
-diff --git a/lib/gtp.c b/lib/gtp.c
-index 9bdf82c..9a2670e 100644
---- a/lib/gtp.c
-+++ b/lib/gtp.c
-@@ -4480,7 +4480,7 @@ restart:
-                tve->pts->event =
-                        perf_event_create_kernel_counter(&(tve->pts->attr),
-                                                         tve->pts->cpu,
--                                                        NULL, NULL, NULL);
-+                                                        NULL, NULL);
-                if (IS_ERR(tve->pts->event)) {
-                        int     ret = PTR_ERR(tve->pts->event);
-
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index fa3a591..5227d65 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -124,7 +124,7 @@ static mempool_t *sd_cdb_pool;
+ 
+ static const char *sd_cache_types[] = {
+ 	"write through", "none", "write back",
+-	"write back, no read (daft)"
++	"write back, no read (daft)", "write back(ata cmd)"
+ };
+ 
+ static ssize_t
+@@ -156,8 +156,15 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	}
+ 	if (ct < 0)
+ 		return -EINVAL;
++
++	if (ct & 0x04) {
++		sdp->use_ata_cmd = 1;
++		goto revalidate_disk;
++	}
++
+ 	rcd = ct & 0x01 ? 1 : 0;
+ 	wce = ct & 0x02 ? 1 : 0;
++
+ 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
+ 			    SD_MAX_RETRIES, &data, NULL))
+ 		return -EINVAL;
+@@ -175,6 +182,8 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 			sd_print_sense_hdr(sdkp, &sshdr);
+ 		return -EINVAL;
+ 	}
++
++revalidate_disk:
+ 	revalidate_disk(sdkp->disk);
+ 	return count;
+ }
+@@ -2029,11 +2038,15 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 	int old_wce = sdkp->WCE;
+ 	int old_rcd = sdkp->RCD;
+ 	int old_dpofua = sdkp->DPOFUA;
++	unsigned char cdb[ATA_16_LEN] = {0};
+ 
+ 	first_len = 4;
+ 	if (sdp->skip_ms_page_8) {
+ 		if (sdp->type == TYPE_RBC)
+ 			goto defaults;
++		else if (sdp->use_ata_cmd) {
++			goto WCE_USING_ATA;
++		}
+ 		else {
+ 			if (sdp->skip_ms_page_3f)
+ 				goto defaults;
+@@ -2142,6 +2155,39 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 			sdkp->DPOFUA = 0;
+ 		}
+ 
++WCE_USING_ATA:
++		if (!sdp->removable && (sdp->use_ata_cmd && !sdkp->WCE)) {
++			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache "
++				"enable/disable using ATA command\n");
++			cdb[0] = ATA_16;
++			/* Packet command, Programmed I/O -
++			 * PIO - Indicates Data in */
++			cdb[1] = ATA_PROTO_PIO_IN;
++			/* Data read sectors from device */
++			cdb[2] = CDB2_TLEN_NSECT |
++				 CDB2_TLEN_SECTORS | CDB2_TDIR_FROM_DEV;
++			cdb[6] = 0x01; /* No. of Sectors To Read */
++			cdb[13] = ATA_USING_LBA;
++			cdb[14] = ATA_OP_IDENTIFY;
++
++			sdkp->WCE = 0;
++			sdkp->RCD = 0;
++			sdkp->DPOFUA = 0;
++
++			if (!scsi_execute_req(sdp, cdb, DMA_FROM_DEVICE,
++				buffer,	SD_BUF_SIZE, &sshdr, SD_TIMEOUT,
++				SD_MAX_RETRIES, NULL)) {
++				/*
++				 * '6th' Bit in Word 85 Corresponds to
++				 * Write Cache being Enabled/disabled,
++				 * Word 85 represnets the features supported
++				 */
++				if (le16_to_cpu(
++					((unsigned short *)buffer)[85]) & 0x20)
++					sdkp->WCE = 1;
++			}
++		}
++
+ 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
+ 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
+ 			sd_printk(KERN_NOTICE, sdkp,
+@@ -2515,6 +2561,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+ 	sdkp->RCD = 0;
+ 	sdkp->ATO = 0;
+ 	sdkp->first_scan = 1;
++	sdp->use_ata_cmd = 0;
+ 
+ 	sd_revalidate_disk(gd);
+ 
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index 8001ae4..9e44805 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -181,6 +181,38 @@ struct scsi_cmnd;
+ #define	ATA_16		      0x85	/* 16-byte pass-thru */
+ #define	ATA_12		      0xa1	/* 12-byte pass-thru */
+ 
++#define ATA_16_LEN     16
++#define ATA_OP_IDENTIFY        0xec /* Command to Identify device*/
++
++#define ATA_LBA48            1
++#define ATA_PROTO_NON_DATA   (3 << 1)
++#define ATA_PROTO_PIO_IN     (4 << 1)
++#define ATA_PROTO_PIO_OUT    (5 << 1)
++#define ATA_PROTO_DMA        (6 << 1)
++
++/*
++ * Some useful ATA register bits
++ */
++enum {
++	ATA_USING_LBA   =       (1 << 6),
++	ATA_STAT_DRQ    =       (1 << 3),
++	ATA_STAT_ERR    =       (1 << 0),
++};
++
++enum {
++	CDB2_TLEN_NODATA     = 0 << 0,
++	CDB2_TLEN_FEAT       = 1 << 0,
++	CDB2_TLEN_NSECT      = 2 << 0,
++
++	CDB2_TLEN_BYTES      = 0 << 2,
++	CDB2_TLEN_SECTORS    = 1 << 2,
++
++	CDB2_TDIR_TO_DEV     = 0 << 3,
++	CDB2_TDIR_FROM_DEV   = 1 << 3,
++
++	CDB2_CHECK_COND      = 1 << 5,
++};
++
+ /*
+  *	SCSI command lengths
+  */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 5591ed5..edfa981 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -151,6 +151,8 @@ struct scsi_device {
+ 	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
+ 	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
+ 	unsigned is_visible:1;	/* is the device visible in sysfs */
++	unsigned use_ata_cmd; /* device which do not responed to normal routine,
++			       * try ATA_16 command on them. */
+ 
+ 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
+ 	struct list_head event_list;	/* asserted events */
 -- 
-1.7.3.4
-==========
+1.7.2.3
 
-Thank you for your contribution for embedded kernel debugging
-
->
-> Thanks,
-> Hui
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Best regards,
-Geunsik Lim ( Samsung Electronics )
-Blog : http://blog.naver.com/invain/
-Homepage: http://leemgs.fedorapeople.org
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
