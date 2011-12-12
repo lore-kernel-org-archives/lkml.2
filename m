@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab1LLElu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Dec 2011 23:41:50 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:35060 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab1LLEls (ORCPT
+	id S1752382Ab1LLEoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Dec 2011 23:44:46 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45041 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752127Ab1LLEoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Dec 2011 23:41:48 -0500
-Date: Mon, 12 Dec 2011 15:41:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20111212154139.9c8aaa79884568ca461cb3f6@canb.auug.org.au>
-In-Reply-To: <20111212152601.e03fe38dc6606f70d86a1cef@canb.auug.org.au>
-References: <20111209160856.d1f8de40a6d415cd5d9cafc7@canb.auug.org.au>
-	<20111208214744.19117662.akpm@linux-foundation.org>
-	<20111212152601.e03fe38dc6606f70d86a1cef@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN"
+	Sun, 11 Dec 2011 23:44:44 -0500
+Date: Mon, 12 Dec 2011 12:44:38 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        linaro-dev@lists.linaro.org, arnd@arndb.de, eric.miao@linaro.org
+Subject: Re: [PATCH 01/06] MFD: DA9052/53 MFD core module v9
+Message-ID: <20111212044437.GB2806@opensource.wolfsonmicro.com>
+References: <1323440144.23171.69.camel@dhruva>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323440144.23171.69.camel@dhruva>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 09, 2011 at 07:45:44PM +0530, Ashish Jangam wrote:
+> The DA9052/53 is a highly integrated PMIC subsystem with supply domain
+> flexibility to support wide range of high performance application.
 
-Hi Andrew,
+This looks pretty good now.  There's a few issues below but with those
+corrected the driver looks good.
 
-On Mon, 12 Dec 2011 15:26:01 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Thu, 8 Dec 2011 21:47:44 -0800 Andrew Morton <akpm@linux-foundation.or=
-g> wrote:
-> >
-> > I suppose this is a good enough fix for that:
-> >=20
-> >  include/linux/mempolicy.h |   10 ----------
-> >  mm/mempolicy.c            |   12 ++++++++++++
-> >  2 files changed, 12 insertions(+), 10 deletions(-)
->=20
-> OK, I applied this to the akpm tree today.
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Actually I applied this:  (put the inlines the the correct file):
+> +int da9052_add_regulator_devices(struct da9052 *da9052)
+> +{
+> +	struct platform_device *pdev;
+> +	int i, ret;
+> +
+> +	for (i = 0; i < DA9052_MAX_REGULATORS; i++) {
+> +		pdev = platform_device_alloc("da9052-regulator", i);
+> +		if (!pdev)
+> +			return -ENOMEM;
+> +
+> +		pdev->dev.parent = da9052->dev;
+> +		ret = platform_device_add(pdev);
+> +		if (ret) {
+> +			platform_device_put(pdev);
+> +			return ret;
+> +		}
+> +	}
 
- include/linux/mempolicy.h |   10 ----------
- kernel/cpuset.c           |   12 ++++++++++++
- 2 files changed, 12 insertions(+), 10 deletions(-)
+Same comment as ever about these - just make them normal MFD children.
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index d2589e2..7978eec 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -253,11 +253,6 @@ static inline int vma_migratable(struct vm_area_struct=
- *vma)
- 	return 1;
- }
-=20
--static inline bool task_has_mempolicy(struct task_struct *task)
--{
--	return task->mempolicy;
--}
--
- #else
-=20
- struct mempolicy {};
-@@ -384,11 +379,6 @@ static inline int mpol_to_str(char *buffer, int maxlen=
-, struct mempolicy *pol,
- 	return 0;
- }
-=20
--static inline bool task_has_mempolicy(struct task_struct *task)
--{
--	return false;
--}
--
- #endif /* CONFIG_NUMA */
- #endif /* __KERNEL__ */
-=20
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index ba5dfe5..540ef69 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -938,6 +938,18 @@ static void cpuset_migrate_mm(struct mm_struct *mm, co=
-nst nodemask_t *from,
- 	guarantee_online_mems(task_cs(tsk),&tsk->mems_allowed);
- }
-=20
-+#ifdef CONFIG_NUMA
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return task->mempolicy;
-+}
-+#else
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return false;
-+}
-+#endif
-+
- /*
-  * cpuset_change_task_nodemask - change task's mems_allowed and mempolicy
-  * @tsk: the task to change
---=20
-1.7.7.3
+> +	if (!pdata && !pdata->irq_base)
+> +		da9052->irq_base = -1;
 
+The above should be || not && - you want to set irq_base to -1 if you
+don't have one provided.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> +static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
+> +				     unsigned char bit_mask,
+> +				     unsigned char reg_val)
+> +{
+> +	if (reg > DA9052_MAX_REG_CNT) {
+> +		dev_err(da9052->dev, "invalid reg %x\n", reg);
+> +		return -EINVAL;
+> +	}
 
---Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO5YYDAAoJEECxmPOUX5FEOaMP/jdzDbmQf0mHLlhkIxCEiEsh
-LIu1yGqYUgRvRkfPOhB3sE/Cv1YlbqAMU5hpIOw/+gEQ1IiMCasl7sD371P3Hr+f
-a0umCJV3Br0xYi9awGKYyhX0KSnCTN/x7HeVQuy2+JpE2KnixKiAZU0aDjwPbs+z
-5PGalGk8p7SIjHdnZ5xs0pJMInNdjRFpwC5mBRfsiabjIQCOuCm850AJ5/VUqNI0
-EABrH/kpKMHzJwmxkVGf+6YMyxjbSfSQdLKWGD4rKB7+QKRk/DyVZTPM+2s3oWYS
-Ay96kI1Q0avVu5NGUyRLYQP+kx0MvT+UqGO0F5Qs4I5a9UKaCcZashJ+iAhCuhau
-n4c8XoNLoUGVwYHgasuP5Ige/UCSA9aO0oe6Szn/aC1pz/c2NIEigHTKaaa7ZGdp
-mkDBLczNW9A4uf2bBdfI4GzmH6Pgnp2y+23qZDvi5S7SnPh6c4rqUF522suYE8Az
-1WcanyrWV5pz4anewJVkydF87XKVPDg7EvkZyQXqoenqs0q9Y72FxMLjqYOulTfm
-JIoDZQWx4jy/MD9lSdAy+Gg8GWcFPqfHI0oEkcXpJomfgrUx4T37n0La0yzwAAQs
-4ck4eDmQgfWF0N6kNonCobeYnQ3875BVaB+JHhFdDD+3OCSGXyNyD1DZNwQc8yDa
-G+DPLJoRYlpZ8tTtP2yW
-=/iT7
------END PGP SIGNATURE-----
-
---Signature=_Mon__12_Dec_2011_15_41_39_+1100_UY4M_jALS9/.WCrN--
+regmap will do this for you if you tell it max_register, this will also
+get you the ability to inspect the device registers via debugfs which
+can be very helpful.  I'd also encourage you to enable cache support, it
+should make system performance better.
