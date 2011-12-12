@@ -1,140 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab1LLRUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 12:20:21 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34675 "EHLO gir.skynet.ie"
+	id S1753528Ab1LLRVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 12:21:14 -0500
+Received: from home.keithp.com ([63.227.221.253]:43918 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753227Ab1LLRUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 12:20:18 -0500
-Date: Mon, 12 Dec 2011 17:20:15 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 02/11] mm: compaction: introduce
- isolate_{free,migrate}pages_range().
-Message-ID: <20111212172015.GL3277@csn.ul.ie>
-References: <1321634598-16859-1-git-send-email-m.szyprowski@samsung.com>
- <1321634598-16859-3-git-send-email-m.szyprowski@samsung.com>
- <20111212140728.GC3277@csn.ul.ie>
- <op.v6dub1ms3l0zgt@mpn-glaptop>
- <20111212163052.GK3277@csn.ul.ie>
- <op.v6dx7bo43l0zgt@mpn-glaptop>
+	id S1752193Ab1LLRVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 12:21:13 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed address is invalid"
+In-Reply-To: <CA+55aFzkq-3z3URp75LkVd=Qk1nEk76wDZCrLPKyabNcdieQVA@mail.gmail.com>
+References: <1323648762-2148-1-git-send-email-keithp@keithp.com> <CA+55aFydzKrzUaDtBaebjKKO4xVpubfZAXP6oSD-SDuDMq9eGw@mail.gmail.com> <867h22jwj1.fsf@sumi.keithp.com> <4EE575E3.7090206@zytor.com> <8639cqjvyn.fsf@sumi.keithp.com> <1323684083.3669.15.camel@mfleming-mobl1.ger.corp.intel.com> <86sjkpiw8i.fsf@sumi.keithp.com> <CA+55aFzkq-3z3URp75LkVd=Qk1nEk76wDZCrLPKyabNcdieQVA@mail.gmail.com>
+User-Agent: Notmuch/0.10.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 12 Dec 2011 09:21:51 -0800
+Message-ID: <86mxaxiu34.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <op.v6dx7bo43l0zgt@mpn-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 05:46:13PM +0100, Michal Nazarewicz wrote:
-> On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> >On Mon, Dec 12, 2011 at 04:22:39PM +0100, Michal Nazarewicz wrote:
-> >>> <SNIP>
-> >>>
-> >>>>+		if (!pfn_valid_within(pfn))
-> >>>>+			goto skip;
-> >>>
-> >>>The flow of this function in general with gotos of skipped and next
-> >>>is confusing in comparison to the existing function. For example,
-> >>>if this PFN is not valid, and no freelist is provided, then we call
-> >>>__free_page() on a PFN that is known to be invalid.
-> >>>
-> >>>>+		++nr_scanned;
-> >>>>+
-> >>>>+		if (!PageBuddy(page)) {
-> >>>>+skip:
-> >>>>+			if (freelist)
-> >>>>+				goto next;
-> >>>>+			for (; start < pfn; ++start)
-> >>>>+				__free_page(pfn_to_page(pfn));
-> >>>>+			return 0;
-> >>>>+		}
-> >>>
-> >>>So if a PFN is valid and !PageBuddy and no freelist is provided, we
-> >>>call __free_page() on it regardless of reference count. That does not
-> >>>sound safe.
-> >>
-> >>Sorry about that.  It's a bug in the code which was caught later on.  The
-> >>code should read ???__free_page(pfn_to_page(start))???.
-> 
-> On Mon, 12 Dec 2011 17:30:52 +0100, Mel Gorman <mel@csn.ul.ie> wrote:
-> >That will call free on valid PFNs but why is it safe to call
-> >__free_page() at all?  You say later that CMA requires that all
-> >pages in the range be valid but if the pages are in use, that does
-> >not mean that calling __free_page() is safe. I suspect you have not
-> >seen a problem because the pages in the range were free as expected
-> >and not in use because of MIGRATE_ISOLATE.
-> 
-> All pages from [start, pfn) have passed through the loop body which
-> means that they are valid and they have been removed from buddy (for
-> caller's use). Also, because of split_free_page(), all of those pages
-> have been split into 0-order pages. 
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Ah, I see. Even though you are not putting the pages on a freelist, the
-function still returns with an elevated reference count and it's up to
-the caller to find them again.
+On Mon, 12 Dec 2011 08:50:52 -0800, Linus Torvalds <torvalds@linux-foundati=
+on.org> wrote:
 
-> Therefore, in error recovery, to
-> undo what the loop has done so far, we put give back to buddy by
-> calling __free_page() on each 0-order page.
-> 
+> Ahh. And the reason it works for me is that I don't even have
+> "CONFIG_EFI" enabled, much less EFI debugging. So I never trigger the
+> buggy code at all.
 
-Ok.
+I foolishly assumed that an EFI machine required CONFIG_EFI...
 
-> >>>> 		/* Found a free page, break it into order-0 pages */
-> >>>> 		isolated = split_free_page(page);
-> >>>> 		total_isolated += isolated;
-> >>>>-		for (i = 0; i < isolated; i++) {
-> >>>>-			list_add(&page->lru, freelist);
-> >>>>-			page++;
-> >>>>+		if (freelist) {
-> >>>>+			struct page *p = page;
-> >>>>+			for (i = isolated; i; --i, ++p)
-> >>>>+				list_add(&p->lru, freelist);
-> >>>> 		}
-> >>>>
-> >>>>-		/* If a page was split, advance to the end of it */
-> >>>>-		if (isolated) {
-> >>>>-			blockpfn += isolated - 1;
-> >>>>-			cursor += isolated - 1;
-> >>>>-		}
-> >>>>+next:
-> >>>>+		pfn += isolated;
-> >>>>+		page += isolated;
-> >>>
-> >>>The name isolated is now confusing because it can mean either
-> >>>pages isolated or pages scanned depending on context. Your patch
-> >>>appears to be doing a lot more than is necessary to convert
-> >>>isolate_freepages_block into isolate_freepages_range and at this point,
-> >>>it's unclear why you did that.
-> >>
-> >>When CMA uses this function, it requires all pages in the range to be valid
-> >>and free. (Both conditions should be met but you never know.)
-> 
-> To be clear, I meant that the CMA expects pages to be in buddy when the function
-> is called but after the function finishes, all the pages in the range are removed
-> from buddy.  This, among other things, is why the call to split_free_page() is
-> necessary.
-> 
+=2D-=20
+keith.packard@intel.com
 
-Understood.
+--=-=-=
+Content-Type: application/pgp-signature
 
--- 
-Mel Gorman
-SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTuY4LzYtFsjWk68qAQgnDA/9FFlaNp9b+11QQllnJdRe17R5fiO6dn5s
+H3Vn/Nyq/CDcqV1r5Wq/c5Sl1OTPhph9Kf/IWsaXPCvKxYQry5Zamc3jf2TdP/RG
+EtIYgp7Pp6hk7F27aGKlPJMISqmscWou5LKHZ5Z8E1Xfh3rBjeTWKLVt3c3lmzXM
+JOwYSv80KeYow64jWM6tvPJPJmYhsmPbdUH6PVgn6aiqMIK+VpRXTd0oHuEgqqmN
+whHrHiGkV00aEffhTuqG/8DaUSy97EnEGxwyGuM2f/zD4dnHy9ECufCla2dgIxBP
+HoVhfi4MoOw+qXzgSM58+HQwkmyQEicJJ1INfkXNriRaZuGIDZkkeCUSxX4qJsNb
+LdCTEgwhbNhFI/NmKLL3SUS8LD7OfjvzIfq2zO5ge0KNeWgxJXzaXnQKqe/hPlNL
+bwq0q0llvbijZClC/7CzqHU6SYAITCVJxJPuKjeQeXJhW1QwEmGHnzKidPMvRu7i
+34Cm2JpylZSTxP4gJ66hX584AlQQtp9ePbpECkIks2gHhI8iDJRVBlLupDvS+kbT
+5XUM1p08z3/73w5FW6gtIqiczy0wvvSLl/ol2m64s9C57XVRj9CYS7073sMBfgof
+qZuBD61n7hEwQ5PBB3UWYhQzHd+shbCPNWqEY3yJOwjw42icguec9+GAwxJpV93Q
+424znuTrSUA=
+=WnkT
+-----END PGP SIGNATURE-----
+--=-=-=--
