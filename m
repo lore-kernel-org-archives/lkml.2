@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1LMAm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:42:56 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46333 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab1LMAmu (ORCPT
+	id S1754720Ab1LMAmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:42:38 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:35093 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab1LMAmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:42:50 -0500
+	Mon, 12 Dec 2011 19:42:36 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,43 +14,43 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        patches@linaro.org, Kees Cook <keescook@chromium.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 6/6] cpu: Export cpu_up()
-Date: Mon, 12 Dec 2011 16:42:24 -0800
-Message-Id: <1323736944-32575-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 3/6] docs: Additional LWN links to RCU API
+Date: Mon, 12 Dec 2011 16:42:21 -0800
+Message-Id: <1323736944-32575-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20111213004144.GA32120@linux.vnet.ibm.com>
  <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
-x-cbid: 11121300-3270-0000-0000-000002833194
+x-cbid: 11121300-7408-0000-0000-00000138C46F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: Kees Cook <keescook@chromium.org>
 
-Building rcutorture as a module requires cpu_up() as well as cpu_down()
-exported, so apply EXPORT_SYMBOL_GPL().
+Tyler Hicks pointed me at an additional article on RCU and I figured
+it should probably be mentioned with the others.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/cpu.c |    1 +
+ Documentation/RCU/whatisRCU.txt |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 563f136..9d448dd 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -380,6 +380,7 @@ out:
- 	cpu_maps_update_done();
- 	return err;
- }
-+EXPORT_SYMBOL_GPL(cpu_up);
+diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
+index 8e8cdc2..6bbe8dc 100644
+--- a/Documentation/RCU/whatisRCU.txt
++++ b/Documentation/RCU/whatisRCU.txt
+@@ -4,6 +4,7 @@ to start learning about RCU:
+ 1.	What is RCU, Fundamentally?  http://lwn.net/Articles/262464/
+ 2.	What is RCU? Part 2: Usage   http://lwn.net/Articles/263130/
+ 3.	RCU part 3: the RCU API      http://lwn.net/Articles/264090/
++4.	The RCU API, 2010 Edition    http://lwn.net/Articles/418853/
  
- #ifdef CONFIG_PM_SLEEP_SMP
- static cpumask_var_t frozen_cpus;
+ 
+ What is RCU?
 -- 
 1.7.8
 
