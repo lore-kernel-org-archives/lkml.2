@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1LMVAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 16:00:11 -0500
-Received: from lo.gmane.org ([80.91.229.12]:45002 "EHLO lo.gmane.org"
+	id S1754730Ab1LMVGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 16:06:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56145 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab1LMVAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 16:00:08 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: batouzo <batouzo@gmx.com>
-Subject: Re: [3.1.4] mm slub memory corruption in drm_vblank_cleanup
-Date: Tue, 13 Dec 2011 21:59:50 +0100
-Message-ID: <jc8ec6$m42$1@dough.gmane.org>
-References: <jc7q4e$qv9$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1753324Ab1LMVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 16:06:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH][Regression fix] PCI / Hotplug: Always allow acpiphp to handle non-PCIe bridges
+Date: Tue, 13 Dec 2011 22:09:04 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+References: <201112130002.28907.rjw@sisk.pl> <20111213104220.5cfb78b2@jbarnes-desktop>
+In-Reply-To: <20111213104220.5cfb78b2@jbarnes-desktop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: ip-1-141.gemini.net.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-In-Reply-To: <jc7q4e$qv9$1@dough.gmane.org>
+Message-Id: <201112132209.04185.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 04:14 PM, batouzo wrote:
+On Tuesday, December 13, 2011, Jesse Barnes wrote:
+> On Tue, 13 Dec 2011 00:02:28 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make
+> > acpiphp ignore root bridges using PCIe native hotplug) added code
+> > that made the acpiphp driver completely ignore PCIe root complexes
+> > for which the kernel had been granted control of the native PCIe
+> > hotplug feature by the BIOS through _OSC.  Unfortunately, however,
+> > this was a mistake, because on some systems there were PCI bridges
+> > supporting PCI (non-PCIe) hotplug under such root complexes and
+> > those bridges should have been handled by acpiphp.
+> > 
+> > For this reason, revert the changes made by the commit mentioned
+> > above and make register_slot() in drivers/pci/hotplug/acpiphp_glue.c
+> > avoid registering hotplug slots for PCIe ports that belong to
+> > root complexes with native PCIe hotplug enabled (which means that
+> > the BIOS has granted the kernel control of this feature for the
+> > given root complex).  This is reported to address the original
+> > issue fixed by commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a and
+> > to work on the system where that commit broke things.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> 
+> Applied to my for-linus branch.  I'll probably send to Linus on Thu. or
+> so.
+> 
+> I also rebased the breakage out of linux-next.
 
-Should I write to soem other group and/or email developers as well?
+Thanks a lot!
 
-Can anyone help debug this bug?
-
-> Allocated in drm_vblank_init+0x139/0x260 [drm] + Freed in
-> drm_vblank_cleanup+0x78/0x90 [drm]
-> Allocated in drm_vblank_init+0xbe/0x260 [drm] + Freed in
-> drm_vblank_cleanup+0x48/0x90 [drm]
-
-
+Rafael
