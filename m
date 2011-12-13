@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab1LMOMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 09:12:06 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51270 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab1LMOMD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 09:12:03 -0500
+	id S1755246Ab1LMONH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 09:13:07 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:42695 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754862Ab1LMONF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 09:13:05 -0500
+From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sascha Hauer <kernel@pengutronix.de>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 08/19] dma: MX3_IPU fix depends
+Date: Tue, 13 Dec 2011 15:12:55 +0100
+Message-Id: <1323785575-22703-1-git-send-email-eric@eukrea.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <CAOMZO5AOpFtkJDmTSjPmvPVr0ra4d7jUcihGgncYE2VtfKCeSQ@mail.gmail.com>
+References: <CAOMZO5AOpFtkJDmTSjPmvPVr0ra4d7jUcihGgncYE2VtfKCeSQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111212173819.GT13952@sortiz-mobl>
-References: <20111126201334.16080.85045.stgit@notabene.brown>
-	<20111212173819.GT13952@sortiz-mobl>
-Date: Tue, 13 Dec 2011 16:12:02 +0200
-Message-ID: <CAMP44s1D+HXP_prHVwEztLCd1XJpnzukFeNKH_xEZrq06jEouA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] fixes for twl4030-irq in mainline
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: NeilBrown <neilb@suse.de>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ARCH_MX3 was removed in commit a89cf59 :
+"arm/imx: merge i.MX3 and i.MX6"
+thus preventing to select MX3_IPU, thus preventing IPU and display
+to work on i.MX3x SOC.
+i.MX SDMA support is also affected.
 
-On Mon, Dec 12, 2011 at 7:38 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> On Sun, Nov 27, 2011 at 07:17:41AM +1100, NeilBrown wrote:
->>   The recent tidying up of twl4030-irq seems to have left it broken.
->> At least it doesn't work for me on my gta04 (www.gta04.org).  The
->> first interrupt from the device freezes the whole system (by being
->> constantly delivered)
->>
->> The following 4 patches make it work for me and addresses some other
->> less critical issues like a typo in a comment :-)
->
-> Thanks, I applied all 4 of them.
+Signed-off-by: Eric Bénard <eric@eukrea.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+---
+v2: improve comment based on Sergei's comments, and also handle SDMA
+case based on Fabio's comment
+ drivers/dma/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Did you apply them for 3.2 or 3.3? Without the first patch any system
-that has a twl4030 chip will immediately hang on the first interrupt,
-and many functions of twl4030 will just not work without the second
-one.
-
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index ab8f469..5a99bb3 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -124,7 +124,7 @@ config MV_XOR
+ 
+ config MX3_IPU
+ 	bool "MX3x Image Processing Unit support"
+-	depends on ARCH_MX3
++	depends on SOC_IMX31 || SOC_IMX35
+ 	select DMA_ENGINE
+ 	default y
+ 	help
+@@ -216,7 +216,7 @@ config PCH_DMA
+ 
+ config IMX_SDMA
+ 	tristate "i.MX SDMA support"
+-	depends on ARCH_MX25 || ARCH_MX3 || ARCH_MX5
++	depends on ARCH_MX25 || SOC_IMX31 || SOC_IMX35 || ARCH_MX5
+ 	select DMA_ENGINE
+ 	help
+ 	  Support the i.MX SDMA engine. This engine is integrated into
 -- 
-Felipe Contreras
+1.7.6.4
+
