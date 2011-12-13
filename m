@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1LMUpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:45:12 -0500
-Received: from stl-smtpout-01.boeing.com ([130.76.96.56]:53726 "EHLO
-	stl-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab1LMUpJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:45:09 -0500
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 13 Dec 2011 14:44:48 -0600
-Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-Thread-Topic: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-Thread-Index: Acy52A6u3y+5zWrsQtahs34ADJRaDQ==
-Message-ID: <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
-References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <4EE7A31E.7080301@gmail.com>
-In-Reply-To: <4EE7A31E.7080301@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-x-tm-as-product-ver: SMEX-10.0.0.1412-6.800.1017-18580.001
-x-tm-as-result: No--64.728200-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755912Ab1LMUrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:47:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28598 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726Ab1LMUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:47:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="86193887"
+Date: Tue, 13 Dec 2011 21:52:56 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: NeilBrown <neilb@suse.de>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 0/4] fixes for twl4030-irq in mainline
+Message-ID: <20111213205256.GG2796@sortiz-mobl>
+References: <20111126201334.16080.85045.stgit@notabene.brown>
+ <20111212173819.GT13952@sortiz-mobl>
+ <CAMP44s1D+HXP_prHVwEztLCd1XJpnzukFeNKH_xEZrq06jEouA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s1D+HXP_prHVwEztLCd1XJpnzukFeNKH_xEZrq06jEouA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 13, 2011, at 14:10, Rob Herring wrote:
-> On 12/13/2011 12:23 PM, Kyle Moffett wrote:
->> 
->> I posted this patch series a few weeks ago and saw no responses, so I
->> tweaked the CC list and am reposting it again for review.
->> 
->> I'm working on support for some custom hardware of ours, and part of
->> the support code is the ability for the software to shutdown the power
->> supply using GPIOs (via an I2C GPIO controller).
->> 
->> I previously had this in my platform code, but it seemed generically
->> useful, so I split it out into a separate module for others to use.
->> 
->> The first two patches are generic of_gpio enhancements, providing some
->> new library functions for requesting lots of GPIOs at once.
->> 
->> The third patch is the actual driver itself.  The driver can be used to
->> instantiate a platform device as a whole-machine-poweroff device as we
->> use it on our hardware.  Alternatively it can instantiate multiple
->> platform devs at specific locations on the device tree which trigger
->> from the platform_driver->shutdown() callback.
->> 
->> For architectures which are still stuck in the dark ages, this driver
->> also supports being instantiated via legacy platform_data.
+Hi Felipe,
+
+On Tue, Dec 13, 2011 at 04:12:02PM +0200, Felipe Contreras wrote:
+> Hi,
 > 
-> Leave them there... :)
-
-Mostly this was out of convenience and imitating the other OF platform
-drivers.  I wrote it and ended up with a struct full of probe data being
-passed between functions, so I just called it "platform_data" :-D.
-
-
->> The OpenFirmware binding documentation is added in the third patch.
->> Since this is my first cut, it's a little rough, so please be gentle.
->> 
->> I'm interested to know what you all think.
+> On Mon, Dec 12, 2011 at 7:38 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> > On Sun, Nov 27, 2011 at 07:17:41AM +1100, NeilBrown wrote:
+> >>   The recent tidying up of twl4030-irq seems to have left it broken.
+> >> At least it doesn't work for me on my gta04 (www.gta04.org).  The
+> >> first interrupt from the device freezes the whole system (by being
+> >> constantly delivered)
+> >>
+> >> The following 4 patches make it work for me and addresses some other
+> >> less critical issues like a typo in a comment :-)
+> >
+> > Thanks, I applied all 4 of them.
 > 
-> Does the regulator framework gpio-regulator not work for this?
-
-Well, when I initially wrote this code, the regulator framework didn't
-exist :-D.
-
-I looked at it a bit when I was generalizing my code, but it seemed
-dramatically more complicated than I needed, and I couldn't see any
-reasonable way to hook it from the machine_poweroff() code.
-
-There's also the fact that I was looking for a pure-device-tree type
-of driver and the regulator framework does not seem to support the
-standard OF-platform probe system.
-
-I will admit that there's probably some value in having a more generic
-GPIO-power-control (instead of just poweroff), but I don't have the
-target use-case to be able to design for it.
-
-
-> The DT gpio patches look useful on their own.
-
-Yeah, it seemed like a fairly generic extension of the existing API.
-
-Thanks for the comments!
+> Did you apply them for 3.2 or 3.3? Without the first patch any system
+> that has a twl4030 chip will immediately hang on the first interrupt,
+> and many functions of twl4030 will just not work without the second
+> one.
+Thanks for the heads up. I applied the first 2 patches to my for-linus branch.
 
 Cheers,
-Kyle Moffett
+Samuel.
 
---
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
