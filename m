@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab1LMPop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:44:45 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:48914 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754770Ab1LMPoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:44:39 -0500
-Date: Tue, 13 Dec 2011 16:44:32 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/4] mm: bootmem: drop superfluous range check when
- freeing pages in bulk
-Message-ID: <20111213154432.GE1818@cmpxchg.org>
-References: <1323784711-1937-1-git-send-email-hannes@cmpxchg.org>
- <1323784711-1937-4-git-send-email-hannes@cmpxchg.org>
- <20111213152843.GD4585@pengutronix.de>
+	id S1754601Ab1LMPrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:47:52 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:37239 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753443Ab1LMPru (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 10:47:50 -0500
+Date: Tue, 13 Dec 2011 10:47:49 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH v5 5/6] ata: add ata port system PM callbacks
+In-Reply-To: <1323786040.3769.24.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1112131038360.1888-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111213152843.GD4585@pengutronix.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 04:28:43PM +0100, Uwe Kleine-König wrote:
-> Hello Johannes,
+On Tue, 13 Dec 2011, Lin Ming wrote:
+
+> I just realized that the ata port runtime PM status need to be updated
+> after system resume.
 > 
-> On Tue, Dec 13, 2011 at 02:58:30PM +0100, Johannes Weiner wrote:
-> > The area node_bootmem_map represents is aligned to BITS_PER_LONG, and
-> > all bits in any aligned word of that map valid.  When the represented
-> > area extends beyond the end of the node, the non-existant pages will
-> > be marked as reserved.
-> > 
-> > As a result, when freeing a page block, doing an explicit range check
-> > for whether that block is within the node's range is redundant as the
-> > bitmap is consulted anyway to see whether all pages in the block are
-> > unreserved.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> I suggest to drop my patch then and add something like
+> I tried below patch.
+> Unfortunately, it causes a problem that sd can't resume correctly.
 > 
-> 	Reported-by: $me
+> During system resume, ata port is resumed first and then sd resumed.
 > 
-> to this one instead.
+> When ata port resumed, device_resume(...) calls pm_runtime_put_sync(..),
+> which causes ata port to be runtime suspended immediately.
+> 
+> So sd resume fails because it requires ata port to be active to handle
+> start device command.
+> 
+> This seems a PM core's bug.
+> 
+> device_resume(...) should not runtime suspend the parent device, because
+> its children have not resumed yet.
+> 
+> Alan, 
+> 
+> What do you think?
 
-Your patch is a real and obvious fix, while mine is just a cleanup but
-has more obscure dependencies on how the bitmap is managed.
+This appears to be the first time this problem has come up.  But it is 
+a real problem.
 
-If you don't mind, I would prefer to keep them as separate changes.
+If a child device was runtime-suspended when a system suspend began, 
+then there will be nothing to prevent its parent from 
+runtime-suspending as soon as it is woken up during the system resume.  
+Then when the time comes to resume the child, the resume will fail 
+because the parent is already back at low power.
 
-> Other than that I will give your series a spin on my ARM machine later
-> today.
+On the other hand, there are some devices which should remain at low 
+power across an entire suspend-resume cycle.  The details depend on the 
+device and the platform.
 
-Thanks a lot!
+This suggests that the PM core is not the right place to solve the 
+problem.  One possible solution is for the subsystem or device driver 
+to call pm_runtime_get_sync(dev->parent) at the start of the 
+system-resume procedure and pm_runtime_put_sync(dev->parent) at the 
+end.
+
+Alan Stern
+
