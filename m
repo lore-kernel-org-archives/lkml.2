@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab1LMDek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 22:34:40 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:59246 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754140Ab1LMDej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 22:34:39 -0500
-Message-ID: <4EE6C7BA.30800@st.com>
-Date: Tue, 13 Dec 2011 09:04:18 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1754756Ab1LMDfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 22:35:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53365 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754280Ab1LMDfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 22:35:03 -0500
+Message-ID: <4EE6C7AD.3020907@cn.fujitsu.com>
+Date: Tue, 13 Dec 2011 11:34:05 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant
- 801
-References: <cover.1321507421.git.viresh.kumar@st.com> <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com> <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com> <4EC9D175.2070008@st.com> <20111121145116.GA32137@sirena.org.uk> <4ECB1BA6.4050803@st.com> <20111212142058.GE13952@sortiz-mobl>
-In-Reply-To: <20111212142058.GE13952@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Kamal Mostafa <kamal@canonical.com>
+CC: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH v2 4/7] VFS: Rename and refactor writeback_inodes_sb_if_idle
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com> <1323367477-21685-5-git-send-email-kamal@canonical.com>
+In-Reply-To: <1323367477-21685-5-git-send-email-kamal@canonical.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-13 11:34:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-13 11:34:28,
+	Serialize complete at 2011-12-13 11:34:28
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 7:50 PM, Samuel Ortiz wrote:
-> Ok, so I reverted your first 2 patches patchset since it seems it was
-> problematic. Now, I think Rabin's concern on your patch #5 seems valid, and
-> I'd like you to fix it before applying this patchset.
+On thu, 8 Dec 2011 10:04:34 -0800, Kamal Mostafa wrote:
+>  /**
+> - * writeback_inodes_sb_if_idle	-	start writeback if none underway
+> + * try_to_writeback_inodes_sb_nr	-	start writeback if none underway
+>   * @sb: the superblock
+>   * @nr: the number of pages to write
+>   *
+>   * Invoke writeback_inodes_sb if no writeback is currently underway.
+>   * Returns 1 if writeback was started, 0 if not.
+>   */
+> -int writeback_inodes_sb_nr_if_idle(struct super_block *sb,
+> +int try_to_writeback_inodes_sb_nr(struct super_block *sb,
+>  				   unsigned long nr,
+>  				   enum wb_reason reason)
+>  {
+>  	if (!writeback_in_progress(sb->s_bdi)) {
+>  		down_read(&sb->s_umount);
+> -		writeback_inodes_sb_nr(sb, nr, reason);
+> +		if (nr == 0)
+> +			writeback_inodes_sb(sb, reason);
+> +		else
+> +			writeback_inodes_sb_nr(sb, nr, reason);
+>  		up_read(&sb->s_umount);
+>  		return 1;
+>  	} else
+>  		return 0;
 
-Which problem are you talking about? Issues in v2 of patch 5/5 or converting to regmap?
+The comment said "Returns 1 if writeback was started", so if writeback_in_progress()
+return true, I think this function also should return 1.
 
-Earlier once are already fixed in V3 of 5/5. And for later one, i already confirmed to
-do it in a separate patchset.
+BTW: Does anyone know when this patchset will be merged into the main tree?
 
--- 
-viresh
+Thanks
+Miao
