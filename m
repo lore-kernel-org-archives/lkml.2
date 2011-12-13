@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1LMOYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 09:24:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40353 "EHLO mx1.redhat.com"
+	id S1755335Ab1LMO0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 09:26:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab1LMOYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 09:24:13 -0500
-Message-ID: <4EE75FF8.5060208@redhat.com>
-Date: Tue, 13 Dec 2011 16:23:52 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1754295Ab1LMO0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 09:26:21 -0500
+Date: Tue, 13 Dec 2011 12:26:05 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: roel <roel.kluin@gmail.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: bad lookup in perf_evlist__equal()?
+Message-ID: <20111213142605.GA15131@infradead.org>
+References: <4EE65AA3.7070609@gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
-References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu> <alpine.LFD.2.02.1112111459270.3020@ionos> <20111211155347.GA1297@elte.hu> <CAOJsxLHTuN43AGA7C02MtETzJU87y9cRaWRg6e9ER7NxOK2w-Q@mail.gmail.com> <20111212172059.GC23870@elte.hu> <CAOJsxLFk9Af+b4PAx_j+1QhApBsFdXyZY1aK08fb_6_dTiBEDQ@mail.gmail.com> <20111212192135.GA18876@elte.hu> <alpine.LFD.2.02.1112130056370.3020@ionos> <4EE72FCB.3070109@redhat.com> <alpine.LFD.2.02.1112131434320.3020@ionos>
-In-Reply-To: <alpine.LFD.2.02.1112131434320.3020@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE65AA3.7070609@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 03:52 PM, Thomas Gleixner wrote:
-> On Tue, 13 Dec 2011, Avi Kivity wrote:
->
-> > On 12/13/2011 02:59 AM, Thomas Gleixner wrote:
-> > 
-> > <snip trace>
-> > > Why the heck is a paravirtualized guest using an local APIC timer
-> > > emulation, instead of a paravirtualized clock event device?
-> > >
-> > > Just look at the trace. That's insane. We enter the guest for 2us to
-> > > come back and handle the APIC_EOI for 11us. Then we go back to the
-> > > guest for 9us and spend again 11us for handling a write to APIC_TMICT.
-> > >
-> > > That's 11us guest vs. 22us host time.
-> > 
-> > Run your guest with x2apic enabled, the timing will be very different. 
->
-> And what magic do I have to use to make that happen other than having
-> x2apic support enabled in the kernel? Or do I need a certain kernel
-> version for host and guest to make that work?
+Em Mon, Dec 12, 2011 at 08:48:51PM +0100, roel escreveu:
+> Fix lookup in perf_evlist__equal()
+> 
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
 
-With qemu, -cpu host or -cpu blah,+x2apic.  kvm-tool does the equivalent
-of -cpu host, so I'm surprised it doesn't show up.  x2apic has been
-recognized by the guest for a long time (ce69a784; 2.6.32, I'll be
-surprised if you have anything older than that on your machine).
+That wasn't intentional at all, it was just comparing the first byte,
+duh.
 
-Does x2apic show up in your guest's /proc/cpuinfo?
+Eagle eyes!
 
-> > The problem with paravirt clockevents is that if/when the APIC becomes
-> > virtualized, then guests which were started with the paravirt
-> > clockevents don't get accelerated when they are migrated onto newer
-> > hardware.  This problem has bitten us several times in the past; if you
-> > want to see how it looks when applied on a large scale look at Xen -
-> > they have a paravirt-the-fsck-out-of-everything mode and a full virt
-> > mode (which should be way faster these days); the two aren't
-> > compatible.  Of course back when they started, they didn't have a
-> > choice, but we do.
->
-> Well, I can see the migration pain for life migration and I agree that
-> paravirt the world and some more is a horror as well. Though there is
-> a midground between everything and being smart about certain
-> aspects. 
+I'm pushing this thru perf/urgent.
 
-Agree, clocksource is one example where the gain exceeds the pain.
+Thanks,
 
-> The whole APIC timer calibration and the back and forth
-> conversion is definitely nothing which falls into the category of
-> smart.
+- Arnaldo
 
-APIC timer calibration is silly but it hasn't proven to be a real-world
-problem.
-
--- 
-error compiling committee.c: too many arguments to function
-
+> ---
+>  tools/perf/builtin-record.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> Unless this was a feature, but then a comment might be nice
+> This was introduced in a91e5431d54f5
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 6ab58cc..4ccb7d0 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -252,7 +252,7 @@ static bool perf_evlist__equal(struct perf_evlist *evlist,
+>  	pair = list_entry(other->entries.next, struct perf_evsel, node);
+>  
+>  	list_for_each_entry(pos, &evlist->entries, node) {
+> -		if (memcmp(&pos->attr, &pair->attr, sizeof(pos->attr) != 0))
+> +		if (memcmp(&pos->attr, &pair->attr, sizeof(pos->attr)) != 0)
+>  			return false;
+>  		pair = list_entry(pair->node.next, struct perf_evsel, node);
+>  	}
