@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1LMP5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:57:47 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:57237
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753452Ab1LMP5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:57:44 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: hv_storvsc driver
-Date: Tue, 13 Dec 2011 07:58:36 -0800
-Message-Id: <1323791916-2340-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754868Ab1LMP66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:58:58 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48498 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab1LMP6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 10:58:55 -0500
+Date: Tue, 13 Dec 2011 07:58:48 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
+Message-ID: <20111213155848.GI25802@google.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Frederic.
 
-Sometime back I had sent the scsi mailing list, the patch to move the 
-Hyper-V storage driver out of staging. This patch addresses  the
-review comments I have gotten to date from James, Greg and Christoph (I have not heard
-from anybody else in the  scsi mailing list). The patches addressing the review
-comments have already been sent to the staging tree and Greg has already
-applied these patches. James, Let me know what I can do to expedite the
-move from the staging tree.
+Can you please rebase the patchset on top of cgroup/for-3.3?  I
+primarily like the idea of being able to track process usage w/ cgroup
+and enforce limits on it but hope that it could somehow integrate w/
+cgroup freezer.  ie. trigger freezer if it goes over limit and let the
+userland tool / administrator deal with the frozen cgroup.  I'm
+planning on extending cgroup freezer such that it supports recursive
+freezing and killing of frozen tasks.  If we can fit task counters
+into that, we'll have general method of handling problematic cgroups -
+freeze, notify userland and let it deal with it.
 
-Greg, do you have any issues you would want
-me to address before this driver can exit staging. Let me know.
- 
-Regards,
+Thank you.
 
-K. Y
-
+-- 
+tejun
