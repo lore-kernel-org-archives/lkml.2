@@ -1,173 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab1LMGvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 01:51:11 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35674 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab1LMGvI (ORCPT
+	id S1752819Ab1LMHAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 02:00:52 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64904 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab1LMHAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 01:51:08 -0500
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: gregkh@suse.de, Larry.Finger@lwfinger.net, seanm@seanm.ca, thomas@m3y3r.de,
-        jj@chaosbits.net, mikem@ring3k.org, imirkin@alum.mit.edu,
-        viro@zeniv.linux.org.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 1/1] remove version.h includes in rtl8192e
-Date: Tue, 13 Dec 2011 01:49:29 -0500
-Message-Id: <1323758969-13539-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 13 Dec 2011 02:00:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111213042515.GA18251@kroah.com>
+References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>
+ <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+ <1323198694-7186-1-git-send-email-jim.cromie@gmail.com> <20111212220537.GB1641@kroah.com>
+ <CAJfuBxzeKzmOCo00Ew8xAp9EmU0QZ3zjOkRcdEMzYrtx_b9+kA@mail.gmail.com>
+ <CAJfuBxxgd-w02DP9EBkjTm2cY5e9Us5ArnZy9BGJUcnsAwrhOA@mail.gmail.com> <20111213042515.GA18251@kroah.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 13 Dec 2011 00:00:19 -0700
+Message-ID: <CAJfuBxxnT8va7DRt8e7s=LrSqHYThb_8fkbSO69Fii3r1x0hvg@mail.gmail.com>
+Subject: Re: [patch 00/24 ] dynamic debug enhancements: multi-queries during mod-init
+To: Greg KH <greg@kroah.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jason Baron <jbaron@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 12, 2011 at 9:25 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Dec 12, 2011 at 09:17:43PM -0700, Jim Cromie wrote:
+>> On Mon, Dec 12, 2011 at 3:05 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Tue, Dec 06, 2011 at 12:11:10PM -0700, jim.cromie@gmail.com wrote:
+>> >> 0001-kernel-module.c-fix-compile-err-warnings-under-ifdef.patch
+>> >> 0002-dynamic_debug-fix-whitespace-complaints-from-scripts.patch
+>> >> 0024-dynamic_debug-remove-unneeded-includes.patch
+>> >>
+>> >
+>> > Now that is just about the most unhelpful 00/XX email I've seen in a
+>> > long time.
+>> >
+>>
+>> Sorry about that.
+>> That was an attempt to thread onto a previous message.
+>>
+>> In-Reply-To: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>,
+>> <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+>> References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>,
+>> <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+>>
+>> IE this:
+>>
+>> http://article.gmane.org/gmane.linux.kernel/1171277/match=dynamic_debug
+>>
+>> I'll use URLs in the future.
+>
+> Use git-send-email and you will not have to do any of this by hand, it
+> handles it all for you automatically.
+>
+> greg k-h
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/rtl8192e/rtl8192e/rtl_core.h |    1 -
- drivers/staging/rtl8192e/rtllib.h            |    1 -
- drivers/staging/rtl8192e/rtllib_crypt.c      |    1 -
- drivers/staging/rtl8192e/rtllib_crypt_ccmp.c |    1 -
- drivers/staging/rtl8192e/rtllib_crypt_tkip.c |    1 -
- drivers/staging/rtl8192e/rtllib_crypt_wep.c  |    1 -
- drivers/staging/rtl8192e/rtllib_module.c     |    1 -
- drivers/staging/rtl8192e/rtllib_rx.c         |    1 -
- drivers/staging/rtl8192e/rtllib_softmac.c    |    1 -
- drivers/staging/rtl8192e/rtllib_tx.c         |    1 -
- drivers/staging/rtl8192e/rtllib_wx.c         |    1 -
- 11 files changed, 0 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.h b/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
-index 93478df..2a2519c 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.h
-@@ -44,7 +44,6 @@
- #include <linux/proc_fs.h>
- #include <linux/if_arp.h>
- #include <linux/random.h>
--#include <linux/version.h>
- #include <linux/io.h>
+I did use git-send-email.
+What I seem to miss on every send is which reference to use in the
+reply-to part,
+at least when trying to tie it to an email sent from the web-interface.
+It doesnt help that gmail isnt displaying them in a thread for me
+using the headers that git-send-email is adding (it threads by subject)
 
- /* Need this defined before including local include files */
-diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
-index a8cae9b..9a31935 100644
---- a/drivers/staging/rtl8192e/rtllib.h
-+++ b/drivers/staging/rtl8192e/rtllib.h
-@@ -25,7 +25,6 @@
- #define RTLLIB_H
- #include <linux/if_ether.h> /* ETH_ALEN */
- #include <linux/kernel.h>   /* ARRAY_SIZE */
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/jiffies.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_crypt.c b/drivers/staging/rtl8192e/rtllib_crypt.c
-index 4665712..c6e2440 100644
---- a/drivers/staging/rtl8192e/rtllib_crypt.c
-+++ b/drivers/staging/rtl8192e/rtllib_crypt.c
-@@ -11,7 +11,6 @@
-  *
-  */
+(for most recent batch..)
+Message-Id: <1323731569-20644-22-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
+References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c b/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c
-index 7b62ab2..0419c77 100644
---- a/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c
-+++ b/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c
-@@ -9,7 +9,6 @@
-  * more details.
-  */
+On previous batch (the one you commented on), IIRC, I deleted all
+--compose content
+after realizing the patch-count was wrong, thinking it would behave like
+a rebase -i with an empty to-do file.  Or, it was some other operator error.
 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_crypt_tkip.c b/drivers/staging/rtl8192e/rtllib_crypt_tkip.c
-index 9dd4029..f68cda2 100644
---- a/drivers/staging/rtl8192e/rtllib_crypt_tkip.c
-+++ b/drivers/staging/rtl8192e/rtllib_crypt_tkip.c
-@@ -9,7 +9,6 @@
-  * more details.
-  */
+Looking now at the headers, I'll trust that --compose will work the same,
+and use that only (should the latest set need another resend)
 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_crypt_wep.c b/drivers/staging/rtl8192e/rtllib_crypt_wep.c
-index d06d15d..f5e11b4 100644
---- a/drivers/staging/rtl8192e/rtllib_crypt_wep.c
-+++ b/drivers/staging/rtl8192e/rtllib_crypt_wep.c
-@@ -9,7 +9,6 @@
-  * more details.
-  */
-
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_module.c b/drivers/staging/rtl8192e/rtllib_module.c
-index d5515df..c92ad9f 100644
---- a/drivers/staging/rtl8192e/rtllib_module.c
-+++ b/drivers/staging/rtl8192e/rtllib_module.c
-@@ -45,7 +45,6 @@
- #include <linux/slab.h>
- #include <linux/tcp.h>
- #include <linux/types.h>
--#include <linux/version.h>
- #include <linux/wireless.h>
- #include <linux/etherdevice.h>
- #include <linux/uaccess.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-index b640c87..e662fd6 100644
---- a/drivers/staging/rtl8192e/rtllib_rx.c
-+++ b/drivers/staging/rtl8192e/rtllib_rx.c
-@@ -36,7 +36,6 @@
- #include <linux/slab.h>
- #include <linux/tcp.h>
- #include <linux/types.h>
--#include <linux/version.h>
- #include <linux/wireless.h>
- #include <linux/etherdevice.h>
- #include <linux/uaccess.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
-index 8565365..44b466b 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac.c
-@@ -18,7 +18,6 @@
-
- #include <linux/random.h>
- #include <linux/delay.h>
--#include <linux/version.h>
- #include <linux/uaccess.h>
- #include "dot11d.h"
-
-diff --git a/drivers/staging/rtl8192e/rtllib_tx.c b/drivers/staging/rtl8192e/rtllib_tx.c
-index eb3c472..b8135be 100644
---- a/drivers/staging/rtl8192e/rtllib_tx.c
-+++ b/drivers/staging/rtl8192e/rtllib_tx.c
-@@ -46,7 +46,6 @@
- #include <linux/slab.h>
- #include <linux/tcp.h>
- #include <linux/types.h>
--#include <linux/version.h>
- #include <linux/wireless.h>
- #include <linux/etherdevice.h>
- #include <linux/uaccess.h>
-diff --git a/drivers/staging/rtl8192e/rtllib_wx.c b/drivers/staging/rtl8192e/rtllib_wx.c
-index c7f8d9c..5e81734 100644
---- a/drivers/staging/rtl8192e/rtllib_wx.c
-+++ b/drivers/staging/rtl8192e/rtllib_wx.c
-@@ -30,7 +30,6 @@
-
- ******************************************************************************/
- #include <linux/wireless.h>
--#include <linux/version.h>
- #include <linux/kmod.h>
- #include <linux/module.h>
-
---
-1.7.4.1
+thanks
+Jim
