@@ -1,50 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab1LMBgl (ORCPT <rfc822;w@1wt.eu>);
+	id S1754737Ab1LMBgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:36:46 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35343 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab1LMBgl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Dec 2011 20:36:41 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20542 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab1LMBgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:36:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85003449"
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Berck E. Nash" <flyboy@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 12 Dec 2011 17:41:15 -0800
-In-Reply-To: <CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>
-References: <4EE2BC33.80902@gmail.com>
-	 <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
-	 <20111211075713.GA20790@elte.hu>
-	 <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-	 <4EE5291C.1030302@gmail.com>
-	 <CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
-	 <4EE68C80.7000408@gmail.com>
-	 <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
-	 <CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323740475.1984.171.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+MIME-Version: 1.0
+In-Reply-To: <CANFwon0eEfaRn_Tbw_+sGeTk+HXVhBMLX0wt7bZ2=az2RFzydA@mail.gmail.com>
+References: <CANFwon04fJe9z+5wKXp55Kp-SX+FZyAhnNcAH9zi6zBd++GSFg@mail.gmail.com>
+	<CABiHV1ShpvmA0r0wJtepnWyQ2ZT3hXtYFdKMUaZ=axTgC7uR0Q@mail.gmail.com>
+	<CANFwon0eEfaRn_Tbw_+sGeTk+HXVhBMLX0wt7bZ2=az2RFzydA@mail.gmail.com>
+Date: Tue, 13 Dec 2011 10:36:40 +0900
+Message-ID: <CABiHV1QBxvWD_VZa2554+c6u-JL5mzas6RxZtEBz5YiaqUP_Cw@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111111 release (Android
+ support OK)
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 17:29 -0800, Yinghai Lu wrote:
-> but i don't think bios buy can go that far to enable intr-remapping
-> without providing DMAR.
+On Mon, Dec 12, 2011 at 11:05 PM, Hui Zhu <teawater@gmail.com> wrote:
+> Hi Geunsik,
+>
+> Thanks for your patch.
+> But  Kernel upstream:
+> struct perf_event *
+> perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+>                                 struct task_struct *task,
+>                                 perf_overflow_handler_t overflow_handler,
+>                                 void *context)
+>
+> I am sorry that gtp.patch is just for the Kernel upstream (Actually,
+> it just for review).
+>
+> I suggest you use LKM if it is OK for you.
+As you mentioned, LKM is normal in my experience.
+But, In embedded environment, built-in kernel including KGTP is important
+to debugging instantly without any manipulation and  to review according to
+volunteers easily.
 
-We never know. And also It is not just bios. kexec'd kernel with out the
-interrupt-remapping support will also run into this issue and we should
-handle this also gracefully.
+>
+> If you want include KGTP into your kernel tree or something, maybe I
+> can supply a special patch for you.
+I think that you can just append exception handling to solve this
+issue like belows.
+Or, I will suggest for you will keep kgtp-3.1.1.patch  without
+kgtp.patch like linux-kernel-rt patch for each kernel version
 
-thanks,
-suresh
+====
+diff --git a/lib/gtp.c b/lib/gtp.c
+index 9bdf82c..6253811 100644
+--- a/lib/gtp.c
++++ b/lib/gtp.c
+@@ -4477,10 +4477,17 @@ restart:
+                        continue;
 
+                /* Get event.  */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 1, 0)
+                tve->pts->event =
+                        perf_event_create_kernel_counter(&(tve->pts->attr),
+                                                         tve->pts->cpu,
+                                                         NULL, NULL, NULL);
++#else
++               tve->pts->event =
++                       perf_event_create_kernel_counter(&(tve->pts->attr),
++                                                        tve->pts->cpu,
++                                                        NULL, NULL);
++#endif
+                if (IS_ERR(tve->pts->event)) {
+                        int     ret = PTR_ERR(tve->pts->event);
+
+====
+
+>
+> BTW looks I need release an gtp_auto.patch that can patch to most of
+> Linux kernel.
+>
+> Thanks,
+> Hui
+>
+> On Mon, Dec 12, 2011 at 19:13, Geunsik Lim <leemgs1@gmail.com> wrote:
+>> On Mon, Nov 14, 2011 at 2:15 PM, Hui Zhu <teawater@gmail.com> wrote:
+>>> KGTP is a realtime and lightweight Linux Kernel GDB debugger and tracer.
+>>>
+>>> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+>>> current machine or remote machine can debug and trace Linux through
+>>> GDB tracepoint without stopping the Linux Kernel.
+>>> And even if the board doesn't have GDB on it and doesn't have
+>>> interface for remote debug. It can debug the Linux Kernel using
+>>> offline debug.
+>>> Now, it supports X86-32, X86-64, MIPS and ARM.
+>>>
+>>> Now, KGTP 20111111 release.
+>>>
+>>> The change of this release is:
+>>> Add a doc for use KGTP with Android in
+>>> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid
+>>> post_handler will make kprobes-optimization cannot be used. So make
+>>> gtp_kp_post_handler be call only when tpe->step is true.
+>>> Make rdtsc_current to x86 special.
+>>> Register easy Kprobe handler to speed up it when no tracepoint access
+>>> $cooked_clock, $cooked_rdtsc or "pc_pe" tvariable.
+>>> Fix a bug of ARM build.
+>>> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
+>>>
+>>> According to the comments of Christoph.  I make a patch for Linux
+>>> Kernel and make it looks OK with checkpatch.pl.  The file gtp.patch is
+>>> include in the source of KGTP code.
+>> Dear Hui Zhu,
+>>
+>> Recently, I synchronized KGTP kernel source with svn 838 to test
+>> built-in kernel
+>> after adjusting recent bug-fix. I still had a compilation error.
+>> Please, adjust the below patch content to support  X86/ARM
+>> architecture normally.
+>>
+>> ==========
+>> From 39d58cc7dab8df5e57fa106e8e7f00e562b45212 Mon Sep 17 00:00:00 2001
+>> From: Geunsik Lim <geunsik.lim@samsung.com>
+>> Date: Mon, 10 Dec 2011 18:08:03 +0900
+>> Subject: [PATCH] Modify perf related func interface.
+>>
+>> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  lib/gtp.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/lib/gtp.c b/lib/gtp.c
+>> index 9bdf82c..9a2670e 100644
+>> --- a/lib/gtp.c
+>> +++ b/lib/gtp.c
+>> @@ -4480,7 +4480,7 @@ restart:
+>>                tve->pts->event =
+>>                        perf_event_create_kernel_counter(&(tve->pts->attr),
+>>                                                         tve->pts->cpu,
+>> -                                                        NULL, NULL, NULL);
+>> +                                                        NULL, NULL);
+>>                if (IS_ERR(tve->pts->event)) {
+>>                        int     ret = PTR_ERR(tve->pts->event);
+>>
+>> --
+>> 1.7.3.4
+>> ==========
+>>
+>> Thank you for your contribution for embedded kernel debugging
+>>
+>>>
+>>> Thanks,
+>>> Hui
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> Best regards,
+>> Geunsik Lim ( Samsung Electronics )
+>> Blog : http://blog.naver.com/invain/
+>> Homepage: http://leemgs.fedorapeople.org
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Best regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+Homepage: http://leemgs.fedorapeople.org
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
