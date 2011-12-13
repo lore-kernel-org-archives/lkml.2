@@ -1,105 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1LMUWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:22:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19410 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755780Ab1LMUWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:22:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208,223";a="86885949"
-Subject: Re: iwlagn regression in v3.1.5
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: Udo Steinberg <udo@hypervisor.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EE636B9.1020305@udo.edu>
-References: <4EE4AEF4.2080702@udo.edu> <4EE4DB55.4090804@udo.edu>
-	 <20111211174138.79e51fe8@x220.fritz.box>  <4EE4E152.2070204@udo.edu>
-	 <1323627815.1806.19.camel@wwguy-ubuntu>  <4EE50266.4050208@udo.edu>
-	 <1323653737.1806.21.camel@wwguy-ubuntu>  <4EE636B9.1020305@udo.edu>
-Content-Type: multipart/mixed; boundary="=-9adGkZalXA7a6smKi76Z"
-Date: Tue, 13 Dec 2011 12:15:27 -0800
-Message-ID: <1323807327.7144.6.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755954Ab1LMUYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:24:34 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63798 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab1LMUYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:24:30 -0500
+Message-ID: <4EE7B41C.5080006@solonet.org.ua>
+Date: Tue, 13 Dec 2011 22:22:52 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH v3 resend2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver
+ use gpiolib
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during probe.
 
---=-9adGkZalXA7a6smKi76Z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-Hi Andrej,
-
-Could you try this patch and see any differences.
-
-please still use the same debug flag I ask you last time.
-
-Thanks
-Wey
-
-n Mon, 2011-12-12 at 09:15 -0800, Andrej Gelenberg wrote:
-> Hi,
-> 
-> there are broken wlan log and working wlan log and an diff of them.
-> 
-> Regards,
-> Andrej Gelenberg
-> 
-> On 12/12/2011 02:35 AM, wwguy wrote:
-> > Hi Andjej,
-> >
-> >
-> > Could you please load the module with debug=0x1082 and send me the log.
-> >
-> > $sudo modprobe iwlagn debug=0x1082
-> >
-> > Thanks
-> > Wey
-
-
---=-9adGkZalXA7a6smKi76Z
-Content-Disposition: attachment; filename*0=0001-iwlwifi-allow-to-switch-to-HT40-if-not-associated-ye.pat; filename*1=ch
-Content-Type: text/x-patch; name="0001-iwlwifi-allow-to-switch-to-HT40-if-not-associated-ye.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 92e10223b4acf832121f0aa5b4a8d35ebb176f9e Mon Sep 17 00:00:00 2001
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date: Tue, 13 Dec 2011 12:13:05 -0800
-Subject: [PATCH 1/1] iwlwifi: allow to switch to HT40 if not associated yet
-
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-index 36932aa..23548ac 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
-@@ -610,8 +610,9 @@ int iwlagn_mac_config(struct ieee80211_hw *hw, u32 changed)
- 			if (ctx->ht.enabled) {
- 				/* if HT40 is used, it should not change
- 				 * after associated except channel switch */
--				if (iwl_is_associated_ctx(ctx) &&
--				     !ctx->ht.is_40mhz)
-+				if ((iwl_is_associated_ctx(ctx) &&
-+						!ctx->ht.is_40mhz) ||
-+						!iwl_is_associated_ctx(ctx))
- 					iwlagn_config_ht40(conf, ctx);
- 			} else
- 				ctx->ht.is_40mhz = false;
--- 
-1.7.0.4
+There is a comment "no point in having a pull-up if we are always driving"
+but code was actually enabled pull-resistor for that case probably because of
+function parameter misunderstanding (1 - disables, 0 - enables). So this was
+changed to another function which takes alphabetically defined constant as
+parameter.
+Tested on Mini2440 board which implements most complex case where both
+S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set.
 
+Changes v1->v2
+        Fix typo's and style problems.
+Changes v2->v3
+        Remove pull-resistor enabling code for case of S3C24XX_LEDF_TRISTATE
+flag is set
 
---=-9adGkZalXA7a6smKi76Z--
+See https://lkml.org/lkml/2011/11/22/42 for discussion and ack.
 
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index a77771d..a1dbf54 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+ 	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
+ 	struct s3c24xx_led_platdata *pd = led->pdata;
+ 
+-	/* there will be a short delay between setting the output and
+-	 * going from output to input when using tristate. */
+-
+-	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+-			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+-
+-	if (pd->flags & S3C24XX_LEDF_TRISTATE)
+-		s3c2410_gpio_cfgpin(pd->gpio,
+-			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
++	/*
++	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
++	 * (only 100% brightness is supported)
++	 */
++	value = value ? 1 : 0;
++
++	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
++		if (value) {
++			/* invert value if S3C24XX_LEDF_ACTLOW is set */
++			value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++			gpio_direction_output(pd->gpio, value);
++		} else {
++			gpio_direction_input(pd->gpio);
++		}
++	} else {
++		/* invert value if S3C24XX_LEDF_ACTLOW is set */
++		value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++		gpio_set_value(pd->gpio, value);
++	}
+ 
+ }
+ 
+ static int s3c24xx_led_remove(struct platform_device *dev)
+ {
++	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
+ 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+ 
+ 	led_classdev_unregister(&led->cdev);
++	gpio_free(pdata->gpio);
+ 	kfree(led);
+ 
+ 	return 0;
+@@ -76,7 +88,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
+ 	if (led == NULL) {
+ 		dev_err(&dev->dev, "No memory for device\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+ 
+ 	platform_set_drvdata(dev, led);
+@@ -88,15 +101,24 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 
+ 	led->pdata = pdata;
+ 
+-	/* no point in having a pull-up if we are always driving */
++	ret = gpio_request(pdata->gpio, pdata->name);
++	if (ret < 0) {
++		dev_err(&dev->dev, "gpio_request failed\n");
++		goto err_gpio_request;
++	}
+ 
++	/* apply GPIO settings and initially turn off the LED */
+ 	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
++		ret = gpio_direction_input(pdata->gpio);
+ 	} else {
+-		s3c2410_gpio_pullup(pdata->gpio, 0);
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
++		/* no point in having a pull-up as we are always driving */
++		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
++		ret = gpio_direction_output(pdata->gpio,
++				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
++	}
++	if (ret < 0) {
++		dev_err(&dev->dev, "can't set gpio direction\n");
++		goto err_gpio_set_direction;
+ 	}
+ 
+ 	/* register our new led device */
+@@ -104,11 +126,18 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	ret = led_classdev_register(&dev->dev, &led->cdev);
+ 	if (ret < 0) {
+ 		dev_err(&dev->dev, "led_classdev_register failed\n");
+-		kfree(led);
+-		return ret;
++		goto err_led_classdev_register;
+ 	}
+ 
+ 	return 0;
++
++err_led_classdev_register:
++err_gpio_set_direction:
++		gpio_free(pdata->gpio);
++err_gpio_request:
++		kfree(led);
++err_kzalloc:
++		return ret;
+ }
+ 
+ static struct platform_driver s3c24xx_led_driver = {
