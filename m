@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab1LMCmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 21:42:17 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:52541 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751106Ab1LMCmQ (ORCPT
+	id S1754755Ab1LMCmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 21:42:35 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:52153 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab1LMCmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 21:42:16 -0500
-Date: Mon, 12 Dec 2011 21:42:13 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Subject: [RELEASE] Userspace RCU 0.6.7
-Message-ID: <20111213024213.GA9719@Krystal>
+	Mon, 12 Dec 2011 21:42:33 -0500
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371Ic89bh936eK1432N98dKzz1202hzzz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4EE6BC9B.4000602@freescale.com>
+Date: Tue, 13 Dec 2011 10:46:51 +0800
+From: LiuShuo <b35362@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:39:16 up 384 days,  7:42,  6 users,  load average: 0.03, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Scott Wood <scottwood@freescale.com>
+CC: <dedekind1@gmail.com>, <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
+        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>   <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>   <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>  <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com>
+In-Reply-To: <4EE6725C.3050706@freescale.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+于 2011年12月13日 05:30, Scott Wood 写道:
+> On 12/12/2011 03:19 PM, Artem Bityutskiy wrote:
+>> On Mon, 2011-12-12 at 15:15 -0600, Scott Wood wrote:
+>>> NAND chips come from the factory with bad blocks marked at a certain
+>>> offset into each page.  This offset is normally in the OOB area, but
+>>> since we change the layout from "4k data, 128 byte oob" to "2k data, 64
+>>> byte oob, 2k data, 64 byte oob" the marker is no longer in the oob.  On
+>>> first use we need to migrate the markers so that they are still in the oob.
+>> Ah, I see, thanks. Are you planning to implement in-kernel migration or
+>> use a user-space tool?
+> That's the kind of answer I was hoping to get from Shuo. :-)
+OK, I try to do this. Wait for a couple of days.
 
-Changelog:
-2011-12-12 Userspace RCU 0.6.7
-        * Add compat file for test urcu wfs
-        * Add missing compat file for wfq test
-        * hlist.h: Add missing stddef.h include for NULL
-        * call_rcu: Add missing call_rcu_before_fork and
-          call_rcu_after_fork_parent declarations
-        * Describe autotools/libtool/automake version dependency
-        * Remove m4_ifdef for AC_PROG_LIBTOOL (deprecated)
-        * Support older autotools
-        * Apply autoupdate to configure.ac
-        * Fix build for amd64 environment (for FreeBSD 8.2)
-        * Add missing rcu_dereference_sym_bp
-        * Install test scripts in the dist tarball
-
-Project website: http://lttng.org/urcu
-Download link: http://lttng.org/files/urcu/
+-LiuShuo
+> Most likely is a firmware-based tool, but I'd like there to be some way
+> for the tool to mark that this has happened, so that the Linux driver
+> can refuse to do non-raw accesses to a chip that isn't marked as having
+> been migrated (or at least yell loudly in the log).
+>
+> Speaking of raw accesses, these are currently broken in the eLBC
+> driver... we need some way for the generic layer to tell us what kind of
+> access it is before the transaction starts, not once it wants to read
+> out the buffer (unless we add more hacks to delay the start of a read
+> transaction until first buffer access...).  We'd be better off with a
+> high-level "read page/write page" function that does the whole thing
+> (not just buffer access, but command issuance as well).
+>
+> -Scott
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
