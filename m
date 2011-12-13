@@ -1,129 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1LMRzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 12:55:22 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60708 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460Ab1LMRzU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 12:55:20 -0500
+	id S1755160Ab1LMR4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 12:56:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38801 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754460Ab1LMR40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 12:56:26 -0500
+From: <pavan_savoy@ti.com>
+To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 2/3] drivers:misc: ti-st: flush UART upon fw failure
+Date: Tue, 13 Dec 2011 11:56:19 -0600
+Message-ID: <1323798980-6597-3-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1323798980-6597-2-git-send-email-pavan_savoy@ti.com>
+References: <1323798980-6597-1-git-send-email-pavan_savoy@ti.com>
+ <1323798980-6597-2-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20111212232903.GC2616@gallagher>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca> <20111212232903.GC2616@gallagher>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 13 Dec 2011 10:54:58 -0700
-X-Google-Sender-Auth: 1L3TVw3Goaa40xN3Fja3EJQIGeM
-Message-ID: <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 4:29 PM, Jamie Iles <jamie@jamieiles.com> wrote:
-> Hi Grant,
->
-> I'm still going through these and trying to digest them but a couple of
-> quick questions/comments.
->
-> Jamie
->
-> On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
->> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> new file mode 100644
->> index 0000000..e40c436
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> @@ -0,0 +1,114 @@
->> +This binding is a work-in-progress, and are based on some experimental
->> +work by benh[1].
->> +
->> +Sources of clock signal can be represented by any node in the device
->> +tree.  Those nodes are designated as clock providers.  Clock consumer
->> +nodes use a phandle and clock specifier pair to connect clock provider
->> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
->> +specifier is an array of one more more cells identifying the clock
->> +output on a device.  The length of a clock specifier is defined by the
->> +value of a #clock-cells property in the clock provider node.
->> +
->> +[1] http://patchwork.ozlabs.org/patch/31551/
->> +
->> +==Clock providers==
->> +
->> +Required properties:
->> +#clock-cells:           Number of cells in a clock specifier; typically will be
->> +                set to 1
->
-> I'm not sure I fully understand what the extra cells actually mean for
-> clocks.  I think the first integer is the clock output to use but some
-> of the versatile and highbank ones only have a phandle or is it more
-> implementation defined?  The clock-output-names description hints at
-> recommended, so I find this a little confusing, but that could just be
-> me!
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-I'm following convention here that has been established with
-interrupts, gpios, and others.  Sometimes more information is needed
-that just the clock number.  Using #clock-cells gives a clock provider
-the option of having additional fields for clock flags or other data.
-This is very much implementation defined.  Simple clock providers that
-only have a single clock output can easily use #clock-cells = <0>.
-Providers with multiple outputs will need to use 1 or more cells.
+Upon failure to read firmware version from chip or upon failure in responses
+to firmware download the UART needs to be flushed of its existing buffers so
+that the UIM can restart UART properly.
 
->> +Optional properties:
->> +clock-output-names: Recommended to be a list of strings of clock output signal
->> +                 names indexed by the first cell in the clock specifier.
->> +                 However, the meaning of clock-output-name is domain
->> +                 specific to the clock provider, and is only provided to
->> +                 encourage using the same meaning for the majority of clock
->> +                 providers.  This format may not work for clock providers
->> +                 using a complex clock specifier format.  In those cases it
->> +                 is recommended to omit this property and create a binding
->> +                 specific names property.
->> +
->> +                Clock consumer nodes must never directly reference
->> +                the provider's clock-output-name property.
->> +
->> +For example:
->> +
->> +    oscillator {
->> +        #clock-cells = <1>;
->> +        clock-output-names = "ckil", "ckih";
->> +    };
->> +
->> +- this node defines a device with two clock outputs, the first named
->> +  "ckil" and the second named "ckih".  Consumer nodes always reference
->> +  clocks by index. The names should reflect the clock output signal
->> +  names for the device.
->> +
->> +==Clock consumers==
->> +
->> +Required properties:
->> +clocks:              List of phandle and clock specifier pairs, one pair
->> +             for each clock input to the device.
->
-> Some of the highbank and versatile devicetree nodes have clocks
-> properties that aren't a pair e.g. versatile timer has
-> "clocks = <&tim_clk>;".
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/misc/ti-st/st_kim.c |   54 +++++++++++++++++++-----------------------
+ 1 files changed, 24 insertions(+), 30 deletions(-)
 
-It's still a pair.... it's just that the specifier portion has a zero
-length.  :-)  I do agree that the documentation needs work though.
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 43ef8d1..bc8a571 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -469,37 +469,21 @@ long st_kim_start(void *kim_data)
+ 		/* wait for ldisc to be installed */
+ 		err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+ 				msecs_to_jiffies(LDISC_TIME));
+-		if (!err) {	/* timeout */
+-			pr_err("line disc installation timed out ");
+-			kim_gdata->ldisc_install = 0;
+-			pr_info("ldisc_install = 0");
+-			sysfs_notify(&kim_gdata->kim_pdev->dev.kobj,
+-					NULL, "install");
+-			/* the following wait is never going to be completed,
+-			 * since the ldisc was never installed, hence serving
+-			 * as a mdelay of LDISC_TIME msecs */
+-			err = wait_for_completion_timeout
+-				(&kim_gdata->ldisc_installed,
+-				 msecs_to_jiffies(LDISC_TIME));
+-			err = -ETIMEDOUT;
++		if (!err) {
++			/* ldisc installation timeout,
++			 * flush uart, power cycle BT_EN */
++			pr_err("ldisc installation timeout");
++			err = st_kim_stop(kim_gdata);
+ 			continue;
+ 		} else {
+ 			/* ldisc installed now */
+-			pr_info(" line discipline installed ");
++			pr_info("line discipline installed");
+ 			err = download_firmware(kim_gdata);
+ 			if (err != 0) {
++				/* ldisc installed but fw download failed,
++				 * flush uart & power cycle BT_EN */
+ 				pr_err("download firmware failed");
+-				kim_gdata->ldisc_install = 0;
+-				pr_info("ldisc_install = 0");
+-				sysfs_notify(&kim_gdata->kim_pdev->dev.kobj,
+-						NULL, "install");
+-				/* this wait might be completed, though in the
+-				 * tty_close() since the ldisc is already
+-				 * installed */
+-				err = wait_for_completion_timeout
+-					(&kim_gdata->ldisc_installed,
+-					 msecs_to_jiffies(LDISC_TIME));
+-				err = -EINVAL;
++				err = st_kim_stop(kim_gdata);
+ 				continue;
+ 			} else {	/* on success don't retry */
+ 				break;
+@@ -510,8 +494,14 @@ long st_kim_start(void *kim_data)
+ }
+ 
+ /**
+- * st_kim_stop - called from ST Core, on the last un-registration
+- *	toggle low the chip enable gpio
++ * st_kim_stop - stop communication with chip.
++ *	This can be called from ST Core/KIM, on the-
++ *	(a) last un-register when chip need not be powered there-after,
++ *	(b) upon failure to either install ldisc or download firmware.
++ *	The function is responsible to (a) notify UIM about un-installation,
++ *	(b) flush UART if the ldisc was installed.
++ *	(c) reset BT_EN - pull down nshutdown at the end.
++ *	(d) invoke platform's chip disabling routine.
+  */
+ long st_kim_stop(void *kim_data)
+ {
+@@ -519,12 +509,16 @@ long st_kim_stop(void *kim_data)
+ 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
+ 	struct ti_st_plat_data	*pdata =
+ 		kim_gdata->kim_pdev->dev.platform_data;
++	struct tty_struct	*tty = kim_gdata->core_data->tty;
+ 
+ 	INIT_COMPLETION(kim_gdata->ldisc_installed);
+ 
+-	/* Flush any pending characters in the driver and discipline. */
+-	tty_ldisc_flush(kim_gdata->core_data->tty);
+-	tty_driver_flush_buffer(kim_gdata->core_data->tty);
++	if (tty) {	/* can be called before ldisc is installed */
++		/* Flush any pending characters in the driver and discipline. */
++		tty_ldisc_flush(tty);
++		tty_driver_flush_buffer(tty);
++		tty->ops->flush_buffer(tty);
++	}
+ 
+ 	/* send uninstall notification to UIM */
+ 	pr_info("ldisc_install = 0");
+-- 
+1.7.4.1
 
->
->> +clock-names: List of clock input name strings sorted in the same
->> +             order as the clocks property.  Consumers drivers
->> +             will use clock-names to match clock input names
->> +             with clocks specifiers.
->
-> The versatile and highbank patches appears to omit this required
-> property in several nodes.  So is this really optional?
-
-You're right, it's not required.  I'll move it to optional.
-
-g.
