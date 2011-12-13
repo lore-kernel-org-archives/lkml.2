@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1LMX1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 18:27:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:8630 "EHLO mga02.intel.com"
+	id S1756055Ab1LMXeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 18:34:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48325 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab1LMX1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 18:27:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="86245080"
-Subject: Re: iwlagn regression in v3.1.5
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Udo Steinberg <udo@hypervisor.org>
-Cc: Andrej Gelenberg <andrej.gelenberg@udo.edu>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111213230443.2c12caeb@x220.fritz.box>
-References: <4EE4AEF4.2080702@udo.edu>	<4EE4DB55.4090804@udo.edu>
-	 <20111211174138.79e51fe8@x220.fritz.box>	<4EE4E152.2070204@udo.edu>
-	 <1323627815.1806.19.camel@wwguy-ubuntu>	<4EE50266.4050208@udo.edu>
-	 <1323653737.1806.21.camel@wwguy-ubuntu>	<4EE636B9.1020305@udo.edu>
-	 <1323807327.7144.6.camel@wwguy-ubuntu>	<4EE7BEC1.1060506@udo.edu>
-	 <20111213230443.2c12caeb@x220.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Dec 2011 15:20:17 -0800
-Message-ID: <1323818417.21617.0.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751909Ab1LMXeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 18:34:02 -0500
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: linux-mm@kvack.org
+Subject: Is per_cpu_ptr_to_phys broken?
+Date: Wed, 14 Dec 2011 00:33:58 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.9-default; KDE/4.6.0; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112140033.58951.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-13 at 14:04 -0800, Udo Steinberg wrote:
-> Hi,
-> 
-> Glad to hear it works for you now. In the patch, the following piece of code
-> 
-> +				if ((iwl_is_associated_ctx(ctx) &&
-> +						!ctx->ht.is_40mhz) ||
-> +						!iwl_is_associated_ctx(ctx))
-> 
-> can be simplified to:
-> 
-> 	if (!iwl_is_associated_ctx(ctx) || !ctx->ht.is_40mhz)
-> 
-right, looks better this way :-)
+Hi folks,
 
-Thanks
-Wey
+while trying to understand a weird kdump failure, I found out that the 
+secondary kernel doesn't get the correct NT_PRSTATUS notes from the primary 
+kernel. Further research reveals that the notes are correctly generated, 
+corresponding elfcorehdr program headers are created by kexec, but the 
+physical address is wrong.
+
+The trouble is that the crash_notes per-cpu variable is not page-aligned:
+
+crash_notes = 0xc08e8ed4
+PER-CPU OFFSET VALUES:
+  CPU 0: 3711f000
+  CPU 1: 37129000
+  CPU 2: 37133000
+  CPU 3: 3713d000
+
+So, the per-cpu addresses are:
+  crash_notes on CPU 0: f7a07ed4 => phys 36b57ed4
+  crash_notes on CPU 1: f7a11ed4 => phys 36b4ded4
+  crash_notes on CPU 2: f7a1bed4 => phys 36b43ed4
+  crash_notes on CPU 3: f7a25ed4 => phys 36b39ed4
+
+However, /sys/devices/system/cpu/cpu*/crash_notes says:
+/sys/devices/system/cpu/cpu0/crash_notes: 36b57000
+/sys/devices/system/cpu/cpu1/crash_notes: 36b4d000
+/sys/devices/system/cpu/cpu2/crash_notes: 36b43000
+/sys/devices/system/cpu/cpu3/crash_notes: 36b39000
+
+As you can see, all values are rounded down to a page boundary. Consequently, 
+this is where kexec sets up the NOTE segments, and thus where the secondary 
+kernel is looking for them. However, when the first kernel crashes, it saves 
+the notes to the unaligned addresses, where they are not found.
+
+The value in the crash_notes sysfs attribute are computed as follows:
+
+        addr = per_cpu_ptr_to_phys(per_cpu_ptr(crash_notes, cpunum));
+
+Note that the per-cpu addresses lie between VMALLOC_START (0xf79fe000 on this 
+machine) and VMALLOC_END (0xff1fe000).
+
+Now, the per_cpu_ptr_to_phys() function aligns all vmalloc addresses to a page 
+boundary. This was probably right when Vivek Goyal introduced that function 
+(commit 3b034b0d084221596bf35c8d893e1d4d5477b9cc), because per-cpu addresses
+were only allocated by vmalloc if booted with percpu_alloc=page, but this is 
+no longer the case, because per-cpu variables are now always allocated that 
+way AFAICS.
+
+So, shouldn't we add the offset within the page inside per_cpu_ptr_to_phys?
+
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 3bb810a..4c13334 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -998,6 +998,7 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ 	bool in_first_chunk = false;
+ 	unsigned long first_low, first_high;
+ 	unsigned int cpu;
++	phys_addr_t page_addr;
+ 
+ 	/*
+ 	 * The following test on unit_low/high isn't strictly
+@@ -1023,9 +1024,10 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ 		if (!is_vmalloc_addr(addr))
+ 			return __pa(addr);
+ 		else
+-			return page_to_phys(vmalloc_to_page(addr));
++			page_addr = page_to_phys(vmalloc_to_page(addr));
+ 	} else
+-		return page_to_phys(pcpu_addr_to_page(addr));
++		page_addr = page_to_phys(pcpu_addr_to_page(addr));
++	return page_addr + ((unsigned long)addr & ~PAGE_MASK);
+ }
+ 
+ /**
 
