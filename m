@@ -1,155 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1LMWJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 17:09:58 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:45948 "EHLO smtp6-g21.free.fr"
+	id S1756015Ab1LMWOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 17:14:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26557 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755254Ab1LMWJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 17:09:57 -0500
-Message-ID: <4EE7CD0B.60404@free.fr>
-Date: Tue, 13 Dec 2011 23:09:15 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1752789Ab1LMWOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 17:14:35 -0500
+Date: Tue, 13 Dec 2011 22:14:26 +0000
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] Jabra SPEAK 410 USB - no audio playback
+Message-ID: <20111213221426.GG16692@amd.home.annexia.org>
+References: <20111210142419.GC16692@amd.home.annexia.org>
+ <20111210194539.GF16692@amd.home.annexia.org>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: containers@lists.linux-foundation.org, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Subject: Re: [PATCH 0/1][V4] Handle reboot in a child pid namespace
-References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
-In-Reply-To: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111210194539.GF16692@amd.home.annexia.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 01:17 AM, Daniel Lezcano wrote:
+On Sat, Dec 10, 2011 at 07:45:39PM +0000, Richard W.M. Jones wrote:
 
-Does someone have an opinion for this patch ?
+> diff -uNrp kernel-3.1.fc16.orig/sound/usb/stream.c kernel-3.1.fc16.new/sound/usb/stream.c
+> --- kernel-3.1.fc16.orig/sound/usb/stream.c	2011-12-10 18:03:29.658729051 +0000
+> +++ kernel-3.1.fc16.new/sound/usb/stream.c	2011-12-10 18:08:41.468694907 +0000
+> @@ -164,6 +164,12 @@ static int parse_uac_endpoint_attributes
+>  
+>  	csep = snd_usb_find_desc(alts->endpoint[0].extra, alts->endpoint[0].extralen, NULL, USB_DT_CS_ENDPOINT);
+>  
+> +	/* Jabra SPEAK 410 USB has CS_ENDPOINT before ordinary ENDPOINT,
+> +	 * which confuses the USB descriptor parsing code.  Try looking
+> +	 * for CS_ENDPOINT in the interface->extra - RWMJ. */
+> +	if (!csep)
+> +		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
+> +
+>  	/* Creamware Noah has this descriptor after the 2nd endpoint */
+>  	if (!csep && altsd->bNumEndpoints >= 2)
+>  		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
 
-I cc'ed Bruno who should be interested by this feature too (sorry for
-not cc'ing you before).
 
-Oleg, I did not add your signed-off-by because I changed the patch but I
-guess the V4 is what you expected to see, right ?
+Anyone?  Tested on two different machines and it fixes the
+audio output problem on both ...  If I've sent this to the
+wrong list please let me know.
 
-Thanks
-  -- Daniel
+Rich.
 
-> ChangeLog:
-> ==========
->
->  * V4
->    - store the signal number the child pid namespace init should
->      exit from. It is simpler, cleaner, and does not add more encoding
->      bits to the exit code of the process.
->  * V3
->    - removed lock and serialization of pid_ns_reboot
->  * V2
->    - added a lock for the pid namespace to prevent racy call
->      to the 'reboot' syscall
->    - Moved 'reboot' command assigned in zap_pid_ns_processes
->      instead of wait_task_zombie
->    - added tasklist lock around force_sig
->    - added do_exit in pid_ns_reboot
->    - used task_active_pid_ns instead of declaring a new variable in sys_reboot
->    - moved code up before POWER_OFF changed to HALT in sys_reboot
->
->
-> Test case:
-> ==========
->
-> #include <alloca.h>
-> #include <stdio.h>
-> #include <sched.h>
-> #include <unistd.h>
-> #include <signal.h>
-> #include <sys/reboot.h>
-> #include <sys/types.h>
-> #include <sys/wait.h>
->
-> #include <linux/reboot.h>
->
-> static int do_reboot(void *arg)
-> {
->         int *cmd = arg;
->
->         if (reboot(*cmd))
->                 printf("failed to reboot(%d): %m\n", *cmd);
-> }
->
-> int test_reboot(int cmd, int sig)
-> {
->         long stack_size = 4096;
->         void *stack = alloca(stack_size) + stack_size;
->         int status;
->         pid_t ret;
->
->         ret = clone(do_reboot, stack, CLONE_NEWPID | SIGCHLD, &cmd);
->         if (ret < 0) {
->                 printf("failed to clone: %m\n");
->                 return -1;
->         }
->
->         if (wait(&status) < 0) {
->                 printf("unexpected wait error: %m\n");
->                 return -1;
->         }
->
->         if (!WIFSIGNALED(status)) {
->                 printf("child process exited but was not signaled\n");
->                 return -1;
->         }
->
->         if (WTERMSIG(status) != sig) {
->                 printf("signal termination is not the one expected\n");
->                 return -1;
->         }
->
->         return 0;
-> }
->
-> int main(int argc, char *argv[])
-> {
->         int status;
->
->         status = test_reboot(LINUX_REBOOT_CMD_RESTART, SIGHUP);
->         if (status < 0)
->                 return 1;
->         printf("reboot(LINUX_REBOOT_CMD_RESTART) succeed\n");
->
->         status = test_reboot(LINUX_REBOOT_CMD_RESTART2, SIGHUP);
->         if (status < 0)
->                 return 1;
->         printf("reboot(LINUX_REBOOT_CMD_RESTART2) succeed\n");
->
->         status = test_reboot(LINUX_REBOOT_CMD_HALT, SIGINT);
->         if (status < 0)
->                 return 1;
->         printf("reboot(LINUX_REBOOT_CMD_HALT) succeed\n");
->
->         status = test_reboot(LINUX_REBOOT_CMD_POWER_OFF, SIGINT);
->         if (status < 0)
->                 return 1;
->         printf("reboot(LINUX_REBOOT_CMD_POWERR_OFF) succeed\n");
->
->         status = test_reboot(LINUX_REBOOT_CMD_CAD_ON, -1);
->         if (status >= 0) {
->                 printf("reboot(LINUX_REBOOT_CMD_CAD_ON) should have failed\n");
->                 return 1;
->         }
->         printf("reboot(LINUX_REBOOT_CMD_CAD_ON) has failed as expected\n");
->
->         return 0;
-> }
->
-> Daniel Lezcano (1):
->   Add reboot_pid_ns to handle the reboot syscall
->
->  include/linux/pid_namespace.h |    8 +++++++-
->  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
->  kernel/sys.c                  |    3 +++
->  3 files changed, 43 insertions(+), 1 deletions(-)
->
-
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+Read my programming blog: http://rwmj.wordpress.com
+Fedora now supports 80 OCaml packages (the OPEN alternative to F#)
+http://cocan.org/getting_started_with_ocaml_on_red_hat_and_fedora
