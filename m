@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab1LMOJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 09:09:50 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:35425 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab1LMOJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 09:09:49 -0500
-From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sascha Hauer <kernel@pengutronix.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Li Yang <leoli@freescale.com>,
-        Felipe Balbi <balbi@ti.com> (maintainer:USB GADGET/PERIPH...),
-        linux-usb@vger.kernel.org (open list:FREESCALE USB PER...),
-        linuxppc-dev@lists.ozlabs.org (open list:FREESCALE USB PER...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 01/19] mxc_udc: add workaround for ENGcm09152 for i.MX25
-Date: Tue, 13 Dec 2011 15:09:37 +0100
-Message-Id: <1323785377-22463-1-git-send-email-eric@eukrea.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <20111213101846.GC2619@pengutronix.de>
-References: <20111213101846.GC2619@pengutronix.de>
+	id S1754915Ab1LMOMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 09:12:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51270 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab1LMOMD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 09:12:03 -0500
 MIME-Version: 1.0
+In-Reply-To: <20111212173819.GT13952@sortiz-mobl>
+References: <20111126201334.16080.85045.stgit@notabene.brown>
+	<20111212173819.GT13952@sortiz-mobl>
+Date: Tue, 13 Dec 2011 16:12:02 +0200
+Message-ID: <CAMP44s1D+HXP_prHVwEztLCd1XJpnzukFeNKH_xEZrq06jEouA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] fixes for twl4030-irq in mainline
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: NeilBrown <neilb@suse.de>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch gives the possibility to workaround bug ENGcm09152
-on i.MX25 when the hardware workaround is also implemented on
-the board.
-It covers the workaround described on page 42 of the following Errata,
-titled "USB: UTMI_USBPHY VBUS input impedance implementation error" :
-http://cache.freescale.com/files/dsp/doc/errata/IMX25CE.pdf
+Hi,
 
-Signed-off-by: Eric Bénard <eric@eukrea.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Li Yang <leoli@freescale.com>
----
- drivers/usb/gadget/fsl_mxc_udc.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
+On Mon, Dec 12, 2011 at 7:38 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> On Sun, Nov 27, 2011 at 07:17:41AM +1100, NeilBrown wrote:
+>>   The recent tidying up of twl4030-irq seems to have left it broken.
+>> At least it doesn't work for me on my gta04 (www.gta04.org).  The
+>> first interrupt from the device freezes the whole system (by being
+>> constantly delivered)
+>>
+>> The following 4 patches make it work for me and addresses some other
+>> less critical issues like a typo in a comment :-)
+>
+> Thanks, I applied all 4 of them.
 
-diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
-index dcbc0a2..4aff05d 100644
---- a/drivers/usb/gadget/fsl_mxc_udc.c
-+++ b/drivers/usb/gadget/fsl_mxc_udc.c
-@@ -23,7 +23,7 @@
- static struct clk *mxc_ahb_clk;
- static struct clk *mxc_usb_clk;
- 
--/* workaround ENGcm09152 for i.MX35 */
-+/* workaround ENGcm09152 for i.MX25/35 */
- #define USBPHYCTRL_OTGBASE_OFFSET	0x608
- #define USBPHYCTRL_EVDO			(1 << 23)
- 
-@@ -89,16 +89,20 @@ eenahb:
- void fsl_udc_clk_finalize(struct platform_device *pdev)
- {
- 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
--	if (cpu_is_mx35()) {
-+	if (cpu_is_mx25() || cpu_is_mx35()) {
- 		unsigned int v;
--
--		/* workaround ENGcm09152 for i.MX35 */
-+		void __iomem *otgbase;
-+		if (cpu_is_mx25())
-+			otgbase = MX25_IO_ADDRESS(MX25_USB_BASE_ADDR +
-+					USBPHYCTRL_OTGBASE_OFFSET);
-+		else if (cpu_is_mx35())
-+			otgbase = MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
-+					USBPHYCTRL_OTGBASE_OFFSET);
-+
-+		/* workaround ENGcm09152 for i.MX25/35 */
- 		if (pdata->workaround & FLS_USB2_WORKAROUND_ENGCM09152) {
--			v = readl(MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
--					USBPHYCTRL_OTGBASE_OFFSET));
--			writel(v | USBPHYCTRL_EVDO,
--				MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
--					USBPHYCTRL_OTGBASE_OFFSET));
-+			v = readl(otgbase);
-+			writel(v | USBPHYCTRL_EVDO, otgbase);
- 		}
- 	}
- 
+Did you apply them for 3.2 or 3.3? Without the first patch any system
+that has a twl4030 chip will immediately hang on the first interrupt,
+and many functions of twl4030 will just not work without the second
+one.
+
 -- 
-1.7.6.4
-
+Felipe Contreras
