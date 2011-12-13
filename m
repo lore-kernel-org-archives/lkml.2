@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab1LMSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 13:41:57 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:39133 "EHLO mail.vyatta.com"
+	id S1755525Ab1LMSnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:43:24 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36378 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab1LMSly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 13:41:54 -0500
-Date: Tue, 13 Dec 2011 10:41:52 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Rajesh Borundia <rajesh.borundia@qlogic.com>
-Cc: "starlight@binnacle.cx" <starlight@binnacle.cx>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-Message-ID: <20111213104152.14c01911@nehalam.linuxnetplumber.net>
-In-Reply-To: <13A253B3F9BEFE43B93C09CF75F63CAA8162593365@MNEXMB1.qlogic.org>
-References: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
-	<20111209095014.14a647cd@nehalam.linuxnetplumber.net>
-	<6.2.5.6.2.20111209130007.039b3078@binnacle.cx>
-	<13A253B3F9BEFE43B93C09CF75F63CAA8162593365@MNEXMB1.qlogic.org>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751984Ab1LMSnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 13:43:23 -0500
+Date: Tue, 13 Dec 2011 10:36:44 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Cc: "'Andreas Dilger'" <adilger.kernel@dilger.ca>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Mingming Cao'" <cmm@us.ibm.com>,
+        "'Herbert Xu'" <herbert@gondor.hengli.com.au>,
+        "'linux-crypto'" <linux-crypto@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        "'Theodore Tso'" <tytso@mit.edu>
+Subject: Re: [PATCH 14/14] crc32: Select an algorithm via kconfig
+Message-ID: <20111213183644.GO7137@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com> <20111201201517.5876.39207.stgit@elm3c44.beaverton.ibm.com> <20111202002505.GB19842@gondor.apana.org.au> <20111203023646.GB16577@tux1.beaverton.ibm.com> <20111212225857.GM7137@tux1.beaverton.ibm.com> <02ea01ccb923$48193ff0$d84bbfd0$@systemfabricworks.com> <20111213063228.GN7137@tux1.beaverton.ibm.com> <OF62576D22.A1ACD2B5-ONC1257965.002E3817-C1257965.002E6F16@transmode.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF62576D22.A1ACD2B5-ONC1257965.002E3817-C1257965.002E6F16@transmode.se>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11121318-1976-0000-0000-0000088647D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011 11:42:13 -0600
-Rajesh Borundia <rajesh.borundia@qlogic.com> wrote:
-
-> Hi All,
-> 
-> Sorry for late reply.
-> 
-> Stephan,
-> Thanks for analyzing.
-> 
-> Yes, the netxen adapter does not support fragmented page memory.
-> They are not harmful messages. At that instant of time it may fail allocating
-> memory for some buffers in the ring but after enough memory is available
-> it will try to allocate memory for unallocated buffers in ring.
-> 
-> Or the other option could be to turn LRO off.
-> 
-> Rajesh  
-> 
-> ________________________________________
-> From: starlight@binnacle.cx [starlight@binnacle.cx]
-> Sent: Friday, December 09, 2011 11:33 PM
-> To: Stephen Hemminger; Sony Chacko; Rajesh Borundia
-> Cc: linux-kernel; netdev
-> Subject: Re: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-> 
-> At 09:50 AM 12/9/2011 -0800, Stephen Hemminger wrote:
-> >On Thu, 08 Dec 2011 21:10:02 -0500 starlight@binnacle.cx wrote:
+On Tue, Dec 13, 2011 at 09:27:10AM +0100, Joakim Tjernlund wrote:
+> "Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/12/13 07:32:28:
 > >
-> >You are seeing memory allocation failures because device
-> >is allocating a 16K (order 2) size socket buffer. You are using
-> >netxen device, and it looks like the problem.
+> > On Mon, Dec 12, 2011 at 05:10:45PM -0600, Bob Pearson wrote:
+> > > That choice was for Joakim who measured better performance on his 32 bit PPC
+> > > platform with "by 4".
 > >
-> >From reading the netxen driver source. The LRO buffers
-> >in this device are very large (8060+skb overhead).
-> >Until the driver is fixed to use fragmented page size memory,
-> >I recommend turning off LRO.
+> > Ok.  On my 1.33GHz PowerBook I get ~255MB/s with slice by 4 and ~270MB/s with
+> > slice by 8.  I think it's a PPC 7447, and definitely 32-bit.  In any case, it
+> > reports having 32K of L1D cache.
 > 
-> Thank you for the analysis.  As an alternative
-> would it make sense to double or quadruple
+> I tested Bobs early version on my mpc8321(266MHz, embedded CPU) and it was just
+> half the speed compared with current crc32.
+
+I wonder, given the patch "crc32: Speed up memory table access on powerpc"
+would you mind retesting to see if slice by 8 still trails slice by 4 on your
+powerpc?  I see that your mpc8321 has 16K of L1D cache and a 32-bit memory bus
+whereas my 7447 has a 64-bit memory bus.  I wonder if memory bus size could be
+a defining characteristic...?
+
+I tried it out the crc32c code on a s390x today; apparently by-8 trails by-4
+there too.  It's unfortunately difficult to figure out the hardware details of
+whatever's going on underneath that VM.
+
+--D
 > 
->     /proc/sys/vm/min_free_kbytes
+>  Jocke
 > 
-> or perhaps do the same for
-> 
->     /proc/slabinfo(size-16384)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-The driver should be changed to call allocation with __GFP_NOWARN.
-Change dev_alloc_skb(size) to
-  __dev_alloc_skb(size, GFP_ATOMIC|__GFP_NOWARN)
-
-Or better yet, switch to using netdev_alloc variant like
-  __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC|__GFP_NOWARN)
