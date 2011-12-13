@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1LMWOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 17:14:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab1LMWOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 17:14:35 -0500
-Date: Tue, 13 Dec 2011 22:14:26 +0000
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] Jabra SPEAK 410 USB - no audio playback
-Message-ID: <20111213221426.GG16692@amd.home.annexia.org>
-References: <20111210142419.GC16692@amd.home.annexia.org>
- <20111210194539.GF16692@amd.home.annexia.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111210194539.GF16692@amd.home.annexia.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756034Ab1LMWQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 17:16:56 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49838 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754846Ab1LMWQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 17:16:53 -0500
+Message-ID: <1323814611.3837.40.camel@joe2Laptop>
+Subject: Re: [PATCH v3 resend2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS
+ driver use gpiolib
+From: Joe Perches <joe@perches.com>
+To: Denis Kuzmenko <linux@solonet.org.ua>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>
+Date: Tue, 13 Dec 2011 14:16:51 -0800
+In-Reply-To: <4EE7CC34.8000209@solonet.org.ua>
+References: <4EE7B41C.5080006@solonet.org.ua>
+	 <1323810417.3837.25.camel@joe2Laptop> <4EE7C1C9.8080000@solonet.org.ua>
+	 <1323811732.3837.27.camel@joe2Laptop> <4EE7C4AD.8090805@solonet.org.ua>
+	 <1323812431.3837.31.camel@joe2Laptop> <4EE7CC34.8000209@solonet.org.ua>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 10, 2011 at 07:45:39PM +0000, Richard W.M. Jones wrote:
+On Wed, 2011-12-14 at 00:05 +0200, Denis Kuzmenko wrote:
+> On 12/13/2011 11:40 PM, Joe Perches wrote:
+> > On Tue, 2011-12-13 at 23:33 +0200, Denis Kuzmenko wrote:
+> >> On 12/13/2011 11:28 PM, Joe Perches wrote:
+> >>> The LEDF_ACTLOW use is dependent on it being #defined
+> >>> to 1 when using ^.  I think that's unintelligible.
+> >> Sorry, can't understand. Can you please clarify last two sentences?
+> > 	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+> > 			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+> > I think this should be:
+> > 	s3c2410_gpio_setpin(pd->gpio,
+> > 			    !!value ^ !!(pd->flags & S3C24XX_LEDF_ACTLOW));
+> So you've found a BUG.
 
-> diff -uNrp kernel-3.1.fc16.orig/sound/usb/stream.c kernel-3.1.fc16.new/sound/usb/stream.c
-> --- kernel-3.1.fc16.orig/sound/usb/stream.c	2011-12-10 18:03:29.658729051 +0000
-> +++ kernel-3.1.fc16.new/sound/usb/stream.c	2011-12-10 18:08:41.468694907 +0000
-> @@ -164,6 +164,12 @@ static int parse_uac_endpoint_attributes
->  
->  	csep = snd_usb_find_desc(alts->endpoint[0].extra, alts->endpoint[0].extralen, NULL, USB_DT_CS_ENDPOINT);
->  
-> +	/* Jabra SPEAK 410 USB has CS_ENDPOINT before ordinary ENDPOINT,
-> +	 * which confuses the USB descriptor parsing code.  Try looking
-> +	 * for CS_ENDPOINT in the interface->extra - RWMJ. */
-> +	if (!csep)
-> +		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
-> +
->  	/* Creamware Noah has this descriptor after the 2nd endpoint */
->  	if (!csep && altsd->bNumEndpoints >= 2)
->  		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+It's not really a bug, it's more lack of consistency
+style defect.  It's also an example of why I prefer
+consistent style to equivalent but different styles.
 
+> As I understand my code will behave wrong if
+> S3C24XX_LEDF_ACTLOW value will be changed.
 
-Anyone?  Tested on two different machines and it fixes the
-audio output problem on both ...  If I've sent this to the
-wrong list please let me know.
+> Thank you, I'll make a new version.
 
-Rich.
+cheers, Joe
 
--- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-Read my programming blog: http://rwmj.wordpress.com
-Fedora now supports 80 OCaml packages (the OPEN alternative to F#)
-http://cocan.org/getting_started_with_ocaml_on_red_hat_and_fedora
