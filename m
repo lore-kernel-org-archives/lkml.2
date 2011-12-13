@@ -1,130 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab1LMD5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 22:57:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63469 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab1LMD5L (ORCPT
+	id S1754519Ab1LMD6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 22:58:17 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:47638 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab1LMD6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 22:57:11 -0500
-Message-ID: <1323748626.2583.41.camel@edumazet-laptop>
-Subject: Re: [Slub allocator] There are chances that
- kmem_cache_cpu->freelist gets lost if the process happens to be rescheduled
- to a differenet cpu before the local_irq_save() completes in __slab_alloc()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: zhihua che <zhihua.che@gmail.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Date: Tue, 13 Dec 2011 04:57:06 +0100
-In-Reply-To: <1323711558.2583.11.camel@edumazet-laptop>
-References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
-	 <1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.DEB.2.00.1112120922020.28410@router.home>
-	 <1323711558.2583.11.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+	Mon, 12 Dec 2011 22:58:16 -0500
+Date: Tue, 13 Dec 2011 14:58:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20111213145805.dfdab4f81bc8ffb22c582393@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Dec_2011_14_58_05_+1100_PRQHMZbX/K8BXXKy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 12 décembre 2011 à 18:39 +0100, Eric Dumazet a écrit :
-> Le lundi 12 décembre 2011 à 09:50 -0600, Christoph Lameter a écrit :
-> 
-> > Correct. Issue was introduced in 2.6.39.
-> > 
-> > Acked-by: Christoph Lameter <cl@linux.com>
-> > 
-> 
-> Indeed, I reproduced the leak with hackbench and lot of threads.
-> 
-> Thanks
-> 
-> [PATCH] slub: fix a possible memleak in __slab_alloc()
-> 
-> Zhihua Che reported a possible memleak in slub allocator on
-> CONFIG_PREEMPT=y builds.
-> 
-> It is possible current thread migrates right before disabling irqs in
-> __slab_alloc(). We must check again c->freelist, and perform a normal
-> allocation instead of scratching c->freelist.
-> 
-> Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
-> 
-> Reported-by: zhihua che <zhihua.che@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: stable@vger.kernel.org
-> ---
->  mm/slub.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ed3334d..923d238 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2166,6 +2166,12 @@ redo:
->  		goto new_slab;
->  	}
->  
-> +#ifdef CONFIG_PREEMPT
-> +	object = c->freelist;
-> +	if (object)
-> +		goto load_freelist;
-> +#endif
-> +
->  	stat(s, ALLOC_SLOWPATH);
->  
->  	do {
-> 
+--Signature=_Tue__13_Dec_2011_14_58_05_+1100_PRQHMZbX/K8BXXKy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thinking again about the issue, I believe its not a CONFIG_PREEMPT only
-one.
+Hi all,
 
-We can be interrupted and the IRQ handler can free an object an populate
-freelist too. So the check must always be done.
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Thanks
+drivers/base/regmap/regmap.c: In function 'regmap_reinit_cache':
+drivers/base/regmap/regmap.c:259:2: error: too many arguments to function '=
+regcache_init'
+drivers/base/regmap/internal.h:109:5: note: declared here
 
-[PATCH v2] slub: fix a possible memleak in __slab_alloc()
+Caused by commit bf315173359b ("regmap: Allow drivers to reinitialise the
+register cache at runtime").
 
-Zhihua Che reported a possible memleak in slub allocator on
-CONFIG_PREEMPT=y builds.
+I have used the sound-asoc tree from next-20111212 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It is possible current thread migrates right before disabling irqs in
-__slab_alloc(). We must check again c->freelist, and perform a normal
-allocation instead of scratching c->freelist.
+--Signature=_Tue__13_Dec_2011_14_58_05_+1100_PRQHMZbX/K8BXXKy
+Content-Type: application/pgp-signature
 
-Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-V2: Its also possible an IRQ freed one (or several) object(s) and
-populated c->freelist, so its not a CONFIG_PREEMPT only problem.
+iQIcBAEBCAAGBQJO5s1NAAoJEECxmPOUX5FEgpUQAKKyeWHWnxnTrOVTlYc0CyTB
++Une/7YyhnK8hyCuAacmB2y1q1ECiMRppGXRzrzqlLi/s6WOiA+FknrRaF3COQLT
+ajB4E5bP3WmgzbL4+dm0m+j08e2W5SZj868RPHuxvS3Co3cEUhS44Mi8++KGCQM5
+JuV+h+Q+ftlQ8bpb4IEmYO+iqITdY7PUSwJIBm7+vxDMlndVP3T2Q4Kbb7mYn9h9
+QgmEGQRwn4gKx+L2i9OvOiyOCdQqPl9g+6nUynjp8D1BH5wCKwIusPpZIw+SlfVI
+G5oZlDrTROZIe6KOvwgS9NYn4F0tUvNVEWZz3wu9GO27xaeJjrI/2yiPxijMa+Wn
+Q/eod5FWau1WweXZSU/WMrUflCqXP2jXvCbrrkMGvXEh7kGJowWvUsfsx9h/lYQD
+mgoU36dliUntZqEHpSnaqfamtE7Ke3A6NzXUGjeNLvt+I09efEKUHMrJqrv4EK0S
+uOl+hSuI/ybfnw1SDc4ZqmKgOZKhZValy0b1lb9rlJzuG2aTKFGWeUEJelc77M3q
+D/rYuNrNt2ZCqSXYKH2B1mVcDkJehY34mZxD8Ya2sJpAqKJGlb0NZvk9iUmRZgJo
+V2hYblybrIWDQ15kwbmOHwjQn2IWoV1HAKB00Mq7ZMb6zfmef8SUG+0R5BqG2sCT
+mwIPS6Cfw8GwGtrsNDci
+=A0tv
+-----END PGP SIGNATURE-----
 
-Reported-by: zhihua che <zhihua.che@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
----
- mm/slub.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ed3334d..1a919f0 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2166,6 +2166,11 @@ redo:
- 		goto new_slab;
- 	}
- 
-+	/* must check again c->freelist in case of cpu migration or IRQ */
-+	object = c->freelist;
-+	if (object)
-+		goto load_freelist;
-+
- 	stat(s, ALLOC_SLOWPATH);
- 
- 	do {
-
-
+--Signature=_Tue__13_Dec_2011_14_58_05_+1100_PRQHMZbX/K8BXXKy--
