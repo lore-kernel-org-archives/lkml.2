@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1LMW2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 17:28:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18291 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab1LMW2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 17:28:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101856728"
-Date: Tue, 13 Dec 2011 14:27:59 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] DEBUGFS: Automatically create parents for debugfs
- files v2
-Message-ID: <20111213222759.GB7633@tassilo.jf.intel.com>
-References: <1323812733-7520-1-git-send-email-andi@firstfloor.org>
- <20111213222256.GD2618@moon>
+	id S1756063Ab1LMWnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 17:43:22 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58962 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab1LMWnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 17:43:19 -0500
+Date: Tue, 13 Dec 2011 23:43:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/3] DEBUGFS: Add per cpu counters
+In-Reply-To: <1323812733-7520-2-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LFD.2.02.1112132336440.3020@ionos>
+References: <1323812733-7520-1-git-send-email-andi@firstfloor.org> <1323812733-7520-2-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213222256.GD2618@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Andi, is it possible to do say kstrdup or something instead of
+On Tue, 13 Dec 2011, Andi Kleen wrote:
+>  									\
+> +	__debugfs	: AT(ADDR(__debugfs) - LOAD_OFFSET) {		\
+> +		VMLINUX_SYMBOL(__start___debugfs) = .;			\
+> +		*(__debugfs)						\
+> +		VMLINUX_SYMBOL(__stop___debugfs) = .;			\
+> +	}								\
+> +									\
 
-It's possible, just would add complexity with an additional
-error path.
+....
+  
+> +struct debugfs_counter {
+> +	unsigned __percpu *ptr;
+> +	const char *fn;
+> +	const char *name;
+> +} __attribute__((aligned(sizeof(char *))));
+> +
+> +/* Note: static doesn't work unlike DEFINE_PERCPU. Sorry. */
+> +#define DEFINE_DEBUGFS_COUNTER(name_, file)				\
+> +	DEFINE_PER_CPU(unsigned, name_ ## _counter);			\
+> +	struct debugfs_counter name_ ## _pcpu_counter __used		\
+> +	__attribute__((aligned(sizeof(char *)),section("__debugfs"),unused)) \
+> +	= { .ptr = &name_ ## _counter, .fn = file, .name = #name_ }; \
 
-> variable-size array in fn[strlen(name) + 1] ? As far as I remember
-> we already had some warnings with them at least in perf land (or
-> trace land). Or I miss something?
+Sigh, we had that section forms an array problem more than once
+already. Why do you invent another variant and think that it will not
+explode?
 
-Not aware of any problems with tracing or perf. I like them at least.
+Your alignment magic does not guarantee at all that the structs will
+form an array. The "aligned" attribute guarantees only the _MINIMUM_
+alignment for a structure, but the compiler and the linker are free to
+align on larger multiples.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+See commit 654986462 for details. That has been discussed to death and
+your solution wont work either across all the various compiler
+incarnations we have and will have.
+
+Thanks,
+
+	tglx
