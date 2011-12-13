@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1LMTK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:10:27 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39515 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab1LMTK0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:10:26 -0500
-Message-ID: <4EE7A31E.7080301@gmail.com>
-Date: Tue, 13 Dec 2011 13:10:22 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
-In-Reply-To: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755606Ab1LMTKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:10:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20855 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755586Ab1LMTKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 14:10:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95753814"
+Message-Id: <cover.1323803130.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 13 Dec 2011 11:05:30 -0800
+Subject: [PATCH 0/6] x86, mce: machine check recovery for applications
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 12:23 PM, Kyle Moffett wrote:
-> Hello again,
-> 
-> I posted this patch series a few weeks ago and saw no responses, so I
-> tweaked the CC list and am reposting it again for review.
-> 
-> I'm working on support for some custom hardware of ours, and part of
-> the support code is the ability for the software to shutdown the power
-> supply using GPIOs (via an I2C GPIO controller).
-> 
-> I previously had this in my platform code, but it seemed generically
-> useful, so I split it out into a separate module for others to use.
-> 
-> The first two patches are generic of_gpio enhancements, providing some
-> new library functions for requesting lots of GPIOs at once.
-> 
-> The third patch is the actual driver itself.  The driver can be used to
-> instantiate a platform device as a whole-machine-poweroff device as we
-> use it on our hardware.  Alternatively it can instantiate multiple
-> platform devs at specific locations on the device tree which trigger
-> from the platform_driver->shutdown() callback.
-> 
-> For architectures which are still stuck in the dark ages, this driver
-> also supports being instantiated via legacy platform_data.
+Yet another version ...
 
-Leave them there... :)
+Some bits should look familiar (hopefully pieces that were not too controversial
+from earlier versions). Other bits are all new (e.g. part 4/6 which sets up some
+functions that can safely save away the physical address of the faulting address
+in the machine check handler for later retrieval in a safer execution context).
 
-> The OpenFirmware binding documentation is added in the third patch.
-> Since this is my first cut, it's a little rough, so please be gentle.
-> 
-> I'm interested to know what you all think.
+Tony Luck (6):
+  HWPOISON: clean up memory_failure() vs. __memory_failure()
+  HWPOISON: Add code to handle "action required" errors.
+  x86, mce: create helper function to save addr/misc when needed
+  x86, mce: Add mechanism to safely save information in MCE handler
+  x86, mce: handle "action required" errors
+  x86, mce: Recognise machine check bank signature for data path error
 
-Does the regulator framework gpio-regulator not work for this?
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 +++-
+ arch/x86/kernel/cpu/mcheck/mce.c          |  153 ++++++++++++++++++++++-------
+ drivers/base/memory.c                     |    2 +-
+ include/linux/mm.h                        |    4 +-
+ mm/hwpoison-inject.c                      |    4 +-
+ mm/madvise.c                              |    2 +-
+ mm/memory-failure.c                       |   96 ++++++++++---------
+ 7 files changed, 186 insertions(+), 89 deletions(-)
 
-The DT gpio patches look useful on their own.
+-- 
+1.7.3.1
 
-Rob
