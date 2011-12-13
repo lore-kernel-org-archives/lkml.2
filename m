@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1LMPj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:39:28 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40270 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1LMPj1 (ORCPT
+	id S1754876Ab1LMPkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:40:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43726 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab1LMPkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:39:27 -0500
-Date: Tue, 13 Dec 2011 07:39:21 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        cgroups@vger.kernel.org, bsingharora@gmail.com, devel@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 2/3] make clone_children a flag
-Message-ID: <20111213153921.GE25802@google.com>
-References: <1323614738-7405-1-git-send-email-glommer@parallels.com>
- <1323614738-7405-4-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323614738-7405-4-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 Dec 2011 10:40:06 -0500
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>, Chris Ball <cjb@laptop.org>,
+        Artem Bityutskiy <artem.bityutskiy@intel.com>
+Cc: Huang Shijie <b32955@freescale.com>, linux-mmc@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/4] Fix the left DMA_NONE from dma_transfer_direction migration
+Date: Tue, 13 Dec 2011 23:48:02 +0800
+Message-Id: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 03:45:37PM +0100, Glauber Costa wrote:
-> There is no reason to have a flags field, and then a separate
-> bool field just to indicate if the clone_children flag is set.
-> Make it a flag
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
+I have been working on -rc recently, and have not noticed the failure
+until I ran next tree today.  The mxs-mmc driver is broken on next
+tree because the DMA_NONE was left over from the dma_transfer_direction
+migration for mxs-dma and its client drivers.
 
-Doesn't this change how remount conditions are checked?
+This seires is trying to fix it up.
 
-Thanks.
+Huang Shijie (1):
+      mtd: fix compile error for gpmi-nand
 
--- 
-tejun
+Shawn Guo (3):
+      dmaengine: add DMA_TRANS_NONE to dma_transfer_direction
+      mmc: mxs-mmc: fix the dma_transfer_direction migration
+      mtd: gpmi-nand: move to dma_transfer_direction
+
+ drivers/dma/mxs-dma.c                 |    2 +-
+ drivers/mmc/host/mxs-mmc.c            |    3 +
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c |   22 ++++++-----
+ include/linux/dmaengine.h             |    1 +
+ include/linux/mtd/gpmi-nand.h         |   68 +++++++++++++++++++++++++++++++++
+ 5 files changed, 85 insertions(+), 11 deletions(-)
