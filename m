@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1LMXE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 18:04:29 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61495 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab1LMXE2 (ORCPT
+	id S1756087Ab1LMXHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 18:07:19 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2154 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1LMXHQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 18:04:28 -0500
+	Tue, 13 Dec 2011 18:07:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 13 Dec 2011 15:07:09 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Date: Tue, 13 Dec 2011 15:07:08 -0800
+Subject: RE: [PATCH V2 2/2] ARM: mmp: enable pinmux in platform driver
+Thread-Topic: [PATCH V2 2/2] ARM: mmp: enable pinmux in platform driver
+Thread-Index: Acy560sWcJPhL2jPSNu/kKR5jmDwpQAAFmNg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1751860C3C@HQMAIL01.nvidia.com>
+References: <1323769253-22580-1-git-send-email-haojian.zhuang@marvell.com>
+	<1323769253-22580-3-git-send-email-haojian.zhuang@marvell.com>
+ <CACRpkdbqj0zyRP4skGm4EX0Hx1Axe5-wkC14Y6Ee_B9TFzy39g@mail.gmail.com>
+In-Reply-To: <CACRpkdbqj0zyRP4skGm4EX0Hx1Axe5-wkC14Y6Ee_B9TFzy39g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-Date: Wed, 14 Dec 2011 00:04:26 +0100
-Message-ID: <CAKMK7uEOOod4Q_29WCXonR7YsQ=WfKCakptkhgk61bVysLQE_w@mail.gmail.com>
-Subject: Patches queued to drm-intel-fixes
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keith,
+Linus Walleij wrote at Tuesday, December 13, 2011 4:02 PM:
+> On Tue, Dec 13, 2011 at 10:40 AM, Haojian Zhuang wrote:
+...
+> > +static struct pinmux_map brownstone_pmx_map[] = {
+> > +       {
+> > +               .name = "dkin",
+> > +               .ctrl_dev_name = "mmp2-pinmux",
+> > +               .function = "dkin",
+> > +               .group = "dkin-2-pin",
+> > +               .hog_on_boot = true,
+> > +       }, {
+...
+> 
+> Looks like we want to add
+> #define PINMUX_MAP_SYS_HOG_GROUP() or so with four
+> arguments, what do you say Stephen? Shall I try to patch  in
+> something like that (then this patch will look even better).
 
-I've noticed that you merged my patch "rm/i915: properly prefault for
-pread/pwrite" into your -fixes branch (which I assume is headed for
-3.2). Please remove that from your queue again for the following
-reasons:
+Yes, sounds like a good idea. I just realized that I ignored PINMUX_MAP_*
+in the stuff I'm working on and implemented exactly that macro as a custom
+macro right before the map array. So, having it in the pinctrl header
+would be good. 
 
-- The right thing to do is to fix up the prefault handlers in pagemap.h
-- It's really ugly code (which Chris Wilson later on complained
-about), so ugly actually that it confused you while reviewing it.
-- It changes the semantics of pread/pwrite in funny ways (something
-you actually complained about in review a while ago, too).
-- This bug has been lying around for almost half a year already, so I
-don't see the need for a rush now.
-- It only papers over the underlying issue, the real minimal and
-proper fix is queued up (and reviewed) in my-next in my own git repo
-for 3.3.
-- I actually managed to blow things up while playing with the prefault
-stuff, so it's imo not really risk-free.
-- But most important this late in the -rc cylce: It doesn't fix a regression.
-
-I've also noticed that you have my patch "drm/i915: check ACTHD of all
-rings" queued up in -fixes. I wouldn't have minded this getting merged
-a few weeks ago into an early -rc but again I think it's too late for
-this one for the following reasons:
-- It touches on the hangcheck code, one of the most important pieces
-to be able to debug issues and hence support users of our driver, but
-also one of the least tested ones (we essentially only test it when
-hitting actual hangs).
-- A similar patch by Ben Widawsky actually blew things up for Chris Wilson.
-- Again it doesn't fix a regression.
-
-Dave, please reject a pull request for 3.2 containing these patches -
-I've already embarrassed myself with the vt-d oneliner (which should
-imo have been merged about 4 weeks ago, but mea culpa).
-
-Yours, Daniel
 -- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+nvpublic
+
