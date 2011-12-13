@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab1LMSWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 13:22:41 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:39364 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab1LMSWj (ORCPT
+	id S1755239Ab1LMSXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:23:15 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42862 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab1LMSXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 13:22:39 -0500
-Subject: Re: REGRESSION: v3.2-rcX: iwlagn refuses to associate with my AP's
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, ilw@linux.intel.com,
-        linux-wireless@vger.kernel.org
-In-Reply-To: <E1RaBm1-0001JR-8a@tytso-glaptop.cam.corp.google.com> (sfid-20111212_204303_180958_202A47DB)
-References: <E1RaBm1-0001JR-8a@tytso-glaptop.cam.corp.google.com>
-	 (sfid-20111212_204303_180958_202A47DB)
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Dec 2011 19:22:37 +0100
-Message-ID: <1323800557.3355.31.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Dec 2011 13:23:10 -0500
+Date: Tue, 13 Dec 2011 19:23:07 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: Re: [PATCH RESEND] gpio: mpc8xxx: don't allow input-only pins to be
+ output for MPC5121
+Message-ID: <20111213182307.GA2736@pengutronix.de>
+References: <1323767568-9565-1-git-send-email-w.sang@pengutronix.de>
+ <20111213181659.GA29243@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <20111213181659.GA29243@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
 
-> The failure to associate with access points happens at work, with
-> whatever AP's are in use at the Cambridge Google office.  When I tried
-> v3.2-rc5 at home, I was able to associate with a consumer-grade NetGear
-> AP, although it was flaky --- that is, it completely failed to associate
-> initially, but then I tried rebooting and I was eventually able to get
-> it to work.   At work, I was able to reproduce the problem with a
-> v3.2-rc5 and v3.2-rc2 kernel, but the problem did not manifest itself
-> with a v3.1 kernel.
-> 
-> One interesting thing is that I'm getting the following WARNING message
-> triggering in my dmesg logs:
-> 
-> [   48.518246] wlan0: deauthenticating from 00:1a:1e:26:2b:30 by local choice (r
-> eason=3)
-> [   48.525625] ------------[ cut here ]------------
-> [   48.525653] WARNING: at net/wireless/mlme.c:309 __cfg80211_auth_remove+0xc2/0xcf [cfg80211]()
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This seems to be happening after the failure to associate with the AP,
-> so it could be a red herring.
+On Tue, Dec 13, 2011 at 11:16:59AM -0700, Grant Likely wrote:
+> On Tue, Dec 13, 2011 at 10:12:48AM +0100, Wolfram Sang wrote:
+> > Add a 5121-custom reject if an input-only pin is requested to be output
+> > (see 18.3.1.1 in the refman). Also, rewrite mach-specific quirk setup to
+> > consume less lines which scales better.
+> >=20
+> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> > ---
+> >  drivers/gpio/gpio-mpc8xxx.c |   17 ++++++++++++-----
+> >  1 files changed, 12 insertions(+), 5 deletions(-)
+> >=20
+> > diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+> > index ec3fcf0..25dc736 100644
+> > --- a/drivers/gpio/gpio-mpc8xxx.c
+> > +++ b/drivers/gpio/gpio-mpc8xxx.c
+> > @@ -115,6 +115,14 @@ static int mpc8xxx_gpio_dir_in(struct gpio_chip *g=
+c, unsigned int gpio)
+> >  	return 0;
+> >  }
+> > =20
+> > +static int mpc5121_gpio_dir_out(struct gpio_chip *gc, unsigned int gpi=
+o, int val)
+> > +{
+> > +	/* GPIO 28..31 are input only on MPC5121 */
+> > +	if (gpio >=3D 28)
+> > +		return -EINVAL;
+> > +
+> > +	return mpc8xxx_gpio_dir_out(gc, gpio, val);
+> > +}
+> >  static int mpc8xxx_gpio_dir_out(struct gpio_chip *gc, unsigned int gpi=
+o, int val)
+>=20
+> This actually caused a build failure.  mpc8xxx_gpio_dir_out() was used be=
+fore
+> it was declared.  I moved the symbol to immediately below and applied any=
+way,
+> but how did it compile for you?  Should I drop this patch until you retes=
+t?
 
-I think this is. It's interesting though that it is deauthenticating --
-is there anything in the log before? But since you bisected it to the TX
-sync commit, I'd say let's try the below patch. You might have to adjust
-the iwl-mac80211.c file to iwl-agn.c, I'm not entirely sure what version
-has the moved code.
+Huh, I am surprised as well. Will investigate tomorrow. Sorry for the
+inconvenience.
 
-Please let me know -- this commit is probably the right thing to do
-until we get rid of tx_sync completely.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Thanks,
-Johannes
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---- wireless-testing.orig/drivers/net/wireless/iwlwifi/iwl-mac80211.c	2011-12-13 09:06:14.000000000 +0100
-+++ wireless-testing/drivers/net/wireless/iwlwifi/iwl-mac80211.c	2011-12-13 19:20:24.000000000 +0100
-@@ -1014,6 +1014,9 @@ static int iwlagn_mac_tx_sync(struct iee
- 	int ret;
- 	u8 sta_id;
- 
-+	if (!vif->p2p)
-+		return 0;
-+
- 	IWL_DEBUG_MAC80211(priv, "enter\n");
- 	mutex_lock(&priv->shrd->mutex);
- 
-@@ -1063,6 +1066,9 @@ static void iwlagn_mac_finish_tx_sync(st
- 	struct iwl_vif_priv *vif_priv = (void *)vif->drv_priv;
- 	struct iwl_rxon_context *ctx = vif_priv->ctx;
- 
-+	if (!vif->p2p)
-+		return;
-+
- 	IWL_DEBUG_MAC80211(priv, "enter\n");
- 	mutex_lock(&priv->shrd->mutex);
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEARECAAYFAk7nmAsACgkQD27XaX1/VRtuWQCeMXeAVzoGuVcSdCOn5ZOjFO/f
+ngMAoK5aYa7lR6ElC5sPQFZ1AAo18360
+=oDhg
+-----END PGP SIGNATURE-----
 
+--tKW2IUtsqtDRztdT--
