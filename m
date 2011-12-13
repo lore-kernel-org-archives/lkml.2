@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1LMR4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 12:56:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37853 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab1LMR40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755468Ab1LMR4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 12:56:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38800 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054Ab1LMR40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Dec 2011 12:56:26 -0500
 From: <pavan_savoy@ti.com>
 To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
 CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 3/3] drivers:misc: ti-st: DEBUG uart, baud rate mods
-Date: Tue, 13 Dec 2011 11:56:20 -0600
-Message-ID: <1323798980-6597-4-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 1/3] drivers:misc: ti-st: protect registrations
+Date: Tue, 13 Dec 2011 11:56:18 -0600
+Message-ID: <1323798980-6597-2-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1323798980-6597-3-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1323798980-6597-1-git-send-email-pavan_savoy@ti.com>
 References: <1323798980-6597-1-git-send-email-pavan_savoy@ti.com>
- <1323798980-6597-2-git-send-email-pavan_savoy@ti.com>
- <1323798980-6597-3-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,69 +23,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-To debug different UARTs at different baud-rates connected to the WiLink
-connectivity combo-chipset, this patch enables the debugging code so that upon
-boot different UARTs at different baud-rates can be tried out to verify the
-interface with WiLink.
+Concurrent access to UART2/combo-interface by multiple protocol drivers such
+as BT, FM and GPS caused issues during firmware download failure cases or
+cases when the firmware download took longer than usual.
+
+This was because of un-safe access to protos_registered & st_states.
+Protecting this will also make the registration complete callback un-safe for
+sleep.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/misc/ti-st/st_core.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index bc8a571..55ab031 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -573,6 +573,28 @@ static ssize_t show_install(struct device *dev,
- 	return sprintf(buf, "%d\n", kim_data->ldisc_install);
- }
- 
-+#ifdef DEBUG
-+static ssize_t store_dev_name(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct kim_data_s *kim_data = dev_get_drvdata(dev);
-+	pr_debug("storing dev name >%s<", buf);
-+	strncpy(kim_data->dev_name, buf, count);
-+	pr_debug("stored dev name >%s<", kim_data->dev_name);
-+	return count;
-+}
-+
-+static ssize_t store_baud_rate(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct kim_data_s *kim_data = dev_get_drvdata(dev);
-+	pr_debug("storing baud rate >%s<", buf);
-+	sscanf(buf, "%ld", &kim_data->baud_rate);
-+	pr_debug("stored baud rate >%ld<", kim_data->baud_rate);
-+	return count;
-+}
-+#endif	/* if DEBUG */
-+
- static ssize_t show_dev_name(struct device *dev,
- 		struct device_attribute *attr, char *buf)
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index ba168a7..2b62232 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -137,6 +137,8 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
+  * st_reg_complete -
+  * to call registration complete callbacks
+  * of all protocol stack drivers
++ * This function is being called with spin lock held, protocol drivers are
++ * only expected to complete their waits and do nothing more than that.
+  */
+ void st_reg_complete(struct st_data_s *st_gdata, char err)
  {
-@@ -598,11 +620,19 @@ static ssize_t show_flow_cntrl(struct device *dev,
- static struct kobj_attribute ldisc_install =
- __ATTR(install, 0444, (void *)show_install, NULL);
+@@ -538,11 +540,12 @@ long st_register(struct st_proto_s *new_proto)
+ 		set_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
+ 		st_recv = st_kim_recv;
  
-+#ifdef DEBUG	/* TODO: move this to debug-fs if possible */
-+__ATTR(dev_name, 0644, (void *)show_dev_name, (void *)store_dev_name);
-+#else
- static struct kobj_attribute uart_dev_name =
- __ATTR(dev_name, 0444, (void *)show_dev_name, NULL);
-+#endif
++		/* enable the ST LL - to set default chip state */
++		st_ll_enable(st_gdata);
++
+ 		/* release lock previously held - re-locked below */
+ 		spin_unlock_irqrestore(&st_gdata->lock, flags);
  
- static struct kobj_attribute uart_baud_rate =
-+#ifdef DEBUG	/* TODO: move to debugfs */
-+__ATTR(baud_rate, 0644, (void *)show_baud_rate, (void *)store_baud_rate);
-+#else
- __ATTR(baud_rate, 0444, (void *)show_baud_rate, NULL);
-+#endif
+-		/* enable the ST LL - to set default chip state */
+-		st_ll_enable(st_gdata);
+ 		/* this may take a while to complete
+ 		 * since it involves BT fw download
+ 		 */
+@@ -553,10 +556,13 @@ long st_register(struct st_proto_s *new_proto)
+ 			    (test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
+ 				pr_err(" KIM failure complete callback ");
+ 				st_reg_complete(st_gdata, err);
++				clear_bit(ST_REG_PENDING, &st_gdata->st_state);
+ 			}
+ 			return -EINVAL;
+ 		}
  
- static struct kobj_attribute uart_flow_cntrl =
- __ATTR(flow_cntrl, 0444, (void *)show_flow_cntrl, NULL);
++		spin_lock_irqsave(&st_gdata->lock, flags);
++
+ 		clear_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
+ 		st_recv = st_int_recv;
+ 
+@@ -576,10 +582,10 @@ long st_register(struct st_proto_s *new_proto)
+ 		if (st_gdata->is_registered[new_proto->chnl_id] == true) {
+ 			pr_err(" proto %d already registered ",
+ 				   new_proto->chnl_id);
++			spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 			return -EALREADY;
+ 		}
+ 
+-		spin_lock_irqsave(&st_gdata->lock, flags);
+ 		add_channel_to_table(st_gdata, new_proto);
+ 		st_gdata->protos_registered++;
+ 		new_proto->write = st_write;
+@@ -619,7 +625,7 @@ long st_unregister(struct st_proto_s *proto)
+ 
+ 	spin_lock_irqsave(&st_gdata->lock, flags);
+ 
+-	if (st_gdata->list[proto->chnl_id] == NULL) {
++	if (st_gdata->is_registered[proto->chnl_id] == false) {
+ 		pr_err(" chnl_id %d not registered", proto->chnl_id);
+ 		spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 		return -EPROTONOSUPPORT;
+@@ -629,6 +635,10 @@ long st_unregister(struct st_proto_s *proto)
+ 	remove_channel_from_table(st_gdata, proto);
+ 	spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 
++	/* paranoid check */
++	if (st_gdata->protos_registered < ST_EMPTY)
++		st_gdata->protos_registered = ST_EMPTY;
++
+ 	if ((st_gdata->protos_registered == ST_EMPTY) &&
+ 	    (!test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
+ 		pr_info(" all chnl_ids unregistered ");
 -- 
 1.7.4.1
 
