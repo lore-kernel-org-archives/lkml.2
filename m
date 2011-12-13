@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab1LMXDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 18:03:11 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59032 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1LMXDI (ORCPT
+	id S1756146Ab1LMXE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 18:04:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61495 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1LMXE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 18:03:08 -0500
-Date: Wed, 14 Dec 2011 00:03:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <ak@linux.intel.com>
-cc: Cyrill Gorcunov <gorcunov@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] DEBUGFS: Automatically create parents for debugfs
- files v2
-In-Reply-To: <20111213222759.GB7633@tassilo.jf.intel.com>
-Message-ID: <alpine.LFD.2.02.1112132359430.3020@ionos>
-References: <1323812733-7520-1-git-send-email-andi@firstfloor.org> <20111213222256.GD2618@moon> <20111213222759.GB7633@tassilo.jf.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 13 Dec 2011 18:04:28 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Originating-IP: [178.83.130.250]
+Date: Wed, 14 Dec 2011 00:04:26 +0100
+Message-ID: <CAKMK7uEOOod4Q_29WCXonR7YsQ=WfKCakptkhgk61bVysLQE_w@mail.gmail.com>
+Subject: Patches queued to drm-intel-fixes
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011, Andi Kleen wrote:
+Hi Keith,
 
-> > Hi Andi, is it possible to do say kstrdup or something instead of
-> 
-> It's possible, just would add complexity with an additional
-> error path.
-> 
-> > variable-size array in fn[strlen(name) + 1] ? As far as I remember
-> > we already had some warnings with them at least in perf land (or
-> > trace land). Or I miss something?
-> 
-> Not aware of any problems with tracing or perf. I like them at least.
+I've noticed that you merged my patch "rm/i915: properly prefault for
+pread/pwrite" into your -fixes branch (which I assume is headed for
+3.2). Please remove that from your queue again for the following
+reasons:
 
-That does not make them better. We had wreckage before and you can
-just consult commit a84a79e4d3 and then find a good explanation why
-your usage is safe.
+- The right thing to do is to fix up the prefault handlers in pagemap.h
+- It's really ugly code (which Chris Wilson later on complained
+about), so ugly actually that it confused you while reviewing it.
+- It changes the semantics of pread/pwrite in funny ways (something
+you actually complained about in review a while ago, too).
+- This bug has been lying around for almost half a year already, so I
+don't see the need for a rush now.
+- It only papers over the underlying issue, the real minimal and
+proper fix is queued up (and reviewed) in my-next in my own git repo
+for 3.3.
+- I actually managed to blow things up while playing with the prefault
+stuff, so it's imo not really risk-free.
+- But most important this late in the -rc cylce: It doesn't fix a regression.
 
-Thanks,
+I've also noticed that you have my patch "drm/i915: check ACTHD of all
+rings" queued up in -fixes. I wouldn't have minded this getting merged
+a few weeks ago into an early -rc but again I think it's too late for
+this one for the following reasons:
+- It touches on the hangcheck code, one of the most important pieces
+to be able to debug issues and hence support users of our driver, but
+also one of the least tested ones (we essentially only test it when
+hitting actual hangs).
+- A similar patch by Ben Widawsky actually blew things up for Chris Wilson.
+- Again it doesn't fix a regression.
 
-	tglx
+Dave, please reject a pull request for 3.2 containing these patches -
+I've already embarrassed myself with the vt-d oneliner (which should
+imo have been merged about 4 weeks ago, but mea culpa).
 
+Yours, Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
