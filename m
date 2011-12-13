@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1LMUdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:33:13 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52250 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab1LMUdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:33:09 -0500
-Message-ID: <1323808301.6805.4.camel@work-vm>
-Subject: [GIT PULL] Few more RTC fixes for 3.2
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Matt Turner <mattst88@gmail.com>, Nico Macrionitis <acrux@cruxppc.org>,
-        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Date: Tue, 13 Dec 2011 12:31:41 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11121320-3270-0000-0000-00000288A897
+	id S1755965Ab1LMUdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:33:25 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35637 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755871Ab1LMUdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:33:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85335649"
+Date: Tue, 13 Dec 2011 21:38:23 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rabin Vincent <rabin@rab.in>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V2 5/5] gpio/gpio-stmpe: ADD support for stmpe variant 801
+Message-ID: <20111213203823.GD2796@sortiz-mobl>
+References: <cover.1321507421.git.viresh.kumar@st.com>
+ <d2b66ba1a6c2b34f7e0b82e31bc360684c734759.1321507421.git.viresh.kumar@st.com>
+ <CAH+eYFCLauXusdDs75qm2rGB5Y0==bhTbxPJD+gyaaZQVbvsVw@mail.gmail.com>
+ <4EC9D175.2070008@st.com>
+ <20111121145116.GA32137@sirena.org.uk>
+ <4ECB1BA6.4050803@st.com>
+ <20111212142058.GE13952@sortiz-mobl>
+ <4EE6C7BA.30800@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE6C7BA.30800@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
+Hi Viresh,
 
-Here are two more RTC fixes that should be considered for 3.2:
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.2/tip/timers/urgent
+On Tue, Dec 13, 2011 at 09:04:18AM +0530, Viresh Kumar wrote:
+> On 12/12/2011 7:50 PM, Samuel Ortiz wrote:
+> > Ok, so I reverted your first 2 patches patchset since it seems it was
+> > problematic. Now, I think Rabin's concern on your patch #5 seems valid, and
+> > I'd like you to fix it before applying this patchset.
+> 
+> Which problem are you talking about? Issues in v2 of patch 5/5 or converting to regmap?
+> 
+> Earlier once are already fixed in V3 of 5/5. And for later one, i already confirmed to
+> do it in a separate patchset.
+I haven't received a V3 for 5/5. Could you please re-send it to me ?
 
-John Stultz (1):
-      rtc: m41t80: Workaround broken alarm functionality
+Cheers,
+Samuel.
 
-NeilBrown (1):
-      rtc: Expire alarms after the time is set.
-
- drivers/rtc/interface.c  |    6 ++++++
- drivers/rtc/rtc-m41t80.c |    9 +++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
