@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1LMHBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 02:01:42 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:56502 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1LMHBk (ORCPT
+	id S1753284Ab1LMHDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 02:03:55 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43215 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752134Ab1LMHDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 02:01:40 -0500
-Date: Tue, 13 Dec 2011 15:59:33 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/3] sched: fix cgroup movement of waking process
-Message-Id: <20111213155933.36cd824a.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20111213155710.5b453415.nishimura@mxp.nes.nec.co.jp>
-References: <20111213155710.5b453415.nishimura@mxp.nes.nec.co.jp>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Dec 2011 02:03:54 -0500
+Date: Tue, 13 Dec 2011 09:03:32 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+In-Reply-To: <alpine.LFD.2.02.1112130056370.3020@ionos>
+Message-ID: <alpine.LFD.2.02.1112130859530.2138@tux.localdomain>
+References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu>
+ <alpine.LFD.2.02.1112111459270.3020@ionos> <20111211155347.GA1297@elte.hu> <CAOJsxLHTuN43AGA7C02MtETzJU87y9cRaWRg6e9ER7NxOK2w-Q@mail.gmail.com> <20111212172059.GC23870@elte.hu> <CAOJsxLFk9Af+b4PAx_j+1QhApBsFdXyZY1aK08fb_6_dTiBEDQ@mail.gmail.com>
+ <20111212192135.GA18876@elte.hu> <alpine.LFD.2.02.1112130056370.3020@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a small race between try_to_wake_up() and sched_move_task(), which is trying
-to move the process being woken up.
+* Pekka Enberg <penberg@kernel.org> wrote:
+>>> So i'm pretty sure it's some bug in hw/serial.c that's
+>>> limiting character output by interrupts.
 
-    try_to_wake_up() on CPU0       sched_move_task() on CPU1
---------------------------------+---------------------------------
-  raw_spin_lock_irqsave(p->pi_lock)
-  task_waking_fair()
-    ->p.se.vruntime -= cfs_rq->min_vruntime
-  ttwu_queue()
-    ->send reschedule IPI to another CPU1
-  raw_spin_unlock_irqsave(p->pi_lock)
-                                   task_rq_lock()
-                                     -> tring to aquire both p->pi_lock and rq->lock
-                                        with IRQ disabled
-                                   task_move_group_fair()
-                                     ->p.se.vruntime -= (old)cfs_rq->min_vruntime
-                                     ->p.se.vruntime += (new)cfs_rq->min_vruntime
-                                   task_rq_unlock()
+On Tue, 13 Dec 2011, Thomas Gleixner wrote:
+> No, that's not a bug. The current emulation has no fifo and it writes
+> every single character to the terminal. Go figure. The timer
+> limitation is due to the missing fifo and other details, which would
+> drive the serial driver into the "too much work for irq 4" case.
+>
+> The approach I took was to keep the emulated device as close to the
+> real HW for obvious reasons. You simply cannot ignore the way how a HW
+> device works and how the corresponding kernel driver expects it to
+> work.
 
-                                   (via IPI)
-                                   sched_ttwu_pending()
-                                     raw_spin_lock(rq->lock)
-                                     ttwu_do_activate()
-                                       ...
-                                       enqueue_entity()
-                                         child.se->vruntime += cfs_rq->min_vruntime
-                                     raw_spin_unlock(rq->lock)
+No disagreement here.
 
-As a result, vruntime of the process becomes far bigger than min_vruntime,
-if (new)cfs_rq->min_vruntime >> (old)cfs_rq->min_vruntime.
+On Mon, 12 Dec 2011, Ingo Molnar wrote:
+>> Serial port control flow somehow being bound by timer frequency
+>> [which is not really a necessity: both the host and the guest
+>> could stream on full speed] was too my observation early on.
+>
+> That simply does not work with the way the serial driver for the 8250
+> is written.
+>
+> If you emulate hardware then don't expect that the shortcomings of the
+> real hardware and the clusterf*ck in the corresponding device drivers
+> go magically away.
+>
+> If you want high performance virtualization then use virtual drivers
+> and stop whining about a 30 years old legacy device and its warts.
 
-This patch fixes this problem by just ignoring such process in task_move_group_fair(),
-because the vruntime has already been normalized in task_waking_fair().
+If you compare Ingo's numbers to mine, there's still some slowdown which 
+cannot be explained by legacy device warts.
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
----
- kernel/sched_fair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Btw, I was able to double the speed of serial console with this simple 
+patch:
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index bdaa4ab..3feb3a2 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -4925,10 +4925,10 @@ static void task_move_group_fair(struct task_struct *p, int on_rq)
- 	 * to another cgroup's rq. This does somewhat interfere with the
- 	 * fair sleeper stuff for the first placement, but who cares.
- 	 */
--	if (!on_rq && p->state != TASK_RUNNING)
-+	if (!on_rq && p->state != TASK_RUNNING && p->state != TASK_WAKING)
- 		p->se.vruntime -= cfs_rq_of(&p->se)->min_vruntime;
- 	set_task_rq(p, task_cpu(p));
--	if (!on_rq && p->state != TASK_RUNNING)
-+	if (!on_rq && p->state != TASK_RUNNING && p->state != TASK_WAKING)
- 		p->se.vruntime += cfs_rq_of(&p->se)->min_vruntime;
- }
- #endif
--- 
-1.7.1
+diff --git a/tools/kvm/hw/serial.c b/tools/kvm/hw/serial.c
+index c0f6970..1a8eaaa 100644
+--- a/tools/kvm/hw/serial.c
++++ b/tools/kvm/hw/serial.c
+@@ -232,7 +232,7 @@ static bool serial8250_out(struct ioport *ioport, struct kvm *kvm, u16 port, voi
+  				term_putc(CONSOLE_8250, addr, size, dev->id);
+  			/* else FIXME: Inject data into rcv path for LOOP */
 
+-			if (++dev->txcnt == 16)
++			if (++dev->txcnt == 32)
+  				dev->lsr &= ~(UART_LSR_TEMT | UART_LSR_THRE);
+  			break;
+  		} else {
+
+I assume '16' here is the 16550A FIFO size? Is there any reason we can't 
+cheat and use a deeper FIFO internally?
+
+ 			Pekka
