@@ -1,99 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1LMSXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 13:23:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42862 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab1LMSXK (ORCPT
+	id S1755435Ab1LMSY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:24:27 -0500
+Received: from border.exmeritus.com ([70.167.241.26]:57148 "EHLO
+	border.exmeritus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab1LMSYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 13:23:10 -0500
-Date: Tue, 13 Dec 2011 19:23:07 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Anatolij Gustschin <agust@denx.de>
-Subject: Re: [PATCH RESEND] gpio: mpc8xxx: don't allow input-only pins to be
- output for MPC5121
-Message-ID: <20111213182307.GA2736@pengutronix.de>
-References: <1323767568-9565-1-git-send-email-w.sang@pengutronix.de>
- <20111213181659.GA29243@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-In-Reply-To: <20111213181659.GA29243@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 13 Dec 2011 13:24:23 -0500
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [REPOST RFC PATCH 1/3] of_gpio: Extend of_gpio_count() to support other property names
+Date: Tue, 13 Dec 2011 13:23:32 -0500
+Message-Id: <1323800614-12642-2-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The of_get_named_gpio_flags() function allows the caller to specify the
+property name which should be read for a list of GPIOs.
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Unfortunately there is no easy way to *count* the number of GPIOs listed
+in an arbitrary property.
 
-On Tue, Dec 13, 2011 at 11:16:59AM -0700, Grant Likely wrote:
-> On Tue, Dec 13, 2011 at 10:12:48AM +0100, Wolfram Sang wrote:
-> > Add a 5121-custom reject if an input-only pin is requested to be output
-> > (see 18.3.1.1 in the refman). Also, rewrite mach-specific quirk setup to
-> > consume less lines which scales better.
-> >=20
-> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > ---
-> >  drivers/gpio/gpio-mpc8xxx.c |   17 ++++++++++++-----
-> >  1 files changed, 12 insertions(+), 5 deletions(-)
-> >=20
-> > diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
-> > index ec3fcf0..25dc736 100644
-> > --- a/drivers/gpio/gpio-mpc8xxx.c
-> > +++ b/drivers/gpio/gpio-mpc8xxx.c
-> > @@ -115,6 +115,14 @@ static int mpc8xxx_gpio_dir_in(struct gpio_chip *g=
-c, unsigned int gpio)
-> >  	return 0;
-> >  }
-> > =20
-> > +static int mpc5121_gpio_dir_out(struct gpio_chip *gc, unsigned int gpi=
-o, int val)
-> > +{
-> > +	/* GPIO 28..31 are input only on MPC5121 */
-> > +	if (gpio >=3D 28)
-> > +		return -EINVAL;
-> > +
-> > +	return mpc8xxx_gpio_dir_out(gc, gpio, val);
-> > +}
-> >  static int mpc8xxx_gpio_dir_out(struct gpio_chip *gc, unsigned int gpi=
-o, int val)
->=20
-> This actually caused a build failure.  mpc8xxx_gpio_dir_out() was used be=
-fore
-> it was declared.  I moved the symbol to immediately below and applied any=
-way,
-> but how did it compile for you?  Should I drop this patch until you retes=
-t?
+To resolve this, rename of_gpio_count() to of_gpio_count_named() and add
+a new "propname" parameter.
 
-Huh, I am surprised as well. Will investigate tomorrow. Sorry for the
-inconvenience.
+Also add a static inline replacement for of_gpio_count() which calls
+of_gpio_count_named() with "gpios" to avoid breaking existing users.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/of/gpio.c       |   13 ++++++-------
+ include/linux/of_gpio.h |   27 +++++++++++++++++++++++++--
+ 2 files changed, 31 insertions(+), 9 deletions(-)
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
+index ef0105f..f349aaf 100644
+--- a/drivers/of/gpio.c
++++ b/drivers/of/gpio.c
+@@ -83,8 +83,9 @@ err0:
+ EXPORT_SYMBOL(of_get_named_gpio_flags);
+ 
+ /**
+- * of_gpio_count - Count GPIOs for a device
++ * of_gpio_count_named - Count GPIOs for a device
+  * @np:		device node to count GPIOs for
++ * @propname:	property name containing gpio specifier(s)
+  *
+  * The function returns the count of GPIOs specified for a node.
+  *
+@@ -98,15 +99,13 @@ EXPORT_SYMBOL(of_get_named_gpio_flags);
+  * defines four GPIOs (so this function will return 4), two of which
+  * are not specified.
+  */
+-unsigned int of_gpio_count(struct device_node *np)
++unsigned int of_gpio_count_named(struct device_node *np, const char *propname)
+ {
+ 	unsigned int cnt = 0;
+ 
+ 	do {
+-		int ret;
+-
+-		ret = of_parse_phandles_with_args(np, "gpios", "#gpio-cells",
+-						  cnt, NULL, NULL);
++		int ret = of_parse_phandles_with_args(np, propname,
++				"#gpio-cells", cnt, NULL, NULL);
+ 		/* A hole in the gpios = <> counts anyway. */
+ 		if (ret < 0 && ret != -EEXIST)
+ 			break;
+@@ -114,7 +113,7 @@ unsigned int of_gpio_count(struct device_node *np)
+ 
+ 	return cnt;
+ }
+-EXPORT_SYMBOL(of_gpio_count);
++EXPORT_SYMBOL(of_gpio_count_named);
+ 
+ /**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index 52280a2..1411a06 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -49,7 +49,8 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ extern int of_get_named_gpio_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags);
+ 
+-extern unsigned int of_gpio_count(struct device_node *np);
++extern unsigned int of_gpio_count_named(struct device_node *np,
++		const char *propname);
+ 
+ extern int of_mm_gpiochip_add(struct device_node *np,
+ 			      struct of_mm_gpio_chip *mm_gc);
+@@ -69,7 +70,8 @@ static inline int of_get_named_gpio_flags(struct device_node *np,
+ 	return -ENOSYS;
+ }
+ 
+-static inline unsigned int of_gpio_count(struct device_node *np)
++static inline unsigned int of_gpio_count_named(struct device_node *np,
++		const char *propname)
+ {
+ 	return 0;
+ }
+@@ -87,6 +89,27 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
+ #endif /* CONFIG_OF_GPIO */
+ 
+ /**
++ * of_gpio_count - Count GPIOs for a device
++ * @np:		device node to count GPIOs for
++ *
++ * The function returns the count of GPIOs specified for a node.
++ *
++ * Note that the empty GPIO specifiers counts too. For example,
++ *
++ * gpios = <0
++ *          &pio1 1 2
++ *          0
++ *          &pio2 3 4>;
++ *
++ * defines four GPIOs (so this function will return 4), two of which
++ * are not specified.
++ */
++static inline unsigned int of_gpio_count(struct device_node *np)
++{
++	return of_gpio_count_named(np, "gpios");
++}
++
++/**
+  * of_get_gpio_flags() - Get a GPIO number and flags to use with GPIO API
+  * @np:		device node to get GPIO from
+  * @index:	index of the GPIO
+-- 
+1.7.7.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7nmAsACgkQD27XaX1/VRtuWQCeMXeAVzoGuVcSdCOn5ZOjFO/f
-ngMAoK5aYa7lR6ElC5sPQFZ1AAo18360
-=oDhg
------END PGP SIGNATURE-----
-
---tKW2IUtsqtDRztdT--
