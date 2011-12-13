@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1LMPlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:41:18 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51618 "EHLO
+	id S1753690Ab1LMPoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:44:37 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47728 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab1LMPlQ (ORCPT
+	with ESMTP id S1752724Ab1LMPoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:41:16 -0500
-Date: Tue, 13 Dec 2011 07:41:08 -0800
+	Tue, 13 Dec 2011 10:44:34 -0500
+Date: Tue, 13 Dec 2011 07:44:28 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        cgroups@vger.kernel.org, bsingharora@gmail.com, devel@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 3/3] make 'none' field a flag
-Message-ID: <20111213154108.GF25802@google.com>
-References: <1323614738-7405-1-git-send-email-glommer@parallels.com>
- <1323614738-7405-5-git-send-email-glommer@parallels.com>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: Pavel Emelianov <xemul@openvz.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH] resource cgroups: remove bogus cast
+Message-ID: <20111213154428.GG25802@google.com>
+References: <1323119621.3244.1.camel@offbook>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323614738-7405-5-git-send-email-glommer@parallels.com>
+In-Reply-To: <1323119621.3244.1.camel@offbook>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 11, 2011 at 03:45:38PM +0100, Glauber Costa wrote:
-> There is no reason to have a flags field, and then a separate
-> bool field just to indicate if 'none' subsystem were explicitly
-> requested.
+On Mon, Dec 05, 2011 at 10:13:41PM +0100, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
 > 
-> Make it a flag
+> The memparse() function already accepts const char * as the parsing string.
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Same as the previous patch.  Doesn't this change how remount
-conditions are checked?
+Applied to cgroup/for-3.3 w/ Pavel's Acked-by.  Li Zefan, I committed
+w/o your ack as the patch is trivial.  Please scream if you aren't
+happy.
 
 Thanks.
 
