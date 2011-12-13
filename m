@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1LMP5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:57:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45488 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1LMP5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:57:35 -0500
-Message-ID: <4EE775E8.50403@canonical.com>
-Date: Tue, 13 Dec 2011 16:57:28 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: greg@kroah.com, stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Please put e5fd47b xen/pm_idle: Make pm_idle be default_idle
- under Xen in 3.0/3.1 stable tree.
-References: <20111213154938.GA4955@phenom.dumpdata.com>
-In-Reply-To: <20111213154938.GA4955@phenom.dumpdata.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754897Ab1LMP5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:57:47 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:57237
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753452Ab1LMP5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 10:57:44 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: hv_storvsc driver
+Date: Tue, 13 Dec 2011 07:58:36 -0800
+Message-Id: <1323791916-2340-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
 
-On 13.12.2011 16:49, Konrad Rzeszutek Wilk wrote:
-> Hey Greg,
-> 
-> I was going to post the "e5fd47b xen/pm_idle: Make pm_idle be default_idle
-> under Xen" with the CC stable@kernel.org but Linus picked up the patch soo
-> fast that I did not get to it.
-> 
-> So please manually back-port the e5fd47bfab2df0c2184cc0bf4245d8e1bb7724fb
-> in the 3.1 (and 3.0) stable tree. It does not need to backported in to
-> earlier trees.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Thank you!
+Sometime back I had sent the scsi mailing list, the patch to move the 
+Hyper-V storage driver out of staging. This patch addresses  the
+review comments I have gotten to date from James, Greg and Christoph (I have not heard
+from anybody else in the  scsi mailing list). The patches addressing the review
+comments have already been sent to the staging tree and Greg has already
+applied these patches. James, Let me know what I can do to expedite the
+move from the staging tree.
 
-Hm, might be not needed in 3.0. As far as I see that has not
+Greg, do you have any issues you would want
+me to address before this driver can exit staging. Let me know.
+ 
+Regards,
 
-commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Apr 1 18:28:35 2011 -0400
+K. Y
 
-    cpuidle: replace xen access to x86 pm_idle and default_idle
-
-in it which broke things and went into 3.1.
-
-- -Stefan
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBCgAGBQJO53XoAAoJEOhnXe7L7s6jT6AP/RGR7umLQ4YGBC04HJCMJDCl
-NcEPvyzVwFs9hY0X3KVXt/Gicc7+IvPa6BL/iy0pq3haDlkSCAT45KQu0yQFTpxC
-sBzU4ljImZEsVbxy2UQAO1ddUHV2yyEC1vcuDVi9XX7WHQDjSPiatvr7QWdTQYCi
-MvdNCLshOLCH08K0lsPynVPXWOZw3K8UiHqQHLX48XxNTMkUi7V+5yfnCkO+75KV
-nmRBOUYHclb9MLSsaFIXdf6Il4G+SQhwV+L9NyHR9Cy7+WTYx61JQ+DrjqeudeSQ
-up7op99oJ4+QQ+ygINzxl4KaCZ12xNWXW9VcyYtBoU/ofJRqL156GhLqYbyUJSk3
-O1C0zLpIn+kxi0MGA2lPUsuZAMKQUw9y1LOP2gBuDoJff34LYqs9XuDIUy+edaru
-aKgCuUT8k+QpwukORX9JnBh2v7MILmlgGmY2PRxXnmV79/sBekZ84lQnp6l9VbEk
-BRghejE6YW8jEiUOTq7iCgrMvsHb8qw9d7P5k8NsxIe0H6zO6kLs0cd74TLdDqzL
-5MxpP8qhDYvX2mxvG1LOvR9n9o6aXZv/nMPxN+py7aZ3xgArTCVDFSpW0+ojinf6
-rAdTOtfnZO0lG0YR1HoQJWMvktp+Zowmf17PCLXB7QgByFrsgd8nQ/3Rz6xr7BYx
-3MYM73KG1I43WQYVi5H4
-=vDeX
------END PGP SIGNATURE-----
