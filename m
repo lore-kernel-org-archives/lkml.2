@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1LMTG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:06:58 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:37869 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab1LMTG4 (ORCPT
+	id S1755544Ab1LMTHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:07:52 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:54092 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755167Ab1LMTHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:06:56 -0500
-Date: Tue, 13 Dec 2011 20:06:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
-Message-ID: <20111213190642.GB2421@somewhere.redhat.com>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
- <20111213155848.GI25802@google.com>
+	Tue, 13 Dec 2011 14:07:47 -0500
+Date: Tue, 13 Dec 2011 14:07:44 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH v5 5/6] ata: add ata port system PM callbacks
+In-Reply-To: <1323802667.3060.2.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1112131405560.1192-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213155848.GI25802@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:58:48AM -0800, Tejun Heo wrote:
-> Hello, Frederic.
+On Wed, 14 Dec 2011, Lin Ming wrote:
+
+> > This suggests that the PM core is not the right place to solve the 
+> > problem.  One possible solution is for the subsystem or device driver 
+> > to call pm_runtime_get_sync(dev->parent) at the start of the 
+> > system-resume procedure and pm_runtime_put_sync(dev->parent) at the 
+> > end.
 > 
-> Can you please rebase the patchset on top of cgroup/for-3.3?
+> How about below?
+> (Not tested yet)
+> 
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index a633076..5cf9a19 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -71,9 +71,17 @@ static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
+>  static int scsi_bus_resume_common(struct device *dev)
+>  {
+>  	int err = 0;
+> +	bool put = false;
+>  
+> -	if (scsi_is_sdev_device(dev))
+> +	if (scsi_is_sdev_device(dev)) {
+> +		if (dev->parent && pm_runtime_suspended(dev->parent)) {
+> +			pm_runtime_get_sync(dev->parent);
+> +			put = true;
+> +		}
 
-Sure. But please note its fate is still under discussion. Whether
-we want it upstream is still a running debate. But I certainly
-need to rebase against your tree.
+You don't need to test anything.  Always call pm_runtime_get_sync().
 
-> I primarily like the idea of being able to track process usage w/ cgroup
-> and enforce limits on it but hope that it could somehow integrate w/
-> cgroup freezer.  ie. trigger freezer if it goes over limit and let the
-> userland tool / administrator deal with the frozen cgroup.  I'm
-> planning on extending cgroup freezer such that it supports recursive
-> freezing and killing of frozen tasks.  If we can fit task counters
-> into that, we'll have general method of handling problematic cgroups -
-> freeze, notify userland and let it deal with it.
+>  		err = scsi_dev_type_resume(dev);
+> +		if (put)
+> +			pm_runtime_put_sync(dev->parent);
 
-Hmm, so you suggest a kernel trigger that freeze the cgroup when the
-task limit is reached?
+Same here.
 
-What about rather implementing register_event() for the tasks.usage such
-that the user can be notified using eventfd when the limit is reached.
-Then it would be up to the user to decide to freeze or any other thing.
-Sounds like a more generic solution.
+> +	}
+>  
+>  	if (err == 0) {
+>  		pm_runtime_disable(dev);
 
-Hm?
+Alan Stern
 
-Thanks.
