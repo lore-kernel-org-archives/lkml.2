@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab1LMULq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:11:46 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:43157 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab1LMULn convert rfc822-to-8bit (ORCPT
+	id S1755805Ab1LMUMO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:12:14 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38271 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755646Ab1LMUMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:11:43 -0500
-Message-ID: <4EE7B154.4050208@parallels.com>
-Date: Wed, 14 Dec 2011 00:11:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 13 Dec 2011 15:12:05 -0500
+Date: Tue, 13 Dec 2011 22:11:58 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Christoph Lameter <cl@linux.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, zhihua che <zhihua.che@gmail.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
+ gets lost if the process happens to be rescheduled to a differenet cpu before
+ the local_irq_save() completes in __slab_alloc()
+In-Reply-To: <alpine.DEB.2.00.1112131025370.23111@router.home>
+Message-ID: <alpine.LFD.2.02.1112132211350.1675@tux.localdomain>
+References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>  <1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.DEB.2.00.1112120922020.28410@router.home>  <1323711558.2583.11.camel@edumazet-laptop>
+ <1323748626.2583.41.camel@edumazet-laptop> <alpine.DEB.2.00.1112131025370.23111@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <christoph.paasch@uclouvain.be>, David Miller <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
-        <avagin@parallels.com>, <devel@openvz.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v9 0/9] Request for inclusion: per-cgroup tcp memory pressure
- controls
-References: <1323676029-5890-1-git-send-email-glommer@parallels.com>  <20111212.190734.1967808916779299221.davem@davemloft.net>  <4EE757D7.6060006@uclouvain.be> <1323784748.2950.4.camel@edumazet-laptop>
-In-Reply-To: <1323784748.2950.4.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [83.149.8.203]
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 05:59 PM, Eric Dumazet wrote:
-> Le mardi 13 décembre 2011 à 14:49 +0100, Christoph Paasch a écrit :
->
->> now there are plenty of compiler-warnings when CONFIG_CGROUPS is not set:
->>
->> In file included from include/linux/tcp.h:211:0,
->>                   from include/linux/ipv6.h:221,
->>                   from include/net/ip_vs.h:23,
->>                   from kernel/sysctl_binary.c:6:
->> include/net/sock.h:67:57: warning: ‘struct cgroup_subsys’ declared
->> inside parameter list [enabled by default]
->> include/net/sock.h:67:57: warning: its scope is only this definition or
->> declaration, which is probably not what you want [enabled by default]
->> include/net/sock.h:67:57: warning: ‘struct cgroup’ declared inside
->> parameter list [enabled by default]
->> include/net/sock.h:68:61: warning: ‘struct cgroup_subsys’ declared
->> inside parameter list [enabled by default]
->> include/net/sock.h:68:61: warning: ‘struct cgroup’ declared inside
->> parameter list [enabled by default]
->>
->>
->> Because struct cgroup is only declared if CONFIG_CGROUPS is enabled.
->> (cfr. linux/cgroup.h)
->>
->
-> Yes, we probably need forward reference like this :
->
-> Thanks !
->
-> [PATCH net-next] net: fix build error if CONFIG_CGROUPS=n
->
-> Reported-by: Christoph Paasch<christoph.paasch@uclouvain.be>
-> Signed-off-by: Eric Dumazet<eric.dumazet@gmail.com>
-I am deeply sorry about that.
-I was pretty sure I tested this case. But now that I looked into it, it 
-occurs to me that I may have tested it only with the Memory Cgroup 
-disabled, not with the master flag off.
+On Tue, 13 Dec 2011, Eric Dumazet wrote:
+>> We can be interrupted and the IRQ handler can free an object an populate
+>> freelist too. So the check must always be done.
 
-Thanks for spotting this
+On Tue, 13 Dec 2011, Christoph Lameter wrote:
+> True. So a small memory leak that remained undetected. Hmm.... Wonder how
+> one can create some diagnostics to allow detection of this in the future.
+>
+> Acked-by: Christoph Lameter <cl@linux.com>
 
+I queued this for 3.3. Thanks guys!
+
+ 			Pekka
