@@ -1,544 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab1LMLmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 06:42:19 -0500
-Received: from mail.nonattached.net ([193.160.39.30]:58726 "EHLO
-	mail.nonattached.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1LMLmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 06:42:16 -0500
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Dec 2011 06:42:15 EST
-From: Dan Luedtke <mail@danrl.de>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan Luedtke <mail@danrl.de>
-Subject: [PATCH] staging: wlan-ng: prism: coding style fixes, removed space-indentations
-Date: Tue, 13 Dec 2011 12:35:37 +0100
-Message-Id: <1323776137-458-1-git-send-email-mail@danrl.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1753456Ab1LMLnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 06:43:09 -0500
+Received: from mga14.intel.com ([143.182.124.37]:59031 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab1LMLnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 06:43:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85148288"
+Date: Tue, 13 Dec 2011 19:33:03 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] writeback fixes for 3.2-rc6
+Message-ID: <20111213113303.GA5862@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues. Converted multiple spaces to tabs.
+Linus,
 
-(Please provide feedback on problems, it's my first kernel patch ever)
+Please pull 5 writeback fixes, thanks!
 
-Signed-off-by: Dan Luedtke <mail@danrl.de>
----
- drivers/staging/wlan-ng/prism2fw.c |  190 +++++++++++++++++++-----------------
- 1 files changed, 99 insertions(+), 91 deletions(-)
+- abort write(2) on SIGKILL                                                                                             
+- 2 patches to keep system responsive on stalled NFS mount                                                              
+- 2 comment fixes                                                                                                     
 
-diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
-index 3c40096..e035839 100644
---- a/drivers/staging/wlan-ng/prism2fw.c
-+++ b/drivers/staging/wlan-ng/prism2fw.c
-@@ -172,13 +172,14 @@ static int read_cardpda(struct pda *pda, wlandevice_t *wlandev);
- static int mkpdrlist(struct pda *pda);
+The following changes since commit 8748dfae379573cdbea4e765b55e608a1764f918:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux (2011-11-28 16:37:35 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git writeback-for-linus
+
+Jan Kara (1):
+      fs: Make write(2) interruptible by a fatal signal
+
+Marcos Paulo de Souza (1):
+      writeback: Fix issue on make htmldocs
+
+Wu Fengguang (3):
+      writeback: comment on the bdi dirty threshold
+      writeback: permit through good bdi even when global dirty exceeded
+      writeback: set max_pause to lowest value on zero bdi_dirty
+
+ fs/fs-writeback.c   |    5 +++++
+ mm/filemap.c        |    6 ++++--
+ mm/page-writeback.c |   32 ++++++++++++++++++++++++++++----
+ 3 files changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 73c3992..ac86f8b 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -156,6 +156,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+  * bdi_start_writeback - start writeback
+  * @bdi: the backing device to write from
+  * @nr_pages: the number of pages to write
++ * @reason: reason why some writeback work was initiated
+  *
+  * Description:
+  *   This does WB_SYNC_NONE opportunistic writeback. The IO is only
+@@ -1223,6 +1224,7 @@ static void wait_sb_inodes(struct super_block *sb)
+  * writeback_inodes_sb_nr -	writeback dirty inodes from given super_block
+  * @sb: the superblock
+  * @nr: the number of pages to write
++ * @reason: reason why some writeback work initiated
+  *
+  * Start writeback on some inodes on this super_block. No guarantees are made
+  * on how many (if any) will be written, and this function does not wait
+@@ -1251,6 +1253,7 @@ EXPORT_SYMBOL(writeback_inodes_sb_nr);
+ /**
+  * writeback_inodes_sb	-	writeback dirty inodes from given super_block
+  * @sb: the superblock
++ * @reason: reason why some writeback work was initiated
+  *
+  * Start writeback on some inodes on this super_block. No guarantees are made
+  * on how many (if any) will be written, and this function does not wait
+@@ -1265,6 +1268,7 @@ EXPORT_SYMBOL(writeback_inodes_sb);
+ /**
+  * writeback_inodes_sb_if_idle	-	start writeback if none underway
+  * @sb: the superblock
++ * @reason: reason why some writeback work was initiated
+  *
+  * Invoke writeback_inodes_sb if no writeback is currently underway.
+  * Returns 1 if writeback was started, 0 if not.
+@@ -1285,6 +1289,7 @@ EXPORT_SYMBOL(writeback_inodes_sb_if_idle);
+  * writeback_inodes_sb_if_idle	-	start writeback if none underway
+  * @sb: the superblock
+  * @nr: the number of pages to write
++ * @reason: reason why some writeback work was initiated
+  *
+  * Invoke writeback_inodes_sb if no writeback is currently underway.
+  * Returns 1 if writeback was started, 0 if not.
+diff --git a/mm/filemap.c b/mm/filemap.c
+index c0018f2..c106d3b 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2407,7 +2407,6 @@ static ssize_t generic_perform_write(struct file *file,
+ 						iov_iter_count(i));
  
- static int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
--	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda);
-+	struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda);
+ again:
+-
+ 		/*
+ 		 * Bring in the user page that we will copy from _first_.
+ 		 * Otherwise there's a nasty deadlock on copying from the
+@@ -2463,7 +2462,10 @@ again:
+ 		written += copied;
  
- static int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
--	     struct s3crcrec *s3crc, unsigned int ns3crc);
-+				struct s3crcrec *s3crc, unsigned int ns3crc);
+ 		balance_dirty_pages_ratelimited(mapping);
+-
++		if (fatal_signal_pending(current)) {
++			status = -EINTR;
++			break;
++		}
+ 	} while (iov_iter_count(i));
  
- static int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
--	       unsigned int nfchunks);
-+							unsigned int nfchunks);
+ 	return written ? written : status;
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 7125248..50f0824 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -411,8 +411,13 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+  *
+  * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
+  * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
+- * And the "limit" in the name is not seriously taken as hard limit in
+- * balance_dirty_pages().
++ *
++ * Note that balance_dirty_pages() will only seriously take it as a hard limit
++ * when sleeping max_pause per page is not enough to keep the dirty pages under
++ * control. For example, when the device is completely stalled due to some error
++ * conditions, or when there are 1000 dd tasks writing to a slow 10MB/s USB key.
++ * In the other normal situations, it acts more gently by throttling the tasks
++ * more (rather than completely block them) when the bdi dirty pages go high.
+  *
+  * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+@@ -594,6 +599,13 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+ 	 */
+ 	if (unlikely(bdi_thresh > thresh))
+ 		bdi_thresh = thresh;
++	/*
++	 * It's very possible that bdi_thresh is close to 0 not because the
++	 * device is slow, but that it has remained inactive for long time.
++	 * Honour such devices a reasonable good (hopefully IO efficient)
++	 * threshold, so that the occasional writes won't be blocked and active
++	 * writes can rampup the threshold quickly.
++	 */
+ 	bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+ 	/*
+ 	 * scale global setpoint to bdi's:
+@@ -977,8 +989,7 @@ static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
+ 	 *
+ 	 * 8 serves as the safety ratio.
+ 	 */
+-	if (bdi_dirty)
+-		t = min(t, bdi_dirty * HZ / (8 * bw + 1));
++	t = min(t, bdi_dirty * HZ / (8 * bw + 1));
+ 
+ 	/*
+ 	 * The pause time will be settled within range (max_pause/4, max_pause).
+@@ -1136,6 +1147,19 @@ pause:
+ 		if (task_ratelimit)
+ 			break;
+ 
++		/*
++		 * In the case of an unresponding NFS server and the NFS dirty
++		 * pages exceeds dirty_thresh, give the other good bdi's a pipe
++		 * to go through, so that tasks on them still remain responsive.
++		 *
++		 * In theory 1 page is enough to keep the comsumer-producer
++		 * pipe going: the flusher cleans 1 page => the task dirties 1
++		 * more page. However bdi_dirty has accounting errors.  So use
++		 * the larger and more IO friendly bdi_stat_error.
++		 */
++		if (bdi_dirty <= bdi_stat_error(bdi))
++			break;
 +
- static void free_chunks(struct imgchunk *fchunk, unsigned int *nfchunks);
- 
- static void free_srecs(void);
-@@ -200,23 +201,23 @@ static int validate_identity(void);
- * Returns:
- *	0	- success
- *	~0	- failure
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
- {
- 	const struct firmware *fw_entry = NULL;
- 
- 	printk(KERN_INFO "prism2_usb: Checking for firmware %s\n",
--	       PRISM2_USB_FWFILE);
-+		PRISM2_USB_FWFILE);
- 	if (request_ihex_firmware(&fw_entry, PRISM2_USB_FWFILE, &udev->dev) != 0) {
- 		printk(KERN_INFO
--		       "prism2_usb: Firmware not available, but not essential\n");
-+			"prism2_usb: Firmware not available, but not essential\n");
- 		printk(KERN_INFO
--		       "prism2_usb: can continue to use card anyway.\n");
-+			"prism2_usb: can continue to use card anyway.\n");
- 		return 1;
- 	}
- 
- 	printk(KERN_INFO "prism2_usb: %s will be processed, size %zu\n",
--	       PRISM2_USB_FWFILE, fw_entry->size);
-+		PRISM2_USB_FWFILE, fw_entry->size);
- 	prism2_fwapply((const struct ihex_binrec *)fw_entry->data, wlandev);
- 
- 	release_firmware(fw_entry);
-@@ -235,7 +236,7 @@ int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
- * Returns:
- *	0	- success
- *	~0	- failure
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t *wlandev)
- {
- 	signed int result = 0;
-@@ -374,9 +375,9 @@ int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t *wlandev)
- * Returns:
- *	0	success
- *	~0	failure
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
--	     struct s3crcrec *s3crc, unsigned int ns3crc)
-+				struct s3crcrec *s3crc, unsigned int ns3crc)
- {
- 	int result = 0;
- 	int i;
-@@ -410,10 +411,10 @@ int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 		}
- 		if (c >= nfchunks) {
- 			printk(KERN_ERR
--			       "Failed to find chunk for "
--			       "crcrec[%d], addr=0x%06x len=%d , "
--			       "aborting crc.\n",
--			       i, s3crc[i].addr, s3crc[i].len);
-+				"Failed to find chunk for "
-+				"crcrec[%d], addr=0x%06x len=%d , "
-+				"aborting crc.\n",
-+				i, s3crc[i].addr, s3crc[i].len);
- 			return 1;
- 		}
- 
-@@ -438,7 +439,7 @@ int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
- *
- * Returns:
- *	nothing
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- void free_chunks(struct imgchunk *fchunk, unsigned int *nfchunks)
- {
- 	int i;
-@@ -460,7 +461,7 @@ void free_chunks(struct imgchunk *fchunk, unsigned int *nfchunks)
- *
- * Returns:
- *	nothing
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- void free_srecs(void)
- {
- 	ns3data = 0;
-@@ -487,7 +488,7 @@ void free_srecs(void)
- * Returns:
- *	0	- success
- *	~0	- failure (probably an errno)
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int mkimage(struct imgchunk *clist, unsigned int *ccnt)
- {
- 	int result = 0;
-@@ -521,7 +522,8 @@ int mkimage(struct imgchunk *clist, unsigned int *ccnt)
- 			/* their beginning bound */
- 			for (j = 0; j < ns3crc; j++) {
- 				if (s3crc[j].dowrite &&
--				    s3crc[j].addr == clist[currchunk].addr) {
-+					s3crc[j].addr ==
-+					clist[currchunk].addr) {
- 					clist[currchunk].addr -= 2;
- 					clist[currchunk].len += 2;
- 				}
-@@ -537,7 +539,7 @@ int mkimage(struct imgchunk *clist, unsigned int *ccnt)
- 		clist[i].data = kzalloc(clist[i].len, GFP_KERNEL);
- 		if (clist[i].data == NULL) {
- 			printk(KERN_ERR
--			       "failed to allocate image space, exitting.\n");
-+				"failed to allocate image space, exitting.\n");
- 			return 1;
- 		}
- 		pr_debug("chunk[%d]: addr=0x%06x len=%d\n",
-@@ -556,8 +558,8 @@ int mkimage(struct imgchunk *clist, unsigned int *ccnt)
- 		}
- 		if (((unsigned int)j) >= (*ccnt)) {
- 			printk(KERN_ERR
--			       "s3rec(a=0x%06x,l=%d), no chunk match, exiting.\n",
--			       s3start, s3data[i].len);
-+				"s3rec(a=0x%06x,l=%d), no chunk match, exiting.\n",
-+				s3start, s3data[i].len);
- 			return 1;
- 		}
- 		coffset = s3start - cstart;
-@@ -580,7 +582,7 @@ int mkimage(struct imgchunk *clist, unsigned int *ccnt)
- * Returns:
- *	0	- success
- *	~0	- failure (probably an errno)
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int mkpdrlist(struct pda *pda)
- {
- 	int result = 0;
-@@ -590,30 +592,30 @@ int mkpdrlist(struct pda *pda)
- 	pda->nrec = 0;
- 	curroff = 0;
- 	while (curroff < (HFA384x_PDA_LEN_MAX / 2) &&
--	       le16_to_cpu(pda16[curroff + 1]) != HFA384x_PDR_END_OF_PDA) {
-+		le16_to_cpu(pda16[curroff + 1]) != HFA384x_PDR_END_OF_PDA) {
- 		pda->rec[pda->nrec] = (hfa384x_pdrec_t *) &(pda16[curroff]);
- 
- 		if (le16_to_cpu(pda->rec[pda->nrec]->code) == HFA384x_PDR_NICID) {
- 			memcpy(&nicid, &pda->rec[pda->nrec]->data.nicid,
--			       sizeof(nicid));
-+				sizeof(nicid));
- 			nicid.id = le16_to_cpu(nicid.id);
- 			nicid.variant = le16_to_cpu(nicid.variant);
- 			nicid.major = le16_to_cpu(nicid.major);
- 			nicid.minor = le16_to_cpu(nicid.minor);
- 		}
- 		if (le16_to_cpu(pda->rec[pda->nrec]->code) ==
--		    HFA384x_PDR_MFISUPRANGE) {
-+			HFA384x_PDR_MFISUPRANGE) {
- 			memcpy(&rfid, &pda->rec[pda->nrec]->data.mfisuprange,
--			       sizeof(rfid));
-+				sizeof(rfid));
- 			rfid.id = le16_to_cpu(rfid.id);
- 			rfid.variant = le16_to_cpu(rfid.variant);
- 			rfid.bottom = le16_to_cpu(rfid.bottom);
- 			rfid.top = le16_to_cpu(rfid.top);
- 		}
- 		if (le16_to_cpu(pda->rec[pda->nrec]->code) ==
--		    HFA384x_PDR_CFISUPRANGE) {
-+			HFA384x_PDR_CFISUPRANGE) {
- 			memcpy(&macid, &pda->rec[pda->nrec]->data.cfisuprange,
--			       sizeof(macid));
-+				sizeof(macid));
- 			macid.id = le16_to_cpu(macid.id);
- 			macid.variant = le16_to_cpu(macid.variant);
- 			macid.bottom = le16_to_cpu(macid.bottom);
-@@ -626,8 +628,8 @@ int mkpdrlist(struct pda *pda)
- 	}
- 	if (curroff >= (HFA384x_PDA_LEN_MAX / 2)) {
- 		printk(KERN_ERR
--		       "no end record found or invalid lengths in "
--		       "PDR data, exiting. %x %d\n", curroff, pda->nrec);
-+			"no end record found or invalid lengths in "
-+			"PDR data, exiting. %x %d\n", curroff, pda->nrec);
- 		return 1;
- 	}
- 	if (le16_to_cpu(pda16[curroff + 1]) == HFA384x_PDR_END_OF_PDA) {
-@@ -653,9 +655,9 @@ int mkpdrlist(struct pda *pda)
- * Returns:
- *	0	success
- *	~0	failure
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
--	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda)
-+	struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda)
- {
- 	int result = 0;
- 	int i;			/* plug index */
-@@ -676,7 +678,7 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 		if (s3plug[i].itemcode != 0xffffffffUL) { /* not filename */
- 			for (j = 0; j < pda->nrec; j++) {
- 				if (s3plug[i].itemcode ==
--				    le16_to_cpu(pda->rec[j]->code))
-+					le16_to_cpu(pda->rec[j]->code))
- 					break;
- 			}
- 		} else {
-@@ -684,8 +686,8 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 		}
- 		if (j >= pda->nrec && j != -1) { /*  if no matching PDR, fail */
- 			printk(KERN_WARNING
--			       "warning: Failed to find PDR for "
--			       "plugrec 0x%04x.\n", s3plug[i].itemcode);
-+				"warning: Failed to find PDR for "
-+				"plugrec 0x%04x.\n", s3plug[i].itemcode);
- 			continue;	/* and move on to the next PDR */
- #if 0
- 			/* MSM: They swear that unless it's the MAC address,
-@@ -703,9 +705,9 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 		/* Validate plug len against PDR len */
- 		if (j != -1 && s3plug[i].len < le16_to_cpu(pda->rec[j]->len)) {
- 			printk(KERN_ERR
--			       "error: Plug vs. PDR len mismatch for "
--			       "plugrec 0x%04x, abort plugging.\n",
--			       s3plug[i].itemcode);
-+				"error: Plug vs. PDR len mismatch for "
-+				"plugrec 0x%04x, abort plugging.\n",
-+				s3plug[i].itemcode);
- 			result = 1;
- 			continue;
- 		}
-@@ -719,8 +721,8 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 		}
- 		if (c >= nfchunks) {
- 			printk(KERN_ERR
--			       "error: Failed to find image chunk for "
--			       "plugrec 0x%04x.\n", s3plug[i].itemcode);
-+				"error: Failed to find image chunk for "
-+				"plugrec 0x%04x.\n", s3plug[i].itemcode);
- 			result = 1;
- 			continue;
- 		}
-@@ -761,7 +763,7 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- * Returns:
- *	0	- success
- *	~0	- failure (probably an errno)
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int read_cardpda(struct pda *pda, wlandevice_t *wlandev)
- {
- 	int result = 0;
-@@ -851,7 +853,7 @@ int read_cardpda(struct pda *pda, wlandevice_t *wlandev)
- * Returns:
- *	0	- success
- *	~0	- failure (probably an errno)
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int read_fwfile(const struct ihex_binrec *record)
- {
- 	int		i;
-@@ -878,9 +880,9 @@ int read_fwfile(const struct ihex_binrec *record)
- 		case S3ADDR_START:
- 			startaddr = *ptr32;
- 			pr_debug("  S7 start addr, record=%d "
--				      " addr=0x%08x\n",
--				      rcnt,
--				      startaddr);
-+					" addr=0x%08x\n",
-+					rcnt,
-+					startaddr);
+ 		if (fatal_signal_pending(current))
  			break;
- 		case S3ADDR_PLUG:
- 			s3plug[ns3plug].itemcode = *ptr32;
-@@ -888,15 +890,16 @@ int read_fwfile(const struct ihex_binrec *record)
- 			s3plug[ns3plug].len = *(ptr32 + 2);
- 
- 			pr_debug("  S3 plugrec, record=%d "
--				      "itemcode=0x%08x addr=0x%08x len=%d\n",
--				      rcnt,
--				      s3plug[ns3plug].itemcode,
--				      s3plug[ns3plug].addr,
--				      s3plug[ns3plug].len);
-+					"itemcode=0x%08x addr=0x%08x len=%d\n",
-+					rcnt,
-+					s3plug[ns3plug].itemcode,
-+					s3plug[ns3plug].addr,
-+					s3plug[ns3plug].len);
- 
- 			ns3plug++;
- 			if (ns3plug == S3PLUG_MAX) {
--				printk(KERN_ERR "S3 plugrec limit reached - aborting\n");
-+				printk(KERN_ERR "S3 plugrec limit reached"
-+						" - aborting\n");
- 				return 1;
- 			}
- 			break;
-@@ -906,14 +909,15 @@ int read_fwfile(const struct ihex_binrec *record)
- 			s3crc[ns3crc].dowrite = *(ptr32 + 2);
- 
- 			pr_debug("  S3 crcrec, record=%d "
--				      "addr=0x%08x len=%d write=0x%08x\n",
--				      rcnt,
--				      s3crc[ns3crc].addr,
--				      s3crc[ns3crc].len,
--				      s3crc[ns3crc].dowrite);
-+					"addr=0x%08x len=%d write=0x%08x\n",
-+					rcnt,
-+					s3crc[ns3crc].addr,
-+					s3crc[ns3crc].len,
-+					s3crc[ns3crc].dowrite);
- 			ns3crc++;
- 			if (ns3crc == S3CRC_MAX) {
--				printk(KERN_ERR "S3 crcrec limit reached - aborting\n");
-+				printk(KERN_ERR "S3 crcrec limit reached"
-+					" - aborting\n");
- 				return 1;
- 			}
- 			break;
-@@ -922,17 +926,19 @@ int read_fwfile(const struct ihex_binrec *record)
- 			s3info[ns3info].type = *(ptr16 + 1);
- 
- 			pr_debug("  S3 inforec, record=%d "
--			      "len=0x%04x type=0x%04x\n",
--				      rcnt,
--				      s3info[ns3info].len,
--				      s3info[ns3info].type);
--			if (((s3info[ns3info].len - 1) * sizeof(u16)) > sizeof(s3info[ns3info].info)) {
--				printk(KERN_ERR " S3 inforec length too long - aborting\n");
-+					"len=0x%04x type=0x%04x\n",
-+					rcnt,
-+					s3info[ns3info].len,
-+					s3info[ns3info].type);
-+			if (((s3info[ns3info].len - 1) * sizeof(u16)) >
-+				sizeof(s3info[ns3info].info)) {
-+				printk(KERN_ERR " S3 inforec length too long"
-+					" - aborting\n");
- 				return 1;
- 			}
- 
- 			tmpinfo = (u16 *)&(s3info[ns3info].info.version);
--			pr_debug("            info=");
-+			pr_debug("	     info=");
- 			for (i = 0; i < s3info[ns3info].len - 1; i++) {
- 				tmpinfo[i] = *(ptr16 + 2 + i);
- 				pr_debug("%04x ", tmpinfo[i]);
-@@ -941,7 +947,8 @@ int read_fwfile(const struct ihex_binrec *record)
- 
- 			ns3info++;
- 			if (ns3info == S3INFO_MAX) {
--				printk(KERN_ERR "S3 inforec limit reached - aborting\n");
-+				printk(KERN_ERR "S3 inforec limit reached"
-+					" - aborting\n");
- 				return 1;
- 			}
- 			break;
-@@ -951,7 +958,8 @@ int read_fwfile(const struct ihex_binrec *record)
- 			s3data[ns3data].data = (uint8_t *) record->data;
- 			ns3data++;
- 			if (ns3data == S3DATA_MAX) {
--				printk(KERN_ERR "S3 datarec limit reached - aborting\n");
-+				printk(KERN_ERR "S3 datarec limit reached"
-+					" - aborting\n");
- 				return 1;
- 			}
- 			break;
-@@ -975,9 +983,9 @@ int read_fwfile(const struct ihex_binrec *record)
- * Returns:
- *	0	success
- *	~0	failure
------------------------------------------------------------------*/
-+*----------------------------------------------------------------*/
- int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
--	       unsigned int nfchunks)
-+		unsigned int nfchunks)
- {
- 	int result = 0;
- 	struct p80211msg_p2req_ramdl_state rstatemsg;
-@@ -1032,15 +1040,15 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 	result = prism2mgmt_ramdl_state(wlandev, msgp);
- 	if (result) {
- 		printk(KERN_ERR
--		       "writeimage state enable failed w/ result=%d, "
--		       "aborting download\n", result);
-+			"writeimage state enable failed w/ result=%d, "
-+			"aborting download\n", result);
- 		return result;
  	}
- 	resultcode = rstatemsg.resultcode.data;
- 	if (resultcode != P80211ENUM_resultcode_success) {
- 		printk(KERN_ERR
--		       "writeimage()->xxxdl_state msg indicates failure, "
--		       "w/ resultcode=%d, aborting download.\n", resultcode);
-+			"writeimage()->xxxdl_state msg indicates failure, "
-+			"w/ resultcode=%d, aborting download.\n", resultcode);
- 		return 1;
- 	}
- 
-@@ -1062,12 +1070,12 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 			rwritemsg.addr.data = currdaddr;
- 			rwritemsg.len.data = currlen;
- 			memcpy(rwritemsg.data.data,
--			       fchunk[i].data + curroff, currlen);
-+				fchunk[i].data + curroff, currlen);
- 
- 			/* Send flashdl_write(pda) */
- 			pr_debug
--			    ("Sending xxxdl_write message addr=%06x len=%d.\n",
--			     currdaddr, currlen);
-+				("Sending xxxdl_write message addr=%06x len=%d.\n",
-+				currdaddr, currlen);
- 
- 			msgp = (struct p80211msg *) &rwritemsg;
- 			result = prism2mgmt_ramdl_write(wlandev, msgp);
-@@ -1075,16 +1083,16 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 			/* Check the results */
- 			if (result) {
- 				printk(KERN_ERR
--				       "writeimage chunk write failed w/ result=%d, "
--				       "aborting download\n", result);
-+					"writeimage chunk write failed w/ result=%d, "
-+					"aborting download\n", result);
- 				return result;
- 			}
- 			resultcode = rstatemsg.resultcode.data;
- 			if (resultcode != P80211ENUM_resultcode_success) {
- 				printk(KERN_ERR
--				       "writeimage()->xxxdl_write msg indicates failure, "
--				       "w/ resultcode=%d, aborting download.\n",
--				       resultcode);
-+					"writeimage()->xxxdl_write msg indicates failure, "
-+					"w/ resultcode=%d, aborting download.\n",
-+					resultcode);
- 				return 1;
- 			}
- 
-@@ -1100,15 +1108,15 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 	result = prism2mgmt_ramdl_state(wlandev, msgp);
- 	if (result) {
- 		printk(KERN_ERR
--		       "writeimage state disable failed w/ result=%d, "
--		       "aborting download\n", result);
-+			"writeimage state disable failed w/ result=%d, "
-+			"aborting download\n", result);
- 		return result;
- 	}
- 	resultcode = rstatemsg.resultcode.data;
- 	if (resultcode != P80211ENUM_resultcode_success) {
- 		printk(KERN_ERR
--		       "writeimage()->xxxdl_state msg indicates failure, "
--		       "w/ resultcode=%d, aborting download.\n", resultcode);
-+			"writeimage()->xxxdl_state msg indicates failure, "
-+			"w/ resultcode=%d, aborting download.\n", resultcode);
- 		return 1;
- 	}
- 	return result;
-@@ -1148,25 +1156,25 @@ int validate_identity(void)
- 
- 			/* MAC compat range */
- 			if ((s3info[i].info.compat.role == 1) &&
--			    (s3info[i].info.compat.id == 2)) {
-+				(s3info[i].info.compat.id == 2)) {
- 				if (s3info[i].info.compat.variant !=
--				    macid.variant) {
-+					macid.variant) {
- 					result = 2;
- 				}
- 			}
- 
- 			/* PRI compat range */
- 			if ((s3info[i].info.compat.role == 1) &&
--			    (s3info[i].info.compat.id == 3)) {
-+				(s3info[i].info.compat.id == 3)) {
- 				if ((s3info[i].info.compat.bottom > priid.top)
--				    || (s3info[i].info.compat.top <
-+					|| (s3info[i].info.compat.top <
- 					priid.bottom)) {
- 					result = 3;
- 				}
- 			}
- 			/* SEC compat range */
- 			if ((s3info[i].info.compat.role == 1) &&
--			    (s3info[i].info.compat.id == 4)) {
-+				(s3info[i].info.compat.id == 4)) {
- 				/* FIXME: isn't something missing here? */
- 			}
- 
-@@ -1189,7 +1197,7 @@ int validate_identity(void)
- 			if (nicid.minor != s3info[i].info.version.minor)
- 				continue;
- 			if ((nicid.variant != s3info[i].info.version.variant) &&
--			    (nicid.id != 0x8008))
-+				(nicid.id != 0x8008))
- 				continue;
- 
- 			trump = 1;
--- 
-1.7.3.4
-
