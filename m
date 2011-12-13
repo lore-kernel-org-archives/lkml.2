@@ -1,99 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab1LMXR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 18:17:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59082 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab1LMXR0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 18:17:26 -0500
-Date: Wed, 14 Dec 2011 00:17:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <ak@linux.intel.com>
-cc: Andi Kleen <andi@firstfloor.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/3] DEBUGFS: Add per cpu counters
-In-Reply-To: <20111213225617.GC7633@tassilo.jf.intel.com>
-Message-ID: <alpine.LFD.2.02.1112140003550.3020@ionos>
-References: <1323812733-7520-1-git-send-email-andi@firstfloor.org> <1323812733-7520-2-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1112132336440.3020@ionos> <20111213225617.GC7633@tassilo.jf.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756092Ab1LMXWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 18:22:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab1LMXWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 18:22:35 -0500
+Date: Tue, 13 Dec 2011 23:22:13 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Daniel J Walsh <dwalsh@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tim Hockin <thockin@hockin.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Blum <bblum@andrew.cmu.edu>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>, Tejun Heo <tj@kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH -mm] cgroup: Fix task counter common ancestor logic
+Message-ID: <20111213232213.GC4637@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <1320765670-14181-1-git-send-email-fweisbec@gmail.com>
+ <20111108135111.6a74f1d2.akpm@linux-foundation.org>
+ <20111124132442.GA18579@somewhere.redhat.com>
+ <4EE7B926.9030702@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4EE7B926.9030702@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011, Andi Kleen wrote:
-> On Tue, Dec 13, 2011 at 11:43:16PM +0100, Thomas Gleixner wrote:
-> > On Tue, 13 Dec 2011, Andi Kleen wrote:
-> > >  									\
-> > > +	__debugfs	: AT(ADDR(__debugfs) - LOAD_OFFSET) {		\
-> > > +		VMLINUX_SYMBOL(__start___debugfs) = .;			\
-> > > +		*(__debugfs)						\
-> > > +		VMLINUX_SYMBOL(__stop___debugfs) = .;			\
-> > > +	}								\
-> > > +									\
+On Tue, Dec 13, 2011 at 03:44:22PM -0500, Daniel J Walsh wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 11/24/2011 08:24 AM, Frederic Weisbecker wrote:
+> > On Tue, Nov 08, 2011 at 01:51:11PM -0800, Andrew Morton wrote:
+> >> On Tue,  8 Nov 2011 16:21:10 +0100 Frederic Weisbecker
+> >> <fweisbec@gmail.com> wrote:
+> >> 
+> >>> To solve this, keep the original cgroup of each thread in the
+> >>> thread group cached in the flex array and pass it to
+> >>> can_attach_task()/attach_task() and cancel_attach_task() so
+> >>> that the correct common ancestor between the old and new cgroup
+> >>> can be safely retrieved for each task.
+> >> 
+> >> OK, thanks.
+> >> 
+> >> We need to work out what to do with this patchset.  ie: should we
+> >> merge it.  I'm not sure that the case has been made?
+> >> 
+> >> Let's please drag this thing onto the table and poke at it for a
+> >> while. Probably everyone has forgotten everything so we'll need
+> >> to start again, sorry.  Perhaps you can (re)start proceedings by
+> >> telling us why it's useful to our users and why we should merge
+> >> it?
 > > 
-> > ....
-> >   
-> > > +struct debugfs_counter {
-> > > +	unsigned __percpu *ptr;
-> > > +	const char *fn;
-> > > +	const char *name;
-> > > +} __attribute__((aligned(sizeof(char *))));
-> > > +
-> > > +/* Note: static doesn't work unlike DEFINE_PERCPU. Sorry. */
-> > > +#define DEFINE_DEBUGFS_COUNTER(name_, file)				\
-> > > +	DEFINE_PER_CPU(unsigned, name_ ## _counter);			\
-> > > +	struct debugfs_counter name_ ## _pcpu_counter __used		\
-> > > +	__attribute__((aligned(sizeof(char *)),section("__debugfs"),unused)) \
-> > > +	= { .ptr = &name_ ## _counter, .fn = file, .name = #name_ }; \
+> > Right, so the main purpose is to have a suitable forkbomb
+> > protection in the lxc containers. It seems that these days, using
+> > NR_PROC rlimit is the prime choice to protect against forkbombs.
+> > But we can't use this for containers because if they run under the
+> > same user, they can starve each others by generating high number of
+> > processes. So we need the limit on number of processes to be per
+> > container.
 > > 
-> > Sigh, we had that section forms an array problem more than once
-> > already. Why do you invent another variant and think that it will not
-> > explode?
-> 
-> I did three or four different sections like this in the past and as far
-> as I know none of them has exploded so far in production use.
-> 
-> Can you be more specific? Where exactly do you think this will
-> not work?
-
-Can you actually read and understand what I wrote below?
- 
-> > Your alignment magic does not guarantee at all that the structs will
-> > form an array. The "aligned" attribute guarantees only the _MINIMUM_
-> > alignment for a structure, but the compiler and the linker are free to
-> > align on larger multiples.
-> 
+> > The basic requirement is to be able to run untrustee process inside
+> > a container while protecting against attacks from there without
+> > impacting the rest of the system.
 > > 
-> > See commit 654986462 for details.
+> > I'm adding in Cc some Lxc people who could perhaps provide more
+> > details and testify we really need this.
+> > 
+> >> Some mental notes:
+> >> 
+> >> Tim says it would be useful for the things he's doing but
+> >> doesn't appear to have confirmed/tested that.
+> > 
+> > Yeah, I'm waiting for more details from him. Tim?
+> > 
+> >> Kay has said that it would not be useful for his plumber's
+> >> wishlist item, which is a shame.
+> > 
+> > Indeed. I mean it would work but this cgroup subsystem is too much
+> > overhead to be used by an init process (and then all other
+> > processes).
+> > 
+> >> I seem to recall complaining that it doesn't address the forkbomb
+> >> issue for non-cgroups setups, so the forkbomb issue remains
+> >> unaddressed.
+> > 
+> > Right. Now if we can find a generic solution to protect against all
+> > forkbombs, something deterministic that can react soon enough so
+> > that it doesn't impact the rest of system, in order to avoid
+> > running into some DDOS, then we will consider it.
+> > 
+> > Thanks.
 > 
-> Doesn't give a lot of details actually.
+> 
+> I have heard that this is being held up because of a lack of
+> justification.  Here is my attempt.  I would like to use the ability
+> to prevent a fork bomb and guaranteed killall for three different
+> tools that I work on.
+> 
+> 1.  Kiosk/xguest user.  Currently we tell people to log out of a
+> system on the kiosk and the pam stack attempts to kill all processes
+> running in the kiosk user session.  The kiosk user is not allowed to
+> login to the system if a process is still running as the user.  The
+> reason for this is we want to guarantee no previous user left a trojan
+> process waiting to track your activity.  If the login program can not
+> kill all user processes at logout, then the next user will not be able
+> to login.
+> 
+> 2.  Sandbox Desktop tools are used to write one or more processes
+> within a lockeddown environment.  The idea here is to run untrusted
+> code and potentially this code could trigger a fork bomb, you want to
+> be able to kill the session.
+> 
+> 3.  Secure containers, similarly to sandboxes allow users to run
+> multiple Linux Containers in a locked down manner.  We would like to
+> be guaranteed that we can kill all processes within a secure
+> containers at exit.
 
-There are enough details to figure it out. http://www.jfgit.com might
-help.
+More generally when libvirt uses the kernel's namespace+cgroups support
+to spawn the LXC container, we want to be able to put an upper bound on
+the number of process an individual container can run. The existing
+RLIMIT_NPROC doesn't work, because you can get multiple containers running
+processes with the same real UID, and each container can also run processes
+under different real UIDs. libvirt places each container created inside a
+dedicated cgroups, for the purpose of resource control, so task limits
+attached to cgroups easily lets us limit per-container process creation.
 
->  Which target?
-
-The target is irrelevant.
-
-> Note that my structure only has pointers, so there is not a lot 
-> of potential for "evil" alignment.
-
-That does NOT matter at ALL. Also whether you did that in the past or
-not is completely irrelevant. Its also totally irrelevant whether your
-structure only has pointers or not.
-
-There is NO GUARANTEE that this will end up in a linear array with a
-stride of the struct size. Period.
-
-Just get it.
-
-Thanks,
-
-	tglx
+Regards,
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
