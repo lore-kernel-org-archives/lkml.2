@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1LMKOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 05:14:08 -0500
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:39397 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab1LMKOG (ORCPT
+	id S1753796Ab1LMKQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 05:16:24 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44799 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab1LMKQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 05:14:06 -0500
-Message-ID: <4EE7253E.2030604@eukrea.com>
-Date: Tue, 13 Dec 2011 11:13:18 +0100
-From: =?ISO-8859-15?Q?Eric_B=E9nard?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
+	Tue, 13 Dec 2011 05:16:23 -0500
+Date: Tue, 13 Dec 2011 11:16:17 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Eric =?iso-8859-15?Q?B=E9nard?= <eric@eukrea.com>
+Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
         Russell King <linux@arm.linux.org.uk>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
         open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/19] eukrea-cpuimx51: remove board
-References: <1323757911-25217-1-git-send-email-eric@eukrea.com> <1323757911-25217-16-git-send-email-eric@eukrea.com> <20111213100532.GH27267@pengutronix.de>
-In-Reply-To: <20111213100532.GH27267@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 03/19] cpuimx25sd: fix Kconfig
+Message-ID: <20111213101617.GB2619@pengutronix.de>
+References: <1323757911-25217-1-git-send-email-eric@eukrea.com>
+ <1323757911-25217-3-git-send-email-eric@eukrea.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E39vaYmALEf/7YXx"
+Content-Disposition: inline
+In-Reply-To: <1323757911-25217-3-git-send-email-eric@eukrea.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
 
-Le 13/12/2011 11:05, Sascha Hauer a écrit :
-> On Tue, Dec 13, 2011 at 07:31:48AM +0100, Eric Bénard wrote:
->> this board is not maintained anymore and is replaced by cpuimx51sd
->
-> I'm happy to remove this code, but aren't there any users of this board?
->
-not any that would need a kernel upgrade considering the Freescale proprietary 
-drivers used on it :-(
-Thanks,
-Eric
+--E39vaYmALEf/7YXx
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Dec 13, 2011 at 07:31:35AM +0100, Eric B=E9nard wrote:
+> in 0d6cfa3a75f5cde5b3ca0dde748fd22625b4f34c I fixed the mach-types
+> records. We also need to make the name consistent in Kconfig else
+> the machine_is_eukrea_cpuimx25sd macro fails, and thus audio codec
+> is not properly initalized.
+>=20
+> Signed-off-by: Eric B=E9nard <eric@eukrea.com>
+> Cc: Sascha Hauer <kernel@pengutronix.de>
+
+Nit: The subject line is a bit sparse.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--E39vaYmALEf/7YXx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7nJfEACgkQD27XaX1/VRuGxACgnsiM07armoyuQEPoeTYLP7y6
+sSwAoI0CxKSzbyO8g0XXkuIesFAgb7Gb
+=kR9u
+-----END PGP SIGNATURE-----
+
+--E39vaYmALEf/7YXx--
