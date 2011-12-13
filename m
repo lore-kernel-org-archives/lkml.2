@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab1LMMPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 07:15:53 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36805 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752611Ab1LMMPt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 07:15:49 -0500
+	id S1754359Ab1LMMT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 07:19:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50650 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1LMMTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 07:19:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323766382.8163.12.camel@dabdike>
-References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
-	<1323694267.20451.5.camel@dabdike>
-	<CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
-	<1323766382.8163.12.camel@dabdike>
-Date: Tue, 13 Dec 2011 17:45:47 +0530
-Message-ID: <CADDb1s1-bvwMBNh8k7MYDcWjgk694zFhFd5=6XZC8WgKJccyLQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
- routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20111212105650.GA5798@glitch>
+References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+	<20111212105650.GA5798@glitch>
+Date: Tue, 13 Dec 2011 13:19:24 +0100
+Message-ID: <CACRpkdZsG2zO6DNCrZz3=BReoZLPaGzPtteYvsSvtROCiPw_0Q@mail.gmail.com>
+Subject: Re: [PATCH v6] pinctrl: add a pin config interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 2:23 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Tue, 2011-12-13 at 09:20 +0900, Namjae Jeon wrote:
->> > This whole patch looks like a layering violation.  Why not just update
->> > the SAT layer to translate the MODE SENSE correctly?
->> Would plz you explain more ? I didn't clearly understand your point yet.
+On Mon, Dec 12, 2011 at 11:56 AM, Domenico Andreoli <cavokz@gmail.com> wrote:
+> On Fri, Dec 09, 2011 at 12:57:37PM +0100, Linus Walleij wrote:
+
+>> -struct pinctrl_dev;
 >
-> The ATA layer does translation for SCSI commands.  Just translate the
-> mode sense correctly to use IDENTIFY word 85.  It's a smaller patch and
-> no need for any changes in SCSI.
-I have a confusion to this, can you please guide where exactly to look for this.
-Is there any existing solution to this problem? I did a lot of
-analysis and actually tried to make use of a number of USB HDD's from
-different vendors to be very sure of my observations. Our's is a
-target where-in we connect our HDD through the USB interface.
-Do you mean that putting code changes at this place would have impact
-on SATA HDD?
-Please help more on this.
->
-> Actually, looking at it, it seems to be correct ... why is it not
-> working for you?
-Again, if possible please share that code point, We can again check if
-that is hitting in our case.
-If need be I can provide the list of all the HDDs with their
-manufaturer ID's - on which we tested.
-Please let me know for this.
->
-> James
->
->
-Thanks & Regards,
-Amit Sahrawat
+> this introduces a warning in case CONFIG_PINCTRL is not enabled.
+
+Uh oh. I've put it back in.
+
+Thanks!
+Linus Walleij
