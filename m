@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1LMNz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 08:55:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59744 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab1LMNzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 08:55:25 -0500
-Subject: Re: [PATCH 1/4] PM / Sleep: Make pm_op() and pm_noirq_op() return
- callback pointers
-From: Namhyung Kim <namhyung@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alan Stern <stern@rowland.harvard.edu>
-In-Reply-To: <201112130053.37714.rjw@sisk.pl>
-References: <201112100018.38536.rjw@sisk.pl>
-	 <201112100020.00368.rjw@sisk.pl> <loom.20111212T041314-709@post.gmane.org>
-	 <201112130053.37714.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Dec 2011 22:55:16 +0900
-Message-ID: <1323784516.1455.2.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754866Ab1LMN6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 08:58:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56987 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab1LMN6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 08:58:19 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <11863.1323784204@redhat.com>
+References: <11863.1323784204@redhat.com> <20111213235714.8e1c456786e60acc691b899e@canb.auug.org.au> <1323770653-19177-1-git-send-email-dhowells@redhat.com> <1323770653-19177-15-git-send-email-dhowells@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: dhowells@redhat.com, torvalds@linux-foundation.org, arnd@arndb.de,
+        alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 14/17] UAPI: Make linux/patchkey.h easier to parse
+Date: Tue, 13 Dec 2011 13:57:57 +0000
+Message-ID: <12078.1323784677@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-12-13 (화), 00:53 +0100, Rafael J. Wysocki:
-> On Monday, December 12, 2011, Namhyung Kim wrote:
-> > Rafael J. Wysocki <rjw <at> sisk.pl> writes:
-> > 
-> > > 
-> > > From: Rafael J. Wysocki <rjw <at> sisk.pl>
-> > > 
-> > > Make the pm_op() and pm_noirq_op() functions return pointers to
-> > > appropriate callbacks instead of executing those callbacks and
-> > > returning their results.
-> > > 
-> > > This change is required for a subsequent modification that will
-> > > execute the corresponding driver callback if the subsystem
-> > > callback returned by either pm_op(), or pm_noirq_op() is NULL.
-> > > 
-> > 
-> > Hello Rafael,
-> > 
-> > How about typedef'ing something like pm_callback_t for readability?
-> > 
-> >    typedef int (*pm_callback_t)(struct device *);
-> > 
-> > This way, the code will be easier to read.
+David Howells <dhowells@redhat.com> wrote:
+
+> > Is this part missing, or no longer needed?
 > 
-> Do you mean something like in the patch below?  It does look a bit simpler.
-> 
+> It seems to have got lost somewhere.  Thanks for catching it.
 
-Yes, indeed. The patch looks better to me. :)
+Actually, it doesn't seem to be necessary.  The header splitter managed to cope
+without it and did the right thing.  I think what happened was that the
+splitter didn't recognise the _LINUX_PATCHKEY_H_INDIRECT thing as a reinclusion
+guard, so it just tossed that into the UAPI header, then recognised the
+_LINUX_PATCHKEY_H thing as the reinclusion guard and proceeded from there.
 
-Thanks,
-Namhyung Kim
+Would you prefer that I remove that from the comments or would you prefer that
+I leave things unchanged?
 
-
-
+David
