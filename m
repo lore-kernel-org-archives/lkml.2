@@ -1,33 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1LMNub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 08:50:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753429Ab1LMNu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 08:50:29 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20111213235714.8e1c456786e60acc691b899e@canb.auug.org.au>
-References: <20111213235714.8e1c456786e60acc691b899e@canb.auug.org.au> <1323770653-19177-1-git-send-email-dhowells@redhat.com> <1323770653-19177-15-git-send-email-dhowells@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org, arnd@arndb.de,
-        alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 14/17] UAPI: Make linux/patchkey.h easier to parse
-Date: Tue, 13 Dec 2011 13:50:04 +0000
-Message-ID: <11863.1323784204@redhat.com>
+	id S1754838Ab1LMNwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 08:52:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57464 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab1LMNwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 08:52:07 -0500
+Date: Tue, 13 Dec 2011 14:52:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Avi Kivity <avi@redhat.com>
+cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [patch 0/3] kvm tool: Serial emulation overhaul
+In-Reply-To: <4EE72FCB.3070109@redhat.com>
+Message-ID: <alpine.LFD.2.02.1112131434320.3020@ionos>
+References: <20111210132220.083204833@linutronix.de> <alpine.LFD.2.02.1112101715500.10936@tux.localdomain> <alpine.LFD.2.02.1112102144370.3020@ionos> <alpine.LFD.2.02.1112111014500.1663@tux.localdomain> <20111211103047.GA19299@elte.hu>
+ <alpine.LFD.2.02.1112111459270.3020@ionos> <20111211155347.GA1297@elte.hu> <CAOJsxLHTuN43AGA7C02MtETzJU87y9cRaWRg6e9ER7NxOK2w-Q@mail.gmail.com> <20111212172059.GC23870@elte.hu> <CAOJsxLFk9Af+b4PAx_j+1QhApBsFdXyZY1aK08fb_6_dTiBEDQ@mail.gmail.com>
+ <20111212192135.GA18876@elte.hu> <alpine.LFD.2.02.1112130056370.3020@ionos> <4EE72FCB.3070109@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Tue, 13 Dec 2011, Avi Kivity wrote:
 
-> Is this part missing, or no longer needed?
+> On 12/13/2011 02:59 AM, Thomas Gleixner wrote:
+> 
+> <snip trace>
+> > Why the heck is a paravirtualized guest using an local APIC timer
+> > emulation, instead of a paravirtualized clock event device?
+> >
+> > Just look at the trace. That's insane. We enter the guest for 2us to
+> > come back and handle the APIC_EOI for 11us. Then we go back to the
+> > guest for 9us and spend again 11us for handling a write to APIC_TMICT.
+> >
+> > That's 11us guest vs. 22us host time.
+> 
+> Run your guest with x2apic enabled, the timing will be very different. 
 
-It seems to have got lost somewhere.  Thanks for catching it.
+And what magic do I have to use to make that happen other than having
+x2apic support enabled in the kernel? Or do I need a certain kernel
+version for host and guest to make that work?
 
-David
+> The problem with paravirt clockevents is that if/when the APIC becomes
+> virtualized, then guests which were started with the paravirt
+> clockevents don't get accelerated when they are migrated onto newer
+> hardware.  This problem has bitten us several times in the past; if you
+> want to see how it looks when applied on a large scale look at Xen -
+> they have a paravirt-the-fsck-out-of-everything mode and a full virt
+> mode (which should be way faster these days); the two aren't
+> compatible.  Of course back when they started, they didn't have a
+> choice, but we do.
+
+Well, I can see the migration pain for life migration and I agree that
+paravirt the world and some more is a horror as well. Though there is
+a midground between everything and being smart about certain
+aspects. The whole APIC timer calibration and the back and forth
+conversion is definitely nothing which falls into the category of
+smart.
+
+Thanks,
+
+	tglx
+
+
