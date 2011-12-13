@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab1LMVTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 16:19:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58217 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab1LMVTw (ORCPT
+	id S1755883Ab1LMVWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 16:22:54 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63285 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab1LMVWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 16:19:52 -0500
+	Tue, 13 Dec 2011 16:22:51 -0500
+Message-ID: <4EE7C1C9.8080000@solonet.org.ua>
+Date: Tue, 13 Dec 2011 23:21:13 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <4EE5A8A0.2010206@bitmer.com>
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
-	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
-	<CAMP44s3Szzm9iXxghXfNCBjKyUw-nRrG1aEeweKnRCidaxmxEA@mail.gmail.com>
-	<4EDF5231.6080309@bitmer.com>
-	<CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
-	<4EE5A8A0.2010206@bitmer.com>
-Date: Tue, 13 Dec 2011 23:19:52 +0200
-Message-ID: <CAMP44s1Zz7CqxRM6PeNT3GN9GbCLy+0smgk6_-9kSjghY33Xuw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <heikki.krogerus@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
+To: Joe Perches <joe@perches.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH v3 resend2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS
+ driver use gpiolib
+References: <4EE7B41C.5080006@solonet.org.ua> <1323810417.3837.25.camel@joe2Laptop>
+In-Reply-To: <1323810417.3837.25.camel@joe2Laptop>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
-> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
-> non isp1704_charger change has broke it as there hasn't been changes on it.
+Hi Joe,
+Thank you for review.
 
-Actually it's broken in 3.0 as well, try this configuration:
+On 12/13/2011 11:06 PM, Joe Perches wrote:
+> On Tue, 2011-12-13 at 22:22 +0200, Denis Kuzmenko wrote:
+>> Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during probe.
+> []
+>> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+> []
+>> @@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+>> +	/*
+>> +	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
+>> +	 * (only 100% brightness is supported)
+>> +	 */
+>> +	value = value ? 1 : 0;
+> 
+> Maybe value = !!value;
 
-	# CONFIG_USB_MUSB_HOST is not set
-	# CONFIG_USB_MUSB_PERIPHERAL is not set
-	CONFIG_USB_MUSB_OTG=y
-	CONFIG_USB_GADGET_MUSB_HDRC=y
-	CONFIG_USB_MUSB_HDRC_HCD=y
+IMHO my variant is better readable.
 
-	CONFIG_USB_GADGET_SELECTED=y
-	# CONFIG_USB_GADGET_FUSB300 is not set
-	# CONFIG_USB_GADGET_OMAP is not set
-	# CONFIG_USB_GADGET_R8A66597 is not set
-	# CONFIG_USB_GADGET_PXA_U2O is not set
-	# CONFIG_USB_GADGET_M66592 is not set
-	# CONFIG_USB_GADGET_DUMMY_HCD is not set
+>> +		/* no point in having a pull-up as we are always driving */
+>> +		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
+>> +		ret = gpio_direction_output(pdata->gpio,
+>> +				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
+> 
+> akin to this use.
 
-I will try to find where the issues started to happen, but it's a bit
-difficult because all this USB Kconfig stuff is completely messed up.
-
-*Sigh*
+There is no so much space for implementation used before so I've used
+shorter notation, again, for better readability.
 
 -- 
-Felipe Contreras
+Best regards, Denis Kuzmenko.
