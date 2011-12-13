@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1LMBpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 20:45:01 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:35251 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab1LMBpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:45:00 -0500
-Date: Tue, 13 Dec 2011 02:47:29 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] fs/ncpfs: fix error paths and goto statements in
- ncp_fill_super()
-Message-ID: <20111213014729.GA7693@dztty>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754072Ab1LMBx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:53:28 -0500
+Received: from ozlabs.org ([203.10.76.45]:40227 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753685Ab1LMBxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 20:53:25 -0500
+From: Michael Neuling <mikey@neuling.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>, Greg KH <gregkh@suse.de>
+cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] serial: fix Kconfig for Freescale 16550
+In-reply-to: <20111213005444.GA27190@suse.de>
+References: <7963.1323736263@neuling.org> <20111213005444.GA27190@suse.de>
+Comments: In-reply-to Greg KH <gregkh@suse.de>
+   message dated "Mon, 12 Dec 2011 16:54:44 -0800."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Tue, 13 Dec 2011 12:53:22 +1100
+Message-ID: <21148.1323741202@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The label 'out_bdi' should be followed by bdi_destroy() instead of
-fput() which should be after the 'out_fput' label.
+In message <20111213005444.GA27190@suse.de> you wrote:
+> On Tue, Dec 13, 2011 at 11:31:03AM +1100, Michael Neuling wrote:
+> > next-20111212 breaks with linking a pmac32_defconfig with:
+> >   drivers/built-in.o: In function `fsl8250_handle_irq':
+> >   (.text+0x7ba74): undefined reference to `serial8250_modem_status'
+> >   drivers/built-in.o: In function `fsl8250_handle_irq':
+> >   (.text+0x7baa4): undefined reference to `serial8250_tx_chars'
+> >   drivers/built-in.o: In function `fsl8250_handle_irq':
+> >   (.text+0x7bab4): undefined reference to `serial8250_rx_chars'
+> > 
+> > Caused by:
+> >   9deaa53 serial: add irq handler for Freescale 16550 errata.
+> > 
+> > pmac32_defconfig results in SERIAL_8250_FSL=y but SERIAL_8250=m so
+> > 8250_fsl.c doesn't link properly.  
+> > 
+> > This explicitly makes SERIAL_8250_FSL depends on SERIAL_8250=y. 
+> > 
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> > I'm not sure this is the right fix as it seems like a Kconfig bug.  
+> > 
+> > diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> > index a1d55c3..c9046de 100644
+> > --- a/drivers/tty/serial/Kconfig
+> > +++ b/drivers/tty/serial/Kconfig
+> > @@ -99,7 +99,7 @@ config SERIAL_8250_PNP
+> >  
+> >  config SERIAL_8250_FSL
+> >  	bool
+> > -	depends on SERIAL_8250 && PPC
+> > +	depends on SERIAL_8250=y && PPC
+> 
+> Then you can't select SERIAL_8250 as a module at all, right?  
 
-If bdi_setup_and_register() fails then jump to the 'out_fput' label
-instead of the 'out_bdi' one.
+Correct, unless SERIAL_8250_FOL=n of course.
 
-If fget(data.info_fd) fails then jump to the previously fixed 'out_bdi'
-label to call bdi_destroy() otherwise the bdi object will not be
-destroyed.
+> Perhaps you should allow SERIAL_8250_FSL to be a module as well here?
+> So changing the bool to a tristate should be the correct option?  Can
+> you try that?
 
-Compile tested only.
+Yep, that works also.  New patch below.  
 
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/ncpfs/inode.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+This should probably be aced by Paul to ensure he's cool with it being
+a module now. 
 
-diff --git a/fs/ncpfs/inode.c b/fs/ncpfs/inode.c
-index 5b5fa33..cbd1a61 100644
---- a/fs/ncpfs/inode.c
-+++ b/fs/ncpfs/inode.c
-@@ -548,7 +548,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
+Mikey
+
+
+From: Michael Neuling <mikey@neuling.org>
+
+serial: fix Kconfig for Freescale 16550
+
+next-20111212 breaks with linking a pmac32_defconfig with:
+  drivers/built-in.o: In function `fsl8250_handle_irq':
+  (.text+0x7ba74): undefined reference to `serial8250_modem_status'
+  drivers/built-in.o: In function `fsl8250_handle_irq':
+  (.text+0x7baa4): undefined reference to `serial8250_tx_chars'
+  drivers/built-in.o: In function `fsl8250_handle_irq':
+  (.text+0x7bab4): undefined reference to `serial8250_rx_chars'
+
+Caused by:
+  9deaa53 serial: add irq handler for Freescale 16550 errata.
+
+pmac32_defconfig results in SERIAL_8250_FSL=y but SERIAL_8250=m so
+8250_fsl.c doesn't link properly for the kernel.  
+
+This makes SERIAL_8250_FSL tristate.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Suggested-by: Greg KH <gregkh@suse.de>
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index a1d55c3..d8832a4 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -98,7 +98,7 @@ config SERIAL_8250_PNP
+ 	  disable this feature if you only need legacy serial support.
  
- 	error = bdi_setup_and_register(&server->bdi, "ncpfs", BDI_CAP_MAP_COPY);
- 	if (error)
--		goto out_bdi;
-+		goto out_fput;
+ config SERIAL_8250_FSL
+-	bool
++	tristate
+ 	depends on SERIAL_8250 && PPC
+ 	default PPC
  
- 	server->ncp_filp = ncp_filp;
- 	server->ncp_sock = sock;
-@@ -559,7 +559,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
- 		error = -EBADF;
- 		server->info_filp = fget(data.info_fd);
- 		if (!server->info_filp)
--			goto out_fput;
-+			goto out_bdi;
- 		error = -ENOTSOCK;
- 		sock_inode = server->info_filp->f_path.dentry->d_inode;
- 		if (!S_ISSOCK(sock_inode->i_mode))
-@@ -746,9 +746,9 @@ out_nls:
- out_fput2:
- 	if (server->info_filp)
- 		fput(server->info_filp);
--out_fput:
--	bdi_destroy(&server->bdi);
- out_bdi:
-+	bdi_destroy(&server->bdi);
-+out_fput:
- 	/* 23/12/1998 Marcin Dalecki <dalecki@cs.net.pl>:
- 	 * 
- 	 * The previously used put_filp(ncp_filp); was bogus, since
--- 
-1.7.1
