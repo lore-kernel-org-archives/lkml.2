@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab1LMR0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 12:26:47 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:34703 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753553Ab1LMR0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 12:26:45 -0500
-Date: Tue, 13 Dec 2011 12:26:42 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: linux-kernel@vger.kernel.org
-Cc: ilw@linux.intel.com, linux-wireless@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: REGRESSION: v3.2-rcX: iwlagn refuses to associate with my AP's
-Message-ID: <20111213172642.GA4962@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-	ilw@linux.intel.com, linux-wireless@vger.kernel.org,
-	Johannes Berg <johannes.berg@intel.com>
-References: <E1RaBm1-0001JR-8a@tytso-glaptop.cam.corp.google.com>
+	id S1755149Ab1LMRdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 12:33:33 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54752 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755087Ab1LMRdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 12:33:08 -0500
+X-Sasl-enc: RrsXN8sIos/VcZSc9oh8GozmrijmxsEZEKDSWFsCAtht 1323797587
+Date: Tue, 13 Dec 2011 09:31:35 -0800
+From: Greg KH <greg@kroah.com>
+To: DONG-DONG YANG <gdb746@motorola.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kroah-Hartman <gregkh@suse.de>, Yi-wei Zhao <gbjc64@motorola.com>,
+        TAO HU <taohu@motorola.com>, David Ding <dding@motorola.com>,
+        Jeffrey Carlyle <jeff.carlyle@motorola.com>,
+        zhiming YUAN <a14194@motorola.com>
+Subject: Re: [PATCH 1/1] firmware_loading_store: fix firmware loading
+ use-after-free oops
+Message-ID: <20111213173135.GC17096@kroah.com>
+References: <CACo43CLUiVxLof1k+Z4zL8B+mg9Giob6NhMeZn8WWGSqMc97wg@mail.gmail.com>
+ <20111209235732.GB6680@kroah.com>
+ <CACo43CKhoqvskCrqFfg9mo17OpegnSr84V3ZHEwSrCmp=ZmLcA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1RaBm1-0001JR-8a@tytso-glaptop.cam.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CACo43CKhoqvskCrqFfg9mo17OpegnSr84V3ZHEwSrCmp=ZmLcA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 02:42:53PM -0500, Theodore Ts'o wrote:
-> Hi there,
-> 
-> I recently discovered a regression in the iwlagn driver (works in v3.1
-> but not in v3.2-rc2... I'm going to continue to bisect, but I thought
-> I'd give a heads up now).  I'm using a Lenovo T410, with the following
-> wireless card:
-> 
-> [   11.197410] iwlwifi 0000:03:00.0: HW Revision ID = 0x35
-> [   11.197637] iwlwifi 0000:03:00.0: Detected Intel(R) Centrino(R) Advanced-N + WiMAX 6250 AGN, REV=0x84
-> 
-> The failure to associate with access points happens at work, with
-> whatever AP's are in use at the Cambridge Google office.  When I tried
-> v3.2-rc5 at home, I was able to associate with a consumer-grade NetGear
-> AP, although it was flaky --- that is, it completely failed to associate
-> initially, but then I tried rebooting and I was eventually able to get
-> it to work.   At work, I was able to reproduce the problem with a
-> v3.2-rc5 and v3.2-rc2 kernel, but the problem did not manifest itself
-> with a v3.1 kernel.
+A: No.
+Q: Should I include quotations after my reply?
 
-OK, a follow up.  A bisection puts the finger of blame very firmly at:
+http://daringfireball.net/2007/07/on_top
 
-debcf73 iwlagn: handle GO powersave
+On Tue, Dec 13, 2011 at 01:31:32PM +0800, DONG-DONG YANG wrote:
+> If we do the check for fw in the fw_load_abort call, I concern whether it would
+> limit FW_STATUS_ABORT scope, which would presume any fw_abort occur after fw
+> instance generation.
 
-Specifically, I can't associate with *any* access points (encrypted or
-not) if I compile a kernel at commit debcf73, but if I compile a
-kernel with its parent (commit 8ad71be), it works fine.
+Are you sure this really fixes anything?  What happens if the fw pointer
+becomes null after the check happens but before the call?  What is
+protecting that from happening here?
 
-However, as a puzzler, when I tried reverted compiling 3.2-rc5 with
-debcf73 reverted, it did not make the problem go away.  So there's
-something more going on here.  I could try doing a bisect with reverts
-of debcf73 at each step, trying to find the problem, but I'm hoping
-this is enough of a hint that someone can tell me either that this is
-fixed already in the linux-wireless tree, or that they know what's
-wrong and can provide a test patch...
+> The issue was introduced when the webtop components are integrated into the
+> Linux Android platform.
+> The webtop firmware loading performs udev configuration files (under /lib/udev/
+> *) by default, however,
+> ueventd is in charge of such loading task on android framework. The conflict
+> causes the weird things happen.
+>
+> 50-firmware.rules, one of udev default rules, forks a sub-process, named
+> "firmware", which sends "-1" to "loading" fw ctrl file on receiving "add"
+> event. Such firmware loading failure should bring on APP processes exit or
+> error report, but it causes use-after-free oops due to we have no check for fw
+> in firmware_loading_store.
 
-Thanks,
+Sounds like this is a major userspace configuration error.  Not that
+this means we shouldn't be applying the kernel patch, just that you need
+to fix up your system first :)
 
-						- Ted
+Hm, so, you have two different processes trying to write to the firmware
+file at the same time?  And when one finishes, the other one tries to
+abort things?
+
+Ok, I can understand that, it's a very messed up userspace, but I
+understand.
+
+But, your patch needs to properly hold the lock when this is being
+checked, otherwise it will still race and could still oops.
+
+And, your check needs to be done in a different place, again, what's to
+keep that pointer from going away later, in the middle of that call you
+just made?
+
+Care to fix this up properly?
+
+> The patch and log analysis are attached.
+
+Please don't attach patches, it's not easy to apply them when they are
+in base64 mode.
+
+Also, your patch can't be applied as you made it against a very wierd
+patch "rbase"?
+
+thanks,
+
+greg k-h
