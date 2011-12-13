@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1LMQXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 11:23:00 -0500
-Received: from sh.osrg.net ([192.16.179.4]:57462 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755196Ab1LMQWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 11:22:41 -0500
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 1/2] nilfs2: unbreak compat ioctl
-Date: Wed, 14 Dec 2011 01:13:48 +0900
-Message-Id: <1323792829-17395-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1323792829-17395-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-References: <1323792829-17395-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Dispatcher: imput version 20070423(IM149)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 14 Dec 2011 01:22:30 +0900 (JST)
+	id S1755406Ab1LMQ0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:26:38 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:21169 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755149Ab1LMQ0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 11:26:36 -0500
+Message-ID: <4EE77C02.1000103@vmware.com>
+Date: Tue, 13 Dec 2011 17:23:30 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com
+Subject: Re: [PATCH] fixes to drm-next - TTM DMA code (v1)
+References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com> <20111213160753.GC2339@homer.localdomain>
+In-Reply-To: <20111213160753.GC2339@homer.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+On 12/13/2011 05:07 PM, Jerome Glisse wrote:
+> On Mon, Dec 12, 2011 at 03:09:26PM -0500, Konrad Rzeszutek Wilk wrote:
+>    
+>> Jerome pointed me to some accounting error in the DMA API debugging code and
+>> while I can't figure it out yet, I did notice some extreme slowness - which
+>> is due to the nouveau driver calling the unpopulate (now that unbind +
+>> unpopulate are squashed) quite a lot (this is using Gnome Shell - I think GNOME2
+>> did not have those issues but I can't recall).
+>>
+>> Anyhow these patches fix the 50% perf regression I saw and also some minor bugs
+>> that I noticed.
+>>
+>>      
+> Gonna review those today and test them.
+>
+> Cheers,
+> Jerome
+>    
+Hi!
 
-I guess commit 828b1c50ae11e6dda68f8dfefe43b74c7182b157 incidentally broke
-all other NILFS compat ioctls. make them work again.
+I'm not whether any drivers are still using the AGP backend?
+Calling unpopulate / (previous clear) each time unbind is done should be 
+quite
+inefficient with that one, as AGP sets up its own data structures and 
+copies page tables
+on each populate. That should really be avoided unless there is a good 
+reason to have it.
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: <stable@kernel.org> [3.0+]
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
----
- fs/nilfs2/ioctl.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+/Thomas
 
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 41d6743..3e65427 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -842,6 +842,19 @@ long nilfs_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	case FS_IOC32_GETVERSION:
- 		cmd = FS_IOC_GETVERSION;
- 		break;
-+	case NILFS_IOCTL_CHANGE_CPMODE:
-+	case NILFS_IOCTL_DELETE_CHECKPOINT:
-+	case NILFS_IOCTL_GET_CPINFO:
-+	case NILFS_IOCTL_GET_CPSTAT:
-+	case NILFS_IOCTL_GET_SUINFO:
-+	case NILFS_IOCTL_GET_SUSTAT:
-+	case NILFS_IOCTL_GET_VINFO:
-+	case NILFS_IOCTL_GET_BDESCS:
-+	case NILFS_IOCTL_CLEAN_SEGMENTS:
-+	case NILFS_IOCTL_SYNC:
-+	case NILFS_IOCTL_RESIZE:
-+	case NILFS_IOCTL_SET_ALLOC_RANGE:
-+		break;
- 	default:
- 		return -ENOIOCTLCMD;
- 	}
--- 
-1.7.7.4
 
