@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab1LNXsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:48:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:12089 "EHLO mga03.intel.com"
+	id S1758329Ab1LNXvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 18:51:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:46746 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab1LNXsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:48:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85831960"
-Date: Wed, 14 Dec 2011 23:02:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Tao Ma <tm@tao.ma>
-Cc: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-Message-ID: <20111214150243.GA25725@localhost>
-References: <20111214133400.GA18565@localhost>
- <20111214143014.GB18080@thunk.org>
- <4EE8B810.8040405@tao.ma>
+	id S1754960Ab1LNXu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 18:50:58 -0500
+From: Rusty Russell <rusty@ozlabs.org>
+To: David Howells <dhowells@redhat.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan.van.de.ven@intel.com, alan.cox@intel.com,
+        Jon Masters <jcm@jonmasters.org>
+Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
+In-Reply-To: <21605.1323706287@redhat.com>
+References: <87ty56taup.fsf@rustcorp.com.au> <87obvfogc6.fsf@rustcorp.com.au> <8739csq5ac.fsf@rustcorp.com.au> <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk> <2657.1323456206@redhat.com> <30007.1323526114@redhat.com> <26644.1323652900@redhat.com>  <21605.1323706287@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 13 Dec 2011 12:45:40 +1030
+Message-ID: <87obvdtdwz.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE8B810.8040405@tao.ma>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:52:00PM +0800, Tao Ma wrote:
-> Hi Ted/Fengguang,
-> On 12/14/2011 10:30 PM, Ted Ts'o wrote:
-> > On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
-> >> Hi,
-> >>
-> >> Shaohua recently found that ext4 writeback mode could perform worse
-> >> than ordered mode in some cases. It may not be a big problem, however
-> >> we'd like to share some information on our findings.
-> >>
-> >> I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
-> >> The interesting thing is, data=writeback used to run a bit faster
-> >> than data=ordered, however situation get inverted presumably by the
-> >> IO-less dirty throttling.
-> > 
-> > Interesting.  What sort of workloads are you using to do these
-> > measurements?  How many writer threads; I assume you are doing
-> > sequential writes which are extending one or more files, etc?
-> > 
-> > I suspect it's due to the throttling meaning that each thread is
-> > getting to send less data to the disk, and so there is more seeking
-> > going on with data=writeback, where as with data=ordered, at each
-> > journal commit we are forcing all of the dirty pages out to disk, one
-> > inode at a time, and this is resulting in a more efficient writeback
-> > compared to when the writeback code is getting to make its own choices
-> > about how much each inode gets to write out at at time.
-> > 
-> > It would be interesting to see what would happen if in
-> > ext4_da_writepages(), we completely ignore how many pages are
-> > requested to be written back by the writeback code, and just simply
-> > write back all of the dirty pages, and see if that brings the
-> > performance back.
-> I guess fengguang's test is a buffer write dd test. Here we have found
-> some performance regression from 18 because of the delayed allocation.
-> In case of delayed allocation, we will create the extent tree during
-> writepages which would delay the write because ext4_da_write_begin would
-> down_read the i_data_sem to map the block while writepages would
-> down_write it so we have seen some severe delay in ext4_da_write_begin
-> (around 3s). And instead of increasing the page numbers of every
-> writepages, some tests shows that the decrease makes the performance
-> increase. I will dive into it soon to see what's going on there.
+On Mon, 12 Dec 2011 16:11:27 +0000, David Howells <dhowells@redhat.com> wrote:
+> Rusty Russell <rusty@ozlabs.org> wrote:
 > 
-> So Fengguang, would you please keep the page number in
-> ext4_da_writepages passed by writeback(instead of the bumping) and check
-> the result?
+> > OK, then you need to generate stripped modules as part of the build,
+> > too.  It's a bit of a pain, sure, but hardly a showstopper.
+> 
+> They'd have to be maximally stripped so that mkinitrd doesn't do anything to
+> them, but you'd then get the debuginfo from them into the packaging if you're
+> on some distribution or other.  And you also provide an option to not strip
+> them if whoever wants them unstripped.
 
-Sure, can you provide a patch for me to test?
+I was thinking we generate multiple modules; people will definitely want
+unstripped versions as well.
+
+> > A signature contains a magic marker
+> 
+> I don't like this particularly - you can't guarantee that this won't be
+> generated by the assembler quite by accident.
+
+We don't care, in practice.  It can't generate a valid key by accident.
+The only difference is that you might get "bad key" instead of "no key"
+if no sigature matches.  But a validly parsable signature won't happen
+in practice.
+
+> You should find the end of the
+> ELF and work from there.  It should be a simple matter of parsing the header
+> and the section table only, right?  Then you can look at the file offset +
+> length of the last section in the file.
+
+Tried that first.  It's more lines (which need to be carefully
+scrutinized)...
+
+>  At that point, assuming this isn't
+> coincident with the actual end of the file, you can try parsing what's
+> thereafter as a signature.  If it is actual PGP, then an RFC4880 parser should
+> recognise it as valid, and a signature packet should be seen.
+
+...and you can still have padding.  At which point, I realised that we
+might as well just scan the whole thing and be done.
+
+It's a bit cheeky, but I *know* it works, and can be verified by any
+reader without knowing anything about ELF or trusting the format at all.
+
+> > A signature contains a magic marker: it signs everything up to the
+> > magic marker (ie. just append them):
+> > 	SUM=`md5sum drivers/block/loop.ko | cut -d\  -f1`; echo "@Module signature:$SUM" >> drivers/block/loop.ko
+> 
+> That's not a useful signature, but I suspect you're just showing this as an
+> example.
+
+Yeah, it was supposed to be a dumb example...
+
+> > We can have false positives, but at worst that make us report EINVAL
+> > (bad signature) instead of ENOENT (no signature).
+> 
+> EKEYREJECTED please; that way it's the same as RHEL does now.
+
+OK, sure (who knew that was there?).
+
+> > Took me longer to figure out the damn crypto API
+> 
+> You don't actually need to use that.  The crypto API for the moment doesn't do
+> crytographic signature verification.
+
+Sure, I was working on mainline, which is why I chose md5 (plus using
+md5sum is easy).
+
+> returns -EBADMSG if none of its parsers recognise the signature, -ENOPKG if
+> the signature is recognised, but we can't handle it (for instance if it's an
+> unsupported hash algorithm), -ENOKEY if we recognise it, but there's no key
+> available or -EKEYREJECTED if we recognised it, found the matching key, but
+> the key couldn't be used to verify the signature for some reason.
+> 
+> 	/* Call repeatedly to shovel data into the crypto hash */
+> 	verify_sig_add_data(mod_sig, dataptr, datasize);
+> 
+> 	/* Call to finalise and actually perform the verification */
+> 	ret = verify_sig_end(mod_sig, sig, sig_size);
+> 
+> or:
+> 
+> 	/* Call to cancel the verification */
+> 	verify_sig_cancel(mod_sig);
+> 
+> This does all the work for you.
+
+That looks really nice, actually!
 
 Thanks,
-Fengguang
+Rusty.
