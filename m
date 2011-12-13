@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1LMAnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:43:42 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60306 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab1LMAmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:42:35 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 5/6] rcu: Apply ACCESS_ONCE() to rcu_boost() return value
-Date: Mon, 12 Dec 2011 16:42:23 -0800
-Message-Id: <1323736944-32575-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20111213004144.GA32120@linux.vnet.ibm.com>
- <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
-x-cbid: 11121300-1780-0000-0000-0000019582D7
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000240; HX=3.00000179; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00095600; UDB=6.00024991; UTC=2011-12-13
- 00:42:35
+	id S1754631Ab1LMAsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:48:35 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:40809 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890Ab1LMAsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 19:48:32 -0500
+Subject: Re: [PATCH v2] unicore32: standardize /proc/iomem "Kernel code"
+ name
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20111212230429.GA25851@outflux.net>
+References: <20111212230429.GA25851@outflux.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Tue, 13 Dec 2011 08:50:23 +0800
+Message-ID: <1323737423.32086.18.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Mon, 2011-12-12 at 15:04 -0800, Kees Cook wrote:
+> All other ports use "Kernel code" to identify the Kernel text segment
+> in /proc/iomem. Change the unicore32 resources to do the same.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Both TINY_RCU's and TREE_RCU's implementations of rcu_boost() access
-the ->boost_tasks and ->exp_tasks fields without preventing concurrent
-changes to these fields.  This commit therefore applies ACCESS_ONCE in
-order to prevent compiler mischief.
+Thanks.
+I have pushed this patch into my repo.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutiny_plugin.h |    4 ++--
- kernel/rcutree_plugin.h |    3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Guan Xuetao
 
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index dfa97cb..9cb1ae4 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -312,8 +312,8 @@ static int rcu_boost(void)
- 	rt_mutex_lock(&mtx);
- 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
- 
--	return rcu_preempt_ctrlblk.boost_tasks != NULL ||
--	       rcu_preempt_ctrlblk.exp_tasks != NULL;
-+	return ACCESS_ONCE(rcu_preempt_ctrlblk.boost_tasks) != NULL ||
-+	       ACCESS_ONCE(rcu_preempt_ctrlblk.exp_tasks) != NULL;
- }
- 
- /*
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index f55f10b..8bb35d7 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1232,7 +1232,8 @@ static int rcu_boost(struct rcu_node *rnp)
- 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
- 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
- 
--	return rnp->exp_tasks != NULL || rnp->boost_tasks != NULL;
-+	return ACCESS_ONCE(rnp->exp_tasks) != NULL ||
-+	       ACCESS_ONCE(rnp->boost_tasks) != NULL;
- }
- 
- /*
--- 
-1.7.8
+> ---
+> v2: Fixed my copy/paste-o.
+> ---
+>  arch/unicore32/kernel/setup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/unicore32/kernel/setup.c b/arch/unicore32/kernel/setup.c
+> index 471b6bc..2a64061 100644
+> --- a/arch/unicore32/kernel/setup.c
+> +++ b/arch/unicore32/kernel/setup.c
+> @@ -64,7 +64,7 @@ static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
+>   */
+>  static struct resource mem_res[] = {
+>  	{
+> -		.name = "Kernel text",
+> +		.name = "Kernel code",
+>  		.start = 0,
+>  		.end = 0,
+>  		.flags = IORESOURCE_MEM
+> -- 
+> 1.7.5.4
+> 
+> 
+
 
