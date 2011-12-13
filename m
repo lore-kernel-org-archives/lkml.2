@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab1LMDfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 22:35:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53365 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab1LMDfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 22:35:03 -0500
-Message-ID: <4EE6C7AD.3020907@cn.fujitsu.com>
-Date: Tue, 13 Dec 2011 11:34:05 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kamal Mostafa <kamal@canonical.com>
-CC: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: [PATCH v2 4/7] VFS: Rename and refactor writeback_inodes_sb_if_idle
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com> <1323367477-21685-5-git-send-email-kamal@canonical.com>
-In-Reply-To: <1323367477-21685-5-git-send-email-kamal@canonical.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-13 11:34:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-13 11:34:28,
-	Serialize complete at 2011-12-13 11:34:28
+	id S1754745Ab1LMDnv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 22:43:51 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36449 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab1LMDnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 22:43:49 -0500
+Message-ID: <1323747782.4078.144.camel@work-vm>
+Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 12 Dec 2011 19:43:02 -0800
+In-Reply-To: <20111213032406.GA9604@netboy.at.omicron.at>
+References: <cover.1323739287.git.luto@amacapital.net>
+	 <20111213032406.GA9604@netboy.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
+Mime-Version: 1.0
+x-cbid: 11121303-7282-0000-0000-000004DD2569
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On thu, 8 Dec 2011 10:04:34 -0800, Kamal Mostafa wrote:
->  /**
-> - * writeback_inodes_sb_if_idle	-	start writeback if none underway
-> + * try_to_writeback_inodes_sb_nr	-	start writeback if none underway
->   * @sb: the superblock
->   * @nr: the number of pages to write
->   *
->   * Invoke writeback_inodes_sb if no writeback is currently underway.
->   * Returns 1 if writeback was started, 0 if not.
->   */
-> -int writeback_inodes_sb_nr_if_idle(struct super_block *sb,
-> +int try_to_writeback_inodes_sb_nr(struct super_block *sb,
->  				   unsigned long nr,
->  				   enum wb_reason reason)
->  {
->  	if (!writeback_in_progress(sb->s_bdi)) {
->  		down_read(&sb->s_umount);
-> -		writeback_inodes_sb_nr(sb, nr, reason);
-> +		if (nr == 0)
-> +			writeback_inodes_sb(sb, reason);
-> +		else
-> +			writeback_inodes_sb_nr(sb, nr, reason);
->  		up_read(&sb->s_umount);
->  		return 1;
->  	} else
->  		return 0;
+On Tue, 2011-12-13 at 04:24 +0100, Richard Cochran wrote:
+> On Mon, Dec 12, 2011 at 05:26:36PM -0800, Andy Lutomirski wrote:
+> > On x86-64, clock_gettime is so fast that the overhead converting to and
+> > from nanoseconds is non-negligible.  clock_gettime_ns is a different
+> > interface that is potentially faster.  If people like the ABI, I'll
+> > implement an optimized version.
+> 
+> I am not so interested in performance optimizations, but do I think
+> offering time in nanoseconds is attractive from an application point
+> of view. The timespec is impractical for everyone.
+> 
+> While you are at it with new syscalls, why not make a clean break from
+> POSIX and fix the uglies?
+> 
+> - New name, to distance ourselves from POSIX (clock_ns_get?)
+> - Family of calls, with set/get
+> - Sub nanosecond field
+> - TAI time base (or according to parameter?)
 
-The comment said "Returns 1 if writeback was started", so if writeback_in_progress()
-return true, I think this function also should return 1.
+Having a CLOCK_TAI would be interesting across the board. We already
+keep a TAI offset in the ntp code. However, I'm not sure if ntp actually
+sets it these days.
 
-BTW: Does anyone know when this patchset will be merged into the main tree?
+thanks
+-john
 
-Thanks
-Miao
