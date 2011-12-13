@@ -1,38 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab1LMGkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 01:40:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39728 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750830Ab1LMGkw (ORCPT
+	id S1752460Ab1LMGqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 01:46:01 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35136 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab1LMGqA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 01:40:52 -0500
-Date: Tue, 13 Dec 2011 14:40:48 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Cc: linux-arm-kernel@lists.infradead.org, Liam Girdwood <lrg@ti.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] mx27vis-aic32x4: only register when running on the
- right machine
-Message-ID: <20111213064047.GD7148@opensource.wolfsonmicro.com>
-References: <1323757911-25217-1-git-send-email-eric@eukrea.com>
- <1323757911-25217-6-git-send-email-eric@eukrea.com>
+	Tue, 13 Dec 2011 01:46:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1323757911-25217-6-git-send-email-eric@eukrea.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111212173215.GI23870@elte.hu>
+References: <1323559734-3488-1-git-send-email-eranian@google.com>
+	<1323559734-3488-3-git-send-email-eranian@google.com>
+	<1323694657.13285.12.camel@twins>
+	<20111212173215.GI23870@elte.hu>
+Date: Mon, 12 Dec 2011 22:45:58 -0800
+Message-ID: <CABPqkBQJZNFC3cnXWz1ycnFDKqY6j9QeoMnq_zxH138e2Tt6kQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] perf_event: add PERF_COUNT_HW_REF_CPU_CYCLES generic
+ PMU event
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, asharma@fb.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:31:38AM +0100, Eric B�nard wrote:
-> without this fix, a kernel compiled with imx_v4_v5_defconfig
-> and running on a cpuimx25sd leads to :
-
-I'll apply this but a better fix is to convert the driver to be a normal
-platform driver and only register the device on the appropraite boards.
+On Mon, Dec 12, 2011 at 9:32 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Sun, 2011-12-11 at 00:28 +0100, Stephane Eranian wrote:
+>> > This event counts the number of reference core cpu cycles.
+>> > Reference means that the event increments at a constant rate which
+>> > is not subject to core CPU frequency adjustments. The event may
+>> > not count when the processor is in halted (low power) state.
+>> > As such, it may not be equivalent to wall clock time. However,
+>> > when the processor is not halted state, the event keeps
+>> > a constant correlation with wall clock time.
+>> >
+>> > Signed-off-by: Stephane Eranian <eranian@google.com>
+>> > ---
+>> >  include/linux/perf_event.h |    1 +
+>> >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> > index 564769c..0885561 100644
+>> > --- a/include/linux/perf_event.h
+>> > +++ b/include/linux/perf_event.h
+>> > @@ -54,6 +54,7 @@ enum perf_hw_id {
+>> >     PERF_COUNT_HW_BUS_CYCLES                = 6,
+>> >     PERF_COUNT_HW_STALLED_CYCLES_FRONTEND   = 7,
+>> >     PERF_COUNT_HW_STALLED_CYCLES_BACKEND    = 8,
+>> > +   PERF_COUNT_HW_REF_CPU_CYCLES            = 9,
+>> >
+>> >     PERF_COUNT_HW_MAX,                      /* non-ABI */
+>> >  };
+>>
+>> Does it make sense to add this to the 'generic' events? Are
+>> other archs going to use this?
+>>
+>> That is, I already queued patch 1, I'm just wondering if the
+>> generic bit makes sense, Even BUS_CYCLES seems to be a
+>> questionable 'generic' event, but that's history and we can't
+>> fix it.
+>
+> If we named it in a generic way, with a generic,
+> platform-independent meaning behind it, then it shouldn't be a
+> problem. This is why i suggested naming it 'constant CPU cycles'
+> - or 'constant freq cycles' or a variant of that.
+>
+Isn't CPU_REF_CYCLES good enough?
+Should we speel out ref completely to 'REFERENCE'.
+In the changelog, I gave a generic definition of what it is supposed to
+measure. If most platforms don't have such events, then that's fine too.
