@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab1LMAk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:40:58 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:37890 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753472Ab1LMAk5 (ORCPT
+	id S1754676Ab1LMAlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:41:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62499 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab1LMAlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:40:57 -0500
-Message-ID: <4EE69F02.2090805@fb.com>
-Date: Mon, 12 Dec 2011 16:40:34 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 19:41:05 -0500
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-References: <1323718578-1157-1-git-send-email-asharma@fb.com> <1323718578-1157-3-git-send-email-asharma@fb.com> <CAObL_7F8v1PT0FQ=GNcNmJKWkzQ7DfkQ9ym2EeR0TgFKiZPPaw@mail.gmail.com> <4EE6850F.5070002@fb.com> <CAObL_7GPA2RvVQSO9PhDs0X++=_62B83Y-CM1DL1+a9oftJ=YQ@mail.gmail.com>
-In-Reply-To: <CAObL_7GPA2RvVQSO9PhDs0X++=_62B83Y-CM1DL1+a9oftJ=YQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <20111212143750.GA27267@pengutronix.de>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
+	<20111209010147.GH7913@S2100-06.ap.freescale.net>
+	<4EE18403.30604@nvidia.com>
+	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
+	<4EE192DC.3080209@nvidia.com>
+	<20111209051413.GK7913@S2100-06.ap.freescale.net>
+	<20111209110807.GG27267@pengutronix.de>
+	<CACRpkdYpq1phHTTLy875xSr-upiW5BmvKMPO_d-niG+-J14t9w@mail.gmail.com>
+	<20111212143750.GA27267@pengutronix.de>
+Date: Tue, 13 Dec 2011 01:41:05 +0100
+Message-ID: <CACRpkdZz=1xf19feiO8SkzGr=x6ntaNzSwiCjyYmOrz0Z33phA@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Stephen Warren <swarren@nvidia.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/11 3:01 PM, Andrew Lutomirski wrote:
-
->> The timing based attacks depend on the granularity of timestamps. I feel
->> what's available here is too coarse grained to be useful. Happy to
->> disable the code at compile time for those cases. Are there
->> CONFIG_HIGH_SECURITY type of options I could use for this purpose?
+On Mon, Dec 12, 2011 at 3:37 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Sat, Dec 10, 2011 at 01:18:43AM +0100, Linus Walleij wrote:
+>> On Fri, Dec 9, 2011 at 12:08 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>>
+>> > Drivers should not be bothered with pin muxing *at all*.
+>>
+>> Not if they are simple. Like - set them up once and for all and
+>> then forget about it.
+>>
+>> It gets problematic when we get to sleep states and the system
+>> need to reconfigure all pins on say idle or deep sleep.
 >
-> It allows anyone to detect with very high precision when context
-> switches happen on another CPU.  This sounds a little dangerous.  I
-> don't know if a config option is the right choice.
+> If you need to reconfigure your pins in deep sleep and you control
+> the pins in the driver this seems to suggest that your device won't
+> suspend properly if the driver is not loaded?
 
-Minor nit: attacker gets to see sum_exec_runtime - sched_clock(), not 
-sched_clock() directly. It might still be equally damaging (assuming the 
-attacker can work out sum_exec_runtime by observing the VVAR page).
+In our case (ux500) it's more like all pins have a defined nice
+state for active, sleep and idle. (Pull-ups, downs, wakeups etc
+set in a certain way.)
 
-Either way, I think it's important to get to the bottom of this. 
-Conversely, we might want to consider enabling things like this only 
-under CONFIG_I_TRUST_STUFF_RUNNING_ON_MY_MACHINE.
+Then there are some real agressive stuff PM people start to do.
+Some of them require you to shut down things in a certain
+sequence, like this device has to have its pins turned off first,
+the clock released, then regulator, etc. And others do it in the
+reverse order, or any order.
 
->> Yes - this should be a separate patch. gcc-4.4 likes to get rid of the
->> instruction in __do_thread_cpu_time without the asm volatile (in spite of
->> the memory clobber).
->>
->
-> gcc 4.4 caught a genuine bug in your code.  You ignored the return
-> value (which is an output constraint), so you weren't using any
-> outputs and gcc omitted the apparently useless code.  The right fix is
-> to check the return value.  (And to consider adding the missing
-> volatile.)
+If all your hardware was engineered the
+same way with this in mind it could probably be done
+centrally, like the nice stuff Magnus Damm has for managing
+clocks in drivers/base/power/clock_ops.c for all SHmobile
+clocks. Would be real nice if it worked for us, sadly not all
+hardware is designed in such a consistent way.
 
-Yes - there are two bugs here.
+For our hardware it's better to spread it out across the
+drivers and then consolidate once we have the entire
+picture, I'm afraid. For others it will be different, maybe
+your systems will never need it and you can keep all in
+central places.
 
->
->>
->>
->>>> +       if (vp->tsc_unstable) {
->>>> +               struct timespec ts;
->>>> +               vdso_fallback_gettime(CLOCK_THREAD_CPUTIME_ID,&ts);
->>>> +               return timespec_to_ns(&ts);
->>>> +       }
->>>
->>>
->>> Yuck -- another flag indicating whether we're using the tsc.
->>
->>
->> I renamed it to thread_cputime_disabled to deal with NR_CPUS>  64.
->>
->
-> Still yuck.  IMO this should always work.
->
-
-Yes - but boot time VVAR page allocation is going to take me some time 
-to implement. In the meanwhile I was merely trying to ensure that 
-compilation doesn't break for unsupported configs and the app doesn't 
-get SIGILL when running on old 64 bit CPUs.
-
-[..]
-> Sorry, I was unclear.  gtod_data contains vclock_mode, which will tell
-> you whether the tsc is usable.  I have a buggy computer (I'm typing
-> this email on it) that has a TSC that is only useful per-process.  I
-> don't think it's worth supporting this particular case, since it's a
-> bios bug and needs fixing by the vendor.  It's hopefully rare.
-
-Ah yes. Will make this change as well.
-
-  -Arun
+Linus Walleij
