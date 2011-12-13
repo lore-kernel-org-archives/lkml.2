@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1LMOUC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 09:20:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42674 "EHLO mx2.suse.de"
+	id S1755298Ab1LMOWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 09:22:39 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40057 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab1LMOUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 09:20:00 -0500
-Date: Tue, 13 Dec 2011 15:19:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: clean up soft_limit_tree properly new
-Message-ID: <20111213141957.GC30440@tiehlicka.suse.cz>
-References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
- <alpine.LSU.2.00.1112111520510.2297@eggly>
- <20111212131118.GA15249@tiehlicka.suse.cz>
- <CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
- <20111212140750.GE14720@tiehlicka.suse.cz>
- <20111212140935.GF14720@tiehlicka.suse.cz>
- <20111213140844.GB1818@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213140844.GB1818@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751346Ab1LMOWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 09:22:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95637943"
+Subject: Re: [PATCH v5 5/6] ata: add ata port system PM callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+In-Reply-To: <CAF1ivSbRejpSEVfHAhOUxaqAedkCQVHWOgsJGFLM2yt2QaxtuQ@mail.gmail.com>
+References: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
+	 <1323048028-10421-6-git-send-email-ming.m.lin@intel.com>
+	 <CAF1ivSbRejpSEVfHAhOUxaqAedkCQVHWOgsJGFLM2yt2QaxtuQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 13 Dec 2011 22:20:40 +0800
+Message-ID: <1323786040.3769.24.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-12-11 15:08:44, Johannes Weiner wrote:
-> On Mon, Dec 12, 2011 at 03:09:35PM +0100, Michal Hocko wrote:
-> > And a follow up patch for the proper clean up:
-> > ---
-> > >From 4b9f5a1e88496af9f336d1ef37cfdf3754a3ba48 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Mon, 12 Dec 2011 15:04:18 +0100
-> > Subject: [PATCH] memcg: clean up soft_limit_tree properly
-> > 
-> > If we are not able to allocate tree nodes for all NUMA nodes then we
-> > should better clean up those that were allocated otherwise we will leak
-> > a memory.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+On Tue, 2011-12-13 at 21:56 +0800, Lin Ming wrote:
+> +
+> +static int ata_port_resume(struct device *dev)
+> +{
+> +       struct ata_port *ap = to_ata_port(dev);
+> +       int rc;
+> +
+> +       rc = ata_port_request_pm(ap, PMSG_ON, ATA_EH_RESET,
+> +               ATA_EHI_NO_AUTOPSY | ATA_EHI_QUIET, 1);
+> +       return rc;
+> +}
 
-Thanks
+I just realized that the ata port runtime PM status need to be updated
+after system resume.
 
-> 
-> That being said, I think it's unlikely that the machine even boots
-> properly if those allocations fail.  But the code looks better this
-> way and one doesn't have to double take, wondering if anyone else is
-> taking care of the already allocated objects.
+I tried below patch.
+Unfortunately, it causes a problem that sd can't resume correctly.
 
-Yes, that was the point of the patch - just a cleanup. I do not think we
-want to push it into stable...
+During system resume, ata port is resumed first and then sd resumed.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+When ata port resumed, device_resume(...) calls pm_runtime_put_sync(..),
+which causes ata port to be runtime suspended immediately.
+
+So sd resume fails because it requires ata port to be active to handle
+start device command.
+
+This seems a PM core's bug.
+
+device_resume(...) should not runtime suspend the parent device, because
+its children have not resumed yet.
+
+Alan, 
+
+What do you think?
+
+---
+ drivers/ata/libata-core.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 15a3d4d..8996758 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5298,7 +5298,7 @@ static int ata_port_suspend(struct device *dev)
+ 	return ata_port_suspend_common(dev);
+ }
+ 
+-static int ata_port_resume(struct device *dev)
++static int ata_port_resume_common(struct device *dev)
+ {
+ 	struct ata_port *ap = to_ata_port(dev);
+ 	int rc;
+@@ -5308,6 +5308,20 @@ static int ata_port_resume(struct device *dev)
+ 	return rc;
+ }
+ 
++static int ata_port_resume(struct device *dev)
++{
++	int rc;
++
++	rc = ata_port_resume_common(dev);
++	if (!rc) {
++		pm_runtime_disable(dev);
++		pm_runtime_set_active(dev);
++		pm_runtime_enable(dev);
++	}
++
++	return rc;
++}
++
+ static int ata_port_runtime_idle(struct device *dev)
+ {
+ 	return pm_runtime_suspend(dev);
+@@ -5318,7 +5332,7 @@ static const struct dev_pm_ops ata_port_pm_ops = {
+ 	.resume = ata_port_resume,
+ 
+ 	.runtime_suspend = ata_port_suspend_common,
+-	.runtime_resume = ata_port_resume,
++	.runtime_resume = ata_port_resume_common,
+ 	.runtime_idle = ata_port_runtime_idle,
+ };
+ 
+
+
+
+
+
+
