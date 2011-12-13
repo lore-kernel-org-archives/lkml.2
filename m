@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab1LMAWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:22:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54696 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab1LMAWu (ORCPT
+	id S1753999Ab1LMA0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:26:50 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56027 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753685Ab1LMA0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:22:50 -0500
+	Mon, 12 Dec 2011 19:26:49 -0500
+Message-ID: <4EE69BAB.9010302@fb.com>
+Date: Mon, 12 Dec 2011 16:26:19 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAN1soZztU+gC3tkzXK5m51-+djqqcC_JhiJyc4xys2K_ZxUnGA@mail.gmail.com>
-References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
-	<CAN1soZztU+gC3tkzXK5m51-+djqqcC_JhiJyc4xys2K_ZxUnGA@mail.gmail.com>
-Date: Tue, 13 Dec 2011 01:22:50 +0100
-Message-ID: <CACRpkdYFvRDegS63EQzp8pjRMUj7Ru57bK7a+Qq81OkBXmrCBQ@mail.gmail.com>
-Subject: Re: [PATCH v6] pinctrl: add a pin config interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: john stultz <johnstul@us.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>  <1323718578-1157-3-git-send-email-asharma@fb.com>  <1323731361.4078.102.camel@work-vm> <4EE68C31.1030207@fb.com> <1323732772.4078.113.camel@work-vm>
+In-Reply-To: <1323732772.4078.113.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 7:19 AM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
+On 12/12/11 3:32 PM, john stultz wrote:
 
-> You mentioned that pin_config_set() is used in below.
-> ret = pin_config_set(dev, "FOO_GPIO_PIN", PLATFORM_X_PULL_UP);
->
-> struct pinctrl_dev is created while pinmux is registered. I think this
-> structure is always internal structure. It can't be observed by
-> platform driver or device driver.
+> Is it just that you're concerned about the clockid switch costs being
+> too high?
 
-True. Was fixed today by a patch from Stephen Warren that
-simply cuts out the middleman and use the original platform
-device directly. Kudos to Stephen for fixing this!
+Yeah - but I have no real-world data to back it up (I don't think micro 
+benchmarks are a good way to analyze this).
 
-Linus Walleij
+clock_gettime_ns() may just be the right answer here.
+
+  -Arun
