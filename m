@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab1LMSYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 13:24:25 -0500
-Received: from border.exmeritus.com ([70.167.241.26]:57142 "EHLO
-	border.exmeritus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab1LMSYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 13:24:23 -0500
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off platform devices with GPIOs
-Date: Tue, 13 Dec 2011 13:23:31 -0500
-Message-Id: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1755118Ab1LMS0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:26:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:22917 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab1LMS0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 13:26:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95733784"
+Message-ID: <4EE798CF.7080903@linux.intel.com>
+Date: Tue, 13 Dec 2011 10:26:23 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>
+CC: Matt Fleming <matt@console-pimps.org>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] x86, efi: Break up large initrd reads
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>  <1318848017-12301-11-git-send-email-matt@console-pimps.org>  <4E9C8AAC.7080803@gmail.com>  <1321383097.2657.9.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECC4207.3010607@gmail.com>  <1322076468.24448.18.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECE5803.3060203@gmail.com>  <1322168216.24448.61.camel@mfleming-mobl1.ger.corp.intel.com>  <4ECEF144.8020303@gmail.com> <1322210899.24448.66.camel@mfleming-mobl1.ger.corp.intel.com> <4EE689D5.4070600@zytor.com>
+In-Reply-To: <4EE689D5.4070600@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again,
+On 12/12/2011 03:10 PM, H. Peter Anvin wrote:
+> On 11/25/2011 12:48 AM, Matt Fleming wrote:
+>> On Fri, 2011-11-25 at 02:37 +0100, Maarten Lankhorst wrote:
+>>> The efi boot stub tries to read the entire initrd in 1 go,
+>>> however some efi implementations hang if too much if asked
+>>> to read too much data at the same time. After some
+>>> experimentation I found out that my asrock p67 board will
+>>> hang if asked to read chunks of 4mb, so use a safe value.
+>>>
+>>> From elilo source code:
+>>> /*
+>>>  * We load by chunks rather than a single big read because
+>>>  * early versions of EFI had troubles loading files
+>>>  * from floppies in a single big request.  Breaking
+>>>  * the read down into chunks of 4KB fixed that
+>>>  * problem. While this problem has been fixed, we still prefer
+>>>  * this method because it tells us whether or not we're making
+>>>  * forward progress.
+>>>  */
+>>>
+>>> While the comment says 4KB, it's using 4 * EFI_PAGE_SIZE (16KB),
+>>> so I went by the safest route of following elilo here.
+>>>
+> 
+> I'm going to NAK this, because I think the performance impact is too
+> severe.  I would like to set the cap at 1 MiB for now, unless we can
+> identify platforms where *that* is known to fail.
+> 
+> Maarten, would you be willing to rev your patch?  Furthermore, please
+> make the maximum chunksize a define.
+> 
 
-I posted this patch series a few weeks ago and saw no responses, so I
-tweaked the CC list and am reposting it again for review.
+One more thing, Maarten: could you please provide the full DMI
+information of the affected system?
 
-I'm working on support for some custom hardware of ours, and part of
-the support code is the ability for the software to shutdown the power
-supply using GPIOs (via an I2C GPIO controller).
-
-I previously had this in my platform code, but it seemed generically
-useful, so I split it out into a separate module for others to use.
-
-The first two patches are generic of_gpio enhancements, providing some
-new library functions for requesting lots of GPIOs at once.
-
-The third patch is the actual driver itself.  The driver can be used to
-instantiate a platform device as a whole-machine-poweroff device as we
-use it on our hardware.  Alternatively it can instantiate multiple
-platform devs at specific locations on the device tree which trigger
-from the platform_driver->shutdown() callback.
-
-For architectures which are still stuck in the dark ages, this driver
-also supports being instantiated via legacy platform_data.
-
-The OpenFirmware binding documentation is added in the third patch.
-Since this is my first cut, it's a little rough, so please be gentle.
-
-I'm interested to know what you all think.
-
-Cheers,
-Kyle Moffett
-
---
-Interested in my work on the Debian "powerpcspe" port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
+	-hpa
 
