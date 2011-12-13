@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab1LMHpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 02:45:13 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47798 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753304Ab1LMHpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 02:45:09 -0500
-X-Sasl-enc: saXkp6ysWZsh46eIRsXAeG3JNDVzEZRzsx3V3SiXhFUd 1323762308
-Date: Mon, 12 Dec 2011 23:44:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [patch 00/24 ] dynamic debug enhancements: multi-queries during
- mod-init
-Message-ID: <20111213074434.GC20200@kroah.com>
-References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>
- <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
- <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
- <20111212220537.GB1641@kroah.com>
- <CAJfuBxzeKzmOCo00Ew8xAp9EmU0QZ3zjOkRcdEMzYrtx_b9+kA@mail.gmail.com>
- <CAJfuBxxgd-w02DP9EBkjTm2cY5e9Us5ArnZy9BGJUcnsAwrhOA@mail.gmail.com>
- <20111213042515.GA18251@kroah.com>
- <CAJfuBxxnT8va7DRt8e7s=LrSqHYThb_8fkbSO69Fii3r1x0hvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753788Ab1LMHpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 02:45:31 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49379 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab1LMHp2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:2>);
+	Tue, 13 Dec 2011 02:45:28 -0500
+Message-Id: <4EE710A00200007800067274@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 13 Dec 2011 07:45:20 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <stefan.bader@canonical.com>, <Ian.Campbell@citrix.com>,
+        <mike.mcclurg@citrix.com>, <jeremy@goop.org>, <ke.yu@intel.com>,
+        <kevin.tian@intel.com>, <konrad@kernel.org>, <lenb@kernel.org>,
+        <xen-devel@lists.xensource.com>, <liang.tang@oracle.com>,
+        <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 5/8] ACPI: add processor driver for Xen
+ virtual CPUs.
+References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
+ <1322673664-14642-6-git-send-email-konrad.wilk@oracle.com>
+ <4ED755D70200007800064987@nat28.tlf.novell.com>
+ <20111212172941.GA8619@phenom.dumpdata.com>
+In-Reply-To: <20111212172941.GA8619@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CAJfuBxxnT8va7DRt8e7s=LrSqHYThb_8fkbSO69Fii3r1x0hvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 12:00:19AM -0700, Jim Cromie wrote:
-> I did use git-send-email.
-> What I seem to miss on every send is which reference to use in the
-> reply-to part,
-> at least when trying to tie it to an email sent from the web-interface.
+>>> On 12.12.11 at 18:29, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Thu, Dec 01, 2011 at 09:24:23AM +0000, Jan Beulich wrote:
+>> >>> On 30.11.11 at 18:21, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > --- a/drivers/acpi/Makefile
+>> > +++ b/drivers/acpi/Makefile
+>> > @@ -66,6 +66,7 @@ obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
+>> >  # processor has its own "processor." module_param namespace
+>> >  processor-y			:= processor_driver.o processor_throttling.o
+>> >  processor-y			+= processor_idle.o processor_thermal.o
+>> > +processor-y			+= processor_xen.o
+>> 
+>> This should minimally be processor-$(CONFIG_XEN), with other things
+>> adjusted as necessary.
+> 
+> I was under the impression that this was required to get the 
+> processor_xen.ko
+> to be a module. Otherwise it would only compile as built-in.
 
-Don't use the web-interface, it only confuses this type of thing.
+processor_xen.ko? Why not have all the code go into processor.ko?
+(And the original construct didn't aim in that direction either.)
 
-good luck,
+Jan
 
-greg k-h
