@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab1LMOfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 09:35:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65198 "EHLO mx1.redhat.com"
+	id S1754379Ab1LMOhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 09:37:19 -0500
+Received: from mail2.charite.de ([141.42.206.200]:34330 "EHLO mail2.charite.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753883Ab1LMOfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 09:35:16 -0500
-Date: Tue, 13 Dec 2011 09:34:46 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, roel <roel.kluin@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, sage@newdream.net,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-nfs@vger.kernel.org, josef@redhat.com
-Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
-Message-ID: <20111213093446.02de1df1@tlielax.poochiereds.net>
-In-Reply-To: <1323733153.13849.17.camel@lade.trondhjem.org>
-References: <4EE688FC.8090606@gmail.com>
-	<20111212152856.871a8301.akpm@linux-foundation.org>
-	<1323733153.13849.17.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751211Ab1LMOhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 09:37:16 -0500
+Date: Tue, 13 Dec 2011 15:37:13 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: WARNING: at /build/buildd/linux-3.0.0/net/sched/sch_generic.c:255
+  dev_watchdog+0x1e6/0x1f0()
+Message-ID: <20111213143712.GQ15012@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 18:39:13 -0500
-Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+>From dmesg:
 
-> On Mon, 2011-12-12 at 15:28 -0800, Andrew Morton wrote: 
-> > On Tue, 13 Dec 2011 00:06:36 +0100
-> > roel <roel.kluin@gmail.com> wrote:
-> > 
-> > > The test not SEEK_CUR or not SEEK_SET always evaluates to true
-> > > 
-> > > Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> > > ---
-> > >  fs/ceph/file.c   |    2 +-
-> > >  fs/cifs/cifsfs.c |    2 +-
-> > >  fs/fuse/file.c   |    2 +-
-> > >  fs/nfs/file.c    |    2 +-
-> > >  4 files changed, 4 insertions(+), 4 deletions(-)
-> > > 
-> <snip> 
-> > > diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-> > > index eca56d4..606ef0f 100644
-> > > --- a/fs/nfs/file.c
-> > > +++ b/fs/nfs/file.c
-> > > @@ -147,7 +147,7 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
-> > >  	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
-> > >  	 * the cached file length
-> > >  	 */
-> > > -	if (origin != SEEK_SET || origin != SEEK_CUR) {
-> > > +	if (origin != SEEK_SET && origin != SEEK_CUR) {
-> > >  		struct inode *inode = filp->f_mapping->host;
-> > >  
-> > >  		int retval = nfs_revalidate_file_size(inode, filp);
-> > 
-> > This fix will cause changed runtime behaviour, such as NFS no longer
-> > running nfs_revalidate_file_size() for all seek modes.
-> 
-> As far as NFS is concerned, it reverts a regression. NFS only used to
-> run revalidate_file_size() for SEEK_END prior to commit
-> 06222e491e663dac939f04b125c9dc52126a75c4. I accept that we now also need
-> to run it for SEEK_HOLE and SEEK_DATA, but we've never had to do so for
-> SEEK_SET and SEEK_CUR.
-> 
-> I suspect the same is true of ceph, cifs etc...
-> 
-
-(cc'ing Josef Bacik on this too, since he made this change originally)
-
-Agreed. The patch looks correct to me for NFS and CIFS at at least.
+[887648.909830] TCP: Peer 217.231.194.98:49156/993 unexpectedly shrunk window 3688313894:3688343052 (repaired)
+[1108300.282636] ------------[ cut here ]------------
+[1108300.284553] WARNING: at /build/buildd/linux-3.0.0/net/sched/sch_generic.c:255 dev_watchdog+0x1e6/0x1f0()
+[1108300.284699] Hardware name: VMware Virtual Platform
+[1108300.284736] NETDEV WATCHDOG: eth0 (vmxnet3): transmit queue 3 timed out
+[1108300.284879] Modules linked in: xt_multiport iptable_filter ip_tables x_tables mptspi mptscsih mptbase vmw_balloon snd_pcsp
+snd_pcm snd_timer snd serio_raw soundcore snd_page_alloc floppy vmw_pvscsi vmxnet3 [last unloaded: scsi_wait_scan]
+[1108300.285619] Pid: 0, comm: kworker/0:1 Not tainted 3.0.0-13-virtual #22-Ubuntu
+[1108300.285709] Call Trace:
+[1108300.286407]  [<c01503c2>] warn_slowpath_common+0x72/0xa0
+[1108300.286486]  [<c057e2a6>] ? dev_watchdog+0x1e6/0x1f0
+[1108300.286494]  [<c057e2a6>] ? dev_watchdog+0x1e6/0x1f0
+[1108300.286501]  [<c0150493>] warn_slowpath_fmt+0x33/0x40
+[1108300.286507]  [<c057e2a6>] dev_watchdog+0x1e6/0x1f0
+[1108300.286619]  [<c015d80f>] call_timer_fn+0x2f/0x110
+[1108300.286626]  [<c057e0c0>] ? qdisc_reset+0x40/0x40
+[1108300.286632]  [<c015ef0b>] run_timer_softirq+0xeb/0x210
+[1108300.286638]  [<c057e0c0>] ? qdisc_reset+0x40/0x40
+[1108300.286645]  [<c0156f10>] ? local_bh_enable_ip+0x90/0x90
+[1108300.286652]  [<c0156f10>] ? local_bh_enable_ip+0x90/0x90
+[1108300.286658]  [<c0156f91>] __do_softirq+0x81/0x1a0
+[1108300.286664]  [<c0156f10>] ? local_bh_enable_ip+0x90/0x90
+[1108300.286734]  <IRQ>  [<c01572d6>] ? irq_exit+0x76/0xa0
+[1108300.286784]  [<c06623e9>] ? smp_apic_timer_interrupt+0x59/0x88
+[1108300.286797]  [<c065b259>] ? apic_timer_interrupt+0x31/0x38
+[1108300.286817]  [<c012cd6a>] ? native_safe_halt+0xa/0x10
+[1108300.286834]  [<c0110d6c>] ? default_idle.part.5+0x3c/0xf0
+[1108300.286841]  [<c0110e3f>] ? default_idle+0x1f/0x40
+[1108300.286846]  [<c0108c7a>] ? cpu_idle+0x8a/0xc0
+[1108300.286863]  [<c064035f>] ? start_secondary+0xe8/0xed
+[1108300.286987] ---[ end trace 1bbd614812e11d30 ]---
+[1108300.287126] eth0: tx hang
+[1108300.302499] eth0: resetting
+[1108300.446979] eth0: intr type 3, mode 0, 9 vectors allocated
+[1108300.537085] eth0: NIC Link is Up 10000 Mbps
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Ralf Hildebrandt
+  Geschäftsbereich IT | Abteilung Netzwerk
+  Charité - Universitätsmedizin Berlin
+  Campus Benjamin Franklin
+  Hindenburgdamm 30 | D-12203 Berlin
+  Tel. +49 30 450 570 155 | Fax: +49 30 450 570 962
+  ralf.hildebrandt@charite.de | http://www.charite.de
+	    
