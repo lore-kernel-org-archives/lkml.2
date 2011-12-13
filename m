@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1LMQJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 11:09:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49428 "EHLO mx2.suse.de"
+	id S1754988Ab1LMQJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:09:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26427 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800Ab1LMQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 11:09:13 -0500
-Date: Tue, 13 Dec 2011 08:07:53 -0800
-From: Greg KH <gregkh@suse.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: hv_storvsc driver
-Message-ID: <20111213160753.GA8006@suse.de>
-References: <1323791916-2340-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323791916-2340-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752676Ab1LMQJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 11:09:56 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1323770653-19177-1-git-send-email-dhowells@redhat.com>
+References: <1323770653-19177-1-git-send-email-dhowells@redhat.com>
+Cc: dhowells@redhat.com, sfr@canb.auug.org.au, torvalds@linux-foundation.org,
+        arnd@arndb.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [GIT PULL] User API split: Preliminary patches
+Date: Tue, 13 Dec 2011 16:09:34 +0000
+Message-ID: <21378.1323792574@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:58:36AM -0800, K. Y. Srinivasan wrote:
-> 
-> Sometime back I had sent the scsi mailing list, the patch to move the 
-> Hyper-V storage driver out of staging. This patch addresses  the
-> review comments I have gotten to date from James, Greg and Christoph (I have not heard
-> from anybody else in the  scsi mailing list). The patches addressing the review
-> comments have already been sent to the staging tree and Greg has already
-> applied these patches. James, Let me know what I can do to expedite the
-> move from the staging tree.
-> 
-> Greg, do you have any issues you would want
-> me to address before this driver can exit staging. Let me know.
+David Howells <dhowells@redhat.com> wrote:
 
-It's not up to me, it's up to the scsi maintainers, sorry.
+> Can you pull the following into linux-next, please?
 
-greg k-h
+I've made a 'for-next' branch for you to pull if you will:
+
+	http://git.infradead.org/users/dhowells/linux-headers.git
+
+branch:
+
+	for-next
+
+and altered the comment on the patchkey patch that you pointed out (that's the
+only change to the contents).
+
+Additionally, I've stuck date names in the tags.
+
+David
