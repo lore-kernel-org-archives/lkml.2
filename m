@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab1LMAQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:16:43 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:29330 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab1LMAQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:16:26 -0500
-X-Authority-Analysis: v=2.0 cv=NYRkJh/4 c=1 sm=0 a=QETZmXXmyubuBiJjAgCHWw==:17 a=YU8HmM6wsVwA:10 a=ayC55rCoAAAA:8 a=ersyLoyZyrwa3_OOiu8A:9 a=XxWkru6UDOmNnCge:21 a=lrMdyHpm8OyyNkx9:21 a=QETZmXXmyubuBiJjAgCHWw==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 97.103.252.48
-From: Phillip Susi <psusi@cfl.rr.com>
-To: vgoyal@redhat.com
-Cc: joe@perches.com, kzak@redhat.com, linux-kernel@vger.kernel.org,
-        jaxboe@fusionio.com, psusi@cfl.rr.com
-Subject: [PATCH 2/2] Add BLKPG_GET_PARTITION operation
-Date: Mon, 12 Dec 2011 19:16:22 -0500
-Message-Id: <1323735382-5972-2-git-send-email-psusi@cfl.rr.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323735382-5972-1-git-send-email-psusi@cfl.rr.com>
-References: <4EE6990A.9010202@cfl.rr.com>
- <1323735382-5972-1-git-send-email-psusi@cfl.rr.com>
+	id S1753841Ab1LMAU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:20:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21702 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab1LMAU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 19:20:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95407077"
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Berck E. Nash" <flyboy@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 12 Dec 2011 16:25:02 -0800
+In-Reply-To: <4EE68C80.7000408@gmail.com>
+References: <4EE2BC33.80902@gmail.com>
+	 <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
+	 <20111211075713.GA20790@elte.hu>
+	 <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
+	 <4EE5291C.1030302@gmail.com>
+	 <CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
+	 <4EE68C80.7000408@gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new operation to the BLKPG ioctl to read the partition.
-This allows user space to find the current start and length
-of a partition without having to open the partition and use
-the long depreciated HDIO_GETGEO ioctl.
+On Mon, 2011-12-12 at 15:21 -0800, Berck E. Nash wrote:
+> On 12/11/2011 08:40 PM, Yinghai Lu wrote:
+> > x2apic pre-enabled skip the mapping for lapic address. so need map it
+> > after fall back.
+> > 
+> > please check attached -v5..
+> 
+> It appears to work correctly as far as I can tell.
 
-Signed-off-by: Phillip Susi <psusi@cfl.rr.com>
----
- block/ioctl.c         |   15 +++++++++++++++
- include/linux/blkpg.h |    1 +
- 2 files changed, 16 insertions(+), 0 deletions(-)
+Ok. In this case, it looks like bios didn't enable interrupt-remapping
+(part of vt-d) and just enabled x2apic with out touching or exporting
+vt-d HW.
 
-diff --git a/block/ioctl.c b/block/ioctl.c
-index e4e9198..c84a949 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -139,6 +139,21 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
- 			disk_put_part(part);
- 			mutex_unlock(&bdev->bd_mutex);
- 			return 0;
-+		case BLKPG_GET_PARTITION:
-+			mutex_lock(&bdev->bd_mutex);
-+			part = disk_get_part(disk, partno);
-+			if (!part)
-+			{
-+				mutex_unlock(&bdev->bd_mutex);
-+				return -ENXIO;
-+			}
-+			p.start = part->start_sect << 9;
-+			p.length = part->nr_sects << 9;
-+			disk_put_part(part);
-+			mutex_unlock(&bdev->bd_mutex);
-+			if (copy_to_user(a.data, &p, sizeof(struct blkpg_partition)))
-+				return -EFAULT;
-+			return 0;
- 		default:
- 			return -EINVAL;
- 	}
-diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
-index a851944..72bf5e2 100644
---- a/include/linux/blkpg.h
-+++ b/include/linux/blkpg.h
-@@ -41,6 +41,7 @@ struct blkpg_ioctl_arg {
- #define BLKPG_ADD_PARTITION	1
- #define BLKPG_DEL_PARTITION	2
- #define BLKPG_RESIZE_PARTITION	3
-+#define BLKPG_GET_PARTITION	4
- 
- /* Sizes of name fields. Unused at present. */
- #define BLKPG_DEVNAMELTH	64
--- 
-1.7.5.4
+Yinghai, In other scenarios where OS can't recover, mostly likely we
+will fail in check_timer() when we fall back to xapic. Can we add a
+printk in this case to convey the potential reason (that I mentioned in
+the previous e-mail), so that the user can get more accurate information
+for the check timer failure.
+
+thanks,
+suresh
 
