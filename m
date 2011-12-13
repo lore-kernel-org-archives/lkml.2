@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab1LMQl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 11:41:27 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:59055 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606Ab1LMQl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 11:41:26 -0500
-Date: Tue, 13 Dec 2011 11:40:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, bskeggs@redhat.com
-Subject: Re: [PATCH] fixes to drm-next - TTM DMA code (v1)
-Message-ID: <20111213164031.GA32052@phenom.dumpdata.com>
-References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
- <20111213160753.GC2339@homer.localdomain>
- <4EE77C02.1000103@vmware.com>
+	id S1755158Ab1LMQvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:51:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753929Ab1LMQvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 11:51:14 -0500
+Date: Tue, 13 Dec 2011 11:50:27 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Hannes Reinecke <hare@suse.de>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        gmuelas@de.ibm.com, dm-devel@redhat.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+Message-ID: <20111213165024.GA9391@redhat.com>
+References: <4EAE8A7E.8000504@ce.jp.nec.com>
+ <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+ <20111103182548.GA12131@redhat.com>
+ <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
+ <4EBA49C2.1000704@suse.de>
+ <20111110161008.GA15659@osiris.boeblingen.de.ibm.com>
+ <20111117162919.GA3812@redhat.com>
+ <20111129120047.GA2456@osiris.boeblingen.de.ibm.com>
+ <20111129201803.GB6827@redhat.com>
+ <20111212123946.GA2307@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EE77C02.1000103@vmware.com>
+In-Reply-To: <20111212123946.GA2307@osiris.boeblingen.de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020205.4EE78033.0193,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 05:23:30PM +0100, Thomas Hellstrom wrote:
-> On 12/13/2011 05:07 PM, Jerome Glisse wrote:
-> >On Mon, Dec 12, 2011 at 03:09:26PM -0500, Konrad Rzeszutek Wilk wrote:
-> >>Jerome pointed me to some accounting error in the DMA API debugging code and
-> >>while I can't figure it out yet, I did notice some extreme slowness - which
-> >>is due to the nouveau driver calling the unpopulate (now that unbind +
-> >>unpopulate are squashed) quite a lot (this is using Gnome Shell - I think GNOME2
-> >>did not have those issues but I can't recall).
-> >>
-> >>Anyhow these patches fix the 50% perf regression I saw and also some minor bugs
-> >>that I noticed.
-> >>
-> >Gonna review those today and test them.
-> >
-> >Cheers,
-> >Jerome
-> Hi!
+On Mon, Dec 12 2011 at  7:39am -0500,
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+
+> On Tue, Nov 29, 2011 at 03:18:03PM -0500, Mike Snitzer wrote:
+> > On Tue, Nov 29 2011 at  7:00am -0500,
+> > Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> > > [ 4906.683654] Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
+> > 
+> > ...
+> > 
+> > > Gonzalo also tried 2.6.38.8 as suggested and ran into this one:
+> > > 
+> > > [  292.877936] ------------[ cut here ]------------
+> > > [  292.877939] Kernel BUG at 6b6b6b6b6b6b6b6d [verbose debug info unavailable]
+> > 
+> > Again, more poison.
+> > 
+> > Seems this test is causing us to fall on our face no matter what.
+> > Likely, best to leave this 2.6.38 blk_unplug crash to one side and
+> > continue focusing on latest upstream.
 > 
-> I'm not whether any drivers are still using the AGP backend?
+> Sorry again, for taking so long to come back. This time however with good news:
+> 
+> With 3.2.0-rc4.00255.g77a7300 we were unable to reproduce any I/O stall or
+> user-after-free bugs even after nearly 3000 test iterations.
 
-Uh, probably they do if the cards are AGP?
-The problem I encountered was with an PCIe Nvidia card:
+Great news, so with an eye towards getting these fixes upstream:
 
-01:00.0 VGA compatible controller: nVidia Corporation G84 [GeForce 8600 GT] (rev a1
+> The only patches on top we have are:
+> 
+> two patches from Hannes:
+> http://www.spinics.net/lists/linux-scsi/msg55112.html
 
-> Calling unpopulate / (previous clear) each time unbind is done
-> should be quite
-> inefficient with that one, as AGP sets up its own data structures
-> and copies page tables
-> on each populate. That should really be avoided unless there is a
-> good reason to have it.
+Has that scsi_lib.c patch been posted with a formal patch header?
 
-nouveau_bo_rd32 and nv50_crtc_cursor_set showed up as the callers that
-were causing the unpopulate calls. It did happen _a lot_ when I moved the
-cursor madly.
+James, I'm not clear on where I should be looking to see what you have
+staged but not yet sent to Linus.  Does such a branch exist in your
+scsi-misc-2.6 tree?
+
+> http://www.spinics.net/lists/linux-scsi/msg55413.html
+
+Jun'ichi and Hannes said that additional NULL pointer check is needed:
+http://www.redhat.com/archives/dm-devel/2011-December/msg00022.html
+
+Hannes said he'd re-post an updated patch (but hasn't yet).
+
+Mike
