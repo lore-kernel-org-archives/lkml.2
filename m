@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1LMHiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 02:38:01 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:53573 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1LMHh7 (ORCPT
+	id S1753638Ab1LMHpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 02:45:13 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47798 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753304Ab1LMHpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 02:37:59 -0500
-Date: Tue, 13 Dec 2011 18:37:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org
-Subject: Re: [PATCH] rpmsg: rename virtqueue_add_buf_gfp to
- virtqueue_add_buf
-Message-Id: <20111213183751.502abede7b5c3382d153ce51@canb.auug.org.au>
-In-Reply-To: <CAK=WgbY2Kw0G7OkkN6f7=rExFpBzHVy_7r1xCrHe02nSuOUC3Q@mail.gmail.com>
-References: <1323760467.11759.2.camel@phoenix>
-	<CAK=WgbY2Kw0G7OkkN6f7=rExFpBzHVy_7r1xCrHe02nSuOUC3Q@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Dec_2011_18_37_51_+1100_ydEDxFWdrOIXBlTW"
+	Tue, 13 Dec 2011 02:45:09 -0500
+X-Sasl-enc: saXkp6ysWZsh46eIRsXAeG3JNDVzEZRzsx3V3SiXhFUd 1323762308
+Date: Mon, 12 Dec 2011 23:44:34 -0800
+From: Greg KH <greg@kroah.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [patch 00/24 ] dynamic debug enhancements: multi-queries during
+ mod-init
+Message-ID: <20111213074434.GC20200@kroah.com>
+References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>
+ <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+ <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
+ <20111212220537.GB1641@kroah.com>
+ <CAJfuBxzeKzmOCo00Ew8xAp9EmU0QZ3zjOkRcdEMzYrtx_b9+kA@mail.gmail.com>
+ <CAJfuBxxgd-w02DP9EBkjTm2cY5e9Us5ArnZy9BGJUcnsAwrhOA@mail.gmail.com>
+ <20111213042515.GA18251@kroah.com>
+ <CAJfuBxxnT8va7DRt8e7s=LrSqHYThb_8fkbSO69Fii3r1x0hvg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfuBxxnT8va7DRt8e7s=LrSqHYThb_8fkbSO69Fii3r1x0hvg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Dec_2011_18_37_51_+1100_ydEDxFWdrOIXBlTW
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 13, 2011 at 12:00:19AM -0700, Jim Cromie wrote:
+> I did use git-send-email.
+> What I seem to miss on every send is which reference to use in the
+> reply-to part,
+> at least when trying to tie it to an email sent from the web-interface.
 
-Hi,
+Don't use the web-interface, it only confuses this type of thing.
 
-On Tue, 13 Dec 2011 09:20:57 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
->
-> On Tue, Dec 13, 2011 at 9:14 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> > Since commit 7bb7aef2 "virtio: rename virtqueue_add_buf_gfp to virtqueu=
-e_add_buf",
-> > virtqueue_add_buf_gfp is renamed to virtqueue_add_buf now.
-> >
-> > This patch fixes below build error:
-> > =C2=A0CC [M] =C2=A0drivers/rpmsg/virtio_rpmsg_bus.o
-> > drivers/rpmsg/virtio_rpmsg_bus.c: In function 'rpmsg_send_offchannel_ra=
-w':
-> > drivers/rpmsg/virtio_rpmsg_bus.c:723: error: implicit declaration of fu=
-nction 'virtqueue_add_buf_gfp'
-> > make[2]: *** [drivers/rpmsg/virtio_rpmsg_bus.o] Error 1
-> > make[1]: *** [drivers/rpmsg] Error 2
-> > make: *** [drivers] Error 2
-> >
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> > ---
-> > I got the build error on linux-next 20111212.
-> > So this patch is against linux-next.
->=20
-> Thanks a lot for the heads up, Axel !
->=20
-> Stephen, can you please carry this patch in linux-next ?
+good luck,
 
-I seem to have mislaid my copy :-(
-
-If Axel could send to to me again, I will put it in as a merge fix tomorrow.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__13_Dec_2011_18_37_51_+1100_ydEDxFWdrOIXBlTW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO5wDPAAoJEECxmPOUX5FEVXMP/2hbLK2ek6Dh24vKAjIt6pVN
-0POaaadmvlCksuXgSssaAr0do6iWybX1t77xEWXATp3n2hR5etVPVioeWR1DYSq+
-BU4FNZAcXIzmKSMvP4HcnD2uInejuAvFa31mPkvbNe8MeXM63qhqqqxi7vUBVvAD
-deLxBHJVLZpXiN+gZieq/Vk4C0qTCWnns0uGt2xyi1ONXF6eLAEeiUI83xrh6Wz4
-UQc3G0kXKWiAjWuticmfjAu2ZgqUaYFnz+TpPpOhl91Ha8i/0U10u496phTVZzOV
-+ao8XNa/0zjxhYvuvFKYmqM22zeJLcP0zyk/uzRS5xbAJUt1ptnyD9TCJekvNfAm
-EqhZJePoAmdRvBKbNPUivd/snI2POkbxDFft7EJZeGZdCs075VVwwR3ms528EbKO
-P/1tP52pmzC2ZYXPYR/AOyz0zvYVoLMIEjuJzR1hzX3JN5L6sVGhkESQBsci9rF2
-TcBgzKEtA9oN22n2BO9QPvQ9uAiTdEO1+Ro/e6HzMSv4hQX6JA15/3OLABi+VTy+
-VaYavpU3W8dZHPbpX5oZtgxCIF1i/br5XnEDuFC0oS2RifXV3EkQdJDxb/vl2yli
-BLiX8pwMB5L+8fKxHtObLW30iT2jfFpk2hvzdQAGodwPKXdmug3qJnArKyUSmxFr
-t08binZkHFInkZ5sosHG
-=gNkf
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Dec_2011_18_37_51_+1100_ydEDxFWdrOIXBlTW--
+greg k-h
