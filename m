@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1LMJre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 04:47:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49007 "EHLO mx1.redhat.com"
+	id S1753977Ab1LMJs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 04:48:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53534 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab1LMJrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 04:47:32 -0500
-Date: Tue, 13 Dec 2011 11:47:28 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Liu ping fan <kernelfans@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        aliguori@us.ibm.com, jan.kiszka@web.de
-Subject: Re: [PATCH v3] kvm: make vcpu life cycle separated from kvm instance
-Message-ID: <20111213094728.GC12029@redhat.com>
-References: <20111209142303.GC31323@redhat.com>
- <1323657683-13934-1-git-send-email-kernelfans@gmail.com>
- <20111212125440.GF31234@redhat.com>
- <CAFgQCTuuSx6jDy_Q-7mrqpQF0sSDiwEV+eZ-7HCV_PLxnDn-RA@mail.gmail.com>
+	id S1750873Ab1LMJsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 04:48:25 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/3] kref: Remove the memory barriers
+Date: Tue, 13 Dec 2011 10:49:52 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, Ming Lei <tom.leiming@gmail.com>, gregkh@suse.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu
+References: <20111210104341.592561407@chello.nl> <201112122356.47545.oliver@neukum.org> <1323767540.9082.4.camel@twins>
+In-Reply-To: <1323767540.9082.4.camel@twins>
+Organization: SUSE
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFgQCTuuSx6jDy_Q-7mrqpQF0sSDiwEV+eZ-7HCV_PLxnDn-RA@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112131049.53008.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 05:29:50PM +0800, Liu ping fan wrote:
-> On Mon, Dec 12, 2011 at 8:54 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> > On Mon, Dec 12, 2011 at 10:41:23AM +0800, Liu Ping Fan wrote:
-> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> >>
-> >> Currently, vcpu can be destructed only when kvm instance destroyed.
-> >> Change this to vcpu's destruction taken when its refcnt is zero,
-> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
-> >>
-> > Please drop all printks that you add. You do not use rcu_assign_pointer()
-> > during vcpu creation and BTW the code there is incorrect now. It assumed
-> > that online_vcpus is never decremented so it is OK to put newly created
-> > vcpu into kvm->vcpus[kvm->online_vcpus], but now it is not longer true.
-> > We even have BUG_ON() to catch that which I believe you can trigger with
-> > this patch by creating 3 vcpus, removing second one and then adding one
-> > more. Moving to rculist would solve this of course, and will simplify
-> > code that iterates over all vcpus too.
-> >
-> OK, it seems unavoidable to use rculist now :-).  Just one more question, is it
-> useless for "case HV_X64_MSR_VP_INDEX" after adopting rculist?
+Am Dienstag, 13. Dezember 2011, 10:12:20 schrieb Peter Zijlstra:
+> On Mon, 2011-12-12 at 23:56 +0100, Oliver Neukum wrote:
+> > I guess I worried not about the increment, but the decrement.
+> > Which makes me wonder what happens if you don't intend
+> > to get the kref again, but need to make sure it is usually freed,
+> > like:
+> > 
+> > CPU A                                                           CPU B
+> > 
+> > kref_get(p)
+> > start_io(p)
+> >                                                                         [interrupt from IO]
+> >                                                                         kref_put(p)
 > 
-Windows does not support cpu hot-unplug IIRC. Just return the index of
-the vcpu in the vcpus list there.
+> I would expect that if something was needed here, the io stack would
+> provide the barriers since the io completion will probably want to
+> change state set by the start_io thing.
 
---
-			Gleb.
+> Anyway, I would put this squarely outside the responsibility of kref.
+
+I agree, so let's remove it.
+
+	Regards
+		
