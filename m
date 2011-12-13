@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab1LMNCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 08:02:04 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22562 "EHLO mga03.intel.com"
+	id S1754762Ab1LMNRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 08:17:14 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:42323 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452Ab1LMNCB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 08:02:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="46690892"
-From: "Shi, Alex" <alex.shi@intel.com>
-To: "Shi, Alex" <alex.shi@intel.com>, David Rientjes <rientjes@google.com>
-CC: Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 13 Dec 2011 21:01:53 +0800
-Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
-Thread-Topic: [PATCH 1/3] slub: set a criteria for slub node partial adding
-Thread-Index: Acy2WtpYBxu1ZE1KTbeFhuOQdOK8vwAGF8GAAMebcbA=
-Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B672997EA57@shsmsx502.ccr.corp.intel.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
- <alpine.DEB.2.00.1112020842280.10975@router.home>
- <1323419402.16790.6105.camel@debian>
- <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750942Ab1LMNRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 08:17:12 -0500
+X-Greylist: delayed 11025 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Dec 2011 08:17:11 EST
+Message-ID: <4EE7504D.6040509@eukrea.com>
+Date: Tue, 13 Dec 2011 14:17:01 +0100
+From: =?UTF-8?B?RXJpYyBCw6luYXJk?= <eric@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>, festevam@gmail.com
+Subject: Re: [PATCH 08/19] dma: MX3_IPU fix depends
+References: <1323757911-25217-1-git-send-email-eric@eukrea.com> <1323757911-25217-8-git-send-email-eric@eukrea.com> <4EE72EAB.4040308@ru.mvista.com>
+In-Reply-To: <4EE72EAB.4040308@ru.mvista.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > -       if (tail == DEACTIVATE_TO_TAIL)
-> > > +       if (tail == DEACTIVATE_TO_TAIL ||
-> > > +               page->inuse > page->objects /2)
-> > >                 list_add_tail(&page->lru, &n->partial);
-> > >         else
-> > >                 list_add(&page->lru, &n->partial);
-> > >
+Le 13/12/2011 11:53, Sergei Shtylyov a écrit :
+> On 13-12-2011 10:31, Eric Bénard wrote:
+>
+>> ARCH_MX3 was removed in e760b5260d39113794da17c64cbd6e6311155b66
+>
+> Please also specify that commit's summary in parens.
+>
+good point, especially I pointed to the wrong commit.
+v2 follows including change addressing Fabio's comments
 
-> > with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
-> > disabled since it impacts performance so heavily and I'm not sure what
-> > information you're looking for with regards to those stats.
-> 
-> NO, when you collect data, please close SLUB_STAT in kernel config.  _to_head
-> statistics collection patch just tell you, I collected the statistics not include
-> add_partial in early_kmem_cache_node_alloc(). And other places of
-> add_partial were covered. Of course, the kernel with statistic can not be used
-> to measure performance.
-
-David, Did you have time to give a try?  
+Eric
