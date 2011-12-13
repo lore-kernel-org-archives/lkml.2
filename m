@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab1LMUjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:39:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6597 "EHLO mga01.intel.com"
+	id S1755885Ab1LMUoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:44:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40235 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755669Ab1LMUjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:39:07 -0500
+	id S1753692Ab1LMUoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:44:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101820855"
-Date: Tue, 13 Dec 2011 12:38:56 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, lee.schermerhorn@hp.com,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [patch v3]numa: add a sysctl to control interleave allocation
- granularity from each node to improve I/O performance
-Message-ID: <20111213203856.GA6312@tassilo.jf.intel.com>
-References: <1323655125.22361.376.camel@sli10-conroe>
- <20111213190632.GA5830@tassilo.jf.intel.com>
- <alpine.DEB.2.00.1112131412320.27186@router.home>
+   d="scan'208";a="101822266"
+Date: Tue, 13 Dec 2011 21:49:15 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+Cc: Afzal Mohammed <afzal@ti.com>, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, nsekhar@ti.com
+Subject: Re: [PATCH v2-rebased] mfd: TPS65910: Make usable even if interrupt
+ unused
+Message-ID: <20111213204915.GF2796@sortiz-mobl>
+References: <1323770273-21222-1-git-send-email-afzal@ti.com>
+ <CAJ4dqQvJy5EHnkfp2Yf2bBg0LG7e3i9=3qL_S09Sn6oTxPc0XQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112131412320.27186@router.home>
+In-Reply-To: <CAJ4dqQvJy5EHnkfp2Yf2bBg0LG7e3i9=3qL_S09Sn6oTxPc0XQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 02:12:58PM -0600, Christoph Lameter wrote:
-> On Tue, 13 Dec 2011, Andi Kleen wrote:
-> 
-> > I would prefer to add a new policy (INTERLEAVE_MULTI or so) for this
-> > instead of a global sysctl, that takes the additional parameter.
-> 
-> That would require a change of all scripts and code that uses
-> MPOL_INTERLEAVE. Lets not do that.
+Hi Marcus
 
-Yes, but setting a sysctl would need the same right?
+On Tue, Dec 13, 2011 at 11:26:18AM +0100, Marcus Folkesson wrote:
+> Is there any potential issue when calling free_irq on a non-requested irq?
+> If it is, there should be a !irq check in tps65910_irq_exit or
+> tps65910_i2c_remove.
+Good catch. Mohamed, could you please fix that one up ?
 
-It's not clear that all workloads want this.
+Cheers,
+Samuel.
 
-With a global switch only you cannot set it case by case.
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Intel Open Source Technology Centre
+http://oss.intel.com/
