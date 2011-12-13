@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab1LMDYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 22:24:13 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35190 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab1LMDYM (ORCPT
+	id S1754362Ab1LMDcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 22:32:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46129 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab1LMDck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 22:24:12 -0500
-Date: Tue, 13 Dec 2011 04:24:07 +0100
+	Mon, 12 Dec 2011 22:32:40 -0500
+Date: Tue, 13 Dec 2011 04:32:34 +0100
 From: Richard Cochran <richardcochran@gmail.com>
 To: Andy Lutomirski <luto@amacapital.net>
 Cc: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
         john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-Message-ID: <20111213032406.GA9604@netboy.at.omicron.at>
+Subject: Re: [RFC 1/2] Add clock_gettime_ns syscall
+Message-ID: <20111213033233.GB9604@netboy.at.omicron.at>
 References: <cover.1323739287.git.luto@amacapital.net>
+ <0c2e36ec36c3ed82bd77a4d4da50ea3efc61aaa9.1323739287.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1323739287.git.luto@amacapital.net>
+In-Reply-To: <0c2e36ec36c3ed82bd77a4d4da50ea3efc61aaa9.1323739287.git.luto@amacapital.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 05:26:36PM -0800, Andy Lutomirski wrote:
-> On x86-64, clock_gettime is so fast that the overhead converting to and
-> from nanoseconds is non-negligible.  clock_gettime_ns is a different
-> interface that is potentially faster.  If people like the ABI, I'll
-> implement an optimized version.
+On Mon, Dec 12, 2011 at 05:26:37PM -0800, Andy Lutomirski wrote:
+> On some architectures, clock_gettime is fast enough that converting
+> between nanoseconds and struct timespec takes a significant amount of
+> time.  Introduce a new syscall that does the same thing but returns the
+> answer in nanoseconds.  2^64 nanoseconds since the epoch won't wrap
+> around until the year 2554, and by then we can use 128-bit types.
 
-I am not so interested in performance optimizations, but do I think
-offering time in nanoseconds is attractive from an application point
-of view. The timespec is impractical for everyone.
+You have here unsigned, but the time_t timespec is signed. To be
+consistent which clock_gettime, it would have to be signed, and that
+still gives you about 300 years.
 
-While you are at it with new syscalls, why not make a clean break from
-POSIX and fix the uglies?
+OTOH, clearly new and different syscalls can happily be unsigned.
 
-- New name, to distance ourselves from POSIX (clock_ns_get?)
-- Family of calls, with set/get
-- Sub nanosecond field
-- TAI time base (or according to parameter?)
+In any case, you should make it clear.
 
 Thanks,
 Richard
