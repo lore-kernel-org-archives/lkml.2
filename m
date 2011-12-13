@@ -1,30 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1LMEDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 23:03:30 -0500
-Received: from outbound002.nyc1.bluetie.com ([206.65.164.141]:37075 "EHLO
-	outbound002.nyc1.bluetie.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752640Ab1LMED1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 23:03:27 -0500
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Dec 2011 23:03:26 EST
-X-CMAE-OUT-Analysis: v=2.0 cv=EadKsYaC c=1 sm=1 a=IkcTkHD0fZMA:10
- a=B6KMzFptAAAA:20 a=DNt9gYVyboNXQPY48_wA:9 a=QEXdDO2ut3YA:10
- a=KyS2qlXrU621bFwS8Y/86g==:117
-X-CMAE-OUT-Score: 0.00
-Message-ID: <20111212224940.4117@web005.nyc1.bluetie.com>
-X-HTTP-Received: from yuyual28a.mws21795264 [180.183.184.105] by web005.nyc1.bluetie.com (BlueTie WebMail ); Mon, 12 Dec 2011 22:49:40 -0500
-X-Mailer: BlueTie MTA
-Date: Mon, 12 Dec 2011 22:49:40 -0500
-To: doshoes1990@live.com
-From: "Ryan Black" <yuyual28a@mx4719583.biz.tc>
-Importance: normal
-Subject: Re:
-Content-Type: text/plain; charset=UTF-8
+	id S1754081Ab1LMELx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 23:11:53 -0500
+Received: from smp.if.uj.edu.pl ([149.156.82.206]:34257 "EHLO smp.if.uj.edu.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996Ab1LMELt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 23:11:49 -0500
+Date: Tue, 13 Dec 2011 05:11:44 +0100
+From: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, linux-ext4@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [Bug #39732] JBD: Spotted dirty metadata buffer (dev = dm-2,
+ blocknr = 2512725). There's a risk of filesystem corruption in case of
+ system crash.
+Message-ID: <20111213041144.GF28734@smp.if.uj.edu.pl>
+References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera>
+ <gUVi6eNP8RE.A.z7G.OfpWOB@chimera>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <gUVi6eNP8RE.A.z7G.OfpWOB@chimera>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBD43akJ023919
 
-https://docs.google.com/document/d/1dNRZmU55uwS_exaP9svBqucuYJMXJ1ZNr4bv2qTQ2D0/edit
+On 08-28 21:01, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.39 and 3.0.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.39 and 3.0.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=39732
+> Subject		: JBD: Spotted dirty metadata buffer (dev = dm-2, blocknr = 2512725). There's a risk of filesystem corruption in case of system crash.
+> Submitter	: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+> Date		: 2011-07-22 04:22 (38 days old)
+> 
+
+Hi,
+
+This bug still exists in 3.1.0 and 3.2.0-rc5
+
+I spoted it again few days ago, because I moved from me laptop with 2GB
+to temporary desktop with 256MB of RAM, and not it
+triggers like a mad.
+
+So my initial suspicious that it only shows up on big memory
+presure was correct.
+
+
+It is just like this 
+# dmesg | grep dirty
+[122647.953872] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1019852). There's a risk of filesystem corruption in case of system crash.
+[122647.954598] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1043195). There's a risk of filesystem corruption in case of system crash.
+[122647.955213] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1043197). There's a risk of filesystem corruption in case of system crash.
+[122689.978864] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 498559). There's a risk of filesystem corruption in case of system crash.
+[122705.485461] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 68282). There's a risk of filesystem corruption in case of system crash.
+[122705.486046] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 68284). There's a risk of filesystem corruption in case of system crash.
+[122705.496916] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 68365). There's a risk of filesystem corruption in case of system crash.
+[122705.612423] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 69218). There's a risk of filesystem corruption in case of system crash.
+[122706.531297] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 833896). There's a risk of filesystem corruption in case of system crash.
+[122720.863807] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 914979). There's a risk of filesystem corruption in case of system crash.
+[122721.046789] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 890090). There's a risk of filesystem corruption in case of system crash.
+[122721.088280] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 916474). There's a risk of filesystem corruption in case of system crash.
+[122721.176979] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 928182). There's a risk of filesystem corruption in case of system crash.
+[122721.177593] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 927783). There's a risk of filesystem corruption in case of system crash.
+[122721.371654] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 920655). There's a risk of filesystem corruption in case of system crash.
+[122721.543676] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 967035). There's a risk of filesystem corruption in case of system crash.
+[122728.396687] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1043474). There's a risk of filesystem corruption in case of system crash.
+[122736.283876] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 713478). There's a risk of filesystem corruption in case of system crash.
+[122743.576350] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 745551). There's a risk of filesystem corruption in case of system crash.
+[122743.889259] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 828117). There's a risk of filesystem corruption in case of system crash.
+[122752.077022] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 905082). There's a risk of filesystem corruption in case of system crash.
+[122752.125005] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 905294). There's a risk of filesystem corruption in case of system crash.
+[122752.784390] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1030306). There's a risk of filesystem corruption in case of system crash.
+[122752.785053] JBD: Spotted dirty metadata buffer (dev = dm-3, blocknr = 1031593). There's a risk of filesystem corruption in case of system crash.
+#
+
+dm-4 is ext4 partition mounted at /var
+dm-4 is on LVM on luksCrypt on ATA drive.
+
+I'm using currently stock Debian testing kernel:
+$ uname -a
+Linux sredniczarny 3.1.0-1-686-pae #1 SMP Tue Nov 29 19:01:56 UTC 2011 i686 GNU/Linux
+$ cat /proc/version
+Linux version 3.1.0-1-686-pae (Debian 3.1.4-1) (waldi@debian.org) (gcc version 4.6.2 (Debian 4.6.2-4) ) #1 SMP Tue Nov 29 19:01:56 UTC 2011
+$
+
+32-bit intel compatible cpu
+
+
+Regards,
+Witek
+
+-- 
+Witold Baryluk
