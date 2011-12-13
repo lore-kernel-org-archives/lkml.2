@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1LMBaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 20:30:01 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56361 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab1LMBaA (ORCPT
+	id S1754684Ab1LMBdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:33:42 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60263 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab1LMBdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:30:00 -0500
+	Mon, 12 Dec 2011 20:33:41 -0500
+Date: Mon, 12 Dec 2011 17:33:34 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, paul@paulmenage.org,
+        rjw@sisk.pl, lizf@cn.fujitsu.com, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: Re: [PATCH UPDATED AGAIN 03/10] threadgroup: extend
+ threadgroup_lock() to cover exit and exec
+Message-ID: <20111213013334.GC25802@google.com>
+References: <1320191193-8110-4-git-send-email-tj@kernel.org>
+ <20111124225054.GA14828@google.com>
+ <20111125140136.GC23307@somewhere.redhat.com>
+ <20111127193001.GC4266@google.com>
+ <20111202162753.GA19752@somewhere.redhat.com>
+ <20111205184315.GJ627@google.com>
+ <20111207153046.GC13252@somewhere.redhat.com>
+ <20111207182214.GA7610@google.com>
+ <20111208205055.GB12108@google.com>
+ <20111209234246.GC27173@somewhere>
 MIME-Version: 1.0
-In-Reply-To: <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
-References: <4EE2BC33.80902@gmail.com>
-	<CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
-	<20111211075713.GA20790@elte.hu>
-	<CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-	<4EE5291C.1030302@gmail.com>
-	<CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
-	<4EE68C80.7000408@gmail.com>
-	<1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
-Date: Mon, 12 Dec 2011 17:29:59 -0800
-X-Google-Sender-Auth: Vcw5y2FUYPpBjlQlDdw8pax5K6g
-Message-ID: <CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Berck E. Nash" <flyboy@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111209234246.GC27173@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 4:25 PM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Mon, 2011-12-12 at 15:21 -0800, Berck E. Nash wrote:
->> On 12/11/2011 08:40 PM, Yinghai Lu wrote:
->> > x2apic pre-enabled skip the mapping for lapic address. so need map it
->> > after fall back.
->> >
->> > please check attached -v5..
->>
->> It appears to work correctly as far as I can tell.
->
-> Ok. In this case, it looks like bios didn't enable interrupt-remapping
-> (part of vt-d) and just enabled x2apic with out touching or exporting
-> vt-d HW.
->
-> Yinghai, In other scenarios where OS can't recover, mostly likely we
-> will fail in check_timer() when we fall back to xapic. Can we add a
-> printk in this case to convey the potential reason (that I mentioned in
-> the previous e-mail), so that the user can get more accurate information
-> for the check timer failure.
+Hello,
 
-agree. in that case, will have problem.
+On Sat, Dec 10, 2011 at 12:42:53AM +0100, Frederic Weisbecker wrote:
+> > Okay, narrowed exit path protection down to setting of PF_EXITING
+> > itself.  ->exit() on dangling tasks is a bit weird but I don't think
+> > it's too bad.  Frederic, are you okay with this version?
+> 
+> Yeah that new scheme that only protects PF_EXITING may look a bit
+> strange. But I think we are fine. With rcu list traversal, it should
+> be safe even if a group member is concurrently dropped from the list (in that
+> case all we check if its PF_EXITING then we give up). And we may
+> have a concurrent ->exit() but that should be fine too.
+> 
+> Thanks!
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-but i don't think bios buy can go that far to enable intr-remapping
-without providing DMAR.
+Awesome, adding Acked-by, putting it on top of pm-freezer and pushing
+it out to linux-next.
 
-will check if can add print out in check_timer() when
-x2apic_preenabled == 1 and x2apic == 0...
+Thank you.
 
-Thanks
-
-Yinghai Lu
+-- 
+tejun
