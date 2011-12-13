@@ -1,56 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1LMTMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:12:33 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:43136 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755104Ab1LMTMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:12:30 -0500
-X-Sasl-enc: UX/dWJ+t+4Y4h//D+DUhzoJ/mbBtacEBUdnqVY3gPqYx 1323803549
-Date: Tue, 13 Dec 2011 11:11:25 -0800
-From: Greg KH <greg@kroah.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
-        mingo@elte.hu
-Subject: Re: [PATCH 1/3] kref: Inline all functions
-Message-ID: <20111213191125.GA3797@kroah.com>
-References: <20111210104341.592561407@chello.nl>
- <20111210104840.107647845@chello.nl>
- <20111212221159.GA27940@kroah.com>
- <1323768980.9082.6.camel@twins>
- <20111213171511.GA17096@kroah.com>
- <1323802323.9082.20.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323802323.9082.20.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755597Ab1LMTOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:14:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56736 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab1LMTON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 14:14:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101791842"
+Message-Id: <90fe4d68a8eed94885f49f170e8edfa46df70863.1323803130.git.tony.luck@intel.com>
+In-Reply-To: <cover.1323803130.git.tony.luck@intel.com>
+References: <cover.1323803130.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 13 Dec 2011 09:27:58 -0800
+Subject: [PATCH 2/6] HWPOISON: Add code to handle "action required" errors.
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:52:03PM +0100, Peter Zijlstra wrote:
-> On Tue, 2011-12-13 at 09:15 -0800, Greg KH wrote:
-> 
-> > > ---
-> > >  include/linux/kref.h |   80 +++++++++++++++++++++++++++++++++++++++---
-> > >  lib/Makefile         |    2 -
-> > >  lib/kref.c           |   97 ---------------------------------------------------
-> > >  3 files changed, 76 insertions(+), 103 deletions(-)
-> > > Index: linux-2.6/include/linux/kref.h
-> > > ===================================================================
-> > 
-> > What's this stuff for, we aren't using cvs anymore :)
-> 
-> Dunno, it looks like quilt generates that for me.
+Add new flag bit "MF_ACTION_REQUIRED" to be used by machine check
+code to force a signal with si_code = BUS_MCEERR_AR in the case
+where the error occurs in processor execution context. Pass the
+flags argument along call chain:
+	memory_failure()
+	  hwpoison_user_mappings()
+	    kill_procs()
+	      kill_proc()
 
-You need to put:
-QUILT_REFRESH_ARGS="--diffstat --strip-trailing-whitespace --no-timestamps --no-index --sort -p1 -p ab"
-QUILT_DIFF_ARGS="--no-timestamps --no-index --sort --color=auto -p ab"
+Drop the "_ao" suffix from kill_procs_ao() and kill_proc_ao() since
+they can now handle "action required" as well as "action optional" errors.
 
-into your .quiltrc so the index markings will not show up, as well as
-using some other "sane" defaults for generating patches.
+Acked-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ include/linux/mm.h  |    1 +
+ mm/memory-failure.c |   50 +++++++++++++++++++++++++++++---------------------
+ 2 files changed, 30 insertions(+), 21 deletions(-)
 
-greg k-h
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bcc5234..bf169ca 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1606,6 +1606,7 @@ void vmemmap_populate_print_last(void);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
++	MF_ACTION_REQUIRED = 1 << 1,
+ };
+ extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index ab259bb..95fd307 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -187,33 +187,40 @@ int hwpoison_filter(struct page *p)
+ EXPORT_SYMBOL_GPL(hwpoison_filter);
+ 
+ /*
+- * Send all the processes who have the page mapped an ``action optional''
+- * signal.
++ * Send all the processes who have the page mapped a signal.
++ * ``action optional'' if they are not immediately affected by the error
++ * ``action required'' if error happened in current execution context
+  */
+-static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
+-			unsigned long pfn, struct page *page)
++static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
++			unsigned long pfn, struct page *page, int flags)
+ {
+ 	struct siginfo si;
+ 	int ret;
+ 
+ 	printk(KERN_ERR
+-		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
++		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
+ 		pfn, t->comm, t->pid);
+ 	si.si_signo = SIGBUS;
+ 	si.si_errno = 0;
+-	si.si_code = BUS_MCEERR_AO;
+ 	si.si_addr = (void *)addr;
+ #ifdef __ARCH_SI_TRAPNO
+ 	si.si_trapno = trapno;
+ #endif
+ 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
+-	/*
+-	 * Don't use force here, it's convenient if the signal
+-	 * can be temporarily blocked.
+-	 * This could cause a loop when the user sets SIGBUS
+-	 * to SIG_IGN, but hopefully no one will do that?
+-	 */
+-	ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++
++	if ((flags & MF_ACTION_REQUIRED) && t == current) {
++		si.si_code = BUS_MCEERR_AR;
++		ret = force_sig_info(SIGBUS, &si, t);
++	} else {
++		/*
++		 * Don't use force here, it's convenient if the signal
++		 * can be temporarily blocked.
++		 * This could cause a loop when the user sets SIGBUS
++		 * to SIG_IGN, but hopefully no one will do that?
++		 */
++		si.si_code = BUS_MCEERR_AO;
++		ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++	}
+ 	if (ret < 0)
+ 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
+ 		       t->comm, t->pid, ret);
+@@ -338,8 +345,9 @@ static void add_to_kill(struct task_struct *tsk, struct page *p,
+  * Also when FAIL is set do a force kill because something went
+  * wrong earlier.
+  */
+-static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+-			  int fail, struct page *page, unsigned long pfn)
++static void kill_procs(struct list_head *to_kill, int doit, int trapno,
++			  int fail, struct page *page, unsigned long pfn,
++			  int flags)
+ {
+ 	struct to_kill *tk, *next;
+ 
+@@ -363,8 +371,8 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+ 			 * check for that, but we need to tell the
+ 			 * process anyways.
+ 			 */
+-			else if (kill_proc_ao(tk->tsk, tk->addr, trapno,
+-					      pfn, page) < 0)
++			else if (kill_proc(tk->tsk, tk->addr, trapno,
++					      pfn, page, flags) < 0)
+ 				printk(KERN_ERR
+ 		"MCE %#lx: Cannot send advisory machine check signal to %s:%d\n",
+ 					pfn, tk->tsk->comm, tk->tsk->pid);
+@@ -844,7 +852,7 @@ static int page_action(struct page_state *ps, struct page *p,
+  * the pages and send SIGBUS to the processes if the data was dirty.
+  */
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+-				  int trapno)
++				  int trapno, int flags)
+ {
+ 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+@@ -962,8 +970,8 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * use a more force-full uncatchable kill to prevent
+ 	 * any accesses to the poisoned memory.
+ 	 */
+-	kill_procs_ao(&tokill, !!PageDirty(ppage), trapno,
+-		      ret != SWAP_SUCCESS, p, pfn);
++	kill_procs(&tokill, !!PageDirty(ppage), trapno,
++		      ret != SWAP_SUCCESS, p, pfn, flags);
+ 
+ 	return ret;
+ }
+@@ -1148,7 +1156,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 * Now take care of user space mappings.
+ 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
+ 	 */
+-	if (hwpoison_user_mappings(p, pfn, trapno) != SWAP_SUCCESS) {
++	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
+ 		res = -EBUSY;
+ 		goto out;
+-- 
+1.7.3.1
+
