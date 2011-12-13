@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab1LMQDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 11:03:54 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:35451 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab1LMQDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 11:03:51 -0500
-Date: Tue, 13 Dec 2011 11:07:53 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, thellstrom@vmware.com
-Subject: Re: [PATCH] fixes to drm-next - TTM DMA code (v1)
-Message-ID: <20111213160753.GC2339@homer.localdomain>
-References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
+	id S1754795Ab1LMQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:09:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49428 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751800Ab1LMQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 11:09:13 -0500
+Date: Tue, 13 Dec 2011 08:07:53 -0800
+From: Greg KH <gregkh@suse.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: hv_storvsc driver
+Message-ID: <20111213160753.GA8006@suse.de>
+References: <1323791916-2340-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1323791916-2340-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 03:09:26PM -0500, Konrad Rzeszutek Wilk wrote:
-> Jerome pointed me to some accounting error in the DMA API debugging code and
-> while I can't figure it out yet, I did notice some extreme slowness - which
-> is due to the nouveau driver calling the unpopulate (now that unbind +
-> unpopulate are squashed) quite a lot (this is using Gnome Shell - I think GNOME2
-> did not have those issues but I can't recall).
+On Tue, Dec 13, 2011 at 07:58:36AM -0800, K. Y. Srinivasan wrote:
 > 
-> Anyhow these patches fix the 50% perf regression I saw and also some minor bugs
-> that I noticed.
+> Sometime back I had sent the scsi mailing list, the patch to move the 
+> Hyper-V storage driver out of staging. This patch addresses  the
+> review comments I have gotten to date from James, Greg and Christoph (I have not heard
+> from anybody else in the  scsi mailing list). The patches addressing the review
+> comments have already been sent to the staging tree and Greg has already
+> applied these patches. James, Let me know what I can do to expedite the
+> move from the staging tree.
 > 
+> Greg, do you have any issues you would want
+> me to address before this driver can exit staging. Let me know.
 
-Gonna review those today and test them.
+It's not up to me, it's up to the scsi maintainers, sorry.
 
-Cheers,
-Jerome
+greg k-h
