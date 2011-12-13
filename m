@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab1LMTKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:10:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:20855 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755586Ab1LMTKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:10:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95753814"
-Message-Id: <cover.1323803130.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 13 Dec 2011 11:05:30 -0800
-Subject: [PATCH 0/6] x86, mce: machine check recovery for applications
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+	id S1755600Ab1LMTMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:12:33 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:43136 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755104Ab1LMTMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 14:12:30 -0500
+X-Sasl-enc: UX/dWJ+t+4Y4h//D+DUhzoJ/mbBtacEBUdnqVY3gPqYx 1323803549
+Date: Tue, 13 Dec 2011 11:11:25 -0800
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ostrikov@nvidia.com, adobriyan@gmail.com, eric.dumazet@gmail.com,
+        mingo@elte.hu
+Subject: Re: [PATCH 1/3] kref: Inline all functions
+Message-ID: <20111213191125.GA3797@kroah.com>
+References: <20111210104341.592561407@chello.nl>
+ <20111210104840.107647845@chello.nl>
+ <20111212221159.GA27940@kroah.com>
+ <1323768980.9082.6.camel@twins>
+ <20111213171511.GA17096@kroah.com>
+ <1323802323.9082.20.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323802323.9082.20.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yet another version ...
+On Tue, Dec 13, 2011 at 07:52:03PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-12-13 at 09:15 -0800, Greg KH wrote:
+> 
+> > > ---
+> > >  include/linux/kref.h |   80 +++++++++++++++++++++++++++++++++++++++---
+> > >  lib/Makefile         |    2 -
+> > >  lib/kref.c           |   97 ---------------------------------------------------
+> > >  3 files changed, 76 insertions(+), 103 deletions(-)
+> > > Index: linux-2.6/include/linux/kref.h
+> > > ===================================================================
+> > 
+> > What's this stuff for, we aren't using cvs anymore :)
+> 
+> Dunno, it looks like quilt generates that for me.
 
-Some bits should look familiar (hopefully pieces that were not too controversial
-from earlier versions). Other bits are all new (e.g. part 4/6 which sets up some
-functions that can safely save away the physical address of the faulting address
-in the machine check handler for later retrieval in a safer execution context).
+You need to put:
+QUILT_REFRESH_ARGS="--diffstat --strip-trailing-whitespace --no-timestamps --no-index --sort -p1 -p ab"
+QUILT_DIFF_ARGS="--no-timestamps --no-index --sort --color=auto -p ab"
 
-Tony Luck (6):
-  HWPOISON: clean up memory_failure() vs. __memory_failure()
-  HWPOISON: Add code to handle "action required" errors.
-  x86, mce: create helper function to save addr/misc when needed
-  x86, mce: Add mechanism to safely save information in MCE handler
-  x86, mce: handle "action required" errors
-  x86, mce: Recognise machine check bank signature for data path error
+into your .quiltrc so the index markings will not show up, as well as
+using some other "sane" defaults for generating patches.
 
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 +++-
- arch/x86/kernel/cpu/mcheck/mce.c          |  153 ++++++++++++++++++++++-------
- drivers/base/memory.c                     |    2 +-
- include/linux/mm.h                        |    4 +-
- mm/hwpoison-inject.c                      |    4 +-
- mm/madvise.c                              |    2 +-
- mm/memory-failure.c                       |   96 ++++++++++---------
- 7 files changed, 186 insertions(+), 89 deletions(-)
-
--- 
-1.7.3.1
-
+greg k-h
