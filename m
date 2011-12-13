@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1LMIxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 03:53:10 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41022 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660Ab1LMIxI (ORCPT
+	id S1753924Ab1LMIxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 03:53:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45615 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab1LMIxg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 03:53:08 -0500
-Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
- routine fails
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
-References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
-	 <1323694267.20451.5.camel@dabdike>
-	 <CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
+	Tue, 13 Dec 2011 03:53:36 -0500
+Message-ID: <1323766358.9082.0.camel@twins>
+Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arun Sharma <asharma@fb.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Andy Lutomirski <luto@MIT.EDU>
+Date: Tue, 13 Dec 2011 09:52:38 +0100
+In-Reply-To: <4EE67CB5.7000404@fb.com>
+References: <1323718578-1157-1-git-send-email-asharma@fb.com>
+	   <1323718578-1157-3-git-send-email-asharma@fb.com>
+	  <1323720791.2583.23.camel@edumazet-laptop> <4EE66FE9.1050202@fb.com>
+	 <1323725243.2583.27.camel@edumazet-laptop> <4EE67CB5.7000404@fb.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Dec 2011 12:53:02 +0400
-Message-ID: <1323766382.8163.12.camel@dabdike>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-13 at 09:20 +0900, Namjae Jeon wrote:
-> > This whole patch looks like a layering violation.  Why not just update
-> > the SAT layer to translate the MODE SENSE correctly?
-> Would plz you explain more ? I didn't clearly understand your point yet.
+On Mon, 2011-12-12 at 14:14 -0800, Arun Sharma wrote:
 
-The ATA layer does translation for SCSI commands.  Just translate the
-mode sense correctly to use IDENTIFY word 85.  It's a smaller patch and
-no need for any changes in SCSI.
+> > But really most modern distros have NR_CPUS>  64
+> 
+> Is 256 the new 64? :)
 
-Actually, looking at it, it seems to be correct ... why is it not
-working for you?
-
-James
-
-
+4096 in fact.
