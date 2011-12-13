@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1LMVtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 16:49:25 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16786 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab1LMVtY convert rfc822-to-8bit (ORCPT
+	id S1755931Ab1LMVzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 16:55:08 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29099 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754742Ab1LMVzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 16:49:24 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 13 Dec 2011 13:49:15 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Date: Tue, 13 Dec 2011 13:49:15 -0800
-Subject: RE: [PATCH v6] pinctrl: add a pin config interface
-Thread-Topic: [PATCH v6] pinctrl: add a pin config interface
-Thread-Index: Acy5Z9z1ZgIdfj1bSUyk+VJpEpQSzAAeIsrA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1751860BDA@HQMAIL01.nvidia.com>
-References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
-	<CAN1soZztU+gC3tkzXK5m51-+djqqcC_JhiJyc4xys2K_ZxUnGA@mail.gmail.com>
-	<CACRpkdYFvRDegS63EQzp8pjRMUj7Ru57bK7a+Qq81OkBXmrCBQ@mail.gmail.com>
- <CAN1soZw=51caZjEoxBx8ch0KiE-kgHQFA1amRcTOyDDKe5Ymzw@mail.gmail.com>
-In-Reply-To: <CAN1soZw=51caZjEoxBx8ch0KiE-kgHQFA1amRcTOyDDKe5Ymzw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Dec 2011 16:55:05 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+fmdcb/DBx4dCpxTZ9zbJT
+Date: Tue, 13 Dec 2011 13:55:01 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Heikki Krogerus <krohei@gmail.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH] omap: rx51: initialize isp1704 properly
+Message-ID: <20111213215501.GU32251@atomide.com>
+References: <20111207193141.GG31337@atomide.com>
+ <1323287816-2809-1-git-send-email-felipe.contreras@gmail.com>
+ <20111208144044.GA25415@xps8300>
+ <CAMP44s2noD4TXBALOc0JkcbVroYFnp3BaSozrQYdUbsv50xuoQ@mail.gmail.com>
+ <20111212194445.GG32251@atomide.com>
+ <CAMP44s301iWcReReqScJw+N1pQ4=g8D8hZKOV3wEX-qN0_gRQQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s301iWcReReqScJw+N1pQ4=g8D8hZKOV3wEX-qN0_gRQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Haojian Zhuang wrote at Tuesday, December 13, 2011 12:22 AM:
-> On Tue, Dec 13, 2011 at 8:22 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Mon, Dec 12, 2011 at 7:19 AM, Haojian Zhuang
-> > <haojian.zhuang@gmail.com> wrote:
-> >
-> >> You mentioned that pin_config_set() is used in below.
-> >> ret = pin_config_set(dev, "FOO_GPIO_PIN", PLATFORM_X_PULL_UP);
+* Felipe Contreras <felipe.contreras@gmail.com> [111213 11:33]:
+> On Mon, Dec 12, 2011 at 9:44 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Felipe Contreras <felipe.contreras@gmail.com> [111208 11:52]:
+> >> On Thu, Dec 8, 2011 at 4:40 PM, Heikki Krogerus <krohei@gmail.com> wrote:
+> >> > On Wed, Dec 07, 2011 at 09:56:56PM +0200, Felipe Contreras wrote:
+> >> >> From: Heikki Krogerus <krohei@gmail.com>
+> >> >
+> >> > I would prefer that you change this so this is from you, like it
+> >> > actually is. You can mention me in the commit message if you like.
 > >>
-> >> struct pinctrl_dev is created while pinmux is registered. I think this
-> >> structure is always internal structure. It can't be observed by
-> >> platform driver or device driver.
+> >> Well, you came with the fix, I just typed it down, but as you wish :)
+> >>
+> >> >> Without this USB networking doesn't work as the link is never detected.
+> >> >
+> >> > What this changes is, it leaves the transceiver powered by default
+> >> > instead of setting it into power off mode. So not only USB networking
+> >> > is affected by this. If isp1704_charger is not enabled with RX51, USB
+> >> > does not work at all. Please change the comment.
+> >>
+> >> I've updated the patch.
 > >
-> > True. Was fixed today by a patch from Stephen Warren that
-> > simply cuts out the middleman and use the original platform
-> > device directly. Kudos to Stephen for fixing this!
-> >
-> > Linus Walleij
+> > Sorry what's the deal with this one? Is this the one to use or is there
+> > some other patch?
 > 
-> Excuse me that I didn't find that patch. Did you merge it into your
-> git tree? The latest patch on pinconf.c is updating pdev->dev to
-> &pdev->dev.
+> Yeap, there's v2 of this one:
+> 1323375780-13190-1-git-send-email-felipe.contreras@nokia.com
 
-I just hit the same problem. This isn't what my patch addresses.
+OK, thanks applying into fixes.
 
-My patch prevents the pinctrl core from creating a struct device for the
-pin controller, since it already has one.
-
-The problem that Haojian mentions is regarding struct pinctrl_dev, not
-plain device.
-
-I'd suggest modifying all the pin_config_* APIs to take a device name
-rather than a "struct pinctrl_dev *". I'll work on a patch to do this,
-since I'm hitting the same problem.
-
-An alternative may be to either:
-
-* Add function pinctrl_get_dev_by_name(name)
-
-Or:
-
-* Use dev = bus_find_device_by_name(name) to get the plain device, and
-add a pinctrl_find_dev_by_dev(dev).
-
-Either of those sound more complex though, but I suppose do allow
-direct operation if you somehow do already have the struct pinctrl_dev.
-
--- 
-nvpublic
-
+Tony
