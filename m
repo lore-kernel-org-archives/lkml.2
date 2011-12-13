@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab1LMFXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 00:23:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55743 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1LMFXP (ORCPT
+	id S1751480Ab1LMF36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 00:29:58 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:46817 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab1LMF3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 00:23:15 -0500
-Message-ID: <4EE6E140.904@gmail.com>
-Date: Mon, 12 Dec 2011 22:23:12 -0700
-From: "Berck E. Nash" <flyboy@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	Tue, 13 Dec 2011 00:29:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=0iwhcosnUXwPsT0cjiEtFyYzF
+	4oYzEE6SV4+e9ugOfaQ4naxKxpzxAatAHBrhgbYDETAt0c7UCLq7f80zoReaup57
+	zV012X0S+Q4hcx7vIqsKZlLVL3YmGT3IYHoW7y1QxM9zZ9ZXeLdyt+7C6WDlahpY
+	jJIfdgvWmZeya1AEe0=
+Date: Mon, 12 Dec 2011 21:29:51 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>, roel <roel.kluin@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
+In-Reply-To: <20111212155423.24543d6a.akpm@linux-foundation.org>
+Message-ID: <Pine.LNX.4.64.1112122123040.17811@cobra.newdream.net>
+References: <4EE688FC.8090606@gmail.com> <20111212152856.871a8301.akpm@linux-foundation.org>
+ <1323733153.13849.17.camel@lade.trondhjem.org> <1323733511.13849.19.camel@lade.trondhjem.org>
+ <20111212155423.24543d6a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: skeggsb@gmail.com
-CC: Dave Airlie <airlied@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: DRM nouveau crash with 3.2.0-rc5
-References: <4EE2E9BB.8060801@gmail.com>			<CAPM=9tzVxGbsE4+EgTd0apvGBCUcvtnjSH-ydbr-MOVSTf1QaQ@mail.gmail.com>		 <CACAvsv6g+qz+-ja+4Qfinz04rr0EAyxwxQpFyfcE1fAtqQyuEA@mail.gmail.com>		 <4EE42ADA.5000406@gmail.com> <1323590203.31951.2.camel@nisroch>	 <4EE564CF.8090203@gmail.com> <1323753537.10514.0.camel@nisroch>
-In-Reply-To: <1323753537.10514.0.camel@nisroch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 10:18 PM, Ben Skeggs wrote:
-> Are you able to bisect this back to a commit?  I've attempted on a few
-> different cards to cause this and I'm not seeing it.
+On Mon, 12 Dec 2011, Andrew Morton wrote:
+> On Mon, 12 Dec 2011 18:45:11 -0500
+> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
 > 
-> It might take a while to bisect given that it's hard for you to
-> reproduce, but, it'd be *very* helpful.
+> > On Mon, 2011-12-12 at 18:39 -0500, Trond Myklebust wrote:
+> > 
+> > > As far as NFS is concerned, it reverts a regression. NFS only used to
+> > > run revalidate_file_size() for SEEK_END prior to commit
+> > > 06222e491e663dac939f04b125c9dc52126a75c4. I accept that we now also need
+> > > to run it for SEEK_HOLE and SEEK_DATA, but we've never had to do so for
+> > > SEEK_SET and SEEK_CUR.
+> > 
+> > BTW: The regression exists in 3.1, so this is probably a stable
+> > candidate...
+> > 
+> 
+> I'd prefer not to merge this one unless all four fs maintainers have
+> reviewed and preferably tested it.  Also, in view of your earlier email
+> the changelog for this patch needs updating for NFS and probably other
+> filesystems.
+> 
+> So please prepare and send the NFS patch, with a Reported-by:roel?
 
-Oof.  Assuming that the bisection points are generally usable, I'll give
-it a try and see how it goes.  Don't expect any immediate answers:)
+I'll push a fix for the ceph bit through my tree.  Thanks, roel!
 
-Berck
+sage
