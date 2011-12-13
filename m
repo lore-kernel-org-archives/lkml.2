@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1LMAlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:41:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62499 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab1LMAlF (ORCPT
+	id S1754680Ab1LMAmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:42:09 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47145 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab1LMAmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:41:05 -0500
+	Mon, 12 Dec 2011 19:42:05 -0500
+Date: Mon, 12 Dec 2011 16:41:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/6] Preview of fifth set of RCU changes for 3.3
+Message-ID: <20111213004144.GA32120@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <20111212143750.GA27267@pengutronix.de>
-References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<74CDBE0F657A3D45AFBB94109FB122FF1750B77BD8@HQMAIL01.nvidia.com>
-	<20111209010147.GH7913@S2100-06.ap.freescale.net>
-	<4EE18403.30604@nvidia.com>
-	<20111209043220.GJ7913@S2100-06.ap.freescale.net>
-	<4EE192DC.3080209@nvidia.com>
-	<20111209051413.GK7913@S2100-06.ap.freescale.net>
-	<20111209110807.GG27267@pengutronix.de>
-	<CACRpkdYpq1phHTTLy875xSr-upiW5BmvKMPO_d-niG+-J14t9w@mail.gmail.com>
-	<20111212143750.GA27267@pengutronix.de>
-Date: Tue, 13 Dec 2011 01:41:05 +0100
-Message-ID: <CACRpkdZz=1xf19feiO8SkzGr=x6ntaNzSwiCjyYmOrz0Z33phA@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Stephen Warren <swarren@nvidia.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11121300-3352-0000-0000-000001524FC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 3:37 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Sat, Dec 10, 2011 at 01:18:43AM +0100, Linus Walleij wrote:
->> On Fri, Dec 9, 2011 at 12:08 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
->>
->> > Drivers should not be bothered with pin muxing *at all*.
->>
->> Not if they are simple. Like - set them up once and for all and
->> then forget about it.
->>
->> It gets problematic when we get to sleep states and the system
->> need to reconfigure all pins on say idle or deep sleep.
->
-> If you need to reconfigure your pins in deep sleep and you control
-> the pins in the driver this seems to suggest that your device won't
-> suspend properly if the driver is not loaded?
+Hello!
 
-In our case (ux500) it's more like all pins have a defined nice
-state for active, sleep and idle. (Pull-ups, downs, wakeups etc
-set in a certain way.)
+This patchset adds to the earlier sets:
 
-Then there are some real agressive stuff PM people start to do.
-Some of them require you to shut down things in a certain
-sequence, like this device has to have its pins turned off first,
-the clock released, then regulator, etc. And others do it in the
-reverse order, or any order.
+	https://lkml.org/lkml/2011/11/2/363
+	https://lkml.org/lkml/2011/11/15/302
+	https://lkml.org/lkml/2011/11/28/588
+	https://lkml.org/lkml/2011/12/3/77
 
-If all your hardware was engineered the
-same way with this in mind it could probably be done
-centrally, like the nice stuff Magnus Damm has for managing
-clocks in drivers/base/power/clock_ops.c for all SHmobile
-clocks. Would be real nice if it worked for us, sadly not all
-hardware is designed in such a consistent way.
+This fifth set adds rcutorture tests for the recently added
+srcu_read_lock_raw(), additional tracing to further evaluate
+RCU_FAST_NO_HZ, addition of an export to assist with rcutorture testing,
+bug fixes, and documentation.  The patches are as follows:
 
-For our hardware it's better to spread it out across the
-drivers and then consolidate once we have the entire
-picture, I'm afraid. For others it will be different, maybe
-your systems will never need it and you can keep all in
-central places.
+1.	Add rcutorture tests for srcu_read_lock_raw().
+2.	Add tracing to further validate RCU_FAST_NO_HZ by giving more
+	information on RCU's state at the time it decides to stop
+	invoking callbacks.
+3.	Add the 2010 RCU API LWN article to the RCU documentation
+	(courtesy of Kees Cook).
+4.	Revert patch that permitted rtmutex acquisition with interrupts
+	disabled.  Per LKML discussions (https://lkml.org/lkml/2011/12/5/63),
+	it was decided to illegalize IRQ-disable code sections that
+	partially overlap with RCU read-side critical sections.  Code
+	to enforce this illegalization is in progress.
+5.	Add ACCESS_ONCE() to rcu_boost() return value.
+6.	Export cpu_up() so that rcutorture can exercise CPU hotplug
+	and RCU when rcutorture is built as a module.
 
-Linus Walleij
+For a testing-only version of this patchset from git, please see the
+following subject-to-rebase branch, based on 3.2-rc5:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/RCU/whatisRCU.txt |    1 +
+ b/include/trace/events/rcu.h      |   38 +++++++++++++++++++++++++++++---------
+ b/kernel/cpu.c                    |    1 +
+ b/kernel/rcutiny.c                |   10 ++++++++--
+ b/kernel/rcutiny_plugin.h         |   25 +++++++++++++++++++++++++
+ b/kernel/rcutorture.c             |   26 +++++++++++++++++++++++++-
+ b/kernel/rcutree.c                |    8 ++++++--
+ b/kernel/rcutree_plugin.h         |    5 -----
+ b/kernel/rtmutex.c                |    8 --------
+ kernel/rcutiny_plugin.h           |    4 ++--
+ kernel/rcutree_plugin.h           |    3 ++-
+ 11 files changed, 99 insertions(+), 30 deletions(-)
+
