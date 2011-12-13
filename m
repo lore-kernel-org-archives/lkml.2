@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1LMB0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 20:26:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53910 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab1LMB0t (ORCPT
+	id S1754731Ab1LMB1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:27:03 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33577 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab1LMB0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:26:49 -0500
+	Mon, 12 Dec 2011 20:26:52 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
         john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 1/2] Add clock_gettime_ns syscall
-Date: Mon, 12 Dec 2011 17:26:37 -0800
-Message-Id: <0c2e36ec36c3ed82bd77a4d4da50ea3efc61aaa9.1323739287.git.luto@amacapital.net>
+Subject: [RFC 2/2] x86-64: Add __vdso_clock_gettime_ns vsyscall
+Date: Mon, 12 Dec 2011 17:26:38 -0800
+Message-Id: <8db74f68d65f90e99825dacc16ef20948ebea1d4.1323739287.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <cover.1323739287.git.luto@amacapital.net>
 References: <cover.1323739287.git.luto@amacapital.net>
@@ -25,85 +25,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some architectures, clock_gettime is fast enough that converting
-between nanoseconds and struct timespec takes a significant amount of
-time.  Introduce a new syscall that does the same thing but returns the
-answer in nanoseconds.  2^64 nanoseconds since the epoch won't wrap
-around until the year 2554, and by then we can use 128-bit types.
+This is just for the ABI.  An optimized implementation will come later.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/unistd_64.h |    2 ++
- include/linux/syscalls.h         |    2 ++
- kernel/posix-timers.c            |   29 +++++++++++++++++++++++++++++
- 3 files changed, 33 insertions(+), 0 deletions(-)
+ arch/x86/vdso/vclock_gettime.c |   70 ++++++++++++++++++++++++++++++---------
+ arch/x86/vdso/vdso.lds.S       |    7 ++++
+ 2 files changed, 61 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 2010405..3a48069 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -683,6 +683,8 @@ __SYSCALL(__NR_sendmmsg, sys_sendmmsg)
- __SYSCALL(__NR_setns, sys_setns)
- #define __NR_getcpu				309
- __SYSCALL(__NR_getcpu, sys_getcpu)
-+#define __NR_clock_gettime_ns			310
-+__SYSCALL(__NR_clock_gettime_ns, sys_clock_gettime_ns)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 1ff0ec2..2502bc1 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -316,6 +316,8 @@ asmlinkage long sys_clock_settime(clockid_t which_clock,
- 				const struct timespec __user *tp);
- asmlinkage long sys_clock_gettime(clockid_t which_clock,
- 				struct timespec __user *tp);
-+asmlinkage long sys_clock_gettime_ns(clockid_t which_clock,
-+				u64 __user *tp);
- asmlinkage long sys_clock_adjtime(clockid_t which_clock,
- 				struct timex __user *tx);
- asmlinkage long sys_clock_getres(clockid_t which_clock,
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 4556182..07e0772 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -980,6 +980,35 @@ SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
- 	return error;
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 6bc0e72..79d6919 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -82,7 +82,7 @@ notrace static inline long vgetns(void)
+ 	return (v * gtod->clock.mult) >> gtod->clock.shift;
  }
  
-+SYSCALL_DEFINE2(clock_gettime_ns, const clockid_t, which_clock,
-+		u64 __user *, tp)
+-notrace static noinline int do_realtime(struct timespec *ts)
++notrace static noinline void do_realtime(struct timespec *ts)
+ {
+ 	unsigned long seq, ns;
+ 	do {
+@@ -92,10 +92,9 @@ notrace static noinline int do_realtime(struct timespec *ts)
+ 		ns = vgetns();
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+ 	timespec_add_ns(ts, ns);
+-	return 0;
+ }
+ 
+-notrace static noinline int do_monotonic(struct timespec *ts)
++notrace static noinline void do_monotonic(struct timespec *ts)
+ {
+ 	unsigned long seq, ns, secs;
+ 	do {
+@@ -115,11 +114,9 @@ notrace static noinline int do_monotonic(struct timespec *ts)
+ 	}
+ 	ts->tv_sec = secs;
+ 	ts->tv_nsec = ns;
+-
+-	return 0;
+ }
+ 
+-notrace static noinline int do_realtime_coarse(struct timespec *ts)
++notrace static noinline void do_realtime_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+@@ -127,10 +124,9 @@ notrace static noinline int do_realtime_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+-	return 0;
+ }
+ 
+-notrace static noinline int do_monotonic_coarse(struct timespec *ts)
++notrace static noinline void do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq, ns, secs;
+ 	do {
+@@ -150,25 +146,29 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
+ 	}
+ 	ts->tv_sec = secs;
+ 	ts->tv_nsec = ns;
+-
+-	return 0;
+ }
+ 
+ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_realtime(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_realtime(ts);
++			return 0;
++		}
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_monotonic(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_monotonic(ts);
++			return 0;
++		}
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+-		return do_realtime_coarse(ts);
++		do_realtime_coarse(ts);
++		return 0;
+ 	case CLOCK_MONOTONIC_COARSE:
+-		return do_monotonic_coarse(ts);
++		do_monotonic_coarse(ts);
++		return 0;
+ 	}
+ 
+ 	return vdso_fallback_gettime(clock, ts);
+@@ -176,6 +176,44 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
+ 
++notrace int __vdso_clock_gettime_ns(clockid_t clock, u64 *t)
 +{
-+	/*
-+	 * This implementation isn't as fast as it could be, but the syscall
-+	 * entry will take much longer than the unnecessary division and
-+	 * multiplication.  Arch-specific implementations can be made faster.
-+	 */
++	/* This implementation is slow.  It will be improved later. */
 +
-+	struct k_clock *kc = clockid_to_kclock(which_clock);
-+	struct timespec kernel_timespec;
-+	u64 ns;
++	struct timespec ts;
 +	int error;
 +
-+	if (!kc)
-+		return -EINVAL;
-+
-+	error = kc->clock_get(which_clock, &kernel_timespec);
-+
-+	if (!error) {
-+		ns = kernel_timespec.tv_sec * NSEC_PER_SEC
-+			+ kernel_timespec.tv_nsec;
-+
-+		error = copy_to_user(tp, &ns, sizeof(ns));
++	switch (clock) {
++	case CLOCK_REALTIME:
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_realtime(&ts);
++			*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
++			return 0;
++		}
++		break;
++	case CLOCK_MONOTONIC:
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_monotonic(&ts);
++			*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
++			return 0;
++		}
++		break;
++	case CLOCK_REALTIME_COARSE:
++		do_realtime_coarse(&ts);
++		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
++		return 0;
++	case CLOCK_MONOTONIC_COARSE:
++		do_monotonic_coarse(&ts);
++		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
++		return 0;
 +	}
 +
++	error = vdso_fallback_gettime(clock, &ts);
++	if (!error)
++		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
 +	return error;
 +}
 +
- SYSCALL_DEFINE2(clock_adjtime, const clockid_t, which_clock,
- 		struct timex __user *, utx)
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
  {
+ 	long ret;
+diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
+index b96b267..238f500 100644
+--- a/arch/x86/vdso/vdso.lds.S
++++ b/arch/x86/vdso/vdso.lds.S
+@@ -17,6 +17,10 @@
+ VERSION {
+ 	LINUX_2.6 {
+ 	global:
++		/*
++		 * These are the original vsyscalls.  They have weak symbols
++		 * without the __vdso_ prefix for ABI compatibility.
++		 */
+ 		clock_gettime;
+ 		__vdso_clock_gettime;
+ 		gettimeofday;
+@@ -25,6 +29,9 @@ VERSION {
+ 		__vdso_getcpu;
+ 		time;
+ 		__vdso_time;
++
++		/* New vsyscalls are just plain functions. */
++		__vdso_clock_gettime_ns;
+ 	local: *;
+ 	};
+ }
 -- 
 1.7.7.4
 
