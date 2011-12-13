@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab1LML0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 06:26:16 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43897 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab1LML0M (ORCPT
+	id S1754074Ab1LMLgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 06:36:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56970 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab1LMLgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 06:26:12 -0500
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Sage Weil <sage@newdream.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        roel <roel.kluin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org
-Subject: Re: ceph, cifs, nfs, fuse: boolean and / or confusion
-References: <4EE688FC.8090606@gmail.com>
-	<20111212152856.871a8301.akpm@linux-foundation.org>
-	<1323733153.13849.17.camel@lade.trondhjem.org>
-	<1323733511.13849.19.camel@lade.trondhjem.org>
-	<20111212155423.24543d6a.akpm@linux-foundation.org>
-	<Pine.LNX.4.64.1112122123040.17811@cobra.newdream.net>
-Date: Tue, 13 Dec 2011 12:25:19 +0100
-In-Reply-To: <Pine.LNX.4.64.1112122123040.17811@cobra.newdream.net> (Sage
-	Weil's message of "Mon, 12 Dec 2011 21:29:51 -0800 (PST)")
-Message-ID: <87obvc3e8w.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 13 Dec 2011 06:36:44 -0500
+Message-ID: <4EE738CA.8030409@canonical.com>
+Date: Tue, 13 Dec 2011 11:36:42 +0000
+From: James Hunt <james.hunt@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Upstart Devel List <upstart-devel@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Upstart 1.4 "Let them speak" released
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sage Weil <sage@newdream.net> writes:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> On Mon, 12 Dec 2011, Andrew Morton wrote:
->> 
->> So please prepare and send the NFS patch, with a Reported-by:roel?
+Summary of changes:
 
-Fuse patch follows.  Also pushed to git tree:
+* Improved console setting.
+* New "log" argument to console stanza allowing a system jobs
+  stdout/stderr to be captured to a file. New options added to
+  support this feature: '--default-console', '--logdir',
+  '--no-log'. This feature only currently applies to system jobs:
+  user jobs which specify "console log" will be treated as if they
+  had specified "console none".
+* New "setuid" and "setgid" stanzas to allow system jobs to be run
+  under the specified uid/gid corresponding to the given name/group.
+* Improvements to upstart-udev-bridge to handle problematic hardware
+  (such as some batteries) which pass non-printable bytes to userspace.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+Download it from launchpad: https://launchpad.net/upstart
 
-Thanks Roel.
+Kind regards,
 
-Miklos
+James.
+- --
+James Hunt
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-----
->From b48c6af2086ab2ba8a9c9b6ce9ecb34592ce500c Mon Sep 17 00:00:00 2001
-From: Roel Kluin <roel.kluin@gmail.com>
-Date: Tue, 13 Dec 2011 10:37:00 +0100
-Subject: [PATCH] fuse: fix llseek bug
-
-The test in fuse_file_llseek() "not SEEK_CUR or not SEEK_SET" always evaluates
-to true.
-
-This was introduced in 3.1 by commit 06222e49 (fs: handle SEEK_HOLE/SEEK_DATA
-properly in all fs's that define their own llseek) and changed the behavior of
-SEEK_CUR and SEEK_SET to always retrieve the file attributes.  This is a
-performance regression.
-
-Fix the test so that it makes sense.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: stable@vger.kernel.org
-CC: Josef Bacik <josef@redhat.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/fuse/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 594f07a..19029e9 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1556,7 +1556,7 @@ static loff_t fuse_file_llseek(struct file *file, loff_t offset, int origin)
- 	struct inode *inode = file->f_path.dentry->d_inode;
- 
- 	mutex_lock(&inode->i_mutex);
--	if (origin != SEEK_CUR || origin != SEEK_SET) {
-+	if (origin != SEEK_CUR && origin != SEEK_SET) {
- 		retval = fuse_update_attributes(inode, NULL, file, NULL);
- 		if (retval)
- 			goto exit;
--- 
-1.7.7
-
+iQIcBAEBAgAGBQJO5zi9AAoJEJ1Q4UTmNXMnJoAQAJBZC+SyNuvCeVUplVhdKUwy
+Rrhywx7ul2rPx/ZoyXI/SgVlzRJoKDQGYmgwtbunh2bPn8HdpzkB4Oo0//jNlT6K
+6yPVUJ3LOd/JCW3XNOwZqsDDO9eMHKP39yLBLXnjEDglZu2FG7bcdzisDXOXxYF8
+xR3Y+Z+eM0YuJuOLnF4s4MByiM8jgJHDQ/N479OkRPnu/Qb9/E46qurp+fq3EokU
+uGTn+eCa0bnkbHYLo0d4hE4KCvkXWKtkqXBpZoZUsWtPXKfem3pPPz8nCW/J3YvS
+4hSaY6GsBRxz4gmiIDF+nG/zDAJZb4MCQIYFiihBzcRsF5NSKYiac9vUVNX60kdC
+89WkdbRDdEQzvXeF1R7bTFtv+HraV1HP8PHh2jExmiliUknEqZVwyvtSWec6EuNj
+9vp8lQ/I70N53l9gUi7e+vssYlNlYpTUFkKdfLvmTwoSduJs9ZfldubG/Bnxbhy2
+DpzoPvb/Z3WcCdAeDkAgxdMmgsGp0E28SKJZ06OWXAs5yOupFO9cXebOIxEUr57P
+WUupmzNO/yz88nsaQ8Cu+823aFIK4xKkNURy+Y7Q63JM8FxXCTBEnujJzxm1zfdE
+vOO7SkOLpDr3qj0F0JNck6GDt4RkiunBPy5gO7XqxG9ApkI5YnN3LtvskCv9erhx
+QHb7A7D/2tFY1OCB4O0g
+=cf3s
+-----END PGP SIGNATURE-----
