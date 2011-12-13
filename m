@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab1LMXCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 18:02:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65038 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1LMXCa convert rfc822-to-8bit (ORCPT
+	id S1756196Ab1LMXDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 18:03:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59032 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab1LMXDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 18:02:30 -0500
+	Tue, 13 Dec 2011 18:03:08 -0500
+Date: Wed, 14 Dec 2011 00:03:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <ak@linux.intel.com>
+cc: Cyrill Gorcunov <gorcunov@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] DEBUGFS: Automatically create parents for debugfs
+ files v2
+In-Reply-To: <20111213222759.GB7633@tassilo.jf.intel.com>
+Message-ID: <alpine.LFD.2.02.1112132359430.3020@ionos>
+References: <1323812733-7520-1-git-send-email-andi@firstfloor.org> <20111213222256.GD2618@moon> <20111213222759.GB7633@tassilo.jf.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1323769253-22580-3-git-send-email-haojian.zhuang@marvell.com>
-References: <1323769253-22580-1-git-send-email-haojian.zhuang@marvell.com>
-	<1323769253-22580-3-git-send-email-haojian.zhuang@marvell.com>
-Date: Wed, 14 Dec 2011 00:02:29 +0100
-Message-ID: <CACRpkdbqj0zyRP4skGm4EX0Hx1Axe5-wkC14Y6Ee_B9TFzy39g@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] ARM: mmp: enable pinmux in platform driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>, swarren@nvidia.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        eric.y.miao@gmail.com, linux@arm.linux.org.uk, arnd@arndb.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 10:40 AM, Haojian Zhuang
-<haojian.zhuang@marvell.com> wrote:
+On Tue, 13 Dec 2011, Andi Kleen wrote:
 
-> Only enable pinmux in brownstone/aspenite/ttc dkb.
->
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+> > Hi Andi, is it possible to do say kstrdup or something instead of
+> 
+> It's possible, just would add complexity with an additional
+> error path.
+> 
+> > variable-size array in fn[strlen(name) + 1] ? As far as I remember
+> > we already had some warnings with them at least in perf land (or
+> > trace land). Or I miss something?
+> 
+> Not aware of any problems with tracing or perf. I like them at least.
 
-A very appetizing and appealing patch, this is looking *very good*.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-(But I guess you need the other patch to go in as well...)
-
-> +static struct pinmux_map brownstone_pmx_map[] = {
-> +       {
-> +               .name = "dkin",
-> +               .ctrl_dev_name = "mmp2-pinmux",
-> +               .function = "dkin",
-> +               .group = "dkin-2-pin",
-> +               .hog_on_boot = true,
-> +       }, {
-> +               .name = "uart1",
-> +               .ctrl_dev_name = "mmp2-pinmux",
-> +               .function = "uart1",
-> +               .group = "uart1-4-pin",
-> +               .hog_on_boot = true,
-> +       }, {
-> +               .name = "uart2",
-> +               .ctrl_dev_name = "mmp2-pinmux",
-> +               .function = "uart2",
-> +               .group = "uart2-4-pin",
-> +               .hog_on_boot = true,
-> +       },
-
-Looks like we want to add
-#define PINMUX_MAP_SYS_HOG_GROUP() or so with four
-arguments, what do you say Stephen? Shall I try to patch  in
-something like that (then this patch will look even better).
-
-> +       PINMUX_MAP_SYS_HOG("uart3", "mmp2-pinmux", "uart3"),
-> +       PINMUX_MAP_SYS_HOG("twsi2", "mmp2-pinmux", "twsi2"),
-(...)
+That does not make them better. We had wreckage before and you can
+just consult commit a84a79e4d3 and then find a good explanation why
+your usage is safe.
 
 Thanks,
-Linus Walleij
+
+	tglx
+
