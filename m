@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab1LMBZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 20:25:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47888 "EHLO
+	id S1754649Ab1LMB0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:26:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53910 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab1LMBZ2 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753649Ab1LMB0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:25:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE69158.5080805@zytor.com>
-References: <4EE2BC33.80902@gmail.com>
-	<CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
-	<20111211075713.GA20790@elte.hu>
-	<CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-	<4EE5291C.1030302@gmail.com>
-	<CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
-	<4EE69158.5080805@zytor.com>
-Date: Mon, 12 Dec 2011 17:25:27 -0800
-X-Google-Sender-Auth: 2YSkca632l2bMdwUIsh1wYhVefk
-Message-ID: <CAE9FiQWUhp1v86YZ=rGL3g=5EfgAOt1OCGkH2b7ut0juOebeaw@mail.gmail.com>
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Berck E. Nash" <flyboy@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Dec 2011 20:26:47 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
+        john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC 0/2] ABI for clock_gettime_ns
+Date: Mon, 12 Dec 2011 17:26:36 -0800
+Message-Id: <cover.1323739287.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.7.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 3:42 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/11/2011 07:40 PM, Yinghai Lu wrote:
->> -v2: use x2apic_disabled instead of nox2apic, Suggested by Thomas
->>      update x2apic_supported with x2apic_disabled, Suggested by Thomas
->
-> This is ugly.  Typically we have no- for boolean options.  If we have a
-> multivalue option it should be option=value, i.e. x2apic=disabled.  We
-> can allow x2apic_supported as a backwards compatibility option.
+On x86-64, clock_gettime is so fast that the overhead converting to and
+from nanoseconds is non-negligible.  clock_gettime_ns is a different
+interface that is potentially faster.  If people like the ABI, I'll
+implement an optimized version.
 
-x2apic_disabled is variable.
+For the git-inclined, this series is at
+https://git.kernel.org/?p=linux/kernel/git/luto/linux.git;a=shortlog;h=refs/heads/timing/clock_gettime_ns/rfc_v1
 
-for command line, still use nox2apic for that purpose.
+Andy Lutomirski (2):
+  Add clock_gettime_ns syscall
+  x86-64: Add __vdso_clock_gettime_ns vsyscall
 
-Thanks
+ arch/x86/include/asm/unistd_64.h |    2 +
+ arch/x86/vdso/vclock_gettime.c   |   70 +++++++++++++++++++++++++++++---------
+ arch/x86/vdso/vdso.lds.S         |    7 ++++
+ include/linux/syscalls.h         |    2 +
+ kernel/posix-timers.c            |   29 ++++++++++++++++
+ 5 files changed, 94 insertions(+), 16 deletions(-)
 
-Yinghai
+-- 
+1.7.7.4
+
