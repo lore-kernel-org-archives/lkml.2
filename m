@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab1LMUhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:37:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:8316 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab1LMUhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:37:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="86191064"
-Date: Tue, 13 Dec 2011 21:42:50 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
-        linaro-dev@lists.linaro.org, arnd@arndb.de, eric.miao@linaro.org
-Subject: Re: [PATCH 01/06] MFD: DA9052/53 MFD core module v10
-Message-ID: <20111213204250.GE2796@sortiz-mobl>
-References: <1323700616.1626.7.camel@dhruva>
- <20111213063344.GC7148@opensource.wolfsonmicro.com>
+	id S1755975Ab1LMUi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:38:26 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35913 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab1LMUiV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:38:21 -0500
+Message-ID: <4EE7B7B9.7060700@garzik.org>
+Date: Tue, 13 Dec 2011 15:38:17 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213063344.GC7148@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com> <1323694267.20451.5.camel@dabdike> <CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com> <1323766382.8163.12.camel@dabdike>
+In-Reply-To: <1323766382.8163.12.camel@dabdike>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 12/13/2011 03:53 AM, James Bottomley wrote:
+> On Tue, 2011-12-13 at 09:20 +0900, Namjae Jeon wrote:
+>>> This whole patch looks like a layering violation.  Why not just update
+>>> the SAT layer to translate the MODE SENSE correctly?
+>> Would plz you explain more ? I didn't clearly understand your point yet.
+>
+> The ATA layer does translation for SCSI commands.  Just translate the
+> mode sense correctly to use IDENTIFY word 85.  It's a smaller patch and
+> no need for any changes in SCSI.
 
-On Tue, Dec 13, 2011 at 02:33:45PM +0800, Mark Brown wrote:
-> On Mon, Dec 12, 2011 at 08:06:56PM +0530, Ashish Jangam wrote:
-> > The DA9052/53 is a highly integrated PMIC subsystem with supply domain
-> > flexibility to support wide range of high performance application.
-> 
-> > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-> > control and other functionality.
-> 
-> > This patch is functionally tested on Samsung SMDKV6410.
-> 
-> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> Looking good now!  Samuel, this uses regmap-irq so either I can carry
-> this or you can merge:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git topic/irq
-> 
-> into your tree to get the changes that the driver depends on.
-It's probably easier for you to merge it. Please add my
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Correct.
 
-to it.
+> Actually, looking at it, it seems to be correct ... why is it not
+> working for you?
 
-Cheers,
-Samuel.
+Indeed -- the patch attempts to address a problem that the libata-scsi 
+translation module already handles.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I would look at why the device is not properly reporting that already. 
+If necessary, we would update libata not SCSI.
+
+	Jeff
+
+
