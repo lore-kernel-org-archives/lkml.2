@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab1LMRrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 12:47:21 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:9572 "EHLO
-	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab1LMRrR convert rfc822-to-8bit (ORCPT
+	id S1755376Ab1LMRru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 12:47:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40424 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab1LMRrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 12:47:17 -0500
-X-SpamScore: -23
-X-BigFish: VPS-23(zzbb2dI9371I148cM1432N98dK14ffOzz1202hzzz2fh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
-From: Rajesh Borundia <rajesh.borundia@qlogic.com>
-To: "starlight@binnacle.cx" <starlight@binnacle.cx>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sony Chacko <sony.chacko@qlogic.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 13 Dec 2011 11:42:13 -0600
-Subject: RE: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-Thread-Topic: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-Thread-Index: Acy2nY3LFNmVcFelSayQeWFrHI3hXADIP4/x
-Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA8162593365@MNEXMB1.qlogic.org>
-References: <6.2.5.6.2.20111208210303.03a06228@flumedata.com>
- <20111209095014.14a647cd@nehalam.linuxnetplumber.net>,<6.2.5.6.2.20111209130007.039b3078@binnacle.cx>
-In-Reply-To: <6.2.5.6.2.20111209130007.039b3078@binnacle.cx>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+	Tue, 13 Dec 2011 12:47:49 -0500
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: [PATCH V2] gpio: mpc8xxx: don't allow input-only pins to be output for MPC5121
+Date: Tue, 13 Dec 2011 18:46:57 +0100
+Message-Id: <1323798417-11500-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.5
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Add a 5121-custom reject if an input-only pin is requested to be output
+(see 18.3.1.1 in the refman). Also, rewrite mach-specific quirk setup to
+consume less lines which scales better.
 
-Sorry for late reply.
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+---
 
-Stephan,
-Thanks for analyzing.
+Since V1, added an empty line after the new function.
 
-Yes, the netxen adapter does not support fragmented page memory.
-They are not harmful messages. At that instant of time it may fail allocating
-memory for some buffers in the ring but after enough memory is available
-it will try to allocate memory for unallocated buffers in ring.
+ drivers/gpio/gpio-mpc8xxx.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
 
-Or the other option could be to turn LRO off.
-
-Rajesh  
-
-________________________________________
-From: starlight@binnacle.cx [starlight@binnacle.cx]
-Sent: Friday, December 09, 2011 11:33 PM
-To: Stephen Hemminger; Sony Chacko; Rajesh Borundia
-Cc: linux-kernel; netdev
-Subject: Re: kernel 3.1.1 message:  <IRQ> warn_alloc_failed
-
-At 09:50 AM 12/9/2011 -0800, Stephen Hemminger wrote:
->On Thu, 08 Dec 2011 21:10:02 -0500 starlight@binnacle.cx wrote:
->
->You are seeing memory allocation failures because device
->is allocating a 16K (order 2) size socket buffer. You are using
->netxen device, and it looks like the problem.
->
->From reading the netxen driver source. The LRO buffers
->in this device are very large (8060+skb overhead).
->Until the driver is fixed to use fragmented page size memory,
->I recommend turning off LRO.
-
-Thank you for the analysis.  As an alternative
-would it make sense to double or quadruple
-
-    /proc/sys/vm/min_free_kbytes
-
-or perhaps do the same for
-
-    /proc/slabinfo(size-16384)
-
-or both?
-
-
+diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+index ec3fcf0..bb4975f 100644
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -115,6 +115,15 @@ static int mpc8xxx_gpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+ 	return 0;
+ }
+ 
++static int mpc5121_gpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
++{
++	/* GPIO 28..31 are input only on MPC5121 */
++	if (gpio >= 28)
++		return -EINVAL;
++
++	return mpc8xxx_gpio_dir_out(gc, gpio, val);
++}
++
+ static int mpc8xxx_gpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ {
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+@@ -340,11 +349,10 @@ static void __init mpc8xxx_add_controller(struct device_node *np)
+ 	mm_gc->save_regs = mpc8xxx_gpio_save_regs;
+ 	gc->ngpio = MPC8XXX_GPIO_PINS;
+ 	gc->direction_input = mpc8xxx_gpio_dir_in;
+-	gc->direction_output = mpc8xxx_gpio_dir_out;
+-	if (of_device_is_compatible(np, "fsl,mpc8572-gpio"))
+-		gc->get = mpc8572_gpio_get;
+-	else
+-		gc->get = mpc8xxx_gpio_get;
++	gc->direction_output = of_device_is_compatible(np, "fsl,mpc5121-gpio") ?
++		mpc5121_gpio_dir_out : mpc8xxx_gpio_dir_out;
++	gc->get = of_device_is_compatible(np, "fsl,mpc8572-gpio") ?
++		mpc8572_gpio_get : mpc8xxx_gpio_get;
+ 	gc->set = mpc8xxx_gpio_set;
+ 	gc->to_irq = mpc8xxx_gpio_to_irq;
+ 
+-- 
+1.7.2.5
 
