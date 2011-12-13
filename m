@@ -1,196 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1LMB1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 20:27:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33577 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667Ab1LMB0w (ORCPT
+	id S1754666Ab1LMBaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 20:30:01 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56361 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab1LMBaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 20:26:52 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
-        john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 2/2] x86-64: Add __vdso_clock_gettime_ns vsyscall
-Date: Mon, 12 Dec 2011 17:26:38 -0800
-Message-Id: <8db74f68d65f90e99825dacc16ef20948ebea1d4.1323739287.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <cover.1323739287.git.luto@amacapital.net>
-References: <cover.1323739287.git.luto@amacapital.net>
-In-Reply-To: <cover.1323739287.git.luto@amacapital.net>
-References: <cover.1323739287.git.luto@amacapital.net>
+	Mon, 12 Dec 2011 20:30:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
+References: <4EE2BC33.80902@gmail.com>
+	<CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
+	<20111211075713.GA20790@elte.hu>
+	<CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
+	<4EE5291C.1030302@gmail.com>
+	<CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
+	<4EE68C80.7000408@gmail.com>
+	<1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
+Date: Mon, 12 Dec 2011 17:29:59 -0800
+X-Google-Sender-Auth: Vcw5y2FUYPpBjlQlDdw8pax5K6g
+Message-ID: <CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "Berck E. Nash" <flyboy@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just for the ABI.  An optimized implementation will come later.
+On Mon, Dec 12, 2011 at 4:25 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Mon, 2011-12-12 at 15:21 -0800, Berck E. Nash wrote:
+>> On 12/11/2011 08:40 PM, Yinghai Lu wrote:
+>> > x2apic pre-enabled skip the mapping for lapic address. so need map it
+>> > after fall back.
+>> >
+>> > please check attached -v5..
+>>
+>> It appears to work correctly as far as I can tell.
+>
+> Ok. In this case, it looks like bios didn't enable interrupt-remapping
+> (part of vt-d) and just enabled x2apic with out touching or exporting
+> vt-d HW.
+>
+> Yinghai, In other scenarios where OS can't recover, mostly likely we
+> will fail in check_timer() when we fall back to xapic. Can we add a
+> printk in this case to convey the potential reason (that I mentioned in
+> the previous e-mail), so that the user can get more accurate information
+> for the check timer failure.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vclock_gettime.c |   70 ++++++++++++++++++++++++++++++---------
- arch/x86/vdso/vdso.lds.S       |    7 ++++
- 2 files changed, 61 insertions(+), 16 deletions(-)
+agree. in that case, will have problem.
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 6bc0e72..79d6919 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -82,7 +82,7 @@ notrace static inline long vgetns(void)
- 	return (v * gtod->clock.mult) >> gtod->clock.shift;
- }
- 
--notrace static noinline int do_realtime(struct timespec *ts)
-+notrace static noinline void do_realtime(struct timespec *ts)
- {
- 	unsigned long seq, ns;
- 	do {
-@@ -92,10 +92,9 @@ notrace static noinline int do_realtime(struct timespec *ts)
- 		ns = vgetns();
- 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
- 	timespec_add_ns(ts, ns);
--	return 0;
- }
- 
--notrace static noinline int do_monotonic(struct timespec *ts)
-+notrace static noinline void do_monotonic(struct timespec *ts)
- {
- 	unsigned long seq, ns, secs;
- 	do {
-@@ -115,11 +114,9 @@ notrace static noinline int do_monotonic(struct timespec *ts)
- 	}
- 	ts->tv_sec = secs;
- 	ts->tv_nsec = ns;
--
--	return 0;
- }
- 
--notrace static noinline int do_realtime_coarse(struct timespec *ts)
-+notrace static noinline void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -127,10 +124,9 @@ notrace static noinline int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
--	return 0;
- }
- 
--notrace static noinline int do_monotonic_coarse(struct timespec *ts)
-+notrace static noinline void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq, ns, secs;
- 	do {
-@@ -150,25 +146,29 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
- 	}
- 	ts->tv_sec = secs;
- 	ts->tv_nsec = ns;
--
--	return 0;
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
--			return do_realtime(ts);
-+		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
-+			do_realtime(ts);
-+			return 0;
-+		}
- 		break;
- 	case CLOCK_MONOTONIC:
--		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
--			return do_monotonic(ts);
-+		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
-+			do_monotonic(ts);
-+			return 0;
-+		}
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		return 0;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		return 0;
- 	}
- 
- 	return vdso_fallback_gettime(clock, ts);
-@@ -176,6 +176,44 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
- 
-+notrace int __vdso_clock_gettime_ns(clockid_t clock, u64 *t)
-+{
-+	/* This implementation is slow.  It will be improved later. */
-+
-+	struct timespec ts;
-+	int error;
-+
-+	switch (clock) {
-+	case CLOCK_REALTIME:
-+		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
-+			do_realtime(&ts);
-+			*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
-+			return 0;
-+		}
-+		break;
-+	case CLOCK_MONOTONIC:
-+		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
-+			do_monotonic(&ts);
-+			*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
-+			return 0;
-+		}
-+		break;
-+	case CLOCK_REALTIME_COARSE:
-+		do_realtime_coarse(&ts);
-+		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
-+		return 0;
-+	case CLOCK_MONOTONIC_COARSE:
-+		do_monotonic_coarse(&ts);
-+		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
-+		return 0;
-+	}
-+
-+	error = vdso_fallback_gettime(clock, &ts);
-+	if (!error)
-+		*t = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
-+	return error;
-+}
-+
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- {
- 	long ret;
-diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
-index b96b267..238f500 100644
---- a/arch/x86/vdso/vdso.lds.S
-+++ b/arch/x86/vdso/vdso.lds.S
-@@ -17,6 +17,10 @@
- VERSION {
- 	LINUX_2.6 {
- 	global:
-+		/*
-+		 * These are the original vsyscalls.  They have weak symbols
-+		 * without the __vdso_ prefix for ABI compatibility.
-+		 */
- 		clock_gettime;
- 		__vdso_clock_gettime;
- 		gettimeofday;
-@@ -25,6 +29,9 @@ VERSION {
- 		__vdso_getcpu;
- 		time;
- 		__vdso_time;
-+
-+		/* New vsyscalls are just plain functions. */
-+		__vdso_clock_gettime_ns;
- 	local: *;
- 	};
- }
--- 
-1.7.7.4
+but i don't think bios buy can go that far to enable intr-remapping
+without providing DMAR.
 
+will check if can add print out in check_timer() when
+x2apic_preenabled == 1 and x2apic == 0...
+
+Thanks
+
+Yinghai Lu
