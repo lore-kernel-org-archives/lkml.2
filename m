@@ -1,132 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab1LMUou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 15:44:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754093Ab1LMUor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 15:44:47 -0500
-Message-ID: <4EE7B926.9030702@redhat.com>
-Date: Tue, 13 Dec 2011 15:44:22 -0500
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755946Ab1LMUpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 15:45:12 -0500
+Received: from stl-smtpout-01.boeing.com ([130.76.96.56]:53726 "EHLO
+	stl-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab1LMUpJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 15:45:09 -0500
+From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 13 Dec 2011 14:44:48 -0600
+Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
+ platform devices with GPIOs
+Thread-Topic: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
+ platform devices with GPIOs
+Thread-Index: Acy52A6u3y+5zWrsQtahs34ADJRaDQ==
+Message-ID: <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
+References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <4EE7A31E.7080301@gmail.com>
+In-Reply-To: <4EE7A31E.7080301@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+x-tm-as-product-ver: SMEX-10.0.0.1412-6.800.1017-18580.001
+x-tm-as-result: No--64.728200-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Tim Hockin <thockin@hockin.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Blum <bblum@andrew.cmu.edu>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>, Tejun Heo <tj@kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH -mm] cgroup: Fix task counter common ancestor logic
-References: <1320765670-14181-1-git-send-email-fweisbec@gmail.com> <20111108135111.6a74f1d2.akpm@linux-foundation.org> <20111124132442.GA18579@somewhere.redhat.com>
-In-Reply-To: <20111124132442.GA18579@somewhere.redhat.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 11/24/2011 08:24 AM, Frederic Weisbecker wrote:
-> On Tue, Nov 08, 2011 at 01:51:11PM -0800, Andrew Morton wrote:
->> On Tue,  8 Nov 2011 16:21:10 +0100 Frederic Weisbecker
->> <fweisbec@gmail.com> wrote:
+On Dec 13, 2011, at 14:10, Rob Herring wrote:
+> On 12/13/2011 12:23 PM, Kyle Moffett wrote:
 >> 
->>> To solve this, keep the original cgroup of each thread in the
->>> thread group cached in the flex array and pass it to
->>> can_attach_task()/attach_task() and cancel_attach_task() so
->>> that the correct common ancestor between the old and new cgroup
->>> can be safely retrieved for each task.
+>> I posted this patch series a few weeks ago and saw no responses, so I
+>> tweaked the CC list and am reposting it again for review.
 >> 
->> OK, thanks.
+>> I'm working on support for some custom hardware of ours, and part of
+>> the support code is the ability for the software to shutdown the power
+>> supply using GPIOs (via an I2C GPIO controller).
 >> 
->> We need to work out what to do with this patchset.  ie: should we
->> merge it.  I'm not sure that the case has been made?
+>> I previously had this in my platform code, but it seemed generically
+>> useful, so I split it out into a separate module for others to use.
 >> 
->> Let's please drag this thing onto the table and poke at it for a
->> while. Probably everyone has forgotten everything so we'll need
->> to start again, sorry.  Perhaps you can (re)start proceedings by
->> telling us why it's useful to our users and why we should merge
->> it?
-> 
-> Right, so the main purpose is to have a suitable forkbomb
-> protection in the lxc containers. It seems that these days, using
-> NR_PROC rlimit is the prime choice to protect against forkbombs.
-> But we can't use this for containers because if they run under the
-> same user, they can starve each others by generating high number of
-> processes. So we need the limit on number of processes to be per
-> container.
-> 
-> The basic requirement is to be able to run untrustee process inside
-> a container while protecting against attacks from there without
-> impacting the rest of the system.
-> 
-> I'm adding in Cc some Lxc people who could perhaps provide more
-> details and testify we really need this.
-> 
->> Some mental notes:
+>> The first two patches are generic of_gpio enhancements, providing some
+>> new library functions for requesting lots of GPIOs at once.
 >> 
->> Tim says it would be useful for the things he's doing but
->> doesn't appear to have confirmed/tested that.
+>> The third patch is the actual driver itself.  The driver can be used to
+>> instantiate a platform device as a whole-machine-poweroff device as we
+>> use it on our hardware.  Alternatively it can instantiate multiple
+>> platform devs at specific locations on the device tree which trigger
+>> from the platform_driver->shutdown() callback.
+>> 
+>> For architectures which are still stuck in the dark ages, this driver
+>> also supports being instantiated via legacy platform_data.
 > 
-> Yeah, I'm waiting for more details from him. Tim?
+> Leave them there... :)
+
+Mostly this was out of convenience and imitating the other OF platform
+drivers.  I wrote it and ended up with a struct full of probe data being
+passed between functions, so I just called it "platform_data" :-D.
+
+
+>> The OpenFirmware binding documentation is added in the third patch.
+>> Since this is my first cut, it's a little rough, so please be gentle.
+>> 
+>> I'm interested to know what you all think.
 > 
->> Kay has said that it would not be useful for his plumber's
->> wishlist item, which is a shame.
-> 
-> Indeed. I mean it would work but this cgroup subsystem is too much
-> overhead to be used by an init process (and then all other
-> processes).
-> 
->> I seem to recall complaining that it doesn't address the forkbomb
->> issue for non-cgroups setups, so the forkbomb issue remains
->> unaddressed.
-> 
-> Right. Now if we can find a generic solution to protect against all
-> forkbombs, something deterministic that can react soon enough so
-> that it doesn't impact the rest of system, in order to avoid
-> running into some DDOS, then we will consider it.
-> 
-> Thanks.
+> Does the regulator framework gpio-regulator not work for this?
+
+Well, when I initially wrote this code, the regulator framework didn't
+exist :-D.
+
+I looked at it a bit when I was generalizing my code, but it seemed
+dramatically more complicated than I needed, and I couldn't see any
+reasonable way to hook it from the machine_poweroff() code.
+
+There's also the fact that I was looking for a pure-device-tree type
+of driver and the regulator framework does not seem to support the
+standard OF-platform probe system.
+
+I will admit that there's probably some value in having a more generic
+GPIO-power-control (instead of just poweroff), but I don't have the
+target use-case to be able to design for it.
 
 
-I have heard that this is being held up because of a lack of
-justification.  Here is my attempt.  I would like to use the ability
-to prevent a fork bomb and guaranteed killall for three different
-tools that I work on.
+> The DT gpio patches look useful on their own.
 
-1.  Kiosk/xguest user.  Currently we tell people to log out of a
-system on the kiosk and the pam stack attempts to kill all processes
-running in the kiosk user session.  The kiosk user is not allowed to
-login to the system if a process is still running as the user.  The
-reason for this is we want to guarantee no previous user left a trojan
-process waiting to track your activity.  If the login program can not
-kill all user processes at logout, then the next user will not be able
-to login.
+Yeah, it seemed like a fairly generic extension of the existing API.
 
-2.  Sandbox Desktop tools are used to write one or more processes
-within a lockeddown environment.  The idea here is to run untrusted
-code and potentially this code could trigger a fork bomb, you want to
-be able to kill the session.
+Thanks for the comments!
 
-3.  Secure containers, similarly to sandboxes allow users to run
-multiple Linux Containers in a locked down manner.  We would like to
-be guaranteed that we can kill all processes within a secure
-containers at exit.
+Cheers,
+Kyle Moffett
+
+--
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
 
 
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk7nuSYACgkQrlYvE4MpobMY1ACgmZ/P8LbVTHBrOQUsh6xL5Qy2
-scsAoK641lrpZkX8DB1JETpKT6jfWe5i
-=E93Z
------END PGP SIGNATURE-----
