@@ -1,60 +1,574 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab1LMJ0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 04:26:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:52310 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab1LMJ0a (ORCPT
+	id S1753682Ab1LMJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 04:29:56 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60623 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab1LMJ3v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 04:26:30 -0500
-Message-ID: <4EE71A62.9050700@oracle.com>
-Date: Tue, 13 Dec 2011 17:26:58 +0800
-From: liang tang <liang.tang@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+	Tue, 13 Dec 2011 04:29:51 -0500
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stefan.bader@canonical.com,
-        Ian.Campbell@citrix.com, mike.mcclurg@citrix.com, jeremy@goop.org,
-        ke.yu@intel.com, kevin.tian@intel.com, konrad@kernel.org,
-        lenb@kernel.org, xen-devel@lists.xensource.com, rjw@sisk.pl,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH 5/8] ACPI: add processor driver for Xen virtual
- CPUs.
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com> <1322673664-14642-6-git-send-email-konrad.wilk@oracle.com> <4ED755D70200007800064987@nat28.tlf.novell.com> <20111212172941.GA8619@phenom.dumpdata.com> <4EE710A00200007800067274@nat28.tlf.novell.com>
-In-Reply-To: <4EE710A00200007800067274@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4EE71A3A.0064,ss=1,re=0.000,fgs=0
+In-Reply-To: <20111212125440.GF31234@redhat.com>
+References: <20111209142303.GC31323@redhat.com>
+	<1323657683-13934-1-git-send-email-kernelfans@gmail.com>
+	<20111212125440.GF31234@redhat.com>
+Date: Tue, 13 Dec 2011 17:29:50 +0800
+Message-ID: <CAFgQCTuuSx6jDy_Q-7mrqpQF0sSDiwEV+eZ-7HCV_PLxnDn-RA@mail.gmail.com>
+Subject: Re: [PATCH v3] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        aliguori@us.ibm.com, jan.kiszka@web.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-13 15:45, Jan Beulich wrote:
->>>> On 12.12.11 at 18:29, Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>  wrote:
->> On Thu, Dec 01, 2011 at 09:24:23AM +0000, Jan Beulich wrote:
->>>>>> On 30.11.11 at 18:21, Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>  wrote:
->>>> --- a/drivers/acpi/Makefile
->>>> +++ b/drivers/acpi/Makefile
->>>> @@ -66,6 +66,7 @@ obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
->>>>   # processor has its own "processor." module_param namespace
->>>>   processor-y			:= processor_driver.o processor_throttling.o
->>>>   processor-y			+= processor_idle.o processor_thermal.o
->>>> +processor-y			+= processor_xen.o
->>> This should minimally be processor-$(CONFIG_XEN), with other things
->>> adjusted as necessary.
->> I was under the impression that this was required to get the
->> processor_xen.ko
->> to be a module. Otherwise it would only compile as built-in.
-> processor_xen.ko? Why not have all the code go into processor.ko?
-> (And the original construct didn't aim in that direction either.)
+On Mon, Dec 12, 2011 at 8:54 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Mon, Dec 12, 2011 at 10:41:23AM +0800, Liu Ping Fan wrote:
+>> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>>
+>> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> Change this to vcpu's destruction taken when its refcnt is zero,
+>> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>>
+> Please drop all printks that you add. You do not use rcu_assign_pointer()
+> during vcpu creation and BTW the code there is incorrect now. It assumed
+> that online_vcpus is never decremented so it is OK to put newly created
+> vcpu into kvm->vcpus[kvm->online_vcpus], but now it is not longer true.
+> We even have BUG_ON() to catch that which I believe you can trigger with
+> this patch by creating 3 vcpus, removing second one and then adding one
+> more. Moving to rculist would solve this of course, and will simplify
+> code that iterates over all vcpus too.
 >
-> Jan
+OK, it seems unavoidable to use rculist now :-).  Just one more question, is it
+useless for "case HV_X64_MSR_VP_INDEX" after adopting rculist?
+
+Thanks and regards,
+ping fan
+> Also see below.
 >
-the code about driver function which kernel 
-require(drivers/acpi/processor_xen.c )  build into processor.ko.
-the code which have more relation with xen 
-(drivers/xen/acpi_processor.c)  did not build into processor.ko.
-liang
+>> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/i8254.c     |   10 ++++--
+>>  arch/x86/kvm/i8259.c     |   12 +++++--
+>>  arch/x86/kvm/mmu.c       |    7 ++--
+>>  arch/x86/kvm/x86.c       |   54 +++++++++++++++++++----------------
+>>  include/linux/kvm_host.h |   71 ++++++++++++++++++++++++++++++++++++++++++----
+>>  virt/kvm/irq_comm.c      |    7 +++-
+>>  virt/kvm/kvm_main.c      |   62 +++++++++++++++++++++++++++++++++------
+>>  7 files changed, 170 insertions(+), 53 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
+>> index 76e3f1c..ac79598 100644
+>> --- a/arch/x86/kvm/i8254.c
+>> +++ b/arch/x86/kvm/i8254.c
+>> @@ -289,7 +289,7 @@ static void pit_do_work(struct work_struct *work)
+>>       struct kvm_pit *pit = container_of(work, struct kvm_pit, expired);
+>>       struct kvm *kvm = pit->kvm;
+>>       struct kvm_vcpu *vcpu;
+>> -     int i;
+>> +     struct kvm_iter it;
+>>       struct kvm_kpit_state *ps = &pit->pit_state;
+>>       int inject = 0;
+>>
+>> @@ -315,9 +315,13 @@ static void pit_do_work(struct work_struct *work)
+>>                * LVT0 to NMI delivery. Other PIC interrupts are just sent to
+>>                * VCPU0, and only if its LVT0 is in EXTINT mode.
+>>                */
+>> -             if (kvm->arch.vapics_in_nmi_mode > 0)
+>> -                     kvm_for_each_vcpu(i, vcpu, kvm)
+>> +             if (kvm->arch.vapics_in_nmi_mode > 0) {
+>> +                     rcu_read_lock();
+>> +                     kvm_for_each_vcpu(it, vcpu, kvm) {
+>>                               kvm_apic_nmi_wd_deliver(vcpu);
+>> +                     }
+>> +                     rcu_read_unlock();
+>> +             }
+>>       }
+>>  }
+>>
+>> diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+>> index cac4746..2186b30 100644
+>> --- a/arch/x86/kvm/i8259.c
+>> +++ b/arch/x86/kvm/i8259.c
+>> @@ -50,25 +50,29 @@ static void pic_unlock(struct kvm_pic *s)
+>>  {
+>>       bool wakeup = s->wakeup_needed;
+>>       struct kvm_vcpu *vcpu, *found = NULL;
+>> -     int i;
+>> +     struct kvm *kvm = s->kvm;
+>> +     struct kvm_iter it;
+>>
+>>       s->wakeup_needed = false;
+>>
+>>       spin_unlock(&s->lock);
+>>
+>>       if (wakeup) {
+>> -             kvm_for_each_vcpu(i, vcpu, s->kvm) {
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, vcpu, kvm)
+>>                       if (kvm_apic_accept_pic_intr(vcpu)) {
+>>                               found = vcpu;
+>>                               break;
+>>                       }
+>> -             }
+>>
+>> -             if (!found)
+>> +             if (!found) {
+>> +                     rcu_read_unlock();
+>>                       return;
+>> +             }
+>>
+>>               kvm_make_request(KVM_REQ_EVENT, found);
+>>               kvm_vcpu_kick(found);
+>> +             rcu_read_unlock();
+>>       }
+>>  }
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index f1b36cf..c16887e 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1833,11 +1833,12 @@ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
+>>
+>>  static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
+>>  {
+>> -     int i;
+>> +     struct kvm_iter it;
+>>       struct kvm_vcpu *vcpu;
+>> -
+>> -     kvm_for_each_vcpu(i, vcpu, kvm)
+>> +     rcu_read_lock();
+>> +     kvm_for_each_vcpu(it, vcpu, kvm)
+>>               vcpu->arch.last_pte_updated = NULL;
+>> +     rcu_read_unlock();
+>>  }
+>>
+>>  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index c38efd7..a302470 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -1831,10 +1831,15 @@ static int get_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+>>       switch (msr) {
+>>       case HV_X64_MSR_VP_INDEX: {
+>>               int r;
+>> +             struct kvm_iter it;
+>>               struct kvm_vcpu *v;
+>> -             kvm_for_each_vcpu(r, v, vcpu->kvm)
+>> +             struct kvm *kvm =  vcpu->kvm;
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, v, kvm) {
+>>                       if (v == vcpu)
+>>                               data = r;
+>> +             }
+>> +             rcu_read_unlock();
+>>               break;
+>>       }
+>>       case HV_X64_MSR_EOI:
+>> @@ -4966,7 +4971,8 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+>>       struct cpufreq_freqs *freq = data;
+>>       struct kvm *kvm;
+>>       struct kvm_vcpu *vcpu;
+>> -     int i, send_ipi = 0;
+>> +     int send_ipi = 0;
+>> +     struct kvm_iter it;
+>>
+>>       /*
+>>        * We allow guests to temporarily run on slowing clocks,
+>> @@ -5016,13 +5022,16 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+>>
+>>       raw_spin_lock(&kvm_lock);
+>>       list_for_each_entry(kvm, &vm_list, vm_list) {
+>> -             kvm_for_each_vcpu(i, vcpu, kvm) {
+>> +
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, vcpu, kvm) {
+>>                       if (vcpu->cpu != freq->cpu)
+>>                               continue;
+>>                       kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>>                       if (vcpu->cpu != smp_processor_id())
+>>                               send_ipi = 1;
+>>               }
+>> +             rcu_read_unlock();
+>>       }
+>>       raw_spin_unlock(&kvm_lock);
+>>
+>> @@ -6433,13 +6442,17 @@ int kvm_arch_hardware_enable(void *garbage)
+>>  {
+>>       struct kvm *kvm;
+>>       struct kvm_vcpu *vcpu;
+>> -     int i;
+>> +     struct kvm_iter it;
+>>
+>>       kvm_shared_msr_cpu_online();
+>> -     list_for_each_entry(kvm, &vm_list, vm_list)
+>> -             kvm_for_each_vcpu(i, vcpu, kvm)
+>> +     list_for_each_entry(kvm, &vm_list, vm_list) {
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, vcpu, kvm) {
+>>                       if (vcpu->cpu == smp_processor_id())
+>>                               kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>> +             }
+>> +             rcu_read_unlock();
+>> +     }
+>>       return kvm_x86_ops->hardware_enable(garbage);
+>>  }
+>>
+>> @@ -6560,27 +6573,19 @@ static void kvm_unload_vcpu_mmu(struct kvm_vcpu *vcpu)
+>>       vcpu_put(vcpu);
+>>  }
+>>
+>> -static void kvm_free_vcpus(struct kvm *kvm)
+>> -{
+>> -     unsigned int i;
+>> -     struct kvm_vcpu *vcpu;
+>>
+>> -     /*
+>> -      * Unpin any mmu pages first.
+>> -      */
+>> -     kvm_for_each_vcpu(i, vcpu, kvm) {
+>> -             kvm_clear_async_pf_completion_queue(vcpu);
+>> -             kvm_unload_vcpu_mmu(vcpu);
+>> -     }
+>> -     kvm_for_each_vcpu(i, vcpu, kvm)
+>> -             kvm_arch_vcpu_free(vcpu);
+>>
+>> -     mutex_lock(&kvm->lock);
+>> -     for (i = 0; i < atomic_read(&kvm->online_vcpus); i++)
+>> -             kvm->vcpus[i] = NULL;
+>> +void kvm_arch_vcpu_zap(struct work_struct *work)
+>> +{
+>> +     struct kvm_vcpu *vcpu = container_of(work, struct kvm_vcpu,
+>> +                     zap_work);
+>> +     struct kvm *kvm = vcpu->kvm;
+>>
+>> -     atomic_set(&kvm->online_vcpus, 0);
+>> -     mutex_unlock(&kvm->lock);
+>> +     printk(KERN_INFO "%s, zap vcpu:0x%x\n", __func__, vcpu->vcpu_id);
+>> +     kvm_clear_async_pf_completion_queue(vcpu);
+>> +     kvm_unload_vcpu_mmu(vcpu);
+>> +     kvm_arch_vcpu_free(vcpu);
+>> +     kvm_put_kvm(kvm);
+>>  }
+>>
+>>  void kvm_arch_sync_events(struct kvm *kvm)
+>> @@ -6594,7 +6599,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+>>       kvm_iommu_unmap_guest(kvm);
+>>       kfree(kvm->arch.vpic);
+>>       kfree(kvm->arch.vioapic);
+>> -     kvm_free_vcpus(kvm);
+>>       if (kvm->arch.apic_access_page)
+>>               put_page(kvm->arch.apic_access_page);
+>>       if (kvm->arch.ept_identity_pagetable)
+>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>> index d526231..2faafcb 100644
+>> --- a/include/linux/kvm_host.h
+>> +++ b/include/linux/kvm_host.h
+>> @@ -19,6 +19,7 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/rcupdate.h>
+>>  #include <linux/ratelimit.h>
+>> +#include <linux/atomic.h>
+>>  #include <asm/signal.h>
+>>
+>>  #include <linux/kvm.h>
+>> @@ -113,6 +114,8 @@ enum {
+>>
+>>  struct kvm_vcpu {
+>>       struct kvm *kvm;
+>> +     struct rcu_head head;
+>> +     struct work_struct zap_work;
+>>  #ifdef CONFIG_PREEMPT_NOTIFIERS
+>>       struct preempt_notifier preempt_notifier;
+>>  #endif
+>> @@ -290,17 +293,73 @@ struct kvm {
+>>  #define kvm_printf(kvm, fmt ...) printk(KERN_DEBUG fmt)
+>>  #define vcpu_printf(vcpu, fmt...) kvm_printf(vcpu->kvm, fmt)
+>>
+>> +void kvm_arch_vcpu_zap(struct work_struct *work);
+>> +
+>> +/*search vcpu, must be protected by rcu_read_lock*/
+>>  static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
+>>  {
+>> +     struct kvm_vcpu *vcpu;
+>>       smp_rmb();
+>> -     return kvm->vcpus[i];
+>> +     vcpu = rcu_dereference(kvm->vcpus[i]);
+>> +     return vcpu;
+>> +}
+>> +
+>> +/*Must be protected by RCU*/
+>> +struct kvm_iter {
+>> +     struct kvm *kvm;
+>> +     int idx;
+>> +     int cnt;
+>> +};
+>> +
+>> +static inline
+>> +struct kvm_vcpu *kvm_fev_init(struct kvm *kvm, struct kvm_iter *it)
+>> +{
+>> +     int idx, cnt;
+>> +     struct kvm_vcpu *vcpup;
+>> +     vcpup = NULL;
+>> +     for (idx = 0, cnt = 0;
+>> +             cnt < atomic_read(&kvm->online_vcpus) && idx < KVM_MAX_VCPUS;
+>> +             idx++) {
+>> +                     vcpup = kvm_get_vcpu(kvm, idx);
+>> +                     if (unlikely(vcpup == NULL))
+>> +                             continue;
+>> +                     cnt++;
+>> +                     break;
+>> +     }
+>> +
+>> +     it->kvm = kvm;
+>> +     it->idx = idx;
+>> +     it->cnt = cnt;
+>> +     return vcpup;
+>> +}
+>> +
+>> +static inline
+>> +struct kvm_vcpu *kvm_fev_next(struct kvm_iter *it)
+>> +{
+>> +     int idx, cnt;
+>> +     struct kvm_vcpu *vcpup;
+>> +     struct kvm *kvm = it->kvm;
+>> +
+>> +     vcpup = NULL;
+>> +     for (idx = it->idx+1, cnt = it->cnt;
+>> +             cnt < atomic_read(&kvm->online_vcpus) && idx < KVM_MAX_VCPUS;
+>> +             idx++) {
+>> +                     vcpup = kvm_get_vcpu(kvm, idx);
+>> +                     if (unlikely(vcpup == NULL))
+>> +                             continue;
+>> +                      cnt++;
+>> +                      break;
+>> +     }
+>> +
+>> +     it->idx = idx;
+>> +     it->cnt = cnt;
+>> +     return vcpup;
+>>  }
+>>
+>> -#define kvm_for_each_vcpu(idx, vcpup, kvm) \
+>> -     for (idx = 0; \
+>> -          idx < atomic_read(&kvm->online_vcpus) && \
+>> -          (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
+>> -          idx++)
+>> +#define kvm_for_each_vcpu(it, vcpu, kvm) \
+>> +     for (vcpu = kvm_fev_init(kvm, &it); \
+>> +             vcpu; \
+>> +             vcpu = kvm_fev_next(&it))
+>>
+>>  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
+>>  void kvm_vcpu_uninit(struct kvm_vcpu *vcpu);
+>> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+>> index 9f614b4..87eae96 100644
+>> --- a/virt/kvm/irq_comm.c
+>> +++ b/virt/kvm/irq_comm.c
+>> @@ -81,14 +81,16 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+>>  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>>               struct kvm_lapic_irq *irq)
+>>  {
+>> -     int i, r = -1;
+>> +     int r = -1;
+>> +     struct kvm_iter it;
+>>       struct kvm_vcpu *vcpu, *lowest = NULL;
+>>
+>>       if (irq->dest_mode == 0 && irq->dest_id == 0xff &&
+>>                       kvm_is_dm_lowest_prio(irq))
+>>               printk(KERN_INFO "kvm: apic: phys broadcast and lowest prio\n");
+>>
+>> -     kvm_for_each_vcpu(i, vcpu, kvm) {
+>> +     rcu_read_lock();
+>> +     kvm_for_each_vcpu(it, vcpu, kvm) {
+>>               if (!kvm_apic_present(vcpu))
+>>                       continue;
+>>
+>> @@ -111,6 +113,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>>       if (lowest)
+>>               r = kvm_apic_set_irq(lowest, irq);
+>>
+>> +     rcu_read_unlock();
+>>       return r;
+>>  }
+>>
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index d9cfb78..d28356a 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -171,7 +171,8 @@ static void ack_flush(void *_completed)
+>>
+>>  static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
+>>  {
+>> -     int i, cpu, me;
+>> +     int cpu, me;
+>> +     struct kvm_iter it;
+>>       cpumask_var_t cpus;
+>>       bool called = true;
+>>       struct kvm_vcpu *vcpu;
+>> @@ -179,7 +180,9 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
+>>       zalloc_cpumask_var(&cpus, GFP_ATOMIC);
+>>
+>>       me = get_cpu();
+>> -     kvm_for_each_vcpu(i, vcpu, kvm) {
+>> +
+>> +     rcu_read_lock();
+>> +     kvm_for_each_vcpu(it, vcpu, kvm) {
+>>               kvm_make_request(req, vcpu);
+>>               cpu = vcpu->cpu;
+>>
+>> @@ -190,12 +193,15 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
+>>                     kvm_vcpu_exiting_guest_mode(vcpu) != OUTSIDE_GUEST_MODE)
+>>                       cpumask_set_cpu(cpu, cpus);
+>>       }
+>> +
+>>       if (unlikely(cpus == NULL))
+>>               smp_call_function_many(cpu_online_mask, ack_flush, NULL, 1);
+>>       else if (!cpumask_empty(cpus))
+>>               smp_call_function_many(cpus, ack_flush, NULL, 1);
+>>       else
+>>               called = false;
+>> +     rcu_read_unlock();
+>> +
+>>       put_cpu();
+>>       free_cpumask_var(cpus);
+>>       return called;
+>> @@ -580,6 +586,7 @@ static void kvm_destroy_vm(struct kvm *kvm)
+>>       kvm_arch_free_vm(kvm);
+>>       hardware_disable_all();
+>>       mmdrop(mm);
+>> +     printk(KERN_INFO "%s finished\n", __func__);
+>>  }
+>>
+>>  void kvm_get_kvm(struct kvm *kvm)
+>> @@ -1543,6 +1550,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>       int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+>>       int yielded = 0;
+>>       int pass;
+>> +     struct kvm_iter it;
+>>       int i;
+>>
+>>       /*
+>> @@ -1553,9 +1561,11 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>        * We approximate round-robin by starting at the last boosted VCPU.
+>>        */
+>>       for (pass = 0; pass < 2 && !yielded; pass++) {
+>> -             kvm_for_each_vcpu(i, vcpu, kvm) {
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, vcpu, kvm) {
+>>                       struct task_struct *task = NULL;
+>>                       struct pid *pid;
+>> +                     i = it.idx;
+>>                       if (!pass && i < last_boosted_vcpu) {
+>>                               i = last_boosted_vcpu;
+>>                               continue;
+>> @@ -1584,6 +1594,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>                       }
+>>                       put_task_struct(task);
+>>               }
+>> +             rcu_read_unlock();
+>>       }
+>>  }
+>>  EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
+>> @@ -1620,11 +1631,23 @@ static int kvm_vcpu_mmap(struct file *file, struct vm_area_struct *vma)
+>>       return 0;
+>>  }
+>>
+>> +/*Can not block*/
+>> +static void kvm_vcpu_zap(struct rcu_head *rcu)
+>> +{
+>> +     struct kvm_vcpu *vcpu = container_of(rcu, struct kvm_vcpu, head);
+>> +     schedule_work(&vcpu->zap_work);
+>> +}
+>> +
+>>  static int kvm_vcpu_release(struct inode *inode, struct file *filp)
+>>  {
+>>       struct kvm_vcpu *vcpu = filp->private_data;
+>> -
+>> -     kvm_put_kvm(vcpu->kvm);
+>> +     struct kvm *kvm = vcpu->kvm;
+>> +     filp->private_data = NULL;
+>> +     mutex_lock(&kvm->lock);
+>> +     rcu_assign_pointer(kvm->vcpus[vcpu->vcpu_id], NULL);
+> vcpu->vcpu_id is not an index into vcpus array.
+>
+>> +     atomic_dec(&kvm->online_vcpus);
+>> +     mutex_unlock(&kvm->lock);
+>> +     call_rcu(&vcpu->head, kvm_vcpu_zap);
+>>       return 0;
+>>  }
+>>
+>> @@ -1646,6 +1669,16 @@ static int create_vcpu_fd(struct kvm_vcpu *vcpu)
+>>       return anon_inode_getfd("kvm-vcpu", &kvm_vcpu_fops, vcpu, O_RDWR);
+>>  }
+>>
+>> +static struct kvm_vcpu *kvm_vcpu_create(struct kvm *kvm, u32 id)
+>> +{
+>> +     struct kvm_vcpu *vcpu;
+>> +     vcpu = kvm_arch_vcpu_create(kvm, id);
+>> +     if (IS_ERR(vcpu))
+>> +             return vcpu;
+>> +     INIT_WORK(&vcpu->zap_work, kvm_arch_vcpu_zap);
+>> +     return vcpu;
+>> +}
+>> +
+>>  /*
+>>   * Creates some virtual cpus.  Good luck creating more than one.
+>>   */
+>> @@ -1653,8 +1686,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
+>>  {
+>>       int r;
+>>       struct kvm_vcpu *vcpu, *v;
+>> +     struct kvm_iter it;
+>>
+>> -     vcpu = kvm_arch_vcpu_create(kvm, id);
+>> +     vcpu = kvm_vcpu_create(kvm, id);
+>>       if (IS_ERR(vcpu))
+>>               return PTR_ERR(vcpu);
+>>
+>> @@ -1670,11 +1704,15 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
+>>               goto unlock_vcpu_destroy;
+>>       }
+>>
+>> -     kvm_for_each_vcpu(r, v, kvm)
+>> +     rcu_read_lock();
+>> +     kvm_for_each_vcpu(it, v, kvm) {
+>>               if (v->vcpu_id == id) {
+>> +                     rcu_read_unlock();
+>>                       r = -EEXIST;
+>>                       goto unlock_vcpu_destroy;
+>>               }
+>> +     }
+>> +     rcu_read_unlock();
+>>
+>>       BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
+>>
+>> @@ -2593,13 +2631,17 @@ static int vcpu_stat_get(void *_offset, u64 *val)
+>>       unsigned offset = (long)_offset;
+>>       struct kvm *kvm;
+>>       struct kvm_vcpu *vcpu;
+>> -     int i;
+>> +     struct kvm_iter it;
+>>
+>>       *val = 0;
+>>       raw_spin_lock(&kvm_lock);
+>> -     list_for_each_entry(kvm, &vm_list, vm_list)
+>> -             kvm_for_each_vcpu(i, vcpu, kvm)
+>> +     list_for_each_entry(kvm, &vm_list, vm_list) {
+>> +             rcu_read_lock();
+>> +             kvm_for_each_vcpu(it, vcpu, kvm) {
+>>                       *val += *(u32 *)((void *)vcpu + offset);
+>> +             }
+>> +             rcu_read_unlock();
+>> +     }
+>>
+>>       raw_spin_unlock(&kvm_lock);
+>>       return 0;
+>> --
+>> 1.7.4.4
+>
+> --
+>                        Gleb.
