@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1LMP66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:58:58 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48498 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab1LMP6z (ORCPT
+	id S1754849Ab1LMQDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:03:54 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:35451 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab1LMQDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:58:55 -0500
-Date: Tue, 13 Dec 2011 07:58:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
-Message-ID: <20111213155848.GI25802@google.com>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+	Tue, 13 Dec 2011 11:03:51 -0500
+Date: Tue, 13 Dec 2011 11:07:53 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, thellstrom@vmware.com
+Subject: Re: [PATCH] fixes to drm-next - TTM DMA code (v1)
+Message-ID: <20111213160753.GC2339@homer.localdomain>
+References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Frederic.
+On Mon, Dec 12, 2011 at 03:09:26PM -0500, Konrad Rzeszutek Wilk wrote:
+> Jerome pointed me to some accounting error in the DMA API debugging code and
+> while I can't figure it out yet, I did notice some extreme slowness - which
+> is due to the nouveau driver calling the unpopulate (now that unbind +
+> unpopulate are squashed) quite a lot (this is using Gnome Shell - I think GNOME2
+> did not have those issues but I can't recall).
+> 
+> Anyhow these patches fix the 50% perf regression I saw and also some minor bugs
+> that I noticed.
+> 
 
-Can you please rebase the patchset on top of cgroup/for-3.3?  I
-primarily like the idea of being able to track process usage w/ cgroup
-and enforce limits on it but hope that it could somehow integrate w/
-cgroup freezer.  ie. trigger freezer if it goes over limit and let the
-userland tool / administrator deal with the frozen cgroup.  I'm
-planning on extending cgroup freezer such that it supports recursive
-freezing and killing of frozen tasks.  If we can fit task counters
-into that, we'll have general method of handling problematic cgroups -
-freeze, notify userland and let it deal with it.
+Gonna review those today and test them.
 
-Thank you.
-
--- 
-tejun
+Cheers,
+Jerome
