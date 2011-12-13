@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab1LMSyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 13:54:44 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38789 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab1LMSyn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 13:54:43 -0500
-Message-ID: <1323802423.9082.21.camel@twins>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Andy Lutomirski <luto@MIT.EDU>
-Date: Tue, 13 Dec 2011 19:53:43 +0100
-In-Reply-To: <4EE7962E.90204@fb.com>
-References: <1323718578-1157-1-git-send-email-asharma@fb.com>
-	    <1323718578-1157-3-git-send-email-asharma@fb.com>
-	   <1323720791.2583.23.camel@edumazet-laptop> <4EE66FE9.1050202@fb.com>
-	  <1323725243.2583.27.camel@edumazet-laptop> <4EE67CB5.7000404@fb.com>
-	 <1323766358.9082.0.camel@twins> <4EE7962E.90204@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
+	id S1755567Ab1LMS73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:59:29 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3947 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab1LMS71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 13:59:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="86854346"
+Subject: Re: [PATCH v5 5/6] ata: add ata port system PM callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1112131038360.1888-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1112131038360.1888-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Dec 2011 02:57:47 +0800
+Message-ID: <1323802667.3060.2.camel@hp6530s>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-13 at 10:15 -0800, Arun Sharma wrote:
-> On 12/13/11 12:52 AM, Peter Zijlstra wrote:
-> > On Mon, 2011-12-12 at 14:14 -0800, Arun Sharma wrote:
-> >
-> >>> But really most modern distros have NR_CPUS>   64
-> >>
-> >> Is 256 the new 64? :)
-> >
-> > 4096 in fact.
+On Tue, 2011-12-13 at 23:47 +0800, Alan Stern wrote:
+> On Tue, 13 Dec 2011, Lin Ming wrote:
 > 
-> Not sure if you're asking for vsyscall support for NR_CPUS=4096 case or 
-> just a compile fix + disabled vsyscall is ok.
+> > I just realized that the ata port runtime PM status need to be updated
+> > after system resume.
+> > 
+> > I tried below patch.
+> > Unfortunately, it causes a problem that sd can't resume correctly.
+> > 
+> > During system resume, ata port is resumed first and then sd resumed.
+> > 
+> > When ata port resumed, device_resume(...) calls pm_runtime_put_sync(..),
+> > which causes ata port to be runtime suspended immediately.
+> > 
+> > So sd resume fails because it requires ata port to be active to handle
+> > start device command.
+> > 
+> > This seems a PM core's bug.
+> > 
+> > device_resume(...) should not runtime suspend the parent device, because
+> > its children have not resumed yet.
+> > 
+> > Alan, 
+> > 
+> > What do you think?
+> 
+> This appears to be the first time this problem has come up.  But it is 
+> a real problem.
+> 
+> If a child device was runtime-suspended when a system suspend began, 
+> then there will be nothing to prevent its parent from 
+> runtime-suspending as soon as it is woken up during the system resume.  
+> Then when the time comes to resume the child, the resume will fail 
+> because the parent is already back at low power.
+> 
+> On the other hand, there are some devices which should remain at low 
+> power across an entire suspend-resume cycle.  The details depend on the 
+> device and the platform.
+> 
+> This suggests that the PM core is not the right place to solve the 
+> problem.  One possible solution is for the subsystem or device driver 
+> to call pm_runtime_get_sync(dev->parent) at the start of the 
+> system-resume procedure and pm_runtime_put_sync(dev->parent) at the 
+> end.
 
-I'm saying distros tend to compile with NR_CPUS=4096, so if you
-auto-disable the feature for that, it effectively doesn't exist.
+How about below?
+(Not tested yet)
+
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index a633076..5cf9a19 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -71,9 +71,17 @@ static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
+ static int scsi_bus_resume_common(struct device *dev)
+ {
+ 	int err = 0;
++	bool put = false;
+ 
+-	if (scsi_is_sdev_device(dev))
++	if (scsi_is_sdev_device(dev)) {
++		if (dev->parent && pm_runtime_suspended(dev->parent)) {
++			pm_runtime_get_sync(dev->parent);
++			put = true;
++		}
+ 		err = scsi_dev_type_resume(dev);
++		if (put)
++			pm_runtime_put_sync(dev->parent);
++	}
+ 
+ 	if (err == 0) {
+ 		pm_runtime_disable(dev);
+
+
+
+> 
+> Alan Stern
+> 
+
+
