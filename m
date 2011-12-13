@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1LMR4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 12:56:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38800 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754054Ab1LMR40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 12:56:26 -0500
-From: <pavan_savoy@ti.com>
-To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
-CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 1/3] drivers:misc: ti-st: protect registrations
-Date: Tue, 13 Dec 2011 11:56:18 -0600
-Message-ID: <1323798980-6597-2-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1323798980-6597-1-git-send-email-pavan_savoy@ti.com>
-References: <1323798980-6597-1-git-send-email-pavan_savoy@ti.com>
+	id S1755365Ab1LMSAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 13:00:20 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36396 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754792Ab1LMSAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 13:00:17 -0500
+X-Sasl-enc: krm1tIgBHn/6h067Fjyn/PspyCWJOatslJFkPgxFLYZ+ 1323799216
+Date: Tue, 13 Dec 2011 10:00:10 -0800
+From: Greg KH <greg@kroah.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Joachim Foerster <joachim.foerster@missinglinkelectronics.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: ISP1760: Add flags for interrupt polarity and
+ edge/level trigger
+Message-ID: <20111213180010.GA29980@kroah.com>
+References: <1323768793-20633-1-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323768793-20633-1-git-send-email-alexander.stein@systec-electronic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Tue, Dec 13, 2011 at 10:33:13AM +0100, Alexander Stein wrote:
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> ---
+>  drivers/usb/host/isp1760-if.c |    4 ++++
+>  include/linux/usb/isp1760.h   |    2 ++
+>  2 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/isp1760-if.c b/drivers/usb/host/isp1760-if.c
+> index a7dc1e1..0ef9867 100644
+> --- a/drivers/usb/host/isp1760-if.c
+> +++ b/drivers/usb/host/isp1760-if.c
+> @@ -388,6 +388,10 @@ static int __devinit isp1760_plat_probe(struct platform_device *pdev)
+>  			devflags |= ISP1760_FLAG_DACK_POL_HIGH;
+>  		if (priv->dreq_polarity_high)
+>  			devflags |= ISP1760_FLAG_DREQ_POL_HIGH;
+> +		if (priv->interrupt_polarity_high)
+> +			devflags |= ISP1760_FLAG_INTR_POL_HIGH;
+> +		if (priv->interrupt_edge_triggered)
+> +			devflags |= ISP1760_FLAG_INTR_EDGE_TRIG;
+>  	}
+>  
+>  	hcd = isp1760_register(mem_res->start, mem_size, irq_res->start,
+> diff --git a/include/linux/usb/isp1760.h b/include/linux/usb/isp1760.h
+> index de7de53..c5edbc8 100644
+> --- a/include/linux/usb/isp1760.h
+> +++ b/include/linux/usb/isp1760.h
+> @@ -13,6 +13,8 @@ struct isp1760_platform_data {
+>  	unsigned analog_oc:1;			/* Analog overcurrent */
+>  	unsigned dack_polarity_high:1;		/* DACK active high */
+>  	unsigned dreq_polarity_high:1;		/* DREQ active high */
+> +	unsigned interrupt_polarity_high:1;
+> +	unsigned interrupt_edge_triggered:1;
 
-Concurrent access to UART2/combo-interface by multiple protocol drivers such
-as BT, FM and GPS caused issues during firmware download failure cases or
-cases when the firmware download took longer than usual.
+So you added these, and you check them, but who sets them?  What is the
+point of this patch at this point in time?
 
-This was because of un-safe access to protos_registered & st_states.
-Protecting this will also make the registration complete callback un-safe for
-sleep.
+confused,
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/misc/ti-st/st_core.c |   18 ++++++++++++++----
- 1 files changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index ba168a7..2b62232 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -137,6 +137,8 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
-  * st_reg_complete -
-  * to call registration complete callbacks
-  * of all protocol stack drivers
-+ * This function is being called with spin lock held, protocol drivers are
-+ * only expected to complete their waits and do nothing more than that.
-  */
- void st_reg_complete(struct st_data_s *st_gdata, char err)
- {
-@@ -538,11 +540,12 @@ long st_register(struct st_proto_s *new_proto)
- 		set_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
- 		st_recv = st_kim_recv;
- 
-+		/* enable the ST LL - to set default chip state */
-+		st_ll_enable(st_gdata);
-+
- 		/* release lock previously held - re-locked below */
- 		spin_unlock_irqrestore(&st_gdata->lock, flags);
- 
--		/* enable the ST LL - to set default chip state */
--		st_ll_enable(st_gdata);
- 		/* this may take a while to complete
- 		 * since it involves BT fw download
- 		 */
-@@ -553,10 +556,13 @@ long st_register(struct st_proto_s *new_proto)
- 			    (test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
- 				pr_err(" KIM failure complete callback ");
- 				st_reg_complete(st_gdata, err);
-+				clear_bit(ST_REG_PENDING, &st_gdata->st_state);
- 			}
- 			return -EINVAL;
- 		}
- 
-+		spin_lock_irqsave(&st_gdata->lock, flags);
-+
- 		clear_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
- 		st_recv = st_int_recv;
- 
-@@ -576,10 +582,10 @@ long st_register(struct st_proto_s *new_proto)
- 		if (st_gdata->is_registered[new_proto->chnl_id] == true) {
- 			pr_err(" proto %d already registered ",
- 				   new_proto->chnl_id);
-+			spin_unlock_irqrestore(&st_gdata->lock, flags);
- 			return -EALREADY;
- 		}
- 
--		spin_lock_irqsave(&st_gdata->lock, flags);
- 		add_channel_to_table(st_gdata, new_proto);
- 		st_gdata->protos_registered++;
- 		new_proto->write = st_write;
-@@ -619,7 +625,7 @@ long st_unregister(struct st_proto_s *proto)
- 
- 	spin_lock_irqsave(&st_gdata->lock, flags);
- 
--	if (st_gdata->list[proto->chnl_id] == NULL) {
-+	if (st_gdata->is_registered[proto->chnl_id] == false) {
- 		pr_err(" chnl_id %d not registered", proto->chnl_id);
- 		spin_unlock_irqrestore(&st_gdata->lock, flags);
- 		return -EPROTONOSUPPORT;
-@@ -629,6 +635,10 @@ long st_unregister(struct st_proto_s *proto)
- 	remove_channel_from_table(st_gdata, proto);
- 	spin_unlock_irqrestore(&st_gdata->lock, flags);
- 
-+	/* paranoid check */
-+	if (st_gdata->protos_registered < ST_EMPTY)
-+		st_gdata->protos_registered = ST_EMPTY;
-+
- 	if ((st_gdata->protos_registered == ST_EMPTY) &&
- 	    (!test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
- 		pr_info(" all chnl_ids unregistered ");
--- 
-1.7.4.1
-
+greg k-h
