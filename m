@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab1LMTOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:14:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:64874 "EHLO mga14.intel.com"
+	id S1755697Ab1LMTOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:14:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:44935 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615Ab1LMTOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:14:17 -0500
+	id S1755657Ab1LMTOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 14:14:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85309307"
-Message-Id: <f00f81fe745bf8323f24fa6eeced59f211b01de9.1323803130.git.tony.luck@intel.com>
+   d="scan'208";a="95755253"
+Message-Id: <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
 In-Reply-To: <cover.1323803130.git.tony.luck@intel.com>
 References: <cover.1323803130.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 13 Dec 2011 09:48:13 -0800
-Subject: [PATCH 3/6] x86, mce: create helper function to save addr/misc when needed
+Date: Tue, 13 Dec 2011 09:24:27 -0800
+Subject: [PATCH 1/6] HWPOISON: clean up memory_failure() vs. __memory_failure()
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
         "Huang, Ying" <ying.huang@intel.com>,
@@ -23,76 +23,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MCI_STATUS_MISCV and MCI_STATUS_ADDRV bits in the bank status
-registers define whether the MISC and ADDR registers respectively
-contain valid data - provide a helper function to check these bits
-and read the registers when needed.
+There is only one caller of memory_failure(), all other users call
+__memory_failure() and pass in the flags argument explicitly. The
+lone user of memory_failure() will soon need to pass flags too.
 
-In addition, processors that support software error recovery (as
-indicated by the MCG_SER_P bit in the MCG_CAP register) may include
-some undefined bits in the ADDR register - mask these out.
+Add flags argument to the callsite in mce.c. Delete the old memory_failure()
+function, and then rename __memory_failure() without the leading "__".
 
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   31 +++++++++++++++++++++++--------
- 1 files changed, 23 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    9 +++++--
+ drivers/base/memory.c            |    2 +-
+ include/linux/mm.h               |    3 +-
+ mm/hwpoison-inject.c             |    4 +-
+ mm/madvise.c                     |    2 +-
+ mm/memory-failure.c              |   46 +++++++++++++++++--------------------
+ 6 files changed, 32 insertions(+), 34 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 265139d..43f22c8 100644
+index 2af127d..265139d 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -492,6 +492,27 @@ static void mce_report_event(struct pt_regs *regs)
- 	irq_work_queue(&__get_cpu_var(mce_irq_work));
+@@ -1046,11 +1046,14 @@ out:
  }
+ EXPORT_SYMBOL_GPL(do_machine_check);
  
-+/*
-+ * Read ADDR and MISC registers.
-+ */
-+static void mce_read_aux(struct mce *m, int i)
-+{
-+	if (m->status & MCI_STATUS_MISCV)
-+		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
-+	if (m->status & MCI_STATUS_ADDRV) {
-+		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
+-/* dummy to break dependency. actual code is in mm/memory-failure.c */
+-void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
++#ifndef CONFIG_MEMORY_FAILURE
++int memory_failure(unsigned long pfn, int vector, int flags)
+ {
+ 	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
 +
-+		/*
-+		 * Mask the reported address by the reported granularity.
-+		 */
-+		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
-+			u8 shift = m->misc & 0x3f;
-+			m->addr >>= shift;
-+			m->addr <<= shift;
-+		}
-+	}
-+}
-+
- DEFINE_PER_CPU(unsigned, mce_poll_count);
++	return 0;
+ }
++#endif
  
  /*
-@@ -542,10 +563,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		    (m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)))
- 			continue;
+  * Called after mce notification in process context. This code
+@@ -1068,7 +1071,7 @@ void mce_notify_process(void)
+ 	unsigned long pfn;
+ 	mce_notify_irq();
+ 	while (mce_ring_get(&pfn))
+-		memory_failure(pfn, MCE_VECTOR);
++		memory_failure(pfn, MCE_VECTOR, 0);
+ }
  
--		if (m.status & MCI_STATUS_MISCV)
--			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
--		if (m.status & MCI_STATUS_ADDRV)
--			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
-+		mce_read_aux(&m, i);
+ static void mce_process_work(struct work_struct *dummy)
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 8272d92..9a92444 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -474,7 +474,7 @@ store_hard_offline_page(struct class *class,
+ 	if (strict_strtoull(buf, 0, &pfn) < 0)
+ 		return -EINVAL;
+ 	pfn >>= PAGE_SHIFT;
+-	ret = __memory_failure(pfn, 0, 0);
++	ret = memory_failure(pfn, 0, 0);
+ 	return ret ? ret : count;
+ }
  
- 		if (!(flags & MCP_TIMESTAMP))
- 			m.tsc = 0;
-@@ -981,10 +999,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		if (severity == MCE_AR_SEVERITY)
- 			kill_it = 1;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4baadd1..bcc5234 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1607,8 +1607,7 @@ void vmemmap_populate_print_last(void);
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+ };
+-extern void memory_failure(unsigned long pfn, int trapno);
+-extern int __memory_failure(unsigned long pfn, int trapno, int flags);
++extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
+index c7fc7fd..cc448bb 100644
+--- a/mm/hwpoison-inject.c
++++ b/mm/hwpoison-inject.c
+@@ -45,7 +45,7 @@ static int hwpoison_inject(void *data, u64 val)
+ 	 * do a racy check with elevated page count, to make sure PG_hwpoison
+ 	 * will only be set for the targeted owner (or on a free page).
+ 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
+-	 * __memory_failure() will redo the check reliably inside page lock.
++	 * memory_failure() will redo the check reliably inside page lock.
+ 	 */
+ 	lock_page(hpage);
+ 	err = hwpoison_filter(hpage);
+@@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
  
--		if (m.status & MCI_STATUS_MISCV)
--			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
--		if (m.status & MCI_STATUS_ADDRV)
--			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
-+		mce_read_aux(&m, i);
+ inject:
+ 	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
+-	return __memory_failure(pfn, 18, MF_COUNT_INCREASED);
++	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
+ }
  
- 		/*
- 		 * Action optional error. Queue address for later processing.
+ static int hwpoison_unpoison(void *data, u64 val)
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 74bf193..f5ab745 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -251,7 +251,7 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ 		printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
+ 		       page_to_pfn(p), start);
+ 		/* Ignore return value for now */
+-		__memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
++		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
+ 	}
+ 	return ret;
+ }
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 06d3479..ab259bb 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -984,7 +984,25 @@ static void clear_page_hwpoison_huge_page(struct page *hpage)
+ 		ClearPageHWPoison(hpage + i);
+ }
+ 
+-int __memory_failure(unsigned long pfn, int trapno, int flags)
++/**
++ * memory_failure - Handle memory failure of a page.
++ * @pfn: Page Number of the corrupted page
++ * @trapno: Trap number reported in the signal to user space.
++ * @flags: fine tune action taken
++ *
++ * This function is called by the low level machine check code
++ * of an architecture when it detects hardware memory corruption
++ * of a page. It tries its best to recover, which includes
++ * dropping pages, killing processes etc.
++ *
++ * The function is primarily of use for corruptions that
++ * happen outside the current execution context (e.g. when
++ * detected by a background scrubber)
++ *
++ * Must run in process context (e.g. a work queue) with interrupts
++ * enabled and no spinlocks hold.
++ */
++int memory_failure(unsigned long pfn, int trapno, int flags)
+ {
+ 	struct page_state *ps;
+ 	struct page *p;
+@@ -1156,29 +1174,7 @@ out:
+ 	unlock_page(hpage);
+ 	return res;
+ }
+-EXPORT_SYMBOL_GPL(__memory_failure);
+-
+-/**
+- * memory_failure - Handle memory failure of a page.
+- * @pfn: Page Number of the corrupted page
+- * @trapno: Trap number reported in the signal to user space.
+- *
+- * This function is called by the low level machine check code
+- * of an architecture when it detects hardware memory corruption
+- * of a page. It tries its best to recover, which includes
+- * dropping pages, killing processes etc.
+- *
+- * The function is primarily of use for corruptions that
+- * happen outside the current execution context (e.g. when
+- * detected by a background scrubber)
+- *
+- * Must run in process context (e.g. a work queue) with interrupts
+- * enabled and no spinlocks hold.
+- */
+-void memory_failure(unsigned long pfn, int trapno)
+-{
+-	__memory_failure(pfn, trapno, 0);
+-}
++EXPORT_SYMBOL_GPL(memory_failure);
+ 
+ #define MEMORY_FAILURE_FIFO_ORDER	4
+ #define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
+@@ -1251,7 +1247,7 @@ static void memory_failure_work_func(struct work_struct *work)
+ 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+ 		if (!gotten)
+ 			break;
+-		__memory_failure(entry.pfn, entry.trapno, entry.flags);
++		memory_failure(entry.pfn, entry.trapno, entry.flags);
+ 	}
+ }
+ 
 -- 
 1.7.3.1
 
