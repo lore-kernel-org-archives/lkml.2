@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1LMVGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 16:06:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:56145 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324Ab1LMVGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 16:06:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH][Regression fix] PCI / Hotplug: Always allow acpiphp to handle non-PCIe bridges
-Date: Tue, 13 Dec 2011 22:09:04 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-References: <201112130002.28907.rjw@sisk.pl> <20111213104220.5cfb78b2@jbarnes-desktop>
-In-Reply-To: <20111213104220.5cfb78b2@jbarnes-desktop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1754703Ab1LMVHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 16:07:01 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:41844 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751334Ab1LMVG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 16:06:59 -0500
+Message-ID: <1323810417.3837.25.camel@joe2Laptop>
+Subject: Re: [PATCH v3 resend2] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS
+ driver use gpiolib
+From: Joe Perches <joe@perches.com>
+To: Denis Kuzmenko <linux@solonet.org.ua>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>
+Date: Tue, 13 Dec 2011 13:06:57 -0800
+In-Reply-To: <4EE7B41C.5080006@solonet.org.ua>
+References: <4EE7B41C.5080006@solonet.org.ua>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112132209.04185.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 13, 2011, Jesse Barnes wrote:
-> On Tue, 13 Dec 2011 00:02:28 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make
-> > acpiphp ignore root bridges using PCIe native hotplug) added code
-> > that made the acpiphp driver completely ignore PCIe root complexes
-> > for which the kernel had been granted control of the native PCIe
-> > hotplug feature by the BIOS through _OSC.  Unfortunately, however,
-> > this was a mistake, because on some systems there were PCI bridges
-> > supporting PCI (non-PCIe) hotplug under such root complexes and
-> > those bridges should have been handled by acpiphp.
-> > 
-> > For this reason, revert the changes made by the commit mentioned
-> > above and make register_slot() in drivers/pci/hotplug/acpiphp_glue.c
-> > avoid registering hotplug slots for PCIe ports that belong to
-> > root complexes with native PCIe hotplug enabled (which means that
-> > the BIOS has granted the kernel control of this feature for the
-> > given root complex).  This is reported to address the original
-> > issue fixed by commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a and
-> > to work on the system where that commit broke things.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> 
-> Applied to my for-linus branch.  I'll probably send to Linus on Thu. or
-> so.
-> 
-> I also rebased the breakage out of linux-next.
+On Tue, 2011-12-13 at 22:22 +0200, Denis Kuzmenko wrote:
+> Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during probe.
+[]
+> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+[]
+> @@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+> +	/*
+> +	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
+> +	 * (only 100% brightness is supported)
+> +	 */
+> +	value = value ? 1 : 0;
 
-Thanks a lot!
+Maybe value = !!value;
 
-Rafael
+> +		/* no point in having a pull-up as we are always driving */
+> +		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
+> +		ret = gpio_direction_output(pdata->gpio,
+> +				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
+
+akin to this use.
+
+
