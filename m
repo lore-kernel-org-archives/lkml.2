@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab1LMM5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 07:57:30 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:41768 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab1LMM51 (ORCPT
+	id S1754685Ab1LMNCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 08:02:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:22562 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753452Ab1LMNCB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 07:57:27 -0500
-Date: Tue, 13 Dec 2011 23:57:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, arnd@arndb.de, alan@lxorguk.ukuu.org.uk,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 14/17] UAPI: Make linux/patchkey.h easier to parse
-Message-Id: <20111213235714.8e1c456786e60acc691b899e@canb.auug.org.au>
-In-Reply-To: <1323770653-19177-15-git-send-email-dhowells@redhat.com>
-References: <1323770653-19177-1-git-send-email-dhowells@redhat.com>
-	<1323770653-19177-15-git-send-email-dhowells@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Dec_2011_23_57_14_+1100_+jiGkaspZ3Ik/jZq"
+	Tue, 13 Dec 2011 08:02:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="46690892"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: "Shi, Alex" <alex.shi@intel.com>, David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 13 Dec 2011 21:01:53 +0800
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+Thread-Topic: [PATCH 1/3] slub: set a criteria for slub node partial adding
+Thread-Index: Acy2WtpYBxu1ZE1KTbeFhuOQdOK8vwAGF8GAAMebcbA=
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B672997EA57@shsmsx502.ccr.corp.intel.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+ <alpine.DEB.2.00.1112020842280.10975@router.home>
+ <1323419402.16790.6105.camel@debian>
+ <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Dec_2011_23_57_14_+1100_+jiGkaspZ3Ik/jZq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > -       if (tail == DEACTIVATE_TO_TAIL)
+> > > +       if (tail == DEACTIVATE_TO_TAIL ||
+> > > +               page->inuse > page->objects /2)
+> > >                 list_add_tail(&page->lru, &n->partial);
+> > >         else
+> > >                 list_add(&page->lru, &n->partial);
+> > >
 
-Hi David,
+> > with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
+> > disabled since it impacts performance so heavily and I'm not sure what
+> > information you're looking for with regards to those stats.
+> 
+> NO, when you collect data, please close SLUB_STAT in kernel config.  _to_head
+> statistics collection patch just tell you, I collected the statistics not include
+> add_partial in early_kmem_cache_node_alloc(). And other places of
+> add_partial were covered. Of course, the kernel with statistic can not be used
+> to measure performance.
 
-On Tue, 13 Dec 2011 10:04:10 +0000 David Howells <dhowells@redhat.com> wrot=
-e:
->
-> Make linux/patchkey.h easier to parse by:
->=20
->  (1) Switching the reinclusion guard and the indirect-inclusion checks in
->      linux/patchkey.h to put the guard around the outside.
-
-Is this part missing, or no longer needed?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__13_Dec_2011_23_57_14_+1100_+jiGkaspZ3Ik/jZq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO50uqAAoJEECxmPOUX5FEEU0P+gNvfLUBHoB88/U1M/MZaCRl
-zKxca6V+ECeYxkT9dDdQ9k3/2/L+ulPfGfo2aswk6jO4X/faVGDun4yH7zQil7/x
-OX7FmTJKzMdk3T/3tKWzksvMM/1X2a5CegzxP6KCHlw7BvGCsVzYQdUvnAesPyRO
-OKPi5CINFM40E3ZSa0OPiL1X8gxAkn22zdqJMcaCbh+gDTpLlsDRBJVCBH5ejvfJ
-XS8Dt3pjYC68mns4jN4KwVk5HmUg0JxcG0WBSiDSjgxCwTW4u+pFl4z3qBSlPy0h
-ZlBcRETuRKnd/9810vk72C4Ii6r8wMbfRlkvL8YcK/7+4rdv/7kf3Xh5y09ADea0
-5XhOPPUk4zC6eYhGRKJbei3yPnoT+4s5jFylKhxFfYpyjX7TpkISNbqK9HOjZkwx
-fEHP0T91Nty77T8tq1FEJ1bIPSL92c1CWZxinrOcpuhda68PAMqlPJN7AL8ndowZ
-Ke94rHfcdEzOEkI4SHvZOUzP30Ro2o551DHjzj3ArfqAzOUHZl7O0SQs893YC3bb
-tHNKa9s0ZxC2PBeR8bKyQ6AHnfFQ0qp+ALEZIEppG1PYsZflhtN14ZvEWnFHDwLF
-N17DHKwkbrpFQI9rRMBz/3RBdL9o6C2yWL6X8qp9ZYFjEumxp35FL4nnSbKyGnoj
-BMKIcYB8Y1yWNfZU3HZn
-=uubS
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Dec_2011_23_57_14_+1100_+jiGkaspZ3Ik/jZq--
+David, Did you have time to give a try?  
