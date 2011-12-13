@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1LMA0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:26:50 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56027 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753685Ab1LMA0t (ORCPT
+	id S1754651Ab1LMA1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:27:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55379 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab1LMA1G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:26:49 -0500
-Message-ID: <4EE69BAB.9010302@fb.com>
-Date: Mon, 12 Dec 2011 16:26:19 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 12 Dec 2011 19:27:06 -0500
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Andy Lutomirski <luto@MIT.EDU>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-References: <1323718578-1157-1-git-send-email-asharma@fb.com>  <1323718578-1157-3-git-send-email-asharma@fb.com>  <1323731361.4078.102.camel@work-vm> <4EE68C31.1030207@fb.com> <1323732772.4078.113.camel@work-vm>
-In-Reply-To: <1323732772.4078.113.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-12_10:2011-12-12,2011-12-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17518607C1@HQMAIL01.nvidia.com>
+References: <1323382390-14892-1-git-send-email-swarren@nvidia.com>
+	<1323382390-14892-2-git-send-email-swarren@nvidia.com>
+	<CACRpkdYDn0V7SeQuFiFDMxGkybvg6PGf7jxid8ECGB7Azkj3zw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF17518604D7@HQMAIL01.nvidia.com>
+	<CACRpkdahqb0qMVcKF9NBT5pwRgK4FOob5ABtb7ids9Bhh5XbZg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF17518607C1@HQMAIL01.nvidia.com>
+Date: Tue, 13 Dec 2011 01:27:05 +0100
+Message-ID: <CACRpkdYz4-HFf6oBZ1NNies6SqKCYrsTbFaMjh7Sr7M8wXFVPQ@mail.gmail.com>
+Subject: Re: [RFC 1/3] pinctrl: add a driver for NVIDIA Tegra
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/11 3:32 PM, john stultz wrote:
+On Mon, Dec 12, 2011 at 7:06 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Friday, December 09, 2011 4:56 PM:
 
-> Is it just that you're concerned about the clockid switch costs being
-> too high?
+>> For me there are two points:
+>>
+>> - Avoiding clash with kernel maintainers who hate firmware-like tables and
+>>   binary data filling up the kernel. Some certain other guy bearing my
+>>   name comes to mind.
+>
+> Well, one of the nice things here is that everything to conctrol the HW
+> is in the driver, unlike on other systems without all this data that
+> have to rely on opaque BIOS/ACPI/EFI/... hooks.
 
-Yeah - but I have no real-world data to back it up (I don't think micro 
-benchmarks are a good way to analyze this).
+Good point. I will have to play that card if the situation should arise.
+Kernel devs also tend to hate stuff they can't control.
 
-clock_gettime_ns() may just be the right answer here.
+>> - Footprint: the majority of the stuff in your driver ends up in non-discardable
+>>   memory, and will be kept around. Since we have this concept of a
+>>   single zImage for a number of say ARMv7 systems, and since pin
+>>   controllers can be pretty hard to load from modules, *all* of them
+>>   may have to be compiled-in. If every driver for every board takes this
+>>   approach I am afraid it will be end up with a measurable footprint.
+>
+> Perhaps what we need is a way to build all these drivers as modules, but
+> still link them into the kernel so they're statically available during
+> early boot, but allow them to be unloaded like modules after the system
+> has booted and determined they aren't needed.
+>
+> This would have the advantage of getting rid of the unused driver code
+> as well, whereas putting the data into DT only handles ensuring the data
+> for other SoCs isn't present in the kernel after boot.
 
-  -Arun
+Hm that sounds pretty complicated. But also extremely useful if
+we forge ahead on single zImages.
+
+I'd never be able to pull it off thoug :-/
+
+Anyway, we'll deal with this when we run into the problem.
+
+Yours,
+Linus Walleij
