@@ -1,131 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1LMPkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 10:40:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44326 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab1LMPkn (ORCPT
+	id S1755189Ab1LMPlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 10:41:18 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51618 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab1LMPlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 10:40:43 -0500
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>, Chris Ball <cjb@laptop.org>,
-        Artem Bityutskiy <artem.bityutskiy@intel.com>
-Cc: Huang Shijie <b32955@freescale.com>, linux-mmc@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 4/4] mtd: gpmi-nand: move to dma_transfer_direction
-Date: Tue, 13 Dec 2011 23:48:06 +0800
-Message-Id: <1323791286-29574-5-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
-References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
+	Tue, 13 Dec 2011 10:41:16 -0500
+Date: Tue, 13 Dec 2011 07:41:08 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        cgroups@vger.kernel.org, bsingharora@gmail.com, devel@openvz.org,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 3/3] make 'none' field a flag
+Message-ID: <20111213154108.GF25802@google.com>
+References: <1323614738-7405-1-git-send-email-glommer@parallels.com>
+ <1323614738-7405-5-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323614738-7405-5-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes usage of dma direction to adopt dma_transfer_direction.
+On Sun, Dec 11, 2011 at 03:45:38PM +0100, Glauber Costa wrote:
+> There is no reason to have a flags field, and then a separate
+> bool field just to indicate if 'none' subsystem were explicitly
+> requested.
+> 
+> Make it a flag
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c |   22 ++++++++++++----------
- 1 files changed, 12 insertions(+), 10 deletions(-)
+Same as the previous patch.  Doesn't this change how remount
+conditions are checked?
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index de4db76..c4c4d6d 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -827,7 +827,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
- 	pio[1] = pio[2] = 0;
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_NONE, 0);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 1 error\n");
- 		return -1;
-@@ -839,7 +839,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
- 	sg_init_one(sgl, this->cmd_buffer, this->command_length);
- 	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel,
--					sgl, 1, DMA_TO_DEVICE, 1);
-+					sgl, 1, DMA_MEM_TO_DEV, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -872,7 +872,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
- 	pio[1] = 0;
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_NONE, 0);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 1 error\n");
- 		return -1;
-@@ -881,7 +881,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
- 	/* [2] send DMA request */
- 	prepare_data_dma(this, DMA_TO_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
--						1, DMA_TO_DEVICE, 1);
-+						1, DMA_MEM_TO_DEV, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -908,7 +908,7 @@ int gpmi_read_data(struct gpmi_nand_data *this)
- 	pio[1] = 0;
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_NONE, 0);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 1 error\n");
- 		return -1;
-@@ -917,7 +917,7 @@ int gpmi_read_data(struct gpmi_nand_data *this)
- 	/* [2] : send DMA request */
- 	prepare_data_dma(this, DMA_FROM_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
--						1, DMA_FROM_DEVICE, 1);
-+						1, DMA_DEV_TO_MEM, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -964,7 +964,7 @@ int gpmi_send_page(struct gpmi_nand_data *this,
- 
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_NONE, 0);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -998,7 +998,8 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 		| BF_GPMI_CTRL0_XFER_COUNT(0);
- 	pio[1] = 0;
- 	desc = channel->device->device_prep_slave_sg(channel,
--				(struct scatterlist *)pio, 2, DMA_NONE, 0);
-+				(struct scatterlist *)pio, 2,
-+				DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 1 error\n");
- 		return -1;
-@@ -1027,7 +1028,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	pio[5] = auxiliary;
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_NONE, 1);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -1045,7 +1046,8 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 		| BF_GPMI_CTRL0_XFER_COUNT(geo->page_size);
- 	pio[1] = 0;
- 	desc = channel->device->device_prep_slave_sg(channel,
--				(struct scatterlist *)pio, 2, DMA_NONE, 1);
-+				(struct scatterlist *)pio, 2,
-+				DMA_TRANS_NONE, 1);
- 	if (!desc) {
- 		pr_err("step 3 error\n");
- 		return -1;
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
