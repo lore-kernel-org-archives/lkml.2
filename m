@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1LMAmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:42:09 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47145 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab1LMAmF (ORCPT
+	id S1754736Ab1LMAmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:42:40 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:35100 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab1LMAmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:42:05 -0500
-Date: Mon, 12 Dec 2011 16:41:44 -0800
+	Mon, 12 Dec 2011 19:42:38 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,67 +14,87 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: [PATCH tip/core/rcu 0/6] Preview of fifth set of RCU changes for 3.3
-Message-ID: <20111213004144.GA32120@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11121300-3352-0000-0000-000001524FC9
+        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 4/6] Revert "rcu: Permit rt_mutex_unlock() with irqs disabled"
+Date: Mon, 12 Dec 2011 16:42:22 -0800
+Message-Id: <1323736944-32575-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20111213004144.GA32120@linux.vnet.ibm.com>
+ <1323736944-32575-1-git-send-email-paulmck@linux.vnet.ibm.com>
+x-cbid: 11121300-7408-0000-0000-00000138C46E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This patchset adds to the earlier sets:
+This reverts commit 5342e269b2b58ee0b0b4168a94087faaa60d0567.
 
-	https://lkml.org/lkml/2011/11/2/363
-	https://lkml.org/lkml/2011/11/15/302
-	https://lkml.org/lkml/2011/11/28/588
-	https://lkml.org/lkml/2011/12/3/77
+The approach taken in this patch was deemed too abusive to mutexes,
+and thus too likely to result in maintenance problems in the future.
+Instead, we will disallow RCU read-side critical sections that partially
+overlap with interrupt-disbled code segments.
 
-This fifth set adds rcutorture tests for the recently added
-srcu_read_lock_raw(), additional tracing to further evaluate
-RCU_FAST_NO_HZ, addition of an export to assist with rcutorture testing,
-bug fixes, and documentation.  The patches are as follows:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree_plugin.h |    5 -----
+ kernel/rtmutex.c        |    8 --------
+ 2 files changed, 0 insertions(+), 13 deletions(-)
 
-1.	Add rcutorture tests for srcu_read_lock_raw().
-2.	Add tracing to further validate RCU_FAST_NO_HZ by giving more
-	information on RCU's state at the time it decides to stop
-	invoking callbacks.
-3.	Add the 2010 RCU API LWN article to the RCU documentation
-	(courtesy of Kees Cook).
-4.	Revert patch that permitted rtmutex acquisition with interrupts
-	disabled.  Per LKML discussions (https://lkml.org/lkml/2011/12/5/63),
-	it was decided to illegalize IRQ-disable code sections that
-	partially overlap with RCU read-side critical sections.  Code
-	to enforce this illegalization is in progress.
-5.	Add ACCESS_ONCE() to rcu_boost() return value.
-6.	Export cpu_up() so that rcutorture can exercise CPU hotplug
-	and RCU when rcutorture is built as a module.
-
-For a testing-only version of this patchset from git, please see the
-following subject-to-rebase branch, based on 3.2-rc5:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/Documentation/RCU/whatisRCU.txt |    1 +
- b/include/trace/events/rcu.h      |   38 +++++++++++++++++++++++++++++---------
- b/kernel/cpu.c                    |    1 +
- b/kernel/rcutiny.c                |   10 ++++++++--
- b/kernel/rcutiny_plugin.h         |   25 +++++++++++++++++++++++++
- b/kernel/rcutorture.c             |   26 +++++++++++++++++++++++++-
- b/kernel/rcutree.c                |    8 ++++++--
- b/kernel/rcutree_plugin.h         |    5 -----
- b/kernel/rtmutex.c                |    8 --------
- kernel/rcutiny_plugin.h           |    4 ++--
- kernel/rcutree_plugin.h           |    3 ++-
- 11 files changed, 99 insertions(+), 30 deletions(-)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 8cd9efe..f55f10b 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1165,8 +1165,6 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
+ 
+ #endif /* #else #ifdef CONFIG_RCU_TRACE */
+ 
+-static struct lock_class_key rcu_boost_class;
+-
+ /*
+  * Carry out RCU priority boosting on the task indicated by ->exp_tasks
+  * or ->boost_tasks, advancing the pointer to the next task in the
+@@ -1229,9 +1227,6 @@ static int rcu_boost(struct rcu_node *rnp)
+ 	 */
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+ 	rt_mutex_init_proxy_locked(&mtx, t);
+-	/* Avoid lockdep false positives.  This rt_mutex is its own thing. */
+-	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
+-				   "rcu_boost_mutex");
+ 	t->rcu_boost_mutex = &mtx;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index f9d8482..a242e69 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -579,7 +579,6 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 		    struct rt_mutex_waiter *waiter)
+ {
+ 	int ret = 0;
+-	int was_disabled;
+ 
+ 	for (;;) {
+ 		/* Try to acquire the lock: */
+@@ -602,17 +601,10 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 
+ 		raw_spin_unlock(&lock->wait_lock);
+ 
+-		was_disabled = irqs_disabled();
+-		if (was_disabled)
+-			local_irq_enable();
+-
+ 		debug_rt_mutex_print_deadlock(waiter);
+ 
+ 		schedule_rt_mutex(lock);
+ 
+-		if (was_disabled)
+-			local_irq_disable();
+-
+ 		raw_spin_lock(&lock->wait_lock);
+ 		set_current_state(state);
+ 	}
+-- 
+1.7.8
 
