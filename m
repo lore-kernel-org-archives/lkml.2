@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1LMVI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 16:08:59 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43976 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755861Ab1LMVI4 (ORCPT
+	id S1755737Ab1LMVTz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 16:19:55 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58217 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab1LMVTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 16:08:56 -0500
-Date: Tue, 13 Dec 2011 21:08:38 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "eranian@google.com" <eranian@google.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: perf NULL pointer dereference on -rc5
-Message-ID: <20111213210838.GA6143@mudshark.cambridge.arm.com>
-References: <20111213152651.GP20297@mudshark.cambridge.arm.com>
- <1323805735.9082.47.camel@twins>
+	Tue, 13 Dec 2011 16:19:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323805735.9082.47.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EE5A8A0.2010206@bitmer.com>
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
+	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+	<CAMP44s3Szzm9iXxghXfNCBjKyUw-nRrG1aEeweKnRCidaxmxEA@mail.gmail.com>
+	<4EDF5231.6080309@bitmer.com>
+	<CAMP44s0a6hcORZn8wDxHUJKxs=wjAmkhRfiT9kEA_MoDYeAmfg@mail.gmail.com>
+	<4EE5A8A0.2010206@bitmer.com>
+Date: Tue, 13 Dec 2011 23:19:52 +0200
+Message-ID: <CAMP44s1Zz7CqxRM6PeNT3GN9GbCLy+0smgk6_-9kSjghY33Xuw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Heikki Krogerus <heikki.krogerus@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:48:55PM +0000, Peter Zijlstra wrote:
-> On Tue, 2011-12-13 at 15:26 +0000, Will Deacon wrote:
-> > 
-> > Commit 10c6db11 ("perf: Fix loss of notification with multi-event") seems to
-> > dereference a NULL event->rb in the wakeup handler during Vince Weaver's perf
-> > tests (specifically corner_cases/overflow_requires_mmap).
-> > 
-> > This diff seems to fix the problem, but I'm not sure if it just hides something else:
-> 
-> No that is about right.. not so very good of us to have missed that.
+On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
+> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
+> non isp1704_charger change has broke it as there hasn't been changes on it.
 
-Well, at least we caught it in the end.
+Actually it's broken in 3.0 as well, try this configuration:
 
-> Can I add your SoB to this? 
+	# CONFIG_USB_MUSB_HOST is not set
+	# CONFIG_USB_MUSB_PERIPHERAL is not set
+	CONFIG_USB_MUSB_OTG=y
+	CONFIG_USB_GADGET_MUSB_HDRC=y
+	CONFIG_USB_MUSB_HDRC_HCD=y
 
-Sure:
+	CONFIG_USB_GADGET_SELECTED=y
+	# CONFIG_USB_GADGET_FUSB300 is not set
+	# CONFIG_USB_GADGET_OMAP is not set
+	# CONFIG_USB_GADGET_R8A66597 is not set
+	# CONFIG_USB_GADGET_PXA_U2O is not set
+	# CONFIG_USB_GADGET_M66592 is not set
+	# CONFIG_USB_GADGET_DUMMY_HCD is not set
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+I will try to find where the issues started to happen, but it's a bit
+difficult because all this USB Kconfig stuff is completely messed up.
 
-Will
+*Sigh*
 
-> ---
-> Subject: perf: Fix ring_buffer_wakeup()
-> From: Will Deacon <will.deacon@arm.com>
-> Date: Tue Dec 13 20:40:45 CET 2011
-> 
-> Commit 10c6db11 ("perf: Fix loss of notification with multi-event")
-> seems to unconditionally dereference event->rb in the wakeup handler,
-> this is wrong, there might not be a buffer attached.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/20111213152651.GP20297@mudshark.cambridge.arm.com
-> ---
->  kernel/events/core.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3360,9 +3360,12 @@ static void ring_buffer_wakeup(struct pe
->  
->  	rcu_read_lock();
->  	rb = rcu_dereference(event->rb);
-> +	if (!rb)
-> +		goto unlock;
->  	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
->  		wake_up_all(&event->waitq);
->  	}
-> +unlock:
->  	rcu_read_unlock();
->  }
->  
-> 
-> 
+-- 
+Felipe Contreras
