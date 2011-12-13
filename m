@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab1LMQWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 11:22:45 -0500
-Received: from sh.osrg.net ([192.16.179.4]:57463 "EHLO sh.osrg.net"
+	id S1755340Ab1LMQXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 11:23:00 -0500
+Received: from sh.osrg.net ([192.16.179.4]:57462 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab1LMQWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755196Ab1LMQWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Dec 2011 11:22:41 -0500
 From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org,
         Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 2/2] nilfs2: potential integer overflow in nilfs_ioctl_clean_segments()
-Date: Wed, 14 Dec 2011 01:13:49 +0900
-Message-Id: <1323792829-17395-3-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+Subject: [PATCH 1/2] nilfs2: unbreak compat ioctl
+Date: Wed, 14 Dec 2011 01:13:48 +0900
+Message-Id: <1323792829-17395-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <1323792829-17395-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
 References: <1323792829-17395-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
@@ -22,43 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haogang Chen <haogangchen@gmail.com>
+From: Thomas Meyer <thomas@m3y3r.de>
 
-There is a potential integer overflow in nilfs_ioctl_clean_segments().
-When a large argv[n].v_nmembs is passed from the userspace, the
-subsequent call to vmalloc() will allocate a buffer smaller than
-expected, which leads to out-of-bound access in
-nilfs_ioctl_move_blocks() and lfs_clean_segments().
+I guess commit 828b1c50ae11e6dda68f8dfefe43b74c7182b157 incidentally broke
+all other NILFS compat ioctls. make them work again.
 
-The following check does not prevent the overflow because nsegs is also
-controlled by the userspace and could be very large.
-
-		if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment)
-			goto out_free;
-
-This patch clamps argv[n].v_nmembs to UINT_MAX / argv[n].v_size, and
-returns -EINVAL when overflow.
-
-Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: <stable@kernel.org> [3.0+]
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 ---
- fs/nilfs2/ioctl.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ fs/nilfs2/ioctl.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
 diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 3e65427..ac258be 100644
+index 41d6743..3e65427 100644
 --- a/fs/nilfs2/ioctl.c
 +++ b/fs/nilfs2/ioctl.c
-@@ -625,6 +625,9 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
- 		if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment)
- 			goto out_free;
- 
-+		if (argv[n].v_nmembs >= UINT_MAX / argv[n].v_size)
-+			goto out_free;
-+
- 		len = argv[n].v_size * argv[n].v_nmembs;
- 		base = (void __user *)(unsigned long)argv[n].v_base;
- 		if (len == 0) {
+@@ -842,6 +842,19 @@ long nilfs_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case FS_IOC32_GETVERSION:
+ 		cmd = FS_IOC_GETVERSION;
+ 		break;
++	case NILFS_IOCTL_CHANGE_CPMODE:
++	case NILFS_IOCTL_DELETE_CHECKPOINT:
++	case NILFS_IOCTL_GET_CPINFO:
++	case NILFS_IOCTL_GET_CPSTAT:
++	case NILFS_IOCTL_GET_SUINFO:
++	case NILFS_IOCTL_GET_SUSTAT:
++	case NILFS_IOCTL_GET_VINFO:
++	case NILFS_IOCTL_GET_BDESCS:
++	case NILFS_IOCTL_CLEAN_SEGMENTS:
++	case NILFS_IOCTL_SYNC:
++	case NILFS_IOCTL_RESIZE:
++	case NILFS_IOCTL_SET_ALLOC_RANGE:
++		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
 -- 
 1.7.7.4
 
