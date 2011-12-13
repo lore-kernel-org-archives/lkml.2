@@ -1,133 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab1LMErK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 23:47:10 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51895 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab1LMErG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 23:47:06 -0500
+	id S1754776Ab1LME42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 23:56:28 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59485 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752640Ab1LME4X convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 23:56:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323748626.2583.41.camel@edumazet-laptop>
-References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
-	<1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<alpine.DEB.2.00.1112120922020.28410@router.home>
-	<1323711558.2583.11.camel@edumazet-laptop>
-	<1323748626.2583.41.camel@edumazet-laptop>
-Date: Tue, 13 Dec 2011 12:47:06 +0800
-Message-ID: <CABexPfFht2Fv3JaEHTG+s8z4bgdEFEOUC+1kz7RTxM=xwdV4zQ@mail.gmail.com>
-Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
- gets lost if the process happens to be rescheduled to a differenet cpu before
- the local_irq_save() completes in __slab_alloc()
-From: zhihua che <zhihua.che@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CADDb1s2SOK5sC3N0OOdkBrPuDKc2d2A4z4yso4jYs=1rbxNmkA@mail.gmail.com>
+References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
+	<1323694267.20451.5.camel@dabdike>
+	<CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
+	<CADDb1s2SOK5sC3N0OOdkBrPuDKc2d2A4z4yso4jYs=1rbxNmkA@mail.gmail.com>
+Date: Tue, 13 Dec 2011 10:26:21 +0530
+Message-ID: <CADDb1s0jFem00eqmm-jp0-0YCzS0bows6yvS77UuaEj=5GYdEw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/13 Eric Dumazet <eric.dumazet@gmail.com>:
-> Le lundi 12 décembre 2011 à 18:39 +0100, Eric Dumazet a écrit :
->> Le lundi 12 décembre 2011 à 09:50 -0600, Christoph Lameter a écrit :
+On Tue, Dec 13, 2011 at 10:24 AM, Amit Sahrawat
+<amit.sahrawat83@gmail.com> wrote:
+>
+> Hi James,
+>
+>
+>
+> We verified the changes by actually putting the setup through a series of test cases. There were test cases where-in we were able to reduce the filesystem corruption by 100%.
+>
+> Yes, In normal operation SYNC_CACHE gets called up when we do a safe removal of the device. But, Setting WCE also takes cares of sending the SYNC_CACHE command in between the operations also.
+>
+>
+>
+> What we are making sure is, that by providing this interface we can have WCE enabled for some HDD –that will mark QUEUE ORDERING to QUEUE_ORDERED_DRAIN_FLUSH(Preflush-Postflush)(i.e., flushing will occur for all the Mass Storage devices - which in turn will keep on calling SYNC_CACHE for these devices.
+>
+>
+>
+> We checked this on USB HDD’s, USB SSD, and USB Flash from a number of vendors – all seemed to work pretty well with these changes.
+>
+>
+>
+> Please share your opinion.
+>
+>
+>
+> Thanks & Regards,
+>
+> Amit Sahrawat
+>
+>
+>
+>
+> On Tue, Dec 13, 2011 at 5:50 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
 >>
->> > Correct. Issue was introduced in 2.6.39.
+>> 2011/12/12 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>> > On Mon, 2011-12-12 at 16:48 +0530, Amit Sahrawat wrote:
+>> >> It has been observed that a number of USB HDD's do not respond correctly
+>> >> to SCSI mode sense command(retrieve caching pages) which results in their
+>> >> Write Cache being discarded by queue requests i.e., WCE if left set to
+>> >> '0'(disabled).
+>> >> This results in a number of Filesystem corruptions, when the device
+>> >> is unplugged abruptly.
 >> >
->> > Acked-by: Christoph Lameter <cl@linux.com>
+>> > Um, how would knowing the caching type correctly help?  If you surprise
+>> > unplug the device, we can't send a flush to it anyway ...
+>> Hi. James.
+>> We can get device specification buffer to use ata_16 cmd.So we are
+>> able to distinguish caching type by using 85byte of buffer.
+>> And filesystem is using write barrier function to protect important
+>> data like journaling data.
+>> If filesystem is able to use write barrier by correctly setting WCE,
+>> ordering can be guaranteed to flush data(preflush/postflush) to
+>> internal write cache in hdd before power off. so filesystem can get
+>> consistency and reliability by sudden plug and power off.
 >> >
->>
->> Indeed, I reproduced the leak with hackbench and lot of threads.
->>
->> Thanks
->>
->> [PATCH] slub: fix a possible memleak in __slab_alloc()
->>
->> Zhihua Che reported a possible memleak in slub allocator on
->> CONFIG_PREEMPT=y builds.
->>
->> It is possible current thread migrates right before disabling irqs in
->> __slab_alloc(). We must check again c->freelist, and perform a normal
->> allocation instead of scratching c->freelist.
->>
->> Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
->>
->> Reported-by: zhihua che <zhihua.che@gmail.com>
->> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> Acked-by: Christoph Lameter <cl@linux.com>
->> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->> CC: stable@vger.kernel.org
->> ---
->>  mm/slub.c |    6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/mm/slub.c b/mm/slub.c
->> index ed3334d..923d238 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -2166,6 +2166,12 @@ redo:
->>               goto new_slab;
->>       }
->>
->> +#ifdef CONFIG_PREEMPT
->> +     object = c->freelist;
->> +     if (object)
->> +             goto load_freelist;
->> +#endif
->> +
->>       stat(s, ALLOC_SLOWPATH);
->>
->>       do {
->>
->
-> Thinking again about the issue, I believe its not a CONFIG_PREEMPT only
-> one.
->
-> We can be interrupted and the IRQ handler can free an object an populate
-> freelist too. So the check must always be done.
->
-> Thanks
->
-> [PATCH v2] slub: fix a possible memleak in __slab_alloc()
->
-> Zhihua Che reported a possible memleak in slub allocator on
-> CONFIG_PREEMPT=y builds.
->
-> It is possible current thread migrates right before disabling irqs in
-> __slab_alloc(). We must check again c->freelist, and perform a normal
-> allocation instead of scratching c->freelist.
->
-> Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
->
-> V2: Its also possible an IRQ freed one (or several) object(s) and
-> populated c->freelist, so its not a CONFIG_PREEMPT only problem.
->
-> Reported-by: zhihua che <zhihua.che@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> ---
->  mm/slub.c |    5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ed3334d..1a919f0 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2166,6 +2166,11 @@ redo:
->                goto new_slab;
->        }
->
-> +       /* must check again c->freelist in case of cpu migration or IRQ */
-> +       object = c->freelist;
-> +       if (object)
-> +               goto load_freelist;
-> +
->        stat(s, ALLOC_SLOWPATH);
->
->        do {
+>> >> So, in order to identify the devices correctly - give it
+>> >> a last try using ATA_16 after failure from normal routine.
+>> >> Introduce a mechanism to store write-cache type using /sys/class/
+>> >> interface, so that the normal code continues to function without errors.
+>> >>
+>> >> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+>> >> Signed-off-by: Nam-Jae Jeon <namjae.jeon@samsung.com>
+>> >
+>> > This whole patch looks like a layering violation.  Why not just update
+>> > the SAT layer to translate the MODE SENSE correctly?
+>> Would plz you explain more ? I didn't clearly understand your point yet.
+>> >
+>> > James
+>> >
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
 >
 >
-
-I'm glad and excited I can help. :-)
