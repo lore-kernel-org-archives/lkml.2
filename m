@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1LMAU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 19:20:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21702 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970Ab1LMAU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 19:20:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95407077"
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Berck E. Nash" <flyboy@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 12 Dec 2011 16:25:02 -0800
-In-Reply-To: <4EE68C80.7000408@gmail.com>
-References: <4EE2BC33.80902@gmail.com>
-	 <CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>
-	 <20111211075713.GA20790@elte.hu>
-	 <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
-	 <4EE5291C.1030302@gmail.com>
-	 <CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
-	 <4EE68C80.7000408@gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1754567Ab1LMAVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 19:21:03 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55744 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab1LMAVA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Dec 2011 19:21:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1323694267.20451.5.camel@dabdike>
+References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
+	<1323694267.20451.5.camel@dabdike>
+Date: Tue, 13 Dec 2011 09:20:59 +0900
+Message-ID: <CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
+Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-12 at 15:21 -0800, Berck E. Nash wrote:
-> On 12/11/2011 08:40 PM, Yinghai Lu wrote:
-> > x2apic pre-enabled skip the mapping for lapic address. so need map it
-> > after fall back.
-> > 
-> > please check attached -v5..
-> 
-> It appears to work correctly as far as I can tell.
-
-Ok. In this case, it looks like bios didn't enable interrupt-remapping
-(part of vt-d) and just enabled x2apic with out touching or exporting
-vt-d HW.
-
-Yinghai, In other scenarios where OS can't recover, mostly likely we
-will fail in check_timer() when we fall back to xapic. Can we add a
-printk in this case to convey the potential reason (that I mentioned in
-the previous e-mail), so that the user can get more accurate information
-for the check timer failure.
-
-thanks,
-suresh
-
+2011/12/12 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> On Mon, 2011-12-12 at 16:48 +0530, Amit Sahrawat wrote:
+>> It has been observed that a number of USB HDD's do not respond correctly
+>> to SCSI mode sense command(retrieve caching pages) which results in their
+>> Write Cache being discarded by queue requests i.e., WCE if left set to
+>> '0'(disabled).
+>> This results in a number of Filesystem corruptions, when the device
+>> is unplugged abruptly.
+>
+> Um, how would knowing the caching type correctly help?  If you surprise
+> unplug the device, we can't send a flush to it anyway ...
+Hi. James.
+We can get device specification buffer to use ata_16 cmd.So we are
+able to distinguish caching type by using 85byte of buffer.
+And filesystem is using write barrier function to protect important
+data like journaling data.
+If filesystem is able to use write barrier by correctly setting WCE,
+ordering can be guaranteed to flush data(preflush/postflush) to
+internal write cache in hdd before power off. so filesystem can get
+consistency and reliability by sudden plug and power off.
+>
+>> So, in order to identify the devices correctly - give it
+>> a last try using ATA_16 after failure from normal routine.
+>> Introduce a mechanism to store write-cache type using /sys/class/
+>> interface, so that the normal code continues to function without errors.
+>>
+>> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+>> Signed-off-by: Nam-Jae Jeon <namjae.jeon@samsung.com>
+>
+> This whole patch looks like a layering violation.  Why not just update
+> the SAT layer to translate the MODE SENSE correctly?
+Would plz you explain more ? I didn't clearly understand your point yet.
+>
+> James
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
