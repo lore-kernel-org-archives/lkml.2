@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1LMEi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Dec 2011 23:38:28 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55085 "EHLO
+	id S1754248Ab1LMErK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Dec 2011 23:47:10 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51895 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab1LMEi0 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752551Ab1LMErG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Dec 2011 23:38:26 -0500
+	Mon, 12 Dec 2011 23:47:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111212100513.GA5017@sirena.org.uk>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
-	<1321848532-8784-3-git-send-email-tomoya.rohm@gmail.com>
-	<20111121114524.GE3784@opensource.wolfsonmicro.com>
-	<CANKRQnivyNXNZPnaUOHwpXpJz+kCz6gOwfqYNwkcOo5EpsSvZQ@mail.gmail.com>
-	<20111212100513.GA5017@sirena.org.uk>
-Date: Tue, 13 Dec 2011 13:38:25 +0900
-Message-ID: <CANKRQng7AgKLYGSbBMbOiWifL6WNPHM=b7cB0FhfuXg74qi1Fg@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 3/3] sound/soc/lapis: add platform driver
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>, qi.wang@intel.com,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        yong.y.wang@intel.com, kok.howg.ewe@intel.com,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        joel.clark@intel.com
+In-Reply-To: <1323748626.2583.41.camel@edumazet-laptop>
+References: <CABexPfFR1n=_JdCYLDRcVsPRcqt5FGmhSjoeZP8CLBMRO_CxfA@mail.gmail.com>
+	<1323702586.1765.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<alpine.DEB.2.00.1112120922020.28410@router.home>
+	<1323711558.2583.11.camel@edumazet-laptop>
+	<1323748626.2583.41.camel@edumazet-laptop>
+Date: Tue, 13 Dec 2011 12:47:06 +0800
+Message-ID: <CABexPfFht2Fv3JaEHTG+s8z4bgdEFEOUC+1kz7RTxM=xwdV4zQ@mail.gmail.com>
+Subject: Re: [Slub allocator] There are chances that kmem_cache_cpu->freelist
+ gets lost if the process happens to be rescheduled to a differenet cpu before
+ the local_irq_save() completes in __slab_alloc()
+From: zhihua che <zhihua.che@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/12 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Dec 12, 2011 at 05:28:13PM +0900, Tomoya MORINAGA wrote:
+2011/12/13 Eric Dumazet <eric.dumazet@gmail.com>:
+> Le lundi 12 décembre 2011 à 18:39 +0100, Eric Dumazet a écrit :
+>> Le lundi 12 décembre 2011 à 09:50 -0600, Christoph Lameter a écrit :
+>>
+>> > Correct. Issue was introduced in 2.6.39.
+>> >
+>> > Acked-by: Christoph Lameter <cl@linux.com>
+>> >
+>>
+>> Indeed, I reproduced the leak with hackbench and lot of threads.
+>>
+>> Thanks
+>>
+>> [PATCH] slub: fix a possible memleak in __slab_alloc()
+>>
+>> Zhihua Che reported a possible memleak in slub allocator on
+>> CONFIG_PREEMPT=y builds.
+>>
+>> It is possible current thread migrates right before disabling irqs in
+>> __slab_alloc(). We must check again c->freelist, and perform a normal
+>> allocation instead of scratching c->freelist.
+>>
+>> Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
+>>
+>> Reported-by: zhihua che <zhihua.che@gmail.com>
+>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: stable@vger.kernel.org
+>> ---
+>>  mm/slub.c |    6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index ed3334d..923d238 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2166,6 +2166,12 @@ redo:
+>>               goto new_slab;
+>>       }
+>>
+>> +#ifdef CONFIG_PREEMPT
+>> +     object = c->freelist;
+>> +     if (object)
+>> +             goto load_freelist;
+>> +#endif
+>> +
+>>       stat(s, ALLOC_SLOWPATH);
+>>
+>>       do {
+>>
 >
->> struct snd_soc_ops {
->> ...
->> };
+> Thinking again about the issue, I believe its not a CONFIG_PREEMPT only
+> one.
 >
->> On the other hand, tegra_i2s.c describes like below.
+> We can be interrupted and the IRQ handler can free an object an populate
+> freelist too. So the check must always be done.
 >
->> static const struct snd_soc_dai_ops tegra_i2s_dai_ops = {
->> ...
->> };
+> Thanks
 >
->> Which is true as modern driver ? or case by case ?
+> [PATCH v2] slub: fix a possible memleak in __slab_alloc()
 >
-> The latter.  With things like this it would be *really* helpful if you
-> could take a step back and think about what the differences mean and why
-> they are different.
+> Zhihua Che reported a possible memleak in slub allocator on
+> CONFIG_PREEMPT=y builds.
+>
+> It is possible current thread migrates right before disabling irqs in
+> __slab_alloc(). We must check again c->freelist, and perform a normal
+> allocation instead of scratching c->freelist.
+>
+> Many thanks to Zhihua Che for spotting this bug, introduced in 2.6.39
+>
+> V2: Its also possible an IRQ freed one (or several) object(s) and
+> populated c->freelist, so its not a CONFIG_PREEMPT only problem.
+>
+> Reported-by: zhihua che <zhihua.che@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> ---
+>  mm/slub.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index ed3334d..1a919f0 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -2166,6 +2166,11 @@ redo:
+>                goto new_slab;
+>        }
+>
+> +       /* must check again c->freelist in case of cpu migration or IRQ */
+> +       object = c->freelist;
+> +       if (object)
+> +               goto load_freelist;
+> +
+>        stat(s, ALLOC_SLOWPATH);
+>
+>        do {
+>
+>
 
-Our driver needs ".pointer" method.
-However, "struct snd_soc_dai_ops" doesn't have the method.
-So, I think "struct snd_soc_dai_ops" cannot be applied to our driver.
-Searching other drivers, "blackfin/bf5xx-i2s-pcm.c" uses "struct
-snd_soc_ops" not "struct snd_soc_dai_ops".
-Let me know your opinion.
-
-Thanks,
-
-tomoya
+I'm glad and excited I can help. :-)
