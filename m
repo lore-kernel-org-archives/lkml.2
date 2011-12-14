@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab2ACUU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:20:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62042 "EHLO mga01.intel.com"
+	id S1755092Ab2ACUUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:20:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34860 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab2ACUUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:20:24 -0500
+	id S1751091Ab2ACUUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:20:09 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108385067"
-Message-Id: <29edffc96e6a7c0db19bbea13052da7b55cb501b.1325620195.git.tony.luck@intel.com>
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="92593837"
+Message-Id: <8531e70c261bcc7f31cdd2378ca2863a6ff8cb85.1325620195.git.tony.luck@intel.com>
 In-Reply-To: <cover.1325620195.git.tony.luck@intel.com>
 References: <cover.1325620195.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 13 Dec 2011 09:27:58 -0800
-Subject: [PATCH 2/6] HWPOISON: Add code to handle "action required" errors.
+Date: Wed, 14 Dec 2011 15:55:20 -0800
+Subject: [PATCH 4/6] x86/mce: Add mechanism to safely save information in MCE handler
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
         Chen Gong <gong.chen@linux.intel.com>,
@@ -24,147 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new flag bit "MF_ACTION_REQUIRED" to be used by machine check
-code to force a signal with si_code = BUS_MCEERR_AR in the case
-where the error occurs in processor execution context. Pass the
-flags argument along call chain:
-	memory_failure()
-	  hwpoison_user_mappings()
-	    kill_procs()
-	      kill_proc()
+Machine checks on Intel cpus interrupt execution on all cpus, regardless
+of interrupt masking.  We have a need to save some data about the cause
+of the machine check (physical address) in the machine check handler that
+can be retrieved later to attempt recovery in a more flexible execution
+state.
 
-Drop the "_ao" suffix from kill_procs_ao() and kill_proc_ao() since
-they can now handle "action required" as well as "action optional" errors.
-
-Acked-by: Borislav Petkov <bp@amd64.org>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- include/linux/mm.h  |    1 +
- mm/memory-failure.c |   50 +++++++++++++++++++++++++++++---------------------
- 2 files changed, 30 insertions(+), 21 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   43 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 43 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index bcc5234..bf169ca 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1606,6 +1606,7 @@ void vmemmap_populate_print_last(void);
- 
- enum mf_flags {
- 	MF_COUNT_INCREASED = 1 << 0,
-+	MF_ACTION_REQUIRED = 1 << 1,
- };
- extern int memory_failure(unsigned long pfn, int trapno, int flags);
- extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index ab259bb..95fd307 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -187,33 +187,40 @@ int hwpoison_filter(struct page *p)
- EXPORT_SYMBOL_GPL(hwpoison_filter);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2f1c200..e1579c5 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -887,6 +887,49 @@ static void mce_clear_state(unsigned long *toclear)
+ }
  
  /*
-- * Send all the processes who have the page mapped an ``action optional''
-- * signal.
-+ * Send all the processes who have the page mapped a signal.
-+ * ``action optional'' if they are not immediately affected by the error
-+ * ``action required'' if error happened in current execution context
-  */
--static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
--			unsigned long pfn, struct page *page)
-+static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
-+			unsigned long pfn, struct page *page, int flags)
- {
- 	struct siginfo si;
- 	int ret;
- 
- 	printk(KERN_ERR
--		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
-+		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
- 		pfn, t->comm, t->pid);
- 	si.si_signo = SIGBUS;
- 	si.si_errno = 0;
--	si.si_code = BUS_MCEERR_AO;
- 	si.si_addr = (void *)addr;
- #ifdef __ARCH_SI_TRAPNO
- 	si.si_trapno = trapno;
- #endif
- 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
--	/*
--	 * Don't use force here, it's convenient if the signal
--	 * can be temporarily blocked.
--	 * This could cause a loop when the user sets SIGBUS
--	 * to SIG_IGN, but hopefully no one will do that?
--	 */
--	ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++ * Need to save faulting physical address associated with a process
++ * in the machine check handler some place where we can grab it back
++ * later in mce_notify_process()
++ */
++#define	MCE_INFO_MAX	16
 +
-+	if ((flags & MF_ACTION_REQUIRED) && t == current) {
-+		si.si_code = BUS_MCEERR_AR;
-+		ret = force_sig_info(SIGBUS, &si, t);
-+	} else {
-+		/*
-+		 * Don't use force here, it's convenient if the signal
-+		 * can be temporarily blocked.
-+		 * This could cause a loop when the user sets SIGBUS
-+		 * to SIG_IGN, but hopefully no one will do that?
-+		 */
-+		si.si_code = BUS_MCEERR_AO;
-+		ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++struct mce_info {
++	atomic_t		inuse;
++	struct task_struct	*t;
++	__u64			paddr;
++} mce_info[MCE_INFO_MAX];
++
++static void mce_save_info(__u64 addr)
++{
++	struct mce_info *mi;
++
++	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++) {
++		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
++			mi->t = current;
++			mi->paddr = addr;
++			return;
++		}
 +	}
- 	if (ret < 0)
- 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
- 		       t->comm, t->pid, ret);
-@@ -338,8 +345,9 @@ static void add_to_kill(struct task_struct *tsk, struct page *p,
-  * Also when FAIL is set do a force kill because something went
-  * wrong earlier.
-  */
--static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
--			  int fail, struct page *page, unsigned long pfn)
-+static void kill_procs(struct list_head *to_kill, int doit, int trapno,
-+			  int fail, struct page *page, unsigned long pfn,
-+			  int flags)
- {
- 	struct to_kill *tk, *next;
- 
-@@ -363,8 +371,8 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
- 			 * check for that, but we need to tell the
- 			 * process anyways.
- 			 */
--			else if (kill_proc_ao(tk->tsk, tk->addr, trapno,
--					      pfn, page) < 0)
-+			else if (kill_proc(tk->tsk, tk->addr, trapno,
-+					      pfn, page, flags) < 0)
- 				printk(KERN_ERR
- 		"MCE %#lx: Cannot send advisory machine check signal to %s:%d\n",
- 					pfn, tk->tsk->comm, tk->tsk->pid);
-@@ -844,7 +852,7 @@ static int page_action(struct page_state *ps, struct page *p,
-  * the pages and send SIGBUS to the processes if the data was dirty.
-  */
- static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
--				  int trapno)
-+				  int trapno, int flags)
- {
- 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
- 	struct address_space *mapping;
-@@ -962,8 +970,8 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * use a more force-full uncatchable kill to prevent
- 	 * any accesses to the poisoned memory.
- 	 */
--	kill_procs_ao(&tokill, !!PageDirty(ppage), trapno,
--		      ret != SWAP_SUCCESS, p, pfn);
-+	kill_procs(&tokill, !!PageDirty(ppage), trapno,
-+		      ret != SWAP_SUCCESS, p, pfn, flags);
- 
- 	return ret;
- }
-@@ -1148,7 +1156,7 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	 * Now take care of user space mappings.
- 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
- 	 */
--	if (hwpoison_user_mappings(p, pfn, trapno) != SWAP_SUCCESS) {
-+	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
- 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
- 		res = -EBUSY;
- 		goto out;
++
++	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
++}
++
++static struct mce_info *mce_find_info(void)
++{
++	struct mce_info *mi;
++
++	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++)
++		if (atomic_read(&mi->inuse) && mi->t == current)
++			return mi;
++	return NULL;
++}
++
++static void mce_clear_info(struct mce_info *mi)
++{
++	atomic_set(&mi->inuse, 0);
++}
++
++/*
+  * The actual machine check handler. This only handles real
+  * exceptions when something got corrupted coming in through int 18.
+  *
 -- 
 1.7.3.1
 
