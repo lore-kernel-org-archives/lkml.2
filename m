@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab1LNAM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:12:26 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40406 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab1LNAMZ (ORCPT
+	id S1756158Ab1LNANd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:13:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63000 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab1LNANa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:12:25 -0500
-Date: Tue, 13 Dec 2011 19:12:21 -0500
-From: Edward Donovan <edward.donovan@numble.net>
-To: Chris Palmer <chris.palmer@pobox.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: Re: [PROBLEM] ASUS Sandybridge motherboards + PCI not
- working (IRQ n: nobody cared)
-Message-ID: <20111214001221.GA2143@Brahman>
-References: <CADLC3L3wZuS-1oNoOkkU5uEDhmUio3edL05Cy4EDapfG-Y202w@mail.gmail.com>
- <4EE72C4D.9080207@pobox.com>
+	Tue, 13 Dec 2011 19:13:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE72C4D.9080207@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1111152259430.4902@ionos>
+References: <20110908215314.829452535@linutronix.de>
+	<CADGdYn6V_eQJZ4=irMbSS7XJj4MJVeALxcrWdD7o2bGs1sEJZQ@mail.gmail.com>
+	<20110913133258.GA6267@n2100.arm.linux.org.uk>
+	<CAKfTPtCWuiOM5+sOwdh1FzXZb1EFT__tVEpRPY5suGOxpYTdQQ@mail.gmail.com>
+	<20110913175312.GB6267@n2100.arm.linux.org.uk>
+	<20110923084001.GP17169@n2100.arm.linux.org.uk>
+	<01d501cc84d6$62720890$275619b0$%kim@samsung.com>
+	<alpine.LFD.2.02.1110071354310.3240@ionos>
+	<CAPz4a6CkOXp6LHX2hFYVBhXWT4rhCUzLyYTLbO7g8u_jYcHt7Q@mail.gmail.com>
+	<CAPz4a6C7md+k8pCz6mJtB-v_1h-faGxQZkOqU9vHUtcG-jrYVQ@mail.gmail.com>
+	<4EC2DF93.2050904@codeaurora.org>
+	<alpine.LFD.2.02.1111152259430.4902@ionos>
+Date: Tue, 13 Dec 2011 16:13:30 -0800
+X-Google-Sender-Auth: n5tm6VC1rqU_nHcYfT1S445YvLg
+Message-ID: <CAPz4a6BwzAmE=08pCfhK5of0vEV+uPaf8D-9U_MnW5_vAe6NFw@mail.gmail.com>
+Subject: Re: Re: [patch] ARM: smpboot: Enable interrupts after marking CPU online/active
+From: Dima Zavin <dima@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        amit kachhap <amit.kachhap@linaro.org>,
+        Colin Cross <ccross@android.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        chaos.youn@samsung.com, LAK <linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris -
+Thomas,
 
-[Dammit, accidentally sent an html mail.  Should have stepped out of gmail,
-sorry.]
+Did you ever get a chance to look into this further?
 
-I will certainly take a look.  I don't have the hardware, unfortunately.  And
-this is kinda my first rodeo, kernel-wise, so don't let me sound too expert. :)
-Let me ask a couple questions, anyway.
+Thanks in advance.
 
-- Later, I'll have time to look for Andrew's message, but do you know -- did he
-  mean an ACPI bug in the firmware, or in Linux?
+--Dima
 
-- Does 2.6.38 behave the same as 3.1.5 or the other newest kernels?  (If the
-  hardware doesn't require something newer than .38.)  There was an IRQ overhaul
-  in 2.6.39, and the two bugs I fixed were regressions from that work.  As of
-  now, the bad-irq handling seems equivalent to 2.6.38, but I should make sure
-  that goes for your problem, too.
-
-I think I'll cc LKML, too, if you don't mind.  I've seen this topic going by,
-but don't know what's been said.  And maybe tomorrow I can get some pondering
-time -
-
-Ed
-
+On Tue, Nov 15, 2011 at 2:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 15 Nov 2011, Stepan Moskovchenko wrote:
+>> I am seeing a deadlock when executing hotplug operations with this patch
+>> applied. When the secondary CPU gets brought up in _cpu_up, the cpu is turned
+>> on
+>> and then the online notifier gets called, which is what marks the secondary
+>> CPU
+>> as active. If _cpu_up on the primary CPU is preempted before the secondary CPU
+>> is marked active, it is possible that the primary CPU will want to call
+>> smp_call_function (or send an IPI) to the secondary CPU because it is marked
+>> online. However, with this patch, the secondary CPU is still spinning on
+>> !cpu_active(cpu)
+>> with interrupts disabled. So, the primary CPU is now stuck in csd_lock_wait(),
+>> waiting for the secondary CPU to respond, while the secondary CPU spins with
+>> interrupts disabled, waiting for the primary CPU to mark it as active. So,
+>> while
+>> your approach to not call smp_function_single may work for you in your
+>> specific
+>> case, I believe there is still a problem in the general case.
+>>
+>> One suggestion for resolving this might be making smp_call_function look at
+>> the
+>> active CPUs rather than online CPUs, or to just let the secondary CPU mark
+>> itself as active rather than having the primary CPU do this, though this might
+>> defeat the original intended purpose of the active mask.
+>
+> What a mess. I'll have a look tomorrow.
