@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab1LNS6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:58:24 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38070 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab1LNS6V (ORCPT
+	id S1757924Ab1LNTFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 14:05:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43365 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754307Ab1LNTFj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:58:21 -0500
-Message-ID: <1323889023.6805.61.camel@work-vm>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-From: john stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 Dec 2011 10:57:03 -0800
-In-Reply-To: <20111214182121.GA2465@netboy.at.omicron.at>
-References: <cover.1323739287.git.luto@amacapital.net>
-	 <20111213032406.GA9604@netboy.at.omicron.at>
-	 <1323747782.4078.144.camel@work-vm>
-	 <20111214072058.GA2180@netboy.at.omicron.at>
-	 <1323879832.6805.24.camel@work-vm>
-	 <20111214182121.GA2465@netboy.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11121418-6148-0000-0000-000001F5E59E
+	Wed, 14 Dec 2011 14:05:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85741970"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Date: Wed, 14 Dec 2011 11:05:37 -0800
+Subject: RE: [PATCH 5/6] x86, mce: handle "action required" errors
+Thread-Topic: [PATCH 5/6] x86, mce: handle "action required" errors
+Thread-Index: Acy6eg+q69gGjYk5Tt2jdDDMIYQ5eAAF+/8A
+Message-ID: <0207C53569FE594381A4F2EB66570B2A019147F182@orsmsx508.amr.corp.intel.com>
+References: <cover.1323803130.git.tony.luck@intel.com>
+ <80cbf65ae6e4bd610523cc8568b0c2dcb8c629b6.1323803130.git.tony.luck@intel.com>
+ <20111214160409.GG23589@aftab>
+In-Reply-To: <20111214160409.GG23589@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 19:21 +0100, Richard Cochran wrote:
-> On Wed, Dec 14, 2011 at 08:23:52AM -0800, john stultz wrote:
-> > On Wed, 2011-12-14 at 08:20 +0100, Richard Cochran wrote:
-> > > Michel Hack wrote an article last year detailing how Linux botches the
-> > > leap second and suggested a more robust way to handle it.
-> > 
-> > Hmm. Do you have a link to the article? 
-> 
-> I don't think it is online. Do you have the magic IEEE access?
-> 
-> http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=5609776
+> > +	if (!mce_find_info(&paddr))
+> > +		mce_panic("Lost address", NULL, NULL);
+>
+> Wouldn't it be good to return struct mce_info *mi here in addition to
+> &paddr...
 
-Ah, research. I'll have to look into getting access.
+Great idea (actually "instead of" works better than "in addition too").
 
-> > I like the idea of having TAI as a kernel clockid. The hard part is
-> > getting systems to initialize it properly at boot. 
-> > 
-> > Also part of the issue with leapseconds is that time functions are such
-> > a hot path, we can't really add extra conditionals checking for leap
-> > seconds. Instead the leapsecond occurs on the first tick of the
-> > leapsecond.
-> 
-> The idea would only involve one conditional and one addition:
-> 
-> - System clock represents TAI
-> - Table of {threshold; offset} values, read mostly, rarely updated
-> - Table has index pointing to next event
-> 
-> Get time becomes:
-> 
-> 1. read system time
-> 2. test threshold
-> 3. apply correction
+> so that you don't need to iterate again over the mce_info array but do:
+>
+>	mce_clear_info(mi);
 
-Again, this seems relatively reasonable. But the difficulty in changing
-system clock to be TAI is getting the table initialized and updated on
-legacy systems that don't have the userland support added. 
+Just coded it - looks much better. Will send new version soon with
+this change, and Ingo's suggestions incorporated.
 
-I'd suggest starting with adding the threshold check and leap-second
-correction in the getnstimeofday() path, and then see how performance is
-impacted. 
+> This assumes, of course, that you have only one AR MCE per task, per
+> return to userspace. I guess this is fine for now.
 
-That would let us improve leapsecond handling and get a sense of the
-performance impact prior to reworking the kernel internals to be TAI.
+While we might have multiple memory references in flight at once, we'd
+have to be really unlucky to hit multiple 2-bit errors at the same
+time (unless there was some system level failure in the memory controller,
+in which case we not likely to be able to recover).
 
-> > More interestingly to me is Google's recent use of slewed leapseconds.
-> > However, how that would work on a public network is a bit more fuzzy.
-> > And being able to support both TAI and slewed leapseconds would require
-> > quite a bit more logic.
-> 
-> Do you mean smoothing the jump over the entire day (or other
-> interval)? This is also discussed in Hack's paper.
+In current processor implementations, the recoverable errors are all
+reported in just one machine check bank - so we can't actually process
+more than one at a time.
 
-Yea, its been discussed widely before, but I've not heard of it actually
-being implemented. You can read about it here:
-http://googleblog.blogspot.com/2011/09/time-technology-and-leaping-seconds.html
-
-Its interesting and attractive solution, but again, I suspect it really
-only works in a closed network where everyone is using the same
-approach. Mixing leap-smeared ntp servers with legacy ntp servers would
-likely cause trouble. 
-
-Also, trying to mix TAI with leap-smeared UTC would be complex to do
-in-kernel, since we would need another layer of indirection to keep the
-smear adjustments to UTC separate from the frequency adjustments for
-TAI. Not impossible, but not trivial.
-
-
-thanks
--john
-
-
+-Tony
