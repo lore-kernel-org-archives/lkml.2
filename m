@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab1LNOau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:30:50 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:52676 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab1LNOaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:30:46 -0500
-Date: Wed, 14 Dec 2011 09:30:14 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Li Shaohua <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-Message-ID: <20111214143014.GB18080@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	Jan Kara <jack@suse.cz>, Li Shaohua <shaohua.li@intel.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-References: <20111214133400.GA18565@localhost>
+	id S1754549Ab1LNOgC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:36:02 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63590 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab1LNOgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 09:36:00 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH resend] audit: fix mark refcounting
+References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu>
+Date: Wed, 14 Dec 2011 15:35:09 +0100
+In-Reply-To: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
+	of "Mon, 07 Nov 2011 15:59:18 +0100")
+Message-ID: <87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214133400.GA18565@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
-> Hi,
-> 
-> Shaohua recently found that ext4 writeback mode could perform worse
-> than ordered mode in some cases. It may not be a big problem, however
-> we'd like to share some information on our findings.
-> 
-> I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
-> The interesting thing is, data=writeback used to run a bit faster
-> than data=ordered, however situation get inverted presumably by the
-> IO-less dirty throttling.
+I think this should go into 3.2 (and stable).
 
-Interesting.  What sort of workloads are you using to do these
-measurements?  How many writer threads; I assume you are doing
-sequential writes which are extending one or more files, etc?
+Please apply.
 
-I suspect it's due to the throttling meaning that each thread is
-getting to send less data to the disk, and so there is more seeking
-going on with data=writeback, where as with data=ordered, at each
-journal commit we are forcing all of the dirty pages out to disk, one
-inode at a time, and this is resulting in a more efficient writeback
-compared to when the writeback code is getting to make its own choices
-about how much each inode gets to write out at at time.
+Thanks,
+Miklos
+----
 
-It would be interesting to see what would happen if in
-ext4_da_writepages(), we completely ignore how many pages are
-requested to be written back by the writeback code, and just simply
-write back all of the dirty pages, and see if that brings the
-performance back.
+From: Miklos Szeredi <mszeredi@suse.cz>
+Subject: audit: fix mark refcounting
 
-      	       	    	       	  	       - Ted
+Removing the parent of a watched file results in "kernel BUG at
+fs/notify/mark.c:139".
+
+To reproduce
+
+  add "-w /tmp/audit/dir/watched_file" to audit.rules
+  rm -rf /tmp/audit/dir
+
+This is caused by fsnotify_destroy_mark() being called without an
+extra reference taken by the caller.
+
+Reported by Francesco Cosoleto here:
+
+  https://bugzilla.novell.com/show_bug.cgi?id=689860
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: Al Viro <viro@zeniv.linux.org.uk>
+CC: Eric Paris <eparis@redhat.com>
+CC: stable@vger.kernel.org
+---
+ kernel/audit_watch.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux.git/kernel/audit_watch.c
+===================================================================
+--- linux.git.orig/kernel/audit_watch.c	2011-12-06 16:39:48.000000000 +0100
++++ linux.git/kernel/audit_watch.c	2011-12-13 14:05:37.000000000 +0100
+@@ -349,7 +349,9 @@ static void audit_remove_parent_watches(
+ 	}
+ 	mutex_unlock(&audit_filter_mutex);
+ 
++	audit_get_parent(parent);
+ 	fsnotify_destroy_mark(&parent->mark);
++	audit_put_parent(parent);
+ }
+ 
+ /* Get path information necessary for adding watches. */
