@@ -1,772 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab1LNMdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 07:33:08 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:41892 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756966Ab1LNMdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 07:33:04 -0500
-X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h93fh62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 05/06] Power: DA9052 Battery module V6
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: <cbouatmailru@gmail.com>
-CC: <linaro-dev@lists.linaro.org>, <dwmw2@infradead.org>,
-        <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
-        <paul.liu@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <sameo@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Dec 2011 17:57:56 +0530
-Message-ID: <1323865676.32031.24.camel@dhruva>
+	id S1757016Ab1LNM7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 07:59:49 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:48548 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756583Ab1LNM7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 07:59:48 -0500
+X-Greylist: delayed 954 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 07:59:48 EST
+Message-ID: <4EE89A06.80101@imgtec.com>
+Date: Wed, 14 Dec 2011 12:43:50 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Neil <neil.jones@imgtec.com>
+Subject: bugs in "ASoC: core - Optimise and refactor pcm_new() to pass only
+ rtd"?
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+X-OriginalArrivalTime: 14 Dec 2011 12:43:50.0546 (UTC) FILETIME=[07AE5720:01CCBA5E]
+X-SEF-Processed: 7_3_0_01158__2011_12_14_12_43_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for DA9052 battery charger. This driver depends on DA9052 MFD core dirver
-for definitions and methods.
+Hi,
 
-This patch is functionally tested on Samsung SMDKV6410.
+I've bisected a problem with an out of tree set of asoc drivers down to commit
+552d1ef6b5a98d7b95959d5b139071e3c90cebf1 ("ASoC: core - Optimise and refactor
+pcm_new() to pass only rtd"). By the looks of it this change was intended not 
+to change the workings of the code, however the dai parameter of pcm_new used
+to be passed codec_dai in soc_new_pcm() (initialised from rtd->codec_dai), but
+each driver now sets it's dai to rtd->cpu_dai instead. This seems to make the
+driver check the wrong dai's driver->capture.channels_min in the pcm_new
+callback, which makes it dereference
+pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream in the driver's
+preallocate_dma_buffer() function which can be NULL. Is this a bug (in every
+pcm asoc driver) that just happens not to have been noticed, or have I
+misunderstood it?
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
----
-As per the thread https://lkml.org/lkml/2011/11/9/42 a transceiver notifications
-will be added in the usb gadget driver to support setting of USB charge current
-limit in the battery driver. This patch adds logic to support that notification.
-Later when usb gadget driver gets modified this driver needs modification only
-for registration with event notification.
----
-Changes since v5
-- Added notifier callback for setting USB charging current limit
-Changes since v4
-- Remove unnecessary type cast
-- Improve code readability
-Changes since v3
-- Included power_supply.h file
-- Corrected the definition of DA9052_BAT_THRESHOLD macro
-- Changed definition of charger_type_enum
-- Added API da9052_battery_read_end_current
-- Added API da9052_battery_check_status
-- Changed the way of handling the interrupts in da9052_bat_irq
-Changes since v2
-- Correct code styling for inline functions
-- Remove averaging algorithm
-- Set use_for_apm thru board specific parameter
----
- drivers/power/Kconfig          |    7 +
- drivers/power/Makefile         |    1 +
- drivers/power/da9052-battery.c |  665 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 673 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/da9052-battery.c
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 9f88641..9696502 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -150,6 +150,13 @@ config BATTERY_DA9030
- 	  Say Y here to enable support for batteries charger integrated into
- 	  DA9030 PMIC.
+Relevant snippets of the original patch below.
+
+Thanks
+James
+
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index 5cb3b88..9465588 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -425,9 +425,11 @@ static void dma_free_dma_buffers(struct snd_pcm *pcm)
  
-+config BATTERY_DA9052
-+	tristate "Dialog DA9052 Battery"
-+	depends on PMIC_DA9052
-+	help
-+	  Say Y here to enable support for batteries charger integrated into
-+	  DA9052 PMIC.
-+
- config BATTERY_MAX17040
- 	tristate "Maxim MAX17040 Fuel Gauge"
- 	depends on I2C
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b4af13d..c570e20 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
- obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
- obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
- obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
-+obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
- obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
- obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
-diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
-new file mode 100644
-index 0000000..37b2840
---- /dev/null
-+++ b/drivers/power/da9052-battery.c
-@@ -0,0 +1,665 @@
-+/*
-+ * Batttery Driver for Dialog DA9052 PMICs
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/freezer.h>
-+#include <linux/fs.h>
-+#include <linux/jiffies.h>
-+#include <linux/module.h>
-+#include <linux/timer.h>
-+#include <linux/uaccess.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+/* STATIC CONFIGURATION */
-+#define DA9052_BAT_CUTOFF_VOLT		2800
-+#define DA9052_BAT_TSH			62000
-+#define DA9052_BAT_LOW_CAP		4
-+#define DA9052_AVG_SZ			4
-+#define DA9052_VC_TBL_SZ		68
-+#define DA9052_VC_TBL_REF_SZ		3
-+
-+#define DA9052_ISET_USB_MASK		0x0F
-+#define DA9052_CHG_USB_ILIM_MASK	0x40
-+#define DA9052_CHG_LIM_COLS		16
-+
-+#define DA9052_MEAN(x, y)		((x + y) / 2)
-+
-+enum charger_type_enum {
-+	DA9052_NOCHARGER = 1,
-+	DA9052_CHARGER,
-+};
-+
-+static const u16 da9052_chg_current_lim[2][DA9052_CHG_LIM_COLS] = {
-+	{70,  80,  90,  100, 110, 120, 400,  450,
-+	 500, 550, 600, 650, 700, 900, 1100, 1300},
-+	{80,  90,  100, 110,  120,  400,  450,  500,
-+	 550, 600, 800, 1000, 1200, 1400, 1600, 1800},
-+};
-+
-+static const u16 vc_tbl_ref[3] = {10, 25, 40};
-+/* Lookup table for voltage vs capacity */
-+static u32 const vc_tbl[3][68][2] = {
-+	/* For temperature 10 degree celisus*/
-+	{
-+	{4082, 100}, {4036, 98},
-+	{4020, 96}, {4008, 95},
-+	{3997, 93}, {3983, 91},
-+	{3964, 90}, {3943, 88},
-+	{3926, 87}, {3912, 85},
-+	{3900, 84}, {3890, 82},
-+	{3881, 80}, {3873, 79},
-+	{3865, 77}, {3857, 76},
-+	{3848, 74}, {3839, 73},
-+	{3829, 71}, {3820, 70},
-+	{3811, 68}, {3802, 67},
-+	{3794, 65}, {3785, 64},
-+	{3778, 62}, {3770, 61},
-+	{3763, 59}, {3756, 58},
-+	{3750, 56}, {3744, 55},
-+	{3738, 53}, {3732, 52},
-+	{3727, 50}, {3722, 49},
-+	{3717, 47}, {3712, 46},
-+	{3708, 44}, {3703, 43},
-+	{3700, 41}, {3696, 40},
-+	{3693, 38}, {3691, 37},
-+	{3688, 35}, {3686, 34},
-+	{3683, 32}, {3681, 31},
-+	{3678, 29}, {3675, 28},
-+	{3672, 26}, {3669, 25},
-+	{3665, 23}, {3661, 22},
-+	{3656, 21}, {3651, 19},
-+	{3645, 18}, {3639, 16},
-+	{3631, 15}, {3622, 13},
-+	{3611, 12}, {3600, 10},
-+	{3587, 9}, {3572, 7},
-+	{3548, 6}, {3503, 5},
-+	{3420, 3}, {3268, 2},
-+	{2992, 1}, {2746, 0}
-+	},
-+	/* For temperature 25 degree celisus */
-+	{
-+	{4102, 100}, {4065, 98},
-+	{4048, 96}, {4034, 95},
-+	{4021, 93}, {4011, 92},
-+	{4001, 90}, {3986, 88},
-+	{3968, 87}, {3952, 85},
-+	{3938, 84}, {3926, 82},
-+	{3916, 81}, {3908, 79},
-+	{3900, 77}, {3892, 76},
-+	{3883, 74}, {3874, 73},
-+	{3864, 71}, {3855, 70},
-+	{3846, 68}, {3836, 67},
-+	{3827, 65}, {3819, 64},
-+	{3810, 62}, {3801, 61},
-+	{3793, 59}, {3786, 58},
-+	{3778, 56}, {3772, 55},
-+	{3765, 53}, {3759, 52},
-+	{3754, 50}, {3748, 49},
-+	{3743, 47}, {3738, 46},
-+	{3733, 44}, {3728, 43},
-+	{3724, 41}, {3720, 40},
-+	{3716, 38}, {3712, 37},
-+	{3709, 35}, {3706, 34},
-+	{3703, 33}, {3701, 31},
-+	{3698, 30}, {3696, 28},
-+	{3693, 27}, {3690, 25},
-+	{3687, 24}, {3683, 22},
-+	{3680, 21}, {3675, 19},
-+	{3671, 18}, {3666, 17},
-+	{3660, 15}, {3654, 14},
-+	{3647, 12}, {3639, 11},
-+	{3630, 9}, {3621, 8},
-+	{3613, 6}, {3606, 5},
-+	{3597, 4}, {3582, 2},
-+	{3546, 1}, {2747, 0}
-+	},
-+	/* For temperature 40 degree celisus*/
-+	{
-+	{4114, 100}, {4081, 98},
-+	{4065, 96}, {4050, 95},
-+	{4036, 93}, {4024, 92},
-+	{4013, 90}, {4002, 88},
-+	{3990, 87}, {3976, 85},
-+	{3962, 84}, {3950, 82},
-+	{3939, 81}, {3930, 79},
-+	{3921, 77}, {3912, 76},
-+	{3902, 74}, {3893, 73},
-+	{3883, 71}, {3874, 70},
-+	{3865, 68}, {3856, 67},
-+	{3847, 65}, {3838, 64},
-+	{3829, 62}, {3820, 61},
-+	{3812, 59}, {3803, 58},
-+	{3795, 56}, {3787, 55},
-+	{3780, 53}, {3773, 52},
-+	{3767, 50}, {3761, 49},
-+	{3756, 47}, {3751, 46},
-+	{3746, 44}, {3741, 43},
-+	{3736, 41}, {3732, 40},
-+	{3728, 38}, {3724, 37},
-+	{3720, 35}, {3716, 34},
-+	{3713, 33}, {3710, 31},
-+	{3707, 30}, {3704, 28},
-+	{3701, 27}, {3698, 25},
-+	{3695, 24}, {3691, 22},
-+	{3686, 21}, {3681, 19},
-+	{3676, 18}, {3671, 17},
-+	{3666, 15}, {3661, 14},
-+	{3655, 12}, {3648, 11},
-+	{3640, 9}, {3632, 8},
-+	{3622, 6}, {3616, 5},
-+	{3611, 4}, {3604, 2},
-+	{3594, 1}, {2747, 0}
-+	}
-+};
-+
-+struct da9052_battery {
-+	struct da9052 *da9052;
-+	struct power_supply psy;
-+	struct notifier_block nb;
-+	int charger_type;
-+	int status;
-+	int health;
-+};
-+
-+static inline int volt_reg_to_mV(int value)
-+{
-+	return ((value * 1000) / 512) + 2500;
-+}
-+
-+static inline int ichg_reg_to_mA(int value)
-+{
-+	return (value * 3900) / 1000;
-+}
-+
-+static int da9052_read_chgend_current(struct da9052_battery *bat,
-+				       int *current_mA)
-+{
-+	int ret;
-+
-+	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
-+		return -EINVAL;
-+
-+	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_END_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGEND_ICHGEND);
-+
-+	return 0;
-+}
-+
-+static int da9052_read_chg_current(struct da9052_battery *bat, int *current_mA)
-+{
-+	int ret;
-+
-+	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
-+		return -EINVAL;
-+
-+	ret = da9052_reg_read(bat->da9052, DA9052_ICHG_AV_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	*current_mA = ichg_reg_to_mA(ret & DA9052_ICHGAV_ICHGAV);
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_check_status(struct da9052_battery *bat, int *status)
-+{
-+	u8 v[2] = {0, 0};
-+	u8 bat_status;
-+	u8 chg_end;
-+	int ret;
-+	int chg_current;
-+	int chg_end_current;
-+	bool dcinsel;
-+	bool dcindet;
-+	bool vbussel;
-+	bool vbusdet;
-+	bool dc;
-+	bool vbus;
-+
-+	ret = da9052_group_read(bat->da9052, DA9052_STATUS_A_REG, 2, v);
-+	if (ret < 0)
-+		return ret;
-+
-+	bat_status = v[0];
-+	chg_end = v[1];
-+
-+	dcinsel = bat_status & DA9052_STATUSA_DCINSEL;
-+	dcindet = bat_status & DA9052_STATUSA_DCINDET;
-+	vbussel = bat_status & DA9052_STATUSA_VBUSSEL;
-+	vbusdet = bat_status & DA9052_STATUSA_VBUSDET;
-+	dc = dcinsel && dcindet;
-+	vbus = vbussel && vbusdet;
-+
-+	/* Preference to WALL(DCIN) charger unit */
-+	if (dc || vbus) {
-+		bat->charger_type = DA9052_CHARGER;
-+
-+		/* If charging end flag is set and Charging current is greater
-+		 * than charging end limit then battery is charging
-+		*/
-+		if ((chg_end & DA9052_STATUSB_CHGEND) != 0) {
-+			ret = da9052_read_chg_current(bat, &chg_current);
-+			if (ret < 0)
-+				return ret;
-+			ret = da9052_read_chgend_current(bat, &chg_end_current);
-+			if (ret < 0)
-+				return ret;
-+
-+			if (chg_current >= chg_end_current)
-+				bat->status = POWER_SUPPLY_STATUS_CHARGING;
-+			else
-+				bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+		} else {
-+			/* If Charging end flag is cleared then battery is
-+			 * charging
-+			*/
-+			bat->status = POWER_SUPPLY_STATUS_CHARGING;
-+		}
-+	} else if (dcindet || vbusdet) {
-+			bat->charger_type = DA9052_CHARGER;
-+			bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+	} else {
-+		bat->charger_type = DA9052_NOCHARGER;
-+		bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
-+	}
-+
-+	if (status != NULL)
-+		*status = bat->status;
-+	return 0;
-+}
-+
-+static int da9052_bat_read_volt(struct da9052_battery *bat, int *volt_mV)
-+{
-+	int volt;
-+
-+	volt = da9052_adc_manual_read(bat->da9052, DA9052_ADC_MAN_MUXSEL_VBAT);
-+	if (volt < 0)
-+		return volt;
-+
-+	*volt_mV = volt_reg_to_mV(volt);
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_check_presence(struct da9052_battery *bat, int *illegal)
-+{
-+	int bat_temp;
-+
-+	bat_temp = da9052_adc_read_temp(bat->da9052);
-+	if (bat_temp < 0)
-+		return bat_temp;
-+
-+	if (bat_temp > DA9052_BAT_TSH)
-+		*illegal = 1;
-+	else
-+		*illegal = 0;
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_interpolate(int vbat_lower, int  vbat_upper,
-+				   int level_lower, int level_upper,
-+				   int bat_voltage)
-+{
-+	int tmp;
-+
-+	tmp = ((level_upper - level_lower) * 1000) / (vbat_upper - vbat_lower);
-+	tmp = level_lower + (((bat_voltage - vbat_lower) * tmp) / 1000);
-+
-+	return tmp;
-+}
-+
-+unsigned char da9052_determine_vc_tbl_index(unsigned char adc_temp)
-+{
-+	int i;
-+
-+	if (adc_temp <= vc_tbl_ref[0])
-+		return 0;
-+
-+	if (adc_temp > vc_tbl_ref[DA9052_VC_TBL_REF_SZ - 1])
-+		return DA9052_VC_TBL_REF_SZ - 1;
-+
-+	for (i = 0; i < DA9052_VC_TBL_REF_SZ; i++) {
-+		if ((adc_temp > vc_tbl_ref[i]) &&
-+		    (adc_temp <= DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1])))
-+				return i;
-+		if ((adc_temp > DA9052_MEAN(vc_tbl_ref[i], vc_tbl_ref[i + 1]))
-+		     && (adc_temp <= vc_tbl_ref[i]))
-+				return i + 1;
-+	}
-+}
-+
-+static int da9052_bat_read_capacity(struct da9052_battery *bat, int *capacity)
-+{
-+	int adc_temp;
-+	int bat_voltage;
-+	int vbat_lower;
-+	int vbat_upper;
-+	int level_upper;
-+	int level_lower;
-+	int ret;
-+	int flag;
-+	int i = 0;
-+	int j;
-+
-+	ret = da9052_bat_read_volt(bat, &bat_voltage);
-+	if (ret < 0)
-+		return ret;
-+
-+	adc_temp = da9052_adc_read_temp(bat->da9052);
-+	if (adc_temp < 0)
-+		return adc_temp;
-+
-+	i = da9052_determine_vc_tbl_index(adc_temp);
-+
-+	if (bat_voltage >= vc_tbl[i][0][0]) {
-+		*capacity = 100;
-+		return 0;
-+	}
-+	if (bat_voltage <= vc_tbl[i][DA9052_VC_TBL_SZ - 1][0]) {
-+		*capacity = 0;
-+		return 0;
-+	}
-+	flag = 0;
-+
-+	for (j = 0; j < (DA9052_VC_TBL_SZ-1); j++) {
-+		if ((bat_voltage <= vc_tbl[i][j][0]) &&
-+		    (bat_voltage >= vc_tbl[i][j + 1][0])) {
-+			vbat_upper = vc_tbl[i][j][0];
-+			vbat_lower = vc_tbl[i][j + 1][0];
-+			level_upper = vc_tbl[i][j][1];
-+			level_lower = vc_tbl[i][j + 1][1];
-+			flag = 1;
-+			break;
-+		}
-+	}
-+	if (!flag)
-+		return -EIO;
-+
-+	*capacity = da9052_bat_interpolate(vbat_lower, vbat_upper, level_lower,
-+					   level_upper, bat_voltage);
-+
-+	return 0;
-+}
-+
-+static int da9052_bat_check_health(struct da9052_battery *bat, int *health)
-+{
-+	int ret;
-+	int bat_illegal;
-+	int capacity;
-+
-+	ret = da9052_bat_check_presence(bat, &bat_illegal);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (bat_illegal) {
-+		bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		return 0;
-+	}
-+
-+	if (bat->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
-+		ret = da9052_bat_read_capacity(bat, &capacity);
-+		if (ret < 0)
-+			return ret;
-+		if (capacity < DA9052_BAT_LOW_CAP)
-+			bat->health = POWER_SUPPLY_HEALTH_DEAD;
-+		else
-+			bat->health = POWER_SUPPLY_HEALTH_GOOD;
-+	}
-+
-+	*health = bat->health;
-+
-+	return 0;
-+}
-+
-+static irqreturn_t da9052_bat_irq(int irq, void *data)
-+{
-+	struct da9052_battery *bat = data;
-+
-+	irq -= bat->da9052->irq_base;
-+
-+	if (irq == DA9052_IRQ_CHGEND)
-+		bat->status = POWER_SUPPLY_STATUS_FULL;
-+	else
-+		da9052_bat_check_status(bat, NULL);
-+
-+	if (irq == DA9052_IRQ_CHGEND || irq == DA9052_IRQ_DCIN ||
-+	    irq == DA9052_IRQ_VBUS || irq == DA9052_IRQ_TBAT) {
-+		power_supply_changed(&bat->psy);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int da9052_USB_current_notifier(struct notifier_block *nb,
-+					unsigned long events, void *data)
-+{
-+	u8 row;
-+	u8 col;
-+	int *current_mA = data;
-+	int ret;
-+	struct da9052_battery *bat = container_of(nb, struct da9052_battery,
-+						  nb);
-+
-+	if (bat->status == POWER_SUPPLY_STATUS_DISCHARGING)
-+		return -EPERM;
-+
-+	ret = da9052_reg_read(bat->da9052, DA9052_CHGBUCK_REG);
-+	if (ret & DA9052_CHG_USB_ILIM_MASK)
-+		return -EPERM;
-+
-+	if (bat->da9052->chip_id == DA9052)
-+		row = 0;
-+	else
-+		row = 1;
-+
-+	if (*current_mA < da9052_chg_current_lim[row][0] ||
-+	    *current_mA > da9052_chg_current_lim[row][DA9052_CHG_LIM_COLS - 1])
-+		return -EINVAL;
-+
-+	for (col = 0; col <= DA9052_CHG_LIM_COLS - 1 ; col++) {
-+		if (*current_mA <= da9052_chg_current_lim[row][col])
-+			break;
-+	}
-+
-+	return da9052_reg_update(bat->da9052, DA9052_ISET_REG,
-+				 DA9052_ISET_USB_MASK, col);
-+}
-+
-+static int da9052_bat_get_property(struct power_supply *psy,
-+				    enum power_supply_property psp,
-+				    union power_supply_propval *val)
-+{
-+	int ret;
-+	int illegal;
-+	struct da9052_battery *bat = container_of(psy, struct da9052_battery,
-+						  psy);
-+
-+	ret = da9052_bat_check_presence(bat, &illegal);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (illegal && psp != POWER_SUPPLY_PROP_PRESENT)
-+		return -ENODEV;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		ret = da9052_bat_check_status(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval =
-+			(bat->charger_type == DA9052_NOCHARGER) ? 0 : 1;
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		ret = da9052_bat_check_presence(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		ret = da9052_bat_check_health(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-+		val->intval = DA9052_BAT_CUTOFF_VOLT * 1000;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		ret = da9052_bat_read_volt(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_CURRENT_AVG:
-+		ret = da9052_read_chg_current(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		ret = da9052_bat_read_capacity(bat, &val->intval);
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		val->intval = da9052_adc_read_temp(bat->da9052);
-+		ret = val->intval;
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return ret;
-+}
-+
-+static enum power_supply_property da9052_bat_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_CURRENT_AVG,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+};
-+
-+static struct power_supply template_battery = {
-+	.name		= "da9052-bat",
-+	.type		= POWER_SUPPLY_TYPE_BATTERY,
-+	.properties	= da9052_bat_props,
-+	.num_properties	= ARRAY_SIZE(da9052_bat_props),
-+	.get_property	= da9052_bat_get_property,
-+};
-+
-+static const char *const da9052_bat_irqs[] = {
-+	"BATT TEMP",
-+	"DCIN DET",
-+	"DCIN REM",
-+	"VBUS DET",
-+	"VBUS REM",
-+	"CHG END",
-+};
-+
-+static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
-+{
-+	struct da9052_pdata *pdata;
-+	struct da9052_battery *bat;
-+	int ret;
-+	int irq;
-+	int i;
-+
-+	bat = kzalloc(sizeof(struct da9052_battery), GFP_KERNEL);
-+	if (!bat)
-+		return -ENOMEM;
-+
-+	bat->da9052 = dev_get_drvdata(pdev->dev.parent);
-+	bat->psy = template_battery;
-+	bat->charger_type = DA9052_NOCHARGER;
-+	bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
-+	bat->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+	bat->nb.notifier_call = da9052_USB_current_notifier;
-+
-+	pdata = bat->da9052->dev->platform_data;
-+	if (pdata != NULL && pdata->use_for_apm)
-+		bat->psy.use_for_apm = pdata->use_for_apm;
-+	else
-+		bat->psy.use_for_apm = 1;
-+
-+	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		ret = request_threaded_irq(bat->da9052->irq_base + irq,
-+					   NULL, da9052_bat_irq,
-+					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					   da9052_bat_irqs[i], bat);
-+		if (ret != 0) {
-+			dev_err(bat->da9052->dev,
-+				"DA9052 failed to request %s IRQ %d: %d\n",
-+				da9052_bat_irqs[i], irq, ret);
-+			goto err;
-+		}
-+	}
-+
-+	ret = power_supply_register(&pdev->dev, &bat->psy);
-+	 if (ret)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	for (; i >= 0; i--) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		free_irq(bat->da9052->irq_base + irq, bat);
-+	}
-+	kfree(bat);
-+	return ret;
-+}
-+static int __devexit da9052_bat_remove(struct platform_device *pdev)
-+{
-+	int i;
-+	int irq;
-+	struct da9052_battery *bat = platform_get_drvdata(pdev);
-+
-+	for (i = 0; i < ARRAY_SIZE(da9052_bat_irqs); i++) {
-+		irq = platform_get_irq_byname(pdev, da9052_bat_irqs[i]);
-+		free_irq(bat->da9052->irq_base + irq, bat);
-+	}
-+	power_supply_unregister(&bat->psy);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_bat_driver = {
-+	.probe = da9052_bat_probe,
-+	.remove = __devexit_p(da9052_bat_remove),
-+	.driver = {
-+		.name = "da9052-bat",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9052_bat_init(void)
-+{
-+	return platform_driver_register(&da9052_bat_driver);
-+}
-+module_init(da9052_bat_init);
-+
-+static void __exit da9052_bat_exit(void)
-+{
-+	platform_driver_unregister(&da9052_bat_driver);
-+}
-+module_exit(da9052_bat_exit);
-+
-+MODULE_DESCRIPTION("DA9052 BAT Device Driver");
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9052-bat");
+ static u64 dma_mask = DMA_BIT_MASK(32);
+ 
+-static int dma_new(struct snd_card *card,
+-	struct snd_soc_dai *dai, struct snd_pcm *pcm)
++static int dma_new(struct snd_soc_pcm_runtime *rtd)
+ {
++	struct snd_card *card = rtd->card->snd_card;
++	struct snd_soc_dai *dai = rtd->cpu_dai;
++	struct snd_pcm *pcm = rtd->pcm;
+ 	int ret = 0;
+ 
+ 	pr_debug("Entered %s\n", __func__);
 
+
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index c53f5d5..29bf9fb 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2143,8 +2143,7 @@ static int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
+ 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &soc_pcm_ops);
+ 
+ 	if (platform->driver->pcm_new) {
+-		ret = platform->driver->pcm_new(rtd->card->snd_card,
+-						codec_dai, pcm);
++		ret = platform->driver->pcm_new(rtd);
+ 		if (ret < 0) {
+ 			pr_err("asoc: platform pcm constructor failed\n");
+ 			return ret;
 
