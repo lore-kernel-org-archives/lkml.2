@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab1LNPiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:38:07 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42180 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab1LNPiC convert rfc822-to-8bit (ORCPT
+	id S1757163Ab1LNPk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:40:58 -0500
+Received: from smtp.altlinux.org ([194.107.17.36]:38432 "EHLO
+	smtp.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab1LNPk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:38:02 -0500
+	Wed, 14 Dec 2011 10:40:57 -0500
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 10:40:56 EST
+To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sysfs: change permissions for /sys from 0755 to 0555
+X-PHP-Originating-Script: 0:func.inc
 MIME-Version: 1.0
-In-Reply-To: <1323874795-2488-10-git-send-email-sjur.brandeland@stericsson.com>
-References: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1323874795-2488-10-git-send-email-sjur.brandeland@stericsson.com>
-Date: Wed, 14 Dec 2011 16:38:01 +0100
-Message-ID: <CACRpkdY-6PT4OpML_S2W2ag90b0AM1XxUq6dDKd18NSCa+agTw@mail.gmail.com>
-Subject: Re: [PATCHv3 09/10] xshm: Makefile and Kconfig for M7400 Shared
- Memory Drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        sjurbren@gmail.com, Randy Dunlap <rdunlap@xenotime.net>,
-        Paul Bolle <pebolle@tiscali.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 14 Dec 2011 19:34:50 +0400
+From: Vitaly Kuznetsov <vitty@altlinux.ru>
+Message-ID: <1b3c733f0412e214042566bac2c3f3e6@hadoop.ru>
+User-Agent: Roundcube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/14 Sjur Brændeland <sjur.brandeland@stericsson.com>:
+There is a misleading difference between /proc and /sys permissions, 
+/proc is 0555 and /sys is 0755. But
+as it is impossible to create or unlink something in /sys it would be 
+nice to have same permissions.
 
-> diff --git a/drivers/xshm/Makefile b/drivers/xshm/Makefile
-> new file mode 100644
-> index 0000000..001cd79
-> --- /dev/null
-> +++ b/drivers/xshm/Makefile
-> @@ -0,0 +1,5 @@
-> +obj-$(CONFIG_XSHM_BUS) += xshm_bus.o
+Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
+---
+  fs/sysfs/mount.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Is this part of the patch set? I get:
-make[4]: *** No rule to make target `drivers/xshm/xshm_bus.o', needed
-by `drivers/xshm/built-in.o'.  Stop.
-make[3]: *** [drivers/xshm] Error 2
-make[3]: *** Waiting for unfinished jobs....
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 4974995..9d56fdd 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -36,7 +36,7 @@ struct sysfs_dirent sysfs_root = {
+         .s_name         = "",
+         .s_count        = ATOMIC_INIT(1),
+         .s_flags        = SYSFS_DIR,
+-       .s_mode         = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
++       .s_mode         = S_IFDIR | S_IRUGO | S_IXUGO,
+         .s_ino          = 1,
+  };
 
-When I select CONFIG_XSHM for a platform here at random...
+-- 
+1.7.7.4
 
-Yours,
-Linus Walleij
