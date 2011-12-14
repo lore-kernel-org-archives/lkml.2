@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab1LNUfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 15:35:37 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56782 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab1LNUfg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 15:35:36 -0500
+	id S1758044Ab1LNUmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 15:42:20 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34713 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757007Ab1LNUmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 15:42:15 -0500
+Date: Wed, 14 Dec 2011 21:42:10 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/4] mm: bootmem: try harder to free pages in bulk
+Message-ID: <20111214204210.GF3047@cmpxchg.org>
+References: <1323784711-1937-1-git-send-email-hannes@cmpxchg.org>
+ <1323784711-1937-5-git-send-email-hannes@cmpxchg.org>
+ <20111214202032.GA24496@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1112142116540.3020@ionos>
-References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
-	<alpine.LFD.2.02.1112141423380.3020@ionos>
-	<alpine.LFD.2.02.1112142116540.3020@ionos>
-Date: Wed, 14 Dec 2011 12:35:35 -0800
-X-Google-Sender-Auth: L_JJg_fII5weNSXoHYQguzDyu1I
-Message-ID: <CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
-Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5 machine
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111214202032.GA24496@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 12:17 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Wed, 14 Dec 2011, Thomas Gleixner wrote:
->
->> On Wed, 14 Dec 2011, Nikunj A Dadhania wrote:
->>
->> > Hi,
->> >
->> > I was trying the latest tip kernel and I am seeing the following
->> > message. After some more logs the machine does not proceed.
->> >
->> > ------------[ cut here ]------------
->> > WARNING: at kernel/time/clockevents.c:47 clockevent_delta2ns+0x79/0x90()
->>
->> Ok, that's caused by stupidity in the apic timer code. Fix
->> below. Note, that patch wont fix the boot problem. It just prevents
->> the warning.
->>
->> > Hardware name: System x3850 X5 -[71455RQ]-
->> > Modules linked in:
->> > Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc4-tip #3
->> > Call Trace:
->> >  [<ffffffff8104d3af>] warn_slowpath_common+0x7f/0xc0
->> >  [<ffffffff8104d40a>] warn_slowpath_null+0x1a/0x20
->> >  [<ffffffff81097ab9>] clockevent_delta2ns+0x79/0x90
->> >  [<ffffffff81e49109>] calibrate_APIC_clock+0x16e/0x377
->> >  [<ffffffff81e4942c>] setup_boot_APIC_clock+0x59/0x7e
->> >  [<ffffffff81e472d1>] native_smp_prepare_cpus+0x1f1/0x205
->> >  [<ffffffff81e38767>] kernel_init+0x1b6/0x29a
->> >  [<ffffffff815f9ca4>] kernel_thread_helper+0x4/0x10
->> >  [<ffffffff81e385b1>] ? parse_early_options+0x20/0x20
->> >  [<ffffffff815f9ca0>] ? gs_change+0x13/0x13
->> > ---[ end trace a7919e7f17c0a725 ]---
->> > APIC frequency too slow, disabling apic timer
->>
->> Ouch. This is really bad.
->>
->> > Performance Events: PEBS fmt1+, Nehalem events, Intel PMU driver.
->> > CPU erratum AAJ80 worked around
->> > CPUID marked event: 'bus cycles' unavailable
->> > ... version:                3
->> > ... bit width:              48
->> > ... generic registers:      4
->> > ... value mask:             0000ffffffffffff
->> > ... max period:             000000007fffffff
->> > ... fixed-purpose events:   3
->> > ... event mask:             000000070000000f
->> > NMI watchdog enabled, takes one hw-pmu counter.
->> > Booting Node   0, Processors  #1
->> > APIC never delivered???
->> > APIC delivery error (ef).
->> >  #2
->
-> What's worse is that this problem exists on 3.2-rc5 as
-> well. Investigating.
+On Wed, Dec 14, 2011 at 09:20:32PM +0100, Uwe Kleine-König wrote:
+> On Tue, Dec 13, 2011 at 02:58:31PM +0100, Johannes Weiner wrote:
+> > The loop that frees pages to the page allocator while bootstrapping
+> > tries to free higher-order blocks only when the starting address is
+> > aligned to that block size.  Otherwise it will free all pages on that
+> > node one-by-one.
+> > 
+> > Change it to free individual pages up to the first aligned block and
+> > then try higher-order frees from there.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> I gave all four patches a try now on my ARM machine and it still works
+> fine. But note that this patch isn't really tested, because for me
+> free_all_bootmem_core is only called once and that with an aligned
+> address.
+> But at least you didn't broke that case :-)
+> Having said that, I wonder if the code does the right thing for
+> unaligned start. (That is, it's wrong to start testing for bit 0 of
+> map[idx / BITS_PER_LONG], isn't it?) But if that's the case that's not
+> something you introduced in this series.
 
+We round up and cover area beyond the end of the node to the next
+alignment boundary, but don't do the same for the beginning of the
+node.  So map[0] is the first BITS_PER_LONG pages starting at start,
+even when start is not aligned.
 
-BIOS pre-enabled x2apic, and kernel config does not have x2apic enabled?
+> > @@ -196,12 +189,17 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+> >  		map = bdata->node_bootmem_map;
+> >  		idx = start - bdata->node_min_pfn;
+> >  		vec = ~map[idx / BITS_PER_LONG];
+> > -
+> > -		if (aligned && vec == ~0UL) {
+> > +		/*
+> > +		 * If we have a properly aligned and fully unreserved
+> > +		 * BITS_PER_LONG block of pages in front of us, free
+> > +		 * it in one go.
+> > +		 */
+> > +		if (IS_ALIGNED(start, BITS_PER_LONG) && vec == ~0UL) {
+> >  			int order = ilog2(BITS_PER_LONG);
+> >  
+> >  			__free_pages_bootmem(pfn_to_page(start), order);
+> >  			count += BITS_PER_LONG;
+> > +			start += BITS_PER_LONG;
+> >  		} else {
+> >  			unsigned long off = 0;
+> >  
+> > @@ -214,8 +212,8 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+> >  				vec >>= 1;
+> >  				off++;
+> >  			}
+> > +			start = ALIGN(start + 1, BITS_PER_LONG);
+> >  		}
+> > -		start += BITS_PER_LONG;
+> I don't know if the compiler would be more happy if you would just use
+> 
+> 	start = ALIGN(start + 1, BITS_PER_LONG);
+> 
+> unconditionally and drop
+> 
+> 	start += BITS_PER_LONG
+> 
+> in the if block?!
 
-Yinghai
+I thought it would be beneficial to have the simpler version for the
+common case, which is freeing a full block.  Have you looked at the
+object code?
