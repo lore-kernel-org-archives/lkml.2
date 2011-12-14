@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab1LNC4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 21:56:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63111 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab1LNC4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 21:56:47 -0500
-X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=3I5gx53VNj0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=IC_izjxyg4O3JNxrCjIA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1323831406.23971.14.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH] writeback: Unduplicate writeback reason
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Curt Wohlgemuth <curtw@google.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Dec 2011 21:56:46 -0500
-In-Reply-To: <20111214014903.GA25931@localhost>
-References: <20111214003150.GA14520@localhost>
-	 <1323825240.23971.11.camel@gandalf.stny.rr.com>
-	 <20111214014903.GA25931@localhost>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756316Ab1LNDSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 22:18:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53347 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754048Ab1LNDSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 22:18:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="86301861"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH 0/3] fixes for ata port runtime pm support
+Date: Wed, 14 Dec 2011 11:17:58 +0800
+Message-Id: <1323832681-7177-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 09:49 +0800, Wu Fengguang wrote:
-> Hi Steven,
-> 
-> On Wed, Dec 14, 2011 at 09:14:00AM +0800, Steven Rostedt wrote:
-> > Names of the writeback reasons are used in both the main kernel as well
-> > as for parsing the tracepoint format file. Instead of duplicating the
-> > names in two locations making it likely that they may become out of
-> > sync, use some macro magic to make sure all the names stay in sync. Any
-> > update only needs to happen in one spot for it to take place in all
-> > locations.
->  
-> It looks a bit hacky,
+Hi Jeff,
 
-One of my professors showed me this trick a long time ago when I was
-going for my Masters. It was actually the trick I based the entire
-TRACE_EVENT() macro magic on :)
+Here are some fixes for ata port runtime pm support.
+Applied on top of libata tree.
 
->  but does the nice job of de-duplicating code.
-> And it compiles. So I like it and would like to take it with the below
-> rename :-)
-> 
-> > Note, this is an RFC patch, and it probably needs much better comments
-> > (well, it currently has no comments), and the C() macro probably should
-> > have a different name too.
-> 
-> C => WB_ENUM_REASONS_ITEM? It may look unpleasantly long, however is
-> unique enough to make the many #define/#undef safe. 
+Lin Ming (3):
+      [SCSI] sd: fix runtime status check in sd_shutdown
+      [SCSI]: runtime resume parent for child's system-resume
+      ata: update ata port's runtime status during system resume
 
-Sure. Acked-by: Steven Rostedt <rostedt@goodmis.org>
+ drivers/ata/libata-core.c |   18 ++++++++++++++++--
+ drivers/scsi/scsi_pm.c    |   11 ++++++++++-
+ drivers/scsi/sd.c         |    7 ++++++-
+ 3 files changed, 32 insertions(+), 4 deletions(-)
 
-Note, there's one buggy issue still. That the enums names still trip up
-trace-cmd. But that's fine, because I have a plan to fix that too. But
-that will be on the ftrace said.
-
-Thanks!
-
--- Steve
-
+Thanks,
+Lin Ming
 
