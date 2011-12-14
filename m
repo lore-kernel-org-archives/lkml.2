@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1LND2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 22:28:50 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:32680 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754788Ab1LND2t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 22:28:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAPMV6E55LOCn/2dsb2JhbABDqyGBBoFyAQEFJxMcIxAIAxguFCUDIRO+XROLYASUcZI+
-Date: Wed, 14 Dec 2011 14:28:44 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Curt Wohlgemuth <curtw@google.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] writeback: Unduplicate writeback reason
-Message-ID: <20111214032844.GL3179@dastard>
-References: <20111214003150.GA14520@localhost>
- <1323825240.23971.11.camel@gandalf.stny.rr.com>
+	id S932070Ab1LNDg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 22:36:57 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:31296
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754494Ab1LNDg4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 22:36:56 -0500
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371Ic89bh936eK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4EE81ADD.6090104@freescale.com>
+Date: Wed, 14 Dec 2011 11:41:17 +0800
+From: LiuShuo <b35362@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323825240.23971.11.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <dedekind1@gmail.com>, Scott Wood <scottwood@freescale.com>
+CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
+        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>	 <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>	 <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>
+In-Reply-To: <1323724195.2297.11.camel@koala>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 08:14:00PM -0500, Steven Rostedt wrote:
-> Names of the writeback reasons are used in both the main kernel as well
-> as for parsing the tracepoint format file. Instead of duplicating the
-> names in two locations making it likely that they may become out of
-> sync, use some macro magic to make sure all the names stay in sync. Any
-> update only needs to happen in one spot for it to take place in all
-> locations.
-> 
-> Note, this is an RFC patch, and it probably needs much better comments
-> (well, it currently has no comments), and the C() macro probably should
-> have a different name too.
+于 2011年12月13日 05:09, Artem Bityutskiy 写道:
+> On Tue, 2011-12-06 at 18:09 -0600, Scott Wood wrote:
+>> On 12/03/2011 10:31 PM, shuo.liu@freescale.com wrote:
+>>> From: Liu Shuo<shuo.liu@freescale.com>
+>>>
+>>> Freescale FCM controller has a 2K size limitation of buffer RAM. In order
+>>> to support the Nand flash chip whose page size is larger than 2K bytes,
+>>> we read/write 2k data repeatedly by issuing FIR_OP_RB/FIR_OP_WB and save
+>>> them to a large buffer.
+>>>
+>>> Signed-off-by: Liu Shuo<shuo.liu@freescale.com>
+>>> ---
+>>> v3:
+>>>      -remove page_size of struct fsl_elbc_mtd.
+>>>      -do a oob write by NAND_CMD_RNDIN.
+>>>
+>>>   drivers/mtd/nand/fsl_elbc_nand.c |  243 ++++++++++++++++++++++++++++++++++----
+>>>   1 files changed, 218 insertions(+), 25 deletions(-)
+>> What is the plan for bad block marker migration.
+I think we can use a special bbt pattern to indicate whether migration 
+has been done.
+(we needn't to define another marker)
 
-I'm not sure this is a pattern we want to repeat all over the place -
-print_symbolic() is quite widely used and adding macro redefinitions
-all over the place doesn't fill me with joy.
+Do the migration our chip->scan_bbt as follow :
 
-AFAICT this code doesn't need a declared array to work so you can
-just use a preprocessor construct like this (as used in XFS):
+/*
+  * this pattern indicate that the bad block information has been migrated,
+  * if this isn't found, we do the migration.
+  */
+static u8 migrated_bbt_pattern[] = {'M', 'b', 'b', 't', '0' };
 
-#define value_1 	1
-#define value_2		2
-.....
+static int fsl_elbc_bbt(struct mtd_info *mtd)
+{
+         if (!check_migrated_bbt_pattern())
+             bad_block_info_migtrate();
 
-or
-
-enum {
-	value_1	= 1,
-	value_2 = 2,
-	.....
+          nand_default_bbt(mtd); /* default function in nand_bbt.c */
 }
 
-followed by:
+- LiuShuo
 
-#define VALUES	\
-	{ value_1,	"Value 1" }, \
-	{ value_2,	"Value 2" }, \
-	.....
-
-And it just uses print_symbolic(__entry->value, VALUES); to print
-them out.
-
-If this construct does everything requiredi, then I think it is a
-much better pattern to use because it's easy to maintain, doesn't
-require an array to be declared in a C file and doesn't require
-macro tricks to do it's job....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
