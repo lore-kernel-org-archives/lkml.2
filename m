@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab1LNQgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:36:06 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:52604 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab1LNQgE (ORCPT
+	id S1757573Ab1LNQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:36:29 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:7603 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757558Ab1LNQg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:36:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
-Date: Wed, 14 Dec 2011 16:35:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        akpm@linux-foundation.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com
-References: <1322125938-6944-2-git-send-email-dg77.kim@samsung.com> <1322125938-6944-3-git-send-email-dg77.kim@samsung.com> <20111212170846.GO13952@sortiz-mobl>
-In-Reply-To: <20111212170846.GO13952@sortiz-mobl>
+	Wed, 14 Dec 2011 11:36:28 -0500
+Message-ID: <4EE8D08A.9070202@tilera.com>
+Date: Wed, 14 Dec 2011 11:36:26 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: roel <roel.kluin@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: misplaced parens near likely
+References: <4EE6815E.8090905@gmail.com>
+In-Reply-To: <4EE6815E.8090905@gmail.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112141635.55071.arnd@arndb.de>
-X-Provags-ID: V02:K0:NZSAJGWrl9Y4aqC5Yrsy4O3ZEMW+Wvo4ZjS9+t+m8ke
- yYIHspMWYcChbD0nP6L+HkC7BdGQWvPbuNMekY9on8nHYZBdVn
- DT00mpnrJr3EsvcVtslbZ6sXu+sOzdX3pJLW1yacKyiwrlziXw
- LZbCD3DXr9/czvJBU3AT/JRF9gWisJKzQfD2ZTxM/IHZqjusb/
- OMecOaqKdLMq0LD+X9xpwW3FSvuRk8PEf1X39mIlyFRtXaJhzg
- 3yuiPu6ZD239GdUU2w81NN2NufSjp/KCLI4bpnr1rt8dUKs0NW
- KixwAkhK8aSVfDU4OF531MNsRV1IV4SQG1fv67IVgHC/E1EtrS
- /TpVymYKZaWbKnaUphu8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 December 2011, Samuel Ortiz wrote:
-> On Thu, Nov 24, 2011 at 06:12:18PM +0900, Donggeun Kim wrote:
-> > The MUIC function in MAX8997 device can be used as
-> > a USB port detector and switch.
-> > This patch supports the MUIC feature of MAX8997.
-> 
-> I'm queueing this one to my for-next branch as it depends on your previous MFD
-> patch.
-> I'm also cc'ing Arnd in case he has some objections.
+On 12/12/2011 5:34 PM, roel wrote:
+> Parentheses were missing.
+>
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
 
-Thanks for the notification!
+Thanks, I'll take this into the tile tree.
 
-First of all, every new user space interface including new sysfs files
-and uevent messages needs documentation in the Documentation/ABI
-directory.
+> ---
+>  arch/tile/lib/spinlock_32.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> This is what it should be, right?
+>
+> diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
+> index cb0999f..b16ac49 100644
+> --- a/arch/tile/lib/spinlock_32.c
+> +++ b/arch/tile/lib/spinlock_32.c
+> @@ -144,7 +144,7 @@ void arch_read_unlock(arch_rwlock_t *rwlock)
+>  	for (;;) {
+>  		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
+>  		val = __insn_tns((int *)&rwlock->lock);
+> -		if (likely(val & 1) == 0) {
+> +		if (likely((val & 1) == 0)) {
+>  			rwlock->lock = val - (1 << _RD_COUNT_SHIFT);
+>  			__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
+>  			break;
 
-The part that is not clear to me is how this new driver fits in
-with the first fsa9480 driver and the currently discussed extcon
-subsystem, apparently all written by the same team at Samsung.
-Is this misc driver still useful when the extcon framework gets
-merged?
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-I very much believe that we should avoid introducing user interfaces
-in a driver specific way when we have multiple pieces of hardware
-that try to do the same thing. The extcon subsystem seems to handle
-this correctly on the high-level (I have not done a detailed
-review yet but I trust that it will be ok), so I don't understand
-why we want another driver for the MAX8997 MUIC.
-
-	Arnd
