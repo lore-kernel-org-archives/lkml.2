@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab1LNTbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 14:31:47 -0500
-Received: from eng.riverbed.com ([208.70.196.45]:50920 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab1LNTbp (ORCPT
+	id S1758048Ab1LNTdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 14:33:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:64091 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab1LNTdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 14:31:45 -0500
-X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 14:31:45 EST
-From: Jiang Wang <Jiang.Wang@riverbed.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: ppanchamukhi@riverbed.com, clala@riverbed.com,
-        Francis.St.Amant@riverbed.com, miles.ito@intel.com,
-        Jiang Wang <Jiang.Wang@riverbed.com>
-Subject: [PATCH 1/2] e100: power down PHY if WOL is not enabled
-Date: Tue, 13 Dec 2011 18:49:55 -0800
-Message-Id: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 14 Dec 2011 14:33:19 -0500
+X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Jj81R3xejsoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=C-krsxV6Xh8kvhYOQQkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323891195.23971.60.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Date: Wed, 14 Dec 2011 14:33:15 -0500
+In-Reply-To: <4EE8EA61.9050902@zytor.com>
+References: <20111214025237.457632996@goodmis.org>
+	 <20111214025253.519573056@goodmis.org> <4EE8EA61.9050902@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the interface will not be used after being put down and WOL is disabled,
-just power it off.
-When bring up the interface, power on the PHY.
+On Wed, 2011-12-14 at 10:26 -0800, H. Peter Anvin wrote:
+> On 12/13/2011 06:52 PM, Steven Rostedt wrote:
+> > With i386, NMIs and breakpoints use the current stack and they
+> > do not reset the stack pointer to a fix point that might corrupt
+> > a previous NMI or breakpoint (as it does in x86_64). But NMIs are
+> > still not made to be re-entrant, and need to prevent the case that
+> > an NMI hitting a breakpoint (which does an iret), doesn't allow
+> > another NMI to run.
+> 
+> Okay... what about the other way around: avoiding the IRET when invoked
+> from an NMI context and therefore leaving NMI disabled until the
+> appropriate time?
 
-Signed-off-by: Jiang Wang <Jiang.Wang@riverbed.com>
----
- drivers/net/ethernet/intel/e100.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+Linus was against this approach. He didn't want the ugliness of NMI to
+spread to other code, by adding ugly handlers around the 'iret' of
+breakpoints and exceptions.
 
-diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index 5a2fdf7..9824e0a 100644
---- a/drivers/net/ethernet/intel/e100.c
-+++ b/drivers/net/ethernet/intel/e100.c
-@@ -1449,6 +1449,14 @@ static int e100_phy_init(struct nic *nic)
- 		netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
- 			     "phy_addr = %d\n", nic->mii.phy_id);
- 
-+	/* Make sure power to the PHY is enabled */
-+	if (!(nic->flags & wol_magic)) {
-+		uint16_t phy_data;
-+		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
-+		phy_data &= ~BMCR_PDOWN;
-+		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
-+	}
-+
- 	/* Get phy ID */
- 	id_lo = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID1);
- 	id_hi = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID2);
-@@ -2261,6 +2269,15 @@ static void e100_down(struct nic *nic)
- 	napi_disable(&nic->napi);
- 	netif_stop_queue(nic->netdev);
- 	e100_hw_reset(nic);
-+
-+	/* If wake on LAN is not enabled, power down the PHY */
-+	if (!(nic->flags & wol_magic)) {
-+		uint16_t phy_data;
-+		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
-+		phy_data |= BMCR_PDOWN;
-+		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
-+	}
-+
- 	free_irq(nic->pdev->irq, nic->netdev);
- 	del_timer_sync(&nic->watchdog);
- 	netif_carrier_off(nic->netdev);
--- 
-1.7.1
+-- Steve
+
 
