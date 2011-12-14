@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab1LNWPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 17:15:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52243 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180Ab1LNWO6 (ORCPT
+	id S1758264Ab1LNWPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 17:15:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35955 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755547Ab1LNWPx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 17:14:58 -0500
-Message-ID: <4EE91FDD.5070206@gmail.com>
-Date: Wed, 14 Dec 2011 16:14:53 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Wed, 14 Dec 2011 17:15:53 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH] irq: fix crash due to op-less irq domains
-References: <1323896156-20692-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1323896156-20692-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <20111214211152.GM27267@pengutronix.de>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+	<1323878622-26602-5-git-send-email-b29396@freescale.com>
+	<20111214211152.GM27267@pengutronix.de>
+Date: Wed, 14 Dec 2011 23:15:53 +0100
+Message-ID: <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Dong Aisheng <b29396@freescale.com>, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, shawn.guo@freescale.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Dec 14, 2011 at 10:11 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Thu, Dec 15, 2011 at 12:03:42AM +0800, Dong Aisheng wrote:
 
-On 12/14/2011 02:55 PM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> IRQ domains without ops does not work anymore after commit
-> "irq: support domains with non-zero hwirq base", since the
-> check dereferences domain->ops->to_irq without checking of
-> domain->ops are NULL. This makes U300 (and probably most other
-> systems using the PL190 VIC) boot again.
+>> +     pmx = pinmux_get(&pdev->dev, NULL);
+>> +     if (IS_ERR(pmx)) {
+>> +             err = PTR_ERR(pmx);
+>> +             goto err_pmx_get;
+>> +     }
+>> +     err = pinmux_enable(pmx);
+>> +     if (err)
+>> +             goto err_pmx_enable;
+>> +     imx_data->pmx = pmx;
+>> +
+>
+> Won't this break every i.MX except i.MX6?
 
-I thought the VIC series had the fix for this, but it seems not. NULL
-ops is considered invalid based on the code comments. The correct fix is
-this patch:
+Not this patch on its own, first the machines have to
+select PINCTRL
+select PINMUX_FOO
 
-irqdomain: export irq_domain_simple_ops for !CONFIG_OF
-http://www.spinics.net/lists/arm-kernel/msg150290.html
+*Then* it will break :-D
 
-I believe this is going in with some iMX changes. But I guess the VIC is
-going to need a fix to use irq_domain_simple_ops.
+So if you want to do this for i.MX you need something like
+selectable dummy pinmuxes, i.e. pinmux_get() to return something
+that just say "OK" to everything like the dummy regulators.
 
-Rob
+Shall I try to create something like that?
 
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  include/linux/irqdomain.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index 99834e58..78a1e66 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -74,7 +74,7 @@ struct irq_domain {
->  static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
->  					     unsigned long hwirq)
->  {
-> -	if (d->ops->to_irq)
-> +	if (d->ops && d->ops->to_irq)
->  		return d->ops->to_irq(d, hwirq);
->  	if (WARN_ON(hwirq < d->hwirq_base))
->  		return 0;
+Yours,
+Linus Walleij
