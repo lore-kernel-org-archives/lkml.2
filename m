@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab1LNRMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:12:13 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:38889
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755296Ab1LNRML (ORCPT
+	id S1757700Ab1LNRNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:13:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33409 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129Ab1LNRN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:12:11 -0500
-X-Greylist: delayed 3015 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 12:12:10 EST
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: rdunlap@xenotime.net, lenb@kernel.org,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] ACPI: kernel-parameters.txt : Add intel_idle.max_cstate
-Date: Thu, 15 Dec 2011 01:18:52 +0900
-Message-Id: <1323879532-10490-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
+	Wed, 14 Dec 2011 12:13:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF176B446FFD@HQMAIL01.nvidia.com>
+References: <1323851530-4171-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF176B446FFD@HQMAIL01.nvidia.com>
+Date: Wed, 14 Dec 2011 18:13:27 +0100
+Message-ID: <CACRpkdbjQYCcv9LBVoDb1MkSuqLYfrgb9Hr5w7TKYVoJCLwWGA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: add a group-specific hog macro
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing intel_idle.max_cstate in kernel-parameters.txt
+On Wed, Dec 14, 2011 at 4:46 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Wednesday, December 14, 2011 1:32 AM:
+>> To create elegant tables for pinmux hogs on the PXA MMP platform,
+>> we need this hog macro that can specify both function and group in
+>> one go.
+>>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+>
+> That said, when using this, I'd wrap it in a macro that set .name and
+> .group to the same thing; for system hogs, I'm not sure what other name
+> would be useful. Should the macro do that?
 
-Signed-off-by Masanari Iida <standby24x7@gmail.com>
-cc:Len Brown <lenb@kernel.org>
-cc:Randy Dunlap <rdunlap@xenotime.net>
----
- Documentation/kernel-parameters.txt |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Nah I want to keep these namespaces separate. I can see why you'd
+want to do that but it could be confusing too, some may want to
+say, prefix the map entry name with the board name (or a board
+wildcard like "mop500*" or nifty things like that so they see "OK these
+entries are for all boards, these are for this specific variant..." etc.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 81c287f..c6a56d8 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1035,6 +1035,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			By default, super page will be supported if Intel IOMMU
- 			has the capability. With this option, super page will
- 			not be supported.
-+
-+	intel_idle.max_cstate=	[KNL,HW,ACPI,X86]
-+			0	disables intel_idle and fall back on acpi_idle.
-+			1 to 6	specify maximum depth of C-state.
-+
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
- 			off	disable Interrupt Remapping
--- 
-1.7.6.4
-
+Linus Walleij
