@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab1LNVlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 16:41:25 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45827 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab1LNVlY convert rfc822-to-8bit (ORCPT
+	id S1758218Ab1LNVpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 16:45:25 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:55764 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab1LNVpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 16:41:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE8E52C.1030506@gmail.com>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
- <1323878622-26602-2-git-send-email-b29396@freescale.com> <4EE8E52C.1030506@gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 14 Dec 2011 14:41:01 -0700
-X-Google-Sender-Auth: 9YXJ7B-SzuaKD1hcv-qWElIb5rA
-Message-ID: <CACxGe6tQO=5oGXjpZ_VD+Pzs+mPKgdciKBHiA6YBf4PHfe_Q7g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 1/4] dt: add of_get_child_number helper function
-To: Rob Herring <robherring2@gmail.com>
-Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Dec 2011 16:45:22 -0500
+Date: Wed, 14 Dec 2011 22:37:13 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Su Kang Yin <cantona@cantona.no-ip.org>
+Cc: hayeswang <hayeswang@realtek.com>, linux-kernel@vger.kernel.org,
+        nic_swsd@realtek.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] r8169.c correct MSIEnable register offset
+Message-ID: <20111214213713.GA2907@electric-eye.fr.zoreil.com>
+References: <CABJLtPHWfRLcbzDFR0ZXe4da3jv04eDZL2CabF1FTcaadoy0xQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABJLtPHWfRLcbzDFR0ZXe4da3jv04eDZL2CabF1FTcaadoy0xQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 11:04 AM, Rob Herring <robherring2@gmail.com> wrote:
-> Dong,
->
-> On 12/14/2011 10:03 AM, Dong Aisheng wrote:
->> From: Dong Aisheng <dong.aisheng@linaro.org>
->>
->> Currently most code to get child number in kernel are almost same,
->> add a helper to implement this function for dt to use.
->>
->> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> ---
->>  include/linux/of.h |   17 +++++++++++++++++
->>  1 files changed, 17 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/of.h b/include/linux/of.h
->> index 4948552..09d53dc 100644
->> --- a/include/linux/of.h
->> +++ b/include/linux/of.h
->> @@ -189,6 +189,18 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
->>       for (child = of_get_next_child(parent, NULL); child != NULL; \
->>            child = of_get_next_child(parent, child))
->>
->> +static inline int of_get_child_number(struct device_node *np)
->
-> I would call this of_get_child_count instead.
+Su Kang Yin <cantona@cantona.no-ip.org> :
+> correct MSIEnable (bit 5) register to Config1 (offset 0x52) instead of
+> Config2 (offset 0x53)
 
-I agree.
+I wonder where the inspiration for the MSIEnable bit came from.
+It looks like something was confused with the Message Control word
+in PCI space.
 
->
-> Rob
-
-
+Imho you can simply remove it altogether.
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Ueimor
