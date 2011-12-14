@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab1LNRPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:15:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51308 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab1LNRPu convert rfc822-to-8bit (ORCPT
+	id S1757732Ab1LNRRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:17:16 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:9345 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198Ab1LNRRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:15:50 -0500
+	Wed, 14 Dec 2011 12:17:07 -0500
+Message-ID: <4EE8DA11.5020109@cavium.com>
+Date: Wed, 14 Dec 2011 09:17:05 -0800
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <1323881310.6805.41.camel@work-vm>
-References: <cover.1323739287.git.luto@amacapital.net> <20111213032406.GA9604@netboy.at.omicron.at>
- <1323747782.4078.144.camel@work-vm> <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
- <20111214074640.GB2180@netboy.at.omicron.at> <1323881310.6805.41.camel@work-vm>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Dec 2011 09:15:29 -0800
-Message-ID: <CALCETrW+g6_VSUJJz4NSVwjKhMo+U_3uQDe9W6uEXdjTuaXVhA@mail.gmail.com>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-To: john stultz <johnstul@us.ibm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: David Daney <ddaney.cavm@gmail.com>, ralf@linux-mips.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        linux-kernel@vger.kernel.org, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH] jump-label: initialize jump-label subsystem somewhat
+ later
+References: <1323881315-23245-1-git-send-email-ddaney.cavm@gmail.com> <1323881470.28489.51.camel@twins>
+In-Reply-To: <1323881470.28489.51.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Dec 2011 17:17:06.0203 (UTC) FILETIME=[34410EB0:01CCBA84]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 8:48 AM, john stultz <johnstul@us.ibm.com> wrote:
-> On Wed, 2011-12-14 at 08:46 +0100, Richard Cochran wrote:
->> On Mon, Dec 12, 2011 at 11:09:29PM -0800, Andy Lutomirski wrote:
->> > On Mon, Dec 12, 2011 at 7:43 PM, john stultz <johnstul@us.ibm.com> wrote:
->> > >> - New name, to distance ourselves from POSIX (clock_ns_get?)
->> >
->> > I will defer to the bikeshedding consensus :)
->> >
->> > >> - Family of calls, with set/get
->> >
->> > Setting the time is a big can of worms.  adjtimex is rather
->> > incomprehensible (without reading lots of source and/or the rfc) and
->> > IMO puts a lot of NTP magic into the kernel, where it doesn't belong.
->
-> Honestly, I don't really see how we jumped to adjtimex from setting the
-> time, nor the complexity hinted at. First, the rational for getting
-> clock_gettime_ns is to avoid the overhead of userland translating from
-> timespec to ns.   I doubt there are similar performance needs for
-> settimeofday().  Even if it was needed, it shouldn't be more complex
-> then the unit conversion done in this abi patch. Am I missing something?
->
->> > That being said, it might be nice to do something about leap seconds.
->> > I always thought that the nanosecond count should include every
->> > possible leap second so that every time that actually happens
->> > corresponds to a unique count, but maybe that's just me.
+On 12/14/2011 08:51 AM, Peter Zijlstra wrote:
+> On Wed, 2011-12-14 at 08:48 -0800, David Daney wrote:
+>> From: David Daney<david.daney@cavium.com>
 >>
->> The advantage of working with TAI is that you can use simple addition
->> and substraction (converting the result to UTC or whatever), and the
->> answer is always correct.
->
-> But again, the hard part with in-kernel TAI (possibly as the base of
-> time)is that initialization of the TAI/UTC offset needs to be able to be
-> phased in slowly, as we also have to preserve legacy interfaces and
-> behavior.
-
-I have a computer that ticks at the wrong rate, and trying to correct
-it via the existing APIs is possible but seemed far more complicated
-than it should have been.  That being said, I have almost no interest
-in messing with this stuff.  I'll leave it to the NTP experts :)
-
-It certainly has nothing to do with my patch.
-
->
->> > >> - Sub nanosecond field
->> >
->> > Me.  A nanosecond is approximately a light-second.  Other than things
->> > local to a single computer, not much of interest happens on a
->> > sub-nanosecond time scale.  Also, a single 64-bit count is nice, and
->> > 2^64 picoseconds isn't very long.
+>> commit 97ce2c88f9ad42e3c60a9beb9fca87abf3639faa breaks MIPS.
 >>
->> Believe it or not, people (from the Test and Measurement field) have
->> already been asking me about having subnanosecond time values from the
->> kernel.
+>> The jump-lable initialization does I-Cache flushing after modifying
+>> code.  On MIPS this is done by calling through the function pointer
+>> flush_icache_range().  This function pointer is initialized mm_init().
 
-I'm curious how that works.  My personal record is synchronizing time
-across a bunch of computers to within maybe half a nanosecond, but it
-wasn't the *system* clock that I synchronized -- I just calibrated a
-bunch of oscillator phase differences on ADC clocks that I was using.
-I only relied on the system clock being correct to a few tens of
-microseconds, which is easily done with PTP.
+Actually I misspoke, for MIPS we need jump_label_init() after 
+trap_init(), not mm_init().
 
 >>
->> What about this sort of time value?
->>
->> struct sys_timeval {
->>       __s64 nanoseconds;
->>       __u32 fractional_ns;
->> };
->>
->> The second field can just be zero, for now.
+>> As things stand, we cannot be calling jump_label_init() until after
+>> mm_init() completes, so we move the call down to satisfy this
+>> constraint.
 >
-> I'm mixed on this.
->
-> We could do this, as the kernel keeps track of sub-ns granularity.
-> However, its not stored in a decimal format. So I worry the extra math
-> needed to convert it to something usable might add extra overhead,
-> removing the gain of the proposed clock_gettime_ns() interface.
+> I'm fine as long as it stays before sched_init(), which it does. Jeremy
+> is this still early enough for you?
 >
 
-I would actually prefer units of 2^-32 ns over .  I have no attachment
-to SI picoseconds so long as the units are constant.
+Just tested a revised patch that moves it to between trap_init() and 
+mm_init(), I propose that we do that instead.
 
-Windows sidesteps this issue by returning arbitrary units and telling
-the user what those units are.  This adds a lot of unpleasantness (try
-relating the timestamps to actual wall time) and we need to rescale
-the time anyway for NTP.
+New patch in a couple of minutes.
 
-What about:
-
-struct sys_timeval {
-    u64 nanoseconds;  /* unsigned.  the current time will always be
-after 1970, and those extra 290 years might be nice. */
-    u64 padding;  /* for later.  currently always zero. */
-
-That way, once there's both an implementation and a use case, we can
-implement it.  In the mean time, the overhead is probably immeasurably
-low -- it's a single assignment.
-
-Note that rdtsc isn't good to a nanosecond, let alone sub-nanosecond
-intervals, on any hardware I've ever seen.
-
---Andy
+David Daney
