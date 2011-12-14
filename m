@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab1LNVkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 16:40:15 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:60599 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab1LNVkM convert rfc822-to-8bit (ORCPT
+	id S1758205Ab1LNVlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 16:41:25 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45827 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab1LNVlY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 16:40:12 -0500
+	Wed, 14 Dec 2011 16:41:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323876538-20406-10-git-send-email-robherring2@gmail.com>
-References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-10-git-send-email-robherring2@gmail.com>
+In-Reply-To: <4EE8E52C.1030506@gmail.com>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+ <1323878622-26602-2-git-send-email-b29396@freescale.com> <4EE8E52C.1030506@gmail.com>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 14 Dec 2011 14:39:51 -0700
-X-Google-Sender-Auth: WBudR5_teYXiqzDmcADczKlzZ2A
-Message-ID: <CACxGe6vDsk9W0Wnr02RhbfKaWWFXHG5vQD_+bKT5h0H88UAOgw@mail.gmail.com>
-Subject: Re: [PATCH 9/9] ARM: highbank: add interrupt properties to gpio nodes
+Date: Wed, 14 Dec 2011 14:41:01 -0700
+X-Google-Sender-Auth: 9YXJ7B-SzuaKD1hcv-qWElIb5rA
+Message-ID: <CACxGe6tQO=5oGXjpZ_VD+Pzs+mPKgdciKBHiA6YBf4PHfe_Q7g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 1/4] dt: add of_get_child_number helper function
 To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, shawn.guo@freescale.com,
-        Kukjin Kim <kgene.kim@samsung.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 8:28 AM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Wed, Dec 14, 2011 at 11:04 AM, Rob Herring <robherring2@gmail.com> wrote:
+> Dong,
 >
-> Add interrupt-controller properties to pl061 gpio nodes so gpio lines can
-> function as interrupts.
+> On 12/14/2011 10:03 AM, Dong Aisheng wrote:
+>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>
+>> Currently most code to get child number in kernel are almost same,
+>> add a helper to implement this function for dt to use.
+>>
+>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>>  include/linux/of.h |   17 +++++++++++++++++
+>>  1 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/of.h b/include/linux/of.h
+>> index 4948552..09d53dc 100644
+>> --- a/include/linux/of.h
+>> +++ b/include/linux/of.h
+>> @@ -189,6 +189,18 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
+>>       for (child = of_get_next_child(parent, NULL); child != NULL; \
+>>            child = of_get_next_child(parent, child))
+>>
+>> +static inline int of_get_child_number(struct device_node *np)
 >
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> I would call this of_get_child_count instead.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+I agree.
 
-> ---
->  arch/arm/boot/dts/highbank.dts |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
 >
-> diff --git a/arch/arm/boot/dts/highbank.dts b/arch/arm/boot/dts/highbank.dts
-> index aeb1a75..dfe2b49 100644
-> --- a/arch/arm/boot/dts/highbank.dts
-> +++ b/arch/arm/boot/dts/highbank.dts
-> @@ -89,7 +89,6 @@
->                        #size-cells = <0>;
->                        #address-cells = <1>;
->                        interrupt-controller;
-> -                       interrupt-parent;
->                        reg = <0xfff11000 0x1000>,
->                              <0xfff10100 0x100>;
->                };
-> @@ -129,6 +128,8 @@
->                        #gpio-cells = <2>;
->                        compatible = "arm,pl061", "arm,primecell";
->                        gpio-controller;
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <2>;
->                        reg = <0xfff30000 0x1000>;
->                        interrupts = <0 14 4>;
->                };
-> @@ -137,6 +138,8 @@
->                        #gpio-cells = <2>;
->                        compatible = "arm,pl061", "arm,primecell";
->                        gpio-controller;
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <2>;
->                        reg = <0xfff31000 0x1000>;
->                        interrupts = <0 15 4>;
->                };
-> @@ -145,6 +148,8 @@
->                        #gpio-cells = <2>;
->                        compatible = "arm,pl061", "arm,primecell";
->                        gpio-controller;
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <2>;
->                        reg = <0xfff32000 0x1000>;
->                        interrupts = <0 16 4>;
->                };
-> @@ -153,6 +158,8 @@
->                        #gpio-cells = <2>;
->                        compatible = "arm,pl061", "arm,primecell";
->                        gpio-controller;
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <2>;
->                        reg = <0xfff33000 0x1000>;
->                        interrupts = <0 17 4>;
->                };
-> --
-> 1.7.5.4
->
+> Rob
 
 
 
