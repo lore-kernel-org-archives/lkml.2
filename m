@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab1LNDoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 22:44:19 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36682 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753515Ab1LNDoP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 22:44:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE7B7B9.7060700@garzik.org>
-References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
-	<1323694267.20451.5.camel@dabdike>
-	<CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
-	<1323766382.8163.12.camel@dabdike>
-	<4EE7B7B9.7060700@garzik.org>
-Date: Wed, 14 Dec 2011 09:14:14 +0530
-Message-ID: <CADDb1s1JwTbeFMsL4Vcz99PhgZKAMG05rgqankYCNeJLFRQSMg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
- routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756634Ab1LND6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 22:58:35 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:36768 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753676Ab1LND6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 22:58:33 -0500
+From: Mike Turquette <mturquette@linaro.org>
+To: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
+        paul@pwsan.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, mturquette@linaro.org, mturquette@ti.com,
+        andrew@lunn.ch
+Subject: [PATCH v4 0/6] common clk framework
+Date: Tue, 13 Dec 2011 19:53:52 -0800
+Message-Id: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff/James,
+From: Mike Turquette <mturquette@ti.com>
 
-Just to add a thought - this issues is not related with ATA, this is
-primarily related with HDD's with a USB interface i.e., SCSI <-> USB.
-And, when I check my kernel config, CONFIG_ATA is not selected,
-libata-scsi - this gets compiled only in case CONFIG_ATA is on.
-Are these two things inter-related?
+The common clk framework is an attempt to define a generic struct clk
+which most platforms can use to build a clk tree and perform a set of
+well-defined operations.
 
-Please let us know.
+The previous patchset, v3, can be found at,
+http://article.gmane.org/gmane.linux.kernel/1218622
 
-Thanks & Regards,
-Amit Sahrawat
+New stuff in v4:
+ * clk rate change notifiers
+ * clk debug info via debugfs (instead of sysfs)
+ * lots of bug fixes
 
-On Wed, Dec 14, 2011 at 2:08 AM, Jeff Garzik <jeff@garzik.org> wrote:
-> On 12/13/2011 03:53 AM, James Bottomley wrote:
->>
->> On Tue, 2011-12-13 at 09:20 +0900, Namjae Jeon wrote:
->>>>
->>>> This whole patch looks like a layering violation.  Why not just update
->>>> the SAT layer to translate the MODE SENSE correctly?
->>>
->>> Would plz you explain more ? I didn't clearly understand your point yet.
->>
->>
->> The ATA layer does translation for SCSI commands.  Just translate the
->> mode sense correctly to use IDENTIFY word 85.  It's a smaller patch and
->> no need for any changes in SCSI.
->
->
-> Correct.
->
->
->> Actually, looking at it, it seems to be correct ... why is it not
->> working for you?
->
->
-> Indeed -- the patch attempts to address a problem that the libata-scsi
-> translation module already handles.
->
-> I would look at why the device is not properly reporting that already. If
-> necessary, we would update libata not SCSI.
->
->        Jeff
->
->
+Stuff that is known to be missing in v4:
+ * basic mux and divider clk types
+ * fix for migrating clk_prepare_count/clk_enable_count in
+   clk_set_parent
+ * minor rework comments from v3
+ * Documentation/clk.txt needs love
+
+All of the mising items above will be rolled into v5 ASAP.  I wanted to
+go ahead and push out the new notifier changes for review and gather
+comments on those since those were a big gap in the v3 patchset.
+
+Paul W. also had some good comments about the greater clk API, and the
+opportunity to fix some of that stuff while this patchset is still under
+discussion.  I didn't address those here because they require more
+thought, and more comments from reviewers.
+
+Finally, OMAP4 support for the common struct clk will be posted
+immediately after this patch series to LAKML and LOML, along with some
+hack patches that show how to use the recursive clk_set_rate for
+propagating rate changes up the tree for CPUfreq and how to use the new
+clk rate change notifiers in a driver.
+
+Mike Turquette (6):
+  clk: Kconfig: add entry for HAVE_CLK_PREPARE
+  Documentation: common clk API
+  clk: introduce the common clock framework
+  clk: introduce rate change notifiers
+  clk: basic gateable and fixed-rate clks
+  clk: export the clk tree topology to debugfs
+
+ Documentation/clk.txt   |  312 +++++++++++++++
+ drivers/clk/Kconfig     |   23 ++
+ drivers/clk/Makefile    |    4 +-
+ drivers/clk/clk-basic.c |  208 ++++++++++
+ drivers/clk/clk.c       |  992 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h     |  230 +++++++++++-
+ 6 files changed, 1765 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/clk.txt
+ create mode 100644 drivers/clk/clk-basic.c
+ create mode 100644 drivers/clk/clk.c
+
+-- 
+1.7.5.4
+
