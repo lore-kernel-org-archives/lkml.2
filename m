@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab1LNWnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 17:43:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34508 "EHLO mail.zytor.com"
+	id S1758315Ab1LNWn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 17:43:27 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:59796 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab1LNWnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 17:43:07 -0500
-Message-ID: <4EE9266A.90200@zytor.com>
-Date: Wed, 14 Dec 2011 14:42:50 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1758281Ab1LNWn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 17:43:26 -0500
+Date: Wed, 14 Dec 2011 14:39:26 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] sched: mark parent and real_parent as __rcu
+Message-ID: <20111214223925.GA27578@www.outflux.net>
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Yinghai Lu <yinghai.lu@oracle.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
- above 4 GB from direct mapping.
-References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>  <4EA09EA2.3030203@zytor.com> <1319149574.13035.6.camel@jshin-Toonie>
-In-Reply-To: <1319149574.13035.6.camel@jshin-Toonie>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2011 03:26 PM, Jacob Shin wrote:
-> On Thu, 2011-10-20 at 17:20 -0500, H. Peter Anvin wrote:
->> On 10/20/2011 02:15 PM, Jacob Shin wrote:
->>> On systems with very large memory (1 TB in our case), BIOS may report a
->>> reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
->>> these from the direct mapping.
->>
->>> +			if (ei->type == E820_RESERVED)
->>> +				continue;
->>
->> This should probably be ei->type != E820_RAM or something similar.  I
->> haven't looked yet, what does the < 4 GiB code do?
-> 
-> Hm, okay, it calls e820_end_of_low_ram_pfn() which effectively is !=
-> E820_RAM.
-> 
-> I'll fix this, test, then resend.
-> 
+The parent and real_parent pointers should be considered __rcu, since
+they should be held under either tasklist_lock or rcu_read_lock.
 
-I never got any kind of updated patch, did I?
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ include/linux/sched.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-	-hpa
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1c4f3e9..b05e8af 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1315,8 +1315,8 @@ struct task_struct {
+ 	 * older sibling, respectively.  (p->father can be replaced with 
+ 	 * p->real_parent->pid)
+ 	 */
+-	struct task_struct *real_parent; /* real parent process */
+-	struct task_struct *parent; /* recipient of SIGCHLD, wait4() reports */
++	struct task_struct __rcu *real_parent; /* real parent process */
++	struct task_struct __rcu *parent; /* recipient of SIGCHLD, wait4() reports */
+ 	/*
+ 	 * children/sibling forms the list of my natural children
+ 	 */
+-- 
+1.7.0.4
 
