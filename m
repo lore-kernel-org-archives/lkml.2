@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab1LNAWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:22:08 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45595 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753956Ab1LNAWF (ORCPT
+	id S1756238Ab1LNAWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:22:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44886 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab1LNAWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:22:05 -0500
-X-Sasl-enc: uuVellw3nyesJ29lSf7XF0aRHmSNpGBlZkqGEhzsq6Hx 1323822124
-Date: Tue, 13 Dec 2011 16:18:47 -0800
-From: Greg KH <greg@kroah.com>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Staging: zram: print the disk size in KB
-Message-ID: <20111214001847.GA26688@kroah.com>
-References: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Dec 2011 19:22:43 -0500
+Date: Tue, 13 Dec 2011 16:22:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
+Subject: Re: [PATCH][V4] Add reboot_pid_ns to handle the reboot syscall
+Message-Id: <20111213162242.1ab3cb1a.akpm@linux-foundation.org>
+In-Reply-To: <1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
+References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
+	<1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 10:46:53AM +0530, Ajeet Yadav wrote:
-> >From a5d5ba92b5af9134e617986884856334c377e1d0 Mon Sep 17 00:00:00 2001
-> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-> Date: Mon, 12 Dec 2011 18:42:30 +0530
-> Subject: [PATCH 1/1] Staging: zram: print the disk size in KB
+On Mon, 12 Dec 2011 01:17:44 +0100
+Daniel Lezcano <daniel.lezcano@free.fr> wrote:
 
-Why did you include the patch in an email instead of using
-git-send-email?  This would force me to edit the patch by hand, removing
-this useless stuff.
-
+> In the case of a child pid namespace, rebooting the system does not
+> really makes sense. When the pid namespace is used in conjunction
+> with the other namespaces in order to create a linux container, the
+> reboot syscall leads to some problems.
 > 
-> Total memory size is in KB, but the zram disk size was not
-> printed in KB, correct the figure in KB units.
+> A container can reboot the host. That can be fixed by dropping
+> the sys_reboot capability but we are unable to correctly poweroff/
+> halt/reboot a container and the container stays stuck at the shutdown
+> time with the container's init process waiting indefinitively.
 > 
-> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-> ---
->  drivers/staging/zram/zram_drv.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> After several attempts, no solution from userspace was found to reliabily
+> handle the shutdown from a container.
 > 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 09de99f..ff591e3 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -126,7 +126,7 @@ static void zram_set_disksize(struct zram *zram,
-> size_t totalram_bytes)
+> This patch propose to make the init process of the child pid namespace to
+> exit with a signal status set to : SIGINT if the child pid namespace called
+> "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
+> When the reboot syscall is called and we are not in the initial
+> pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
+> and "RESTART2". Otherwise we return EINVAL.
+> 
+> Returning EINVAL is also an easy way to check if this feature is supported
+> by the kernel when invoking another 'reboot' option like CAD.
+> 
+> By this way the parent process of the child pid namespace knows if
+> it rebooted or not and can take the right decision.
+>
+> ...
+>
+> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
+> +{
+> +	BUG();
+> +}
+>  #endif /* CONFIG_PID_NS */
 
-And your patch is line-wrapped, making it so I would have to edit it
-again.
+I'd recommend compile-testing this...
 
-Please fix up, and get the acks from the zram maintainer (as this does
-change a kernel/user api) before I can accept this.
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  	                magic2 != LINUX_REBOOT_MAGIC2C))
+>  		return -EINVAL;
+>  
+> +	if (task_active_pid_ns(current) != &init_pid_ns)
+> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
+> +
+>  	/* Instead of trying to make the power_off code look like
+> 	 * halt when pm_power_off is not set do it the easy way.
+> 	 */
 
-greg k-h
+I'll repeat my cruelly-ignored review comment for v3:
+
+This adds a bunch of useless code if CONFIG_PID_NS=n.  It would be
+better to do
+
+#ifdef CONFIG_PID_NS
+extern void pidns_handle_reboot(int cmd);
+#else
+static inline void pidns_handle_reboot(int cmd)
+{
+}
+#endif
+
+(And thereby move the additional code into pid_namespace.c)
