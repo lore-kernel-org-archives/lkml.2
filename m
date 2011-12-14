@@ -1,69 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1LNItk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:49:40 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:58298 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab1LNItj convert rfc822-to-8bit (ORCPT
+	id S1755688Ab1LNJEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 04:04:25 -0500
+Received: from smtp-out-091.synserver.de ([212.40.185.91]:1103 "HELO
+	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1752971Ab1LNJEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:49:39 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Dong Aisheng <dong.aisheng@linaro.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 5/5] ASoC: mxs: correct 'direction' of
- device_prep_dma_cyclic
-Thread-Topic: [PATCH 5/5] ASoC: mxs: correct 'direction' of
- device_prep_dma_cyclic
-Thread-Index: AQHMujLgHUShY+dU6EmZWyX/2qAQPZXbBasA
-Date: Wed, 14 Dec 2011 08:49:36 +0000
-Message-ID: <7FE21149F4667147B645348EC605788503F3AE@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
- <1323848866-19768-1-git-send-email-shawn.guo@linaro.org>
-In-Reply-To: <1323848866-19768-1-git-send-email-shawn.guo@linaro.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Dec 2011 04:04:20 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12098
+Message-ID: <4EE866AE.9090502@metafoo.de>
+Date: Wed, 14 Dec 2011 10:04:46 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, rpurdie@rpsys.net
+Subject: Re: [PATCH RESEND] add led driver for Bachmann's ot200
+References: <CAH9NwWfMXKQ5DUeHfXaMzEKK_Zn6TS6E44AdqhcOj-jMuAeGQw@mail.gmail.com>
+In-Reply-To: <CAH9NwWfMXKQ5DUeHfXaMzEKK_Zn6TS6E44AdqhcOj-jMuAeGQw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Shawn Guo
-> Sent: Wednesday, December 14, 2011 3:48 PM
-> To: Liam Girdwood; Mark Brown
-> Cc: Dong Aisheng; alsa-devel@alsa-project.org; linux-
-> kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Shawn Guo
-> Subject: [PATCH 5/5] ASoC: mxs: correct 'direction' of
-> device_prep_dma_cyclic
+On 12/13/2011 10:57 AM, Christian Gmeiner wrote:
+> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
+> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Date: Fri, 18 Nov 2011 10:21:48 +0100
+> Subject: [PATCH] add led driver for Bachmann's ot200
 > 
-> The commit 49920bc (dmaengine: add new enum dma_transfer_direction)
-> changes the type of parameter 'direction' of device_prep_dma_cyclic from
-> dma_data_direction to dma_transfer_direction.
+> This patch adds support for leds on Bachmann's ot200 visualisation device.
+> The device has three leds on the back panel (led_err, led_init and led_run)
+> and can handle up to seven leds on the front panel.
 > 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> The driver was written by Linutronix on behalf of
+> Bachmann electronic GmbH.
+> 
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
 > ---
->  sound/soc/mxs/mxs-pcm.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/leds/Kconfig      |    8 ++
+>  drivers/leds/Makefile     |    1 +
+>  drivers/leds/leds-ot200.c |  204 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 213 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-ot200.c
 > 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index ff203a4..6cf0dd6 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -387,6 +387,14 @@ config LEDS_RENESAS_TPU
+>          pin function. The latter to support brightness control.
+>          Brightness control is supported but hardware blinking is not.
+> 
+> +config LEDS_OT200
+> +       tristate "LED support for Bachmann OT200"
+> +       depends on LEDS_CLASS
+> +       help
+> +         This option enables support for the LEDs on the Bachmann OT200. The
+> +         LEDs are controlled through LPC bus.
+> +         Say Y to enable LEDs on the Bachmann OT200.
+> +
+>  config LEDS_TRIGGERS
+>        bool "LED Trigger support"
+>        depends on LEDS_CLASS
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index e4f6bf5..0814d42 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)                        += leds-ns2.o
+>  obj-$(CONFIG_LEDS_NETXBIG)             += leds-netxbig.o
+>  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
+>  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
+> +obj-$(CONFIG_LEDS_OT200)               += leds-ot200.o
+> 
+>  # LED SPI Drivers
+>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+> new file mode 100644
+> index 0000000..60f118b
+> --- /dev/null
+> +++ b/drivers/leds/leds-ot200.c
+> @@ -0,0 +1,204 @@
+> +/*
+> + * Bachmann ot200 leds driver.
+> + *
+> + * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> + * License: GPL as published by the FSF.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/leds.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +
+> +struct ot200_led {
+> +       struct led_classdev cdev;
+> +       char name[8];
+> +       unsigned int num;
+> +};
+> +
+> +static u8 old_val;
+> +static u8 old_val_back;
+> +DEFINE_SPINLOCK(value_lock);
+> +
+> +static void ot200_led_set(struct led_classdev *led_cdev,
+> +                       enum led_brightness value)
+> +{
+> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
+> +       u8 val;
+> +       u8 mask;
+> +       unsigned long flags;
+> +
+> +       mask = 1 << led->num;
+> +
+> +       spin_lock_irqsave(&value_lock, flags);
+> +       val = old_val;
+> +
+> +       if (value == LED_OFF)
+> +               val &= ~mask;
+> +       else
+> +               val |= mask;
+> +
+> +       old_val = val;
+> +       spin_unlock_irqrestore(&value_lock, flags);
+> +       outb(val, 0x49);
+> +}
+> +
 
-Regards
-Dong Aisheng
+These two functions (above and beneath) look rather similar, they could
+probably share most of their code. Maybe use the leds num field to
+distinguish between the two types and choose the address where to write the
+value accordingly.
 
+> +static void ot200_led_back_set(struct led_classdev *led_cdev,
+> +                       enum led_brightness value)
+> +{
+> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
+> +       u8 val;
+> +       u8 mask;
+> +       unsigned long flags;
+> +
+> +       mask = 1 << led->num;
+> +
+> +       spin_lock_irqsave(&value_lock, flags);
+> +       val = old_val_back;
+> +
+> +       if (value == LED_OFF)
+> +               val &= ~mask;
+> +       else
+> +               val |= mask;
+> +
+> +       old_val_back = val;
+> +       spin_unlock_irqrestore(&value_lock, flags);
+> +       outb(val, 0x5a);
+> +}
+> +
+> +static int __devinit create_ot200_led(struct platform_device *pdev, int num,
+> +               struct ot200_led *led)
+> +{
+> +       int ret;
+> +
+> +       num += 1;
+> +       snprintf(led->name, sizeof(led->name), "led%d", num);
+> +       led->num = 7 - num;
+> +       led->cdev.name = led->name;
+> +       led->cdev.default_trigger = NULL;
+> +       led->cdev.blink_set = NULL;
+> +       led->cdev.brightness_set = ot200_led_set;
+> +
+> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       dev_set_drvdata(led->cdev.dev, led);
+> +       return 0;
+> +
+> +       led_classdev_unregister(&led->cdev);
+> +out:
+> +       return ret;
+> +}
+
+These two look also rather similar.
+
+> +
+> +static int __devinit create_ot200_led_back(struct platform_device *pdev,
+> +               int num, struct ot200_led *led)
+> +{
+> +       char *led_name;
+> +       int ret;
+> +
+> +       switch (num) {
+> +       case 0:
+> +               led_name = "run";
+> +               break;
+> +       case 1:
+> +               led_name = "init";
+> +               break;
+> +       case 2:
+> +               led_name = "err";
+> +               break;
+> +       default:
+> +               BUG();
+> +       };
+
+Since your led names are const and do not depend on platform data a global
+static array containing all the names (including the led prefix) should
+probably work as well.
+
+> +
+> +       snprintf(led->name, sizeof(led->name), "led_%s", led_name);
+> +       led->num = num;
+> +       led->cdev.name = led->name;
+> +       led->cdev.blink_set = NULL;
+> +       led->cdev.brightness_set = ot200_led_back_set;
+> +
+> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       dev_set_drvdata(led->cdev.dev, led);
+> +       return 0;
+> +
+> +       led_classdev_unregister(&led->cdev);
+> +out:
+> +       return ret;
+> +
+> +}
+> +
+> +#define NUM_LEDS       7
+> +#define NUM_LEDS_BACK  3
+> +#define NUM_LEDS_TOTAL (NUM_LEDS + NUM_LEDS_BACK)
+> +
+> +static int __devinit ot200_led_probe(struct platform_device *pdev)
+> +{
+> +       struct ot200_led *leds;
+> +       int i;
+> +       int ret;
+> +
+> +       leds = kzalloc(sizeof(struct ot200_led) * NUM_LEDS_TOTAL, GFP_KERNEL);
+
+kcalloc
+
+> +       if (!leds)
+> +               return -ENOMEM;
+> +
+> +       for (i = 0; i < NUM_LEDS; i++) {
+> +               ret = create_ot200_led(pdev, i, &leds[i]);
+> +               if (ret < 0)
+> +                       goto err;
+> +       }
+> +
+> +       for (i = NUM_LEDS; i < NUM_LEDS + NUM_LEDS_BACK; i++) {
+> +               ret = create_ot200_led_back(pdev, i - NUM_LEDS, &leds[i]);
+> +               if (ret < 0)
+> +                       goto err;
+> +       }
+> +
+> +       platform_set_drvdata(pdev, leds);
+> +       outb(0x0, 0x49);        /* turn of all front leds */
+
+off
+
+> +       outb(0x2, 0x5a);        /* turn on init led */
+> +       return 0;
+> +
+> +err:
+> +       for (i = i - 1; i >= 0; i--)
+> +               led_classdev_unregister(&leds[i].cdev);
+> +
+> +       kfree(leds);
+> +
+> +       return ret;
+> +}
+> +
+> +static int __devexit ot200_led_remove(struct platform_device *pdev)
+> +{
+> +       int i;
+> +       struct ot200_led *leds;
+> +
+> +       leds = platform_get_drvdata(pdev);
+> +
+> +       for (i = 0; i < NUM_LEDS_TOTAL; i++)
+> +               led_classdev_unregister(&leds[i].cdev);
+> +
+> +       kfree(leds);
+> +       platform_set_drvdata(pdev, NULL);
+
+platform_set_drvdata(pdev, NULL) is not necessary.
+
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver ot200_led_driver = {
+> +       .probe          = ot200_led_probe,
+> +       .remove         = __devexit_p(ot200_led_remove),
+> +       .driver         = {
+> +               .name   = "leds-ot200",
+> +               .owner  = THIS_MODULE,
+> +       },
+> +};
+> +
+> +module_platform_driver(ot200_led_driver);
+> +
+> +MODULE_AUTHOR("Sebastian A. Siewior <bigeasy@linutronix.de>");
+> +MODULE_DESCRIPTION("ot200 LED driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:leds-ot200");
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
