@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1LNTbu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 14:31:50 -0500
+	id S1758050Ab1LNTbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 14:31:47 -0500
 Received: from eng.riverbed.com ([208.70.196.45]:50920 "EHLO
 	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872Ab1LNTbq (ORCPT
+	with ESMTP id S1755473Ab1LNTbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 14:31:46 -0500
+	Wed, 14 Dec 2011 14:31:45 -0500
 X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 14:31:45 EST
 From: Jiang Wang <Jiang.Wang@riverbed.com>
 To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
@@ -23,43 +23,58 @@ To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
 Cc: ppanchamukhi@riverbed.com, clala@riverbed.com,
         Francis.St.Amant@riverbed.com, miles.ito@intel.com,
         Jiang Wang <Jiang.Wang@riverbed.com>
-Subject: [PATCH 2/2] e100: power off PHY after reset when interface is down
-Date: Tue, 13 Dec 2011 18:49:56 -0800
-Message-Id: <1323830996-16388-2-git-send-email-Jiang.Wang@riverbed.com>
+Subject: [PATCH 1/2] e100: power down PHY if WOL is not enabled
+Date: Tue, 13 Dec 2011 18:49:55 -0800
+Message-Id: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
-References: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PHYs supported by e100 re-starts auto-negotiation after writing to
-BMCR_RESET bit. This patch powers down PHY when the interface is down
-and reset is issued.
+Since the interface will not be used after being put down and WOL is disabled,
+just power it off.
+When bring up the interface, power on the PHY.
 
 Signed-off-by: Jiang Wang <Jiang.Wang@riverbed.com>
 ---
- drivers/net/ethernet/intel/e100.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/intel/e100.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index 9824e0a..b8e4910 100644
+index 5a2fdf7..9824e0a 100644
 --- a/drivers/net/ethernet/intel/e100.c
 +++ b/drivers/net/ethernet/intel/e100.c
-@@ -2386,6 +2386,13 @@ static int e100_set_settings(struct net_device *netdev, struct ethtool_cmd *cmd)
- 	err = mii_ethtool_sset(&nic->mii, cmd);
- 	e100_exec_cb(nic, NULL, e100_configure);
+@@ -1449,6 +1449,14 @@ static int e100_phy_init(struct nic *nic)
+ 		netif_printk(nic, hw, KERN_DEBUG, nic->netdev,
+ 			     "phy_addr = %d\n", nic->mii.phy_id);
  
-+	if (!netif_running(netdev) && !(nic->flags & wol_magic)) {
++	/* Make sure power to the PHY is enabled */
++	if (!(nic->flags & wol_magic)) {
++		uint16_t phy_data;
++		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
++		phy_data &= ~BMCR_PDOWN;
++		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
++	}
++
+ 	/* Get phy ID */
+ 	id_lo = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID1);
+ 	id_hi = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID2);
+@@ -2261,6 +2269,15 @@ static void e100_down(struct nic *nic)
+ 	napi_disable(&nic->napi);
+ 	netif_stop_queue(nic->netdev);
+ 	e100_hw_reset(nic);
++
++	/* If wake on LAN is not enabled, power down the PHY */
++	if (!(nic->flags & wol_magic)) {
 +		uint16_t phy_data;
 +		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
 +		phy_data |= BMCR_PDOWN;
 +		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
 +	}
 +
- 	return err;
- }
- 
+ 	free_irq(nic->pdev->irq, nic->netdev);
+ 	del_timer_sync(&nic->watchdog);
+ 	netif_carrier_off(nic->netdev);
 -- 
 1.7.1
 
