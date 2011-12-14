@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab1LNHes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:34:48 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:9154 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753469Ab1LNHer (ORCPT
+	id S1754237Ab1LNHkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:40:09 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43698 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751782Ab1LNHkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:34:47 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Dong Aisheng <dong.aisheng@linaro.org>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 5/5] ASoC: mxs: correct 'direction' of device_prep_dma_cyclic
-Date: Wed, 14 Dec 2011 15:47:46 +0800
-Message-ID: <1323848866-19768-1-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
-References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+	Wed, 14 Dec 2011 02:40:03 -0500
+Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
+ routine fails
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Cc: Jeff Garzik <jeff@garzik.org>, Namjae Jeon <linkinjeon@gmail.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CADDb1s1JwTbeFMsL4Vcz99PhgZKAMG05rgqankYCNeJLFRQSMg@mail.gmail.com>
+References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
+	 <1323694267.20451.5.camel@dabdike>
+	 <CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
+	 <1323766382.8163.12.camel@dabdike> <4EE7B7B9.7060700@garzik.org>
+	 <CADDb1s1JwTbeFMsL4Vcz99PhgZKAMG05rgqankYCNeJLFRQSMg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Dec 2011 11:39:58 +0400
+Message-ID: <1323848398.3063.12.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 49920bc (dmaengine: add new enum dma_transfer_direction)
-changes the type of parameter 'direction' of device_prep_dma_cyclic
-from dma_data_direction to dma_transfer_direction.
+On Wed, 2011-12-14 at 09:14 +0530, Amit Sahrawat wrote:
+> Just to add a thought - this issues is not related with ATA, this is
+> primarily related with HDD's with a USB interface i.e., SCSI <-> USB.
+> And, when I check my kernel config, CONFIG_ATA is not selected,
+> libata-scsi - this gets compiled only in case CONFIG_ATA is on.
+> Are these two things inter-related?
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
- sound/soc/mxs/mxs-pcm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+OK, so what you're telling us is that you're trying to correct a
+deficiency in a SATL inside a USB device?  The device itself is ATA but
+it doesn't use our libata connectors.
 
-diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
-index 0e12f4e..105f42a 100644
---- a/sound/soc/mxs/mxs-pcm.c
-+++ b/sound/soc/mxs/mxs-pcm.c
-@@ -136,7 +136,7 @@ static int snd_mxs_pcm_hw_params(struct snd_pcm_substream *substream,
- 			iprtd->period_bytes * iprtd->periods,
- 			iprtd->period_bytes,
- 			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
--			DMA_TO_DEVICE : DMA_FROM_DEVICE);
-+			DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
- 	if (!iprtd->desc) {
- 		dev_err(&chan->dev->device, "cannot prepare slave dma\n");
- 		return -EINVAL;
--- 
-1.7.4.1
+I think in that case, the best way forwards is a mini-SATL correction
+layer within USB storage.  USB storage is certainly the place to
+black/white list whether this should be done.  ATA_16 is a bit of a
+dangerous command to be throwing around because it's known to crash
+various USB devices (and some old SCSI ones might even choke on it).
+
+depending on how big this SATL ends up being we should consider whether
+it should share processing with the libata SATL.  If it's just a single
+mode sense, my instinct is that it's probably OK to implement separately
+(however, you need to use the libata headers ... no duplication of
+libata opcodes and status defines like you had in the original SCSI
+patch).  If there are more commands to correct on the way, it might be
+better as shared code.
+
+James
 
 
