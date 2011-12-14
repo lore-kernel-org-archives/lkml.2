@@ -1,75 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab1LNHws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:52:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33056 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab1LNHwo convert rfc822-to-8bit (ORCPT
+	id S1755120Ab1LNHxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:53:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56671 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab1LNHxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:52:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
-References: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
-Date: Wed, 14 Dec 2011 08:52:42 +0100
-X-Google-Sender-Auth: giwpD_kMvJBjsYQvwRa1CqBydWM
-Message-ID: <CAMuHMdV_eyMhWS6+CFc--i_KBcyb31u11tEO3OkDQsB4HbYpfA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Staging: zram: print the disk size in KB
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Dec 2011 02:53:36 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Dec 2011 16:52:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: [PATCH 4/4] memcg: simplify LRU handling by new rule
+Message-Id: <20111214165226.1c3b666e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 06:16, Ajeet Yadav <ajeet.yadav.77@gmail.com> wrote:
-> From a5d5ba92b5af9134e617986884856334c377e1d0 Mon Sep 17 00:00:00 2001
-> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-> Date: Mon, 12 Dec 2011 18:42:30 +0530
-> Subject: [PATCH 1/1] Staging: zram: print the disk size in KB
->
-> Total memory size is in KB, but the zram disk size was not
-> printed in KB, correct the figure in KB units.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Kelvin bytes?
+Now, at LRU handling, memory cgroup needs to do complicated works
+to see valid pc->mem_cgroup, which may be overwritten.
 
-> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-> ---
->  drivers/staging/zram/zram_drv.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 09de99f..ff591e3 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -126,7 +126,7 @@ static void zram_set_disksize(struct zram *zram,
-> size_t totalram_bytes)
->                "\tMemory Size: %zu kB\n"
+This patch is for relaxing the protocol. This patch guarantees
+   - when pc->mem_cgroup is overwritten, page must not be on LRU.
 
-kilobytes? Either this ...
+By this, LRU routine can believe pc->mem_cgroup and don't need to
+check bits on pc->flags. This new rule may adds small overheads to
+swapin. But in most case, lru handling gets faster.
 
->                "\tSize you selected: %llu kB\n"
+After this patch, PCG_ACCT_LRU bit is obsolete and removed.
 
-... and this should be KiB ...
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/page_cgroup.h |    8 -----
+ mm/memcontrol.c             |   72 ++++++++++--------------------------------
+ 2 files changed, 17 insertions(+), 63 deletions(-)
 
->                "Continuing anyway ...\n",
-> -               totalram_bytes >> 10, zram->disksize
-> +               totalram_bytes >> 10, zram->disksize >> 10
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index aaa60da..2cddacf 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -10,8 +10,6 @@ enum {
+ 	/* flags for mem_cgroup and file and I/O status */
+ 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+ 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
+-	/* No lock in page_cgroup */
+-	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
+ 	__NR_PCG_FLAGS,
+ };
+ 
+@@ -75,12 +73,6 @@ TESTPCGFLAG(Used, USED)
+ CLEARPCGFLAG(Used, USED)
+ SETPCGFLAG(Used, USED)
+ 
+-SETPCGFLAG(AcctLRU, ACCT_LRU)
+-CLEARPCGFLAG(AcctLRU, ACCT_LRU)
+-TESTPCGFLAG(AcctLRU, ACCT_LRU)
+-TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
+-
+-
+ SETPCGFLAG(FileMapped, FILE_MAPPED)
+ CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+ TESTPCGFLAG(FileMapped, FILE_MAPPED)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 2ae973d..d5e21e7 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -974,30 +974,8 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+ 		return &zone->lruvec;
+ 
+ 	pc = lookup_page_cgroup(page);
+-	VM_BUG_ON(PageCgroupAcctLRU(pc));
+-	/*
+-	 * putback:				charge:
+-	 * SetPageLRU				SetPageCgroupUsed
+-	 * smp_mb				smp_mb
+-	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
+-	 *
+-	 * Ensure that one of the two sides adds the page to the memcg
+-	 * LRU during a race.
+-	 */
+-	smp_mb();
+-	/*
+-	 * If the page is uncharged, it may be freed soon, but it
+-	 * could also be swap cache (readahead, swapoff) that needs to
+-	 * be reclaimable in the future.  root_mem_cgroup will babysit
+-	 * it for the time being.
+-	 */
+-	if (PageCgroupUsed(pc)) {
+-		/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+-		smp_rmb();
+-		memcg = pc->mem_cgroup;
+-		SetPageCgroupAcctLRU(pc);
+-	} else
+-		memcg = root_mem_cgroup;
++	memcg = pc->mem_cgroup;
++	VM_BUG_ON(!memcg);
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	/* compound_order() is stabilized through lru_lock */
+ 	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
+@@ -1024,18 +1002,8 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
+ 		return;
+ 
+ 	pc = lookup_page_cgroup(page);
+-	/*
+-	 * root_mem_cgroup babysits uncharged LRU pages, but
+-	 * PageCgroupUsed is cleared when the page is about to get
+-	 * freed.  PageCgroupAcctLRU remembers whether the
+-	 * LRU-accounting happened against pc->mem_cgroup or
+-	 * root_mem_cgroup.
+-	 */
+-	if (TestClearPageCgroupAcctLRU(pc)) {
+-		VM_BUG_ON(!pc->mem_cgroup);
+-		memcg = pc->mem_cgroup;
+-	} else
+-		memcg = root_mem_cgroup;
++	memcg = pc->mem_cgroup;
++	VM_BUG_ON(!memcg);
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	/* huge page split is done under lru_lock. so, we have no races. */
+ 	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+@@ -2377,6 +2345,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 
+ 	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), nr_pages);
+ 	unlock_page_cgroup(pc);
++	WARN_ON_ONCE(PageLRU(page));
+ 	/*
+ 	 * "charge_statistics" updated event counter. Then, check it.
+ 	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
+@@ -2388,7 +2357,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 
+ #define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MOVE_LOCK) |\
+-			(1 << PCG_ACCT_LRU) | (1 << PCG_MIGRATION))
++			(1 << PCG_MIGRATION))
+ /*
+  * Because tail pages are not marked as "used", set it. We're under
+  * zone->lru_lock, 'splitting on pmd' and compound_lock.
+@@ -2399,6 +2368,8 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ {
+ 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
+ 	struct page_cgroup *pc;
++	struct mem_cgroup_per_zone *mz;
++	enum lru_list lru;
+ 	int i;
+ 
+ 	if (mem_cgroup_disabled())
+@@ -2407,23 +2378,15 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ 		pc = head_pc + i;
+ 		pc->mem_cgroup = head_pc->mem_cgroup;
+ 		smp_wmb();/* see __commit_charge() */
+-		/*
+-		 * LRU flags cannot be copied because we need to add tail
+-		 * page to LRU by generic call and our hooks will be called.
+-		 */
+ 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+ 	}
+-
+-	if (PageCgroupAcctLRU(head_pc)) {
+-		enum lru_list lru;
+-		struct mem_cgroup_per_zone *mz;
+-		/*
+-		 * We hold lru_lock, then, reduce counter directly.
+-		 */
+-		lru = page_lru(head);
+-		mz = page_cgroup_zoneinfo(head_pc->mem_cgroup, head);
+-		MEM_CGROUP_ZSTAT(mz, lru) -= HPAGE_PMD_NR - 1;
+-	}
++	/* 
++	 * Tail pages will be added to LRU.
++	 * We hold lru_lock,then,reduce counter directly.
++	 */
++	lru = page_lru(head);
++	mz = page_cgroup_zoneinfo(head_pc->mem_cgroup, head);
++	MEM_CGROUP_ZSTAT(mz, lru) -= HPAGE_PMD_NR - 1;
+ }
+ #endif
+ 
+@@ -2656,10 +2619,9 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 	if (!page_is_file_cache(page))
+ 		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+ 
+-	if (!PageSwapCache(page)) {
++	if (!PageSwapCache(page))
+ 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+-		WARN_ON_ONCE(PageLRU(page));
+-	} else { /* page is swapcache/shmem */
++	else { /* page is swapcache/shmem */
+ 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+ 		if (!ret)
+ 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+-- 
+1.7.4.1
 
-... or these should be / 1000 instead of >> 10.
 
->                );
->        }
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
