@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1LNHyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:54:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40352 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab1LNHyR convert rfc822-to-8bit (ORCPT
+	id S1755504Ab1LNH4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:56:43 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:57252 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab1LNH4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:54:17 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH 2/3] HID: usbhid: hid-core: submit queued urbs before suspend
-Date: Wed, 14 Dec 2011 08:55:39 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <1321529030-7845-3-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1321529030-7845-3-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201112140855.40050.oneukum@suse.de>
+	Wed, 14 Dec 2011 02:56:40 -0500
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: khali@linux-fr.org, ben-linux@fluff.org, seth.heasley@intel.com,
+        ben@decadent.org.uk, David.Woodhouse@intel.com
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, dlaurie@chromium.org, bleung@chromium.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 0/3] i2c: i801: enable irq
+Date: Wed, 14 Dec 2011 15:56:29 +0800
+Message-Id: <1323849392-20413-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 17. November 2011, 12:23:49 schrieb Daniel Kurtz:
-> Unfortunately, this usually happens while the first LED request is
-> actually still being processed.  Thus when the completion handler tries
-> to submit the second LED request it fails, since REPORTED_IDLE is
-> already set!  This REPORTED_IDLE check failure causes the completion
-> handler to complete, however without clearing the CTRL_RUNNING flag.
-> This, in turn, means that the suspend() handler's wait_io() condition
-> is never satisfied, and instead it times out after 10 seconds, aborting
-> the original system suspend.
-> 
-> This patch changes the behavior to the following:
->   (1) allow completion handler to finish submitting all queued URBs, even if
->       REPORTED_IDLE is set.  This guarantees that all URBs queued before the
->       hid-core suspend() call will be submitted before the system is
->       suspended.
+This set of patches enables the Intel PCH SMBus controller interrupt.
 
-Hi,
+The Interrupt can signify:
+ INTR - the end of a complete transaction
+ DEV_ERR - that a device did not ACK a transaction
+ BYTE_DONE - the completion of a single byte during a byte-by-byte transaction
 
-why is this desirable? You'd want to requests to be executed at resumption.
-A system suspend will alter the LED state anyway.
+This patchset arrives with the following caveats:
 
-	Regards
-		Oliver
+ 1)  It has only been tested with a Cougar Point (Intel 6 Series PCH) SMBus
+controller, so the irq is only enabled for that chip type.
+
+ 2) It has not been tested with any devices that do transactions that use the
+    PEC.  In fact, I believe that an additional small patch would be required
+    to the driver working correctly in interrupt mode with PEC.
+
+ 3) It has not been tested in SMBus Slave mode.
+
+ 4) It has not been tested with SMI#-type interrupts.
+
+ 5) The BIOS has to configure the PCH SMBus IRQ properly.
+
+ 6) It has not been tested with a device that does byte-by-byte smbus (non-i2c)
+    reads.
+
+ 7) It has not been tested with smbus 'process call' transactions.
+
+If would be very helpful if somebody could help test on other chipsets, with
+a PEC device, or on additional BIOS that woudl be very helpful.
+
+In the meantime, the interrupt behavior is only enabled on the Cougar Point,
+and even here, it can be completely disabled with the "Interrupt" feature like
+other advanced features of the driver.
+
+Daniel Kurtz (3):
+  i2c: i801: refactor i801_block_transaction_byte_by_byte
+  i2c: i801: enable irq for i801 smbus transactions
+  i2c: i801: enable irq for byte_by_byte transactions
+
+ drivers/i2c/busses/i2c-i801.c |  193 ++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 170 insertions(+), 23 deletions(-)
+
 -- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+1.7.3.1
+
