@@ -1,198 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab1LNNSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:18:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:32946 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab1LNNSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:18:22 -0500
-Date: Wed, 14 Dec 2011 14:18:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Turquette <mturquette@linaro.org>
-cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, paul@pwsan.com,
-        broonie@opensource.wolfsonmicro.com, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, mturquette@ti.com, andrew@lunn.ch
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-In-Reply-To: <1323834838-2206-4-git-send-email-mturquette@linaro.org>
-Message-ID: <alpine.LFD.2.02.1112141007550.3020@ionos>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-4-git-send-email-mturquette@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756213Ab1LNN0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:26:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:11213 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753657Ab1LNN0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:26:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="87187059"
+Subject: Re: [PATCH 1/3] [SCSI] sd: fix runtime status check in sd_shutdown
+From: Lin Ming <ming.m.lin@intel.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+In-Reply-To: <4EE8813B.1090802@mvista.com>
+References: <1323832681-7177-1-git-send-email-ming.m.lin@intel.com>
+	 <1323832681-7177-2-git-send-email-ming.m.lin@intel.com>
+	 <4EE8813B.1090802@mvista.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Dec 2011 21:24:31 +0800
+Message-ID: <1323869071.2656.7.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011, Mike Turquette wrote:
-> +void __clk_unprepare(struct clk *clk)
-> +{
-> +	if (!clk)
-> +		return;
-> +
-> +	if (WARN_ON(clk->prepare_count == 0))
-> +		return;
-> +
-> +	if (--clk->prepare_count > 0)
-> +		return;
-> +
-> +	WARN_ON(clk->enable_count > 0);
+On Wed, 2011-12-14 at 18:58 +0800, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 14-12-2011 7:17, Lin Ming wrote:
+> 
+> > Commit af8db15 disabled device's runtime PM during shutdown.
+> 
+>     Please also specify that commit's summary in parens.
 
-So this leaves the clock enable count set. I'm a bit wary about
-that. Shouldn't it either return (including bumping the prepare_count
-again) or call clk_disable() ?
+OK. Here it is.
 
-> +/**
-> + * clk_get_parent - return the parent of a clk
-> + * @clk: the clk whose parent gets returned
-> + *
-> + * Simply returns clk->parent.  It is up to the caller to hold the
-> + * prepare_lock, if desired.  Returns NULL if clk is NULL.
+>From 7e3dcebe235d005126c03a3976bca859691110bc Mon Sep 17 00:00:00 2001
+From: Lin Ming <ming.m.lin@intel.com>
+Date: Wed, 14 Dec 2011 10:14:21 +0800
+Subject: [PATCH 1/3] [SCSI] sd: fix runtime status check in sd_shutdown
 
-Holding the prepare lock in the caller will deadlock. So it's not a
-real good idea to document it as an option :)
+Commit af8db15(PM / driver core: disable device's runtime PM during
+shutdown) makes pm_runtime_suspended(dev) always return false.
+So sd's runtime status can't be checked with pm_runtime_suspended(dev)
+any more.
 
-> + */
-> +struct clk *clk_get_parent(struct clk *clk)
-> +{
-> +	struct clk *parent;
-> +
-> +	if (!clk)
-> +		return NULL;
-> +
-> +	mutex_lock(&prepare_lock);
+Fix it by checking runtime status with pm_runtime_status_suspended(dev).
 
-> +/**
-> + * clk_init - initialize the data structures in a struct clk
-> + * @dev: device initializing this clk, placeholder for now
-> + * @clk: clk being initialized
-> + *
-> + * Initializes the lists in struct clk, queries the hardware for the
-> + * parent and rate and sets them both.  Adds the clk to the sysfs tree
-> + * topology.
-> + *
-> + * Caller must populate clk->name and clk->flags before calling
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/scsi/sd.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-I'm not too happy about this construct. That leaves struct clk and its
-members exposed to the world instead of making it a real opaque
-cookie. I know from my own painful experience, that this will lead to
-random fiddling in that data structure in drivers and arch code just
-because the core code has a shortcoming.
-
-Why can't we make struct clk a real cookie and confine the data
-structure to the core code ?
-
-That would change the init call to something like:
-
-struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
-                     struct clk *parent)
-
-And have:
-struct clk_hw {
-       struct clk_hw_ops *ops;
-       const char 	 *name;
-       unsigned long	 flags;
-};       
-
-Implementers can do:
-struct my_clk_hw {
-       struct clk_hw	hw;
-       mydata;
-};
-
-And then change the clk ops callbacks to take struct clk_hw * as an
-argument.
-
-So the core code can allocate the clk data structure and you return a
-real opaque cookie. You do the same thing for the basic gated clock in
-one of the next patches, so doing it for struct clk itself is just
-consequent.
-
-> + * clk_init.  A key assumption in the call to .get_parent is that clks
-> + * are being initialized in-order.
-
-We should not require that, see below.
-
-> + */
-
-> +void clk_init(struct device *dev, struct clk *clk)
-> +{
-> +	if (!clk)
-> +		return;
-> +
-> +	INIT_HLIST_HEAD(&clk->children);
-> +	INIT_HLIST_NODE(&clk->child_node);
-> +
-> +	mutex_lock(&prepare_lock);
-> +
-> +	/*
-> +	 * .get_parent is mandatory for populating .parent for clks with
-> +	 * multiple possible parents.  For clks with a fixed parent
-> +	 * .get_parent is not mandatory and .parent can be statically
-> +	 * initialized
-> +	 */
-> +	if (clk->ops->get_parent)
-> +		clk->parent = clk->ops->get_parent(clk);
-> +
-> +	/* clks without a parent are considered root clks */
-
-I'd rather prefer that root clocks are explicitely marked with a flag
-instead of relying on clk->parent being NULL.
-
-> +	if (clk->parent)
-> +		hlist_add_head(&clk->child_node,
-> +				&clk->parent->children);
-> +	else
-> +		hlist_add_head(&clk->child_node, &clk_root_list);
-
-You could put clocks which have no parent and are not marked as root
-clock onto a separate list clk_orphaned or such. You might need this
-for handling clocks which are disconnected from any parent runtime as
-well.
-
-And to avoid the whole in-order initialization issue, you could change
-clk_init to:
-
-struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
-                     unsigned long flags, const char *parent_name)
-
-Then you can lookup the requested parent by name. If that fails, you
-put the clock into the orphaned list. When a new clock is initialized,
-then you walk the orphaned list and check whether something is waiting
-for that clock.
-
-To handle multi-parent clocks you need to go one step further and add:
-
-struct clk_hw {
-       struct clk_hw_ops *ops;
-       const char 	 *name;
-       const char	 **possible_parents;
-};
-
-You also require a get_parent_idx() function in clk_hw_ops. So when
-clk_init() is called with parent_name = NULL and get_parent_idx() is
-implemented, then you call it and the clock returns you the index of
-the possible_parents array. If that parent clock is not yet
-registered, you store the requested name and do the lookup when new
-clocks are registered.
-
-That has also the advantage, that you can validate parent settings
-upfront and for setting the parent during runtime, you don't have to
-acquire a pointer to the parent clock. It's enough to call
-clk_set_named_parent().
-
-Thoughts ?
-
-	 tglx
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7b3f807..284b087 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2742,7 +2742,12 @@ static void sd_shutdown(struct device *dev)
+ 	if (!sdkp)
+ 		return;         /* this can happen */
+ 
+-	if (pm_runtime_suspended(dev))
++	/*
++	 * Check runtime status with pm_runtime_status_suspended(dev)
++	 * instead of pm_runtime_suspended(dev),
++	 * because device_shutdown() has disabled the device's runtime PM.
++	 */
++	if (pm_runtime_status_suspended(dev))
+ 		goto exit;
+ 
+ 	if (sdkp->WCE) {
+-- 
+1.7.2.5
 
 
 
