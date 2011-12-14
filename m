@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab1LNHyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:54:08 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49401 "EHLO mx3.mail.elte.hu"
+	id S1755238Ab1LNHyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:54:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40352 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab1LNHyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:54:04 -0500
-Date: Wed, 14 Dec 2011 08:52:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 4/6] x86, mce: Add mechanism to safely save information
- in MCE handler
-Message-ID: <20111214075210.GE25232@elte.hu>
-References: <cover.1323803130.git.tony.luck@intel.com>
- <21784ca9d3f0a59c01c9d127a088077561616ba1.1323803130.git.tony.luck@intel.com>
+	id S1753892Ab1LNHyR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 02:54:17 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [PATCH 2/3] HID: usbhid: hid-core: submit queued urbs before suspend
+Date: Wed, 14 Dec 2011 08:55:39 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
+        olofj@chromium.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <1321529030-7845-3-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1321529030-7845-3-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21784ca9d3f0a59c01c9d127a088077561616ba1.1323803130.git.tony.luck@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201112140855.40050.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tony Luck <tony.luck@intel.com> wrote:
-
-> Machine checks on Intel cpus interrupt execution on all cpus, regardless
-> of interrupt masking.  We have a need to save some data about the cause
-> of the machine check (physical address) in the machine check handler that
-> can be retrieved later to attempt recovery in a more flexible execution
-> state.
+Am Donnerstag, 17. November 2011, 12:23:49 schrieb Daniel Kurtz:
+> Unfortunately, this usually happens while the first LED request is
+> actually still being processed.  Thus when the completion handler tries
+> to submit the second LED request it fails, since REPORTED_IDLE is
+> already set!  This REPORTED_IDLE check failure causes the completion
+> handler to complete, however without clearing the CTRL_RUNNING flag.
+> This, in turn, means that the suspend() handler's wait_io() condition
+> is never satisfied, and instead it times out after 10 seconds, aborting
+> the original system suspend.
 > 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   51 ++++++++++++++++++++++++++++++++++++++
->  1 files changed, 51 insertions(+), 0 deletions(-)
+> This patch changes the behavior to the following:
+>   (1) allow completion handler to finish submitting all queued URBs, even if
+>       REPORTED_IDLE is set.  This guarantees that all URBs queued before the
+>       hid-core suspend() call will be submitted before the system is
+>       suspended.
 
-Just some cleanliness nits:
+Hi,
 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 43f22c8..9b83b7d 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -887,6 +887,57 @@ static void mce_clear_state(unsigned long *toclear)
->  }
->  
->  /*
-> + * Need to save faulting physical address associated with a process
-> + * in the machine check handler some place where we can grab it back
-> + * later in mce_notify_process()
-> + */
-> +#define	MAX_MCE_INFO	16
-> +struct mce_info {
+why is this desirable? You'd want to requests to be executed at resumption.
+A system suspend will alter the LED state anyway.
 
-please separate non-bulk definitons by newlines.
-
-> +	atomic_t		inuse;
-> +	struct task_struct	*t;
-> +	__u64			paddr;
-> +} mce_info[MAX_MCE_INFO];
-> +
-> +static void mce_save_info(__u64 addr)
-> +{
-> +	int	i;
-
-that tab looks weird. [there's repeat occurances further below 
-as well]
-
-> +
-> +	for (i = 0; i < MAX_MCE_INFO; i++)
-> +		if (atomic_cmpxchg(&mce_info[i].inuse, 0, 1) == 0) {
-> +			mce_info[i].t = current;
-> +			mce_info[i].paddr = addr;
-> +			return;
-> +		}
-
-We typically use curly braces for all multi-line statements - so 
-two would be needed above.
-
-> +
-> +	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
-> +}
-> +
-> +static int mce_find_info(__u64 *paddr)
-> +{
-> +	int	i;
-> +
-> +	for (i = 0; i < MAX_MCE_INFO; i++)
-> +		if (atomic_read(&mce_info[i].inuse) &&
-> +		    mce_info[i].t == current) {
-> +			*paddr = mce_info[i].paddr;
-> +			return 1;
-> +		}
-> +	return 0;
-> +}
-> +
-> +static void mce_clear_info(void)
-> +{
-> +	int	i;
-> +
-> +	for (i = 0; i < MAX_MCE_INFO; i++)
-> +		if (atomic_read(&mce_info[i].inuse) &&
-> +		    mce_info[i].t == current) {
-
-the line-break shows that the code has complexit troubles. Doing 
-this in the loop iterator:
-
-	struct mce_info *mi = mce_info + i;
-
-would help make it shorter and more readable.
-
-Thanks,
-
-	Ingo
+	Regards
+		Oliver
+-- 
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
