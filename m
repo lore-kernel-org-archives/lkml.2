@@ -1,43 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab1LNNjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:39:39 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:38267 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab1LNNji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:39:38 -0500
-Date: Wed, 14 Dec 2011 08:34:29 -0500 (EST)
-From: David Airlie <airlied@redhat.com>
-To: Eugene Teo <eugeneteo@kernel.sg>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
-Message-ID: <2486420a-edef-443a-ba5e-18fb5efb0eb9@zmail16.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <CAGyNYUNwMs0ntak4bo5S1EMuEoTuTwsV1dKAc1gu8qF9qQ4ZLg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.36.6.35]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+	id S1757225Ab1LNNj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:39:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60788 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757206Ab1LNNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:39:53 -0500
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
+        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...)
+Subject: [PATCH] debugfs: add mode, uid and gid options
+Date: Wed, 14 Dec 2011 14:39:47 +0100
+Message-Id: <1323869987-14797-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Cautious admins may want to restrict access to debugfs. Currently a
+manual chown/chmod e.g. in an init script is needed to achieve that.
+Distributions that want to make the mount options configurable need
+to add extra config files. By allowing to set the root inode's uid,
+gid and mode via mount options no such hacks are needed anymore.
+Instead configuration becomes straight forward via fstab.
 
------ Original Message -----
-> From: "Eugene Teo" <eugeneteo@kernel.sg>
-> To: "Xi Wang" <xi.wang@gmail.com>
-> Cc: "David Airlie" <airlied@linux.ie>, dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-> security@kernel.org, "Dave Airlie" <airlied@redhat.com>
-> Sent: Wednesday, 14 December, 2011 1:16:49 PM
-> Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
-> 
-> Cc'ed Dave's work email.
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+---
+ fs/debugfs/inode.c |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 148 insertions(+), 1 deletions(-)
 
-This is already in Linus tree, went there a while ago.
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index f3a257d..b48f34a 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -23,9 +23,13 @@
+ #include <linux/debugfs.h>
+ #include <linux/fsnotify.h>
+ #include <linux/string.h>
++#include <linux/seq_file.h>
++#include <linux/parser.h>
+ #include <linux/magic.h>
+ #include <linux/slab.h>
+ 
++#define DEBUGFS_DEFAULT_MODE	0755
++
+ static struct vfsmount *debugfs_mount;
+ static int debugfs_mount_count;
+ static bool debugfs_registered;
+@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
+ 	return dentry->d_inode && !d_unhashed(dentry);
+ }
+ 
++struct debugfs_mount_opts {
++	uid_t uid;
++	gid_t gid;
++	umode_t mode;
++};
++
++enum {
++	Opt_uid,
++	Opt_gid,
++	Opt_mode,
++	Opt_err
++};
++
++static const match_table_t tokens = {
++	{Opt_uid, "uid=%u"},
++	{Opt_gid, "gid=%u"},
++	{Opt_mode, "mode=%o"},
++	{Opt_err, NULL}
++};
++
++struct debugfs_fs_info {
++	struct debugfs_mount_opts mount_opts;
++};
++
++static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
++{
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++	int token;
++	char *p;
++
++	opts->mode = DEBUGFS_DEFAULT_MODE;
++
++	while ((p = strsep(&data, ",")) != NULL) {
++		if (!*p)
++			continue;
++
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_uid:
++			if (match_int(&args[0], &option))
++				return -EINVAL;
++			opts->uid = option;
++			break;
++		case Opt_gid:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->gid = option;
++			break;
++		case Opt_mode:
++			if (match_octal(&args[0], &option))
++				return -EINVAL;
++			opts->mode = option & S_IALLUGO;
++			break;
++		/*
++		 * We might like to report bad mount options here;
++		 * but traditionally debugfs has ignored all mount options
++		 */
++		}
++	}
++
++	return 0;
++}
++
++static int debugfs_apply_options(struct super_block *sb)
++{
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++	struct inode *inode = sb->s_root->d_inode;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	inode->i_mode &= ~S_IALLUGO;
++	inode->i_mode |= opts->mode;
++
++	inode->i_uid = opts->uid;
++	inode->i_gid = opts->gid;
++
++	return 0;
++}
++
++static int debugfs_remount(struct super_block *sb, int *flags, char *data)
++{
++	int err;
++	struct debugfs_fs_info *fsi = sb->s_fs_info;
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	debugfs_apply_options(sb);
++
++fail:
++	return err;
++}
++
++static int debugfs_show_options(struct seq_file *m, struct vfsmount *mnt)
++{
++	struct debugfs_fs_info *fsi = mnt->mnt_sb->s_fs_info;
++	struct debugfs_mount_opts *opts = &fsi->mount_opts;
++
++	if (opts->uid != 0)
++		seq_printf(m, ",uid=%u", opts->uid);
++	if (opts->gid != 0)
++		seq_printf(m, ",gid=%u", opts->gid);
++	if (opts->mode != DEBUGFS_DEFAULT_MODE)
++		seq_printf(m, ",mode=%o", opts->mode);
++
++	return 0;
++}
++
++static const struct super_operations debugfs_super_operations = {
++	.statfs		= simple_statfs,
++	.remount_fs	= debugfs_remount,
++	.show_options	= debugfs_show_options,
++};
++
+ static int debug_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	static struct tree_descr debug_files[] = {{""}};
++	struct debugfs_fs_info *fsi;
++	int err;
++
++	save_mount_options(sb, data);
++
++	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
++	sb->s_fs_info = fsi;
++	if (!fsi) {
++		err = -ENOMEM;
++		goto fail;
++	}
++
++	err = debugfs_parse_options(data, &fsi->mount_opts);
++	if (err)
++		goto fail;
++
++	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++	if (err)
++		goto fail;
++
++	sb->s_op = &debugfs_super_operations;
++
++	debugfs_apply_options(sb);
++
++	return 0;
+ 
+-	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
++fail:
++	kfree(fsi);
++	sb->s_fs_info = NULL;
++	return err;
+ }
+ 
+ static struct dentry *debug_mount(struct file_system_type *fs_type,
+-- 
+1.7.7
 
-a5cd335165e31db9dbab636fd29895d41da55dd2
-
-Dave.
