@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab1LNQcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:32:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35266 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab1LNQcE (ORCPT
+	id S1757509Ab1LNQeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:34:15 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56328 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044Ab1LNQeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:32:04 -0500
-X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=x1dTjSklBAoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=_iBQ51ZGXban8YdSw38A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1323880322.23971.33.camel@gandalf.stny.rr.com>
-Subject: Re: linux-next: build warnings after merge of the final tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 14 Dec 2011 11:32:02 -0500
-In-Reply-To: <20111214181545.6e13bc954cb7ddce9086e861@canb.auug.org.au>
-References: <20111214181545.6e13bc954cb7ddce9086e861@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 Dec 2011 11:34:14 -0500
+Date: Wed, 14 Dec 2011 17:34:09 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20111214163407.GE10791@somewhere.redhat.com>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+ <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
+ <20111213192556.GD2421@somewhere.redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 18:15 +1100, Stephen Rothwell wrote:
-
-> Maybe caused by commit d5e553d6e0a4 ("trace: Include <asm/asm-offsets.h>
-> in trace_syscalls.c") from the tip tree.  These warnings may have been
-> here for a while as it is hard to catch the new ones among the flood.
+On Wed, Dec 14, 2011 at 10:09:11AM -0500, Seiji Aguchi wrote:
+> Thank you for giving me a comment.
+> Unfortunately, neither "perf record" nor "ftrace" works for me.
 > 
+> >What about using perf for that?
+> >
+> >Just run:
+> >
+> >	perf record -ag
+> >	^C
+> >	perf report
+> >
+> >And you should find in the callchains some informations about where your CPUs
+> >are spending time.
+> >
+> >If you system is too slow for that 
+> 
+> When system is too slow, user command such as "perf record" may not work.
+> 
+> >but you're doing background tracing with
+> >ftrace, you can use stacktrace with ftrace.
+> 
+> Actually, We're doing background tracing in our customer's system rather than kernel debugging. 
+> Ftrace doesn't work for me because it checks the size of the stack at every function call.
+> Our customers are seriously concerned about its overhead.
+> 
+> For reducing the overhead, I need tracepoints so we can hook minimal function calls.
 
-hpa,
+Well ftrace is a whole subsystem that includes the function tracer and also an interface
+for tracepoints in debugfs. I was rather suggesting the latter one. This is a good
+choice for background tracing. And it supports stacktraces. If those generate too much
+overhead perhaps you can tune the number of entries in the stacktrace, I don't remember
+if we can do that currently but this can be an interesting feature.
 
-Was this change only needed for x86? If so, could you put that into
-asm/ftrace.h instead?
-
--- Steve
-
-
+What are you using currently for the background tracing?
