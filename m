@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab1LNANd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:13:33 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63000 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab1LNANa (ORCPT
+	id S1756235Ab1LNAWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:22:08 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45595 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753956Ab1LNAWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:13:30 -0500
+	Tue, 13 Dec 2011 19:22:05 -0500
+X-Sasl-enc: uuVellw3nyesJ29lSf7XF0aRHmSNpGBlZkqGEhzsq6Hx 1323822124
+Date: Tue, 13 Dec 2011 16:18:47 -0800
+From: Greg KH <greg@kroah.com>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Staging: zram: print the disk size in KB
+Message-ID: <20111214001847.GA26688@kroah.com>
+References: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1111152259430.4902@ionos>
-References: <20110908215314.829452535@linutronix.de>
-	<CADGdYn6V_eQJZ4=irMbSS7XJj4MJVeALxcrWdD7o2bGs1sEJZQ@mail.gmail.com>
-	<20110913133258.GA6267@n2100.arm.linux.org.uk>
-	<CAKfTPtCWuiOM5+sOwdh1FzXZb1EFT__tVEpRPY5suGOxpYTdQQ@mail.gmail.com>
-	<20110913175312.GB6267@n2100.arm.linux.org.uk>
-	<20110923084001.GP17169@n2100.arm.linux.org.uk>
-	<01d501cc84d6$62720890$275619b0$%kim@samsung.com>
-	<alpine.LFD.2.02.1110071354310.3240@ionos>
-	<CAPz4a6CkOXp6LHX2hFYVBhXWT4rhCUzLyYTLbO7g8u_jYcHt7Q@mail.gmail.com>
-	<CAPz4a6C7md+k8pCz6mJtB-v_1h-faGxQZkOqU9vHUtcG-jrYVQ@mail.gmail.com>
-	<4EC2DF93.2050904@codeaurora.org>
-	<alpine.LFD.2.02.1111152259430.4902@ionos>
-Date: Tue, 13 Dec 2011 16:13:30 -0800
-X-Google-Sender-Auth: n5tm6VC1rqU_nHcYfT1S445YvLg
-Message-ID: <CAPz4a6BwzAmE=08pCfhK5of0vEV+uPaf8D-9U_MnW5_vAe6NFw@mail.gmail.com>
-Subject: Re: Re: [patch] ARM: smpboot: Enable interrupts after marking CPU online/active
-From: Dima Zavin <dima@android.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        amit kachhap <amit.kachhap@linaro.org>,
-        Colin Cross <ccross@android.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        chaos.youn@samsung.com, LAK <linux-arm-kernel@lists.infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Tue, Dec 13, 2011 at 10:46:53AM +0530, Ajeet Yadav wrote:
+> >From a5d5ba92b5af9134e617986884856334c377e1d0 Mon Sep 17 00:00:00 2001
+> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+> Date: Mon, 12 Dec 2011 18:42:30 +0530
+> Subject: [PATCH 1/1] Staging: zram: print the disk size in KB
 
-Did you ever get a chance to look into this further?
+Why did you include the patch in an email instead of using
+git-send-email?  This would force me to edit the patch by hand, removing
+this useless stuff.
 
-Thanks in advance.
+> 
+> Total memory size is in KB, but the zram disk size was not
+> printed in KB, correct the figure in KB units.
+> 
+> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+> ---
+>  drivers/staging/zram/zram_drv.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 09de99f..ff591e3 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -126,7 +126,7 @@ static void zram_set_disksize(struct zram *zram,
+> size_t totalram_bytes)
 
---Dima
+And your patch is line-wrapped, making it so I would have to edit it
+again.
 
-On Tue, Nov 15, 2011 at 2:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 15 Nov 2011, Stepan Moskovchenko wrote:
->> I am seeing a deadlock when executing hotplug operations with this patch
->> applied. When the secondary CPU gets brought up in _cpu_up, the cpu is turned
->> on
->> and then the online notifier gets called, which is what marks the secondary
->> CPU
->> as active. If _cpu_up on the primary CPU is preempted before the secondary CPU
->> is marked active, it is possible that the primary CPU will want to call
->> smp_call_function (or send an IPI) to the secondary CPU because it is marked
->> online. However, with this patch, the secondary CPU is still spinning on
->> !cpu_active(cpu)
->> with interrupts disabled. So, the primary CPU is now stuck in csd_lock_wait(),
->> waiting for the secondary CPU to respond, while the secondary CPU spins with
->> interrupts disabled, waiting for the primary CPU to mark it as active. So,
->> while
->> your approach to not call smp_function_single may work for you in your
->> specific
->> case, I believe there is still a problem in the general case.
->>
->> One suggestion for resolving this might be making smp_call_function look at
->> the
->> active CPUs rather than online CPUs, or to just let the secondary CPU mark
->> itself as active rather than having the primary CPU do this, though this might
->> defeat the original intended purpose of the active mask.
->
-> What a mess. I'll have a look tomorrow.
+Please fix up, and get the acks from the zram maintainer (as this does
+change a kernel/user api) before I can accept this.
+
+greg k-h
