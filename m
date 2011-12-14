@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab1LND70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 22:59:26 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:48474 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756702Ab1LND6w (ORCPT
+	id S1756763Ab1LND7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 22:59:23 -0500
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:33403 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756700Ab1LND6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 22:58:52 -0500
+	Tue, 13 Dec 2011 22:58:50 -0500
 From: Mike Turquette <mturquette@linaro.org>
 To: linux@arm.linux.org.uk
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -18,11 +18,10 @@ Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
         magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
         richard.zhao@linaro.org, mturquette@linaro.org, mturquette@ti.com,
-        andrew@lunn.ch, Yong Shen <yong.shen@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH v4 6/6] clk: export the clk tree topology to debugfs
-Date: Tue, 13 Dec 2011 19:53:58 -0800
-Message-Id: <1323834838-2206-7-git-send-email-mturquette@linaro.org>
+        andrew@lunn.ch, Jamie Iles <jamie@jamieiles.com>
+Subject: [PATCH v4 5/6] clk: basic gateable and fixed-rate clks
+Date: Tue, 13 Dec 2011 19:53:57 -0800
+Message-Id: <1323834838-2206-6-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
 References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
@@ -30,267 +29,319 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Represents the clk tree as a directory hieraching in debugfs.  Each clk
-is a directory filled with the following read-only entries:
+Many platforms support simple gateable clks and fixed-rate clks that
+should not be re-implemented by every platform.
 
-clk_rate
-clk_flags
-clk_prepare_count
-clk_enable_count
-clk_notifier_count
+This patch introduces a gateable clk with a common programming model of
+gate control via a write of 1 bit to a register.  Both set-to-enable and
+clear-to-enable are supported.
 
-This commit borrows some code from Yong Shen's patch to export clkdev
-clk's to debugfs:
-http://git.pengutronix.de/?p=imx/linux-2.6.git;a=commit;h=30aa15230747b3b92da16d841b1cf369f07192e7
+Also introduced is a fixed-rate clk which has no reprogrammable aspects.
+
+The purpose of both types of clks is documented in drivers/clk/basic.c.
+
+TODO: add support for a simple divider, simple mux and a dummy clk for
+stubbing out platform support.
+
+Based on original patch by Jeremy Kerr and contribution by Jamie Iles.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Cc: Yong Shen <yong.shen@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Jamie Iles <jamie@jamieiles.com>
 ---
- drivers/clk/Kconfig |    9 +++
- drivers/clk/clk.c   |  176 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/clk.h |    3 +
- 3 files changed, 186 insertions(+), 2 deletions(-)
+ drivers/clk/Kconfig     |    7 ++
+ drivers/clk/Makefile    |    5 +-
+ drivers/clk/clk-basic.c |  208 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h     |   35 ++++++++
+ 4 files changed, 253 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/clk/clk-basic.c
 
 diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index ba7eb8c..09cc198 100644
+index adc0586..ba7eb8c 100644
 --- a/drivers/clk/Kconfig
 +++ b/drivers/clk/Kconfig
-@@ -19,3 +19,12 @@ config GENERIC_CLK_BASIC
- 	help
- 	   Allow use of basic, single-function clock types.  These
- 	   common definitions can be used across many platforms.
+@@ -12,3 +12,10 @@ config HAVE_CLK_PREPARE
+ config GENERIC_CLK
+ 	bool
+ 	select HAVE_CLK_PREPARE
 +
-+config GENERIC_CLK_DEBUG
-+	bool "Clock tree representation in debugs"
++config GENERIC_CLK_BASIC
++	bool "Basic clock definitions"
 +	depends on GENERIC_CLK
 +	help
-+	  Creates a directory hierchy in debugfs for visualizing the clk
-+	  tree structure as well.  Each directory contains read-only
-+	  members that export information specific to that clk node:
-+	  clk_rate, clk_flags, clk_prepare_count & clk_enable_count.
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index f86cb98..a6ddbb1 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -23,6 +23,166 @@ static DEFINE_MUTEX(prepare_lock);
- static HLIST_HEAD(clk_root_list);
- static LIST_HEAD(clk_notifier_list);
++	   Allow use of basic, single-function clock types.  These
++	   common definitions can be used across many platforms.
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 570d5b9..68b20a1 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -1,3 +1,4 @@
  
-+/***        debugfs support        ***/
+-obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+-obj-$(CONFIG_GENERIC_CLK)	+= clk.o
++obj-$(CONFIG_CLKDEV_LOOKUP)		+= clkdev.o
++obj-$(CONFIG_GENERIC_CLK)		+= clk.o
++obj-$(CONFIG_GENERIC_CLK_BASIC)		+= clk-basic.o
+diff --git a/drivers/clk/clk-basic.c b/drivers/clk/clk-basic.c
+new file mode 100644
+index 0000000..a065bc8
+--- /dev/null
++++ b/drivers/clk/clk-basic.c
+@@ -0,0 +1,208 @@
++/*
++ * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
++ * Copyright (C) 2011 Linaro Ltd <mturquette@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Basic single-function clk implementations
++ */
 +
-+#ifdef CONFIG_GENERIC_CLK_DEBUG
-+#include <linux/debugfs.h>
++/* TODO add basic divider clk, basic mux clk and dummy clk */
 +
-+static struct dentry *rootdir;
-+static int inited = 0;
++#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/io.h>
 +
-+/* caller must hold prepare_lock */
-+static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
-+{
-+	struct dentry *d;
-+	int ret = -ENOMEM;
++/*
++ * NOTE: all of the basic clks here are just that: single-function
++ * simple clks.  One assumption in their implementation is that existing
++ * locking mechanisms (prepare_mutex and enable_spinlock) are enough to
++ * prevent race conditions during register accesses.  If this is not
++ * true for your platform then please implement your own version of
++ * these clks which take such issues into account.
++ */
 +
-+	if (!clk || !pdentry) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	d = debugfs_create_dir(clk->name, pdentry);
-+	if (!d)
-+		goto out;
-+
-+	clk->dentry = d;
-+
-+	d = debugfs_create_u64("clk_rate", S_IRUGO, clk->dentry,
-+			(u64 *)&clk->rate);
-+	if (!d)
-+		goto err_out;
-+
-+	d = debugfs_create_x32("clk_flags", S_IRUGO, clk->dentry,
-+			(u32 *)&clk->flags);
-+	if (!d)
-+		goto err_out;
-+
-+	d = debugfs_create_u32("clk_prepare_count", S_IRUGO, clk->dentry,
-+			(u32 *)&clk->prepare_count);
-+	if (!d)
-+		goto err_out;
-+
-+	d = debugfs_create_u32("clk_enable_count", S_IRUGO, clk->dentry,
-+			(u32 *)&clk->enable_count);
-+	if (!d)
-+		goto err_out;
-+
-+	d = debugfs_create_u32("clk_notifier_count", S_IRUGO, clk->dentry,
-+			(u32 *)&clk->notifier_count);
-+	if (!d)
-+		goto err_out;
-+
-+	ret = 0;
-+	goto out;
-+
-+err_out:
-+	debugfs_remove(clk->dentry);
-+out:
-+	return ret;
-+}
-+
-+/* caller must hold prepare_lock */
-+static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+	int ret = -EINVAL;;
-+
-+	if (!clk || !pdentry)
-+		goto out;
-+
-+	ret = clk_debug_create_one(clk, pdentry);
-+
-+	if (ret)
-+		goto out;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node)
-+		clk_debug_create_subtree(child, clk->dentry);
-+
-+	ret = 0;
-+out:
-+	return ret;
-+}
++#define to_clk_hw_gate(ck) container_of(ck, struct clk_hw_gate, clk)
++#define to_clk_hw_fixed(ck) container_of(ck, struct clk_hw_fixed, clk)
 +
 +/**
-+ * clk_debug_register - add a clk node to the debugfs clk tree
-+ * @clk: the clk being added to the debugfs clk tree
++ * DOC: basic gatable clock which can gate and ungate it's ouput
 + *
-+ * Dynamically adds a clk to the debugfs clk tree if debugfs has been
-+ * initialized.  Otherwise it bails out early since the debugfs clk tree
-+ * will be created lazily by clk_debug_init as part of a late_initcall.
++ * Traits of this clock:
++ * prepare - clk_prepare & clk_unprepare do nothing
++ * enable - clk_enable and clk_disable are functional & control gating
++ * rate - inherits rate from parent.  No clk_set_rate support
++ * parent - fixed parent.  No clk_set_parent support
 + *
-+ * Caller must hold prepare_lock.  Only clk_init calls this function (so
-+ * far) so this is taken care.
++ * note: parent should not be NULL for this clock, but we check because we're
++ * paranoid
 + */
-+static int clk_debug_register(struct clk *clk)
++
++static unsigned long clk_hw_gate_recalc_rate(struct clk *clk)
 +{
-+	struct clk *parent;
-+	struct dentry *pdentry;
-+	int ret = 0;
-+
-+	if (!inited)
-+		goto out;
-+
-+	parent = clk->parent;
-+
-+	/*
-+	 * Check to see if a clk is a root clk.  Also check that it is
-+	 * safe to add this clk to debugfs
-+	 */
-+	if (!parent)
-+		pdentry = rootdir;
++	if (clk->parent)
++		return clk->parent->rate;
 +	else
-+		if (parent->dentry)
-+			pdentry = parent->dentry;
-+		else
-+			goto out;
-+
-+	ret = clk_debug_create_subtree(clk, pdentry);
-+
-+out:
-+	return ret;
++		return 0;
 +}
 +
-+/**
-+ * clk_debug_init - lazily create the debugfs clk tree visualization
-+ *
-+ * clks are often initialized very early during boot before memory can
-+ * be dynamically allocated and well before debugfs is setup.
-+ * clk_debug_init walks the clk tree hierarchy while holding
-+ * prepare_lock and creates the topology as part of a late_initcall,
-+ * thus insuring that clks initialized very early will still be
-+ * represented in the debugfs clk tree.  This function should only be
-+ * called once at boot-time, and all other clks added dynamically will
-+ * be done so with clk_debug_register.
-+ */
-+static int __init clk_debug_init(void)
++static struct clk *clk_hw_gate_get_parent(struct clk *clk)
 +{
-+	struct clk *root_clk;
-+	struct hlist_node *tmp;
++	return to_clk_hw_gate(clk)->fixed_parent;
++}
 +
-+	rootdir = debugfs_create_dir("clk", NULL);
++static void clk_hw_gate_set_bit(struct clk *clk)
++{
++	struct clk_hw_gate *gate = to_clk_hw_gate(clk);
++	u32 reg;
 +
-+	if (!rootdir)
-+		return -ENOMEM;
++	reg = readl(gate->reg);
++	reg |= BIT(gate->bit_idx);
++	writel(reg, gate->reg);
++}
 +
-+	mutex_lock(&prepare_lock);
++static void clk_hw_gate_clear_bit(struct clk *clk)
++{
++	struct clk_hw_gate *gate = to_clk_hw_gate(clk);
++	u32 reg;
 +
-+	hlist_for_each_entry(root_clk, tmp, &clk_root_list, child_node)
-+		clk_debug_create_subtree(root_clk, rootdir);
++	reg = readl(gate->reg);
++	reg &= ~BIT(gate->bit_idx);
++	writel(reg, gate->reg);
++}
 +
-+	inited = 1;
-+
-+	mutex_unlock(&prepare_lock);
++static int clk_hw_gate_enable_set(struct clk *clk)
++{
++	clk_hw_gate_set_bit(clk);
 +
 +	return 0;
 +}
-+late_initcall(clk_debug_init);
-+#else
-+static inline int clk_debug_register(struct clk *clk) { return 0; }
-+#endif /* CONFIG_GENERIC_CLK_DEBUG */
 +
- /***        clk API        ***/
- 
- void __clk_unprepare(struct clk *clk)
-@@ -574,15 +734,25 @@ EXPORT_SYMBOL_GPL(clk_get_parent);
- 
- void __clk_reparent(struct clk *clk, struct clk *new_parent)
- {
-+	struct dentry *d;
++static void clk_hw_gate_disable_clear(struct clk *clk)
++{
++	clk_hw_gate_clear_bit(clk);
++}
 +
- 	if (!clk || !new_parent)
- 		return;
- 
- 	hlist_del(&clk->child_node);
- 	hlist_add_head(&clk->child_node, &new_parent->children);
- 
--	clk->parent = new_parent;
-+#ifdef CONFIG_GENERIC_CLK_DEBUG
-+	d = debugfs_rename(clk->parent->dentry, clk->dentry,
-+			new_parent->dentry, clk->name);
-+	if (d)
-+		clk->dentry = d;
++struct clk_hw_ops clk_hw_gate_set_enable_ops = {
++	.enable = clk_hw_gate_enable_set,
++	.disable = clk_hw_gate_disable_clear,
++	.recalc_rate = clk_hw_gate_recalc_rate,
++	.get_parent = clk_hw_gate_get_parent,
++};
++EXPORT_SYMBOL_GPL(clk_hw_gate_set_enable_ops);
++
++static int clk_hw_gate_enable_clear(struct clk *clk)
++{
++	clk_hw_gate_clear_bit(clk);
++
++	return 0;
++}
++
++static void clk_hw_gate_disable_set(struct clk *clk)
++{
++	clk_hw_gate_set_bit(clk);
++}
++
++struct clk_hw_ops clk_hw_gate_set_disable_ops = {
++	.enable = clk_hw_gate_enable_clear,
++	.disable = clk_hw_gate_disable_set,
++	.recalc_rate = clk_hw_gate_recalc_rate,
++	.get_parent = clk_hw_gate_get_parent,
++};
++EXPORT_SYMBOL_GPL(clk_hw_gate_set_disable_ops);
++
++int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
++		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
++		int set_to_enable)
++{
++	struct clk_hw_gate *gclk;
++	struct clk *clk;
++
++	gclk = kmalloc(sizeof(struct clk_hw_gate), GFP_KERNEL);
++
++	if (!gclk) {
++		pr_err("%s: could not allocate gated clk\n", __func__);
++		return -ENOMEM;
++	}
++
++	clk = &gclk->clk;
++
++	/* struct clk_hw_gate assignments */
++	gclk->fixed_parent = fixed_parent;
++	gclk->reg = reg;
++	gclk->bit_idx = bit_idx;
++
++	/* struct clk assignments */
++	clk->name = name;
++	clk->flags = flags;
++
++	if (set_to_enable)
++		clk->ops = &clk_hw_gate_set_enable_ops;
 +	else
-+		pr_debug("%s: failed to reparent debugfs entry for %s\n",
-+				__func__, clk->name);
-+#endif
- 
--	/* FIXME update sysfs clock topology */
-+	clk->parent = new_parent;
- }
- 
- /**
-@@ -697,6 +867,8 @@ void clk_init(struct device *dev, struct clk *clk)
- 	else
- 		clk->rate = 0;
- 
-+	clk_debug_register(clk);
++		clk->ops = &clk_hw_gate_set_disable_ops;
 +
- 	mutex_unlock(&prepare_lock);
- 
- 	return;
++	clk_init(NULL, clk);
++
++	return 0;
++}
++
++/*
++ * DOC: basic fixed-rate clock that cannot gate
++ *
++ * Traits of this clock:
++ * prepare - clock never gates.  clk_prepare & clk_unprepare do nothing
++ * enable - clock never gates.  clk_enable & clk_disable do nothing
++ * rate - rate is always a fixed value.  No clk_set_rate support
++ * parent - fixed parent.  No clk_set_parent support
++ *
++ * note: parent can be NULL, which implies that this clock is a root clock.
++ */
++
++static unsigned long clk_hw_fixed_recalc_rate(struct clk *clk)
++{
++	return to_clk_hw_fixed(clk)->fixed_rate;
++}
++
++static struct clk *clk_hw_fixed_get_parent(struct clk *clk)
++{
++	return to_clk_hw_fixed(clk)->fixed_parent;
++}
++
++struct clk_hw_ops clk_hw_fixed_ops = {
++	.recalc_rate = clk_hw_fixed_recalc_rate,
++	.get_parent = clk_hw_fixed_get_parent,
++};
++EXPORT_SYMBOL_GPL(clk_hw_fixed_ops);
++
++int clk_register_fixed(struct device *dev, const char *name,
++		unsigned long flags, struct clk *fixed_parent,
++		unsigned long fixed_rate)
++{
++	struct clk_hw_fixed *fclk;
++	struct clk *clk;
++
++	fclk = kmalloc(sizeof(struct clk_hw_fixed), GFP_KERNEL);
++
++	if (!fclk) {
++		pr_err("%s: could not allocate fixed clk\n", __func__);
++		return -ENOMEM;
++	}
++
++	clk = &fclk->clk;
++
++	/* struct clk_hw_fixed assignments */
++	fclk->fixed_parent = fixed_parent;
++	fclk->fixed_rate = fixed_rate;
++
++	/* struct clk assignments */
++	clk->name = name;
++	clk->flags = flags;
++	clk->ops = &clk_hw_fixed_ops;
++
++	clk_init(NULL, clk);
++
++	return 0;
++}
 diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 55049ee..6cf3e2b 100644
+index 63a72f2..55049ee 100644
 --- a/include/linux/clk.h
 +++ b/include/linux/clk.h
-@@ -46,6 +46,9 @@ struct clk {
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
- 	unsigned int		notifier_count;
-+#ifdef CONFIG_GENERIC_CLK_DEBUG
-+	struct dentry		*dentry;
-+#endif
+@@ -131,6 +131,41 @@ struct clk_hw_ops {
+ 	int		(*set_rate)(struct clk *clk, unsigned long);
  };
  
++/*
++ * Base clock implementations. Platform clock implementations can use these
++ * directly, or 'subclass' as approprate
++ */
++
++#ifdef CONFIG_GENERIC_CLK_BASIC
++
++struct clk_hw_fixed {
++	struct clk	clk;
++	struct clk	*fixed_parent;
++	unsigned long	fixed_rate;
++};
++
++extern struct clk_hw_ops clk_hw_fixed_ops;
++
++int clk_register_fixed(struct device *dev, const char *name,
++		unsigned long flags, struct clk *fixed_parent,
++		unsigned long fixed_rate);
++
++struct clk_hw_gate {
++	struct clk	clk;
++	struct clk	*fixed_parent;
++	void __iomem	*reg;
++	u8		bit_idx;
++};
++
++extern struct clk_hw_ops clk_hw_gate_set_enable_ops;
++extern struct clk_hw_ops clk_hw_gate_set_disable_ops;
++
++int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
++		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
++		int set_to_enable);
++
++#endif
++
  /**
+  * clk_init - initialize the data structures in a struct clk
+  * @dev: device initializing this clk, placeholder for now
 -- 
 1.7.5.4
 
