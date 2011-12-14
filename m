@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab1LNGvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 01:51:13 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:39342 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab1LNGvK (ORCPT
+	id S1753627Ab1LNGxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 01:53:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60181 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1LNGw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 01:51:10 -0500
-Date: Wed, 14 Dec 2011 17:51:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: manual merge of the akpm tree with the cgroup tree
-Message-Id: <20111214175101.daac0549e5ed9d766c3a9bb5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b"
+	Wed, 14 Dec 2011 01:52:59 -0500
+Date: Wed, 14 Dec 2011 06:52:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/ncpfs: fix error paths and goto statements in
+ ncp_fill_super()
+Message-ID: <20111214065245.GL2203@ZenIV.linux.org.uk>
+References: <20111213014729.GA7693@dztty>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111213014729.GA7693@dztty>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[davem Cc'd, since there's an ugly socket-related problem in that area]
 
-Hi Andrew,
+On Tue, Dec 13, 2011 at 02:47:29AM +0100, Djalal Harouni wrote:
+> The label 'out_bdi' should be followed by bdi_destroy() instead of
+> fput() which should be after the 'out_fput' label.
+> 
+> If bdi_setup_and_register() fails then jump to the 'out_fput' label
+> instead of the 'out_bdi' one.
+> 
+> If fget(data.info_fd) fails then jump to the previously fixed 'out_bdi'
+> label to call bdi_destroy() otherwise the bdi object will not be
+> destroyed.
+> 
+> Compile tested only.
 
-Today's linux-next merge of the akpme tree got conflicts in several files
-between commits from the cgroup  tree and commit "cgroups: add previous
-cgroup in can_attach_task/attach_task callbacks" from the akpm tree.
+Applied, but now that I've looked at that code...  It, along with several
+other places, overwrites a bunch of fields in sock->sk.  What happens if
+some joker feeds that descriptor to, say, svc_addsock()?  It does the
+same kind of thing, and both assume that no bonehead programmer would
+ever do something that dumb.  Moreover, what if somebody feeds the same fd
+to ncpfs mount or svc_addsock twice?
 
-This got a bit to hard to resolve, so I dropped that patch and the
-following from the akpm tree.
+I'd done a quick grep and AFAICS, most of the places doing that kind of thing
+is acting on internally created socket, so no such problem for them.  Or
+they take care to check that somebody has already done that to socket in
+question.  Potentially unpleasant ones:
+	drivers/scsi/iscsi_tcp.c:iscsi_sw_tcp_conn_bind()
+	fs/dlm/lowcomms.c:process_sctp_notification()
+	fs/ncpfs/inode.c:ncp_fill_super()
+	net/sunrpc/svcsock.c:svc_addsock()
 
-cgroups: new cancel_attach_task() subsystem callback
-cgroups: ability to stop res charge propagation on bounded ancestor
-cgroups: add res counter common ancestor searching
-res_counter: allow charge failure pointer to be null
-cgroups: pull up res counter charge failure interpretation to caller
-cgroups: allow subsystems to cancel a fork
-cgroups: add a task counter subsystem
-cgroups: ERR_PTR needs err.h
-cgroup: Fix task counter common ancestor logic
-cgroup-fix-task-counter-common-ancestor-logic-checkpatch-fixes
+I'm not familiar with that area at all; not even enough to tell if locking
+is wrong in svc_addsock() - I suspect that it is, but...
 
-I am wondering if that patch set should be included in the cgroup tree?
-Alternatively, you could provide me with a new set of patches based on
-today's linux-next.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO6EdVAAoJEECxmPOUX5FEA3EP/0SNSUN6Ezd6rIWpBNS3sjDh
-sCtCYUaETv2QcMu/VofCbFRYWW0dmdw9zlbOVlN9FXZIW/0NvEI3LofjzFUTdg4k
-zfWe7WgJ/A3mQafcXoowlmctB5CCzHEKrHDZ5pIVZAskOXT88uxcCRWPBCdrGuzl
-DLnh4HojOJw+CYFGWjX8anI+0VffjF+4ml5PVsMEzE5xS/Zn8Q4qvBESfIm8ozIF
-iTon9yKntiJhbfY4zWax3aFz1as2GfIMIUUbbGvnqAi5n21S75Z2S56LY8wWwnyp
-q9VDaJSB3IqMC0RaEfLAfEHbCrigOAx1VNUhUsErtQhwPewscRvjJp88xj6ezoxX
-HXNiHAhmvh2ufKx4bu3wQCKPMQecDlkO0TiFTg2RAXOu+i1wNt52MLNIM943d4Px
-8y+JDdDYtXodL59q8trC14M9VUkcoyBtLU2B9trnP1rIGp4wbs1OTJUpJRufopz4
-nAO2xNtF/e8OQmAZLIRYtD+q77rkfR+/JrmsmbOMcRkpuveBYb2MpAYLzRkss4yZ
-d5ERnZSGN+zmjenbMjoYHZ34BpwavaPaViUNw2pDuDUTdOnnvKm8Cc+9IigEXxfS
-HSqGGu7QbmjVt9qTG8kTvadlRWwn1Bb9Q5NoaWjTe1Njdpd82MEoAVh7h8XqsUmC
-WMfid3YaPibhvX10MzJ/
-=adP6
------END PGP SIGNATURE-----
-
---Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b--
+Dave, am I right assuming that all those places ought to check if somebody
+is already parasiting on the socket in question and fail with -EBUSY or
+something like that?
