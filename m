@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab1LNWor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 17:44:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34518 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758231Ab1LNWop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 17:44:45 -0500
-Message-ID: <4EE926D2.3030803@zytor.com>
-Date: Wed, 14 Dec 2011 14:44:34 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1758325Ab1LNWrY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 17:47:24 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39136 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758294Ab1LNWrX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 17:47:23 -0500
+X-Sasl-enc: YcvAz6v9ZMrceyIMNGdubBDs0w/KgqFKIEdDKpd4bUA3 1323902842
+Date: Wed, 14 Dec 2011 14:44:20 -0800
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
+        davej@redhat.com
+Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
+ for CPU modaliases)
+Message-ID: <20111214224420.GA10610@kroah.com>
+References: <1323309517.979.8.camel@mop>
+ <20111209001145.GB9550@kroah.com>
+ <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
+ <1323444321.979.39.camel@mop>
+ <20111209223454.GA24987@kroah.com>
+ <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
+ <20111214012141.GA18215@kroah.com>
+ <CAPXgP10ZVjy00H3g1YbGJz+e0=mP9hXfdeDT8pOLrDE-e5E5_A@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Mike Waychison <mikew@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 3/4] EFI: Add support for variables longer than 1024 bytes
-References: <1323896791-10858-1-git-send-email-mjg@redhat.com> <1323896791-10858-4-git-send-email-mjg@redhat.com> <CAGTjWtCpt_1h6XMwCFkx1TQnQbagtSuFBejcp6XNr4yhKgNuLg@mail.gmail.com> <20111214223950.GA29264@srcf.ucam.org>
-In-Reply-To: <20111214223950.GA29264@srcf.ucam.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP10ZVjy00H3g1YbGJz+e0=mP9hXfdeDT8pOLrDE-e5E5_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 02:39 PM, Matthew Garrett wrote:
+On Wed, Dec 14, 2011 at 03:11:34AM +0100, Kay Sievers wrote:
+> On Wed, Dec 14, 2011 at 02:21, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Dec 14, 2011 at 01:50:57AM +0100, Kay Sievers wrote:
+> >> On Fri, Dec 9, 2011 at 23:34, Greg KH <greg@kroah.com> wrote:
+> >> > On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
+> >> >> Greg, would be nice, if you can take a quick look a the driver core (not
+> >> >> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
+> >> >> they look sane to you. I'll then split the driver core stuff out, so we
+> >> >> can merge that before we port the individual drivers over.
+> >> >
+> >> > Yes, it looks sane to me, thanks again for doing this work.
+> >>
+> >> Split-up patches are here:
+> >>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=tree
+> >>
+> >> That's the size of it:
+> >>   60 files changed, 1170 insertions(+), 1421 deletions(-)
+> >
+> > Very nice.
+> >
+> >> The current state and the list of the remaining non-x86 files is here:
+> >>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=README;hb=HEAD
+> >>
+> >> We need a plan now. :)
+> >
+> > If I take those patches, none of those other ones will break their
+> > build, right?
 > 
->> We need to be careful here.  The store_raw ABI is broken, in the sense
->> that the ABI from compat mode differs from that in 32bit mode (there
->> is a long in the efi_variable structure which changes the offsets).  I
->> don't know how to fix it properly and still maintain proper ABI
->> compatibility.
-> 
-> True.
-> 
->> What are your thoughts on _not_ wrapping efi_variable with
->> extended_efi_variable, and instead just using a
->> "internal_efi_variable" structure that we copy stuff into/outof.  I
->> think that would make the memory management for dealing with the
->> different sizes a lot easier to follow.
-> 
-> Hm. I think that'd only work if we expose a new interface. Writes would 
-> be easy enough to handle, but reads still need to work for old apps.
-> 
+> The first patch should not break anything, the non-core things
+> shouldn't too.
 
-Would making the old ABI readonly and add a new write interface resolve
-the problem with compat mode?
+Nice, I've applied the first patch to my tree and pushed it out and I'll
+read over the rest now.
 
-	-hpa
+> > Or will the cpu ones?
+> 
+> The cpu patch as it is will break power, s390, sh and tile.
+>   $ git grep -w -l cpu_sysdev_class
+>   arch/powerpc/kernel/sysfs.c
+>   arch/powerpc/platforms/pseries/pseries_energy.c
+>   arch/s390/kernel/smp.c
+>   arch/sh/kernel/cpu/sh4/sq.c
+>   arch/tile/kernel/sysfs.c
+> 
+> If all should be bisectable, we would need to merge these changes into
+> the cpu patch.
+
+Yeah, we need to do that, I'll look at it.
+
+> The other two core patches, node and memory, could need arch fixes
+> too, but a quick grep did not reveal anything.
+
+Ok, we might be safe there, I'll look at them.
+
+thanks,
+
+greg k-h
