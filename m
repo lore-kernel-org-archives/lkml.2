@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab1LNOVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:21:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1LNOVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:21:03 -0500
-Date: Wed, 14 Dec 2011 12:20:26 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Nate Custer <nate@cpanel.net>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: kvm deadlock
-Message-ID: <20111214142026.GA21670@amt.cnet>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
- <20111214122511.GD18317@amt.cnet>
- <4EE8A7ED.7060703@redhat.com>
- <20111214140027.GF18317@amt.cnet>
- <4EE8AC88.1040205@redhat.com>
- <20111214140612.GG18317@amt.cnet>
- <7E2A4D2C-68BD-47E8-8079-37AE152D77B4@cpanel.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7E2A4D2C-68BD-47E8-8079-37AE152D77B4@cpanel.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752907Ab1LNOYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:24:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47251 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab1LNOYv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 09:24:51 -0500
+Message-ID: <1323872631.28489.37.camel@twins>
+Subject: Re: printk() vs tty_io
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Wed, 14 Dec 2011 15:23:51 +0100
+In-Reply-To: <20111214140527.GA18080@thunk.org>
+References: <1323804803.9082.40.camel@twins>
+	 <CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
+	 <20111214104308.14d0500c@pyramind.ukuu.org.uk>
+	 <1323860206.28489.35.camel@twins> <20111214140527.GA18080@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 08:17:45AM -0600, Nate Custer wrote:
+On Wed, 2011-12-14 at 09:05 -0500, Ted Ts'o wrote:
+> On Wed, Dec 14, 2011 at 11:56:46AM +0100, Peter Zijlstra wrote:
+> > 
+> > Well, this was the 8250 serial port driver doing wakeups. Its a simple
+> > on-board serial port,
+> > 
+> > [   29.797007]        [<ffffffff8108a650>] __wake_up_common+0x4e/0x84
+> > [   29.797007]        [<ffffffff8108d6ea>] __wake_up+0x39/0x4d
+> > [   29.797007]        [<ffffffff8135d0db>] tty_wakeup+0x5b/0x60
+> > [   29.797007]        [<ffffffff81373fb9>] uart_write_wakeup+0x21/0x23
+> > [   29.797007]        [<ffffffff81376899>] transmit_chars+0xd8/0x12f
+> > [   29.797007]        [<ffffffff81377f3a>] serial8250_handle_port+0x2d9/0x2fd
+> > [   29.797007]        [<ffffffff81377fcb>] serial8250_handle_irq+0x16/0x1d
+> > [   29.797007]        [<ffffffff81377ff5>] serial8250_default_handle_irq+0x23/0x27
+> > [   29.797007]        [<ffffffff81377ade>] serial8250_interrupt+0x4d/0xc6
+> > [   29.797007]        [<ffffffff810c9ae8>] handle_irq_event_percpu+0xab/0x1fc
+> > [   29.797007]        [<ffffffff810c9c7a>] handle_irq_event+0x41/0x61
+> > [   29.797007]        [<ffffffff810cc4cd>] handle_edge_irq+0xd1/0xf6
+> > [   29.797007]        [<ffffffff8103ab85>] handle_irq+0x24/0x2f
+> > [   29.797007]        [<ffffffff8150acdd>] do_IRQ+0x4d/0xb3
+> > 
+> > which places the wakeup under uport->lock, serial8250_console_write()
+> > takes uport->lock, under console_sem, connecting the locks.
 > 
-> On Dec 14, 2011, at 8:06 AM, Marcelo Tosatti wrote:
-> > I don't know. Its a hang ? It could be memory corruption (of the timer
-> > olist) instead of a bogus NMI actually, the second.
-> 
-> 
-> What is pasted in the second paste is what came scrolling across the console right before the end of all responsiveness. It came from a dmesg dump, the next dmesg command was not accepted via ssh and the console attached showed the same stack trace. At that point the system refused to respond to any direct keyboard input, including the SysRq commands that I expected to work after a core dump. 
-> 
-> The issue happened with two servers (same hardware, same build group so there is a chance of a bad hardware batch). Switching to an older kernel/kvm setup in RHEL 6.2 has corrected the issue, which suggests a software issue to me.
+> printk() goes through serial8250_console_write() which writes to the
+> UART device using a busy loop, with local IRQ's disabled.  So it's not
+> serial8250_console_write() which is waking things up; this is coming
+> form interrupt handler running on some different CPU.
 
-Right. Perhaps try an older upstream kernel to find a culprit then.
-
+Which can still deadlock you just fine..
