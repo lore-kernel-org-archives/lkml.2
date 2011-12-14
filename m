@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab1LNIT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:19:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61987 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab1LNITw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:19:52 -0500
+	id S1755979Ab1LNIUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 03:20:12 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45868 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755735Ab1LNIUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 03:20:09 -0500
+Date: Wed, 14 Dec 2011 09:18:09 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20111214081809.GJ25232@elte.hu>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+ <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
+ <20111213192556.GD2421@somewhere.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201112140901.35203.oneukum@suse.de>
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org>
- <1321529030-7845-4-git-send-email-djkurtz@chromium.org> <201112140901.35203.oneukum@suse.de>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 14 Dec 2011 16:19:31 +0800
-X-Google-Sender-Auth: OCjdndVDark6YOsD3xaEOLRCLh8
-Message-ID: <CAGS+omAzL+RspmQ=GCAN+NSEyDddm=zXvJR99PPT8R=4OVGn4g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-To: Oliver Neukum <oneukum@suse.de>
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111213192556.GD2421@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 4:01 PM, Oliver Neukum <oneukum@suse.de> wrote:
-> Am Donnerstag, 17. November 2011, 12:23:50 schrieb Daniel Kurtz:
->> Defer LED setting action to a workqueue.
->> This is more likely to send all LED change events in a single URB.
->
-> Hi,
->
-> I hope I am looking at the correct version of this patch.
 
-Yes, that is the correct version.  It looks like I forgot to bump r in
-the [PATCH] of the subject.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> But as far as I can see the work for handling LEDs is not delayed
-> while a reset is going on. That is wrong.
+> On Mon, Dec 12, 2011 at 04:52:18PM -0500, Seiji Aguchi wrote:
+> > Hi,
+> > 
+> > I'm interested in these tracepoints.
+> > But this patch removed from -mm tree for some reason.
+> > 
+> > http://www.spinics.net/lists/mm-commits/msg85707.html
+> > 
+> > Do you plan to update it and push to upstream?
+> 
+> Oh weird. Doesn't seem to be in -tip either. Anybody has
+> any clue about where this patch went?
 
-Good catch, I think.  Your comment is a bit terse, so it is difficult to
-tell exactly what you are recommending.  Perhaps something like the following?
+Didn't Thomas critique them - if so then were those observations 
+addressed?
 
-+/* Workqueue routine to send requests to change LEDs */
-+static void hid_led(struct work_struct *work)
-+{
-+       struct usbhid_device *usbhid =
-+               container_of(work, struct usbhid_device, led_work);
-+       struct hid_device *hid = usbhid->hid;
-+       struct hid_field *field;
-+       unsigned long flags;
-+
-+       field = hidinput_get_led_field(hid);
-+       if (!field) {
-+               hid_warn(hid, "LED event field not found\n");
-+               return;
-+       }
-+
-+       spin_lock_irqsave(&usbhid->lock, flags);
-+       if (!test_bit(HID_DISCONNECTED, &usbhid->iofl) &&
-+           !test_bit(HID_RESET_PENDING, &usbhid->iofl)) {
-+               usbhid->ledcount = hidinput_count_leds(hid);
-+               hid_dbg(usbhid->hid, "New ledcount = %u\n", usbhid->ledcount);
-+               __usbhid_submit_report(hid, field->report, USB_DIR_OUT);
-+       }
-+       spin_unlock_irqrestore(&usbhid->lock, flags);
-+}
+Thanks,
 
-
--Dan
-
->
->        Regards
->                Oliver
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	Ingo
