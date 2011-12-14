@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab1LNSac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:30:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36020 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab1LNSab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:30:31 -0500
-Date: Wed, 14 Dec 2011 19:30:25 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-Message-ID: <20111214183025.GB2465@netboy.at.omicron.at>
-References: <cover.1323739287.git.luto@amacapital.net>
- <20111213032406.GA9604@netboy.at.omicron.at>
- <1323747782.4078.144.camel@work-vm>
- <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
- <20111214074640.GB2180@netboy.at.omicron.at>
- <1323881310.6805.41.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323881310.6805.41.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757946Ab1LNSdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:33:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55865 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754732Ab1LNSdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 13:33:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="86568650"
+Subject: Re: [PATCH 2/3] [SCSI]: runtime resume parent for child's
+ system-resume
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.44L0.1112141150520.1707-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1112141150520.1707-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Dec 2011 02:31:52 +0800
+Message-ID: <1323887512.7655.3.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 08:48:30AM -0800, john stultz wrote:
-> On Wed, 2011-12-14 at 08:46 +0100, Richard Cochran wrote:
-> > On Mon, Dec 12, 2011 at 11:09:29PM -0800, Andy Lutomirski wrote:
-> > > On Mon, Dec 12, 2011 at 7:43 PM, john stultz <johnstul@us.ibm.com> wrote:
-> > > >> - New name, to distance ourselves from POSIX (clock_ns_get?)
-> > > 
-> > > I will defer to the bikeshedding consensus :)
-> > > 
-> > > >> - Family of calls, with set/get
-> > > 
-> > > Setting the time is a big can of worms.  adjtimex is rather
-> > > incomprehensible (without reading lots of source and/or the rfc) and
-> > > IMO puts a lot of NTP magic into the kernel, where it doesn't belong.
+On Thu, 2011-12-15 at 00:51 +0800, Alan Stern wrote:
+> On Wed, 14 Dec 2011, Lin Ming wrote:
 > 
-> Honestly, I don't really see how we jumped to adjtimex from setting the
-> time, nor the complexity hinted at. First, the rational for getting
-> clock_gettime_ns is to avoid the overhead of userland translating from
-> timespec to ns.   I doubt there are similar performance needs for
-> settimeofday().  Even if it was needed, it shouldn't be more complex
-> then the unit conversion done in this abi patch. Am I missing something?
+> > On Wed, Dec 14, 2011 at 11:18 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > > [Patch description from Alan Stern]
+> > >
+> > > If a child device was runtime-suspended when a system suspend began,
+> > > then there will be nothing to prevent its parent from
+> > > runtime-suspending as soon as it is woken up during the system resume.
+> > > Then when the time comes to resume the child, the resume will fail
+> > > because the parent is already back at low power.
+> > >
+> > > On the other hand, there are some devices which should remain at low
+> > > power across an entire suspend-resume cycle. �The details depend on the
+> > > device and the platform.
+> > >
+> > > This suggests that the PM core is not the right place to solve the
+> > > problem. �One possible solution is for the subsystem or device driver
+> > > to call pm_runtime_get_sync(dev->parent) at the start of the
+> > > system-resume procedure and pm_runtime_put_sync(dev->parent) at the
+> > > end.
+> > >
+> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > 
+> > Hi Alan,
+> > 
+> > May I add your SOB?
+> 
+> You can add: Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
+> Did you test this?  Does it do what you want?
 
-So, you agree on adding new syscalls as a performance tweek?
+Yes, I have tested this and it fixes the problem.
 
-I am not against it, but I do think syscalls should try to satisfy a
-large number of user cases.
+Thanks.
 
-> But again, the hard part with in-kernel TAI (possibly as the base of
-> time)is that initialization of the TAI/UTC offset needs to be able to be
-> phased in slowly, as we also have to preserve legacy interfaces and
-> behavior. 
+> 
+> Alan Stern
+> 
 
-With brand new syscall, there are no legacy uses.
 
-> Why do we need a new interface for TAI? clock_gettime(CLOCK_TAI,...)
-> should be achievable. I do think it would be interesting, but I also
-> think its separate from the goal of this proposal.
-
-I mean to define an interface that always returns TAI values, no matter
-what the clock device.
-
-Richard
