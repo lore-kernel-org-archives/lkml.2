@@ -1,147 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab1LNRD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:03:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43675 "EHLO mx1.redhat.com"
+	id S1757656Ab1LNREx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:04:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49373 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754945Ab1LNRDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:03:54 -0500
-Date: Wed, 14 Dec 2011 12:03:47 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Nate Custer <nate@cpanel.net>, kvm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: kvm deadlock
-Message-ID: <20111214170347.GA25484@redhat.com>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
- <20111214122511.GD18317@amt.cnet>
- <4EE8A7ED.7060703@redhat.com>
- <4EE8C8EA.9070207@kernel.dk>
+	id S1755272Ab1LNREu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 12:04:50 -0500
+Date: Wed, 14 Dec 2011 18:04:47 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
+        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH v9 1/9] Basic kernel memory functionality for the Memory
+ Controller
+Message-ID: <20111214170447.GB4856@tiehlicka.suse.cz>
+References: <1323676029-5890-1-git-send-email-glommer@parallels.com>
+ <1323676029-5890-2-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EE8C8EA.9070207@kernel.dk>
+In-Reply-To: <1323676029-5890-2-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 05:03:54PM +0100, Jens Axboe wrote:
-> On 2011-12-14 14:43, Avi Kivity wrote:
-> > On 12/14/2011 02:25 PM, Marcelo Tosatti wrote:
-> >> On Mon, Dec 05, 2011 at 04:48:16PM -0600, Nate Custer wrote:
-> >>> Hello,
-> >>>
-> >>> I am struggling with repeatable full hardware locks when running 8-12 KVM vms. At some point before the hard lock I get a inconsistent lock state warning. An example of this can be found here:
-> >>>
-> >>> http://pastebin.com/8wKhgE2C
-> >>>
-> >>> After that the server continues to run for a while and then starts its death spiral. When it reaches that point it fails to log anything further to the disk, but by attaching a console I have been able to get a stack trace documenting the final implosion:
-> >>>
-> >>> http://pastebin.com/PbcN76bd
-> >>>
-> >>> All of the cores end up hung and the server stops responding to all input, including SysRq commands. 
-> >>>
-> >>> I have seen this behavior on two machines (dual E5606 running Fedora 16) both passed cpuburnin testing and memtest86 scans without error. 
-> >>>
-> >>> I have reproduced the crash and stack traces from a Fedora debugging kernel - 3.1.2-1 and with a vanilla 3.1.4 kernel.
-> >>
-> >> Busted hardware, apparently. Can you reproduce these issues with the
-> >> same workload on different hardware?
-> > 
-> > I don't think it's hardware related.  The second trace (in the first
-> > paste) is called during swap, so GFP_FS is set.  The first one is not,
-> > so GFP_FS is clear.  Lockdep is worried about the following scenario:
-> > 
-> >   acpi_early_init() is called
-> >   calls pcpu_alloc(), which takes pcpu_alloc_mutex
-> >   eventually, calls kmalloc(), or some other allocation function
-> >   no memory, so swap
-> >   call try_to_free_pages()
-> >   submit_bio()
-> >   blk_throtl_bio()
-> >   blkio_alloc_blkg_stats()
-> >   alloc_percpu()
-> >   pcpu_alloc(), which takes pcpu_alloc_mutex
-> >   deadlock
-> > 
-> > It's a little unlikely that acpi_early_init() will OOM, but lockdep
-> > doesn't know that.  Other callers of pcpu_alloc() could trigger the same
-> > thing.
-> > 
-> > When lockdep says
-> > 
-> > [ 5839.924953] other info that might help us debug this:
-> > [ 5839.925396]  Possible unsafe locking scenario:
-> > [ 5839.925397]
-> > [ 5839.925840]        CPU0
-> > [ 5839.926063]        ----
-> > [ 5839.926287]   lock(pcpu_alloc_mutex);
-> > [ 5839.926533]   <Interrupt>
-> > [ 5839.926756]     lock(pcpu_alloc_mutex);
-> > [ 5839.926986]
-> > 
-> > It really means
-> > 
-> >    <swap, set GFP_FS>
-> > 
-> > GFP_FS simply marks the beginning of a nested, unrelated context that
-> > uses the same thread, just like an interrupt.  Kudos to lockdep for
-> > catching that.
-> > 
-> > I think the allocation in blkio_alloc_blkg_stats() should be moved out
-> > of the I/O path into some init function. Copying Jens.
+[Now with the current patch version, I hope]
+
+On Mon 12-12-11 11:47:01, Glauber Costa wrote:
+> This patch lays down the foundation for the kernel memory component
+> of the Memory Controller.
 > 
-> That's completely buggy, basically you end up with a GFP_KERNEL
-> allocation from the IO submit path. Vivek, per_cpu data needs to be set
-> up at init time. You can't allocate it dynamically off the IO path.
+> As of today, I am only laying down the following files:
+> 
+>  * memory.independent_kmem_limit
 
-Hi Jens,
+Maybe has been already discussed but the name is rather awkward and it
+would deserve more clarification. It is independent in the way that it
+doesn't add up to the standard (user) allocations or it enables/disables
+accounting?
 
-I am wondering how does CFQ get away with blocking cfqq allocation in
-IO submit path. I see that blk_queue_bio() will do following.
+>  * memory.kmem.limit_in_bytes (currently ignored)
 
-blk_queue_bio()
- get_request_wait()
-  get_request(..,..,GFP_NOIO)
-   blk_alloc_request()
-    elv_set_request()
-     cfq_set_request()
-      ---> Can sleep and do memory allocation in IO submit path as
-           GFP_NOIO has __GFP_WAIT.
+What happens if we reach the limit? Are all kernel allocations
+considered or only selected caches? How do I find out which are those?
 
-So that means sleeping allocation from IO submit path is not necessarily
-a problem?
+AFAIU you have implemented it for network buffers at this stage but I
+guess that dentries will follow...
 
-But in case of per cpu data allocation, we might be holding pcpu_alloc_mutex()
-already at the time of calling pcpu allocation again and that might lead
-to deadlock.  (As Avi mentioned). If yes, then it is a problem.
+>  * memory.kmem.usage_in_bytes (always zero)
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Kirill A. Shutemov <kirill@shutemov.name>
+> CC: Paul Menage <paul@paulmenage.org>
+> CC: Greg Thelen <gthelen@google.com>
+> CC: Johannes Weiner <jweiner@redhat.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> ---
+>  Documentation/cgroups/memory.txt |   40 ++++++++++++++-
+>  init/Kconfig                     |   11 ++++
+>  mm/memcontrol.c                  |  105 ++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 149 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index cc0ebc5..f245324 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -44,8 +44,9 @@ Features:
+>   - oom-killer disable knob and oom-notifier
+>   - Root cgroup has no limit controls.
+>  
+> - Kernel memory and Hugepages are not under control yet. We just manage
+> - pages on LRU. To add more controls, we have to take care of performance.
+> + Hugepages is not under control yet. We just manage pages on LRU. To add more
 
-Right now allocation of root group and associated stats happens at queue
-initialization time. For non-root cgroups, group allocation and associated
-per cpu stats allocation happens dynamically when the IO is submitted. So
-in this case may be we are creating a new blkio cgroup and then doing IO
-which leads to this warning.
+Hugepages are not
+Anyway this sounds outdated as we track both THP and hugetlb, right?
 
-I am not sure how to move this allocation to init path. These stats are
-per group and groups are created dynamically as IO happens in them. Only
-init path seems to be cgroup creation time. blkg is an object which is
-contained in a parent object and at that time parent object is not
-available. It is created dynamically at the IO time (cfq_group,
-blkio_group etc).
+> + controls, we have to take care of performance. Kernel memory support is work
+> + in progress, and the current version provides basically functionality.
 
-Though it is little hackish but can we just delay the allocation of stats
-if pcpu_alloc_mutex is held. We shall have to make pcpu_alloc_mutex non
-static though. Delaying will just not capture the stats for some time
-and sooner or later we will get regular IO with pcpu_alloc_mutex not
-held and we can do per cpu allocation at that time. I will write a
-a test patch.
+s/basically/basic/
 
-Or may be there is a safer version of pcpu alloc which will return
-without allocation if pcpu_alloc_mutex is already locked.
+>  
+>  Brief summary of control files.
+>  
+> @@ -56,8 +57,11 @@ Brief summary of control files.
+>  				 (See 5.5 for details)
+>   memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+>  				 (See 5.5 for details)
+> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
+> +				 (See 2.7 for details)
+>   memory.limit_in_bytes		 # set/show limit of memory usage
+>   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+>   memory.failcnt			 # show the number of memory usage hits limits
+>   memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+>   memory.max_usage_in_bytes	 # show max memory usage recorded
+> @@ -72,6 +76,9 @@ Brief summary of control files.
+>   memory.oom_control		 # set/show oom controls.
+>   memory.numa_stat		 # show the number of memory usage per numa node
+>  
+> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+> +				   independent of user limits
+> +
 
-CCing Tejun too.
+It is not clear what happens in enabled/disabled cases. Let's say they
+are not independent. Does it form a single limit with user charges or it
+toggles kmem charging on/off.
 
-Thanks
-Vivek
+>  1. History
+>  
+>  The memory controller has a long history. A request for comments for the memory
+> @@ -255,6 +262,35 @@ When oom event notifier is registered, event will be delivered.
+>    per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+>    zone->lru_lock, it has no lock of its own.
+>  
+> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
+> +
+> +With the Kernel memory extension, the Memory Controller is able to limit
+> +the amount of kernel memory used by the system. Kernel memory is fundamentally
+> +different than user memory, since it can't be swapped out, which makes it
+> +possible to DoS the system by consuming too much of this precious resource.
+> +
+> +Some kernel memory resources may be accounted and limited separately from the
+> +main "kmem" resource. For instance, a slab cache that is considered important
+> +enough to be limited separately may have its own knobs.
+
+How do you tell which are those that are accounted to the "main kmem"?
+
+> +
+> +Kernel memory limits are not imposed for the root cgroup. Usage for the root
+> +cgroup may or may not be accounted.
+> +
+> +Memory limits as specified by the standard Memory Controller may or may not
+> +take kernel memory into consideration. This is achieved through the file
+> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
+> +memory to be controlled separately.
+
+Separately from user space allocations, right?
+What happens if we reach the limit in both cases?
+
+> @@ -344,9 +353,14 @@ enum charge_type {
+>  };
+>  
+>  /* for encoding cft->private value on file */
+> -#define _MEM			(0)
+> -#define _MEMSWAP		(1)
+> -#define _OOM_TYPE		(2)
+> +
+> +enum mem_type {
+> +	_MEM = 0,
+> +	_MEMSWAP,
+> +	_OOM_TYPE,
+> +	_KMEM,
+> +};
+> +
+
+Probably in a separate (cleanup) patch?
+
+>  #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+>  #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
+>  #define MEMFILE_ATTR(val)	((val) & 0xffff)
+> @@ -3848,10 +3862,17 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+>  	u64 val;
+>  
+>  	if (!mem_cgroup_is_root(memcg)) {
+> +		val = 0;
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +		if (!memcg->kmem_independent_accounting)
+> +			val = res_counter_read_u64(&memcg->kmem, RES_USAGE);
+> +#endif
+>  		if (!swap)
+> -			return res_counter_read_u64(&memcg->res, RES_USAGE);
+> +			val += res_counter_read_u64(&memcg->res, RES_USAGE);
+>  		else
+> -			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
+> +			val += res_counter_read_u64(&memcg->memsw, RES_USAGE);
+> +
+> +		return val;
+>  	}
+
+So you report kmem+user but we do not consider kmem during charge so one
+can easily end up with usage_in_bytes over limit but no reclaim is going
+on. Not good, I would say.
+
+OK, so to sum it up. The biggest problem I see is the (non)independent
+accounting. We simply cannot mix user+kernel limits otherwise we would
+see issues (like kernel resource hog would force memcg-oom and innocent
+members would die because their rss is much bigger).
+It is also not clear to me what should happen when we hit the kmem
+limit. I guess it will be kmem cache dependent.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
