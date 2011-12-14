@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab1LNPqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:46:36 -0500
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:45161 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757093Ab1LNPqe (ORCPT
+	id S1757467Ab1LNPrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:47:08 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8888 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab1LNPrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:46:34 -0500
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: linux-scsi@vger.kernel.org
-Cc: netdev@vger.kernel.org, kxie@chelsio.com, michaelc@cs.wisc.edu,
-        davem@davemloft.net, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH] libcxgbi: do not print a message when memory allocation fails
-Date: Wed, 14 Dec 2011 13:46:23 -0200
-Message-Id: <1323877583-6844-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.4
-x-cbid: 11121415-8936-0000-0000-0000055C707D
+	Wed, 14 Dec 2011 10:47:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 14 Dec 2011 07:46:58 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Wed, 14 Dec 2011 07:46:56 -0800
+Subject: RE: [PATCH] pinctrl: add a group-specific hog macro
+Thread-Topic: [PATCH] pinctrl: add a group-specific hog macro
+Thread-Index: Acy6OvzTErHAbbsjQ+Oo84SEF5qLwQAPGMWA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176B446FFD@HQMAIL01.nvidia.com>
+References: <1323851530-4171-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1323851530-4171-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In alloc_pdu, libcxgbi tries to allocate a skb with GFP_ATOMIC, which
-may potentially fail. When it happens, the current code prints a warning
-message.
+Linus Walleij wrote at Wednesday, December 14, 2011 1:32 AM:
+> To create elegant tables for pinmux hogs on the PXA MMP platform,
+> we need this hog macro that can specify both function and group in
+> one go.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-When the system is under IO stress, this failure may happen lots of
-times and it usually scares users.
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Instead of printing the warning message, the code now increases the
-tx_dropped statistics for the ethernet interface wich is doing the iscsi
-task.
+That said, when using this, I'd wrap it in a macro that set .name and
+.group to the same thing; for system hogs, I'm not sure what other name
+would be useful. Should the macro do that?
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/scsi/cxgbi/libcxgbi.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/cxgbi/libcxgbi.c b/drivers/scsi/cxgbi/libcxgbi.c
-index c10f74a..3422bc2 100644
---- a/drivers/scsi/cxgbi/libcxgbi.c
-+++ b/drivers/scsi/cxgbi/libcxgbi.c
-@@ -1862,8 +1862,9 @@ int cxgbi_conn_alloc_pdu(struct iscsi_task *task, u8 opcode)
- 
- 	tdata->skb = alloc_skb(cdev->skb_tx_rsvd + headroom, GFP_ATOMIC);
- 	if (!tdata->skb) {
--		pr_warn("alloc skb %u+%u, opcode 0x%x failed.\n",
--			cdev->skb_tx_rsvd, headroom, opcode);
-+		struct cxgbi_sock *csk = cconn->cep->csk;
-+		struct net_device *ndev = cdev->ports[csk->port_id];
-+		ndev->stats.tx_dropped++;
- 		return -ENOMEM;
- 	}
- 
 -- 
-1.7.4.4
+nvpublic
 
