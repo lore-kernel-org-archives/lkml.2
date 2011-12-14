@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab1LNGxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 01:53:03 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60181 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab1LNGw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 01:52:59 -0500
-Date: Wed, 14 Dec 2011 06:52:45 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/ncpfs: fix error paths and goto statements in
- ncp_fill_super()
-Message-ID: <20111214065245.GL2203@ZenIV.linux.org.uk>
-References: <20111213014729.GA7693@dztty>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213014729.GA7693@dztty>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753537Ab1LNHAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:00:00 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58114 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab1LNG77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 01:59:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85510676"
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1323845054.2846.18.camel@edumazet-laptop>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+	 <alpine.DEB.2.00.1112020842280.10975@router.home>
+	 <1323419402.16790.6105.camel@debian>
+	 <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
+	 <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1112131835100.31514@chino.kir.corp.google.com>
+	 <1323842761.16790.8295.camel@debian>
+	 <1323845054.2846.18.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Dec 2011 14:56:52 +0800
+Message-ID: <1323845812.16790.8307.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[davem Cc'd, since there's an ugly socket-related problem in that area]
 
-On Tue, Dec 13, 2011 at 02:47:29AM +0100, Djalal Harouni wrote:
-> The label 'out_bdi' should be followed by bdi_destroy() instead of
-> fput() which should be after the 'out_fput' label.
+> > Thanks for the data. Real netperf is hard to give enough press on SLUB.
+> > but as I mentioned before, I also didn't find real performance change on
+> > my loopback netperf testing. 
+> > 
+> > I retested hackbench again. about 1% performance increase still exists
+> > on my 2 sockets SNB/WSM and 4 sockets NHM.  and no performance drop for
+> > other machines. 
+> > 
+> > Christoph, what's comments you like to offer for the results or for this
+> > code change? 
 > 
-> If bdi_setup_and_register() fails then jump to the 'out_fput' label
-> instead of the 'out_bdi' one.
+> I believe far more aggressive mechanism is needed to help these
+> workloads.
 > 
-> If fget(data.info_fd) fails then jump to the previously fixed 'out_bdi'
-> label to call bdi_destroy() otherwise the bdi object will not be
-> destroyed.
+> Please note that the COLD/HOT page concept is not very well used in
+> kernel, because its not really obvious that some decisions are always
+> good (or maybe this is not well known)
+
+Hope Christoph know everything of SLUB. :) 
 > 
-> Compile tested only.
+> We should try to batch things a bit, instead of doing a very small unit
+> of work in slow path.
+> 
+> We now have a very fast fastpath, but inefficient slow path.
+> 
+> SLAB has a litle cache per cpu, we could add one to SLUB for freed
+> objects, not belonging to current slab. This could avoid all these
+> activate/deactivate overhead.
 
-Applied, but now that I've looked at that code...  It, along with several
-other places, overwrites a bunch of fields in sock->sk.  What happens if
-some joker feeds that descriptor to, say, svc_addsock()?  It does the
-same kind of thing, and both assume that no bonehead programmer would
-ever do something that dumb.  Moreover, what if somebody feeds the same fd
-to ncpfs mount or svc_addsock twice?
+Maybe worth to try or maybe Christoph had studied this? 
 
-I'd done a quick grep and AFAICS, most of the places doing that kind of thing
-is acting on internally created socket, so no such problem for them.  Or
-they take care to check that somebody has already done that to socket in
-question.  Potentially unpleasant ones:
-	drivers/scsi/iscsi_tcp.c:iscsi_sw_tcp_conn_bind()
-	fs/dlm/lowcomms.c:process_sctp_notification()
-	fs/ncpfs/inode.c:ncp_fill_super()
-	net/sunrpc/svcsock.c:svc_addsock()
 
-I'm not familiar with that area at all; not even enough to tell if locking
-is wrong in svc_addsock() - I suspect that it is, but...
-
-Dave, am I right assuming that all those places ought to check if somebody
-is already parasiting on the socket in question and fail with -EBUSY or
-something like that?
