@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1LNCxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 21:53:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64584 "EHLO
+	id S932137Ab1LNCxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 21:53:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45608 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756642Ab1LNCwz (ORCPT
+	with ESMTP id S1756640Ab1LNCwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Dec 2011 21:52:55 -0500
-X-Authority-Analysis: v=2.0 cv=HeWWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=Ncku1LITv_IA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=nVI_mnzzUJ0xBcMVdE8A:9 a=2R4oPsScBZbIOtX69w8A:7 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=_GgVX-odOicA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=QyXUC8HyAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=r6tlpdmizkw4SpTRxM4A:9 a=pmeH6dRcdzFXV19EwPMA:7 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=00VAB27iOpDD2gO3:21 a=xXETSA8P2YTXNwkd:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111214025252.684160446@goodmis.org>
+Message-Id: <20111214025253.519573056@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 13 Dec 2011 21:52:41 -0500
+Date: Tue, 13 Dec 2011 21:52:42 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,208 +22,181 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [RFC][PATCH 4/5 v2] x86: Keep current stack in NMI breakpoints
+        Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Subject: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
 References: <20111214025237.457632996@goodmis.org>
-Content-Disposition: inline; filename=0004-x86-Keep-current-stack-in-NMI-breakpoints.patch
+Content-Disposition: inline; filename=0005-x86-Allow-NMIs-to-hit-breakpoints-in-i386.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-We want to allow NMI handlers to have breakpoints to be able to
-remove stop_machine from ftrace, kprobes and jump_labels. But if
-an NMI interrupts a current breakpoint, and then it triggers a
-breakpoint itself, it will switch to the breakpoint stack and
-corrupt the data on it for the breakpoint processing that it
-interrupted.
+With i386, NMIs and breakpoints use the current stack and they
+do not reset the stack pointer to a fix point that might corrupt
+a previous NMI or breakpoint (as it does in x86_64). But NMIs are
+still not made to be re-entrant, and need to prevent the case that
+an NMI hitting a breakpoint (which does an iret), doesn't allow
+another NMI to run.
 
-Instead, have the NMI check if it interrupted breakpoint processing
-by checking if the stack that is currently used is a breakpoint
-stack. If it is, then load a special IDT that changes the IST
-for the debug exception to keep the same stack in kernel context.
-When the NMI is done, it puts it back.
+The fix is to let the NMI be in 3 different states:
 
-This way, if the NMI does trigger a breakpoint, it will keep
-using the same stack and not stomp on the breakpoint data for
-the breakpoint it interrupted.
+1) not running
+2) executing
+3) latched
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
+When no NMI is executing on a given CPU, the state is "not running".
+When the first NMI comes in, the state is switched to "executing".
+On exit of that NMI, a cmpxchg is performed to switch the state
+back to "not running" and if that fails, the NMI is restarted.
+
+If a breakpoint is hit and does an iret, which re-enables NMIs,
+and another NMI comes in before the first NMI finished, it will
+detect that the state is not in the "not running" state and the
+current NMI is nested. In this case, the state is switched to "latched"
+to let the interrupted NMI know to restart the NMI handler, and
+the nested NMI exits without doing anything.
+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Turner <pjt@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/desc.h      |   12 ++++++++++++
- arch/x86/include/asm/processor.h |    6 ++++++
- arch/x86/kernel/cpu/common.c     |   22 ++++++++++++++++++++++
- arch/x86/kernel/head_64.S        |    4 ++++
- arch/x86/kernel/nmi.c            |   15 +++++++++++++++
- arch/x86/kernel/traps.c          |    6 ++++++
- 6 files changed, 65 insertions(+), 0 deletions(-)
+ arch/x86/kernel/nmi.c |  100 +++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 93 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 41935fa..e95822d 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -35,6 +35,8 @@ static inline void fill_ldt(struct desc_struct *desc, const struct user_desc *in
- 
- extern struct desc_ptr idt_descr;
- extern gate_desc idt_table[];
-+extern struct desc_ptr nmi_idt_descr;
-+extern gate_desc nmi_idt_table[];
- 
- struct gdt_page {
- 	struct desc_struct gdt[GDT_ENTRIES];
-@@ -307,6 +309,16 @@ static inline void set_desc_limit(struct desc_struct *desc, unsigned long limit)
- 	desc->limit = (limit >> 16) & 0xf;
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index fb86773..f670295 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -404,11 +404,84 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		unknown_nmi_error(reason, regs);
  }
  
-+#ifdef CONFIG_X86_64
-+static inline void set_nmi_gate(int gate, void *addr)
-+{
-+	gate_desc s;
+-dotraplinkage notrace __kprobes void
+-do_nmi(struct pt_regs *regs, long error_code)
+-{
+-	int update_debug_stack = 0;
++/*
++ * NMIs can hit breakpoints which will cause it to lose its
++ * NMI context with the CPU when the breakpoint does an iret.
++ */
++#ifdef CONFIG_X86_32
++/*
++ * For i386, NMIs use the same stack as the kernel, and we can
++ * add a workaround to the iret problem in C. Simply have 3 states
++ * the NMI can be in.
++ *
++ *  1) not running
++ *  2) executing
++ *  3) latched
++ *
++ * When no NMI is in progress, it is in the "not running" state.
++ * When an NMI comes in, it goes into the "executing" state.
++ * Normally, if another NMI is triggered, it does not interrupt
++ * the running NMI and the HW will simply latch it so that when
++ * the first NMI finishes, it will restart the second NMI.
++ * (Note, the latch is binary, thus multiple NMIs triggering,
++ *  when one is running, are ignored. Only one NMI is restarted.)
++ *
++ * If an NMI hits a breakpoint that executes an iret, another
++ * NMI can preempt it. We do not want to allow this new NMI
++ * to run, but we want to execute it when the first one finishes.
++ * We set the state to "latched", and the first NMI will perform
++ * an cmpxchg on the state, and if it doesn't successfully
++ * reset the state to "not running" it will restart the next
++ * NMI.
++ */
++enum nmi_states {
++	NMI_NOT_RUNNING,
++	NMI_EXECUTING,
++	NMI_LATCHED,
++};
++static DEFINE_PER_CPU(enum nmi_states, nmi_state);
 +
-+	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
-+	write_idt_entry(nmi_idt_table, gate, &s);
++#define nmi_preprocess(regs)						\
++	do {								\
++		if (__get_cpu_var(nmi_state) != NMI_NOT_RUNNING) {	\
++			__get_cpu_var(nmi_state) = NMI_LATCHED;		\
++			return;						\
++		}							\
++	nmi_restart:							\
++		__get_cpu_var(nmi_state) = NMI_EXECUTING;		\
++	} while (0)
++
++#define nmi_postprocess()						\
++	do {								\
++		if (cmpxchg(&__get_cpu_var(nmi_state),			\
++		    NMI_EXECUTING, NMI_NOT_RUNNING) != NMI_EXECUTING)	\
++			goto nmi_restart;				\
++	} while (0)
++#else /* x86_64 */
++/*
++ * In x86_64 things are a bit more difficult. This has the same problem
++ * where an NMI hitting a breakpoint that calls iret will remove the
++ * NMI context, allowing a nested NMI to enter. What makes this more
++ * difficult is that both NMIs and breakpoints have their own stack.
++ * When a new NMI or breakpoint is executed, the stack is set to a fixed
++ * point. If an NMI is nested, it will have its stack set at that same
++ * fixed address that the first NMI had, and will start corrupting the
++ * stack. This is handled in entry_64.S, but the same problem exists with
++ * the breakpoint stack.
++ *
++ * If a breakpoint is being processed, and the debug stack is being used,
++ * if an NMI comes in and also hits a breakpoint, the stack pointer
++ * will be set to the same fixed address as the breakpoint that was
++ * interrupted, causing that stack to be corrupted. To handle this case,
++ * check if the stack that was interrupted is the debug stack, and if
++ * so, change the IDT so that new breakpoints will use the current stack
++ * and not switch to the fixed address. On return of the NMI, switch back
++ * to the original IDT.
++ */
++static DEFINE_PER_CPU(int, update_debug_stack);
+ 
++static inline void nmi_preprocess(struct pt_regs *regs)
++{
+ 	/*
+ 	 * If we interrupted a breakpoint, it is possible that
+ 	 * the nmi handler will have breakpoints too. We need to
+@@ -417,8 +490,22 @@ do_nmi(struct pt_regs *regs, long error_code)
+ 	 */
+ 	if (unlikely(is_debug_stack(regs->sp))) {
+ 		zero_debug_stack();
+-		update_debug_stack = 1;
++		__get_cpu_var(update_debug_stack) = 1;
+ 	}
++}
++
++static inline void nmi_postprocess(void)
++{
++	if (unlikely(__get_cpu_var(update_debug_stack)))
++		reset_debug_stack();
 +}
 +#endif
 +
- static inline void _set_gate(int gate, unsigned type, void *addr,
- 			     unsigned dpl, unsigned ist, unsigned seg)
- {
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b650435..d748d1f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -402,6 +402,9 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
- DECLARE_PER_CPU(unsigned int, irq_count);
- extern unsigned long kernel_eflags;
- extern asmlinkage void ignore_sysret(void);
-+int is_debug_stack(unsigned long addr);
-+void zero_debug_stack(void);
-+void reset_debug_stack(void);
- #else	/* X86_64 */
- #ifdef CONFIG_CC_STACKPROTECTOR
- /*
-@@ -416,6 +419,9 @@ struct stack_canary {
- };
- DECLARE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
- #endif
-+static inline int is_debug_stack(unsigned long addr) { return 0; }
-+static inline void zero_debug_stack(void) { }
-+static inline void reset_debug_stack(void) { }
- #endif	/* X86_64 */
- 
- extern unsigned int xstate_size;
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index aa003b1..98faeff 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1026,6 +1026,8 @@ __setup("clearcpuid=", setup_disablecpuid);
- 
- #ifdef CONFIG_X86_64
- struct desc_ptr idt_descr = { NR_VECTORS * 16 - 1, (unsigned long) idt_table };
-+struct desc_ptr nmi_idt_descr = { NR_VECTORS * 16 - 1,
-+				    (unsigned long) nmi_idt_table };
- 
- DEFINE_PER_CPU_FIRST(union irq_stack_union,
- 		     irq_stack_union) __aligned(PAGE_SIZE);
-@@ -1090,6 +1092,24 @@ unsigned long kernel_eflags;
-  */
- DEFINE_PER_CPU(struct orig_ist, orig_ist);
- 
-+static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
-+
-+int is_debug_stack(unsigned long addr)
++dotraplinkage notrace __kprobes void
++do_nmi(struct pt_regs *regs, long error_code)
 +{
-+	return addr <= __get_cpu_var(debug_stack_addr) &&
-+		addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ);
-+}
++	nmi_preprocess(regs);
 +
-+void zero_debug_stack(void)
-+{
-+	load_idt((const struct desc_ptr *)&nmi_idt_descr);
-+}
-+
-+void reset_debug_stack(void)
-+{
-+	load_idt((const struct desc_ptr *)&idt_descr);
-+}
-+
- #else	/* CONFIG_X86_64 */
- 
- DEFINE_PER_CPU(struct task_struct *, current_task) = &init_task;
-@@ -1208,6 +1228,8 @@ void __cpuinit cpu_init(void)
- 			estacks += exception_stack_sizes[v];
- 			oist->ist[v] = t->x86_tss.ist[v] =
- 					(unsigned long)estacks;
-+			if (v == DEBUG_STACK - 1)
-+				per_cpu(debug_stack_addr, cpu) = (unsigned long)estacks;
- 		}
- 	}
- 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index e11e394..40f4eb3 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -417,6 +417,10 @@ ENTRY(phys_base)
- ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
- 
-+	.align L1_CACHE_BYTES
-+ENTRY(nmi_idt_table)
-+	.skip IDT_ENTRIES * 16
-+
- 	__PAGE_ALIGNED_BSS
- 	.align PAGE_SIZE
- ENTRY(empty_zero_page)
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index b9c8628..fb86773 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -407,6 +407,18 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- dotraplinkage notrace __kprobes void
- do_nmi(struct pt_regs *regs, long error_code)
- {
-+	int update_debug_stack = 0;
-+
-+	/*
-+	 * If we interrupted a breakpoint, it is possible that
-+	 * the nmi handler will have breakpoints too. We need to
-+	 * change the IDT such that breakpoints that happen here
-+	 * continue to use the NMI stack.
-+	 */
-+	if (unlikely(is_debug_stack(regs->sp))) {
-+		zero_debug_stack();
-+		update_debug_stack = 1;
-+	}
  	nmi_enter();
  
  	inc_irq_stat(__nmi_count);
-@@ -415,6 +427,9 @@ do_nmi(struct pt_regs *regs, long error_code)
- 		default_do_nmi(regs);
+@@ -428,8 +515,7 @@ do_nmi(struct pt_regs *regs, long error_code)
  
  	nmi_exit();
-+
-+	if (unlikely(update_debug_stack))
-+		reset_debug_stack();
+ 
+-	if (unlikely(update_debug_stack))
+-		reset_debug_stack();
++	nmi_postprocess();
  }
  
  void stop_nmi(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a8e3eb8..a93c5ca 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -723,4 +723,10 @@ void __init trap_init(void)
- 	cpu_init();
- 
- 	x86_init.irqs.trap_init();
-+
-+#ifdef CONFIG_X86_64
-+	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
-+	set_nmi_gate(1, &debug);
-+	set_nmi_gate(3, &int3);
-+#endif
- }
 -- 
 1.7.7.3
 
