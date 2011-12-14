@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab1LNXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:15:57 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44503 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab1LNXPx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:15:53 -0500
+	id S1758008Ab1LNXTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 18:19:01 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58401 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753150Ab1LNXS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 18:18:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 1/2 v2] PM / Sleep: Simplify generic system suspend callbacks
+Date: Thu, 15 Dec 2011 00:20:41 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
+References: <201111180037.22157.rjw@sisk.pl> <201112100005.24798.rjw@sisk.pl> <201112150019.39645.rjw@sisk.pl>
+In-Reply-To: <201112150019.39645.rjw@sisk.pl>
 MIME-Version: 1.0
-Date: Thu, 15 Dec 2011 01:15:52 +0200
-Message-ID: <CAMP44s2M8cFM5AhjMwbFJZpQtbYe13w9bswTRhap97nOCyZVfQ@mail.gmail.com>
-Subject: Issue with isp1704 loaded too soon
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <heikki.krogerus@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112150020.41977.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 11:19 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
->> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
->> non isp1704_charger change has broke it as there hasn't been changes on it.
->
-> Actually it's broken in 3.0 as well, try this configuration:
->
->        # CONFIG_USB_MUSB_HOST is not set
->        # CONFIG_USB_MUSB_PERIPHERAL is not set
->        CONFIG_USB_MUSB_OTG=y
->        CONFIG_USB_GADGET_MUSB_HDRC=y
->        CONFIG_USB_MUSB_HDRC_HCD=y
->
->        CONFIG_USB_GADGET_SELECTED=y
->        # CONFIG_USB_GADGET_FUSB300 is not set
->        # CONFIG_USB_GADGET_OMAP is not set
->        # CONFIG_USB_GADGET_R8A66597 is not set
->        # CONFIG_USB_GADGET_PXA_U2O is not set
->        # CONFIG_USB_GADGET_M66592 is not set
->        # CONFIG_USB_GADGET_DUMMY_HCD is not set
->
-> I will try to find where the issues started to happen, but it's a bit
-> difficult because all this USB Kconfig stuff is completely messed up.
->
-> *Sigh*
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Sleep: Simplify generic system suspend callbacks
 
-Ok, I made some progress.
+The pm_runtime_suspended() check in __pm_generic_call() doesn't
+really help and may cause problems to happen, because in some cases
+the system suspend callbacks need to be called even if the given
+device has been suspended by runtime PM.  For example, if the device
+generally supports remote wakeup and is not enabled to wake up
+the system from sleep, it should be prevented from generating wakeup
+signals during system suspend and that has to be done by the
+suspend callbacks that the pm_runtime_suspended() check prevents from
+being executed.
 
-The issue appeared on 2.6.39, specifically, on commit 0df0914, which
-is a merge from Linus. The issue doesn't appear in any of the two
-parents of that merge.
+Similarly, it may not be a good idea to unconditionally change
+the runtime PM status of the device to 'active' in
+__pm_generic_resume(), because the driver may want to leave the
+device in the 'suspended' state, depending on what happened to it
+before the system suspend and whether or not it is enabled to
+wake up the system.
 
-I manually merged various commits, and the first one that triggered
-the problem is 18a2689, but the commit itself is not the problem but
-something that was already merged to Linus' tree, specifically at
-point 6899608.
+For the above reasons, remove the pm_runtime_suspended()
+check from __pm_generic_call() and remove the code changing the
+device's runtime PM status from __pm_generic_resume().
 
-IOW, it's a mixture of two changes that appear together at point,
-0df0914, one of them is 18a2689, the other one I still don't know.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/generic_ops.c |   24 ++++++------------------
+ 1 file changed, 6 insertions(+), 18 deletions(-)
 
-Unless you can find what's wrong with this commit:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/arm/mach-omap2/usb-musb.c;h=a9d4d143086d73463b97c093cc9f022de8e1d679;hp=9788b4941857f40d50d48fa6470ee14e179bc373;hb=18a2689;hpb=273ff8c3bc04cf358c131f49ee7a11efa7ec73d7
+Index: linux/drivers/base/power/generic_ops.c
+===================================================================
+--- linux.orig/drivers/base/power/generic_ops.c
++++ linux/drivers/base/power/generic_ops.c
+@@ -97,16 +97,16 @@ int pm_generic_prepare(struct device *de
+  * @event: PM transition of the system under way.
+  * @bool: Whether or not this is the "noirq" stage.
+  *
+- * If the device has not been suspended at run time, execute the
+- * suspend/freeze/poweroff/thaw callback provided by its driver, if defined, and
+- * return its error code.  Otherwise, return zero.
++ * Execute the suspend/freeze/poweroff/thaw callback provided by the driver of
++ * @dev, if defined, and return its error code.    Return 0 if the callback is
++ * not present.
+  */
+ static int __pm_generic_call(struct device *dev, int event, bool noirq)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 	int (*callback)(struct device *);
+ 
+-	if (!pm || pm_runtime_suspended(dev))
++	if (!pm)
+ 		return 0;
+ 
+ 	switch (event) {
+@@ -217,14 +217,12 @@ EXPORT_SYMBOL_GPL(pm_generic_thaw);
+  * @bool: Whether or not this is the "noirq" stage.
+  *
+  * Execute the resume/resotre callback provided by the @dev's driver, if
+- * defined.  If it returns 0, change the device's runtime PM status to 'active'.
+- * Return the callback's error code.
++ * defined, and return its error code.  Return 0 if the callback is not present.
+  */
+ static int __pm_generic_resume(struct device *dev, int event, bool noirq)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 	int (*callback)(struct device *);
+-	int ret;
+ 
+ 	if (!pm)
+ 		return 0;
+@@ -241,17 +239,7 @@ static int __pm_generic_resume(struct de
+ 		break;
+ 	}
+ 
+-	if (!callback)
+-		return 0;
+-
+-	ret = callback(dev);
+-	if (!ret && !noirq && pm_runtime_enabled(dev)) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_active(dev);
+-		pm_runtime_enable(dev);
+-	}
+-
+-	return ret;
++	return callback ? callback(dev) : 0;
+ }
+ 
+ /**
 
-I guess the safest route is to continue with the manual merges to find
-the second relevant commit =/
-
--- 
-Felipe Contreras
