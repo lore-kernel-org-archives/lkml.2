@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1LNN0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:26:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:11213 "EHLO mga09.intel.com"
+	id S1757196Ab1LNN03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:26:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:36678 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657Ab1LNN0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:26:12 -0500
+	id S1756944Ab1LNN01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:26:27 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="87187059"
-Subject: Re: [PATCH 1/3] [SCSI] sd: fix runtime status check in sd_shutdown
-From: Lin Ming <ming.m.lin@intel.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-In-Reply-To: <4EE8813B.1090802@mvista.com>
-References: <1323832681-7177-1-git-send-email-ming.m.lin@intel.com>
-	 <1323832681-7177-2-git-send-email-ming.m.lin@intel.com>
-	 <4EE8813B.1090802@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 14 Dec 2011 21:24:31 +0800
-Message-ID: <1323869071.2656.7.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85613074"
+Date: Wed, 14 Dec 2011 21:16:19 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Curt Wohlgemuth <curtw@google.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] writeback: Unduplicate writeback reason
+Message-ID: <20111214131619.GA17225@localhost>
+References: <20111214003150.GA14520@localhost>
+ <1323825240.23971.11.camel@gandalf.stny.rr.com>
+ <20111214032844.GL3179@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111214032844.GL3179@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 18:58 +0800, Sergei Shtylyov wrote:
-> Hello.
+On Wed, Dec 14, 2011 at 11:28:44AM +0800, Dave Chinner wrote:
+> On Tue, Dec 13, 2011 at 08:14:00PM -0500, Steven Rostedt wrote:
+> > Names of the writeback reasons are used in both the main kernel as well
+> > as for parsing the tracepoint format file. Instead of duplicating the
+> > names in two locations making it likely that they may become out of
+> > sync, use some macro magic to make sure all the names stay in sync. Any
+> > update only needs to happen in one spot for it to take place in all
+> > locations.
+> > 
+> > Note, this is an RFC patch, and it probably needs much better comments
+> > (well, it currently has no comments), and the C() macro probably should
+> > have a different name too.
 > 
-> On 14-12-2011 7:17, Lin Ming wrote:
+> I'm not sure this is a pattern we want to repeat all over the place -
+> print_symbolic() is quite widely used and adding macro redefinitions
+> all over the place doesn't fill me with joy.
+
+Yeah, unfortunately...
+
+> AFAICT this code doesn't need a declared array to work so you can
+
+You mean the string array wb_reason_name[]? Ah it's actually not used
+for now -- until there comes the (planned) writeback stats patch to
+show the reason names in some debugfs/sysfs interface.
+
+So for the upcoming 3.2, wb_reason_name[] can be removed to avoid the
+duplication. However the question still remains how exactly are we
+going to re-introduce it in future?
+
+> just use a preprocessor construct like this (as used in XFS):
 > 
-> > Commit af8db15 disabled device's runtime PM during shutdown.
+> #define value_1 	1
+> #define value_2		2
+> .....
 > 
->     Please also specify that commit's summary in parens.
+> or
+> 
+> enum {
+> 	value_1	= 1,
+> 	value_2 = 2,
+> 	.....
+> }
+> 
+> followed by:
+> 
+> #define VALUES	\
+> 	{ value_1,	"Value 1" }, \
+> 	{ value_2,	"Value 2" }, \
+> 	.....
+> 
+> And it just uses print_symbolic(__entry->value, VALUES); to print
+> them out.
 
-OK. Here it is.
+If using the above macros, wb_reason_name[] can be defined as
 
->From 7e3dcebe235d005126c03a3976bca859691110bc Mon Sep 17 00:00:00 2001
-From: Lin Ming <ming.m.lin@intel.com>
-Date: Wed, 14 Dec 2011 10:14:21 +0800
-Subject: [PATCH 1/3] [SCSI] sd: fix runtime status check in sd_shutdown
+        static const struct trace_print_flags wb_reason_name[] = { VALUES };
 
-Commit af8db15(PM / driver core: disable device's runtime PM during
-shutdown) makes pm_runtime_suspended(dev) always return false.
-So sd's runtime status can't be checked with pm_runtime_suspended(dev)
-any more.
+and reference it in this way
 
-Fix it by checking runtime status with pm_runtime_status_suspended(dev).
+        wb_reason_name[reason][1]
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/scsi/sd.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+The first element is redundant info and will be ignored, because
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 7b3f807..284b087 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2742,7 +2742,12 @@ static void sd_shutdown(struct device *dev)
- 	if (!sdkp)
- 		return;         /* this can happen */
- 
--	if (pm_runtime_suspended(dev))
-+	/*
-+	 * Check runtime status with pm_runtime_status_suspended(dev)
-+	 * instead of pm_runtime_suspended(dev),
-+	 * because device_shutdown() has disabled the device's runtime PM.
-+	 */
-+	if (pm_runtime_status_suspended(dev))
- 		goto exit;
- 
- 	if (sdkp->WCE) {
--- 
-1.7.2.5
+        wb_reason_name[reason][0] == reason
 
+> If this construct does everything requiredi, then I think it is a
+> much better pattern to use because it's easy to maintain, doesn't
+> require an array to be declared in a C file and doesn't require
+> macro tricks to do it's job....
 
+Hmm, I looked through XFS tracing code and find no use case like the
+wb_reason_name[]. That is, the XFS symbolic names are only used for
+tracing output and there is no sharing with debugfs/sysfs outputs.
+So we may be talking about different situations.
 
+Thanks,
+Fengguang
