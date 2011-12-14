@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab1LNBAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:00:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45232 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab1LNBAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:00:13 -0500
-Date: Tue, 13 Dec 2011 17:00:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: clean up soft_limit_tree properly new
-Message-Id: <20111213170012.8fe53c90.akpm@linux-foundation.org>
-In-Reply-To: <20111212140935.GF14720@tiehlicka.suse.cz>
-References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
-	<alpine.LSU.2.00.1112111520510.2297@eggly>
-	<20111212131118.GA15249@tiehlicka.suse.cz>
-	<CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
-	<20111212140750.GE14720@tiehlicka.suse.cz>
-	<20111212140935.GF14720@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756309Ab1LNBH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:07:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64105 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754014Ab1LNBHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 20:07:21 -0500
+Message-ID: <4EE7F745.3040508@cn.fujitsu.com>
+Date: Wed, 14 Dec 2011 09:09:25 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        cgroups@vger.kernel.org, bsingharora@gmail.com, devel@openvz.org,
+        kamezawa.hiroyu@jp.fujitsu.com, tj@kernel.org
+Subject: Re: [PATCH 1/3] nitpick: make simple functions inline
+References: <1323614738-7405-1-git-send-email-glommer@parallels.com> <1323614738-7405-3-git-send-email-glommer@parallels.com>
+In-Reply-To: <1323614738-7405-3-git-send-email-glommer@parallels.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-14 09:06:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-14 09:06:44,
+	Serialize complete at 2011-12-14 09:06:44
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 15:09:35 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+22:45, Glauber Costa wrote:
+> Those are quite simple bit-testing functions that are
+> only used within this file. Not reason for them not to
+> be inline.
+> 
 
-> And a follow up patch for the proper clean up:
+It's better to leave the optimization decision to gcc.
+
+And I've confirmed they are inlined by gcc in my box.
+
+(btw, please add "cgroup" prefix to the patch subject line)
+
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
 > ---
-> >From 4b9f5a1e88496af9f336d1ef37cfdf3754a3ba48 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Mon, 12 Dec 2011 15:04:18 +0100
-> Subject: [PATCH] memcg: clean up soft_limit_tree properly
+>  kernel/cgroup.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> If we are not able to allocate tree nodes for all NUMA nodes then we
-> should better clean up those that were allocated otherwise we will leak
-> a memory.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6aff93c..838d812 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4874,7 +4874,7 @@ static int mem_cgroup_soft_limit_tree_init(void)
->  			tmp = -1;
->  		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
->  		if (!rtpn)
-> -			return 1;
-> +			goto err_cleanup;
->  
->  		soft_limit_tree.rb_tree_per_node[node] = rtpn;
->  
-> @@ -4885,6 +4885,16 @@ static int mem_cgroup_soft_limit_tree_init(void)
->  		}
->  	}
->  	return 0;
-> +
-> +err_cleanup:
-> +	for_each_node_state(node, N_POSSIBLE) {
-> +		if (!soft_limit_tree.rb_tree_per_node[node])
-> +			break;
-> +		kfree(soft_limit_tree.rb_tree_per_node[node]);
-> +		soft_limit_tree.rb_tree_per_node[node] = NULL;
-> +	}
-> +	return 1;
-> +
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index d9d5648..e4b9d3c 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -241,12 +241,12 @@ static int cgroup_is_releasable(const struct cgroup *cgrp)
+>  	return (cgrp->flags & bits) == bits;
 >  }
-
-afacit the kernel never frees the soft_limit_tree.rb_tree_per_node[]
-entries on the mem_cgroup_destroy() path.  Bug?
+>  
+> -static int notify_on_release(const struct cgroup *cgrp)
+> +static inline int notify_on_release(const struct cgroup *cgrp)
+>  {
+>  	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+>  }
+>  
+> -static int clone_children(const struct cgroup *cgrp)
+> +static inline int clone_children(const struct cgroup *cgrp)
+>  {
+>  	return test_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
+>  }
