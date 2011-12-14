@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab1LNSho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:37:44 -0500
-Received: from mail.lippert-at.com ([62.80.22.186]:14919 "EHLO
-	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757717Ab1LNShh (ORCPT
+	id S1757983Ab1LNSiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:38:11 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60252 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757717Ab1LNSiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:37:37 -0500
-Message-ID: <4EE8ECF3.6000900@LiPPERTEmbedded.de>
-Date: Wed, 14 Dec 2011 19:37:39 +0100
-From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
-MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: IRQF_TIMER | IRQF_SHARED ?
-References: <4EE620A5.7080402@LiPPERTEmbedded.de> <20111212123131.502be350@queued.net> <4EE77416.8090907@LiPPERTEmbedded.de>
-In-Reply-To: <4EE77416.8090907@LiPPERTEmbedded.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 Dec 2011 13:38:07 -0500
+Date: Wed, 14 Dec 2011 13:35:56 -0500 (EST)
+Message-Id: <20111214.133556.1607219773146640400.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, glommer@parallels.com, tj@kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111214180752.7893d5460c6fca84d63cab0e@canb.auug.org.au>
+References: <20111214180752.7893d5460c6fca84d63cab0e@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Dec 2011 18:37:33.0119 (UTC) FILETIME=[7151FCF0:01CCBA8F]
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 14 Dec 2011 10:35:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Rottmann schrieb:
-> Andres Salomon schrieb:
->> Just loading cs5535-clockevt should start the periodic timer.
->> On my XO-1, IRQ 7 starts firing immediately.
-> Hmm, no, doesn't work. :-|  In /proc/interrupts IRQ 0 gets increased,
-> not (in my case) IRQ 11.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 14 Dec 2011 18:07:52 +1100
 
-Update: I found that SMP-enabled kernels (like the generic one I was using) do
-load cs5535-clockevt fine but ignore it and keep using the pit timer instead.
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> In file included from include/linux/tcp.h:211:0,
+>                  from include/linux/ipv6.h:221,
+>                  from include/net/ipv6.h:16,
+>                  from include/linux/sunrpc/clnt.h:26,
+>                  from include/linux/nfs_fs.h:50,
+>                  from init/do_mounts.c:20:
+> include/net/sock.h: In function 'memcg_memory_allocated_add':
+> include/net/sock.h:1000:20: error: 'OVER_LIMIT' undeclared (first use in this function)
+> 
+> And several other similar ones.
+> 
+> Caused by commit e1aab161e013 ("socket: initial cgroup code") from the
+> net-next tree. OVER_LIMIT is only defined it CONFIG_INET is set.
+> 
+> I applied the following (stupid) patch for today (just because reverting
+> the above commit would probably be too hard - we have cgroup stuff all
+> over the place :-( ):
 
-Responsible seems kernel/time/tick-common.c: tick_check_new_device()
-                /*
-                 * If the cpu affinity of the device interrupt can not
-                 * be set, ignore it.
-                 */
-                if (!irq_can_set_affinity(newdev->irq))
-                        goto out_bc;
-
-Looks like it has been that way for quite some time, maybe cs5535-clockevt
-hasn't ever worked on SMP kernels.
-
-If I turn off SMP, cs5535-clockevt replaces the pit timer and the MFGPT IRQ
-starts firing just as you said - at least on 3.0.9. 3.2-rc5 prefers to hang
-instead, looks like no timer events get generated. Sigh.
-
-I'll try to narrow it down tomorrow, but now I'm calling it a day.
-
-Cheers
-Jens
+Glauber, please fix this properly.
