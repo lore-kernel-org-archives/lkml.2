@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab1LNBfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:35:47 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:46574 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab1LNBfn (ORCPT
+	id S1756469Ab1LNBis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:38:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58549 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab1LNBir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:35:43 -0500
-Message-ID: <4EE7FD6A.1010700@gmail.com>
-Date: Wed, 14 Dec 2011 12:35:38 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
+	Tue, 13 Dec 2011 20:38:47 -0500
+Date: Tue, 13 Dec 2011 17:38:43 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Shi, Alex" <alex.shi@intel.com>
+cc: Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323419402.16790.6105.camel@debian> <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
+ <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-CC: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/29] Staging: comedi: fix printk issue in dt3000.c
-References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
-In-Reply-To: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/11 16:19, Ravishankar karkala Mallikarjunayya wrote:
+On Fri, 9 Dec 2011, Shi, Alex wrote:
 
-> This is a patch to the dt3000.c file that fixes up a
-> printk warning found by the checkpatch.pl tool.
+> Of course any testing may have result variation. But it is benchmark 
+> accordingly, and there are lot technical to tuning your testing to make 
+> its stand division acceptable, like to sync your system in a clear 
+> status, to close unnecessary services, to use separate working disks for 
+> your testing etc. etc. For this data, like on my SNB-EP machine, (the 
+> following data is not stands for Intel, it is just my personal data). 
+
+I always run benchmarks with freshly booted machines and disabling all but 
+the most basic and required userspace for my testing environment, I can 
+assure you that my comparison of slab and slub on netperf TCP_RR isn't 
+because of any noise from userspace.
+
+> 4 times result of hackbench on this patch are 5.59, 5.475, 5.47833, 
+> 5.504
+
+I haven't been running hackbench benchmarks, sorry.  I was always under 
+the assumption that slub still was slightly better than slab with 
+hackbench since that was used as justification for it becoming the default 
+allocator and also because Christoph had patches merged recently which 
+improved its performance on slub.  I've been speaking only about my 
+history with netperf TCP_RR when using slub.
+
+> > Not sure what you're asking me to test, you would like this:
+> > 
+> > 	{
+> > 	        n->nr_partial++;
+> > 	-       if (tail == DEACTIVATE_TO_TAIL)
+> > 	-               list_add_tail(&page->lru, &n->partial);
+> > 	-       else
+> > 	-               list_add(&page->lru, &n->partial);
+> > 	+       list_add_tail(&page->lru, &n->partial);
+> > 	}
+> > 
+> > with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
+> > disabled since it impacts performance so heavily and I'm not sure what
+> > information you're looking for with regards to those stats.
 > 
-> Converted printks to dev_<levels>.
+> NO, when you collect data, please close SLUB_STAT in kernel config.  
+> _to_head statistics collection patch just tell you, I collected the 
+> statistics not include add_partial in early_kmem_cache_node_alloc(). And 
+> other places of add_partial were covered. Of course, the kernel with 
+> statistic can not be used to measure performance. 
 > 
-> Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 
-
-There are still numerous issues with these patches, some which have been
-pointed out to you several times now and still exist:
-
- - You are using printk/pr_info, etc where dev_info, etc should be used
- - You are converting some KERN_CONT to multiline dev_info, and in doing
-so are now printing useless strings.
- - Some of the printk's you are 'fixing' should just get removed. Don't
-blindly replace things, it just creates churn.
- - You are converting some printks to dev_dbg and leaving dev->minor in
-the string which is no longer needed.
- - There are some subtle format changes introduced by the printk
-changes. Not a big deal, but it should be noted in the changelog. It
-might affect some userspace tools for the comedi drivers?
- - You have multiple patches which do the same thing. Why are there two
-patches for converting printk -> dev_dbg in das1800.c for example? Why
-not do all of the conversion changes for one file in a single patch?
- - Some of your patches don't do what they say they do.
- - You have compile errors still.
-
-Some these patches probably are worth applying, but they are just lost
-in the noise.
-
-~Ryan
+Ok, I'll benchmark netperf TCP_RR comparing Linus' latest -git both with 
+and without the above change.  It was confusing because you had three 
+diffs in your email, I wasn't sure which or combination of which you 
+wanted me to try :)
