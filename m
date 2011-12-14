@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1LNPIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:08:07 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54167 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757338Ab1LNPIB (ORCPT
+	id S1756980Ab1LNPIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:08:16 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5110 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757272Ab1LNPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:08:01 -0500
-Date: Wed, 14 Dec 2011 16:07:56 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
-Message-ID: <20111214150752.GB10791@somewhere.redhat.com>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
- <20111213155848.GI25802@google.com>
- <20111213190642.GB2421@somewhere.redhat.com>
- <20111213204918.GK25802@google.com>
+	Wed, 14 Dec 2011 10:08:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 14 Dec 2011 07:07:54 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v7 08/14] arm/tegra: generalize L2 cache initialization
+Date: Wed, 14 Dec 2011 17:03:20 +0200
+Message-ID: <1323875032-18221-9-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1323875032-18221-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1323875032-18221-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213204918.GK25802@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 12:49:18PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Dec 13, 2011 at 08:06:46PM +0100, Frederic Weisbecker wrote:
-> > On Tue, Dec 13, 2011 at 07:58:48AM -0800, Tejun Heo wrote:
-> > > Can you please rebase the patchset on top of cgroup/for-3.3?
-> > 
-> > Sure. But please note its fate is still under discussion. Whether
-> > we want it upstream is still a running debate. But I certainly
-> > need to rebase against your tree.
-> 
-> I see.
-> 
-> > > I primarily like the idea of being able to track process usage w/ cgroup
-> > > and enforce limits on it but hope that it could somehow integrate w/
-> > > cgroup freezer.  ie. trigger freezer if it goes over limit and let the
-> > > userland tool / administrator deal with the frozen cgroup.  I'm
-> > > planning on extending cgroup freezer such that it supports recursive
-> > > freezing and killing of frozen tasks.  If we can fit task counters
-> > > into that, we'll have general method of handling problematic cgroups -
-> > > freeze, notify userland and let it deal with it.
-> > 
-> > Hmm, so you suggest a kernel trigger that freeze the cgroup when the
-> > task limit is reached?
-> 
-> Yeah, something like that.  I'm not really sure about how it would
-> actually work tho.
-> 
-> > What about rather implementing register_event() for the tasks.usage such
-> > that the user can be notified using eventfd when the limit is reached.
-> > Then it would be up to the user to decide to freeze or any other thing.
-> > Sounds like a more generic solution.
-> 
-> Maybe, the problem would be how to ensure that the userland manager
-> can respond fast enough (whatever that means...).
+Generalize L2 cache initialization and discover L2 cache associativity at
+runtime.
 
-Yeah that's part of the goal of the task counter: limit the spreading
-of the forkbomb soon enough such that the machine stays responsive and
-the admin can react accordingly.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/common.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 8da1847..554f18f 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -73,15 +73,20 @@ static __initdata struct tegra_clk_init_table tegra20_clk_init_table[] = {
+ };
+ #endif
+ 
+-static void __init tegra_init_cache(void)
++static void __init tegra_init_cache(u32 tag_latency, u32 data_latency)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+ 	void __iomem *p = IO_ADDRESS(TEGRA_ARM_PERIF_BASE) + 0x3000;
++	u32 aux_ctrl, cache_type;
+ 
+-	writel_relaxed(0x331, p + L2X0_TAG_LATENCY_CTRL);
+-	writel_relaxed(0x441, p + L2X0_DATA_LATENCY_CTRL);
++	writel_relaxed(tag_latency, p + L2X0_TAG_LATENCY_CTRL);
++	writel_relaxed(data_latency, p + L2X0_DATA_LATENCY_CTRL);
+ 
+-	l2x0_init(p, 0x6C080001, 0x8200c3fe);
++	cache_type = readl(p + L2X0_CACHE_TYPE);
++	aux_ctrl = (cache_type & 0x700) << (17-8);
++	aux_ctrl |= 0x6C000001;
++
++	l2x0_init(p, aux_ctrl, 0x8200c3fe);
+ #endif
+ 
+ }
+@@ -92,6 +97,6 @@ void __init tegra20_init_early(void)
+ 	tegra_init_fuse();
+ 	tegra2_init_clocks();
+ 	tegra_clk_init_from_table(tegra20_clk_init_table);
+-	tegra_init_cache();
++	tegra_init_cache(0x331, 0x441);
+ }
+ #endif
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
