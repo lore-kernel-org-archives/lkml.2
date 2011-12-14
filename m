@@ -1,98 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab1LNQEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:04:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45832 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab1LNQD7 (ORCPT
+	id S1757429Ab1LNQE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:04:28 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43520 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757368Ab1LNQE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:03:59 -0500
-Message-ID: <4EE8C8EA.9070207@kernel.dk>
-Date: Wed, 14 Dec 2011 17:03:54 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 14 Dec 2011 11:04:27 -0500
+Date: Wed, 14 Dec 2011 17:04:10 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 5/6] x86, mce: handle "action required" errors
+Message-ID: <20111214160409.GG23589@aftab>
+References: <cover.1323803130.git.tony.luck@intel.com>
+ <80cbf65ae6e4bd610523cc8568b0c2dcb8c629b6.1323803130.git.tony.luck@intel.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Nate Custer <nate@cpanel.net>,
-        kvm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: kvm deadlock
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net> <20111214122511.GD18317@amt.cnet> <4EE8A7ED.7060703@redhat.com>
-In-Reply-To: <4EE8A7ED.7060703@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <80cbf65ae6e4bd610523cc8568b0c2dcb8c629b6.1323803130.git.tony.luck@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-14 14:43, Avi Kivity wrote:
-> On 12/14/2011 02:25 PM, Marcelo Tosatti wrote:
->> On Mon, Dec 05, 2011 at 04:48:16PM -0600, Nate Custer wrote:
->>> Hello,
->>>
->>> I am struggling with repeatable full hardware locks when running 8-12 KVM vms. At some point before the hard lock I get a inconsistent lock state warning. An example of this can be found here:
->>>
->>> http://pastebin.com/8wKhgE2C
->>>
->>> After that the server continues to run for a while and then starts its death spiral. When it reaches that point it fails to log anything further to the disk, but by attaching a console I have been able to get a stack trace documenting the final implosion:
->>>
->>> http://pastebin.com/PbcN76bd
->>>
->>> All of the cores end up hung and the server stops responding to all input, including SysRq commands. 
->>>
->>> I have seen this behavior on two machines (dual E5606 running Fedora 16) both passed cpuburnin testing and memtest86 scans without error. 
->>>
->>> I have reproduced the crash and stack traces from a Fedora debugging kernel - 3.1.2-1 and with a vanilla 3.1.4 kernel.
->>
->> Busted hardware, apparently. Can you reproduce these issues with the
->> same workload on different hardware?
-> 
-> I don't think it's hardware related.  The second trace (in the first
-> paste) is called during swap, so GFP_FS is set.  The first one is not,
-> so GFP_FS is clear.  Lockdep is worried about the following scenario:
-> 
->   acpi_early_init() is called
->   calls pcpu_alloc(), which takes pcpu_alloc_mutex
->   eventually, calls kmalloc(), or some other allocation function
->   no memory, so swap
->   call try_to_free_pages()
->   submit_bio()
->   blk_throtl_bio()
->   blkio_alloc_blkg_stats()
->   alloc_percpu()
->   pcpu_alloc(), which takes pcpu_alloc_mutex
->   deadlock
-> 
-> It's a little unlikely that acpi_early_init() will OOM, but lockdep
-> doesn't know that.  Other callers of pcpu_alloc() could trigger the same
-> thing.
-> 
-> When lockdep says
-> 
-> [ 5839.924953] other info that might help us debug this:
-> [ 5839.925396]  Possible unsafe locking scenario:
-> [ 5839.925397]
-> [ 5839.925840]        CPU0
-> [ 5839.926063]        ----
-> [ 5839.926287]   lock(pcpu_alloc_mutex);
-> [ 5839.926533]   <Interrupt>
-> [ 5839.926756]     lock(pcpu_alloc_mutex);
-> [ 5839.926986]
-> 
-> It really means
-> 
->    <swap, set GFP_FS>
-> 
-> GFP_FS simply marks the beginning of a nested, unrelated context that
-> uses the same thread, just like an interrupt.  Kudos to lockdep for
-> catching that.
-> 
-> I think the allocation in blkio_alloc_blkg_stats() should be moved out
-> of the I/O path into some init function. Copying Jens.
+On Mon, Dec 12, 2011 at 01:47:45PM -0800, Tony Luck wrote:
+[..]
 
-That's completely buggy, basically you end up with a GFP_KERNEL
-allocation from the IO submit path. Vivek, per_cpu data needs to be set
-up at init time. You can't allocate it dynamically off the IO path.
+> - * Called after mce notification in process context. This code
+> - * is allowed to sleep. Call the high level VM handler to process
+> - * any corrupted pages.
+> - * Assume that the work queue code only calls this one at a time
+> - * per CPU.
+> - * Note we don't disable preemption, so this code might run on the wrong
+> - * CPU. In this case the event is picked up by the scheduled work queue.
+> - * This is merely a fast path to expedite processing in some common
+> - * cases.
+> + * Called in process context that interrupted by MCE and marked with
+> + * TIF_MCE_NOTFY, just before returning to errorneous userland.
+> + * This code is allowed to sleep.
+> + * Attempt possible recovery such as calling the high level VM handler to
+> + * process any corrupted pages, and kill/signal current process if required.
+>   */
+>  void mce_notify_process(void)
+>  {
+> +	__u64	paddr = paddr;
+>  	unsigned long pfn;
+> -	mce_notify_irq();
+> -	while (mce_ring_get(&pfn))
+> -		memory_failure(pfn, MCE_VECTOR, 0);
+> +
+> +	if (!mce_find_info(&paddr))
+> +		mce_panic("Lost address", NULL, NULL);
+
+Wouldn't it be good to return struct mce_info *mi here in addition to
+&paddr...
+
+> +	pfn = paddr >> PAGE_SHIFT;
+> +
+> +	clear_thread_flag(TIF_MCE_NOTIFY);
+> +
+> +	pr_err("Uncorrected hardware memory error in user-access at %llx",
+> +		 paddr);
+> +	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0) {
+> +		pr_err("Memory error not recovered");
+> +		force_sig(SIGBUS, current);
+> +	} else {
+> +		pr_err("Memory error recovered");
+> +		mce_clear_info();
+
+so that you don't need to iterate again over the mce_info array but do:
+
+	mce_clear_info(mi);
+
+?
+
+This assumes, of course, that you have only one AR MCE per task, per
+return to userspace. I guess this is fine for now.
+
+> +	}
+>  }
+>  
+>  static void mce_process_work(struct work_struct *dummy)
+>  {
+> -	mce_notify_process();
+> +	unsigned long pfn;
+> +
+> +	while (mce_ring_get(&pfn))
+> +		memory_failure(pfn, MCE_VECTOR, 0);
+>  }
+>  
+>  #ifdef CONFIG_X86_MCE_INTEL
+> @@ -1232,8 +1246,6 @@ int mce_notify_irq(void)
+>  	/* Not more than two messages every minute */
+>  	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+>  
+> -	clear_thread_flag(TIF_MCE_NOTIFY);
+> -
+>  	if (test_and_clear_bit(0, &mce_need_notify)) {
+>  		/* wake processes polling /dev/mcelog */
+>  		wake_up_interruptible(&mce_chrdev_wait);
+> -- 
+> 1.7.3.1
+> 
+
+Thanks.
 
 -- 
-Jens Axboe
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
