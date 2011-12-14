@@ -1,111 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab1LNR6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:58:49 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:40786 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756258Ab1LNR6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:58:46 -0500
-Date: Wed, 14 Dec 2011 12:58:44 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Avi Kivity <avi@redhat.com>
-Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
-        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped by
- host
-Message-ID: <20111214175844.GD4075@mgebm.net>
-References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
- <4EDF7B0D.4060001@redhat.com>
- <20111208151929.GA6301@mgebm.net>
- <4EE8BBF4.8070108@redhat.com>
+	id S1757841Ab1LNSAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:00:37 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58415 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129Ab1LNSAg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 13:00:36 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
-Content-Disposition: inline
-In-Reply-To: <4EE8BBF4.8070108@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1323878622-26602-3-git-send-email-b29396@freescale.com>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+	<1323878622-26602-3-git-send-email-b29396@freescale.com>
+Date: Wed, 14 Dec 2011 19:00:35 +0100
+Message-ID: <CACRpkdY=Zerp+ULAdv4PHD+u-65PrAci7rQRbkso5KE05UqdOA@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        shawn.guo@freescale.com, kernel@pengutronix.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 5:03 PM, Dong Aisheng <b29396@freescale.com> wrote:
 
---DiL7RhKs8rK9YGuF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> The driver contains the initial support for imx53 and
+> imx6q.
 
-On Wed, 14 Dec 2011, Avi Kivity wrote:
+Cool! Comments below...
 
-> On 12/08/2011 05:19 PM, Eric B Munson wrote:
-> > > error compiling committee.c: too many arguments to function
-> > >=20
-> > My concern for preempt notifiers is masking real soft lockup warnings. =
- If the
-> > flag is set every time the vm is preempted, it becomes more likely that=
- we will
-> > mask real warnings.  The ioctl was choosen because it sets the flag onl=
-y when
-> > the guest is being paused deliberately.
-> >
-> > AFAIK, SIGSTOP is not a supported way to stop a qemu vm so a soft lockup
->=20
-> This is a kvm patch, not a qemu patch.  In general we try to address
-> general requirements, not just those that are specific to one userspace,
-> even if it is near to our hearts.
->=20
-> > warning would be working as designed there.  If that isn't the case, or=
- if it
-> > ever changes, we could always install a signal handler for SIGCONT that=
- set the
-> > flag before resuming the vm.
-> >
-> > Scheduling delays are also beyond the scope of this problem and I see t=
-he soft
-> > lockup warning as appropriate in that case.
->=20
-> I don't think you should see a guest softlockup if the host is
-> overloaded.  Nor should you see it due to a long live migration pause,
-> or STOP/CONT.  You should see a guest softlockup if it is spinning due
-> to a guest bug, and not for any other reason.
->=20
-> I think we need a mix of the ioctl (for STOP/CONT and voluntary pauses,
-> like live migration or qemu stop/cont) and preempt notifiers (together
-> with a check for TASK_RUNNING/TASK_UNINTERRUPTIBLE, for scheduling or
-> swap delays)
->=20
-> --=20
-> error compiling committee.c: too many arguments to function
->=20
+> --- /dev/null
+> +++ b/drivers/pinctrl/pinmux-imx-core.c
 
-Do you want the preemption notifier work in before you will consider merging
-this set, or can that be a follow on?
+We should start naming these pinctrl-* rather than pinmux-*
+so just rename it.
 
-Eric
+Until here it looks like business as usual..
 
---DiL7RhKs8rK9YGuF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +#ifdef CONFIG_OF
+> +static int __devinit imx_pmx_parse_functions(struct device_node *np,
+> +                       struct imx_pinctrl_info *info, u32 num)
+> +{
+> +       struct imx_pmx_func *function;
+> +       struct imx_pin_group *group;
+> +       int ret, len;
+> +
+> +       dev_dbg(info->dev, "parse function %d\n", num);
+> +
+> +       group = &info->groups[num];
+> +       function = &info->functions[num];
+> +
+> +       /* Initialise group */
+> +       ret = of_property_read_string(np, "grp_name", &group->name);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get grp_name\n");
+> +               return ret;
+> +       }
+> +
+> +       ret = of_property_read_u32(np, "num_pins", &group->num_pins);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get num_pins\n");
+> +               return ret;
+> +       }
+> +
+> +       ret = of_property_read_u32(np, "num_mux", &group->num_mux);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get num_mux\n");
+> +               return ret;
+> +       }
+> +
+> +       if (group->num_pins != group->num_mux)
+> +               return -EINVAL;
+> +
+> +       group->pins = devm_kzalloc(info->dev, group->num_pins * sizeof(unsigned int),
+> +                               GFP_KERNEL);
+> +       group->mux_mode = devm_kzalloc(info->dev, group->num_mux * sizeof(unsigned int),
+> +                               GFP_KERNEL);
+> +       if (!group->pins || !group->mux_mode)
+> +               return -ENOMEM;
+> +
+> +       /* sanity check */
+> +       if (of_get_property(np, "grp_pins", &len) &&
+> +               len != group->num_pins * sizeof(unsigned int)) {
+> +               dev_err(info->dev, "wrong pins number?\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (of_get_property(np, "grp_mux", &len) &&
+> +               len != group->num_mux * sizeof(unsigned int)) {
+> +               dev_err(info->dev, "wrong pin mux number?\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       ret = of_property_read_u32_array(np, "grp_pins",
+> +                       group->pins, group->num_pins);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get grp_pins\n");
+> +               return ret;
+> +       }
+> +
+> +       ret = of_property_read_u32_array(np, "grp_mux",
+> +                       group->mux_mode, group->num_mux);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get grp_mux\n");
+> +               return ret;
+> +       }
+> +
+> +       /* Initialise function */
+> +       ret = of_property_read_string(np, "func_name", &function->name);
+> +       if (ret) {
+> +               dev_err(info->dev, "failed to get func_name\n");
+> +               return ret;
+> +       }
+> +
+> +       function->groups = devm_kzalloc(info->dev, sizeof(char **), GFP_KERNEL);
+> +       function->num_groups = 1;
+> +       function->groups[0] = group->name;
+> +
+> +       dev_dbg(info->dev, "func_name %s grp_name %s num_groups %d\n",
+> +                               function->name, function->groups[0],
+> +                               function->num_groups);
+> +
+> +       return 0;
+> +}
+> +
+> +static int __devinit imx_pmx_probe_dt(struct platform_device *pdev,
+> +                               struct imx_pinctrl_info *info)
+> +{
+> +       struct device_node *np = pdev->dev.of_node;
+> +       struct device_node *child = NULL;
+> +       int ret, i;
+> +       u32 nfuncs = 0;
+> +
+> +       if (!np)
+> +               return -ENODEV;
+> +
+> +       nfuncs = of_get_child_number(np);
+> +       if (nfuncs <= 0) {
+> +               dev_err(&pdev->dev, "no functions defined\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       info->nfunctions = nfuncs;
+> +       info->functions = devm_kzalloc(&pdev->dev, nfuncs * sizeof(struct imx_pmx_func),
+> +                                       GFP_KERNEL);
+> +       if (!info->functions)
+> +               return -ENOMEM;
+> +
+> +       /* DT file only passes one group per one function */
+> +       info->ngroups = nfuncs;
+> +       info->groups = devm_kzalloc(&pdev->dev, nfuncs * sizeof(struct imx_pin_group),
+> +                                       GFP_KERNEL);
+> +       if (!info->groups)
+> +               return -ENOMEM;
+> +
+> +       child = NULL;
+> +       i = 0;
+> +       for_each_child_of_node(np, child) {
+> +               ret = imx_pmx_parse_functions(child, info, i++);
+> +               if (ret) {
+> +                       dev_err(&pdev->dev, "failed to parse function\n");
+> +                       return ret;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +#else
+> +static int __devinit imx_pmx_probe_dt(struct platform_device *pdev,
+> +                               struct imx_pinctrl_info *info)
+> +{
+> +       return -ENODEV;
+> +}
+> +#endif
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Looks clever to me! And I think we have agreed that this probing
+must be inside each driver.
 
-iQIcBAEBAgAGBQJO6OPUAAoJEKhG9nGc1bpJfh0P/27rntQ0sjv9E711ZQm01dhK
-7K+sev5s2I0VtZHgNICjQ31D8Ct0PSSOhwvmrs3Fe8SMb+WU18B/NWN8NCX3AFN8
-EjRL8846AGfrzAqdKZyezCbEq+q4gDoESst8bH2kXWiKfpeRu7v/K+trALpheS/B
-HM0B5pJ25hqqy6c18e2mX873WK0gvX2ZnRvitgChnnTGyC29yDh26Xc74mYC5iqP
-RJ2QYVb99Qc0L7E6263NHoaZOKsGntUNcCBE3H8g487ZEwGaGXL37Cc2+tszAo1x
-iu38AdVJwMvNlMlIXykHKA2bxhPSIYB4huooCTCy9oRApxV73Sn/N6IVFjN1loHi
-frDrI5LRHWiSE1lwYQhH5h6C5RGnBIRljjpOqAa5P4lrwbkuf6UV2zJj00m3M+Qz
-ynk216/CeHQfVtXHurHUK5i2L7D3K9DzM/DogaNCqwbd1jGHAIhaIiRtTzoMeqm0
-MgdzqonV0xY6+Xe2MVAJpKL/gitnqIV1We7OAp0BjquQHM3nvNoyhPSrPwR1LEng
-gNbgQJ32qCPs4ydzS76KJRum7BUi0ai8dE7vu0EdBnUrrPBignEjt8v1EZinmjCl
-KHlQC7RW6VBjyre7mfOdPHPBCTw+gQ/4nq+u5qA4NqiEmLKmXaiEQ6MqqhTBFJDK
-gvFdAUa4KV6IToBMkm2T
-=FWT7
------END PGP SIGNATURE-----
+Can we have a look at the corresponding device tree?
+(...)
 
---DiL7RhKs8rK9YGuF--
+> +++ b/drivers/pinctrl/pinmux-imx-core.h
+
+Name this pinctrl-* too for consistency.
+
+(...)
+> +#define IMX_PINCTRL_PIN(pin) PINCTRL_PIN(pin, #pin)
+
+Now I start to think about the range generators I discussed with
+Haojian... but there doesn't seem to be very many ranges in this
+driver so I guess it would only confuse things.
+
+> +#define IMX_PIN_GROUP(n, p, m)  \
+> +       {                       \
+> +               .name = n,      \
+> +               .pins = p,      \
+> +               .num_pins = ARRAY_SIZE(p),      \
+> +               .mux_mode = m,  \
+> +               .num_mux = ARRAY_SIZE(m),       \
+> +       }
+> +
+> +#define IMX_PMX_FUNC(n, g)  \
+> +       {                       \
+> +               .name = n,      \
+> +               .groups = g,    \
+> +               .num_groups = ARRAY_SIZE(g),    \
+> +       }
+
+This looks pretty smart!
+
+> +++ b/drivers/pinctrl/pinmux-imx53.c
+
+Name this pinctrl-*
+
+> diff --git a/drivers/pinctrl/pinmux-imx6q.c b/drivers/pinctrl/pinmux-imx6q.c
+
+This too.
+
+This patch is overall very good, we're quickly approaching merge quality.
+
+Yours,
+Linus Walleij
