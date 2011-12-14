@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab1LNEDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 23:03:08 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53485 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753515Ab1LNEDE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 23:03:04 -0500
+	id S1756606Ab1LNENC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 23:13:02 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:39306 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754145Ab1LNEM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 23:12:59 -0500
+Date: Tue, 13 Dec 2011 23:12:51 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Hugh Dickins <hughd@google.com>
+Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+Message-ID: <20111214041251.GG6276@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
+	Allison Henderson <achender@linux.vnet.ibm.com>,
+	Yongqiang Yang <xiaoqiangnk@gmail.com>,
+	Curt Wohlgemuth <curtw@google.com>,
+	Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Andy Whitcroft <apw@canonical.com>
+References: <20111121165626.GD14568@thunk.org>
+ <alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+ <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+ <4EDD729E.2060402@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1112060030220.1615@sister.anvils>
+ <4EDE85F4.4020503@linux.vnet.ibm.com>
+ <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
+ <4EDF9CAB.3050502@linux.vnet.ibm.com>
+ <4EE046C7.9030902@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1112080909300.22300@sister.anvils>
 MIME-Version: 1.0
-In-Reply-To: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 13 Dec 2011 20:02:42 -0800
-Message-ID: <CAJOA=zOnbUZAyNab5z-upeOHJPiLBYwTpiHogY+teSLcKMoKxw@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] common clk framework
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
-        paul@pwsan.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, mturquette@linaro.org, mturquette@ti.com,
-        andrew@lunn.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1112080909300.22300@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 7:53 PM, Mike Turquette <mturquette@linaro.org> wrote:
-> From: Mike Turquette <mturquette@ti.com>
->
-> The common clk framework is an attempt to define a generic struct clk
-> which most platforms can use to build a clk tree and perform a set of
-> well-defined operations.
+Hey Hugh,
 
-Forgot to mention: these patches are based on v3.2-rc5 and can be pulled from:
-http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=shortlog;h=refs/heads/v3.2-rc5-clkv4
-git://git.linaro.org/people/mturquette/linux.git v3.2-rc5-clk-v4
+If you could do me a favor and run your "kernel compile torture test"
+on the tree found on the "dev" branch of the git tree at:
 
-Regards,
-Mike
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
 
-> The previous patchset, v3, can be found at,
-> http://article.gmane.org/gmane.linux.kernel/1218622
->
-> New stuff in v4:
->  * clk rate change notifiers
->  * clk debug info via debugfs (instead of sysfs)
->  * lots of bug fixes
->
-> Stuff that is known to be missing in v4:
->  * basic mux and divider clk types
->  * fix for migrating clk_prepare_count/clk_enable_count in
->   clk_set_parent
->  * minor rework comments from v3
->  * Documentation/clk.txt needs love
->
-> All of the mising items above will be rolled into v5 ASAP.  I wanted to
-> go ahead and push out the new notifier changes for review and gather
-> comments on those since those were a big gap in the v3 patchset.
->
-> Paul W. also had some good comments about the greater clk API, and the
-> opportunity to fix some of that stuff while this patchset is still under
-> discussion.  I didn't address those here because they require more
-> thought, and more comments from reviewers.
->
-> Finally, OMAP4 support for the common struct clk will be posted
-> immediately after this patch series to LAKML and LOML, along with some
-> hack patches that show how to use the recursive clk_set_rate for
-> propagating rate changes up the tree for CPUfreq and how to use the new
-> clk rate change notifiers in a driver.
->
-> Mike Turquette (6):
->  clk: Kconfig: add entry for HAVE_CLK_PREPARE
->  Documentation: common clk API
->  clk: introduce the common clock framework
->  clk: introduce rate change notifiers
->  clk: basic gateable and fixed-rate clks
->  clk: export the clk tree topology to debugfs
->
->  Documentation/clk.txt   |  312 +++++++++++++++
->  drivers/clk/Kconfig     |   23 ++
->  drivers/clk/Makefile    |    4 +-
->  drivers/clk/clk-basic.c |  208 ++++++++++
->  drivers/clk/clk.c       |  992 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/clk.h     |  230 +++++++++++-
->  6 files changed, 1765 insertions(+), 4 deletions(-)
->  create mode 100644 Documentation/clk.txt
->  create mode 100644 drivers/clk/clk-basic.c
->  create mode 100644 drivers/clk/clk.c
->
-> --
-> 1.7.5.4
->
+... I'd really appreciate it.  This should have all of the patches
+needed to address the problems you had been having, and it would be
+great to get some additional testing before I push it to Linus.
+
+I'm currently running a full xfstests run on this tree as we speak....
+
+    	      	      	     	      	     - Ted
