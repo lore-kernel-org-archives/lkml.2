@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004Ab1LNTIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 14:08:12 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47286 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757122Ab1LNTII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 14:08:08 -0500
-Message-ID: <1323889666.6805.71.camel@work-vm>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-From: john stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 Dec 2011 11:07:46 -0800
-In-Reply-To: <20111214183025.GB2465@netboy.at.omicron.at>
-References: <cover.1323739287.git.luto@amacapital.net>
-	 <20111213032406.GA9604@netboy.at.omicron.at>
-	 <1323747782.4078.144.camel@work-vm>
-	 <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
-	 <20111214074640.GB2180@netboy.at.omicron.at>
-	 <1323881310.6805.41.camel@work-vm>
-	 <20111214183025.GB2465@netboy.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11121419-9360-0000-0000-00000184299D
+	id S1757990Ab1LNTMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 14:12:22 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32809 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab1LNTMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 14:12:20 -0500
+Date: Wed, 14 Dec 2011 19:12:05 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [linux-next] make  s5p64x0_defconfig build error
+Message-ID: <20111214191205.GF14542@n2100.arm.linux.org.uk>
+References: <1323838630.18517.1.camel@phoenix> <20111214123244.GE7122@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111214123244.GE7122@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 19:30 +0100, Richard Cochran wrote:
-> On Wed, Dec 14, 2011 at 08:48:30AM -0800, john stultz wrote:
-> > On Wed, 2011-12-14 at 08:46 +0100, Richard Cochran wrote:
-> > > On Mon, Dec 12, 2011 at 11:09:29PM -0800, Andy Lutomirski wrote:
-> > > > On Mon, Dec 12, 2011 at 7:43 PM, john stultz <johnstul@us.ibm.com> wrote:
-> > > > >> - New name, to distance ourselves from POSIX (clock_ns_get?)
-> > > > 
-> > > > I will defer to the bikeshedding consensus :)
-> > > > 
-> > > > >> - Family of calls, with set/get
-> > > > 
-> > > > Setting the time is a big can of worms.  adjtimex is rather
-> > > > incomprehensible (without reading lots of source and/or the rfc) and
-> > > > IMO puts a lot of NTP magic into the kernel, where it doesn't belong.
+On Wed, Dec 14, 2011 at 12:32:44PM +0000, Will Deacon wrote:
+> On Wed, Dec 14, 2011 at 04:57:10AM +0000, Axel Lin wrote:
+> > I got below build error on linux-next 20111213.
 > > 
-> > Honestly, I don't really see how we jumped to adjtimex from setting the
-> > time, nor the complexity hinted at. First, the rational for getting
-> > clock_gettime_ns is to avoid the overhead of userland translating from
-> > timespec to ns.   I doubt there are similar performance needs for
-> > settimeofday().  Even if it was needed, it shouldn't be more complex
-> > then the unit conversion done in this abi patch. Am I missing something?
+> >   CC      arch/arm/kernel/process.o
+> > In file included from arch/arm/mach-s5p64x0/include/mach/system.h:16,
+> >                  from arch/arm/kernel/process.c:64:
+> > arch/arm/plat-samsung/include/plat/system-reset.h:19:2: error: #error Fix me up
+> > make[1]: *** [arch/arm/kernel/process.o] Error 1
+> > make: *** [arch/arm/kernel] Error 2
 > 
-> So, you agree on adding new syscalls as a performance tweek?
-
-Well, the patch that started this off was introducing a new vdso
-function (which had no syscall equivalent) that provided the same data
-as clock_gettime(CLOCK_THREAD_CPUTIME,...) but in ns format, because
-that was a reasonable performance win.
-
-While I'm not eager to add duplicative interfaces, if the syscall data
-structure is in the way of performance, folks will make ugly hacks to
-get around it, so we might as well adapt to something better as a
-standard interface. However, to avoid maintenance burden, I'd like to
-keep the duplicative interfaces similar so we can share as much back-end
-logic as possible.
-
-> I am not against it, but I do think syscalls should try to satisfy a
-> large number of user cases.
-
-I don't think what is being proposed is trying to limit its use cases.
-The only limitation api wise was if we should return just nanoseconds or
-something with the potential for sub-ns values.
-
-> > But again, the hard part with in-kernel TAI (possibly as the base of
-> > time)is that initialization of the TAI/UTC offset needs to be able to be
-> > phased in slowly, as we also have to preserve legacy interfaces and
-> > behavior. 
+> The clue is in the commit message:
 > 
-> With brand new syscall, there are no legacy uses.
+> commit d0f7e2beabe6a116152ccc31959b6654b6ef0071
+> Author: Russell King <rmk+kernel@arm.linux.org.uk>
+> Date:   Tue Dec 6 12:57:02 2011 +0000
 > 
-> > Why do we need a new interface for TAI? clock_gettime(CLOCK_TAI,...)
-> > should be achievable. I do think it would be interesting, but I also
-> > think its separate from the goal of this proposal.
+>     ARM: restart: Temporary #error to persuade platform maintainers to take the restart changes seriously
 > 
-> I mean to define an interface that always returns TAI values, no matter
-> what the clock device.
+>     Force builds to fail to ensure that platform maintainers take the
+>     restart changes seriously, and sort out fixing their code before the
+>     next merge window.
+> 
+>     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Maybe I'm still not understanding, but that seems more limited then what
-is being proposed, at least in my mind. clock_gettime_ns() would still
-take a clockid, so having a CLOCK_TAI would be a potential change in the
-future.
+Indeed, and note the date, and how long its taken for just one of the
+platforms to be noticed.
 
-I don't see a reason to limit clock_gettime_ns() to only CLOCK_TAI.
-After all, while CLOCK_TAI doesn't have leapseconds, it still can be set
-by userland if its wrong, so it doesn't provide the same functionality
-as CLOCK_MONOTONIC. Additionally, the motivation for this new interface
-is for a more efficient CLOCK_THREAD_CPUTIME vdso implementation, so an
-exclusive CLOCK_TAI interface wouldn't serve that need.
+It seems to me that no one really cares about whether six of the seven
+platforms which have the #error build or don't build, so I really think
+there's a simple solution to this at the next merge window - delete any
+platform which hasn't _at_ _least_ responded with a proposed patch to
+this.
 
-I agree adding CLOCK_TAI is an interesting feature, but that could done
-properly with the existing clock_gettime() interface. So I think the
-CLOCK_TAI discussion is really disconnected from the new ABI being
-proposed.
+The platform maintainers have had _enough_ notice of this - by not
+responding, they're quite simply an obstacle to further consolidation,
+and we're not going to go through months of waiting for their response
+time and time again.
 
-thanks
--john
+I've posted the patches to the mailing list, I've copied them asking
+for help, I've chased them several times, and now they have a #error
+to deal with.  If none of this gets their attention (it seems it
+doesn't), then frankly their platform is unmaintained, it will be
+broken at the next merge window, and therefore _should_ be deleted.
 
-
-
+So... unless things change, we can expect Gemini, almost all Samsung
+stuff, shmobile, vt8500, and Telechips TCC8k to be at least broken at
+the next merge window.
