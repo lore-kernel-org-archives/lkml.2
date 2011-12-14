@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab1LNKpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:45:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48909 "EHLO arroyo.ext.ti.com"
+	id S1756888Ab1LNKp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:45:29 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:16670 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673Ab1LNKpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:45:14 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <sameo@linux.intel.com>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <nsekhar@ti.com>, Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH v3] mfd: TPS65910: Make usable even if interrupt unused
-Date: Wed, 14 Dec 2011 16:05:35 +0530
-Message-ID: <1323858935-25724-1-git-send-email-afzal@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753673Ab1LNKp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:45:26 -0500
+Subject: [PATCH 05/11] SUNRPC: register debug sysctl table per network
+ namespace
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Wed, 14 Dec 2011 14:45:21 +0300
+Message-ID: <20111214104521.3991.38848.stgit@localhost6.localdomain6>
+In-Reply-To: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
+References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TPS65910 can be used even if interrupt is unused.
-Hence let probe succeed in case interrupt can't be
-configured and let Kernel only to complain about it
+This patch introduces per-net sysctl header for debug table and moves debug
+table registration to per-net opreations.
+Also, this patch moves SUNRPC sysctl root registration prior to per-net
+operations, since now they depends on it.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
 ---
+ net/sunrpc/netns.h       |    1 +
+ net/sunrpc/sunrpc_syms.c |    9 ++++++---
+ net/sunrpc/sysctl.c      |   17 +++++++----------
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
-v2: free irq only if registered
-
- drivers/mfd/tps65910-irq.c |    3 ++-
- drivers/mfd/tps65910.c     |    7 ++-----
- 2 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
-index a56be93..95c0d79 100644
---- a/drivers/mfd/tps65910-irq.c
-+++ b/drivers/mfd/tps65910-irq.c
-@@ -215,6 +215,7 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index a949ddb..05ce3b8 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -14,6 +14,7 @@ struct sunrpc_net {
+ 	spinlock_t rpc_client_lock;
+ #ifdef RPC_DEBUG
+ 	struct ctl_table_set sysctls;
++	struct ctl_table_header *debug_ctl_header;
+ #endif
+ };
  
- int tps65910_irq_exit(struct tps65910 *tps65910)
- {
--	free_irq(tps65910->chip_irq, tps65910);
-+	if (tps65910->chip_irq)
-+		free_irq(tps65910->chip_irq, tps65910);
+diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
+index 44759e9..0fd156a 100644
+--- a/net/sunrpc/sunrpc_syms.c
++++ b/net/sunrpc/sunrpc_syms.c
+@@ -90,18 +90,21 @@ init_sunrpc(void)
+ 
+ 	cache_initialize();
+ 
+-	err = register_pernet_subsys(&sunrpc_net_ops);
+-	if (err)
+-		goto out4;
+ #ifdef RPC_DEBUG
+ 	rpc_register_sysctl();
+ #endif
++	err = register_pernet_subsys(&sunrpc_net_ops);
++	if (err)
++		goto out4;
+ 	cache_register(&unix_gid_cache);
+ 	svc_init_xprt_sock();	/* svc sock transport */
+ 	init_socket_xprt();	/* clnt sock transport */
+ 	return 0;
+ 
+ out4:
++#ifdef RPC_DEBUG
++	rpc_unregister_sysctl();
++#endif
+ 	rpcauth_remove_module();
+ out3:
+ 	rpc_destroy_mempool();
+diff --git a/net/sunrpc/sysctl.c b/net/sunrpc/sysctl.c
+index adebf0a..eda80cf 100644
+--- a/net/sunrpc/sysctl.c
++++ b/net/sunrpc/sysctl.c
+@@ -42,7 +42,6 @@ EXPORT_SYMBOL_GPL(nlm_debug);
+ #include <linux/nsproxy.h>
+ #include "netns.h"
+ 
+-static struct ctl_table_header *sunrpc_table_header;
+ static ctl_table		debug_table[];
+ 
+ struct ctl_path sunrpc_path[] = {
+@@ -79,6 +78,9 @@ int debug_sysctl_init(struct net *net)
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
+ 	setup_sysctl_set(&sn->sysctls, NULL, NULL);
++	sn->debug_ctl_header = register_sunrpc_sysctl(net, debug_table);
++	if (sn->debug_ctl_header == NULL)
++		return -ENOMEM;
  	return 0;
  }
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 6f5b8cf..04814a7 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -172,15 +172,12 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
  
- 	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
- 
--	ret = tps65910_irq_init(tps65910, init_data->irq, init_data);
--	if (ret < 0)
--		goto err;
-+	tps65910_irq_init(tps65910, init_data->irq, init_data);
- 
- 	kfree(init_data);
- 	return ret;
- 
- err:
--	mfd_remove_devices(tps65910->dev);
- 	kfree(tps65910);
- 	kfree(init_data);
- 	return ret;
-@@ -190,8 +187,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+@@ -86,26 +88,21 @@ void debug_sysctl_exit(struct net *net)
  {
- 	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
  
--	mfd_remove_devices(tps65910->dev);
- 	tps65910_irq_exit(tps65910);
-+	mfd_remove_devices(tps65910->dev);
- 	kfree(tps65910);
++	unregister_sysctl_table(sn->debug_ctl_header);
++	sn->debug_ctl_header = NULL;
+ 	WARN_ON(!list_empty(&sn->sysctls.list));
+ }
  
- 	return 0;
--- 
-1.7.1
+ void
+ rpc_register_sysctl(void)
+ {
+-	if (!sunrpc_table_header) {
+-		register_sysctl_root(&sunrpc_debug_root);
+-		sunrpc_table_header = register_sunrpc_sysctl(&init_net, debug_table);
+-	}
++	register_sysctl_root(&sunrpc_debug_root);
+ }
+ 
+ void
+ rpc_unregister_sysctl(void)
+ {
+-	if (sunrpc_table_header) {
+-		unregister_sysctl_table(sunrpc_table_header);
+-		unregister_sysctl_root(&sunrpc_debug_root);
+-		sunrpc_table_header = NULL;
+-	}
++	unregister_sysctl_root(&sunrpc_debug_root);
+ }
+ 
+ static int proc_do_xprt(ctl_table *table, int write,
 
