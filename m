@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1LNJW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 04:22:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48824 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754837Ab1LNJWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 04:22:54 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3.2] mfd: Update wm8994 active device checks for WM1811
-Date: Wed, 14 Dec 2011 17:22:47 +0800
-Message-Id: <1323854567-25774-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1756124Ab1LNJXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 04:23:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753673Ab1LNJXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 04:23:34 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
+Date: Wed, 14 Dec 2011 10:25:04 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
+        olofj@chromium.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <201112140901.35203.oneukum@suse.de> <CAGS+omAzL+RspmQ=GCAN+NSEyDddm=zXvJR99PPT8R=4OVGn4g@mail.gmail.com>
+In-Reply-To: <CAGS+omAzL+RspmQ=GCAN+NSEyDddm=zXvJR99PPT8R=4OVGn4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112141025.04745.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This didn't go in as part of the original MFD patch for WM1811 due to
-cross tree issues.
+Am Mittwoch, 14. Dezember 2011, 09:19:31 schrieb Daniel Kurtz:
+> On Wed, Dec 14, 2011 at 4:01 PM, Oliver Neukum <oneukum@suse.de> wrote:
+> > Am Donnerstag, 17. November 2011, 12:23:50 schrieb Daniel Kurtz:
+> >> Defer LED setting action to a workqueue.
+> >> This is more likely to send all LED change events in a single URB.
+> >
+> > Hi,
+> >
+> > I hope I am looking at the correct version of this patch.
+> 
+> Yes, that is the correct version.  It looks like I forgot to bump r in
+> the [PATCH] of the subject.
+> 
+> > But as far as I can see the work for handling LEDs is not delayed
+> > while a reset is going on. That is wrong.
+> 
+> Good catch, I think.  Your comment is a bit terse, so it is difficult to
+> tell exactly what you are recommending.  Perhaps something like the following?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+The problem done this way is what submits the work again after
+it did nothing because a reset was pending.
 
-This is essentially a bugfix for 3.2 - suspend is likely to not work
-well without it, it wasn't merged as part of the original patch set due
-to cross tree issues.
-
- drivers/mfd/wm8994-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 93f8599..83a2a8c 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -229,6 +229,7 @@ static int wm8994_suspend(struct device *dev)
- 
- 	switch (wm8994->type) {
- 	case WM8958:
-+	case WM1811:
- 		ret = wm8994_reg_read(wm8994, WM8958_MIC_DETECT_1);
- 		if (ret < 0) {
- 			dev_err(dev, "Failed to read power status: %d\n", ret);
--- 
-1.7.7.3
-
+	Regards
+		Oliver
