@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758304Ab1LNXzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:55:24 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44954 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755603Ab1LNXzV (ORCPT
+	id S1758361Ab1LNXz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 18:55:58 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:33295 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755576Ab1LNXz4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:55:21 -0500
+	Wed, 14 Dec 2011 18:55:56 -0500
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <028901ccbab8$c2c43890$484ca9b0$%kim@samsung.com>
-References: <1323838630.18517.1.camel@phoenix> <20111214123244.GE7122@mudshark.cambridge.arm.com>
- <20111214191205.GF14542@n2100.arm.linux.org.uk> <028901ccbab8$c2c43890$484ca9b0$%kim@samsung.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 15 Dec 2011 07:54:58 +0800
-Message-ID: <CAF+7xWn80ZsgBNS80f0JYUXx2KN3VGM-Y2EOba7OLMwMGNfbKg@mail.gmail.com>
-Subject: Re: [linux-next] make s5p64x0_defconfig build error
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20111214114016.9441.12006.stgit@warthog.procyon.org.uk>
+References: <20111214114016.9441.12006.stgit@warthog.procyon.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 14 Dec 2011 15:55:34 -0800
+X-Google-Sender-Auth: LSpojl4aWtWgYjgaRdasz2cH9M4
+Message-ID: <CA+55aFxEszjub9-MJD0irFs8y3hzGe3Ph=7RqWfkJ-0jKFtCeA@mail.gmail.com>
+Subject: Re: [PATCH] Fix order_base_2(0)
+To: David Howells <dhowells@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
-
-> Axel and Will, thanks for pointing out.
+On Wed, Dec 14, 2011 at 3:40 AM, David Howells <dhowells@redhat.com> wrote:
+> The order_base_2() function is either wrongly documented or wrongly
+> implemented.  In the preceding comment, it says that:
 >
-> Oops, I couldn't have much time to follow up :(
-> But let me look at that in this weekend and I know, it can be escaped before
-> merge window :)
+>        ob2(0) = 0
 
-I also found the same build errors by:
-make s5pc100_defconfig
-make s5pv210_defconfig
-make exynos4_defconfig
+Let's just remove that comment. That's just crazy math and makes no
+sense. Why would anybody do ilog2() on zero and expect anything valid?
 
-Regards,
-Axel
+At least "-1" would make a tiny amount as sense as an error return or
+"underflow" or whatever. But returning 0 is just wrong. That's
+ilog2(1), not 0.
+
+Does anybody actually *want* order_base_2(0)?
+
+                      Linus
