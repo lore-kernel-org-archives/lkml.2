@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab1LNRj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:39:58 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:44300 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab1LNRj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:39:57 -0500
-Date: Wed, 14 Dec 2011 17:39:50 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org, keithp@keithp.com
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <alpine.DEB.2.00.1112141724510.24407@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1112141738570.24407@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1112141724510.24407@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757789Ab1LNRky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:40:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63515 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab1LNRkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 12:40:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+Date: Wed, 14 Dec 2011 18:40:51 +0100
+Message-ID: <CACRpkdbNOLBxsbAnnYSNiPaQ3EAj6eQ9=C8jJDb+jKP3GdjRcg@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 0/4] pinctrl: imx: add pinnmux support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        shawn.guo@freescale.com, kernel@pengutronix.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 5:03 PM, Dong Aisheng <b29396@freescale.com> wrote:
 
-(ignore original, this one comes with a believable changelog).
+> For DT support, there's still one issue that for pinmux_map,
+> since it's board specific, i wonder if it can be parsed by pinctrl
+> subsystem via dt rather than by each driver.
 
-> Hi Linus,
-> 
-> simple one just one pci ids patch from Alex,
-> 
-> I know Keith has some patches outstanding in his queue and I know they are 
-> probably more than you'll want to merge at this point, I'm off until next 
-> week, so Keith if you do send a pull request you may as well send to 
-> Linus, since I know Linus can be more lenient on pulls which make the hw 
-> he uses suck less :-)
-> 
-The following changes since commit 373da0a2a33018d560afcb2c77f8842985d79594:
+That is definately how it should be done. Seems like a good
+idea to me.
 
-  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-12-13 15:02:31 -0800)
+> but pinctrl still does not supported that, i still only called
+> it in mach-imx6q.c which seems not a correct place.
 
-are available in the git repository at:
+Don't worry that pinctrl does not support it - patch pinctrl core!
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+Just make a separate patch which patches drivers/pinctrl/pinmux.c
+to ass the device tree parsing you need from the core, and we'll
+review it.
 
-Alex Deucher (1):
-      drm/radeon/kms: add some new pci ids
+I am by far too incompetent in device tree mechanisms to do
+that myself, I have never worked much on device tree.
 
- include/drm/drm_pciids.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Thanks,
+Linus Walleij
