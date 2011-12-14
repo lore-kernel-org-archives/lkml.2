@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab1LNBR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:17:57 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35641 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab1LNBRz (ORCPT
+	id S1756545Ab1LNBVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:21:47 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45609 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753655Ab1LNBVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:17:55 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Dec 2011 10:16:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
-        Hugh Dickins <hughd@google.com>, Balbir Singh <bsingharora@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: clean up soft_limit_tree properly new
-Message-Id: <20111214101636.e463405c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111213170012.8fe53c90.akpm@linux-foundation.org>
-References: <CAJd=RBB_AoJmyPd7gfHn+Kk39cn-+Wn-pFvU0ZWRZhw2fxoihw@mail.gmail.com>
-	<alpine.LSU.2.00.1112111520510.2297@eggly>
-	<20111212131118.GA15249@tiehlicka.suse.cz>
-	<CAJd=RBAZT0zVnMm7i7P4J9Qg+LvTYh25RwFP7JZnN9dxwWp55g@mail.gmail.com>
-	<20111212140750.GE14720@tiehlicka.suse.cz>
-	<20111212140935.GF14720@tiehlicka.suse.cz>
-	<20111213170012.8fe53c90.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Dec 2011 20:21:46 -0500
+X-Sasl-enc: wVvep6RTFjK+r6jvZxeUbJBBpTSWlNbfSBkFaOqyxef9 1323825705
+Date: Tue, 13 Dec 2011 17:21:41 -0800
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
+        davej@redhat.com
+Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
+ for CPU modaliases)
+Message-ID: <20111214012141.GA18215@kroah.com>
+References: <1323309517.979.8.camel@mop>
+ <20111209001145.GB9550@kroah.com>
+ <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
+ <1323444321.979.39.camel@mop>
+ <20111209223454.GA24987@kroah.com>
+ <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011 17:00:12 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Mon, 12 Dec 2011 15:09:35 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Wed, Dec 14, 2011 at 01:50:57AM +0100, Kay Sievers wrote:
+> On Fri, Dec 9, 2011 at 23:34, Greg KH <greg@kroah.com> wrote:
+> > On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
+> >> Greg, would be nice, if you can take a quick look a the driver core (not
+> >> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
+> >> they look sane to you. I'll then split the driver core stuff out, so we
+> >> can merge that before we port the individual drivers over.
+> >
+> > Yes, it looks sane to me, thanks again for doing this work.
 > 
-> > And a follow up patch for the proper clean up:
-> > ---
-> > >From 4b9f5a1e88496af9f336d1ef37cfdf3754a3ba48 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Mon, 12 Dec 2011 15:04:18 +0100
-> > Subject: [PATCH] memcg: clean up soft_limit_tree properly
-> > 
-> > If we are not able to allocate tree nodes for all NUMA nodes then we
-> > should better clean up those that were allocated otherwise we will leak
-> > a memory.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  mm/memcontrol.c |   12 +++++++++++-
-> >  1 files changed, 11 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 6aff93c..838d812 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -4874,7 +4874,7 @@ static int mem_cgroup_soft_limit_tree_init(void)
-> >  			tmp = -1;
-> >  		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
-> >  		if (!rtpn)
-> > -			return 1;
-> > +			goto err_cleanup;
-> >  
-> >  		soft_limit_tree.rb_tree_per_node[node] = rtpn;
-> >  
-> > @@ -4885,6 +4885,16 @@ static int mem_cgroup_soft_limit_tree_init(void)
-> >  		}
-> >  	}
-> >  	return 0;
-> > +
-> > +err_cleanup:
-> > +	for_each_node_state(node, N_POSSIBLE) {
-> > +		if (!soft_limit_tree.rb_tree_per_node[node])
-> > +			break;
-> > +		kfree(soft_limit_tree.rb_tree_per_node[node]);
-> > +		soft_limit_tree.rb_tree_per_node[node] = NULL;
-> > +	}
-> > +	return 1;
-> > +
-> >  }
+> Split-up patches are here:
+>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=tree
 > 
-> afacit the kernel never frees the soft_limit_tree.rb_tree_per_node[]
-> entries on the mem_cgroup_destroy() path.  Bug?
+> That's the size of it:
+>   60 files changed, 1170 insertions(+), 1421 deletions(-)
+
+Very nice.
+
+> The current state and the list of the remaining non-x86 files is here:
+>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=README;hb=HEAD
 > 
+> We need a plan now. :)
 
-soft_limit_tree.rb_tree_per_node[] is a global object and allocated once
-at creating root cgroup.
+If I take those patches, none of those other ones will break their
+build, right?  Or will the cpu ones?
 
-Nodes of rb_tree for a memcg are contained in struct mem_cgroup_per_zone
-and it's freed at mem_cgroup_destroy().
+I'll look at this tomorrow, gotta go now, I'm burnt out by badly written
+staging patches that must have been created by someone who is bent on
+driving me crazy.
 
-Thanks,
--Kame
+thanks so much for doing this.
 
-
-
-
+greg k-h
