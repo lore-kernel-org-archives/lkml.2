@@ -1,139 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab1LNBKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:10:50 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60750 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab1LNBKr (ORCPT
+	id S1756422Ab1LNBOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:14:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:38835 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab1LNBOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:10:47 -0500
-Date: Tue, 13 Dec 2011 17:10:28 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH v2.2 00/23] ext4: Add metadata checksumming
-Message-ID: <20111214011028.GA8233@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11121401-3270-0000-0000-00000289DD3C
+	Tue, 13 Dec 2011 20:14:03 -0500
+X-Authority-Analysis: v=2.0 cv=HeWWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Sq825YaR5YAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=LjNjP9thxtKzdCPQ4CgA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323825240.23971.11.camel@gandalf.stny.rr.com>
+Subject: [RFC][PATCH] writeback: Unduplicate writeback reason
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Curt Wohlgemuth <curtw@google.com>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Dec 2011 20:14:00 -0500
+In-Reply-To: <20111214003150.GA14520@localhost>
+References: <20111214003150.GA14520@localhost>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 04:46:14PM -0800, Darrick J. Wong wrote:
-> Hi all,
-> 
-> This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
-> full design document is on the ext4 wiki[1] but I will summarize that document here.
-> 
-> As much as we wish our storage hardware was totally reliable, it is still
-> quite possible for data to be corrupted on disk, corrupted during transfer over
-> a wire, or written to the wrong places.  To protect against this sort of
-> non-hostile corruption, it is desirable to store checksums of metadata objects
-> on the filesystem to prevent broken metadata from shredding the filesystem.
-> 
-> The crc32c polynomial was chosen for its improved error detection capabilities
-> over crc32 and crc16, and because of its hardware acceleration on current and
-> upcoming Intel and Sparc chips.
-> 
-> Each type of metadata object has been retrofitted to store a checksum as follows:
-> 
-> - The superblock stores a crc32c of itself.
-> - Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
->   slack_space_after_inode)
-> - Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
->   bitmap), stored in the block group descriptor.
-> - Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
->   extent_entries) in unused space at the end of the block.
-> - Each directory leaf block has an unused-looking directory entry big enough to
->   store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
->   block.
-> - Each directory htree block is shortened to contain a crc32c(fs_uuid +
->   inode_num + inode_gen + block) at the end of the block.
-> - Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
->   header, where id is, depending on the refcount, either the inode_num and
->   inode_gen; or the block number.
-> - MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
-> - Block groups can now use crc32c instead of crc16.
-> - The journal now has a v2 checksum feature flag.
-> - crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
->   commit blocks, revoke blocks, and the journal superblock.
-> - Each block tag in a descriptor block has a checksum of the related data block.
-> 
-> The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
-> as it is quite lengthy (~48 patches).
-> 
-> As far as performance impact goes, I see nearly no change with a standard mail
-> server ffsb simulation.  On a test that involves only file creation and
-> deletion and extent tree modifications, I see a drop of about 50 percent with
-> the current kernel crc32c implementation; this improves to a drop of about 20
-> percent with the enclosed crc32c implementation.  However, given that metadata
-> is usually a small fraction of total IO, it doesn't seem like the cost of
-> enabling this feature is unreasonable.
-> 
-> There are of course unresolved issues:
-> 
-> - I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
->   submit that as an add-on to the snapshot patchset.
-> 
-> - Using the journal commit hooks to delay crc32c calculation until dirty
->   buffers are actually being written to disk.
-> 
-> - Interaction with online resize code.  Yongqiang seems to be in the process of
->   rewriting this not to use custom metadata block write functions, but I haven't
->   looked at it very closely yet.
-> 
-> Please have a look at the design document and patches, and please feel free to
-> suggest any changes.
-> 
-> v2: Checksum the MMP block, store the checksum type in the superblock, include
-> the inode generation in file checksums, and finally solve the problem of limited
-> space in block groups by splitting the checksum into two halves.
-> 
-> v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
-> handling bugs with the mb cache init routine wherein bitmaps could fail to be
-> checksummed at read time.
-> 
-> v2.2: Reincorporate the FS UUID in the bitmap checksum calcuations.  Move all
-> disk layout changes to the front and the feature flag enablement to the end of
-> the patch set.  Fail journal recovery if revoke block fails checksum.
-> 
-> This patchset has been tested on 3.2.0-rc5 on x64, i386, ppc64, and ppc32.  The
-> patches seems to work fine on all four platforms.
+Names of the writeback reasons are used in both the main kernel as well
+as for parsing the tracepoint format file. Instead of duplicating the
+names in two locations making it likely that they may become out of
+sync, use some macro magic to make sure all the names stay in sync. Any
+update only needs to happen in one spot for it to take place in all
+locations.
 
-OH COME ON!!!!
+Note, this is an RFC patch, and it probably needs much better comments
+(well, it currently has no comments), and the C() macro probably should
+have a different name too.
 
-stgit helpfully changed the From lines, screwing everything up.  Awesome.  I
-apologize, I wasn't expecting stgit to change the From: lines when I migrated
-the disk format changes to the front of the set.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-I don't really want to respam the list just to fix this one little thing.  If
-people want more code changes I'll gladly make them and re-send.  If not, then
-Ted, I can just send you the whole mess as a big mbox file, or post them on a
-webserver somewhere, with correct attribution.
+Index: linux-trace.git/fs/fs-writeback.c
+===================================================================
+--- linux-trace.git.orig/fs/fs-writeback.c
++++ linux-trace.git/fs/fs-writeback.c
+@@ -47,15 +47,10 @@ struct wb_writeback_work {
+ 	struct completion *done;	/* set if the caller waits */
+ };
+ 
++#undef C
++#define C(a, b) [a] = b
+ const char *wb_reason_name[] = {
+-	[WB_REASON_BACKGROUND]		= "background",
+-	[WB_REASON_TRY_TO_FREE_PAGES]	= "try_to_free_pages",
+-	[WB_REASON_SYNC]		= "sync",
+-	[WB_REASON_PERIODIC]		= "periodic",
+-	[WB_REASON_LAPTOP_TIMER]	= "laptop_timer",
+-	[WB_REASON_FREE_MORE_MEM]	= "free_more_memory",
+-	[WB_REASON_FS_FREE_SPACE]	= "fs_free_space",
+-	[WB_REASON_FORKER_THREAD]	= "forker_thread"
++	WB_ENUM_REASONS
+ };
+ 
+ /*
+Index: linux-trace.git/include/linux/writeback.h
+===================================================================
+--- linux-trace.git.orig/include/linux/writeback.h
++++ linux-trace.git/include/linux/writeback.h
+@@ -38,21 +38,23 @@ enum writeback_sync_modes {
+ 	WB_SYNC_ALL,	/* Wait on every mapping */
+ };
+ 
++#define WB_ENUM_REASONS							\
++		C(WB_REASON_BACKGROUND,		"background"),		\
++		C(WB_REASON_TRY_TO_FREE_PAGES,	"try_to_free_pages"),	\
++		C(WB_REASON_SYNC,		"sync"),		\
++		C(WB_REASON_PERIODIC,		"periodic"),		\
++		C(WB_REASON_LAPTOP_TIMER,	"laptop_timer"),	\
++		C(WB_REASON_FREE_MORE_MEM,	"free_more_memory"),	\
++		C(WB_REASON_FS_FREE_SPACE,	"fs_free_space"),	\
++		C(WB_REASON_FORKER_THREAD,	"forker_thread")
++
+ /*
+  * why some writeback work was initiated
+  */
+-enum wb_reason {
+-	WB_REASON_BACKGROUND,
+-	WB_REASON_TRY_TO_FREE_PAGES,
+-	WB_REASON_SYNC,
+-	WB_REASON_PERIODIC,
+-	WB_REASON_LAPTOP_TIMER,
+-	WB_REASON_FREE_MORE_MEM,
+-	WB_REASON_FS_FREE_SPACE,
+-	WB_REASON_FORKER_THREAD,
++#undef C
++#define C(a, b) a
++enum wb_reason { WB_ENUM_REASONS, WB_REASONS_MAX };
+ 
+-	WB_REASON_MAX,
+-};
+ extern const char *wb_reason_name[];
+ 
+ /*
+Index: linux-trace.git/include/trace/events/writeback.h
+===================================================================
+--- linux-trace.git.orig/include/trace/events/writeback.h
++++ linux-trace.git/include/trace/events/writeback.h
+@@ -21,16 +21,11 @@
+ 		{I_REFERENCED,		"I_REFERENCED"}		\
+ 	)
+ 
++#undef C
++#define C(a, b) {a, b}
+ #define show_work_reason(reason)					\
+ 	__print_symbolic(reason,					\
+-		{WB_REASON_BACKGROUND,		"background"},		\
+-		{WB_REASON_TRY_TO_FREE_PAGES,	"try_to_free_pages"},	\
+-		{WB_REASON_SYNC,		"sync"},		\
+-		{WB_REASON_PERIODIC,		"periodic"},		\
+-		{WB_REASON_LAPTOP_TIMER,	"laptop_timer"},	\
+-		{WB_REASON_FREE_MORE_MEM,	"free_more_memory"},	\
+-		{WB_REASON_FS_FREE_SPACE,	"fs_free_space"},	\
+-		{WB_REASON_FORKER_THREAD,	"forker_thread"}	\
++			 WB_ENUM_REASONS				\
+ 	)
+ 
+ struct wb_writeback_work;
 
---D
-> 
-> --D
-> 
-> [1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
