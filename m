@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab1LNEN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 23:13:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18424 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab1LNENx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 23:13:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101956484"
-Subject: Re: REGRESSION: v3.2-rcX: iwlagn refuses to associate with my AP's
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111214015959.GA6276@thunk.org>
-References: <E1RaBm1-0001JR-8a@tytso-glaptop.cam.corp.google.com>
-	 <1323800557.3355.31.camel@jlt3.sipsolutions.net>
-	 <20111213201752.GA5094@thunk.org>  <20111214015959.GA6276@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Dec 2011 19:14:30 -0800
-Message-ID: <1323832470.13074.224.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756677Ab1LNEbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 23:31:18 -0500
+Received: from palinux.external.hp.com ([192.25.206.14]:52757 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab1LNEbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 23:31:16 -0500
+Date: Tue, 13 Dec 2011 21:31:13 -0700
+From: Matthew Wilcox <matthew@wil.cx>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pciehp: Checking pci conf reading to new added device
+	instead of sleep 1s
+Message-ID: <20111214043113.GC20129@parisc-linux.org>
+References: <1323767154-6859-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323767154-6859-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
-On Tue, 2011-12-13 at 17:59 -0800, Ted Ts'o wrote:
-> On Tue, Dec 13, 2011 at 03:17:52PM -0500, Ted Ts'o wrote:
-> > Well, this patch seems to fix things for the non-authenticated case.
-> > I can now associate with the GoogleGuest SSID without any problems.
-> > I'm still having problems associating with the EAP-TLS encrypted
-> > network, but that looks like it's a different bug.  (And that may
-> > explain why I had so much trouble bisecting this; there are two issues
-> > that have very similar symptoms.)
-> 
-> ... and the second problem I had with associating with EAP-TLS
-> encrypted SSID's was solved by Wey-Yi's patch: 
-> 
-> 	  iwlwifi: allow to switch to HT40 if not associated yet
-> 
-> ... found in the thread "iwlagn regression in v3.1.5"
-> 
-> So with these two patches applied, things are now stable for me.
-> 
-> One thing: out of curiosity, I assume there is a pretty good testing
-> infrastructure at Intel --- how was it that this didn't caught
-> earlier?  Is it because different access points do things a little
-> different?  Would it be useful if I can find out the model of access
-> point that we're using, so you could hopefully augment your library of
-> test hardware?  I'm asking out of purely selfish reasons, of course,
-> since this took me the better part of a day to bisect each of these
-> problems.
+On Tue, Dec 13, 2011 at 01:05:54AM -0800, Yinghai Lu wrote:
+> +static bool pci_bus_check_dev(struct pci_bus *bus, int devfn)
+> +{
+> +	u32 l;
+> +	int count = 0;
+> +	u32 lx[50];
+> +	int delay = 1000, step = 20;
+> +	bool found = false;
+> +
+> +again:
+> +	if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
+> +		goto wait;
+> +
+> +	lx[count++] = l;
+> +
+> +	/* some broken boards return 0 or ~0 if a slot is empty: */
+> +	if (l == 0xffffffff || l == 0x00000000 ||
+> +	    l == 0x0000ffff || l == 0xffff0000)
+> +		goto wait;
+> +
+> +	/* Configuration request Retry Status */
+> +	if (l == 0xffff0001)
+> +		goto wait;
+> +
+> +	found = true;
+> +	goto printout;
+> +
+> +wait:
+> +	msleep(step);
+> +	delay -= step;
+> +	if (delay > 0)
+> +		goto again;
 
-You ask a very valid and good question, you are correct, we at Intel
-have a very good lab and great testing infrastructure. But at the same
-time, there are so many APs available on the market and each one could
-behave differently, also just like station, AP's software continue
-change and improve, and at the same time, bugs can be introduced. We try
-to do our best, but we can not cover everything and we truly hope the
-community can help us flush the corner cases and bugs we miss.
+This code looks similar to (but not identical to) the code in
+pci_scan_device().  Please make that code a common function that can be
+called from all PCI hotplug drivers, not just this one.
 
-Yes, if you can let us know your configuration and the AP information,
-it will be very helpful. But please do help us continue test our latest
-driver, so we can improve our driver quality and better serve the
-community.
+> +printout:
+> +	if (count > 1) {
+> +		int i;
+> +		printk(KERN_DEBUG "pci %04x:%02x:%02x.%d id reading try %d times with interval %d ms\n",
+> +			pci_domain_nr(bus), bus->number, PCI_SLOT(devfn),
+> +			PCI_FUNC(devfn), count, step);
+> +		for (i = 0; i < count; i++)
+> +			printk(KERN_DEBUG "  [%02d]=%08x\n", i, lx[i]);
+> +	}
+> +
+> +	return found;
+> +}
+> +
+>  int pciehp_check_link_status(struct controller *ctrl)
+>  {
+>  	u16 lnk_status;
+> @@ -280,13 +325,9 @@ int pciehp_check_link_status(struct cont
+>          else
+>                  msleep(1000);
+>  
+> -	/*
+> -	 * Need to wait for 1000 ms after Data Link Layer Link Active
+> -	 * (DLLLA) bit reads 1b before sending configuration request.
+> -	 * We need it before checking Link Training (LT) bit becuase
+> -	 * LT is still set even after DLLLA bit is set on some platform.
+> -	 */
+> -	msleep(1000);
+> +	/* wait 100ms before read pci conf, and try in 1s */
+> +	msleep(100);
+> +	pci_bus_check_dev(ctrl->pcie->port->subordinate, PCI_DEVFN(0, 0));
+>  
+>  	retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA, &lnk_status);
+>  	if (retval) {
+> @@ -302,14 +343,6 @@ int pciehp_check_link_status(struct cont
+>  		return retval;
+>  	}
+>  
+> -	/*
+> -	 * If the port supports Link speeds greater than 5.0 GT/s, we
+> -	 * must wait for 100 ms after Link training completes before
+> -	 * sending configuration request.
+> -	 */
+> -	if (ctrl->pcie->port->subordinate->max_bus_speed > PCIE_SPEED_5_0GT)
+> -		msleep(100);
+> -
+>  	pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+>  
+>  	return retval;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks
-Wey 
-
-
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
