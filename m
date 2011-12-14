@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab1LNPDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:03:06 -0500
-Received: from mx1.cpanel.net ([208.74.121.68]:41116 "EHLO mx1.cpanel.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab1LNPDC convert rfc822-to-8bit (ORCPT
+	id S1756894Ab1LNPEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:04:13 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38966 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755204Ab1LNPEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:03:02 -0500
-X-Greylist: delayed 2713 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 10:03:02 EST
-Subject: Re: kvm deadlock
-Mime-Version: 1.0 (Apple Message framework v1084)
+	Wed, 14 Dec 2011 10:04:09 -0500
+X-Sasl-enc: ALxR8BclGRBa/LunYFD2AY9vK8KnEZ9Wu1Mx2fFfAUB9 1323875048
+Date: Wed, 14 Dec 2011 07:03:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20111214150359.GA840@kroah.com>
+References: <20111214154844.3ad4e1d685c7987cba0820a0@canb.auug.org.au>
+ <1323854697.28489.7.camel@twins>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Nate Custer <nate@cpanel.net>
-In-Reply-To: <20111214140612.GG18317@amt.cnet>
-Date: Wed, 14 Dec 2011 08:17:45 -0600
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7E2A4D2C-68BD-47E8-8079-37AE152D77B4@cpanel.net>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net> <20111214122511.GD18317@amt.cnet> <4EE8A7ED.7060703@redhat.com> <20111214140027.GF18317@amt.cnet> <4EE8AC88.1040205@redhat.com> <20111214140612.GG18317@amt.cnet>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-X-Mailer: Apple Mail (2.1084)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mx1.cpanel.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - cpanel.net
+Content-Disposition: inline
+In-Reply-To: <1323854697.28489.7.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 10:24:57AM +0100, Peter Zijlstra wrote:
+> On Wed, 2011-12-14 at 15:48 +1100, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the driver-core tree, today's linux-next build
+> > (powerpc_ppc64_defconfig) failed like this:
+> > 
+> > In file included from include/linux/slab.h:185:0,
+> >                  from include/linux/kref.h:19,
+> >                  from include/linux/kobject.h:24,
+> >                  from include/linux/sysdev.h:24,
+> >                  from include/linux/node.h:17,
+> >                  from include/linux/swap.h:10,
+> >                  from include/linux/suspend.h:4,
+> >                  from arch/powerpc/kernel/asm-offsets.c:24:
+> > include/linux/slub_def.h:100:17: error: field 'kobj' has incomplete type
+> > 
+> > Caused by commit 4af679cd7cbb ("kref: Inline all functions") ... we now
+> > have kref.h -> slab.h -> slub_def.h -> kobject.h -> kref.h when
+> > CONFIG_SLUB is set.
+> 
+> Egads, that's nasty.. 
+> 
+> The nicest thing I can come up with is something like the below, but its
+> not all that nice at all :/
 
-On Dec 14, 2011, at 8:06 AM, Marcelo Tosatti wrote:
-> I don't know. Its a hang ? It could be memory corruption (of the timer
-> olist) instead of a bogus NMI actually, the second.
+I'll remove the use of kfree in the WARN_ON(), which should solve this
+problem.
 
-
-What is pasted in the second paste is what came scrolling across the console right before the end of all responsiveness. It came from a dmesg dump, the next dmesg command was not accepted via ssh and the console attached showed the same stack trace. At that point the system refused to respond to any direct keyboard input, including the SysRq commands that I expected to work after a core dump. 
-
-The issue happened with two servers (same hardware, same build group so there is a chance of a bad hardware batch). Switching to an older kernel/kvm setup in RHEL 6.2 has corrected the issue, which suggests a software issue to me.
-
-Nate Custer
-
-
-
+greg k-h
