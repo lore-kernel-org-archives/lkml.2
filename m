@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1LNHtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:49:46 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47376 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754490Ab1LNHtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:49:45 -0500
-Date: Wed, 14 Dec 2011 08:47:49 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
- __memory_failure()
-Message-ID: <20111214074749.GD25232@elte.hu>
-References: <cover.1323803130.git.tony.luck@intel.com>
- <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
+	id S1754673Ab1LNHuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:50:21 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:54709
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753216Ab1LNHuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 02:50:18 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 14 Dec 2011 15:50:04 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux@arm.linux.org.uk>, <andrew@lunn.ch>, <linaro-dev@lists.linaro.org>,
+        <eric.miao@linaro.org>, <grant.likely@secretlab.ca>,
+        <jeremy.kerr@canonical.com>, <mturquette@ti.com>, <sboyd@quicinc.com>,
+        <magnus.damm@gmail.com>, <dsaxena@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <arnd.bergmann@linaro.org>,
+        <patches@linaro.org>, <tglx@linutronix.de>,
+        <linux-omap@vger.kernel.org>, <richard.zhao@linaro.org>,
+        <shawn.guo@freescale.com>, <paul@pwsan.com>,
+        <linus.walleij@stericsson.com>, <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, <amit.kucheria@linaro.org>,
+        <skannan@quicinc.com>
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+Message-ID: <20111214074922.GM28768@b20223-02.ap.freescale.net>
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+ <1323834838-2206-4-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
+In-Reply-To: <1323834838-2206-4-git-send-email-mturquette@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mike,
+> + *
+> + * @recalc_rate	Recalculate the rate of this clock, by quering hardware
+> + * 		and/or the clock's parent. It is up to the caller to insure
+> + * 		that the prepare_mutex is held across this call.  Returns the
+> + * 		calculated rate.  Optional, but recommended - if this op is not
+> + * 		set then clock rate will be initialized to 0.
+I'm still concerned, if it's NULL, why don't just retrun parent's rate if it has? 
+ 
+Thanks
+Richard
 
-* Tony Luck <tony.luck@intel.com> wrote:
-
-> There is only one caller of memory_failure(), all other users call
-> __memory_failure() and pass in the flags argument explicitly. The
-> lone user of memory_failure() will soon need to pass flags too.
-> 
-> Add flags argument to the callsite in mce.c. Delete the old memory_failure()
-> function, and then rename __memory_failure() without the leading "__".
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    9 +++++--
->  drivers/base/memory.c            |    2 +-
->  include/linux/mm.h               |    3 +-
->  mm/hwpoison-inject.c             |    4 +-
->  mm/madvise.c                     |    2 +-
->  mm/memory-failure.c              |   46 +++++++++++++++++--------------------
->  6 files changed, 32 insertions(+), 34 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 2af127d..265139d 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1046,11 +1046,14 @@ out:
->  }
->  EXPORT_SYMBOL_GPL(do_machine_check);
->  
-> -/* dummy to break dependency. actual code is in mm/memory-failure.c */
-> -void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
-> +#ifndef CONFIG_MEMORY_FAILURE
-> +int memory_failure(unsigned long pfn, int vector, int flags)
->  {
->  	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
-
-Btw., while at it, could we phrase this message in a more 
-obvious way to users, such as 'Non-fatal memory failure at %lx 
-ignored'?
-
-Thanks,
-
-	Ingo
