@@ -1,59 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab1LNRWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:22:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40324 "EHLO mga09.intel.com"
+	id S1757761Ab1LNRWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:22:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7831 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab1LNRWG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:22:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="87278806"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Date: Wed, 14 Dec 2011 09:21:54 -0800
-Subject: RE: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
- __memory_failure()
-Thread-Topic: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
- __memory_failure()
-Thread-Index: Acy6gWc4bQpkTvAIQZapjs0crrqLLQAAwvNg
-Message-ID: <0207C53569FE594381A4F2EB66570B2A019147EF6A@orsmsx508.amr.corp.intel.com>
-References: <cover.1323803130.git.tony.luck@intel.com>
- <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
- <20111214074749.GD25232@elte.hu> <20111214160702.GH23589@aftab>
- <20111214165459.GB32305@elte.hu>
-In-Reply-To: <20111214165459.GB32305@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755386Ab1LNRWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 12:22:39 -0500
+Date: Wed, 14 Dec 2011 12:22:34 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Nate Custer <nate@cpanel.net>, kvm@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: kvm deadlock
+Message-ID: <20111214172234.GB25484@redhat.com>
+References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
+ <20111214122511.GD18317@amt.cnet>
+ <4EE8A7ED.7060703@redhat.com>
+ <4EE8C8EA.9070207@kernel.dk>
+ <20111214170347.GA25484@redhat.com>
+ <4EE8D863.5000701@kernel.dk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE8D863.5000701@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >  	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
+On Wed, Dec 14, 2011 at 06:09:55PM +0100, Jens Axboe wrote:
+> On 2011-12-14 18:03, Vivek Goyal wrote:
+> >>> I think the allocation in blkio_alloc_blkg_stats() should be moved out
+> >>> of the I/O path into some init function. Copying Jens.
+> >>
+> >> That's completely buggy, basically you end up with a GFP_KERNEL
+> >> allocation from the IO submit path. Vivek, per_cpu data needs to be set
+> >> up at init time. You can't allocate it dynamically off the IO path.
 > > 
-> > Btw., while at it, could we phrase this message in a more 
-> > obvious way to users, such as 'Non-fatal memory failure at 
-> > %lx ignored'?
+> > Hi Jens,
+> > 
+> > I am wondering how does CFQ get away with blocking cfqq allocation in
+> > IO submit path. I see that blk_queue_bio() will do following.
+> > 
+> > blk_queue_bio()
+> >  get_request_wait()
+> >   get_request(..,..,GFP_NOIO)
+> >    blk_alloc_request()
+> >     elv_set_request()
+> >      cfq_set_request()
+> >       ---> Can sleep and do memory allocation in IO submit path as
+> >            GFP_NOIO has __GFP_WAIT.
+> > 
+> > So that means sleeping allocation from IO submit path is not necessarily
+> > a problem?
 > 
-> Yeah, that's might not be as correct as we want it to be. AO 
-> means it is an uncorrectable error, i.e. it will become fatal 
-> if we'd consumed it, but it isn't that now because we just saw 
-> it passing by in the cacheline...
+
+[..]
+> __GFP_WAIT isn't the problem, you can block in the IO path. You cannot,
+> however, recurse back into IO submission. That's why CFQ is using
+> GFP_NOIO, implying that waiting is OK, but submitting new IO to satisfy
+> the allocation is not.
+
+Ok. Got it. So even if we implement mutex_is_locked() check, it does not
+protect me from possiblity of per cpu allocation path recursing into
+IO submission. That means, there needs to be a variant of per cpu
+allocation which can take the allocation flags as parameter and honor
+these flags.
+
 > 
-> Maybe "Fatal, unconsumed error ignored..."
+> > But in case of per cpu data allocation, we might be holding
+> > pcpu_alloc_mutex() already at the time of calling pcpu allocation
+> > again and that might lead to deadlock.  (As Avi mentioned). If yes,
+> > then it is a problem.
+> 
+> It is both a problem and somewhat of a mess...
+> 
+> > Right now allocation of root group and associated stats happens at
+> > queue initialization time. For non-root cgroups, group allocation and
+> > associated per cpu stats allocation happens dynamically when the IO is
+> > submitted. So in this case may be we are creating a new blkio cgroup
+> > and then doing IO which leads to this warning.
+> > 
+> > I am not sure how to move this allocation to init path. These stats
+> > are per group and groups are created dynamically as IO happens in
+> > them. Only init path seems to be cgroup creation time. blkg is an
+> > object which is contained in a parent object and at that time parent
+> > object is not available. It is created dynamically at the IO time
+> > (cfq_group, blkio_group etc).
+> > 
+> > Though it is little hackish but can we just delay the allocation of
+> > stats if pcpu_alloc_mutex is held. We shall have to make
+> > pcpu_alloc_mutex non static though. Delaying will just not capture the
+> > stats for some time and sooner or later we will get regular IO with
+> > pcpu_alloc_mutex not held and we can do per cpu allocation at that
+> > time. I will write a a test patch.
+> > 
+> > Or may be there is a safer version of pcpu alloc which will return
+> > without allocation if pcpu_alloc_mutex is already locked.
+> 
+> Both of these proposed solutions aren't really pretty. It would be
+> cleaner and have better runtime for the fast path if you could alloc all
+> of these when the non-root groups are setup. Why isn't it done that way
+> right now?
 
-The overall meaning is "land mine seen but not stepped on yet"
+Actually non-root group itself is setup when first IO happens in the
+group. When an IO is submitted, we determine which cgroup does it belong
+to, then we see if we have already setup the group. If not, then we
+go on to alloc one. (Currently I use GFP_ATOMIC for group allocation).
 
-I'll see if I can wordsmith the message to convey that.
+So group allocation itself happens in IO path (like cfqq allocation),
+hence per group per cpu stats are also allocated in that path.
 
--Tony
+We can't setup blkio groups at the cgroup creation time as at that time
+we don't even know how many request queues are threre and on how many
+of them cfq is being used.
+
+Setup of root group at queue initialization time is easy. But we can't
+setup all other cgroups at that time as it does not take care of future
+cgroup creation. Also it will waste memory if cgroups are there but no
+IO is happening in them.
+
+Thanks
+Vivek
