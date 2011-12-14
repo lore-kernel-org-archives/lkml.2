@@ -1,159 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab1LNPR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:17:27 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:46988 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755349Ab1LNPRZ (ORCPT
+	id S1756379Ab1LNP31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:29:27 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58744 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab1LNP3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:17:25 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3] vmscan/trace: Add 'file' info to trace_mm_vmscan_lru_isolate.
-Date: Wed, 14 Dec 2011 23:14:53 +0800
-Message-Id: <1323875693-3504-1-git-send-email-tm@tao.ma>
+	Wed, 14 Dec 2011 10:29:23 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>, shawn.guo@freescale.com,
+        Kukjin Kim <kgene.kim@samsung.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 1/9] dt: add empty of_get_node/of_put_node functions
+Date: Wed, 14 Dec 2011 09:28:50 -0600
+Message-Id: <1323876538-20406-2-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20111213164507.fbee477c.akpm@linux-foundation.org>
-References: <20111213164507.fbee477c.akpm@linux-foundation.org>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.102 authed with tm@tao.ma}
+In-Reply-To: <1323876538-20406-1-git-send-email-robherring2@gmail.com>
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: Rob Herring <rob.herring@calxeda.com>
 
-In trace_mm_vmscan_lru_isolate, we don't output 'file'
-information to the trace event and it is a bit inconvenient for the
-user to get the real information(like pasted below).
-mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+Add empty of_get_node/of_put_node functions for !CONFIG_OF builds.
 
-'active' can be gotten by analyzing mode(Thanks go to Minchan and Mel),
-So this patch adds 'file' to the trace event and it now looks like:
-mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
-nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 file=0
-
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- include/trace/events/vmscan.h |   22 ++++++++++++++--------
- mm/memcontrol.c               |    2 +-
- mm/vmscan.c                   |    2 +-
- 3 files changed, 16 insertions(+), 10 deletions(-)
+ include/linux/of.h |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index edc4b3d..f64560e 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -266,9 +266,10 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int file),
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 4948552..e291381 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -65,6 +65,20 @@ struct device_node {
+ #endif
+ };
  
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file),
++#if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
++/* Dummy ref counting routines - to be implemented later */
++static inline struct device_node *of_node_get(struct device_node *node)
++{
++	return node;
++}
++static inline void of_node_put(struct device_node *node)
++{
++}
++#else
++extern struct device_node *of_node_get(struct device_node *node);
++extern void of_node_put(struct device_node *node);
++#endif
++
+ #ifdef CONFIG_OF
  
- 	TP_STRUCT__entry(
- 		__field(int, order)
-@@ -279,6 +280,7 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__field(unsigned long, nr_lumpy_dirty)
- 		__field(unsigned long, nr_lumpy_failed)
- 		__field(isolate_mode_t, isolate_mode)
-+		__field(int, file)
- 	),
+ /* Pointer for first entry in chain of all nodes. */
+@@ -95,21 +109,6 @@ static inline void of_node_set_flag(struct device_node *n, unsigned long flag)
  
- 	TP_fast_assign(
-@@ -290,9 +292,10 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__entry->nr_lumpy_dirty = nr_lumpy_dirty;
- 		__entry->nr_lumpy_failed = nr_lumpy_failed;
- 		__entry->isolate_mode = isolate_mode;
-+		__entry->file = file;
- 	),
+ extern struct device_node *of_find_all_nodes(struct device_node *prev);
  
--	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu",
-+	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu file=%d",
- 		__entry->isolate_mode,
- 		__entry->order,
- 		__entry->nr_requested,
-@@ -300,7 +303,8 @@ DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
- 		__entry->nr_taken,
- 		__entry->nr_lumpy_taken,
- 		__entry->nr_lumpy_dirty,
--		__entry->nr_lumpy_failed)
-+		__entry->nr_lumpy_failed,
-+		__entry->file)
- );
- 
- DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
-@@ -312,9 +316,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file)
- 
- );
- 
-@@ -327,9 +332,10 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
- 		unsigned long nr_lumpy_taken,
- 		unsigned long nr_lumpy_dirty,
- 		unsigned long nr_lumpy_failed,
--		isolate_mode_t isolate_mode),
-+		isolate_mode_t isolate_mode,
-+		int file),
- 
--	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
-+	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode, file)
- 
- );
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..cd0082d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1249,7 +1249,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 	*scanned = scan;
- 
- 	trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
--				      0, 0, 0, mode);
-+				      0, 0, 0, mode, file);
- 
- 	return nr_taken;
- }
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f54a05b..a444dc0 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1221,7 +1221,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			nr_to_scan, scan,
- 			nr_taken,
- 			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
--			mode);
-+			mode, file);
- 	return nr_taken;
- }
- 
+-#if defined(CONFIG_SPARC)
+-/* Dummy ref counting routines - to be implemented later */
+-static inline struct device_node *of_node_get(struct device_node *node)
+-{
+-	return node;
+-}
+-static inline void of_node_put(struct device_node *node)
+-{
+-}
+-
+-#else
+-extern struct device_node *of_node_get(struct device_node *node);
+-extern void of_node_put(struct device_node *node);
+-#endif
+-
+ /*
+  * OF address retrieval & translation
+  */
 -- 
-1.7.0.4
+1.7.5.4
 
