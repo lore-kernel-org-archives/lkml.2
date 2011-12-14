@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1LNApN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:45:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45114 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192Ab1LNApJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:45:09 -0500
-Date: Tue, 13 Dec 2011 16:45:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH V2] vmscan/trace: Add 'active' and 'file' info to
- trace_mm_vmscan_lru_isolate.
-Message-Id: <20111213164507.fbee477c.akpm@linux-foundation.org>
-In-Reply-To: <1323614784-2924-1-git-send-email-tm@tao.ma>
-References: <1323614784-2924-1-git-send-email-tm@tao.ma>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756264Ab1LNAq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:46:26 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:35100 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753948Ab1LNAqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 19:46:22 -0500
+Subject: [PATCH v2.2 00/23] ext4: Add metadata checksumming
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Tue, 13 Dec 2011 16:46:14 -0800
+Message-ID: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 11121400-8974-0000-0000-000004358A7C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Dec 2011 22:46:24 +0800
-Tao Ma <tm@tao.ma> wrote:
+Hi all,
 
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1103,7 +1103,7 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
->  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  		struct list_head *src, struct list_head *dst,
->  		unsigned long *scanned, int order, isolate_mode_t mode,
-> -		int file)
-> +		int active, int file)
->  {
->  	unsigned long nr_taken = 0;
->  	unsigned long nr_lumpy_taken = 0;
-> @@ -1221,7 +1221,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  			nr_to_scan, scan,
->  			nr_taken,
->  			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
-> -			mode);
-> +			mode, active, file);
->  	return nr_taken;
->  }
->  
-> @@ -1237,7 +1237,7 @@ static unsigned long isolate_pages_global(unsigned long nr,
->  	if (file)
->  		lru += LRU_FILE;
->  	return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
-> -								mode, file);
-> +							mode, active, file);
->  }
+This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
+full design document is on the ext4 wiki[1] but I will summarize that document here.
 
-It would be nice to avoid adding permanent runtime overhead on behalf
-of tracing.  It sounds like sending "mode" will satisfy this - please
-check that in the v2 patch. 
+As much as we wish our storage hardware was totally reliable, it is still
+quite possible for data to be corrupted on disk, corrupted during transfer over
+a wire, or written to the wrong places.  To protect against this sort of
+non-hostile corruption, it is desirable to store checksums of metadata objects
+on the filesystem to prevent broken metadata from shredding the filesystem.
+
+The crc32c polynomial was chosen for its improved error detection capabilities
+over crc32 and crc16, and because of its hardware acceleration on current and
+upcoming Intel and Sparc chips.
+
+Each type of metadata object has been retrofitted to store a checksum as follows:
+
+- The superblock stores a crc32c of itself.
+- Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
+  slack_space_after_inode)
+- Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
+  bitmap), stored in the block group descriptor.
+- Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
+  extent_entries) in unused space at the end of the block.
+- Each directory leaf block has an unused-looking directory entry big enough to
+  store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
+  block.
+- Each directory htree block is shortened to contain a crc32c(fs_uuid +
+  inode_num + inode_gen + block) at the end of the block.
+- Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
+  header, where id is, depending on the refcount, either the inode_num and
+  inode_gen; or the block number.
+- MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
+- Block groups can now use crc32c instead of crc16.
+- The journal now has a v2 checksum feature flag.
+- crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
+  commit blocks, revoke blocks, and the journal superblock.
+- Each block tag in a descriptor block has a checksum of the related data block.
+
+The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
+as it is quite lengthy (~48 patches).
+
+As far as performance impact goes, I see nearly no change with a standard mail
+server ffsb simulation.  On a test that involves only file creation and
+deletion and extent tree modifications, I see a drop of about 50 percent with
+the current kernel crc32c implementation; this improves to a drop of about 20
+percent with the enclosed crc32c implementation.  However, given that metadata
+is usually a small fraction of total IO, it doesn't seem like the cost of
+enabling this feature is unreasonable.
+
+There are of course unresolved issues:
+
+- I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
+  submit that as an add-on to the snapshot patchset.
+
+- Using the journal commit hooks to delay crc32c calculation until dirty
+  buffers are actually being written to disk.
+
+- Interaction with online resize code.  Yongqiang seems to be in the process of
+  rewriting this not to use custom metadata block write functions, but I haven't
+  looked at it very closely yet.
+
+Please have a look at the design document and patches, and please feel free to
+suggest any changes.
+
+v2: Checksum the MMP block, store the checksum type in the superblock, include
+the inode generation in file checksums, and finally solve the problem of limited
+space in block groups by splitting the checksum into two halves.
+
+v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
+handling bugs with the mb cache init routine wherein bitmaps could fail to be
+checksummed at read time.
+
+v2.2: Reincorporate the FS UUID in the bitmap checksum calcuations.  Move all
+disk layout changes to the front and the feature flag enablement to the end of
+the patch set.  Fail journal recovery if revoke block fails checksum.
+
+This patchset has been tested on 3.2.0-rc5 on x64, i386, ppc64, and ppc32.  The
+patches seems to work fine on all four platforms.
+
+--D
+
+[1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
 
