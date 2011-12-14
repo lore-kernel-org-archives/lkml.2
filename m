@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab1LNRKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:10:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42850 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194Ab1LNRKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:10:03 -0500
-Message-ID: <4EE8D863.5000701@kernel.dk>
-Date: Wed, 14 Dec 2011 18:09:55 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1757682Ab1LNRLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:11:10 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:40534 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757395Ab1LNRLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 12:11:08 -0500
+Date: Wed, 14 Dec 2011 12:11:05 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
+        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5 V5] Add functions to check if the host has stopped
+ the vm
+Message-ID: <20111214171105.GB4075@mgebm.net>
+References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
+ <1323116344-17911-3-git-send-email-emunson@mgebm.net>
+ <4EDF78C5.8060908@redhat.com>
+ <20111208152310.GB6301@mgebm.net>
+ <20111214121124.GA18317@amt.cnet>
+ <4EE8B4AD.2060101@redhat.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Nate Custer <nate@cpanel.net>, kvm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: kvm deadlock
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net> <20111214122511.GD18317@amt.cnet> <4EE8A7ED.7060703@redhat.com> <4EE8C8EA.9070207@kernel.dk> <20111214170347.GA25484@redhat.com>
-In-Reply-To: <20111214170347.GA25484@redhat.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s/l3CgOIzMHHjg/5"
+Content-Disposition: inline
+In-Reply-To: <4EE8B4AD.2060101@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-14 18:03, Vivek Goyal wrote:
->>> I think the allocation in blkio_alloc_blkg_stats() should be moved out
->>> of the I/O path into some init function. Copying Jens.
->>
->> That's completely buggy, basically you end up with a GFP_KERNEL
->> allocation from the IO submit path. Vivek, per_cpu data needs to be set
->> up at init time. You can't allocate it dynamically off the IO path.
-> 
-> Hi Jens,
-> 
-> I am wondering how does CFQ get away with blocking cfqq allocation in
-> IO submit path. I see that blk_queue_bio() will do following.
-> 
-> blk_queue_bio()
->  get_request_wait()
->   get_request(..,..,GFP_NOIO)
->    blk_alloc_request()
->     elv_set_request()
->      cfq_set_request()
->       ---> Can sleep and do memory allocation in IO submit path as
->            GFP_NOIO has __GFP_WAIT.
-> 
-> So that means sleeping allocation from IO submit path is not necessarily
-> a problem?
 
-__GFP_WAIT isn't the problem, you can block in the IO path. You cannot,
-however, recurse back into IO submission. That's why CFQ is using
-GFP_NOIO, implying that waiting is OK, but submitting new IO to satisfy
-the allocation is not.
+--s/l3CgOIzMHHjg/5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> But in case of per cpu data allocation, we might be holding
-> pcpu_alloc_mutex() already at the time of calling pcpu allocation
-> again and that might lead to deadlock.  (As Avi mentioned). If yes,
-> then it is a problem.
+On Wed, 14 Dec 2011, Avi Kivity wrote:
 
-It is both a problem and somewhat of a mess...
+> On 12/14/2011 02:11 PM, Marcelo Tosatti wrote:
+> > On Thu, Dec 08, 2011 at 10:23:10AM -0500, Eric B Munson wrote:
+> > > On Wed, 07 Dec 2011, Avi Kivity wrote:
+> > >=20
+> > > > On 12/05/2011 10:19 PM, Eric B Munson wrote:
+> > > > > When a host stops or suspends a VM it will set a flag to show thi=
+s.  The
+> > > > > watchdog will use these functions to determine if a softlockup is=
+ real, or the
+> > > > > result of a suspended VM.
+> > > > > =20
+> > > > > +bool kvm_check_and_clear_guest_paused(int cpu)
+> > > > > +{
+> > > > > +	bool ret =3D false;
+> > > > > +	struct pvclock_vcpu_time_info *src;
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * per_cpu() is safe here because this function is only called =
+=66rom
+> > > > > +	 * timer functions where preemption is already disabled.
+> > > > > +	 */
+> > > > > +	WARN_ON(!in_atomic());
+> > > > > +	src =3D &per_cpu(hv_clock, cpu);
+> > > >=20
+> > > > __get_cpu_var(); drop the cpu argument
+> > > >=20
+> > >=20
+> > > Will change for V6.
+> > >=20
+> > > > > +	if ((src->flags & PVCLOCK_GUEST_STOPPED) !=3D 0) {
+> > > > > +		src->flags =3D src->flags & (~PVCLOCK_GUEST_STOPPED);
+> > > >=20
+> > > > Isn't this racy?  Between reading and writing src->flags, we can ex=
+it to
+> > > > the hypervisor and add/remove new flags.  The write then overrides =
+those
+> > > > new flags.
+> > > >=20
+> > >=20
+> > > If I understand (please correct me if this is wrong) because this is =
+only
+> > > called from the watchdog, which disables preemption, we should be pro=
+tected
+> > > from something else writing to these flags.
+> >
+> > The host can write, but in that case race is harmless.
+>=20
+> Why is it harmless?  You don't know what's in those other flags.
+>=20
+> --=20
+> error compiling committee.c: too many arguments to function
+>=20
 
-> Right now allocation of root group and associated stats happens at
-> queue initialization time. For non-root cgroups, group allocation and
-> associated per cpu stats allocation happens dynamically when the IO is
-> submitted. So in this case may be we are creating a new blkio cgroup
-> and then doing IO which leads to this warning.
-> 
-> I am not sure how to move this allocation to init path. These stats
-> are per group and groups are created dynamically as IO happens in
-> them. Only init path seems to be cgroup creation time. blkg is an
-> object which is contained in a parent object and at that time parent
-> object is not available. It is created dynamically at the IO time
-> (cfq_group, blkio_group etc).
-> 
-> Though it is little hackish but can we just delay the allocation of
-> stats if pcpu_alloc_mutex is held. We shall have to make
-> pcpu_alloc_mutex non static though. Delaying will just not capture the
-> stats for some time and sooner or later we will get regular IO with
-> pcpu_alloc_mutex not held and we can do per cpu allocation at that
-> time. I will write a a test patch.
-> 
-> Or may be there is a safer version of pcpu alloc which will return
-> without allocation if pcpu_alloc_mutex is already locked.
+Currently there is only one other flag in this byte (PVCLOCK_TSC_STABLE_BIT)
+and it isset once in kvmclock_init().  It is highly unlikely that the vm wi=
+ll
+be stopped during this init and have the flag clobbered.  After the tsc sta=
+ble
+bit is written in the init, the field is read only outside of the guest pau=
+sed
+code.
 
-Both of these proposed solutions aren't really pretty. It would be
-cleaner and have better runtime for the fast path if you could alloc all
-of these when the non-root groups are setup. Why isn't it done that way
-right now?
+Eric
 
--- 
-Jens Axboe
+--s/l3CgOIzMHHjg/5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO6NipAAoJEKhG9nGc1bpJqNsP/jdDO/wp0M2MLVuz4FxMRO2E
+08KCSXMjAv13SOi6ti+xtjeFnhiuoXstr8qr0vR2/mO0KAUtpzVKXS2EEr2Y8x9j
+pJI6h5ByJol03UxTCb0jKSpJ0oeJdy/n9DFoPUuLlFGHdDuAcssuYgfouAYu8sAp
+JU5a6bYkjOccplQMe71OBod0F5KEb9grVU2lJN/KtOhsl3K0jXJ93a6/2PTNe91T
+nMbZlUj8mBs4aaFfpmRjAnElK+sYMMD13h6TNOrggHYZZ7DpxCysfeqhoOelKyCJ
+RT+b6XUP4vPATGO0TfRGTcFULGmtLLj2s9PNlWG/ix9n+LZEu2Mvfm86XP2lCPgp
+Unk44x4C6D7za9NoBhpFFtNXAbZ7uwXpZD4SIMW+5vrO2NdWt9fIZV5FaY1UBBYH
+nOHp+wrYQgwQrDzewpG1vLvE8+e1JimLUVpbId9ErprdntPN+Z5f3xTisCIq2Gkf
+syxzeOi+PcmFUPYloCGt6D57WN5A4GcalPoKQzLnN9EkGXeeSS8QDPi9dBuhfyJ9
++5RRhXCHr2D1INS4971/AfQ8oPFZVA+fMNb3b0HIeixY0m7LttxAHOqFul7uMYzd
+KxGp7M5jtCBlhUHX6lM4K7nIKbaBb96L2dDNvzcGyP6WPOf/LRriJU+znB7EI2ml
+br6qaS9kIjYcP8D8mKmV
+=YGgE
+-----END PGP SIGNATURE-----
+
+--s/l3CgOIzMHHjg/5--
