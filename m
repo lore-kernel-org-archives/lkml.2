@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab1LNQQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:16:39 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37011 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1LNQQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:16:36 -0500
-Date: Wed, 14 Dec 2011 17:16:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the cgroup tree
-Message-ID: <20111214161628.GC10791@somewhere.redhat.com>
-References: <20111214175101.daac0549e5ed9d766c3a9bb5@canb.auug.org.au>
+	id S932113Ab1LNQRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:17:14 -0500
+Received: from 8bytes.org ([88.198.83.132]:36530 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753726Ab1LNQRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 11:17:10 -0500
+Date: Wed, 14 Dec 2011 17:17:08 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 20/22] iommu/amd: Implement IO page-fault handler
+Message-ID: <20111214161708.GB4475@8bytes.org>
+References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com> <1323092077-25501-21-git-send-email-joerg.roedel@amd.com> <20111214161300.GA4184@homer.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111214175101.daac0549e5ed9d766c3a9bb5@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111214161300.GA4184@homer.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 05:51:01PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
+On Wed, Dec 14, 2011 at 11:13:00AM -0500, Jerome Glisse wrote:
+> On Mon, Dec 05, 2011 at 02:34:35PM +0100, Joerg Roedel wrote:
+> > +	npages = get_user_pages(fault->state->task, fault->state->mm,
+> > +				fault->address, 1, write, 0, &page, NULL);
+> > +
+> > +	if (npages == 1)
+> > +		put_page(page);
+> > +	else
+> > +		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
 > 
-> Today's linux-next merge of the akpme tree got conflicts in several files
-> between commits from the cgroup  tree and commit "cgroups: add previous
-> cgroup in can_attach_task/attach_task callbacks" from the akpm tree.
-> 
-> This got a bit to hard to resolve, so I dropped that patch and the
-> following from the akpm tree.
+> I might be missing something on how mm work in linux but can't the page
+> in a vma change anytime (like being migrated to a node or being evicted
+> ...) I guess my question is when a fault happen is it because the task
+> page table have an invalid entry ?
 
-Yeah there are many things I need to update to get a clean rebase.
+Yes, but this is not a problem. When the page-fault handler signals
+completion of the page-fault back to the device it will start to re-walk
+the page-table. If the page-walker detects that the page is not there it
+will just signal the fault again. MMU-Notifiers take care of the
+TLB management.
 
-> 
-> cgroups: new cancel_attach_task() subsystem callback
-> cgroups: ability to stop res charge propagation on bounded ancestor
-> cgroups: add res counter common ancestor searching
-> res_counter: allow charge failure pointer to be null
-> cgroups: pull up res counter charge failure interpretation to caller
-> cgroups: allow subsystems to cancel a fork
-> cgroups: add a task counter subsystem
-> cgroups: ERR_PTR needs err.h
-> cgroup: Fix task counter common ancestor logic
-> cgroup-fix-task-counter-common-ancestor-logic-checkpatch-fixes
-> 
-> I am wondering if that patch set should be included in the cgroup tree?
+> I was under the impression that their was a page table associated with
+> each iommu client. Thus that the task page table was never directly use.
+> But i haven't carrefully read all the patches.
 
-That would be probably the easier solution.
-Andrew, do you mind if I rebase these patches and target them to Tejun's
-tree instead? We can keep them on a standalone branch there based on Tejuns until
-we reach an agreement on their upstreamability.
+The IOMMUv2 can handle x86 long-mode page-tables (including
+accessed/dirty bits). So it is easy to just re-use the task page-tables
+in the IOMMUv2.
+
+
+Regards,
+
+	Joerg
+
