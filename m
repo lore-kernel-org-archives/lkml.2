@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab1LNNr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:47:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58915 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756289Ab1LNNr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:47:58 -0500
-Date: Wed, 14 Dec 2011 21:47:53 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>, linaro-dev@lists.linaro.org,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Dajun <dajun.chen@diasemi.com>, paul.liu@linaro.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 05/06] Power: DA9052 Battery module V6
-Message-ID: <20111214134751.GA14317@opensource.wolfsonmicro.com>
-References: <1323865676.32031.24.camel@dhruva>
- <20111214134209.GA21965@oksana.dev.rtsoft.ru>
+	id S1757256Ab1LNN6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:58:18 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:23021 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757218Ab1LNN6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:58:18 -0500
+Message-ID: <4EE8AB76.6040202@imgtec.com>
+Date: Wed, 14 Dec 2011 13:58:14 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214134209.GA21965@oksana.dev.rtsoft.ru>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Neil <neil.jones@imgtec.com>
+Subject: Re: bugs in "ASoC: core - Optimise and refactor pcm_new() to pass
+ only rtd"?
+References: <4EE89A06.80101@imgtec.com> <20111214133448.GD25088@sirena.org.uk>
+In-Reply-To: <20111214133448.GD25088@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Dec 2011 13:58:14.0542 (UTC) FILETIME=[6C6E12E0:01CCBA68]
+X-SEF-Processed: 7_3_0_01158__2011_12_14_13_58_15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 05:42:09PM +0400, Anton Vorontsov wrote:
+On 12/14/2011 01:34 PM, Mark Brown wrote:
+> On Wed, Dec 14, 2011 at 12:43:50PM +0000, James Hogan wrote:
+> 
+>> I've bisected a problem with an out of tree set of asoc drivers down to commit
+>> 552d1ef6b5a98d7b95959d5b139071e3c90cebf1 ("ASoC: core - Optimise and refactor
+>> pcm_new() to pass only rtd"). By the looks of it this change was intended not 
+>> to change the workings of the code, however the dai parameter of pcm_new used
+>> to be passed codec_dai in soc_new_pcm() (initialised from rtd->codec_dai), but
+>> each driver now sets it's dai to rtd->cpu_dai instead. This seems to make the
+>> driver check the wrong dai's driver->capture.channels_min in the pcm_new
+>> callback, which makes it dereference
+>> pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream in the driver's
+>> preallocate_dma_buffer() function which can be NULL. Is this a bug (in every
+>> pcm asoc driver) that just happens not to have been noticed, or have I
+>> misunderstood it?
+> 
+> Your drivers should never have beenn relying on this behaviour of the
+> core - see changes in the pxa and fsl drivers which remove similar
+> assumptions.  The CPU driver should be checking for the substream if
+> it's looking to see if a particular substream is present, not peering
+> inside the DAI for a random parameter.
 
-> I presume this depends on other patches, so I'm fine if this goes via
-> non-battery tree,
+Thanks Mark, we were basing our drivers on one of the other ones (I
+think the atmel one, which still seems to do it as of v3.2-rc4).
 
-There should be no direct dependencies for new MFDs - the Kconfig
-required to depend on the MFD core means that the drivers can't be
-selected until the core appears.
+Cheers
+James
+
