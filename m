@@ -1,67 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab1LNBH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:07:26 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:64105 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754014Ab1LNBHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:07:21 -0500
-Message-ID: <4EE7F745.3040508@cn.fujitsu.com>
-Date: Wed, 14 Dec 2011 09:09:25 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756378Ab1LNBKu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:10:50 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60750 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab1LNBKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 20:10:47 -0500
+Date: Tue, 13 Dec 2011 17:10:28 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH v2.2 00/23] ext4: Add metadata checksumming
+Message-ID: <20111214011028.GA8233@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        cgroups@vger.kernel.org, bsingharora@gmail.com, devel@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com, tj@kernel.org
-Subject: Re: [PATCH 1/3] nitpick: make simple functions inline
-References: <1323614738-7405-1-git-send-email-glommer@parallels.com> <1323614738-7405-3-git-send-email-glommer@parallels.com>
-In-Reply-To: <1323614738-7405-3-git-send-email-glommer@parallels.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-14 09:06:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-14 09:06:44,
-	Serialize complete at 2011-12-14 09:06:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11121401-3270-0000-0000-00000289DD3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-22:45, Glauber Costa wrote:
-> Those are quite simple bit-testing functions that are
-> only used within this file. Not reason for them not to
-> be inline.
+On Tue, Dec 13, 2011 at 04:46:14PM -0800, Darrick J. Wong wrote:
+> Hi all,
+> 
+> This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
+> full design document is on the ext4 wiki[1] but I will summarize that document here.
+> 
+> As much as we wish our storage hardware was totally reliable, it is still
+> quite possible for data to be corrupted on disk, corrupted during transfer over
+> a wire, or written to the wrong places.  To protect against this sort of
+> non-hostile corruption, it is desirable to store checksums of metadata objects
+> on the filesystem to prevent broken metadata from shredding the filesystem.
+> 
+> The crc32c polynomial was chosen for its improved error detection capabilities
+> over crc32 and crc16, and because of its hardware acceleration on current and
+> upcoming Intel and Sparc chips.
+> 
+> Each type of metadata object has been retrofitted to store a checksum as follows:
+> 
+> - The superblock stores a crc32c of itself.
+> - Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
+>   slack_space_after_inode)
+> - Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
+>   bitmap), stored in the block group descriptor.
+> - Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
+>   extent_entries) in unused space at the end of the block.
+> - Each directory leaf block has an unused-looking directory entry big enough to
+>   store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
+>   block.
+> - Each directory htree block is shortened to contain a crc32c(fs_uuid +
+>   inode_num + inode_gen + block) at the end of the block.
+> - Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
+>   header, where id is, depending on the refcount, either the inode_num and
+>   inode_gen; or the block number.
+> - MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
+> - Block groups can now use crc32c instead of crc16.
+> - The journal now has a v2 checksum feature flag.
+> - crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
+>   commit blocks, revoke blocks, and the journal superblock.
+> - Each block tag in a descriptor block has a checksum of the related data block.
+> 
+> The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
+> as it is quite lengthy (~48 patches).
+> 
+> As far as performance impact goes, I see nearly no change with a standard mail
+> server ffsb simulation.  On a test that involves only file creation and
+> deletion and extent tree modifications, I see a drop of about 50 percent with
+> the current kernel crc32c implementation; this improves to a drop of about 20
+> percent with the enclosed crc32c implementation.  However, given that metadata
+> is usually a small fraction of total IO, it doesn't seem like the cost of
+> enabling this feature is unreasonable.
+> 
+> There are of course unresolved issues:
+> 
+> - I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
+>   submit that as an add-on to the snapshot patchset.
+> 
+> - Using the journal commit hooks to delay crc32c calculation until dirty
+>   buffers are actually being written to disk.
+> 
+> - Interaction with online resize code.  Yongqiang seems to be in the process of
+>   rewriting this not to use custom metadata block write functions, but I haven't
+>   looked at it very closely yet.
+> 
+> Please have a look at the design document and patches, and please feel free to
+> suggest any changes.
+> 
+> v2: Checksum the MMP block, store the checksum type in the superblock, include
+> the inode generation in file checksums, and finally solve the problem of limited
+> space in block groups by splitting the checksum into two halves.
+> 
+> v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
+> handling bugs with the mb cache init routine wherein bitmaps could fail to be
+> checksummed at read time.
+> 
+> v2.2: Reincorporate the FS UUID in the bitmap checksum calcuations.  Move all
+> disk layout changes to the front and the feature flag enablement to the end of
+> the patch set.  Fail journal recovery if revoke block fails checksum.
+> 
+> This patchset has been tested on 3.2.0-rc5 on x64, i386, ppc64, and ppc32.  The
+> patches seems to work fine on all four platforms.
+
+OH COME ON!!!!
+
+stgit helpfully changed the From lines, screwing everything up.  Awesome.  I
+apologize, I wasn't expecting stgit to change the From: lines when I migrated
+the disk format changes to the front of the set.
+
+I don't really want to respam the list just to fix this one little thing.  If
+people want more code changes I'll gladly make them and re-send.  If not, then
+Ted, I can just send you the whole mess as a big mbox file, or post them on a
+webserver somewhere, with correct attribution.
+
+--D
+> 
+> --D
+> 
+> [1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-It's better to leave the optimization decision to gcc.
-
-And I've confirmed they are inlined by gcc in my box.
-
-(btw, please add "cgroup" prefix to the patch subject line)
-
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> ---
->  kernel/cgroup.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index d9d5648..e4b9d3c 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -241,12 +241,12 @@ static int cgroup_is_releasable(const struct cgroup *cgrp)
->  	return (cgrp->flags & bits) == bits;
->  }
->  
-> -static int notify_on_release(const struct cgroup *cgrp)
-> +static inline int notify_on_release(const struct cgroup *cgrp)
->  {
->  	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
->  }
->  
-> -static int clone_children(const struct cgroup *cgrp)
-> +static inline int clone_children(const struct cgroup *cgrp)
->  {
->  	return test_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
->  }
