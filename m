@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab1LNBis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:38:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58549 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab1LNBir (ORCPT
+	id S1755829Ab1LNBrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:47:36 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45214 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab1LNBrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:38:47 -0500
-Date: Tue, 13 Dec 2011 17:38:43 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Shi, Alex" <alex.shi@intel.com>
-cc: Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
-In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
-Message-ID: <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323419402.16790.6105.camel@debian> <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
- <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 13 Dec 2011 20:47:35 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl>
+References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
+	<CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com>
+	<BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl>
+	<CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com>
+	<BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl>
+Date: Wed, 14 Dec 2011 02:47:33 +0100
+Message-ID: <CAKMK7uGpn6AJGtbMCYWW1ziR=Zs+E9LB=aiB5aUu0unfVW=2oA@mail.gmail.com>
+Subject: Re: kernel BUG at drivers/gpu/drm/i915/i915_gem
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Rocko Requin <rockorequin@hotmail.com>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Dec 2011, Shi, Alex wrote:
+On Mon, Dec 12, 2011 at 10:16, Rocko Requin <rockorequin@hotmail.com> wrote:
+>> If you can wire up netconsole you should be able to gather the full
+>> backtrace and that would be really useful. Otherwise can you please
+>> confirm by reverting that commit from your current tree that it is
+>> indeed the culprit? Otherwise please bisect the issue.
+>
+> I built 3.2-rc5 with the patch from commit
+> eb1711bb94991e93669c5a1b5f84f11be2d51ea1 reversed, and have been using it
+> now for a day and a half without any i915_gem issues. So at this stage it
+> does seem likely it is the culprit, based on the fact that I had at least 2
+> and probably 3 i915_gem crashes in around 12 hours with the commit applied.
+> When I get some free time I'll reapply the patch and see if I can reproduce
+> the crash and get a netconsole dump.
 
-> Of course any testing may have result variation. But it is benchmark 
-> accordingly, and there are lot technical to tuning your testing to make 
-> its stand division acceptable, like to sync your system in a clear 
-> status, to close unnecessary services, to use separate working disks for 
-> your testing etc. etc. For this data, like on my SNB-EP machine, (the 
-> following data is not stands for Intel, it is just my personal data). 
+Backtraces from another reporter seriously look like we're hitting
+some ugly use-after free. Can you please test whether the patch
+"drm/i915: Only clear the GPU domains upon a successful finish" by
+Chris Wilson fixes anything for you? You can grab it from
+http://cgit.freedesktop.org/~danvet/drm/patch/?id=389a55581e30607af0fcde6cdb4e54f189cf46cf
 
-I always run benchmarks with freshly booted machines and disabling all but 
-the most basic and required userspace for my testing environment, I can 
-assure you that my comparison of slab and slub on netperf TCP_RR isn't 
-because of any noise from userspace.
+Thanks, Daniel
 
-> 4 times result of hackbench on this patch are 5.59, 5.475, 5.47833, 
-> 5.504
 
-I haven't been running hackbench benchmarks, sorry.  I was always under 
-the assumption that slub still was slightly better than slab with 
-hackbench since that was used as justification for it becoming the default 
-allocator and also because Christoph had patches merged recently which 
-improved its performance on slub.  I've been speaking only about my 
-history with netperf TCP_RR when using slub.
 
-> > Not sure what you're asking me to test, you would like this:
-> > 
-> > 	{
-> > 	        n->nr_partial++;
-> > 	-       if (tail == DEACTIVATE_TO_TAIL)
-> > 	-               list_add_tail(&page->lru, &n->partial);
-> > 	-       else
-> > 	-               list_add(&page->lru, &n->partial);
-> > 	+       list_add_tail(&page->lru, &n->partial);
-> > 	}
-> > 
-> > with the statistics patch above?  I typically run with CONFIG_SLUB_STATS
-> > disabled since it impacts performance so heavily and I'm not sure what
-> > information you're looking for with regards to those stats.
-> 
-> NO, when you collect data, please close SLUB_STAT in kernel config.  
-> _to_head statistics collection patch just tell you, I collected the 
-> statistics not include add_partial in early_kmem_cache_node_alloc(). And 
-> other places of add_partial were covered. Of course, the kernel with 
-> statistic can not be used to measure performance. 
-> 
-
-Ok, I'll benchmark netperf TCP_RR comparing Linus' latest -git both with 
-and without the above change.  It was confusing because you had three 
-diffs in your email, I wasn't sure which or combination of which you 
-wanted me to try :)
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
