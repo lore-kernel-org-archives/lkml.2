@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1LNPlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:41:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40407 "EHLO mx2.suse.de"
+	id S1757472Ab1LNPlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:41:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40482 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756953Ab1LNPlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:41:37 -0500
+	id S1755405Ab1LNPlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 10:41:46 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 01/11] mm: compaction: Allow compaction to isolate dirty pages
-Date: Wed, 14 Dec 2011 15:41:23 +0000
-Message-Id: <1323877293-15401-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/11] mm: vmscan: When reclaiming for compaction, ensure there are sufficient free pages available
+Date: Wed, 14 Dec 2011 15:41:31 +0000
+Message-Id: <1323877293-15401-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1323877293-15401-1-git-send-email-mgorman@suse.de>
 References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
@@ -24,42 +24,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-noted that compaction does not migrate dirty or writeback pages and
-that is was meaningless to pick the page and re-add it to the LRU list.
+In commit [e0887c19: vmscan: limit direct reclaim for higher order
+allocations], Rik noted that reclaim was too aggressive when THP was
+enabled. In his initial patch he used the number of free pages to
+decide if reclaim should abort for compaction. My feedback was that
+reclaim and compaction should be using the same logic when deciding if
+reclaim should be aborted.
 
-What was missed during review is that asynchronous migration moves
-dirty pages if their ->migratepage callback is migrate_page() because
-these can be moved without blocking. This potentially impacted
-hugepage allocation success rates by a factor depending on how many
-dirty pages are in the system.
+Unfortunately, this had the effect of reducing THP success rates when
+the workload included something like streaming reads that continually
+allocated pages. The window during which compaction could run and return
+a THP was too small.
 
-This patch partially reverts 39deaf85 to allow migration to isolate
-dirty pages again. This increases how much compaction disrupts the
-LRU but that is addressed later in the series.
+This patch combines Rik's two patches together. compaction_suitable()
+is still used to decide if reclaim should be aborted to allow
+compaction is used. However, it will also ensure that there is a
+reasonable buffer of free pages available. This improves upon the
+THP allocation success rates but bounds the number of pages that are
+freed for compaction.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/compaction.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 39 insertions(+), 5 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 899d956..237560e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -349,9 +349,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 16fb177..d497248 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2122,6 +2122,42 @@ restart:
+ 	throttle_vm_writeout(sc->gfp_mask);
+ }
  
--		if (!cc->sync)
--			mode |= ISOLATE_CLEAN;
--
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
++/* Returns true if compaction should go ahead for a high-order request */
++static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
++{
++	unsigned long balance_gap, watermark;
++	bool watermark_ok;
++
++	/* Do not consider compaction for orders reclaim is meant to satisfy */
++	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
++		return false;
++
++	/*
++	 * Compaction takes time to run and there are potentially other
++	 * callers using the pages just freed. Continue reclaiming until
++	 * there is a buffer of free pages available to give compaction
++	 * a reasonable chance of completing and allocating the page
++	 */
++	balance_gap = min(low_wmark_pages(zone),
++		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
++			KSWAPD_ZONE_BALANCE_GAP_RATIO);
++	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
++	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
++
++	/*
++	 * If compaction is deferred, reclaim up to a point where
++	 * compaction will have a chance of success when re-enabled
++	 */
++	if (compaction_deferred(zone))
++		return watermark_ok;
++
++	/* If compaction is not ready to start, keep reclaiming */
++	if (!compaction_suitable(zone, sc->order))
++		return false;
++
++	return watermark_ok;
++}
++
+ /*
+  * This is the direct reclaim path, for page-allocating processes.  We only
+  * try to reclaim pages from zones which will satisfy the caller's allocation
+@@ -2139,8 +2175,8 @@ restart:
+  * scan then give up on it.
+  *
+  * This function returns true if a zone is being reclaimed for a costly
+- * high-order allocation and compaction is either ready to begin or deferred.
+- * This indicates to the caller that it should retry the allocation or fail.
++ * high-order allocation and compaction is ready to begin. This indicates to
++ * the caller that it should retry the allocation or fail.
+  */
+ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+@@ -2174,9 +2210,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 				 * noticable problem, like transparent huge page
+ 				 * allocations.
+ 				 */
+-				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+-					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone))) {
++				if (compaction_ready(zone, sc)) {
+ 					should_abort_reclaim = true;
+ 					continue;
+ 				}
 -- 
 1.7.3.4
 
