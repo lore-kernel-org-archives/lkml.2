@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab1LNPAw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:00:52 -0500
+	id S1755334Ab1LNPAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:00:24 -0500
 Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39276 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756902Ab1LNPA1 (ORCPT
+	by vger.kernel.org with ESMTP id S1756603Ab1LNPAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:00:27 -0500
+	Wed, 14 Dec 2011 10:00:15 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCHv3 09/10] xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-Date: Wed, 14 Dec 2011 15:59:54 +0100
-Message-Id: <1323874795-2488-10-git-send-email-sjur.brandeland@stericsson.com>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv3 04/10] xshm: geni/geno driver interface.
+Date: Wed, 14 Dec 2011 15:59:49 +0100
+Message-Id: <1323874795-2488-5-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -26,123 +25,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_XSHM should be selected from architectures supporting
-C2C, this will enable the XSHM configuration.
+The Shared Memory driver is using two paired registers called
+GENI and GENO in for triggering events/interrupts on modem and Linux host.
+
+It's primary use is notification about read and write indexes changes
+on each channel. But GENI/GENO are also used for communicating the
+address of the shared memory upon modem boot and to notify about start-up
+event such as when IPC channels and CAIF is ready for use.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
-cc: Randy Dunlap <rdunlap@xenotime.net>
-cc: Paul Bolle <pebolle@tiscali.nl>
+ include/linux/c2c_genio.h |  195 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 195 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/c2c_genio.h
 
- drivers/Kconfig       |    2 +
- drivers/Makefile      |    1 +
- drivers/xshm/Kconfig  |   61 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/xshm/Makefile |    5 ++++
- 4 files changed, 69 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xshm/Kconfig
- create mode 100644 drivers/xshm/Makefile
-
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index b5e6f24..c91a13c 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -136,4 +136,6 @@ source "drivers/hv/Kconfig"
- 
- source "drivers/devfreq/Kconfig"
- 
-+source "drivers/xshm/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 1b31421..eedd8e5 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -120,6 +120,7 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
- obj-y				+= ieee802154/
-+obj-$(CONFIG_XSHM)		+= xshm/
- #common clk code
- obj-y				+= clk/
- 
-diff --git a/drivers/xshm/Kconfig b/drivers/xshm/Kconfig
+diff --git a/include/linux/c2c_genio.h b/include/linux/c2c_genio.h
 new file mode 100644
-index 0000000..0993346
+index 0000000..e7a846e
 --- /dev/null
-+++ b/drivers/xshm/Kconfig
-@@ -0,0 +1,61 @@
-+#
-+# XSHM Framework
-+#
++++ b/include/linux/c2c_genio.h
+@@ -0,0 +1,195 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2011
++ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
++ *
++ * License terms: GNU General Public License (GPL) version 2
++ */
 +
-+config XSHM
-+	tristate
-+	default n
-+	depends on EXPERIMENTAL
++#ifndef __INC_GENIO_H
++#define __INC_GENIO_H
++#include <linux/types.h>
 +
-+if XSHM && NET
++/**
++ * DOC: C2C GENI/GENO interface.
++ *
++ * This API defines the API for the C2C driver and the GENI/GENO registers.
++ */
 +
-+menu "XSHM drivers and interfaces"
++/**
++ * enum GENIO_BITS - Definition of special GENIO BITS.
++ * @READY_FOR_IPC_BIT:  Remote side is ready for IPC.
++ * This GENI/GENO bit is triggered when ring-buffer protocol
++ * is enabled from the remote end (modem)
++ *
++ * @READY_FOR_CAIF_BIT: Remote side is ready for CAIF.
++ * This GENI/GENO bit is triggered when CAIF protocol
++ * is enabled from the remote end (modem)
++ */
++enum GENIO_BITS {
++	READY_FOR_CAIF_BIT = 28,
++	READY_FOR_IPC_BIT = 29
++};
 +
-+config DUMMY_C2C
-+	tristate "Dummy C2C GENIO driver"
-+	depends on !C2C
-+	default XSHM
-+	---help---
-+	Say "Y" or "M" if you want to compile a dummy C2C driver.
-+	Use this if you want to compile without the real
-+	C2C driver available.
++/**
++ * genio_subscribe - Subscribe for notifications on bit-change of GENI/O bits.
++ *
++ * @bit:	The GENI/O bit where we want to be called back when it changes.
++ *
++ * @bit_set_cb:	Callback function to be called when the requested GENI/O bit
++ *		is set by the external device (modem).
++ *
++ * @data: Client data to be provided in the callback function.
++ *
++ * Install a callback function for a GENI/O bit. Returns negative upon error.
++ *
++ * The genio driver is expected to handle the 4-state handshake for geni/geno
++ * update, for the bit this function subscribe to. This function may block,
++ * and cannot be called from IRQ context.
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition: This function is called after genio_set_shm_addr() and
++ * genio_bit_alloc(). @bit must be defined as as getter in genio_bit_alloc().
++ *
++ * Callback context:
++ *		The "bit_set_cb" callback must be called from the
++ *		IRQ context. The callback function is not allowed to block
++ *		or spend much CPU time in the callback, It must defer
++ *		work to soft-IRQ or work queues.
++ */
++int genio_subscribe(int bit, void (*bit_set_cb)(void *data), void *data);
 +
-+config XSHM_BUS
-+	tristate
-+	default XSHM_DEV
++/**
++ * genio_unsubscribe - Unsubscribe for callback  GENI/O bit.
++ * @bit:       The GENI/O bit to we want release.
++ *
++ * This function may block. It returns zero on success, and negative upon error.
++ *
++ * Precondition: @bit must be defined as as getter in genio_bit_alloc().
++ */
++int genio_unsubscribe(int bit);
 +
-+config XSHM_BOOT
-+	tristate
-+	depends on XSHM_DEV
-+	default XSHM_DEV
++/**
++ * genio_bit_alloc - Allocate the usage of GENI/O bits.
++ *
++ * @setter_mask:	Bit-mask defining the bits that can be set by
++ *			genio_set_bit()
++ * @getter_mask:	Bit-mask defining the bits that can be subscribed by
++ *			genio_subscribe().
++ *
++ * The @getter_mask defines the bit for RX direction, i.e. bits that can
++ * be subscribed by the function genio_subscribe().
++ * The @setter_mask defines the bit for TX direction, i.e. bits that can
++ * be set by the function genio_set_bit().
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition:
++ * This function cannot be called before ipc_ready_cb() has been called,
++ * and must be called prior to any call on genio_subscribe() or genio_set_bit().
++ *
++ */
++int genio_bit_alloc(u32 setter_mask, u32 getter_mask);
 +
-+config XSHM_DEV
-+	tristate "XSHM Channels for External Shared Memory (XSHM)"
-+	depends on DUMMY_C2C || C2C
-+	select XSHM_BUS
-+	select XSHM_BOOT
-+	default XSHM
-+	---help---
-+	Say "Y" to use External Shared Memory (XSHM) IPC mechanism.
-+	XSHM is an IPC protocol used to talk to external device such
-+	as modem over a shared memory (e.g. Chip to Chip).
-+	Only say "M" here if you want to test XSHM and need to load
-+	and unload its module.
-+	If unsure say N.
++/**
++ * genio_set_shm_addr - Inform remote device about the shared memory address.
++ * @addr:		The shared memory address.
++ * @ipc_ready_cb:	The callback function indicating IPC is ready.
++ *
++ * Description:
++ * Implements the setting of shared memory address involving the
++ * READY_FOR_IPC GENIO bits, and READY_FOR_IPC handshaking.
++ * When handshaking is done ipc_ready_cb is called.
++ * The usage of this bit is during start/restart.
++ * This function may block.
++ *
++ * When the ipc_ready_cb() with @ready=%true, Stream channels can be opened.
++ *
++ * Sequence:
++ * (1) Write the address to the GENO register,
++ *
++ * (2) wait for interrupt on IPC_READY (set to one in GENI register)
++ *
++ * (3) write zero to the GENO register
++ *
++ * (4) wait for interrupt on IPC_READY (set to zero)
++ *
++ * (5) call the callback function for IPC_READY
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition:
++ * This function must be called initially upon start, or after remote device
++ * has been reset.
++ */
++int genio_set_shm_addr(u32 addr, void (*ipc_ready_cb) (void));
 +
-+config XSHM_CHR
-+	tristate "Character device for External Shared Memory (XSHM)"
-+	depends on XSHM_DEV
-+	default XSHM_DEV
-+	---help---
-+	Say "Y" to use a character device for the External Shared
-+	Memory (XSHM) IPC mechanism. XSHM is an IPC protocol used to
-+	talk to external device such as modem over a shared memory
-+	(e.g. Chip to Chip).
-+	Only say "M" here if you want to test XSHM and need to load
-+	and unload its module.
-+	If unsure say N.
++/**
++ * genio_subscribe_caif_ready - Notify that CAIF channels can be
++ * opened.
++ *
++ * @caif_ready_cb: is called with @ready = %true in the start up sequence,
++ * when the remote side is ready for CAIF enumeration. Upon reset,
++ * caif_ready_cb() will be called with @ready = %false.
++ *
++ * The %READY_FOR_CAIF_BIT is set to %one as long as the
++ * modem is able to run CAIF traffic. Upon modem restart/crash it will
++ * be set back to %zero.
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_subscribe_caif_ready(void (*caif_ready_cb) (bool ready));
 +
-+endmenu
++/**
++ * genio_register_errhandler - Register an error handler.
++ *
++ * @errhandler: error handler called from driver upon severe errors
++ *		that requires reset of the remote device.
++ */
++void genio_register_errhandler(void (*errhandler)(int errno));
 +
-+endif
-diff --git a/drivers/xshm/Makefile b/drivers/xshm/Makefile
-new file mode 100644
-index 0000000..001cd79
---- /dev/null
-+++ b/drivers/xshm/Makefile
-@@ -0,0 +1,5 @@
-+obj-$(CONFIG_XSHM_BUS) += xshm_bus.o
-+obj-$(CONFIG_XSHM_BOOT) += xshm_boot.o
-+obj-$(CONFIG_XSHM_DEV) += xshm_dev.o
-+obj-$(CONFIG_XSHM_CHR) +=  xshm_chr.o
-+obj-$(CONFIG_DUMMY_C2C) +=  dummy_c2c_genio.o
++/**
++ * genio_reset() - Reset the C2C driver
++ *
++ * Reset the C2C Driver due to remote device restart.
++ * This shall reset state back to initial state, and should only
++ * be used when remote device (modem) has reset.
++ *
++ * All settings, subscriptions and state information in the driver must
++ * be reset. GENIO client must do all subscriptions again.
++ * This function may block.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_reset(void);
++
++/**
++ * genio_set_bit() -	Set a single GENI/O bit.
++ *
++ * @bit:	The GENI/O bit to set
++ *
++ * This function is used to signal over GENI/GENO the driver must
++ * perform the 4-state protocol to signal the change to remote device.
++ * This function is non-blocking, and can be called from Soft-IRQ context.
++ *
++ * Returns zero on success, and negative upon error.
++ *
++ * Precondition: @bit must be defined as as setter in genio_bit_alloc().
++ */
++int genio_set_bit(int bit);
++
++/**
++ * genio_power_req() -	Request power on on remote C2C block.
++ *
++ * @state:	1 - power-on request , 0 - power-off request
++ *
++ * This function will request power on of remote C2C block.
++ * This function is non-blocking, and can be called from Soft-IRQ context.
++ *
++ * Returns zero on success, and negative upon error.
++ */
++int genio_power_req(int state);
++
++#endif /*INC_GENIO_H*/
 -- 
 1.7.1
 
