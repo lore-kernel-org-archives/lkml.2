@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab1LNOCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:02:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56233 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358Ab1LNOCG (ORCPT
+	id S1757407Ab1LNOCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:02:25 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52006 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757358Ab1LNOCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:02:06 -0500
+	Wed, 14 Dec 2011 09:02:19 -0500
 From: Ming Lei <ming.lei@canonical.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>,
         Tony Lindgren <tony@atomide.com>
@@ -14,9 +14,9 @@ Cc: Sylwester Nawrocki <snjw23@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v2 7/8] media: video: introduce object detection driver module
-Date: Wed, 14 Dec 2011 22:00:13 +0800
-Message-Id: <1323871214-25435-8-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v2 8/8] media: video: introduce omap4 face detection module driver
+Date: Wed, 14 Dec 2011 22:00:14 +0800
+Message-Id: <1323871214-25435-9-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323871214-25435-1-git-send-email-ming.lei@canonical.com>
 References: <1323871214-25435-1-git-send-email-ming.lei@canonical.com>
@@ -24,94 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces object detection generic driver.
+The patch introduces one face detection device driver for
+driving face detection hardware on omap4[1].
 
-The driver is responsible for all v4l2 stuff, buffer management
-and other general things, and doesn't touch object detection hardware
-directly. Several interfaces are exported to low level drivers
-(such as the coming omap4 FD driver) which will communicate with
-object detection hw module.
+Most things of the driver are dealing with omap4 face detection
+hardware.
 
-So the driver will make driving object detection hw modules more
-easy.
+This driver is platform independent, so in theory it can
+be used to drive same IP module on other platforms.
 
-TODO:
-	- implement object detection setting interfaces with v4l2
-	controls or ext controls
+[1], Ch9 of OMAP4 Technical Reference Manual
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
 v2:
-	- extend face detection driver to object detection driver
-	- introduce subdevice and media entity
-	- provide support to detect object from media HW
+	- based on odif module
+	- use new object detection API
 ---
- drivers/media/video/Kconfig       |    2 +
- drivers/media/video/Makefile      |    1 +
- drivers/media/video/odif/Kconfig  |    7 +
- drivers/media/video/odif/Makefile |    1 +
- drivers/media/video/odif/odif.c   |  890 +++++++++++++++++++++++++++++++++++++
- drivers/media/video/odif/odif.h   |  157 +++++++
- 6 files changed, 1058 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/video/odif/Kconfig
- create mode 100644 drivers/media/video/odif/Makefile
- create mode 100644 drivers/media/video/odif/odif.c
- create mode 100644 drivers/media/video/odif/odif.h
+ drivers/media/video/odif/Kconfig      |    6 +
+ drivers/media/video/odif/Makefile     |    1 +
+ drivers/media/video/odif/fdif_omap4.c |  685 +++++++++++++++++++++++++++++++++
+ 3 files changed, 692 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/video/odif/fdif_omap4.c
 
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index 5684a00..8740ee9 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -1166,3 +1166,5 @@ config VIDEO_SAMSUNG_S5P_MFC
- 	    MFC 5.1 driver for V4L2.
- 
- endif # V4L_MEM2MEM_DRIVERS
-+
-+source "drivers/media/video/odif/Kconfig"
-diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
-index bc797f2..259c8d8 100644
---- a/drivers/media/video/Makefile
-+++ b/drivers/media/video/Makefile
-@@ -197,6 +197,7 @@ obj-$(CONFIG_VIDEO_IR_I2C)  += ir-kbd-i2c.o
- obj-y	+= davinci/
- 
- obj-$(CONFIG_ARCH_OMAP)	+= omap/
-+obj-$(CONFIG_ODIF)	+= odif/
- 
- ccflags-y += -Idrivers/media/dvb/dvb-core
- ccflags-y += -Idrivers/media/dvb/frontends
 diff --git a/drivers/media/video/odif/Kconfig b/drivers/media/video/odif/Kconfig
-new file mode 100644
-index 0000000..5090bd6
---- /dev/null
+index 5090bd6..2a8c545 100644
+--- a/drivers/media/video/odif/Kconfig
 +++ b/drivers/media/video/odif/Kconfig
-@@ -0,0 +1,7 @@
-+config ODIF
-+	depends on VIDEO_DEV && VIDEO_V4L2
-+	select VIDEOBUF2_PAGE
-+	tristate "Object Detection module"
+@@ -5,3 +5,9 @@ config ODIF
+ 	help
+ 	  The ODIF is a object detection module, which can be integrated into
+ 	  some SoCs to detect objects in images or video.
++
++config ODIF_OMAP4
++	depends on ODIF
++	tristate "OMAP4 Face Detection module"
 +	help
-+	  The ODIF is a object detection module, which can be integrated into
-+	  some SoCs to detect objects in images or video.
++	  OMAP4 face detection support
 diff --git a/drivers/media/video/odif/Makefile b/drivers/media/video/odif/Makefile
-new file mode 100644
-index 0000000..a55ff66
---- /dev/null
+index a55ff66..0eb844f 100644
+--- a/drivers/media/video/odif/Makefile
 +++ b/drivers/media/video/odif/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ODIF)		+= odif.o
-diff --git a/drivers/media/video/odif/odif.c b/drivers/media/video/odif/odif.c
+@@ -1 +1,2 @@
+ obj-$(CONFIG_ODIF)		+= odif.o
++obj-$(CONFIG_ODIF_OMAP4)	+= fdif_omap4.o
+diff --git a/drivers/media/video/odif/fdif_omap4.c b/drivers/media/video/odif/fdif_omap4.c
 new file mode 100644
-index 0000000..381ab9d
+index 0000000..d7953d8
 --- /dev/null
-+++ b/drivers/media/video/odif/odif.c
-@@ -0,0 +1,890 @@
++++ b/drivers/media/video/odif/fdif_omap4.c
+@@ -0,0 +1,685 @@
 +/*
-+ *      odif.c  --  object detection module driver
++ *      fdif_omap4.c  --  face detection module driver
 + *
 + *      Copyright (C) 2011  Ming Lei (ming.lei@canonical.com)
-+ *
-+ *	This file is based on drivers/media/video/vivi.c.
 + *
 + *      This program is free software; you can redistribute it and/or modify
 + *      it under the terms of the GNU General Public License as published by
@@ -130,1035 +96,669 @@ index 0000000..381ab9d
 + */
 +
 +/*****************************************************************************/
-+
-+#include <linux/module.h>
++#include <linux/init.h>
 +#include <linux/fs.h>
 +#include <linux/mm.h>
++#include <linux/slab.h>
 +#include <linux/signal.h>
 +#include <linux/wait.h>
 +#include <linux/poll.h>
-+#include <linux/mman.h>
++#include <linux/module.h>
 +#include <linux/pm_runtime.h>
 +#include <linux/delay.h>
++#include <linux/user_namespace.h>
 +#include <linux/platform_device.h>
 +#include <linux/interrupt.h>
++#include <linux/dma-mapping.h>
++#include "odif.h"
 +#include <asm/uaccess.h>
 +#include <asm/byteorder.h>
 +#include <asm/io.h>
-+#include "odif.h"
 +
-+#define	input_from_user(dev) \
-+	(dev->input == OD_INPUT_FROM_USER_SPACE)
++#undef DEBUG
 +
-+#define	DEFAULT_PENDING_RESULT_CNT	8
++#define PICT_SIZE_X     320
++#define PICT_SIZE_Y     240
 +
-+static unsigned debug = 0;
-+module_param(debug, uint, 0644);
-+MODULE_PARM_DESC(debug, "activates debug info");
++#define	WORK_MEM_SIZE	(52*1024)
 +
-+static unsigned result_cnt_threshold = DEFAULT_PENDING_RESULT_CNT;
-+module_param(result_cnt_threshold, uint, 0644);
-+MODULE_PARM_DESC(result_cnt, "max pending result count");
++/* 9.5 FDIF Register Manua of TI OMAP4 TRM */
++#define FDIF_REVISION		0x0
++#define FDIF_HWINFO		0x4
++#define FDIF_SYSCONFIG		0x10
++#define SOFTRESET		(1 << 0)
 +
-+static LIST_HEAD(odif_devlist);
-+static unsigned video_nr = -1;
++#define FDIF_IRQSTATUS_RAW_j	(0x24 + 2*0x10)
++#define FDIF_IRQSTATUS_j	(0x28 + 2*0x10)
++#define FDIF_IRQENABLE_SET_j	(0x2c + 2*0x10)
++#define FDIF_IRQENABLE_CLR_j	(0x30 + 2*0x10)
++#define FINISH_IRQ		(1 << 8)
++#define ERR_IRQ			(1 << 0)
 +
-+int odif_open(struct file *file)
++#define FDIF_PICADDR		0x60
++#define FDIF_CTRL		0x64
++#define CTRL_MAX_TAGS		0x0A
++
++#define FDIF_WKADDR		0x68
++#define FD_CTRL			0x80
++#define CTRL_FINISH		(1 << 2)
++#define CTRL_RUN		(1 << 1)
++#define CTRL_SRST		(1 << 0)
++
++
++#define FD_DNUM			0x84
++#define FD_DCOND		0x88
++#define FD_STARTX		0x8c
++#define FD_STARTY		0x90
++#define FD_SIZEX		0x94
++#define FD_SIZEY		0x98
++#define FD_LHIT			0x9c
++#define FD_CENTERX_i		0x160
++#define FD_CENTERY_i		0x164
++#define FD_CONFSIZE_i		0x168
++#define FD_ANGLE_i		0x16c
++
++static inline void fd_writel(void __iomem *base, u32 reg, u32 val)
 +{
-+	struct odif_dev *dev = video_drvdata(file);
-+
-+	kref_get(&dev->ref);
-+	return v4l2_fh_open(file);
++	__raw_writel(val, base + reg);
 +}
 +
-+static unsigned int
-+odif_poll(struct file *file, struct poll_table_struct *wait)
++static inline u32 fd_readl(void __iomem *base, u32 reg)
 +{
-+	struct odif_dev *dev = video_drvdata(file);
-+	unsigned int mask = 0;
-+	unsigned long flags;
-+
-+	poll_wait(file, &dev->odif_dq.wq, wait);
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	if ((file->f_mode & FMODE_READ) &&
-+		!list_empty(&dev->odif_dq.complete))
-+		mask |= POLLIN | POLLWRNORM;
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+	return mask;
++	return __raw_readl(base + reg);
 +}
 +
-+static int odif_close(struct file *file)
-+{
-+	struct video_device  *vdev = video_devdata(file);
-+	struct odif_dev *dev = video_drvdata(file);
-+	int ret;
++struct fdif_qvga {
++	struct odif_dev *dev;
 +
-+	dprintk(dev, 1, "close called (dev=%s), file %p\n",
-+		video_device_node_name(vdev), file);
++	/*should be removed*/
++	struct platform_device	*pdev;
++	int			irq;
++	void __iomem		*base;
 +
-+	if (v4l2_fh_is_singular_file(file))
-+		vb2_queue_release(&dev->vbq);
++	void			*work_mem_addr;
++	dma_addr_t 		work_dma;
++	dma_addr_t 		pict_dma;
++	unsigned long 		pict_mem_len;
 +
-+	ret = v4l2_fh_release(file);
-+	kref_put(&dev->ref, odif_release);
-+
-+	return ret;
-+}
-+
-+static int odif_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	int ret;
-+
-+	dprintk(dev, 1, "mmap called, vma=0x%08lx\n", (unsigned long)vma);
-+
-+	if (!input_from_user(dev))
-+		return -EBUSY;
-+
-+	ret = vb2_mmap(&dev->vbq, vma);
-+	dprintk(dev, 1, "vma start=0x%08lx, size=%ld, ret=%d\n",
-+		(unsigned long)vma->vm_start,
-+		(unsigned long)vma->vm_end - (unsigned long)vma->vm_start,
-+		ret);
-+	return ret;
-+}
-+
-+static const struct v4l2_file_operations odif_fops = {
-+	.owner		= THIS_MODULE,
-+	.open           = odif_open,
-+	.release        = odif_close,
-+	.poll		= odif_poll,
-+	.unlocked_ioctl = video_ioctl2, /* V4L2 ioctl handler */
-+	.mmap           = odif_mmap,
++	struct odif_buffer	*pending;
++	spinlock_t		lock;
 +};
 +
-+/* ------------------------------------------------------------------
-+	IOCTL vidioc handling
-+   ------------------------------------------------------------------*/
-+static void free_result(struct v4l2_odif_result *result)
-+{
-+	kfree(result);
-+}
-+
-+static int odif_start_detect(struct odif_dev *dev)
-+{
-+	int ret;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	ret = dev->ops->start_detect(dev);
-+
-+	dprintk(dev, 1, "returning from %s, ret is %d\n",
-+			__func__, ret);
-+	return ret;
-+}
-+
-+static void odif_stop_detect(struct odif_dev *dev)
-+{
-+	struct odif_dmaqueue *dma_q = &dev->odif_dq;
-+	unsigned long flags;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	/*stop hardware first*/
-+	dev->ops->stop_detect(dev);
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	/* Release all active buffers */
-+	while (!list_empty(&dma_q->active)) {
-+		struct odif_buffer *buf;
-+		buf = list_entry(dma_q->active.next, struct odif_buffer, list);
-+		list_del(&buf->list);
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
-+		dprintk(dev, 2, "[%p/%d] done\n", buf, buf->vb.v4l2_buf.index);
-+		spin_lock_irqsave(&dev->lock, flags);
-+	}
-+
-+	/* Release all complete detect result, so user space __must__ read
-+	 * the results before stream off*/
-+	while (!list_empty(&dma_q->complete)) {
-+		struct v4l2_odif_result *result;
-+		result = list_entry(dma_q->complete.next, struct v4l2_odif_result, list);
-+		list_del(&result->list);
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+
-+		free_result(result);
-+		dprintk(dev, 2, "[frm_seq:%d] result removed\n", result->frm_seq);
-+		spin_lock_irqsave(&dev->lock, flags);
-+	}
-+	atomic_set(&dma_q->complete_cnt, 0);
-+
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+}
-+static int vidioc_querycap(struct file *file, void  *priv,
-+					struct v4l2_capability *cap)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+
-+	strcpy(cap->driver, "odif");
-+	strcpy(cap->card, "odif");
-+	strlcpy(cap->bus_info, dev->v4l2_dev.name, sizeof(cap->bus_info));
-+	cap->capabilities = dev->ops->capability | V4L2_CAP_OBJ_DETECTION;
-+
-+	return 0;
-+}
-+
-+static int vidioc_enum_fmt_vid_out(struct file *file, void  *priv,
-+					struct v4l2_fmtdesc *f)
-+{
-+	struct odif_fmt *fmt;
-+	struct odif_dev *dev = video_drvdata(file);
-+
-+	if (f->index >= dev->ops->fmt_cnt) {
-+		return -EINVAL;
-+	}
-+
-+	fmt = &dev->ops->table[f->index];
-+
-+	strlcpy(f->description, fmt->name, sizeof(f->description));
-+	f->pixelformat = fmt->fourcc;
-+	return 0;
-+}
-+
-+static int vidioc_g_fmt_vid_out(struct file *file, void *priv,
-+					struct v4l2_format *f)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+
-+	f->fmt.pix.width        = dev->s.width;
-+	f->fmt.pix.height       = dev->s.height;
-+	f->fmt.pix.field        = dev->s.field;
-+	f->fmt.pix.pixelformat  = dev->s.fmt->fourcc;
-+	f->fmt.pix.bytesperline =
-+		(f->fmt.pix.width * dev->s.fmt->depth) >> 3;
-+	f->fmt.pix.sizeimage =
-+		f->fmt.pix.height * f->fmt.pix.bytesperline;
-+	return 0;
-+}
-+
-+static int vidioc_reqbufs(struct file *file, void *priv,
-+			  struct v4l2_requestbuffers *p)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	if (!input_from_user(dev))
-+		return -EBUSY;
-+
-+	return vb2_reqbufs(&dev->vbq, p);
-+}
-+
-+static int vidioc_querybuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	if (!input_from_user(dev))
-+		return -EBUSY;
-+
-+	return vb2_querybuf(&dev->vbq, p);
-+}
-+
-+static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	if (!input_from_user(dev))
-+		return -EBUSY;
-+
-+	return vb2_qbuf(&dev->vbq, p);
-+}
-+
-+static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	if (!input_from_user(dev))
-+		return -EBUSY;
-+
-+	return vb2_dqbuf(&dev->vbq, p, file->f_flags & O_NONBLOCK);
-+}
-+
-+static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	dev->working = 1;
-+
-+	if (input_from_user(dev))
-+		return vb2_streamon(&dev->vbq, i);
-+
-+	return odif_start_detect(dev);
-+}
-+
-+static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	dev->working = 0;
-+
-+	if (input_from_user(dev))
-+		return vb2_streamoff(&dev->vbq, i);
-+
-+	odif_stop_detect(dev);
-+
-+	return 0;
-+}
-+
-+static int vidioc_g_od_count(struct file *file, void *priv,
-+					struct v4l2_od_count *f)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	unsigned long flags;
-+	struct v4l2_odif_result *tmp;
-+	int ret = -EINVAL;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->odif_dq.complete, list)
-+		if (tmp->frm_seq == f->frm_seq) {
-+			f->obj_cnt = tmp->obj_cnt;
-+			ret = 0;
-+			break;
-+		}
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	return ret;
-+}
-+
-+static int vidioc_g_od_result(struct file *file, void *priv,
-+					struct v4l2_od_result *f)
-+{
-+	struct odif_dev *dev = video_drvdata(file);
-+	unsigned long flags;
-+	struct v4l2_odif_result *tmp;
-+	struct v4l2_odif_result *fr = NULL;
-+	unsigned int cnt = 0;
-+	int ret = -EINVAL;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->odif_dq.complete, list)
-+		if (tmp->frm_seq == f->frm_seq) {
-+			fr = tmp;
-+			list_del(&tmp->list);
-+			break;
-+		}
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (fr) {
-+		ret = 0;
-+		cnt = min(f->obj_cnt, fr->obj_cnt);
-+		if (cnt)
-+			memcpy(f->od, fr->objs,
-+				sizeof(struct v4l2_od_object) * cnt);
-+		f->obj_cnt = cnt;
-+
-+		free_result(fr);
-+
-+		atomic_dec(&dev->odif_dq.complete_cnt);
-+	}
-+	return ret;
-+}
-+
-+static const struct v4l2_ioctl_ops odif_ioctl_ops = {
-+	.vidioc_querycap      = vidioc_querycap,
-+	.vidioc_enum_fmt_vid_out  = vidioc_enum_fmt_vid_out,
-+	.vidioc_g_fmt_vid_out     = vidioc_g_fmt_vid_out,
-+	.vidioc_reqbufs       = vidioc_reqbufs,
-+	.vidioc_querybuf      = vidioc_querybuf,
-+	.vidioc_qbuf          = vidioc_qbuf,
-+	.vidioc_dqbuf         = vidioc_dqbuf,
-+	.vidioc_streamon      = vidioc_streamon,
-+	.vidioc_streamoff     = vidioc_streamoff,
-+	.vidioc_g_od_count    = vidioc_g_od_count,
-+	.vidioc_g_od_result   = vidioc_g_od_result,
-+};
-+
-+static void odif_vdev_release(struct video_device *vdev)
-+{
-+	kfree(vdev->lock);
-+	video_device_release(vdev);
-+}
-+
-+static struct video_device odif_template = {
-+	.name		= "odif",
-+	.fops           = &odif_fops,
-+	.ioctl_ops 	= &odif_ioctl_ops,
-+	.release	= odif_vdev_release,
++struct odif_fmt qvga_fmt[] = {
++	{
++		.name		= "8  Greyscale",
++		.fourcc		= V4L2_PIX_FMT_GREY,
++		.depth		= 8,
++		.width		= PICT_SIZE_X,
++		.height		= PICT_SIZE_Y,
++	},
 +};
 +
 +
-+/* ------------------------------------------------------------------
-+	Videobuf operations
-+   ------------------------------------------------------------------*/
-+static int queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-+				unsigned int *nbuffers, unsigned int *nplanes,
-+				unsigned int sizes[], void *alloc_ctxs[])
++#ifdef DEBUG
++static void dump_fdif_setting(struct fdif_qvga *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vq);
-+	unsigned long size;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	BUG_ON(!dev->s.fmt);
-+	size = (dev->s.width * dev->s.height * dev->s.fmt->depth) >> 3;
-+
-+	if (0 == *nbuffers)
-+		*nbuffers = 2;
-+	*nplanes = 1;
-+	sizes[0] = size;
-+
-+	dprintk(dev, 1, "%s, count=%d, size=%ld\n", __func__,
-+		*nbuffers, size);
-+
-+	return 0;
++	printk("%s: %s\n", func, __func__);
++	printk("work mem addr:%8p\n", fdif->work_mem_addr);
++	printk("face size=%2d, face dir=%2d, lhit=%d\n",
++			fdif->dev->s.min_obj_size, fdif->dev->s.obj_dir,
++			fdif->dev->s.lhit);
++	printk("startx =%4d starty=%4d sizex=%4d sizey=%4d\n",
++			fdif->dev->s.startx, fdif->dev->s.starty,
++			fdif->dev->s.sizex, fdif->dev->s.sizey);
 +}
 +
-+static int buffer_init(struct vb2_buffer *vb)
++static void dump_fdif_results(struct v4l2_odif_result *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
++	int idx;
 +
-+	/*
-+	 * This callback is called once per buffer, after its allocation.
-+	 *
-+	 * Vivi does not allow changing format during streaming, but it is
-+	 * possible to do so when streaming is paused (i.e. in streamoff state).
-+	 * Buffers however are not freed when going into streamoff and so
-+	 * buffer size verification has to be done in buffer_prepare, on each
-+	 * qbuf.
-+	 * It would be best to move verification code here to buf_init and
-+	 * s_fmt though.
-+	 */
-+	dprintk(dev, 1, "%s vaddr=%p\n", __func__,
-+			vb2_plane_vaddr(vb, 0));
++	printk("%s: %s\n", func, __func__);
 +
-+	return 0;
-+}
-+
-+static int buffer_prepare(struct vb2_buffer *vb)
-+{
-+	struct odif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	struct odif_buffer *buf = container_of(vb, struct odif_buffer, vb);
-+	unsigned long size;
-+
-+	dprintk(dev, 1, "%s, field=%d\n", __func__, vb->v4l2_buf.field);
-+
-+	BUG_ON(!dev->s.fmt);
-+	size = (dev->s.width * dev->s.height * dev->s.fmt->depth) >> 3;
-+	if (vb2_plane_size(vb, 0) < size) {
-+		dprintk(dev, 1, "%s data will not fit into plane (%lu < %lu)\n",
-+				__func__, vb2_plane_size(vb, 0), size);
-+		return -EINVAL;
++	printk("found %d faces, but index:%d\n", fdif->face_cnt,
++			fdif->index);
++	for(idx=0; idx < fdif->face_cnt; idx++) {
++		struct v4l2_fd_detection *fr = &fdif->faces[idx];
++		printk("	No.%d x=%3d y=%2d sz=%2d ang=%3d conf=%2d\n",
++				idx, fr->face.centerx, fr->face.centery,
++				fr->face.sizex, fr->face.angle,
++				fr->face.confidence);
 +	}
-+
-+	vb2_set_plane_payload(&buf->vb, 0, size);
-+
-+	return 0;
 +}
 +
-+static int buffer_finish(struct vb2_buffer *vb)
++static void dump_fdif_regs(struct fdif_qvga *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return 0;
++	printk("%s:%s\n", __func__, func);
++	printk("FDIF_CTRL=%08x FDIF_SYSCONFIG=%08x\n",
++			fd_readl(fdif->base, FDIF_CTRL),
++			fd_readl(fdif->base, FDIF_SYSCONFIG));
++	printk("FDIF_IRQSTATUS_RAW_j=%08x FDIF_IRQSTATUS_j=%08x\n",
++			fd_readl(fdif->base, FDIF_IRQSTATUS_RAW_j),
++			fd_readl(fdif->base, FDIF_IRQSTATUS_j));
++	printk("FDIF_PICADDR=%08x FDIF_WKADDR=%08x\n",
++			fd_readl(fdif->base, FDIF_PICADDR),
++			fd_readl(fdif->base, FDIF_WKADDR));
++	printk("FD_CTRL=%04x, FDIF_IRQENABLE_SET_j=%04x\n",
++			fd_readl(fdif->base, FD_CTRL),
++			fd_readl(fdif->base, FDIF_IRQENABLE_SET_j));
 +}
 +
-+static void buffer_cleanup(struct vb2_buffer *vb)
++#else
++static inline void dump_fdif_setting(struct fdif_qvga *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	dprintk(dev, 1, "%s\n", __func__);
 +}
-+
-+static void buffer_queue(struct vb2_buffer *vb)
++static inline void dump_fdif_results(struct v4l2_odif_result *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	struct odif_buffer *buf = container_of(vb, struct odif_buffer, vb);
-+	struct odif_dmaqueue *dq = &dev->odif_dq;
-+	unsigned long flags = 0;
-+
-+	dprintk(dev, 1, "%s vaddr:%p\n", __func__,
-+			vb2_plane_vaddr(vb, 0));
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_add_tail(&buf->list, &dq->active);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (vb->vb2_queue->streaming)
-+		dev->ops->submit_detect(dev);
 +}
-+
-+static int start_streaming(struct vb2_queue *vq, unsigned int count)
++static inline void dump_fdif_regs(struct fdif_qvga *fdif, const char *func)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vq);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return odif_start_detect(dev);
 +}
++#endif
 +
-+/* abort streaming and wait for last buffer */
-+static int stop_streaming(struct vb2_queue *vq)
++/**
++ * 0x0: Set the min face size to 20 pixels
++ * 0x1: Set the min face size to 25 pixels
++ * 0x2: Set the min face size to 32 pixels
++ * 0x3: Set the min face size to 40 pixels
++ * */
++static int pixels2hw(u32 pixels)
 +{
-+	struct odif_dev *dev = vb2_get_drv_priv(vq);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	odif_stop_detect(dev);
-+	return 0;
-+}
-+
-+static void odif_lock(struct vb2_queue *vq)
-+{
-+	struct odif_dev *dev = vb2_get_drv_priv(vq);
-+
-+	mutex_lock(&dev->mutex);
-+}
-+
-+static void odif_unlock(struct vb2_queue *vq)
-+{
-+	struct odif_dev *dev = vb2_get_drv_priv(vq);
-+	mutex_unlock(&dev->mutex);
-+}
-+static struct vb2_ops odif_video_qops = {
-+	.queue_setup		= queue_setup,
-+	.buf_init		= buffer_init,
-+	.buf_prepare		= buffer_prepare,
-+	.buf_finish		= buffer_finish,
-+	.buf_cleanup		= buffer_cleanup,
-+	.buf_queue		= buffer_queue,
-+	.start_streaming	= start_streaming,
-+	.stop_streaming		= stop_streaming,
-+	.wait_prepare		= odif_unlock,
-+	.wait_finish		= odif_lock,
-+};
-+
-+/*only store one detection result for one frame*/
-+void odif_add_detection(struct odif_dev *dev,
-+		struct v4l2_odif_result *v4l2_fr)
-+{
-+	unsigned long flags;
-+	struct v4l2_odif_result *old = NULL;
-+	struct v4l2_odif_result *tmp;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->odif_dq.complete, list)
-+		if (tmp->frm_seq == v4l2_fr->frm_seq) {
-+			old = tmp;
-+			list_del(&tmp->list);
-+			break;
-+		}
-+	list_add_tail(&v4l2_fr->list, &dev->odif_dq.complete);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (old)
-+		free_result(old);
++	if (pixels <= 20)
++		pixels = 20;
++	else if (pixels <= 25)
++		pixels = 25;
++	else if (pixels <= 32)
++		pixels = 32;
 +	else
-+		atomic_inc(&dev->odif_dq.complete_cnt);
-+}
-+EXPORT_SYMBOL_GPL(odif_add_detection);
++		pixels = 40;
 +
-+struct v4l2_odif_result *odif_allocate_detection(struct odif_dev *dev,
-+		int cnt)
-+{
-+	struct v4l2_odif_result *result = NULL;
-+	unsigned long flags;
-+
-+	if (atomic_read(&dev->odif_dq.complete_cnt) >=
-+			result_cnt_threshold) {
-+		spin_lock_irqsave(&dev->lock, flags);
-+		result = list_entry(dev->odif_dq.complete.next,
-+					struct v4l2_odif_result, list);
-+		list_del(&result->list);
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+
-+		atomic_dec(&dev->odif_dq.complete_cnt);
++	switch (pixels) {
++	case 20:
++		return 0;
++	case 25:
++		return 1;
++	case 32:
++		return 2;
++	case 40:
++		return 3;
 +	}
 +
-+	if (!result)	goto allocate_result;
-+
-+	/* reuse the old one if count is matched */
-+	if (result->obj_cnt == cnt)
-+		goto out;
-+
-+	/*free the old result*/
-+	free_result(result);
-+
-+allocate_result:
-+	result = kzalloc(sizeof(*result) +
-+			cnt * sizeof(struct v4l2_od_object), GFP_ATOMIC);
-+	if (result)
-+		result->obj_cnt = cnt;
-+out:
-+	return result;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(odif_allocate_detection);
 +
-+struct odif_buffer *odif_pick_up_buffer(struct odif_dev *dev)
++
++static void install_default_setting(struct fdif_qvga *fdif)
 +{
-+	struct odif_buffer *buf = NULL;
++	fdif->dev->s.fmt		= &qvga_fmt[0];
++	fdif->dev->s.field		= V4L2_FIELD_NONE;
++
++	fdif->dev->s.min_obj_size	= 25;
++	fdif->dev->s.obj_dir		= OBJ_DIR_UP;
++	fdif->dev->s.startx		= 0;
++	fdif->dev->s.starty		= 0;
++	fdif->dev->s.sizex		= 0x140;
++	fdif->dev->s.sizey		= 0xf0;
++	fdif->dev->s.lhit		= 0x5;
++
++	fdif->dev->s.width		= PICT_SIZE_X;
++	fdif->dev->s.height		= PICT_SIZE_Y;
++}
++
++static void commit_image_setting(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct vb2_buffer *vb = &fdif->pending->vb;
++	void *pict_vaddr = vb2_plane_vaddr(vb, 0);
++
++	fdif->pict_mem_len = vb2_plane_size(vb, 0);
++	fdif->pict_dma = dma_map_single(&fdif->pdev->dev,
++				pict_vaddr,
++				fdif->pict_mem_len,
++				DMA_TO_DEVICE);
++
++	fd_writel(fdif->base, FDIF_PICADDR, fdif->pict_dma);
++
++	conf = (pixels2hw(fdif->dev->s.min_obj_size) & 0x3) ||
++		((fdif->dev->s.obj_dir & 0x3) << 2);
++	fd_writel(fdif->base, FD_DCOND, conf);
++
++	fd_writel(fdif->base, FD_STARTX, fdif->dev->s.startx);
++	fd_writel(fdif->base, FD_STARTY, fdif->dev->s.starty);
++	fd_writel(fdif->base, FD_SIZEX, fdif->dev->s.sizex);
++	fd_writel(fdif->base, FD_SIZEY, fdif->dev->s.sizey);
++	fd_writel(fdif->base, FD_LHIT, fdif->dev->s.lhit);
++}
++
++
++/*softreset fdif*/
++static int softreset_fdif(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	int to = 0;
++
++	conf = fd_readl(fdif->base, FDIF_SYSCONFIG);
++	conf |= SOFTRESET;
++	fd_writel(fdif->base, FDIF_SYSCONFIG, conf);
++
++	while ((conf & SOFTRESET) && to++ < 2000) {
++		conf = fd_readl(fdif->base, FDIF_SYSCONFIG);
++		udelay(2);
++	}
++
++	if (to == 2000)
++		dev_err(&fdif->pdev->dev, "%s: reset failed\n", __func__);
++
++	return to == 2000;
++}
++
++static void __start_detect(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++
++	dump_fdif_setting(fdif, __func__);
++
++	commit_image_setting(fdif);
++
++	/*enable finish irq*/
++	conf = FINISH_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
++
++	/*set RUN flag*/
++	conf = CTRL_RUN;
++	fd_writel(fdif->base, FD_CTRL, conf);
++
++	dump_fdif_regs(fdif, __func__);
++}
++
++static void __stop_detect(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++
++	dump_fdif_regs(fdif, __func__);
++
++	dma_unmap_single(&fdif->pdev->dev, fdif->pict_dma,
++				fdif->pict_mem_len,
++				DMA_TO_DEVICE);
++	/*disable finish irq*/
++	conf = FINISH_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
++
++	/*mark FINISH flag*/
++	conf = CTRL_FINISH;
++	fd_writel(fdif->base, FD_CTRL, conf);
++}
++
++static int read_faces(struct fdif_qvga *fdif, int is_err)
++{
++	int cnt, idx = 0;
++	struct v4l2_odif_result *v4l2_fr;
++	struct odif_dev *dev = fdif->dev;
++	struct odif_buffer *buf;
 +	unsigned long flags;
 +
-+	WARN_ON(!input_from_user(dev));
++	spin_lock_irqsave(&fdif->lock, flags);
 +
-+	spin_lock_irqsave(&dev->lock, flags);
-+	if (list_empty(&dev->odif_dq.active))
++	buf = fdif->pending;
++	if (!buf) {
++		WARN_ON(1);
++		cnt = -EIO;
 +		goto out;
-+	buf = list_entry(dev->odif_dq.active.next,
-+				struct odif_buffer, list);
-+	list_del(&buf->list);
++	}
++
++	buf->vb.v4l2_buf.sequence++;
++
++	if (!is_err)
++		cnt = fd_readl(fdif->base, FD_DNUM) & 0x3f;
++	else
++		cnt = 0;
++
++	v4l2_fr = odif_allocate_detection(dev, cnt);
++	if (!v4l2_fr) {
++		cnt = -ENOMEM;
++		goto out;
++	}
++
++	v4l2_fr->frm_seq = buf->vb.v4l2_buf.sequence;
++
++	while(idx < cnt) {
++		struct v4l2_od_object *fr = &v4l2_fr->objs[idx];
++
++		fr->type = V4L2_OD_TYPE_FACE;
++
++		fr->o.face.id = idx + 1;
++		fr->o.face.f.centerx = fd_readl(fdif->base,
++				FD_CENTERX_i + idx * 0x10) & 0x1ff;
++		fr->o.face.f.centery = fd_readl(fdif->base,
++				FD_CENTERY_i + idx * 0x10) & 0xff;
++		fr->o.face.f.angle = fd_readl(fdif->base,
++				FD_ANGLE_i + idx * 0x10) & 0x1ff;
++		fr->o.face.f.sizex = fd_readl(fdif->base,
++				FD_CONFSIZE_i + idx * 0x10);
++		fr->confidence = ((fr->o.face.f.sizex >> 8) & 0xf) * 10;
++		fr->o.face.f.sizey = fr->o.face.f.sizex = fr->o.face.f.sizex & 0xff;
++
++		idx++;
++	}
++
++	__stop_detect(fdif);
++	fdif->pending = NULL;
++	spin_unlock_irqrestore(&fdif->lock, flags);
++
++	dump_fdif_results(v4l2_fr, __func__);
++
++	/*queue the detection result to complete queue*/
++	odif_add_detection(dev, v4l2_fr);
++
++	if (is_err)
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
++	else
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
++
++	wake_up(&dev->odif_dq.wq);
++
++	return cnt;
++
 +out:
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	return buf;
++	spin_unlock_irqrestore(&fdif->lock, flags);
++	return cnt;
 +}
-+EXPORT_SYMBOL_GPL(odif_pick_up_buffer);
 +
-+static struct v4l2_subdev_ops odif_subdev_ops = {
-+};
-+
-+static int odif_switch_link(struct odif_dev *dev, int next,
-+		const struct media_pad *remote)
++static int __submit_detection(struct fdif_qvga *fdif)
 +{
-+	int ret = 0;
++	struct odif_dev *dev = fdif->dev;
++	struct odif_buffer *buf;
++	unsigned long flags;
++	unsigned int ret = 0;
 +
-+	if (dev->input == next)
-+		return ret;
++	buf = odif_pick_up_buffer(dev);
++	if (!buf)
++		goto out;
 +
-+	if (!(dev->ops->capability & V4L2_CAP_VIDEO_OUTPUT) &&
-+			next == OD_INPUT_FROM_USER_SPACE)
-+		return -EINVAL;
-+
-+	if (!(dev->ops->capability & V4L2_CAP_VIDEO_CAPTURE) &&
-+			next == OD_INPUT_FROM_MEDIA_HW)
-+		return -EINVAL;
-+
-+	mutex_lock(dev->vfd->lock);
-+	if (dev->working) {
++	spin_lock_irqsave(&fdif->lock, flags);
++	if (fdif->pending) {
++		spin_unlock_irqrestore(&fdif->lock, flags);
 +		ret = -EBUSY;
 +		goto out;
 +	}
++	fdif->pending = buf;
++	__start_detect(fdif);
++	spin_unlock_irqrestore(&fdif->lock, flags);
 +
-+	if (dev->ops->set_input)
-+		dev->ops->set_input(dev, next, remote);
-+	else
-+		ret = -EINVAL;
-+out:
-+	mutex_unlock(dev->vfd->lock);
-+	return ret;
-+}
++	return 0;
 +
-+static int odif_entity_link_setup(struct media_entity *entity,
-+			  const struct media_pad *local,
-+			  const struct media_pad *remote, u32 flags)
-+{
-+	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
-+	struct odif_dev *dev = v4l2_get_subdevdata(sd);
-+	u32    type = media_entity_type(remote->entity);
-+	int ret, next;
-+
-+	/*link user space video to object detection*/
-+	if (remote == &dev->entity[1].pads[0])
-+		next = OD_INPUT_FROM_USER_SPACE;
-+	else if (type == MEDIA_ENT_T_V4L2_SUBDEV)
-+		next = OD_INPUT_FROM_MEDIA_HW;
-+	else
-+		next = dev->input;
-+
-+	printk("%s:%d next=%d\n", __func__, __LINE__, next);
-+	ret = odif_switch_link(dev, next, remote);
-+
-+	return ret;
-+}
-+
-+struct media_entity_operations odif_entity_ops = {
-+	.link_setup = odif_entity_link_setup,
-+};
-+
-+static void odif_cleanup_entities(struct odif_dev *odif)
-+{
-+
-+	v4l2_device_unregister_subdev(&odif->entity[0].subdev);
-+	v4l2_device_unregister_subdev(&odif->entity[1].subdev);
-+
-+	media_entity_cleanup(&odif->entity[0].subdev.entity);
-+	media_entity_cleanup(&odif->entity[1].subdev.entity);
-+}
-+
-+static int odif_init_entities(struct odif_dev *odif)
-+{
-+	const u32 flags = MEDIA_LNK_FL_ENABLED | MEDIA_LNK_FL_DYNAMIC;
-+	int ret;
-+	struct odif_entity *entity;
-+	struct media_entity *source;
-+	struct media_entity *sink;
-+
-+	/*entity[0] is the entity for object detection hw*/
-+	entity = &odif->entity[0];
-+	entity->num_links = 2;
-+	entity->num_pads = 1;
-+	entity->pads[0].flags = MEDIA_PAD_FL_SINK;
-+
-+	v4l2_subdev_init(&entity->subdev, &odif_subdev_ops);
-+	v4l2_set_subdevdata(&entity->subdev, odif);
-+	strlcpy(entity->subdev.name, "object detect",
-+			sizeof(entity->subdev.name));
-+	ret = media_entity_init(&entity->subdev.entity,
-+		entity->num_pads, entity->pads, 1);
-+
-+	if (ret)
-+		goto out;
-+
-+	/*entity[1] is the video entity which sources the user space video*/
-+	entity = &odif->entity[1];
-+	entity->num_links = 1;
-+	entity->num_pads = 1;
-+	entity->pads[0].flags = MEDIA_PAD_FL_SOURCE;
-+
-+	v4l2_subdev_init(&entity->subdev, &odif_subdev_ops);
-+	v4l2_set_subdevdata(&entity->subdev, odif);
-+	strlcpy(entity->subdev.name, "user space video",
-+			sizeof(entity->subdev.name));
-+	ret = media_entity_init(&entity->subdev.entity,
-+		entity->num_pads, entity->pads, 0);
-+
-+	/* create the default link */
-+	source = &odif->entity[1].subdev.entity;
-+	sink = &odif->entity[0].subdev.entity;
-+	sink->ops = &odif_entity_ops;
-+	ret = media_entity_create_link(source, 0,
-+				       sink, 0, flags);
-+	if (ret)
-+		goto out;
-+
-+	/* init the default hw link*/
-+	if (odif->ops->set_input)
-+		ret = odif->ops->set_input(odif,
-+			OD_INPUT_FROM_USER_SPACE,
-+			&odif->entity[1].pads[0]);
-+	if (ret)
-+		goto out;
-+
-+	odif->input = OD_INPUT_FROM_USER_SPACE;
-+
-+	/* register the two subdevices */
-+	ret = v4l2_device_register_subdev(&odif->v4l2_dev,
-+			&odif->entity[0].subdev);
-+	if (ret)
-+		goto out;
-+
-+	ret = v4l2_device_register_subdev(&odif->v4l2_dev,
-+			&odif->entity[1].subdev);
-+	if (ret)
-+		goto out;
 +out:
 +	return ret;
 +}
 +
-+void odif_release(struct kref *ref)
++static irqreturn_t handle_detection(int irq, void *__fdif)
 +{
-+	struct odif_dev *dev = container_of(ref, struct odif_dev, ref);
++	unsigned long irqsts;
++	struct fdif_qvga *fdif = __fdif;
++	irqreturn_t ret = IRQ_HANDLED;
 +
-+	v4l2_info(&dev->v4l2_dev, "unregistering %s\n",
-+		video_device_node_name(dev->vfd));
++	/*clear irq status*/
++	irqsts = fd_readl(fdif->base, FDIF_IRQSTATUS_j);
 +
-+	list_del(&dev->odif_devlist);
++	if (irqsts & (FINISH_IRQ | ERR_IRQ)) {
++		int is_err = irqsts & ERR_IRQ;
 +
-+	odif_cleanup_entities(dev);
-+	video_unregister_device(dev->vfd);
-+	v4l2_device_unregister(&dev->v4l2_dev);
-+	kfree(dev);
-+}
-+EXPORT_SYMBOL_GPL(odif_release);
++		fd_writel(fdif->base, FDIF_IRQSTATUS_j, irqsts);
 +
-+int odif_create_instance(struct device *parent, int priv_size,
-+		struct odif_ops *ops, struct odif_dev **odif_dev)
-+{
-+	struct odif_dev *dev;
-+	struct video_device *vfd;
-+	struct vb2_queue *q;
-+	int ret, len;
-+	struct mutex	*vmutex;
++		read_faces(fdif, is_err);
++		if (is_err)
++			softreset_fdif(fdif);
 +
-+	dev = kzalloc(sizeof(*dev) + priv_size, GFP_KERNEL);
-+	if (!dev) {
-+		ret = -ENOMEM;
-+		goto out;
++		__submit_detection(fdif);
++	} else {
++		ret = IRQ_NONE;
 +	}
 +
-+	kref_init(&dev->ref);
-+	dev->ops = ops;
-+	dev->dev = parent;
-+
-+	len = snprintf(dev->v4l2_dev.name, sizeof(dev->v4l2_dev.name),
-+			"%s", "odif");
-+	dev->v4l2_dev.name[len] = '\0';
-+
-+	ret = v4l2_device_register(dev->dev, &dev->v4l2_dev);
-+	if (ret)
-+		goto free_dev;
-+
-+	/* initialize locks */
-+	spin_lock_init(&dev->lock);
-+
-+	/* initialize queue */
-+	q = &dev->vbq;
-+	memset(q, 0, sizeof(dev->vbq));
-+	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-+	q->io_modes = VB2_MMAP;
-+	q->drv_priv = dev;
-+	q->buf_struct_size = sizeof(struct odif_buffer);
-+	q->ops = &odif_video_qops;
-+	q->mem_ops = &vb2_page_memops;
-+
-+	vb2_queue_init(q);
-+
-+	mutex_init(&dev->mutex);
-+
-+	/* init video dma queues */
-+	atomic_set(&dev->odif_dq.complete_cnt, 0);
-+	INIT_LIST_HEAD(&dev->odif_dq.active);
-+	INIT_LIST_HEAD(&dev->odif_dq.complete);
-+	init_waitqueue_head(&dev->odif_dq.wq);
-+
-+	ret = -ENOMEM;
-+	vfd = video_device_alloc();
-+	if (!vfd)
-+		goto unreg_dev;
-+
-+	*vfd = odif_template;
-+	vfd->debug = debug;
-+	vfd->v4l2_dev = &dev->v4l2_dev;
-+	set_bit(V4L2_FL_USE_FH_PRIO, &vfd->flags);
-+
-+	vmutex = kzalloc(sizeof(struct mutex), GFP_KERNEL);
-+	if (!vmutex)
-+		goto err_alloc_mutex;
-+
-+	mutex_init(vmutex);
-+	/*
-+	 * Provide a mutex to v4l2 core. It will be used to protect
-+	 * all fops and v4l2 ioctls.
-+	 */
-+	vfd->lock = vmutex;
-+
-+	ret = video_register_device(vfd, VFL_TYPE_GRABBER, video_nr);
-+	if (ret < 0)
-+		goto rel_vdev;
-+
-+	if (video_nr != -1)
-+		video_nr++;
-+
-+	dev->vfd = vfd;
-+	video_set_drvdata(vfd, dev);
-+
-+	ret = odif_init_entities(dev);
-+	if (ret)
-+		goto unreg_video;
-+
-+	/* Now that everything is fine, let's add it to device list */
-+	list_add_tail(&dev->odif_devlist, &odif_devlist);
-+
-+	v4l2_info(&dev->v4l2_dev, "V4L2 device registered as %s\n",
-+		  video_device_node_name(vfd));
-+
-+	*odif_dev = dev;
-+	return 0;
-+
-+unreg_video:
-+	video_unregister_device(vfd);
-+rel_vdev:
-+	kfree(vmutex);
-+err_alloc_mutex:
-+	video_device_release(vfd);
-+unreg_dev:
-+	v4l2_device_unregister(&dev->v4l2_dev);
-+free_dev:
-+	kfree(dev);
-+out:
-+	pr_err("%s: error, ret=%d", __func__, ret);
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(odif_create_instance);
 +
-+static int __init odif_init(void)
++static void fdif_global_init(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct device *dev = &fdif->pdev->dev;
++
++	/*softreset fdif*/
++	softreset_fdif(fdif);
++
++	/*set max tags*/
++	conf = fd_readl(fdif->base, FDIF_CTRL);
++	conf &= ~0x1e;
++	conf |= (CTRL_MAX_TAGS << 1);
++	fd_writel(fdif->base, FDIF_CTRL, conf);
++
++	/*enable error irq*/
++	conf = ERR_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
++
++	fdif->work_dma = dma_map_single(dev,
++				fdif->work_mem_addr,
++		                WORK_MEM_SIZE,
++				DMA_TO_DEVICE);
++	fd_writel(fdif->base, FDIF_WKADDR, fdif->work_dma);
++}
++
++static void fdif_global_deinit(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct device *dev = &fdif->pdev->dev;
++
++	/*enable error irq*/
++	conf = ERR_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
++
++	dma_unmap_single(dev, fdif->work_dma,
++			WORK_MEM_SIZE, DMA_TO_DEVICE);
++}
++
++
++static int start_detect(struct odif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++
++	pm_runtime_get_sync(dev->dev);
++	fdif_global_init(fdif);
++
++	return  __submit_detection(fdif);
++}
++
++static int stop_detect(struct odif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++	unsigned long flags, irqsts;
++	struct odif_buffer	*buf;
++
++	spin_lock_irqsave(&fdif->lock, flags);
++
++	/*stop current transfer first*/
++	__stop_detect(fdif);
++
++	buf = fdif->pending;
++	fdif->pending = NULL;
++
++	/*clear irq status in case that it is set*/
++	irqsts = fd_readl(fdif->base, FDIF_IRQSTATUS_j);
++	fd_writel(fdif->base, FDIF_IRQSTATUS_j, irqsts);
++
++	spin_unlock_irqrestore(&fdif->lock, flags);
++
++	if (buf)
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
++
++	fdif_global_deinit(fdif);
++	pm_runtime_put(dev->dev);
++	return 0;
++}
++
++static int submit_detect(struct odif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++
++	__submit_detection(fdif);
++
++	return 0;
++}
++
++static struct odif_ops qvga_ops = {
++	.capability = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING,
++	.table	= qvga_fmt,
++	.fmt_cnt = 1,
++	.start_detect = start_detect,
++	.stop_detect = stop_detect,
++	.submit_detect = submit_detect,
++};
++
++static int fdif_probe(struct platform_device *pdev)
++{
++	struct device	*dev = &pdev->dev;
++	struct fdif_qvga *fdif;
++	struct odif_dev *fdev;
++	struct resource *res;
++	int ret, order;
++
++	ret = odif_create_instance(dev, sizeof(struct fdif_qvga),
++			&qvga_ops, &fdev);
++	if (ret) {
++		dev_err(dev, "odif_create_instance failed:%d\n", ret);
++		goto end_probe;
++	}
++
++	fdif = (struct fdif_qvga *)fdev->priv;
++	fdif->dev = fdev;
++
++	spin_lock_init(&fdif->lock);
++	fdif->pdev = pdev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(dev, "fdif get resource failed\n");
++		ret = -ENODEV;
++		goto err_iomap;
++	}
++
++	fdif->base = ioremap(res->start, resource_size(res));
++	if (!fdif->base) {
++		dev_err(dev, "fdif ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_iomap;
++	}
++
++	fdif->irq = platform_get_irq(pdev, 0);
++	if (fdif->irq < 0) {
++		dev_err(dev, "fdif get irq failed\n");
++		ret = -ENODEV;
++		goto err_get_irq;
++	}
++
++	ret = request_irq(fdif->irq, handle_detection, 0, "fdif-qvga",
++			fdif);
++	if (ret) {
++		dev_err(dev, "request_irq failed:%d\n", ret);
++		goto err_get_irq;
++	}
++
++	order = get_order(WORK_MEM_SIZE);
++	fdif->work_mem_addr = (void *)__get_free_pages(GFP_KERNEL, order);
++	if (!fdif->work_mem_addr) {
++		dev_err(dev, "fdif buffer allocation(%d) failed\n", order);
++		ret = -ENOMEM;
++		goto err_work_mem;
++	}
++
++	install_default_setting(fdif);
++
++	platform_set_drvdata(pdev, fdif);
++
++	pm_suspend_ignore_children(dev, true);
++	pm_runtime_get_sync(dev);
++	dev_info(dev, "fdif version=%8x hwinfo=%08x\n",
++			fd_readl(fdif->base, FDIF_REVISION),
++			fd_readl(fdif->base, FDIF_HWINFO));
++	pm_runtime_put(dev);
++
++	return 0;
++
++err_work_mem:
++	free_irq(fdif->irq, fdif);
++err_get_irq:
++	iounmap(fdif->base);
++err_iomap:
++	kref_put(&fdif->dev->ref, odif_release);
++end_probe:
++	return ret;
++}
++
++static int fdif_remove(struct platform_device *pdev)
++{
++	struct fdif_qvga *fdif = platform_get_drvdata(pdev);
++	int order;
++
++	platform_set_drvdata(pdev, NULL);
++
++	free_irq(fdif->irq, fdif);
++
++	order = get_order(WORK_MEM_SIZE);
++	free_pages((unsigned long)fdif->work_mem_addr, order);
++
++	iounmap(fdif->base);
++
++	kref_put(&fdif->dev->ref, odif_release);
++
++	return 0;
++}
++
++static int fdif_suspend(struct platform_device *pdev, pm_message_t msg)
 +{
 +	return 0;
 +}
 +
-+static void __exit odif_exit(void)
++static int fdif_resume(struct platform_device *pdev)
 +{
++	return 0;
 +}
 +
-+module_init(odif_init);
-+module_exit(odif_exit);
++static struct platform_device_id odif_device_ids[] = {
++	{.name = "omap-fdif"},
++	{},
++};
 +
-+MODULE_DESCRIPTION("object detection interface function module");
-+MODULE_AUTHOR("Ming Lei");
++struct platform_driver fdif_driver = {
++	.probe =	fdif_probe,
++	.remove =	fdif_remove,
++	.suspend =	fdif_suspend,
++	.resume =	fdif_resume,
++	.driver = {
++		.name  =	"omap-fdif",
++		.owner =	THIS_MODULE,
++	},
++	.id_table = 	odif_device_ids,
++};
++
++static int __init omap4_fdif_init(void)
++{
++	int retval;
++	retval = platform_driver_register(&fdif_driver);
++	if (retval) {
++		printk(KERN_ERR "Unable to register fdif driver\n");
++		return retval;
++	}
++	return 0;
++}
++
++static void omap4_fdif_cleanup(void)
++{
++	platform_driver_unregister(&fdif_driver);
++}
++
++module_init(omap4_fdif_init);
++module_exit(omap4_fdif_cleanup);
++
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/media/video/odif/odif.h b/drivers/media/video/odif/odif.h
-new file mode 100644
-index 0000000..25c4788
---- /dev/null
-+++ b/drivers/media/video/odif/odif.h
-@@ -0,0 +1,157 @@
-+#ifndef _LINUX_MEDIA_ODIF_H
-+#define _LINUX_MEDIA_ODIF_H
-+
-+#include <linux/types.h>
-+#include <linux/magic.h>
-+#include <linux/errno.h>
-+#include <linux/kref.h>
-+#include <linux/kernel.h>
-+#include <media/v4l2-common.h>
-+#include <linux/videodev2.h>
-+#include <media/media-entity.h>
-+#include <media/videobuf2-page.h>
-+#include <media/v4l2-device.h>
-+#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-fh.h>
-+#include <media/v4l2-event.h>
-+
-+#define MAX_OBJ_COUNT		40
-+
-+#define OBJ_DIR_UP		0
-+#define OBJ_DIR_RIGHT		1
-+#define OBJ_DIR_LIFT		2
-+#define OBJ_DIR_DOWN		3
-+
-+
-+#define	OD_INPUT_FROM_USER_SPACE	1
-+#define	OD_INPUT_FROM_MEDIA_HW		2
-+
-+struct odif_fmt {
-+	char  *name;
-+	u32   fourcc;          /* v4l2 format id */
-+	u32   depth;
-+	u32   width, height;
-+};
-+
-+struct odif_setting {
-+	struct odif_fmt            *fmt;
-+	enum v4l2_field            field;
-+
-+	/* minimize object size to be detected, unit: pixel */
-+	u32 			min_obj_size;
-+	u32			obj_dir;
-+
-+	u32			startx, starty;
-+	u32			sizex, sizey;
-+
-+	int			lhit;
-+
-+	u32			width, height;
-+};
-+
-+/* buffer for one video frame */
-+struct odif_buffer {
-+	/* common v4l buffer stuff -- must be first */
-+	struct vb2_buffer	vb;
-+	struct list_head	list;
-+};
-+
-+
-+struct v4l2_odif_result {
-+	struct list_head	list;
-+
-+	/*frame sequence*/
-+	u32			frm_seq;
-+	u32			obj_cnt;
-+	struct v4l2_od_object	objs[0];
-+};
-+
-+struct odif_dmaqueue {
-+	atomic_t		complete_cnt;
-+	struct list_head	complete;
-+	struct list_head	active;
-+	wait_queue_head_t	wq;
-+};
-+
-+struct odif_entity {
-+	/* Media controller-related fields. */
-+	struct v4l2_subdev subdev;
-+	unsigned int num_pads;
-+	unsigned int num_links;
-+
-+	/*only one sink pad*/
-+	struct media_pad pads[1];
-+
-+	/* TODO: odif controls */
-+};
-+
-+struct odif_dev {
-+	struct kref		ref;
-+	struct device		*dev;
-+
-+	struct list_head        odif_devlist;
-+	struct v4l2_device	v4l2_dev;
-+	struct vb2_queue        vbq;
-+	struct mutex            mutex;
-+	spinlock_t		lock;
-+
-+	/* media controller entity*/
-+	struct odif_entity	entity[2];
-+
-+	struct video_device	*vfd;
-+	struct odif_dmaqueue	odif_dq;
-+	int	working;
-+
-+	int	input;
-+
-+	/* setting */
-+	struct odif_setting	s;
-+
-+	struct odif_ops	*ops;
-+
-+	unsigned long	priv[0];
-+};
-+
-+/**
-+ * struct odif_ops - interface between odif and low level hw driver
-+ * @capability:	extra capability except for V4L2_CAP_OBJ_DETECTION
-+ * 	V4L2_CAP_STREAMING: mandatory, start/stop detect is triggered
-+ * 		by streaming on/off
-+ * 	V4L2_CAP_VIDEO_OUTPUT: hw can support to detect objects from
-+ * 		user space video input
-+ *	V4L2_CAP_VIDEO_CAPTURE: hw can support to detect objects from
-+ *		internal bus, this doesn't mean capture is capable
-+ *
-+ * @table:	supported format table
-+ * @fmt_cnt:	supported format count
-+ * @start_detect:	start_detect callback
-+ * @stop_detect:	stop_detect callback
-+ * @submit_detect:	submit_detect callback
-+ * @set_input:	change video input source
-+ */
-+struct odif_ops {
-+	u32	capability;
-+	struct odif_fmt *table;
-+	int fmt_cnt;
-+	int (*start_detect)(struct odif_dev *odif);
-+	int (*stop_detect)(struct odif_dev *odif);
-+	int (*submit_detect)(struct odif_dev *odif);
-+	int (*set_input)(struct odif_dev *odif, int next,
-+			const struct media_pad *remote);
-+};
-+
-+#define dprintk(dev, level, fmt, arg...) \
-+	v4l2_dbg(level, debug, &dev->v4l2_dev, fmt, ## arg)
-+
-+
-+extern int odif_create_instance(struct device *parent, int priv_size,
-+		struct odif_ops *ops, struct odif_dev **dev);
-+extern void odif_release(struct kref *ref);
-+extern void odif_add_detection(struct odif_dev *dev,
-+		struct v4l2_odif_result *v4l2_fr);
-+extern struct v4l2_odif_result *odif_allocate_detection(
-+		struct odif_dev *dev, int cnt);
-+extern struct odif_buffer *odif_pick_up_buffer(struct odif_dev *dev);
-+
-+#endif /* _LINUX_MEDIA_ODIF_H */
++MODULE_ALIAS("platform:omap-fdif");
++MODULE_AUTHOR("Ming Lei");
 -- 
 1.7.5.4
 
