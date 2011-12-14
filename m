@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab1LNTdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 14:33:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:64091 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab1LNTdT (ORCPT
+	id S1758060Ab1LNTf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 14:35:28 -0500
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:48641 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755103Ab1LNTfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 14:33:19 -0500
-X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Jj81R3xejsoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=C-krsxV6Xh8kvhYOQQkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1323891195.23971.60.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Date: Wed, 14 Dec 2011 14:33:15 -0500
-In-Reply-To: <4EE8EA61.9050902@zytor.com>
-References: <20111214025237.457632996@goodmis.org>
-	 <20111214025253.519573056@goodmis.org> <4EE8EA61.9050902@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 Dec 2011 14:35:25 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: conjure names for unnamed pins
+Date: Wed, 14 Dec 2011 20:34:59 +0100
+Message-ID: <1323891299-31333-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 10:26 -0800, H. Peter Anvin wrote:
-> On 12/13/2011 06:52 PM, Steven Rostedt wrote:
-> > With i386, NMIs and breakpoints use the current stack and they
-> > do not reset the stack pointer to a fix point that might corrupt
-> > a previous NMI or breakpoint (as it does in x86_64). But NMIs are
-> > still not made to be re-entrant, and need to prevent the case that
-> > an NMI hitting a breakpoint (which does an iret), doesn't allow
-> > another NMI to run.
-> 
-> Okay... what about the other way around: avoiding the IRET when invoked
-> from an NMI context and therefore leaving NMI disabled until the
-> appropriate time?
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Linus was against this approach. He didn't want the ugliness of NMI to
-spread to other code, by adding ugly handlers around the 'iret' of
-breakpoints and exceptions.
+If pins with blank names are registered, we assign them names on-the-fly
+on the form "PINn" where n is the pin number for that pin on the specific
+controller.
 
--- Steve
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c |   13 +++++++++++--
+ drivers/pinctrl/core.h |    2 ++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index f804d8e..fe3143b 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -158,6 +158,8 @@ static void pinctrl_free_pindescs(struct pinctrl_dev *pctldev,
+ 		if (pindesc != NULL) {
+ 			radix_tree_delete(&pctldev->pin_desc_tree,
+ 					  pins[i].number);
++			if (pindesc->dynamic_name)
++				kfree(pindesc->name);
+ 		}
+ 		kfree(pindesc);
+ 	}
+@@ -186,13 +188,20 @@ static int pinctrl_register_one_pin(struct pinctrl_dev *pctldev,
+ 	pindesc->pctldev = pctldev;
+ 
+ 	/* Copy basic pin info */
+-	pindesc->name = name;
++	if (pindesc->name) {
++		pindesc->name = name;
++	} else {
++		pindesc->name = kasprintf(GFP_KERNEL, "PIN%u", number);
++		if (pindesc->name == NULL)
++			return -ENOMEM;
++		pindesc->dynamic_name = true;
++	}
+ 
+ 	spin_lock(&pctldev->pin_desc_tree_lock);
+ 	radix_tree_insert(&pctldev->pin_desc_tree, number, pindesc);
+ 	spin_unlock(&pctldev->pin_desc_tree_lock);
+ 	pr_debug("registered pin %d (%s) on %s\n",
+-		 number, name ? name : "(unnamed)", pctldev->desc->name);
++		 number, pindesc->name, pctldev->desc->name);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 5375582..177a331 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -52,6 +52,7 @@ struct pinctrl_dev {
+  * @pctldev: corresponding pin control device
+  * @name: a name for the pin, e.g. the name of the pin/pad/finger on a
+  *	datasheet or such
++ * @dynamic_name: if the name of this pin was dynamically allocated
+  * @lock: a lock to protect the descriptor structure
+  * @mux_requested: whether the pin is already requested by pinmux or not
+  * @mux_function: a named muxing function for the pin that will be passed to
+@@ -60,6 +61,7 @@ struct pinctrl_dev {
+ struct pin_desc {
+ 	struct pinctrl_dev *pctldev;
+ 	const char *name;
++	bool dynamic_name;
+ 	spinlock_t lock;
+ 	/* These fields only added when supporting pinmux drivers */
+ #ifdef CONFIG_PINMUX
+-- 
+1.7.3.2
 
