@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab1LNQwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:52:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42173 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752045Ab1LNQwg (ORCPT
+	id S1757600Ab1LNQxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:53:35 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46359 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757456Ab1LNQxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:52:36 -0500
-Message-ID: <1323881520.2825.196.camel@deadeye>
-Subject: Re: [RFC] modpost: add option to allow external modules to avoid
- taint
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: "Luis R. Rodriguez" <mcgrof@frijolero.org>, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-wireless@vger.kernel.org
-Date: Wed, 14 Dec 2011 16:52:00 +0000
-In-Reply-To: <1323879603-2961-1-git-send-email-linville@tuxdriver.com>
-References: <1323752547.2825.101.camel@deadeye>
-	 <1323879603-2961-1-git-send-email-linville@tuxdriver.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Pu9591LkloWm7kDU3jDZ"
-X-Mailer: Evolution 3.2.1-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Dec 2011 11:53:33 -0500
+X-Sasl-enc: 1A0I/1aUeMAiU/2Jj5TNBQSTNKV9yjBcwnki7/BCuzzB 1323881612
+Date: Wed, 14 Dec 2011 08:10:27 -0800
+From: Greg KH <greg@kroah.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Joachim Foerster <joachim.foerster@missinglinkelectronics.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: ISP1760: Add flags for interrupt polarity and
+ edge/level trigger
+Message-ID: <20111214161027.GA5996@kroah.com>
+References: <1323768793-20633-1-git-send-email-alexander.stein@systec-electronic.com>
+ <20111213180010.GA29980@kroah.com>
+ <5171961.tdOaMPUdsK@ws-stein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5171961.tdOaMPUdsK@ws-stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 08:57:33AM +0100, Alexander Stein wrote:
+> On Tuesday 13 December 2011 10:00:10 Greg KH wrote:
+> > On Tue, Dec 13, 2011 at 10:33:13AM +0100, Alexander Stein wrote:
+> > > Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> > > ---
+> > > 
+> > >  drivers/usb/host/isp1760-if.c |    4 ++++
+> > >  include/linux/usb/isp1760.h   |    2 ++
+> > >  2 files changed, 6 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/usb/host/isp1760-if.c
+> > > b/drivers/usb/host/isp1760-if.c index a7dc1e1..0ef9867 100644
+> > > --- a/drivers/usb/host/isp1760-if.c
+> > > +++ b/drivers/usb/host/isp1760-if.c
+> > > @@ -388,6 +388,10 @@ static int __devinit isp1760_plat_probe(struct
+> > > platform_device *pdev)> 
+> > >  			devflags |= ISP1760_FLAG_DACK_POL_HIGH;
+> > >  		
+> > >  		if (priv->dreq_polarity_high)
+> > >  		
+> > >  			devflags |= ISP1760_FLAG_DREQ_POL_HIGH;
+> > > 
+> > > +		if (priv->interrupt_polarity_high)
+> > > +			devflags |= ISP1760_FLAG_INTR_POL_HIGH;
+> > > +		if (priv->interrupt_edge_triggered)
+> > > +			devflags |= ISP1760_FLAG_INTR_EDGE_TRIG;
+> > > 
+> > >  	}
+> > >  	
+> > >  	hcd = isp1760_register(mem_res->start, mem_size, irq_res->start,
+> > > 
+> > > diff --git a/include/linux/usb/isp1760.h b/include/linux/usb/isp1760.h
+> > > index de7de53..c5edbc8 100644
+> > > --- a/include/linux/usb/isp1760.h
+> > > +++ b/include/linux/usb/isp1760.h
+> > > @@ -13,6 +13,8 @@ struct isp1760_platform_data {
+> > > 
+> > >  	unsigned analog_oc:1;			/* Analog overcurrent */
+> > >  	unsigned dack_polarity_high:1;		/* DACK active high */
+> > >  	unsigned dreq_polarity_high:1;		/* DREQ active high */
+> > > 
+> > > +	unsigned interrupt_polarity_high:1;
+> > > +	unsigned interrupt_edge_triggered:1;
+> > 
+> > So you added these, and you check them, but who sets them?  What is the
+> > point of this patch at this point in time?
+> 
+> These platform data bits are set by board configurations, which is completly 
+> optional. So currently maybe noone sets/use it, but in future someone may need 
+> it. Also dreq_polarity_high is also there and I only found board files setting 
+> them to 0... So why not add the feature bits too?
 
---=-Pu9591LkloWm7kDU3jDZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Because we don't add "features" to the kernel that are not used, that's
+just unneeded cruft.
 
-On Wed, 2011-12-14 at 11:20 -0500, John W. Linville wrote:
-> In some cases, it might be desirable to package a module from an
-> external source tree alongside the base kernel.  In those cases, it
-> might also be desirable to not have those modules tainting the kernel.
->=20
-> This patch provides a mechanism for an external module build to declare
-> itself as an "integrated build".  Such a module is then treated the same
-> as an intree module.
->=20
-> Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> ---
-> Any thoughts on this?  I'm thinking of adding this to Fedora kernels,
-> where I have been working to integrate the compat-wireless package as
-> part of the base kernel RPM.
-[...]
+If you have a real need and an actual user of these flags, then I will
+be glad to accept this patch.
 
-If you're integrating it then why can't you *really* build it in-tree?
+thanks,
 
-Ben.
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-Pu9591LkloWm7kDU3jDZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATujUMOe/yOyVhhEJAQpmoQ/+MNjjKgGa+Mvl0VZWqsRlw3Y69IE6A68q
-CLWRAAkFLLiWqrbAj3h8+qBmnV8CqX0q/iyJinrf1lJN8+lPCDwc3DPmnkLn6ntK
-ALykQTHZe+NSrpeLOw3pIxrFZvAtDLTQ7Pi9Xu6cR2HsJ20epTfWEG1DtSRQAgoi
-InFPufQ2una2bwnvD9lMO2D8/AIYgJkDyqKkx8lcOVECDPjN8q2Mpy9w7VK1VM0q
-0RVzojZK73e30ZyNXFx7oMXb0lIFZV5tfk2EODkX11HTTNPq1Zz0h2wcapLpi7UI
-C5evoCykpXdrVsJ1q3xvT+fNZV1KFRaeiHh+cERIh1RofVca2Vh14pRUDN8LN5Tu
-8tuEcaDttpUPbfBBJA9zIltGFU0hGOT/p6l9vU5/BjrcYQkYKI5PfQLcBWJw9BhY
-XU8KN800xDCO8EjrlBBH7vadYrAst3NA64NJFiTsND0VWfnVMfDJKAs9MXhWakK+
-OXFs7TJz0NETAWhV7oMLhQxP+qZRKFNC+S0Sp0/wjntA8Zjw4mY+Uck3R+CLCCOk
-rOgE8/N3CIjtOvCSgw4GkUAV0QqUUR41Z45/zXB6Fg1r3frU5r2lczgvRS5Y6khO
-RCisQe9LMUuuwtp+de/oo80H6W8P+JjcCVl0We4Bj2q3CHcGSo3EOTWxSY7PWFsp
-AZsWB4dmooM=
-=Faz6
------END PGP SIGNATURE-----
-
---=-Pu9591LkloWm7kDU3jDZ--
+greg k-h
