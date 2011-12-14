@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab1LNSr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:47:27 -0500
-Received: from lunge.queued.net ([173.255.254.236]:34346 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757368Ab1LNSr0 (ORCPT
+	id S1757993Ab1LNSvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:51:22 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57401 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab1LNSvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:47:26 -0500
-Date: Wed, 14 Dec 2011 10:47:24 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: IRQF_TIMER | IRQF_SHARED ?
-Message-ID: <20111214104724.292b02d4@queued.net>
-In-Reply-To: <4EE8ECF3.6000900@LiPPERTEmbedded.de>
-References: <4EE620A5.7080402@LiPPERTEmbedded.de>
-	<20111212123131.502be350@queued.net>
-	<4EE77416.8090907@LiPPERTEmbedded.de>
-	<4EE8ECF3.6000900@LiPPERTEmbedded.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Wed, 14 Dec 2011 13:51:20 -0500
+Date: Wed, 14 Dec 2011 21:55:16 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: rob@landley.net, aboriginal@lists.landley.net,
+        linux-kernel@vger.kernel.org, tytso@mit.edu,
+        sparclinux@vger.kernel.org, jakub@redhat.com
+Subject: Re: Sparc-32 doesn't work in 3.1.
+Message-ID: <20111214215516.26ffe884@sf.home>
+In-Reply-To: <20111214.131810.916491563666428853.davem@davemloft.net>
+References: <4EE80891.70604@landley.net>
+	<20111214204225.7c8ec86c@sf.home>
+	<20111214.125443.973289484729064945.davem@davemloft.net>
+	<20111214.131810.916491563666428853.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/pxvGas2FXDD+YCSBuo_S=i1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011 19:37:39 +0100
-Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
+--Sig_/pxvGas2FXDD+YCSBuo_S=i1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Jens Rottmann schrieb:
-> > Andres Salomon schrieb:
-> >> Just loading cs5535-clockevt should start the periodic timer.
-> >> On my XO-1, IRQ 7 starts firing immediately.
-> > Hmm, no, doesn't work. :-|  In /proc/interrupts IRQ 0 gets
-> > increased, not (in my case) IRQ 11.
-> 
-> Update: I found that SMP-enabled kernels (like the generic one I was
-> using) do load cs5535-clockevt fine but ignore it and keep using the
-> pit timer instead.
+> sparc32: Be less strict in matching %lo part of relocation.
+>=20
+> The "(insn & 0x01800000) !=3D 0x01800000" test matches 'restore'
+> but that is a legitimate place to see the %lo() part of a 32-bit
+> symbol relocation, particularly in tail calls.
+>=20
+> Signed-off-by: David S. Miller <davem@davemloft.net>
 
-Note that there are two subsystems at work here; clockevents and
-clocksource.  cs5535-clockevt uses clockevents (despite being in
-drivers/clocksource/).  For you to switch away from pit (via,
-/sys/devices/system/clocksource/clocksource0/current_clocksource), we'd
-have to implement cs5535_clocksource.  Something that would be worth
-doing, but I haven't looked into it..
+Tested-by: Sergei Trofimovich <slyfox@gentoo.org>
 
+Was about to send exactly the same. Thanks!
 
-> 
-> Responsible seems kernel/time/tick-common.c: tick_check_new_device()
->                 /*
->                  * If the cpu affinity of the device interrupt can not
->                  * be set, ignore it.
->                  */
->                 if (!irq_can_set_affinity(newdev->irq))
->                         goto out_bc;
-> 
-> Looks like it has been that way for quite some time, maybe
-> cs5535-clockevt hasn't ever worked on SMP kernels.
+--=20
 
-I've only ever tested it on UP kernels.  I didn't know SMP CS5536
-boards existed.  Gosh, I hope all of those cs5535 drivers that hadn't
-had their locking primitives tested aren't racy! ;)
+  Sergei
 
-> 
-> If I turn off SMP, cs5535-clockevt replaces the pit timer and the
-> MFGPT IRQ starts firing just as you said - at least on 3.0.9. 3.2-rc5
-> prefers to hang instead, looks like no timer events get generated.
-> Sigh.
-> 
+--Sig_/pxvGas2FXDD+YCSBuo_S=i1
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-3.2-rc4 hung on my XO-1 due to a bug that's been fixed on rc5, but I
-haven't tested rc5 yet.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-> I'll try to narrow it down tomorrow, but now I'm calling it a day.
-> 
-> Cheers
-> Jens
+iEYEARECAAYFAk7o8RUACgkQcaHudmEf86pIlwCfdEXfeJjG2l+eMHHAvfVDIkTe
+u5oAniMK9UwMuHE0CHZlwNywV/LsFTiy
+=YHMg
+-----END PGP SIGNATURE-----
+
+--Sig_/pxvGas2FXDD+YCSBuo_S=i1--
