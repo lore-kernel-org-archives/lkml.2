@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab1LNRNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:13:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33409 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129Ab1LNRN2 (ORCPT
+	id S1757707Ab1LNROv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:14:51 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41491 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755198Ab1LNROt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:13:28 -0500
+	Wed, 14 Dec 2011 12:14:49 -0500
+X-Sasl-enc: S4bNscqdXVJQstIawf0vGg9XUCyPj2FphHzyJ7pC/9Tn 1323882888
+Date: Wed, 14 Dec 2011 09:14:41 -0800
+From: Greg KH <greg@kroah.com>
+To: David Airlie <airlied@redhat.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, Xi Wang <xi.wang@gmail.com>
+Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
+Message-ID: <20111214171441.GA7172@kroah.com>
+References: <CAGyNYUNwMs0ntak4bo5S1EMuEoTuTwsV1dKAc1gu8qF9qQ4ZLg@mail.gmail.com>
+ <2486420a-edef-443a-ba5e-18fb5efb0eb9@zmail16.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF176B446FFD@HQMAIL01.nvidia.com>
-References: <1323851530-4171-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF176B446FFD@HQMAIL01.nvidia.com>
-Date: Wed, 14 Dec 2011 18:13:27 +0100
-Message-ID: <CACRpkdbjQYCcv9LBVoDb1MkSuqLYfrgb9Hr5w7TKYVoJCLwWGA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: add a group-specific hog macro
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2486420a-edef-443a-ba5e-18fb5efb0eb9@zmail16.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 4:46 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Wednesday, December 14, 2011 1:32 AM:
->> To create elegant tables for pinmux hogs on the PXA MMP platform,
->> we need this hog macro that can specify both function and group in
->> one go.
->>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Acked-by: Stephen Warren <swarren@nvidia.com>
->
-> That said, when using this, I'd wrap it in a macro that set .name and
-> .group to the same thing; for system hogs, I'm not sure what other name
-> would be useful. Should the macro do that?
+On Wed, Dec 14, 2011 at 08:34:29AM -0500, David Airlie wrote:
+> 
+> ----- Original Message -----
+> > From: "Eugene Teo" <eugeneteo@kernel.sg>
+> > To: "Xi Wang" <xi.wang@gmail.com>
+> > Cc: "David Airlie" <airlied@linux.ie>, dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+> > security@kernel.org, "Dave Airlie" <airlied@redhat.com>
+> > Sent: Wednesday, 14 December, 2011 1:16:49 PM
+> > Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
+> > 
+> > Cc'ed Dave's work email.
+> 
+> This is already in Linus tree, went there a while ago.
+> 
+> a5cd335165e31db9dbab636fd29895d41da55dd2
 
-Nah I want to keep these namespaces separate. I can see why you'd
-want to do that but it could be confusing too, some may want to
-say, prefix the map entry name with the board name (or a board
-wildcard like "mop500*" or nifty things like that so they see "OK these
-entries are for all boards, these are for this specific variant..." etc.
+And it was in the 3.0.13 and 3.1.5 kernel releases.
 
-Linus Walleij
+greg k-h
