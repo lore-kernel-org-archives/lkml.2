@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1LNIUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:20:12 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45868 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755735Ab1LNIUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:20:09 -0500
-Date: Wed, 14 Dec 2011 09:18:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
-Message-ID: <20111214081809.GJ25232@elte.hu>
-References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
- <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
- <20111213192556.GD2421@somewhere.redhat.com>
+	id S1755011Ab1LNIdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 03:33:01 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:51135 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754431Ab1LNIc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 03:32:58 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: add a group-specific hog macro
+Date: Wed, 14 Dec 2011 09:32:10 +0100
+Message-ID: <1323851530-4171-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111213192556.GD2421@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+To create elegant tables for pinmux hogs on the PXA MMP platform,
+we need this hog macro that can specify both function and group in
+one go.
 
-> On Mon, Dec 12, 2011 at 04:52:18PM -0500, Seiji Aguchi wrote:
-> > Hi,
-> > 
-> > I'm interested in these tracepoints.
-> > But this patch removed from -mm tree for some reason.
-> > 
-> > http://www.spinics.net/lists/mm-commits/msg85707.html
-> > 
-> > Do you plan to update it and push to upstream?
-> 
-> Oh weird. Doesn't seem to be in -tip either. Anybody has
-> any clue about where this patch went?
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/pinctrl/machine.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Didn't Thomas critique them - if so then were those observations 
-addressed?
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index ad430e0..d0aecb7 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -73,6 +73,15 @@ struct pinmux_map {
+ 	{ .name = a, .ctrl_dev_name = b, .function = c, \
+ 	  .hog_on_boot = true }
+ 
++/*
++ * Convenience macro to map a system function onto a certain pinctrl device
++ * using a specified group, to be hogged by the pinmux core until the system
++ * shuts down.
++ */
++#define PINMUX_MAP_SYS_HOG_GROUP(a, b, c, d)		\
++	{ .name = a, .ctrl_dev_name = b, .function = c, .group = d, \
++	  .hog_on_boot = true }
++
+ #ifdef CONFIG_PINMUX
+ 
+ extern int pinmux_register_mappings(struct pinmux_map const *map,
+-- 
+1.7.3.2
 
-Thanks,
-
-	Ingo
