@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1LNKET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:04:19 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59747 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab1LNKER (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:04:17 -0500
-Date: Wed, 14 Dec 2011 11:03:38 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ryan Mallon <rmallon@gmail.com>,
-        Bill Gatliff <bgat@billgatliff.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-Subject: Re: [PATCH 1/3] PWM: add pwm framework support
-Message-ID: <20111214100338.GA18348@avionic-0098.mockup.avionic-design.de>
-References: <201106301441.24493.arnd@arndb.de>
- <4E11994B.7070103@gmail.com>
- <20110704124318.GI6069@pengutronix.de>
- <201107041607.10265.arnd@arndb.de>
- <20111207085339.GA7970@avionic-0098.mockup.avionic-design.de>
- <20111207090734.GN27267@pengutronix.de>
+	id S1756718Ab1LNKQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:16:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753611Ab1LNKQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:16:40 -0500
+Message-ID: <4EE8777C.4090704@redhat.com>
+Date: Wed, 14 Dec 2011 11:16:28 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-In-Reply-To: <20111207090734.GN27267@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:fQmKwz5h7J+/r3bnY3uQGBfQhYNgQFsNzOaVUfuXALK
- wyV25ZenL1lnPZfRgsbVLyeHbMBzt1zJ0rtLbPOZlMyIigKRi0
- qMlUb1WFtFbm/rVdQePb1IyK9CeZYhefVghliOlgIWvbvysrAK
- PYxbX4vihu2/gcUvqymE0NCJPk/K8m2qn5M9Gnsrex53fY5Kbp
- QSG1tSgLQCVxhXw/aSkxxacJovsD9vax1Q4aZDgunnwvkc1qat
- x+k8TIncM5SwSHf0x82ELWGRiTMj2pixKTMA90f/3bJYfyNIgL
- XKa/REkwwSNGnW5vQ4ttDXM1wrcOXfkP4Xk/Mm/S4jdezkjMPy
- dV9OFH8wU51Y5/vhXuPRKpH0s2tOn+Ixvmd9aiYRVVANLPvDjp
- N7PlilkliLwzmnQD/Nk6GrPEbs2LzCDvXI=
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Ajeet Yadav <ajeet.yadav.77@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Staging: zram: print the disk size in KB
+References: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com> <CAMuHMdV_eyMhWS6+CFc--i_KBcyb31u11tEO3OkDQsB4HbYpfA@mail.gmail.com>
+In-Reply-To: <CAMuHMdV_eyMhWS6+CFc--i_KBcyb31u11tEO3OkDQsB4HbYpfA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/14/2011 08:52 AM, Geert Uytterhoeven wrote:
+> On Tue, Dec 13, 2011 at 06:16, Ajeet Yadav <ajeet.yadav.77@gmail.com> wrote:
+>> From a5d5ba92b5af9134e617986884856334c377e1d0 Mon Sep 17 00:00:00 2001
+>> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+>> Date: Mon, 12 Dec 2011 18:42:30 +0530
+>> Subject: [PATCH 1/1] Staging: zram: print the disk size in KB
+>>
+>> Total memory size is in KB, but the zram disk size was not
+>> printed in KB, correct the figure in KB units.
+> 
+> Kelvin bytes?
+> 
+>> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+>> ---
+>>  drivers/staging/zram/zram_drv.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+>> index 09de99f..ff591e3 100644
+>> --- a/drivers/staging/zram/zram_drv.c
+>> +++ b/drivers/staging/zram/zram_drv.c
+>> @@ -126,7 +126,7 @@ static void zram_set_disksize(struct zram *zram,
+>> size_t totalram_bytes)
+>>                "\tMemory Size: %zu kB\n"
+> 
+> kilobytes? Either this ...
+> 
+>>                "\tSize you selected: %llu kB\n"
+> 
+> ... and this should be KiB ...
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm personally all for the international system of units, but there
+are *a lot* of places in the kernel where the inaccurate kilo = 2^10
+notation is used. I haven't checked, but I would guess that in kernel
+kB stands more often for 1024 bytes than 1000 bytes.
 
-* Sascha Hauer wrote:
-> I have a branch which adds a basic PWM framework. It doesn't change the
-> pwm API at all, but only adds support for registering multiple PWM
-> drivers. All in Kernel drivers are converted to this new framework, but
-> except the i.MX driver all of them are untested. I'm quite confident
-> that the drivers itself work, but there will probably be some Kconfig
-> related issues which I wasn't able to sort out. The corresponding
-> Maintainers should probably have a look over it. Feel free to post
-> the patches if you are prepared to work on the comments you receive.
-> Otherwise I'll see if I find some time maybe next week.
-[...]
+Is there any coding rule about its usage?
 
-I've looked at this in more detail and one thing that irritates me is that
-the current driver API requires a driver to register a pwm_chip structure for
-each PWM it can control. Wouldn't it be easier in such cases to just specify
-how many PWMs a chip wants to register, much like gpiolib does it?
+Jerome
 
-Thierry
+> 
+>>                "Continuing anyway ...\n",
+>> -               totalram_bytes >> 10, zram->disksize
+>> +               totalram_bytes >> 10, zram->disksize >> 10
+> 
+> ... or these should be / 1000 instead of >> 10.
+> 
+>>                );
+>>        }
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
 
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7odHoACgkQZ+BJyKLjJp+iIwCfaRR8krEsdQp0ZX+lkV0ERppT
-jQoAn0JrNoba47tl1mldn8lBMWImecZ+
-=58q/
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
