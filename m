@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1LNH4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:56:43 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:57252 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab1LNH4k (ORCPT
+	id S1754659Ab1LNH5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:57:39 -0500
+Received: from webbox1416.server-home.net ([77.236.96.61]:42717 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753045Ab1LNH5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:56:40 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: khali@linux-fr.org, ben-linux@fluff.org, seth.heasley@intel.com,
-        ben@decadent.org.uk, David.Woodhouse@intel.com
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, dlaurie@chromium.org, bleung@chromium.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 0/3] i2c: i801: enable irq
-Date: Wed, 14 Dec 2011 15:56:29 +0800
-Message-Id: <1323849392-20413-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Wed, 14 Dec 2011 02:57:36 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Greg KH <greg@kroah.com>
+Cc: Joachim Foerster <joachim.foerster@missinglinkelectronics.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: ISP1760: Add flags for interrupt polarity and edge/level trigger
+Date: Wed, 14 Dec 2011 08:57:33 +0100
+Message-ID: <5171961.tdOaMPUdsK@ws-stein>
+User-Agent: KMail/4.7.3 (Linux/3.0.6-gentoo; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <20111213180010.GA29980@kroah.com>
+References: <1323768793-20633-1-git-send-email-alexander.stein@systec-electronic.com> <20111213180010.GA29980@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches enables the Intel PCH SMBus controller interrupt.
+On Tuesday 13 December 2011 10:00:10 Greg KH wrote:
+> On Tue, Dec 13, 2011 at 10:33:13AM +0100, Alexander Stein wrote:
+> > Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+> > ---
+> > 
+> >  drivers/usb/host/isp1760-if.c |    4 ++++
+> >  include/linux/usb/isp1760.h   |    2 ++
+> >  2 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/usb/host/isp1760-if.c
+> > b/drivers/usb/host/isp1760-if.c index a7dc1e1..0ef9867 100644
+> > --- a/drivers/usb/host/isp1760-if.c
+> > +++ b/drivers/usb/host/isp1760-if.c
+> > @@ -388,6 +388,10 @@ static int __devinit isp1760_plat_probe(struct
+> > platform_device *pdev)> 
+> >  			devflags |= ISP1760_FLAG_DACK_POL_HIGH;
+> >  		
+> >  		if (priv->dreq_polarity_high)
+> >  		
+> >  			devflags |= ISP1760_FLAG_DREQ_POL_HIGH;
+> > 
+> > +		if (priv->interrupt_polarity_high)
+> > +			devflags |= ISP1760_FLAG_INTR_POL_HIGH;
+> > +		if (priv->interrupt_edge_triggered)
+> > +			devflags |= ISP1760_FLAG_INTR_EDGE_TRIG;
+> > 
+> >  	}
+> >  	
+> >  	hcd = isp1760_register(mem_res->start, mem_size, irq_res->start,
+> > 
+> > diff --git a/include/linux/usb/isp1760.h b/include/linux/usb/isp1760.h
+> > index de7de53..c5edbc8 100644
+> > --- a/include/linux/usb/isp1760.h
+> > +++ b/include/linux/usb/isp1760.h
+> > @@ -13,6 +13,8 @@ struct isp1760_platform_data {
+> > 
+> >  	unsigned analog_oc:1;			/* Analog overcurrent */
+> >  	unsigned dack_polarity_high:1;		/* DACK active high */
+> >  	unsigned dreq_polarity_high:1;		/* DREQ active high */
+> > 
+> > +	unsigned interrupt_polarity_high:1;
+> > +	unsigned interrupt_edge_triggered:1;
+> 
+> So you added these, and you check them, but who sets them?  What is the
+> point of this patch at this point in time?
 
-The Interrupt can signify:
- INTR - the end of a complete transaction
- DEV_ERR - that a device did not ACK a transaction
- BYTE_DONE - the completion of a single byte during a byte-by-byte transaction
+These platform data bits are set by board configurations, which is completly 
+optional. So currently maybe noone sets/use it, but in future someone may need 
+it. Also dreq_polarity_high is also there and I only found board files setting 
+them to 0... So why not add the feature bits too?
 
-This patchset arrives with the following caveats:
-
- 1)  It has only been tested with a Cougar Point (Intel 6 Series PCH) SMBus
-controller, so the irq is only enabled for that chip type.
-
- 2) It has not been tested with any devices that do transactions that use the
-    PEC.  In fact, I believe that an additional small patch would be required
-    to the driver working correctly in interrupt mode with PEC.
-
- 3) It has not been tested in SMBus Slave mode.
-
- 4) It has not been tested with SMI#-type interrupts.
-
- 5) The BIOS has to configure the PCH SMBus IRQ properly.
-
- 6) It has not been tested with a device that does byte-by-byte smbus (non-i2c)
-    reads.
-
- 7) It has not been tested with smbus 'process call' transactions.
-
-If would be very helpful if somebody could help test on other chipsets, with
-a PEC device, or on additional BIOS that woudl be very helpful.
-
-In the meantime, the interrupt behavior is only enabled on the Cougar Point,
-and even here, it can be completely disabled with the "Interrupt" feature like
-other advanced features of the driver.
-
-Daniel Kurtz (3):
-  i2c: i801: refactor i801_block_transaction_byte_by_byte
-  i2c: i801: enable irq for i801 smbus transactions
-  i2c: i801: enable irq for byte_by_byte transactions
-
- drivers/i2c/busses/i2c-i801.c |  193 ++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 170 insertions(+), 23 deletions(-)
-
--- 
-1.7.3.1
+Regards,
+Alexander
 
