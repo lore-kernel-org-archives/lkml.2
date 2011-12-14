@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1LNHuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:50:21 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:54709
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753216Ab1LNHuS (ORCPT
+	id S1754786Ab1LNHuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:50:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56498 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1LNHud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:50:18 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 14 Dec 2011 15:50:04 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux@arm.linux.org.uk>, <andrew@lunn.ch>, <linaro-dev@lists.linaro.org>,
-        <eric.miao@linaro.org>, <grant.likely@secretlab.ca>,
-        <jeremy.kerr@canonical.com>, <mturquette@ti.com>, <sboyd@quicinc.com>,
-        <magnus.damm@gmail.com>, <dsaxena@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <arnd.bergmann@linaro.org>,
-        <patches@linaro.org>, <tglx@linutronix.de>,
-        <linux-omap@vger.kernel.org>, <richard.zhao@linaro.org>,
-        <shawn.guo@freescale.com>, <paul@pwsan.com>,
-        <linus.walleij@stericsson.com>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, <amit.kucheria@linaro.org>,
-        <skannan@quicinc.com>
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-Message-ID: <20111214074922.GM28768@b20223-02.ap.freescale.net>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
- <1323834838-2206-4-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1323834838-2206-4-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Wed, 14 Dec 2011 02:50:33 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Dec 2011 16:49:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: [PATCH 1/4] memcg: simplify page cache charging.
+Message-Id: <20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-> + *
-> + * @recalc_rate	Recalculate the rate of this clock, by quering hardware
-> + * 		and/or the clock's parent. It is up to the caller to insure
-> + * 		that the prepare_mutex is held across this call.  Returns the
-> + * 		calculated rate.  Optional, but recommended - if this op is not
-> + * 		set then clock rate will be initialized to 0.
-I'm still concerned, if it's NULL, why don't just retrun parent's rate if it has? 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+This patch is a clean up. No functional/logical changes.
+
+Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
+of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
+called against FUSE's pages from splice.
+
+So, Now, mem_cgroup_cache_charge() doesn't receive a page on LRU
+unless it's not SwapCache.
+For checking, WARN_ON_ONCE(PageLRU(page)) is added.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   31 +++++++++----------------------
+ 1 files changed, 9 insertions(+), 22 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a9e92a6..947c62c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2710,6 +2710,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 				gfp_t gfp_mask)
+ {
+ 	struct mem_cgroup *memcg = NULL;
++	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+ 	int ret;
  
-Thanks
-Richard
+ 	if (mem_cgroup_disabled())
+@@ -2719,31 +2720,17 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
++	if (!page_is_file_cache(page))
++		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+ 
+-	if (page_is_file_cache(page)) {
+-		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
+-		if (ret || !memcg)
+-			return ret;
+-
+-		/*
+-		 * FUSE reuses pages without going through the final
+-		 * put that would remove them from the LRU list, make
+-		 * sure that they get relinked properly.
+-		 */
+-		__mem_cgroup_commit_charge_lrucare(page, memcg,
+-					MEM_CGROUP_CHARGE_TYPE_CACHE);
+-		return ret;
+-	}
+-	/* shmem */
+-	if (PageSwapCache(page)) {
++	if (!PageSwapCache(page)) {
++		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
++		WARN_ON_ONCE(PageLRU(page));
++	} else { /* page is swapcache/shmem */
+ 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+ 		if (!ret)
+-			__mem_cgroup_commit_charge_swapin(page, memcg,
+-					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+-	} else
+-		ret = mem_cgroup_charge_common(page, mm, gfp_mask,
+-					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+-
++			__mem_cgroup_commit_charge_swapin(page, memcg, type);
++	}
+ 	return ret;
+ }
+ 
+-- 
+1.7.4.1
+
 
