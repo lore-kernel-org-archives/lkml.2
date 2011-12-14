@@ -1,58 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1LNPEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:04:13 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38966 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755204Ab1LNPEJ (ORCPT
+	id S1757219Ab1LNPEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:04:54 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2581 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab1LNPEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:04:09 -0500
-X-Sasl-enc: ALxR8BclGRBa/LunYFD2AY9vK8KnEZ9Wu1Mx2fFfAUB9 1323875048
-Date: Wed, 14 Dec 2011 07:03:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20111214150359.GA840@kroah.com>
-References: <20111214154844.3ad4e1d685c7987cba0820a0@canb.auug.org.au>
- <1323854697.28489.7.camel@twins>
+	Wed, 14 Dec 2011 10:04:47 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 14 Dec 2011 07:04:44 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v7 01/14] arm/tegra: initial device tree for tegra30
+Date: Wed, 14 Dec 2011 17:03:13 +0200
+Message-ID: <1323875032-18221-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1323875032-18221-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1323875032-18221-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323854697.28489.7.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:24:57AM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-12-14 at 15:48 +1100, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > After merging the driver-core tree, today's linux-next build
-> > (powerpc_ppc64_defconfig) failed like this:
-> > 
-> > In file included from include/linux/slab.h:185:0,
-> >                  from include/linux/kref.h:19,
-> >                  from include/linux/kobject.h:24,
-> >                  from include/linux/sysdev.h:24,
-> >                  from include/linux/node.h:17,
-> >                  from include/linux/swap.h:10,
-> >                  from include/linux/suspend.h:4,
-> >                  from arch/powerpc/kernel/asm-offsets.c:24:
-> > include/linux/slub_def.h:100:17: error: field 'kobj' has incomplete type
-> > 
-> > Caused by commit 4af679cd7cbb ("kref: Inline all functions") ... we now
-> > have kref.h -> slab.h -> slub_def.h -> kobject.h -> kref.h when
-> > CONFIG_SLUB is set.
-> 
-> Egads, that's nasty.. 
-> 
-> The nicest thing I can come up with is something like the below, but its
-> not all that nice at all :/
+This patch adds the initial device tree for tegra30
 
-I'll remove the use of kfree in the WARN_ON(), which should solve this
-problem.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ Documentation/devicetree/bindings/arm/tegra.txt |   14 +++
+ arch/arm/boot/dts/tegra30.dtsi                  |  127 +++++++++++++++++++++++
+ 2 files changed, 141 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/tegra.txt
+ create mode 100644 arch/arm/boot/dts/tegra30.dtsi
 
-greg k-h
+diff --git a/Documentation/devicetree/bindings/arm/tegra.txt b/Documentation/devicetree/bindings/arm/tegra.txt
+new file mode 100644
+index 0000000..6e69d2e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/tegra.txt
+@@ -0,0 +1,14 @@
++NVIDIA Tegra device tree bindings
++-------------------------------------------
++
++Boards with the tegra20 SoC shall have the following properties:
++
++Required root node property:
++
++compatible = "nvidia,tegra20";
++
++Boards with the tegra30 SoC shall have the following properties:
++
++Required root node property:
++
++compatible = "nvidia,tegra30";
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+new file mode 100644
+index 0000000..ee7db98
+--- /dev/null
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -0,0 +1,127 @@
++/include/ "skeleton.dtsi"
++
++/ {
++	compatible = "nvidia,tegra30";
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller@50041000 {
++		compatible = "arm,cortex-a9-gic";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = < 0x50041000 0x1000 >,
++		      < 0x50040100 0x0100 >;
++	};
++
++	i2c@7000c000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible =  "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
++		reg = <0x7000C000 0x100>;
++		interrupts = < 0 38 0x04 >;
++	};
++
++	i2c@7000c400 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
++		reg = <0x7000C400 0x100>;
++		interrupts = < 0 84 0x04 >;
++	};
++
++	i2c@7000c500 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
++		reg = <0x7000C500 0x100>;
++		interrupts = < 0 92 0x04 >;
++	};
++
++	i2c@7000c700 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
++		reg = <0x7000c700 0x100>;
++		interrupts = < 0 120 0x04 >;
++	};
++
++	i2c@7000d000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
++		reg = <0x7000D000 0x100>;
++		interrupts = < 0 53 0x04 >;
++	};
++
++	gpio: gpio@6000d000 {
++		compatible = "nvidia,tegra30-gpio", "nvidia,tegra20-gpio";
++		reg = < 0x6000d000 0x1000 >;
++		interrupts = < 0 32 0x04 0 33 0x04 0 34 0x04 0 35 0x04 0 55 0x04 0 87 0x04 0 89 0x04 >;
++		#gpio-cells = <2>;
++		gpio-controller;
++	};
++
++	serial@70006000 {
++		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
++		reg = <0x70006000 0x40>;
++		reg-shift = <2>;
++		interrupts = < 0 36 0x04 >;
++	};
++
++	serial@70006040 {
++		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
++		reg = <0x70006040 0x40>;
++		reg-shift = <2>;
++		interrupts = < 0 37 0x04 >;
++	};
++
++	serial@70006200 {
++		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
++		reg = <0x70006200 0x100>;
++		reg-shift = <2>;
++		interrupts = < 0 46 0x04 >;
++	};
++
++	serial@70006300 {
++		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
++		reg = <0x70006300 0x100>;
++		reg-shift = <2>;
++		interrupts = < 0 90 0x04 >;
++	};
++
++	serial@70006400 {
++		compatible = "nvidia,tegra30-uart", "nvidia,tegra20-uart";
++		reg = <0x70006400 0x100>;
++		reg-shift = <2>;
++		interrupts = < 0 91 0x04 >;
++	};
++
++	sdhci@78000000 {
++		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
++		reg = <0x78000000 0x200>;
++		interrupts = < 0 14 0x04 >;
++	};
++
++	sdhci@78000200 {
++		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
++		reg = <0x78000200 0x200>;
++		interrupts = < 0 15 0x04 >;
++	};
++
++	sdhci@78000400 {
++		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
++		reg = <0x78000400 0x200>;
++		interrupts = < 0 19 0x04 >;
++	};
++
++	sdhci@78000600 {
++		compatible = "nvidia,tegra30-sdhci", "nvidia,tegra20-sdhci";
++		reg = <0x78000600 0x200>;
++		interrupts = < 0 31 0x04 >;
++	};
++
++	pinmux: pinmux@70000000 {
++		compatible = "nvidia,tegra30-pinmux";
++		reg = < 0x70000868 0xd0     /* Pad control registers */
++			0x70003000 0x3e0 >; /* Mux registers */
++	};
++};
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
