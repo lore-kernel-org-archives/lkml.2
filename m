@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab1LNWn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 17:43:27 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59796 "EHLO smtp.outflux.net"
+	id S1758310Ab1LNWor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 17:44:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34518 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758281Ab1LNWn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 17:43:26 -0500
-Date: Wed, 14 Dec 2011 14:39:26 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] sched: mark parent and real_parent as __rcu
-Message-ID: <20111214223925.GA27578@www.outflux.net>
+	id S1758231Ab1LNWop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 17:44:45 -0500
+Message-ID: <4EE926D2.3030803@zytor.com>
+Date: Wed, 14 Dec 2011 14:44:34 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Mike Waychison <mikew@google.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/4] EFI: Add support for variables longer than 1024 bytes
+References: <1323896791-10858-1-git-send-email-mjg@redhat.com> <1323896791-10858-4-git-send-email-mjg@redhat.com> <CAGTjWtCpt_1h6XMwCFkx1TQnQbagtSuFBejcp6XNr4yhKgNuLg@mail.gmail.com> <20111214223950.GA29264@srcf.ucam.org>
+In-Reply-To: <20111214223950.GA29264@srcf.ucam.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The parent and real_parent pointers should be considered __rcu, since
-they should be held under either tasklist_lock or rcu_read_lock.
+On 12/14/2011 02:39 PM, Matthew Garrett wrote:
+> 
+>> We need to be careful here.  The store_raw ABI is broken, in the sense
+>> that the ABI from compat mode differs from that in 32bit mode (there
+>> is a long in the efi_variable structure which changes the offsets).  I
+>> don't know how to fix it properly and still maintain proper ABI
+>> compatibility.
+> 
+> True.
+> 
+>> What are your thoughts on _not_ wrapping efi_variable with
+>> extended_efi_variable, and instead just using a
+>> "internal_efi_variable" structure that we copy stuff into/outof.  I
+>> think that would make the memory management for dealing with the
+>> different sizes a lot easier to follow.
+> 
+> Hm. I think that'd only work if we expose a new interface. Writes would 
+> be easy enough to handle, but reads still need to work for old apps.
+> 
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- include/linux/sched.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Would making the old ABI readonly and add a new write interface resolve
+the problem with compat mode?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1c4f3e9..b05e8af 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1315,8 +1315,8 @@ struct task_struct {
- 	 * older sibling, respectively.  (p->father can be replaced with 
- 	 * p->real_parent->pid)
- 	 */
--	struct task_struct *real_parent; /* real parent process */
--	struct task_struct *parent; /* recipient of SIGCHLD, wait4() reports */
-+	struct task_struct __rcu *real_parent; /* real parent process */
-+	struct task_struct __rcu *parent; /* recipient of SIGCHLD, wait4() reports */
- 	/*
- 	 * children/sibling forms the list of my natural children
- 	 */
--- 
-1.7.0.4
-
+	-hpa
