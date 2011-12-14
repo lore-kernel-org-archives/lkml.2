@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab1LNKpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:45:41 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47355 "EHLO relay.sw.ru"
+	id S1756922Ab1LNKps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:45:48 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:17936 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756873Ab1LNKpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:45:34 -0500
-Subject: [PATCH 06/11] SUNRPC: register xs_tunables sysctl table per network
- namespace
+	id S1756912Ab1LNKpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:45:42 -0500
+Subject: [PATCH 07/11] SUNRPC: xs tunables per network namespace introduced
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Wed, 14 Dec 2011 14:45:30 +0300
-Message-ID: <20111214104530.3991.86974.stgit@localhost6.localdomain6>
+Date: Wed, 14 Dec 2011 14:45:38 +0300
+Message-ID: <20111214104538.3991.54408.stgit@localhost6.localdomain6>
 In-Reply-To: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
 References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,162 +25,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces per-net sysctl header for xs_tunables table and moves
-xs_tunables table registration to per-net opreations.
+This patch introduces independent sets of xs tunables for every network
+namespace context. Their value is accessible via per-net sysctls.
+Static tunables left as a storage for module params and now used for
+initialization of new network namespace tunables set.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/sunrpc/xprtsock.h |    3 ++
- net/sunrpc/netns.h              |    1 +
- net/sunrpc/sunrpc_syms.c        |    7 +++++
- net/sunrpc/xprtsock.c           |   52 +++++++++++++++++++++++++++++----------
- 4 files changed, 49 insertions(+), 14 deletions(-)
+ net/sunrpc/netns.h    |    6 ++++++
+ net/sunrpc/xprtsock.c |   47 ++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 44 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/sunrpc/xprtsock.h b/include/linux/sunrpc/xprtsock.h
-index 3f14a02..3ba4920 100644
---- a/include/linux/sunrpc/xprtsock.h
-+++ b/include/linux/sunrpc/xprtsock.h
-@@ -9,6 +9,9 @@
- 
- #ifdef __KERNEL__
- 
-+int socket_sysctl_init(struct net *);
-+void socket_sysctl_exit(struct net *);
-+
- int		init_socket_xprt(void);
- void		cleanup_socket_xprt(void);
- 
 diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index 05ce3b8..da825e5 100644
+index da825e5..23d110d 100644
 --- a/net/sunrpc/netns.h
 +++ b/net/sunrpc/netns.h
-@@ -15,6 +15,7 @@ struct sunrpc_net {
- #ifdef RPC_DEBUG
- 	struct ctl_table_set sysctls;
+@@ -17,6 +17,12 @@ struct sunrpc_net {
  	struct ctl_table_header *debug_ctl_header;
-+	struct ctl_table_header *xs_tunables_header;
+ 	struct ctl_table_header *xs_tunables_header;
  #endif
++	unsigned int xprt_udp_slot_table_entries;
++	unsigned int xprt_tcp_slot_table_entries;
++	unsigned int xprt_max_tcp_slot_table_entries;
++	unsigned int xprt_min_resvport;
++	unsigned int xprt_max_resvport;
++	unsigned int xs_tcp_fin_timeout;
  };
  
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 0fd156a..2b76e18 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -42,12 +42,18 @@ static __net_init int sunrpc_init_net(struct net *net)
- 	err = debug_sysctl_init(net);
- 	if (err)
- 		goto err_sysctl;
-+
-+	err = socket_sysctl_init(net);
-+	if (err)
-+		goto err_sock_ctl;
- #endif
- 	INIT_LIST_HEAD(&sn->all_clients);
- 	spin_lock_init(&sn->rpc_client_lock);
- 	return 0;
- 
- #ifdef RPC_DEBUG
-+err_sock_ctl:
-+	debug_sysctl_exit(net);
- err_sysctl:
- 	ip_map_cache_destroy(net);
- #endif
-@@ -60,6 +66,7 @@ err_proc:
- static __net_exit void sunrpc_exit_net(struct net *net)
- {
- #ifdef RPC_DEBUG
-+	socket_sysctl_exit(net);
- 	debug_sysctl_exit(net);
- #endif
- 	ip_map_cache_destroy(net);
+ extern int sunrpc_net_id;
 diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 1acc9a7..9e42db6 100644
+index 9e42db6..fe4b04b 100644
 --- a/net/sunrpc/xprtsock.c
 +++ b/net/sunrpc/xprtsock.c
-@@ -74,14 +74,14 @@ static unsigned int xs_tcp_fin_timeout __read_mostly = XS_TCP_LINGER_TO;
+@@ -89,7 +89,6 @@ static unsigned int xprt_max_resvport_limit = RPC_MAX_RESVPORT;
+ static ctl_table xs_tunables_table[] = {
+ 	{
+ 		.procname	= "udp_slot_table_entries",
+-		.data		= &xprt_udp_slot_table_entries,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+@@ -98,7 +97,6 @@ static ctl_table xs_tunables_table[] = {
+ 	},
+ 	{
+ 		.procname	= "tcp_slot_table_entries",
+-		.data		= &xprt_tcp_slot_table_entries,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+@@ -107,7 +105,6 @@ static ctl_table xs_tunables_table[] = {
+ 	},
+ 	{
+ 		.procname	= "tcp_max_slot_table_entries",
+-		.data		= &xprt_max_tcp_slot_table_entries,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+@@ -116,7 +113,6 @@ static ctl_table xs_tunables_table[] = {
+ 	},
+ 	{
+ 		.procname	= "min_resvport",
+-		.data		= &xprt_min_resvport,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+@@ -125,7 +121,6 @@ static ctl_table xs_tunables_table[] = {
+ 	},
+ 	{
+ 		.procname	= "max_resvport",
+-		.data		= &xprt_max_resvport,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+@@ -134,7 +129,6 @@ static ctl_table xs_tunables_table[] = {
+ 	},
+ 	{
+ 		.procname	= "tcp_fin_timeout",
+-		.data		= &xs_tcp_fin_timeout,
+ 		.maxlen		= sizeof(xs_tcp_fin_timeout),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_jiffies,
+@@ -2874,24 +2868,59 @@ static struct xprt_class	xs_bc_tcp_transport = {
+ int create_xs_tunables_table(struct net *net)
+ {
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
++	struct ctl_table *table;
++
++	table = xs_tunables_table;
++	if (!net_eq(net, &init_net)) {
++		table = kmemdup(xs_tunables_table, sizeof(xs_tunables_table),
++				GFP_KERNEL);
++		if (table == NULL)
++			goto err_alloc;
++	}
++
++	table[0].data = &sn->xprt_udp_slot_table_entries;
++	table[1].data = &sn->xprt_tcp_slot_table_entries;
++	table[2].data = &sn->xprt_max_tcp_slot_table_entries;
++	table[3].data = &sn->xprt_min_resvport;
++	table[4].data = &sn->xprt_max_resvport;
++	table[5].data = &sn->xs_tcp_fin_timeout;
  
+-	sn->xs_tunables_header = register_sunrpc_sysctl(net, xs_tunables_table);
++	sn->xs_tunables_header = register_sunrpc_sysctl(net, table);
+ 	if (sn->xs_tunables_header == NULL)
+-		return -ENOMEM;
++		goto err_reg;
++
+ 	return 0;
+ 
++err_reg:
++	if (!net_eq(net, &init_net))
++		kfree(table);
++err_alloc:
++	return -ENOMEM;
+ }
++
+ void destroy_xs_tunables_table(struct net *net)
+ {
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
++	struct ctl_table *table;
++
++	table = sn->xs_tunables_header->ctl_table_arg;
+ 	unregister_sysctl_table(sn->xs_tunables_header);
+ 	sn->xs_tunables_header = NULL;
++	if (!net_eq(net, &init_net))
++		kfree(table);
+ }
+ #endif
+ 
+-
+ int socket_sysctl_init(struct net *net)
+ {
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
++
++	sn->xprt_udp_slot_table_entries = xprt_udp_slot_table_entries;
++	sn->xprt_tcp_slot_table_entries = xprt_tcp_slot_table_entries;
++	sn->xprt_max_tcp_slot_table_entries = xprt_max_tcp_slot_table_entries;
++	sn->xprt_min_resvport = xprt_min_resvport;
++	sn->xprt_max_resvport = xprt_max_resvport;
++	sn->xs_tcp_fin_timeout = xs_tcp_fin_timeout;
  #ifdef RPC_DEBUG
- 
-+#include "netns.h"
-+
- static unsigned int min_slot_table_size = RPC_MIN_SLOT_TABLE;
- static unsigned int max_slot_table_size = RPC_MAX_SLOT_TABLE;
- static unsigned int max_tcp_slot_table_limit = RPC_MAX_SLOT_TABLE_LIMIT;
- static unsigned int xprt_min_resvport_limit = RPC_MIN_RESVPORT;
- static unsigned int xprt_max_resvport_limit = RPC_MAX_RESVPORT;
- 
--static struct ctl_table_header *sunrpc_table_header;
--
- /*
-  * FIXME: changing the UDP slot table size should also resize the UDP
-  *        socket buffers for existing UDP transports
-@@ -2870,17 +2870,48 @@ static struct xprt_class	xs_bc_tcp_transport = {
- 	.setup		= xs_setup_bc_tcp,
- };
- 
-+#ifdef RPC_DEBUG
-+int create_xs_tunables_table(struct net *net)
-+{
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-+
-+	sn->xs_tunables_header = register_sunrpc_sysctl(net, xs_tunables_table);
-+	if (sn->xs_tunables_header == NULL)
-+		return -ENOMEM;
-+	return 0;
-+
-+}
-+void destroy_xs_tunables_table(struct net *net)
-+{
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-+	unregister_sysctl_table(sn->xs_tunables_header);
-+	sn->xs_tunables_header = NULL;
-+}
-+#endif
-+
-+
-+int socket_sysctl_init(struct net *net)
-+{
-+#ifdef RPC_DEBUG
-+	return create_xs_tunables_table(net);
-+#else
-+	return 0;
-+#endif
-+}
-+
-+void socket_sysctl_exit(struct net *net)
-+{
-+#ifdef RPC_DEBUG
-+	destroy_xs_tunables_table(net);
-+#endif
-+}
-+
- /**
-  * init_socket_xprt - set up xprtsock's sysctls, register with RPC client
-  *
-  */
- int init_socket_xprt(void)
- {
--#ifdef RPC_DEBUG
--	if (!sunrpc_table_header)
--		sunrpc_table_header = register_sunrpc_sysctl(&init_net, xs_tunables_table);
--#endif
--
- 	xprt_register_transport(&xs_local_transport);
- 	xprt_register_transport(&xs_udp_transport);
- 	xprt_register_transport(&xs_tcp_transport);
-@@ -2895,13 +2926,6 @@ int init_socket_xprt(void)
-  */
- void cleanup_socket_xprt(void)
- {
--#ifdef RPC_DEBUG
--	if (sunrpc_table_header) {
--		unregister_sysctl_table(sunrpc_table_header);
--		sunrpc_table_header = NULL;
--	}
--#endif
--
- 	xprt_unregister_transport(&xs_local_transport);
- 	xprt_unregister_transport(&xs_udp_transport);
- 	xprt_unregister_transport(&xs_tcp_transport);
+ 	return create_xs_tunables_table(net);
+ #else
 
