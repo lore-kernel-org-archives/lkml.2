@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab1LNAWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:22:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44886 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab1LNAWn (ORCPT
+	id S1756142Ab1LNA1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:27:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59269 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1LNA1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:22:43 -0500
-Date: Tue, 13 Dec 2011 16:22:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: serge.hallyn@canonical.com, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: Re: [PATCH][V4] Add reboot_pid_ns to handle the reboot syscall
-Message-Id: <20111213162242.1ab3cb1a.akpm@linux-foundation.org>
-In-Reply-To: <1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
-References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
-	<1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Dec 2011 19:27:03 -0500
+Date: Wed, 14 Dec 2011 01:26:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dima Zavin <dima@android.com>
+cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        amit kachhap <amit.kachhap@linaro.org>,
+        Colin Cross <ccross@android.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        chaos.youn@samsung.com, LAK <linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [patch] ARM: smpboot: Enable interrupts after marking CPU
+ online/active
+In-Reply-To: <CAPz4a6BwzAmE=08pCfhK5of0vEV+uPaf8D-9U_MnW5_vAe6NFw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1112140124480.3020@ionos>
+References: <20110908215314.829452535@linutronix.de> <CADGdYn6V_eQJZ4=irMbSS7XJj4MJVeALxcrWdD7o2bGs1sEJZQ@mail.gmail.com> <20110913133258.GA6267@n2100.arm.linux.org.uk> <CAKfTPtCWuiOM5+sOwdh1FzXZb1EFT__tVEpRPY5suGOxpYTdQQ@mail.gmail.com>
+ <20110913175312.GB6267@n2100.arm.linux.org.uk> <20110923084001.GP17169@n2100.arm.linux.org.uk> <01d501cc84d6$62720890$275619b0$%kim@samsung.com> <alpine.LFD.2.02.1110071354310.3240@ionos> <CAPz4a6CkOXp6LHX2hFYVBhXWT4rhCUzLyYTLbO7g8u_jYcHt7Q@mail.gmail.com>
+ <CAPz4a6C7md+k8pCz6mJtB-v_1h-faGxQZkOqU9vHUtcG-jrYVQ@mail.gmail.com> <4EC2DF93.2050904@codeaurora.org> <alpine.LFD.2.02.1111152259430.4902@ionos> <CAPz4a6BwzAmE=08pCfhK5of0vEV+uPaf8D-9U_MnW5_vAe6NFw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011 01:17:44 +0100
-Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+On Tue, 13 Dec 2011, Dima Zavin wrote:
 
-> In the case of a child pid namespace, rebooting the system does not
-> really makes sense. When the pid namespace is used in conjunction
-> with the other namespaces in order to create a linux container, the
-> reboot syscall leads to some problems.
+> Thomas,
 > 
-> A container can reboot the host. That can be fixed by dropping
-> the sys_reboot capability but we are unable to correctly poweroff/
-> halt/reboot a container and the container stays stuck at the shutdown
-> time with the container's init process waiting indefinitively.
-> 
-> After several attempts, no solution from userspace was found to reliabily
-> handle the shutdown from a container.
-> 
-> This patch propose to make the init process of the child pid namespace to
-> exit with a signal status set to : SIGINT if the child pid namespace called
-> "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-> When the reboot syscall is called and we are not in the initial
-> pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-> and "RESTART2". Otherwise we return EINVAL.
-> 
-> Returning EINVAL is also an easy way to check if this feature is supported
-> by the kernel when invoking another 'reboot' option like CAD.
-> 
-> By this way the parent process of the child pid namespace knows if
-> it rebooted or not and can take the right decision.
->
-> ...
->
-> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	BUG();
-> +}
->  #endif /* CONFIG_PID_NS */
+> Did you ever get a chance to look into this further?
 
-I'd recommend compile-testing this...
+Yes, Peter and I are still debating the proper solution as this does
+not only affect ARM. It looks like most of arch/* implementations are
+hosed in one way or the other. Funny enough Peter and I put this on to
+the tomorrow todo list a few hours ago.
 
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  	                magic2 != LINUX_REBOOT_MAGIC2C))
->  		return -EINVAL;
->  
-> +	if (task_active_pid_ns(current) != &init_pid_ns)
-> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
-> +
->  	/* Instead of trying to make the power_off code look like
-> 	 * halt when pm_power_off is not set do it the easy way.
-> 	 */
+Thanks,
 
-I'll repeat my cruelly-ignored review comment for v3:
-
-This adds a bunch of useless code if CONFIG_PID_NS=n.  It would be
-better to do
-
-#ifdef CONFIG_PID_NS
-extern void pidns_handle_reboot(int cmd);
-#else
-static inline void pidns_handle_reboot(int cmd)
-{
-}
-#endif
-
-(And thereby move the additional code into pid_namespace.c)
+	tglx
