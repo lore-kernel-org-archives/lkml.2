@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab1LNPAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:00:09 -0500
+	id S1756765Ab1LNPAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:00:16 -0500
 Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39276 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751059Ab1LNPAH (ORCPT
+	by vger.kernel.org with ESMTP id S1756074Ab1LNPAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:00:07 -0500
+	Wed, 14 Dec 2011 10:00:08 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCHv3 00/10] XSHM: Shared Memory Driver for ST-E Thor M7400 LTE modem
-Date: Wed, 14 Dec 2011 15:59:45 +0100
-Message-Id: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv3 01/10] xshm: Shared Memory layout for ST-E M7400 driver.
+Date: Wed, 14 Dec 2011 15:59:46 +0100
+Message-Id: <1323874795-2488-2-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -24,207 +25,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on review comments from Arnd Bergmann I have the following
-changes since PATCHv2:
-~~~~~~~~~~~~~~~~~~~~~~
-o Move xshm_ipctoc.h from include/linux/xshm to drivers/xshm.
-o Remove #pragma pack.
-o Reduce use of global variables by introducing struct xshm_modem
-  in xshm_boot.c and struct xshm_parent in xshm_dev.c.
-o Remove most of the device lists, and use *_for_each_* instead.
-  In xshm_boot.c an array of configuration entries is kept,
-  instead of device instances. (Device list is in use in xshm_chr.c)
-o request_firmware is implemented instead of home-brewed solution.
-o Minor cleanup of debug macros.
-o Added dependency on CONFIG_NET, issue reported by Randy Dunlap.
-o Dropped __DATE__ macro, issue reported by Michal Marek.
+Add structures defining the channel configuration and the
+shared memory layout used for ST-Ericsson M7400.
 
-Introduction:
-~~~~~~~~~~~~~
-This patch-set introduces the Shared Memory Driver for ST-Ericsson's
-Thor M7400 LTE modem.
-The shared memory model is implemented for Chip-to-chip and
-uses a reserved memory area and a number of bi-directional
-channels. Each channel has it's own designated data area where payload
-data is copied into.
+These data structures are shared between the Linux host and the
+M7400 modem.
 
-Two different channel types are defined, one stream channel which is
-implemented as a traditional ring-buffer, and a packet channel which
-is a ring-buffer of fix sized buffers where each buffer contains
-an array of CAIF frames.
-
-The notification of read and write index updates are handled in a
-separate driver called c2c_genio. This driver will be contributed separately,
-but the API is included in this patch-set.
-
-The channel configuration is stored in shared memory, each channel
-has a designated area in shared memory for configuration data,
-read and write indexes and a data area.
-
-Configuration
-~~~~~~~~~~~~~~~
-
-        IPC-TOC
-        +--------------------+	   Index Area
-        | Channel Descr 0    | -----> +------------+
-	|                    | -+     |	Read Index |
-	|--------------------|	|     |------------|
-	| Channel Descr 1    | 	|     |	Write Index|
-	|                    |	|     +------------+
-	|--------------------|	|   Data Area
-	|       ...    	     |	|     +------------+
-	|                    |	+---> |            |
-	+--------------------+	      |	       	   |
-				      |	       	   |
-				      +------------+
-
-A IPC-TOC (table of content) is used for holding configuration data
-for the channels (struct xshm_ipctoc). It contains an array of
-channel descriptors (struct xshm_ipctoc_channel). The channel
-descriptors points out the data area and the location of
-read and write indexes.
-
-The configuration is provided from user-space using gen-netlink.
-The gen-netlink format is defined in xshm_netlink.h and and handled
-in xshm_boot.c
-
-Packet data
-~~~~~~~~~~~
-The packet channel is set up to minimize interrupts needed to
-transfer a packet and to allow efficient DMA operations on the modem.
-
-Ring Buffer Indexes:
-    +------------+
-  +-| Read Index |
-  | |------------|
-  | | Write Index|------------------------+
-  | +------------+   		 	  |
-  |    		    			  |
-  V    	  				  |
-Buffer-0:				  V Buffer-1:
- +----------------------------------------+---------------+---
- |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
- +----------------------------------------+---------------+--
-   |      |              ^      ^
-   +---------------------+      |
-	  +---------------------+
-
-Packet data is organized in a channel containing a number of fixed-
-size buffers. The channel has a read and write pointer to a buffer in a normal
-ring-buffer fashion.
-
-Each buffer holds an array of CAIF-frames, and starts with an descriptor array
-containing pointers to the data frames in the buffer. The descriptor array
-contains offset and length of each frame.
-
-The packet device (caif_xshm.c) is implemented as a network interface of
-type ARPHRD_CAIF.
-
-Stream data
-~~~~~~~~~~~
-The driver for the stream channel is implemented as a character device
-interface to user space. The character device implements non-blocking open
-and non-blocking IO in general. The character device is implementing
-a traditional circular buffer directly in the shared memory region for
-the channel.
-
-
-Driver model
-~~~~~~~~~~~~~~
-A XSHM bus is implemented, the example below shows one device
-of each type (stream and packet):
-
-/sys/bus/xshm
-|-- devices
-|   |-- xshm0 -> ../../../devices/xshm/xshm0
-|   `-- xshm1 -> ../../../devices/xshm/xshm1
-|-- drivers
-|   |-- caif_xshm
-|   |   |-- bind
-|   |   |-- module -> ../../../../module/caif_xshm
-|   |   |-- uevent
-|   |   |-- unbind
-|   |   `-- xshm1 -> ../../../../devices/xshm/xshm1
-|   `-- xshm_chr
-|       |-- bind
-|       |-- module -> ../../../../module/xshm_chr
-|       |-- uevent
-|       |-- unbind
-|       `-- xshm0 -> ../../../../devices/xshm/xshm0
-|-- drivers_autoprobe
-|-- drivers_probe
-`-- uevent
-
-
-/sys/devices/xshm/
-|-- bootimg
-|-- caif_ready
-|-- ipc_ready
-|-- uevent
-|-- xshm0
-|   |-- driver -> ../../../bus/xshm/drivers/xshm_chr
-|   |-- misc
-|   |   `-- xshm0
-|   |       |-- dev
-|   |       |-- device -> ../../../xshm0
-|   |       |-- subsystem -> ../../../../../class/misc
-|   |       `-- uevent
-|   |-- subsystem -> ../../../bus/xshm
-|   `-- uevent
-`-- xshm1
-    |-- driver -> ../../../bus/xshm/drivers/caif_xshm
-    |-- subsystem -> ../../../bus/xshm
-    `-- uevent
-
-
-Review comments and feedback is welcome.
-
-Regards,
-Sjur Brændeland
-
-cc: Michal Marek <mmarek@suse.cz>
-cc: Randy Dunlap <rdunlap@xenotime.net>
-
-Sjur Brændeland (10):
-  xshm: Shared Memory layout for ST-E M7400 driver.
-  xshm: Channel config definitions for ST-E M7400 driver.
-  xshm: Configuration for XSHM Channel an devices.
-  xshm: geni/geno driver interface.
-  xshm: genio dummy driver
-  xshm: Add xshm device implementation
-  xshm: XSHM Configuration data handling
-  xshm: Character device for XSHM channel access.
-  xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-  caif-xshm: Add CAIF driver for Shared memory for M7400
-
- drivers/Kconfig                   |    2 +
- drivers/Makefile                  |    1 +
- drivers/net/caif/Kconfig          |   10 +
- drivers/net/caif/Makefile         |    1 +
- drivers/net/caif/caif_xshm.c      |  915 +++++++++++++++++++++++++++
- drivers/xshm/Kconfig              |   60 ++
- drivers/xshm/Makefile             |    5 +
- drivers/xshm/dummy_c2c_genio.c    |   76 +++
- drivers/xshm/xshm_boot.c          | 1149 +++++++++++++++++++++++++++++++++
- drivers/xshm/xshm_chr.c           | 1262 +++++++++++++++++++++++++++++++++++++
- drivers/xshm/xshm_dev.c           |  541 ++++++++++++++++
- drivers/xshm/xshm_ipctoc.h        |  153 +++++
- include/linux/Kbuild              |    1 +
- include/linux/c2c_genio.h         |  195 ++++++
- include/linux/xshm/Kbuild         |    1 +
- include/linux/xshm/xshm_dev.h     |  244 +++++++
- include/linux/xshm/xshm_netlink.h |   95 +++
- 17 files changed, 4711 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/caif/caif_xshm.c
- create mode 100644 drivers/xshm/Kconfig
- create mode 100644 drivers/xshm/Makefile
- create mode 100644 drivers/xshm/dummy_c2c_genio.c
- create mode 100644 drivers/xshm/xshm_boot.c
- create mode 100644 drivers/xshm/xshm_chr.c
- create mode 100644 drivers/xshm/xshm_dev.c
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
+ drivers/xshm/xshm_ipctoc.h |  153 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 153 insertions(+), 0 deletions(-)
  create mode 100644 drivers/xshm/xshm_ipctoc.h
- create mode 100644 include/linux/c2c_genio.h
- create mode 100644 include/linux/xshm/Kbuild
- create mode 100644 include/linux/xshm/xshm_dev.h
- create mode 100644 include/linux/xshm/xshm_netlink.h
+
+diff --git a/drivers/xshm/xshm_ipctoc.h b/drivers/xshm/xshm_ipctoc.h
+new file mode 100644
+index 0000000..b604bc5
+--- /dev/null
++++ b/drivers/xshm/xshm_ipctoc.h
+@@ -0,0 +1,153 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2011
++ * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#ifndef XSHM_TOC
++#define XSHM_TOC
++
++/**
++ * DOC: XSHM Shared Memory Layout
++ *
++ * XSHM defines a set of structures describing the memory layout used
++ * for the Shared Memory IPC. In short &toc_entry points out &ipc_toc,
++ * which points out the &xshm_ipctoc_channel. &xshm_ipctoc_channel defines
++ * the channels used to communicate between host and external device (modem).
++ *
++ *  &xshm_ipctoc_channel can be used in packet-mode or stream-mode,
++ *  and points out &xshm_bufidx holding information about cirular
++ *  buffers, andtheir read/write indices etc.
++ */
++
++struct _xshm_offsets {
++	__le32 rx;
++	__le32 tx;
++};
++
++/**
++ * struct xshm_ipctoc - Table Of Content definition for IPC.
++ *
++ * @magic:	Magic shall always be set to Ascii coded string "TC" (2 bytes)
++ * @version:	Main version of the TOC header.
++ * @subver:	Sub version of the TOC header.
++ * @channel_offsets: Offset to both rx and tx direction must be set.
++ *			The array must be terminated by a zero value.
++ *
++ * This struct is stored at the start of the External Shared memory, and
++ * serves as a extended table of contents defining the channel configurations
++ * for the external shared memory protocol between a modem and host.
++ *
++ * This extended table of content (ipctoc) is written to a predefine memory
++ * location and the modem will read this ipctoc during start-up and use this
++ * for setting up the IPC channels and it's buffers.
++ *
++ */
++
++struct xshm_ipctoc {
++	__u8 magic[2];
++	__u8 version;
++	__u8 subver;
++	struct _xshm_offsets channel_offsets[8];
++};
++
++#define XSHM_IPCTOC_MAGIC1 'T'
++#define XSHM_IPCTOC_MAGIC2 'C'
++
++/**
++ * struct xshm_ipctoc_channel - Channel descriptor for External Shared memory.
++ *
++ * @offset: Relative address to channel data area.
++ * @size: Total size of a SHM channel area partition.
++ * @mtu: Maximum Transfer Unit for packets in a buffer (packet mode).
++ * @packets: Maximum Number of packets in a buffer (packet mode).
++ * @mode: Mode of channel: Packet mode=1, Stream mode (shm_channel_mode = 2).
++ * @buffers: Number of buffers for the channel.
++ * @ipc: Offset to IPC message location (of type struct xshm_bufidx).
++ * @read_bit: GENI/O bit used to indicate update of the read pointer for
++ *	this channel (at offset ipc).
++ * @write_bit: GENI/O bit used to indicate update of the write pointer for
++ *	this channel (at offset ipc).
++ * @alignment: Protocol specific options for the protocol,
++ *	e.g. packet alignment.
++ *
++ * This struct defines the channel configuration for a single direction.
++ *
++ * This structure is pointed out by the &xshm_toc and is written by
++ * host during start-up and read by modem at firmware boot.
++ *
++ */
++
++struct xshm_ipctoc_channel {
++	__le32 offset;
++	__le32 size;
++/* private: */
++	__u8 unused[3];
++/* public: */
++	__u8 mode;
++	__le32 buffers;
++	__le32 ipc;
++	__le16 write_bit;
++	__le16 read_bit;
++	__u16 mtu;
++	__u8 packets;
++	__u8 alignment;
++};
++
++/**
++ * struct xshm_bufidx - Indices's for a uni-directional xshm channel.
++ *
++ * @read_index: Specify the read index for a channel. This field can
++ *	have value in range of [0.. xshm_ipctoc_channel.buffers -1].
++ *	In stream mode - this is the read index in the ringbuffer.
++ *	In packet mode - this index will at any time refer to the next
++ *	buffer available for read.
++ *
++ * @write_index: Specify the write index for a channel.
++ *	This field can have value in range of [0.. buffers -1].
++ *	In stream mode - this is the write index in the ringbuffer.
++ *	In packet mode - this index will at any time refer to the next
++ *	buffer available for write.
++ *
++ * @size: The actual number of bytes for a buffer at each index.
++ *	  This array has xshm_ipctoc_channel.buffers slots, one for each buffer.
++ *	  The size is updated every time data is written to the buffer.
++ *
++ * @state: The state of the channel, 0 - Closed, 1 - Open
++ *
++ *
++ * This structure contains data for the ring-buffer used in packet and stream
++ * mode, for the external shared memory protocol.
++ * Note that the read_buf_index and the write_buf_index
++ * refer to two different channels. So for a ring buffer used to communicate
++ * from modem, the modem will update the write_buf_index while Linux host
++ * will update read_buf_index.
++ */
++struct xshm_bufidx {
++	__le32 state;
++	__le32 read_index;
++	__le32 write_index;
++	__le32 size[0];
++};
++
++/** struct toc_entry - Points out the boot imiages
++ *
++ * @start: Offset counting from start of memory area to the image data.
++ * @size:  Size of the images in bytes.
++ * @flags: Use 0 if no flags are in use.
++ * @entry: Where to jump to start exeuting. Only applicable
++ *		when using SDRAM. Set to 0xffffffff if unused.
++ * @load_addr: Location in SDRAM to move image. Set to 0xffffffff if
++ *		not applicable.
++ * @name: Name of image.
++ */
++struct toc_entry {
++	__le32 start;
++	__le32 size;
++	__le32 flags;
++	__le32 entry_point;
++	__le32 load_addr;
++	char name[12];
++};
++
++#endif
+-- 
+1.7.1
 
