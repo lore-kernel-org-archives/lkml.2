@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab1LNBVr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:21:47 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45609 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753655Ab1LNBVq (ORCPT
+	id S1756552Ab1LNB33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:29:29 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58930 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab1LNB30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:21:46 -0500
-X-Sasl-enc: wVvep6RTFjK+r6jvZxeUbJBBpTSWlNbfSBkFaOqyxef9 1323825705
-Date: Tue, 13 Dec 2011 17:21:41 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
-        davej@redhat.com
-Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
- for CPU modaliases)
-Message-ID: <20111214012141.GA18215@kroah.com>
-References: <1323309517.979.8.camel@mop>
- <20111209001145.GB9550@kroah.com>
- <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
- <1323444321.979.39.camel@mop>
- <20111209223454.GA24987@kroah.com>
- <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
+	Tue, 13 Dec 2011 20:29:26 -0500
+Date: Tue, 13 Dec 2011 17:29:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: "Shi, Alex" <alex.shi@intel.com>, Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
+In-Reply-To: <1323657793.22361.383.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1112131726140.8593@chino.kir.corp.google.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323076965.16790.670.camel@debian> <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com> <1323234673.22361.372.camel@sli10-conroe>
+ <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com> <1323657793.22361.383.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 01:50:57AM +0100, Kay Sievers wrote:
-> On Fri, Dec 9, 2011 at 23:34, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
-> >> Greg, would be nice, if you can take a quick look a the driver core (not
-> >> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
-> >> they look sane to you. I'll then split the driver core stuff out, so we
-> >> can merge that before we port the individual drivers over.
-> >
-> > Yes, it looks sane to me, thanks again for doing this work.
-> 
-> Split-up patches are here:
->   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=tree
-> 
-> That's the size of it:
->   60 files changed, 1170 insertions(+), 1421 deletions(-)
+On Mon, 12 Dec 2011, Shaohua Li wrote:
 
-Very nice.
+> With the per-cpu partial list, I didn't see any workload which is still
+> suffering from the list lock, so I suppose both the trashing approach
+> and pick 25% used slab approach don't help.
 
-> The current state and the list of the remaining non-x86 files is here:
->   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=README;hb=HEAD
-> 
-> We need a plan now. :)
-
-If I take those patches, none of those other ones will break their
-build, right?  Or will the cpu ones?
-
-I'll look at this tomorrow, gotta go now, I'm burnt out by badly written
-staging patches that must have been created by someone who is bent on
-driving me crazy.
-
-thanks so much for doing this.
-
-greg k-h
+This doesn't necessarily have anything to do with contention on list_lock, 
+it has to do with the fact that ~99% of allocations come from the slowpath 
+since the cpu slab only has one free object when it is activated, that's 
+what the statistics indicated for kmalloc-256 and kmalloc-2k.  That's what 
+I called "slab thrashing": the continual deactivation of the cpu slab and 
+picking from the partial list that would only have one or two free objects 
+causing the vast majority of allocations to require the slowpath.
