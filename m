@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab1LNFPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 00:15:16 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41177 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1LNFPM (ORCPT
+	id S1752432Ab1LNGA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 01:00:26 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63686 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1LNGAX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 00:15:12 -0500
-Message-ID: <4EE830D5.5070305@gmail.com>
-Date: Wed, 14 Dec 2011 16:15:01 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
+	Wed, 14 Dec 2011 01:00:23 -0500
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, paul@pwsan.com,
-        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
-        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
-        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        grant.likely@secretlab.ca, sboyd@quicinc.com, shawn.guo@freescale.com,
-        skannan@quicinc.com, magnus.damm@gmail.com, arnd.bergmann@linaro.org,
-        eric.miao@linaro.org, richard.zhao@linaro.org, mturquette@ti.com,
-        andrew@lunn.ch, Jamie Iles <jamie@jamieiles.com>
-Subject: Re: [PATCH v4 5/6] clk: basic gateable and fixed-rate clks
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org> <1323834838-2206-6-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1323834838-2206-6-git-send-email-mturquette@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111214001847.GA26688@kroah.com>
+References: <CAB4K4y74HtRxF6iMayonaSvc2Uoe9Fr+7Bwf9Fr05NwbrSDU8g@mail.gmail.com>
+	<20111214001847.GA26688@kroah.com>
+Date: Wed, 14 Dec 2011 11:30:22 +0530
+Message-ID: <CAB4K4y62VuUYcrT_uVGR0SYP+vctJkuyC1GgCebHFhOBExNoeQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Staging: zram: print the disk size in KB
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/12/11 14:53, Mike Turquette wrote:
-
-> Many platforms support simple gateable clks and fixed-rate clks that
-> should not be re-implemented by every platform.
-> 
-> This patch introduces a gateable clk with a common programming model of
-> gate control via a write of 1 bit to a register.  Both set-to-enable and
-> clear-to-enable are supported.
-> 
-> Also introduced is a fixed-rate clk which has no reprogrammable aspects.
-> 
-> The purpose of both types of clks is documented in drivers/clk/basic.c.
-> 
-> TODO: add support for a simple divider, simple mux and a dummy clk for
-> stubbing out platform support.
-> 
-> Based on original patch by Jeremy Kerr and contribution by Jamie Iles.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-> Cc: Jamie Iles <jamie@jamieiles.com>
-
-<snip>
-
-> +int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
-> +		struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
-> +		int set_to_enable)
-> +{
-> +	struct clk_hw_gate *gclk;
-> +	struct clk *clk;
-> +
-> +	gclk = kmalloc(sizeof(struct clk_hw_gate), GFP_KERNEL);
-> +
-> +	if (!gclk) {
-> +		pr_err("%s: could not allocate gated clk\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	clk = &gclk->clk;
-> +
-> +	/* struct clk_hw_gate assignments */
-> +	gclk->fixed_parent = fixed_parent;
-> +	gclk->reg = reg;
-> +	gclk->bit_idx = bit_idx;
-> +
-> +	/* struct clk assignments */
-> +	clk->name = name;
-> +	clk->flags = flags;
-> +
-> +	if (set_to_enable)
-> +		clk->ops = &clk_hw_gate_set_enable_ops;
-> +	else
-> +		clk->ops = &clk_hw_gate_set_disable_ops;
-
-
-You could avoid having two sets of operations if you stored the
-set_to_enable value in struct clk_hw_gate. It might be useful to store
-additional information in struct clk_hw_gate if you also want to extend
-to supporting non-32bit registers (readb, etc), clocks with write only
-registers, or support clocks which require more than one bit to be set
-or cleared to enable them, etc. See the basic mmio gpio driver for a
-similar case.
-
-~Ryan
-
+On Wed, Dec 14, 2011 at 5:48 AM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Dec 13, 2011 at 10:46:53AM +0530, Ajeet Yadav wrote:
+>> >From a5d5ba92b5af9134e617986884856334c377e1d0 Mon Sep 17 00:00:00 2001
+>> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+>> Date: Mon, 12 Dec 2011 18:42:30 +0530
+>> Subject: [PATCH 1/1] Staging: zram: print the disk size in KB
+>
+> Why did you include the patch in an email instead of using
+> git-send-email?  This would force me to edit the patch by hand, removing
+> this useless stuff.
+sorry for the discomfort, gmail SMTP port was not configured properly,
+will take care of this next time.
+>
+>>
+>> Total memory size is in KB, but the zram disk size was not
+>> printed in KB, correct the figure in KB units.
+>>
+>> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+>> ---
+>>  drivers/staging/zram/zram_drv.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+>> index 09de99f..ff591e3 100644
+>> --- a/drivers/staging/zram/zram_drv.c
+>> +++ b/drivers/staging/zram/zram_drv.c
+>> @@ -126,7 +126,7 @@ static void zram_set_disksize(struct zram *zram,
+>> size_t totalram_bytes)
+>
+> And your patch is line-wrapped, making it so I would have to edit it
+> again.
+>
+> Please fix up, and get the acks from the zram maintainer (as this does
+> change a kernel/user api) before I can accept this.
+>
+> greg k-h
