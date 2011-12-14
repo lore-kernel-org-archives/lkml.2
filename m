@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab1LNQeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:34:15 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56328 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab1LNQeO (ORCPT
+	id S1757552Ab1LNQgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:36:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52604 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab1LNQgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:34:14 -0500
-Date: Wed, 14 Dec 2011 17:34:09 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
-Message-ID: <20111214163407.GE10791@somewhere.redhat.com>
-References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
- <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
- <20111213192556.GD2421@somewhere.redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
+	Wed, 14 Dec 2011 11:36:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
+Date: Wed, 14 Dec 2011 16:35:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
+        akpm@linux-foundation.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+References: <1322125938-6944-2-git-send-email-dg77.kim@samsung.com> <1322125938-6944-3-git-send-email-dg77.kim@samsung.com> <20111212170846.GO13952@sortiz-mobl>
+In-Reply-To: <20111212170846.GO13952@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112141635.55071.arnd@arndb.de>
+X-Provags-ID: V02:K0:NZSAJGWrl9Y4aqC5Yrsy4O3ZEMW+Wvo4ZjS9+t+m8ke
+ yYIHspMWYcChbD0nP6L+HkC7BdGQWvPbuNMekY9on8nHYZBdVn
+ DT00mpnrJr3EsvcVtslbZ6sXu+sOzdX3pJLW1yacKyiwrlziXw
+ LZbCD3DXr9/czvJBU3AT/JRF9gWisJKzQfD2ZTxM/IHZqjusb/
+ OMecOaqKdLMq0LD+X9xpwW3FSvuRk8PEf1X39mIlyFRtXaJhzg
+ 3yuiPu6ZD239GdUU2w81NN2NufSjp/KCLI4bpnr1rt8dUKs0NW
+ KixwAkhK8aSVfDU4OF531MNsRV1IV4SQG1fv67IVgHC/E1EtrS
+ /TpVymYKZaWbKnaUphu8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:09:11AM -0500, Seiji Aguchi wrote:
-> Thank you for giving me a comment.
-> Unfortunately, neither "perf record" nor "ftrace" works for me.
+On Monday 12 December 2011, Samuel Ortiz wrote:
+> On Thu, Nov 24, 2011 at 06:12:18PM +0900, Donggeun Kim wrote:
+> > The MUIC function in MAX8997 device can be used as
+> > a USB port detector and switch.
+> > This patch supports the MUIC feature of MAX8997.
 > 
-> >What about using perf for that?
-> >
-> >Just run:
-> >
-> >	perf record -ag
-> >	^C
-> >	perf report
-> >
-> >And you should find in the callchains some informations about where your CPUs
-> >are spending time.
-> >
-> >If you system is too slow for that 
-> 
-> When system is too slow, user command such as "perf record" may not work.
-> 
-> >but you're doing background tracing with
-> >ftrace, you can use stacktrace with ftrace.
-> 
-> Actually, We're doing background tracing in our customer's system rather than kernel debugging. 
-> Ftrace doesn't work for me because it checks the size of the stack at every function call.
-> Our customers are seriously concerned about its overhead.
-> 
-> For reducing the overhead, I need tracepoints so we can hook minimal function calls.
+> I'm queueing this one to my for-next branch as it depends on your previous MFD
+> patch.
+> I'm also cc'ing Arnd in case he has some objections.
 
-Well ftrace is a whole subsystem that includes the function tracer and also an interface
-for tracepoints in debugfs. I was rather suggesting the latter one. This is a good
-choice for background tracing. And it supports stacktraces. If those generate too much
-overhead perhaps you can tune the number of entries in the stacktrace, I don't remember
-if we can do that currently but this can be an interesting feature.
+Thanks for the notification!
 
-What are you using currently for the background tracing?
+First of all, every new user space interface including new sysfs files
+and uevent messages needs documentation in the Documentation/ABI
+directory.
+
+The part that is not clear to me is how this new driver fits in
+with the first fsa9480 driver and the currently discussed extcon
+subsystem, apparently all written by the same team at Samsung.
+Is this misc driver still useful when the extcon framework gets
+merged?
+
+I very much believe that we should avoid introducing user interfaces
+in a driver specific way when we have multiple pieces of hardware
+that try to do the same thing. The extcon subsystem seems to handle
+this correctly on the high-level (I have not done a detailed
+review yet but I trust that it will be ok), so I don't understand
+why we want another driver for the MAX8997 MUIC.
+
+	Arnd
