@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab1LNLHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 06:07:53 -0500
-Received: from furry1.cpalmer.me.uk ([91.84.39.42]:42175 "EHLO
-	furry1.cpalmer.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab1LNLHv (ORCPT
+	id S1756756Ab1LNLN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 06:13:59 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:3459
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754531Ab1LNLN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 06:07:51 -0500
-X-Greylist: delayed 1082 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 06:07:51 EST
-Message-ID: <4EE87F47.7020500@pobox.com>
-Date: Wed, 14 Dec 2011 10:49:43 +0000
-From: Chris Palmer <chris.palmer@pobox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 14 Dec 2011 06:13:58 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Li Yang-R58472 <r58472@freescale.com>
+To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+CC: Wood Scott-B07421 <B07421@freescale.com>,
+        Liu Shuo-B35362 <B35362@freescale.com>,
+        "linux-kernel@vger.kernel.org Kernel" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH v2] Integrated Flash Controller support
+Thread-Topic: [PATCH v2] Integrated Flash Controller support
+Thread-Index: AQHMl7rmfBM38sjwhEqKYc31HdaBkJW6WI4AgAJGI4CACFWWgIAAAgYAgABC8ACAAHZOAIAVwFVg
+Date: Wed, 14 Dec 2011 11:13:53 +0000
+Message-ID: <94F013E7935FF44C83EBE7784D62AD3F056964B0@039-SN2MPN1-023.039d.mgd.msft.net>
+References: <1320053901-23801-1-git-send-email-b35362@freescale.com>
+	  <CCF7C6DB-437C-4140-894F-2F497AD610DC@kernel.crashing.org>
+	  <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org>
+	 <1322602860.2150.10.camel@koala> <4ED5531C.6030104@freescale.com>
+	 <EFF451D9-552A-4820-90D3-BF3156D5B25F@kernel.crashing.org>
+ <1322643080.24797.413.camel@sauron.fi.intel.com>
+In-Reply-To: <1322643080.24797.413.camel@sauron.fi.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.126]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Edward Donovan <edward.donovan@numble.net>
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PROBLEM] ASUS Sandybridge motherboards + PCI not working (IRQ
- n: nobody cared)
-References: <CADLC3L3wZuS-1oNoOkkU5uEDhmUio3edL05Cy4EDapfG-Y202w@mail.gmail.com> <4EE72C4D.9080207@pobox.com> <CADdbW+E9=DKZ-839yPW_R4JM1omXEzqGqT=ae7Txu4Jikyw2=A@mail.gmail.com>
-In-Reply-To: <CADdbW+E9=DKZ-839yPW_R4JM1omXEzqGqT=ae7Txu4Jikyw2=A@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBEBENVv001398
 
-Hi Edward
-Thanks for the reply. See below...
-Regards
-Chris
+>-----Original Message-----
+>From: Artem Bityutskiy [mailto:dedekind1@gmail.com]
+>Sent: Wednesday, November 30, 2011 4:51 PM
+>To: Kumar Gala
+>Cc: Wood Scott-B07421; Li Yang-R58472; Liu Shuo-B35362; linux-
+>kernel@vger.kernel.org Kernel; linux-mtd@lists.infradead.org; Andrew
+>Morton; David Woodhouse; linuxppc-dev@lists.ozlabs.org list
+>Subject: Re: [PATCH v2] Integrated Flash Controller support
+>
+>On Tue, 2011-11-29 at 19:47 -0600, Kumar Gala wrote:
+>> As Scott said, I was more asking about the 2nd patch in the sequence
+>> which did touch MTD.  Since that one is dependent on this patch,
+>> wondering how we wanted to handle them.
+>
+>I do not have time to review it, but it looks OK, so I'd suggest to
+>merge it vie the same tree as the rest of the patches.
 
-On 14/12/2011 00:06, Edward Donovan wrote:
-> Hi Chris -
->
-> I will certainly take a look.  I don't have the hardware,
-> unfortunately.  And
-> this is kinda my first rodeo, kernel-wise, so don't let me sound too
-> expert. :)
-> Let me ask a couple questions, anyway.
->
-> - Later, I'll have time to look for Andrew's message, but do you know
-> -- did he
->   mean a firmware ACPI bug, or a Linux bug?
+Hi Artem,
 
-He didn't say.
+So what is your suggestion on this patch?  Can we regard your previous email as an ACK and merge it through the powerpc tree?  Or do you prefer to merge them through the MTD tree with Kumar's ACK instead?
 
->
-> - Does 2.6.38 behave the same as 3.1.5 or the other newest kernels? 
-> (If the
->   hardware doesn't require something newer than .38.)  There was an
-> IRQ overhaul
->   in 2.6.39, and the two bugs I fixed were regressions from that
-> work.  As of
->   now, the bad-irq handling seems equivalent to 2.6.38, but I should
-> make sure
->   that goes for your problem, too.
-
-I was on 2.6.39.2 when I purchased the motherboard, so can't personally
-vouch for anything earlier. However other posters, who were on earlier
-kernels, referred to the behaviour that I am now experiencing on 3.1.5 -
-i.e. that the "nobody cared" fault occurs and the device then continues
-to "work" but extremely slowly (from 2.6.39.2-3.1.4 it stops working
-completely).
-
->
-> I think I'll cc LKML, too, if you don't mind.  I've seen this topic
-> going by,
-> but don't know what's been said.  And maybe tomorrow I can get some
-> pondering
-> time -
->
-> Ed
->
+- Leo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
