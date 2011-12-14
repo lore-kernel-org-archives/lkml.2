@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab1LNSdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:33:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55865 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab1LNSdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:33:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="86568650"
-Subject: Re: [PATCH 2/3] [SCSI]: runtime resume parent for child's
- system-resume
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+	id S1757934Ab1LNSew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:34:52 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53045 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757371Ab1LNSev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 13:34:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111214140155.GB3999@bnru02.bnr.st.com>
+References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
+	<4EDAA785.40503@solonet.org.ua>
+	<CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com>
+	<4EDFAA0A.7040607@solonet.org.ua>
+	<20111207160002.8b52df42.akpm@linux-foundation.org>
+	<20111208011904.GD5748@opensource.wolfsonmicro.com>
+	<2E48302EED53D048A7BA72B0A307FB511CF4DFD1C0@EXDCVYMBSTM005.EQ1STM.local>
+	<20111214113714.GJ3072@opensource.wolfsonmicro.com>
+	<20111214140155.GB3999@bnru02.bnr.st.com>
+Date: Wed, 14 Dec 2011 19:34:50 +0100
+Message-ID: <CACRpkdaE16-bbvsfzAK2DAmZRqswPvubzt_5ScLpQhDvcDc3uw@mail.gmail.com>
+Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Denis Kuzmenko <linux@solonet.org.ua>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-In-Reply-To: <Pine.LNX.4.44L0.1112141150520.1707-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1112141150520.1707-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Dec 2011 02:31:52 +0800
-Message-ID: <1323887512.7655.3.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-15 at 00:51 +0800, Alan Stern wrote:
-> On Wed, 14 Dec 2011, Lin Ming wrote:
-> 
-> > On Wed, Dec 14, 2011 at 11:18 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > > [Patch description from Alan Stern]
-> > >
-> > > If a child device was runtime-suspended when a system suspend began,
-> > > then there will be nothing to prevent its parent from
-> > > runtime-suspending as soon as it is woken up during the system resume.
-> > > Then when the time comes to resume the child, the resume will fail
-> > > because the parent is already back at low power.
-> > >
-> > > On the other hand, there are some devices which should remain at low
-> > > power across an entire suspend-resume cycle. �The details depend on the
-> > > device and the platform.
-> > >
-> > > This suggests that the PM core is not the right place to solve the
-> > > problem. �One possible solution is for the subsystem or device driver
-> > > to call pm_runtime_get_sync(dev->parent) at the start of the
-> > > system-resume procedure and pm_runtime_put_sync(dev->parent) at the
-> > > end.
-> > >
-> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > 
-> > Hi Alan,
-> > 
-> > May I add your SOB?
-> 
-> You can add: Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> 
-> Did you test this?  Does it do what you want?
+On Wed, Dec 14, 2011 at 3:01 PM, Shreshtha Kumar SAHU
+<shreshthakumar.sahu@stericsson.com> wrote:
 
-Yes, I have tested this and it fixes the problem.
+> I will try to implement this. In AB5500, PWM provides 1024 steps from 0 to
+> full current, and current 16 steps from 2.5mA to 40mA. I need to derive a
+> way to optmially change both PWM and current to get requested brigtness in
+> range of 0-255 (i.e. LED_OFF to LED_FULL).
+> Bur I fear that changing both PWM and current may lead to non linear
+> variation and equation needs to be derived to get it correct which will
+> add complexity to ab5500_led_brightness_set and hence API brightness.
+> In addition if platform sets max current to 10mA then brightness_set()
+> will have only 4 steps for current variation and in thus an overhead if
+> we combined current and PWM control calculation.
 
-Thanks.
+Don't fear this, it sounds like fun to me :-D
 
-> 
-> Alan Stern
-> 
+A simple linearization table with 256 steps 0.255 vs corresponding
+16-bit max current and PWM settings could hide all the complexity
+we have I guess?
 
+Like
 
+struct hvled_linearization {
+    u16 i_max;
+    u16 fade_hi;
+    u16 fade_lo;
+};
+
+#define LIN_TAB_ENTRY(a, b, c) { .i_max = a, .fade_hi = b, fade_lo = c }
+
+struct hvled_linearization lin_table[] = {
+    LIN_TAB_ENTRY(0, 0, 0),
+    ... insert the hard part here ;-) ...
+    LIN_TAB_ENTRY(65535, 65535, 65535),
+};
+
+The problem is I think this table is dependent on the LED fitted
+and needs to be supplied as platform data from the board,
+which knows which LED is on that board.
+
+Methods to generate table is reading the LED data sheet
+(if you have it) or using a photometric instrument while locking
+yourself in a totally dark room. (This is the fun part...)
+http://en.wikipedia.org/wiki/Photometer
+
+Yours,
+Linus Walleij
