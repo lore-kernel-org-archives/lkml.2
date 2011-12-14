@@ -1,209 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab1LNNj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:39:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60788 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757206Ab1LNNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:39:53 -0500
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:DRIVER CORE, KOBJ...)
-Subject: [PATCH] debugfs: add mode, uid and gid options
-Date: Wed, 14 Dec 2011 14:39:47 +0100
-Message-Id: <1323869987-14797-1-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.7
+	id S1757202Ab1LNNlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:41:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34627 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab1LNNlC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:41:02 -0500
+X-Authority-Analysis: v=2.0 cv=HeWWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Jj81R3xejsoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=lAMJI3yp5VahQQjVQKQA:9 a=c-wvdQn9p5MHY7CpMjYA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323870059.23971.23.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+Date: Wed, 14 Dec 2011 08:40:59 -0500
+In-Reply-To: <20111214133025.GA2882@Krystal>
+References: <20111214025237.457632996@goodmis.org>
+	 <20111214025253.519573056@goodmis.org> <20111214133025.GA2882@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cautious admins may want to restrict access to debugfs. Currently a
-manual chown/chmod e.g. in an init script is needed to achieve that.
-Distributions that want to make the mount options configurable need
-to add extra config files. By allowing to set the root inode's uid,
-gid and mode via mount options no such hacks are needed anymore.
-Instead configuration becomes straight forward via fstab.
+On Wed, 2011-12-14 at 08:30 -0500, Mathieu Desnoyers wrote:
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
----
- fs/debugfs/inode.c |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 148 insertions(+), 1 deletions(-)
+> Just to make sure I understand: if an NMI nests over do_nmi between
+> nmi_postprocess() and the following iret (in which case the CPU is in
+> state NMI_NOT_RUNNING), we will end up with two NMI handlers nested on
+> the stack, right ? Given that there is no upper-bound on the nesting
+> level of this situation (although nesting like this more than once is
+> extremely unlikely), is this side-effect something we should care about
+> in terms of stack space usage ?
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index f3a257d..b48f34a 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -23,9 +23,13 @@
- #include <linux/debugfs.h>
- #include <linux/fsnotify.h>
- #include <linux/string.h>
-+#include <linux/seq_file.h>
-+#include <linux/parser.h>
- #include <linux/magic.h>
- #include <linux/slab.h>
- 
-+#define DEBUGFS_DEFAULT_MODE	0755
-+
- static struct vfsmount *debugfs_mount;
- static int debugfs_mount_count;
- static bool debugfs_registered;
-@@ -125,11 +129,154 @@ static inline int debugfs_positive(struct dentry *dentry)
- 	return dentry->d_inode && !d_unhashed(dentry);
- }
- 
-+struct debugfs_mount_opts {
-+	uid_t uid;
-+	gid_t gid;
-+	umode_t mode;
-+};
-+
-+enum {
-+	Opt_uid,
-+	Opt_gid,
-+	Opt_mode,
-+	Opt_err
-+};
-+
-+static const match_table_t tokens = {
-+	{Opt_uid, "uid=%u"},
-+	{Opt_gid, "gid=%u"},
-+	{Opt_mode, "mode=%o"},
-+	{Opt_err, NULL}
-+};
-+
-+struct debugfs_fs_info {
-+	struct debugfs_mount_opts mount_opts;
-+};
-+
-+static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	int option;
-+	int token;
-+	char *p;
-+
-+	opts->mode = DEBUGFS_DEFAULT_MODE;
-+
-+	while ((p = strsep(&data, ",")) != NULL) {
-+		if (!*p)
-+			continue;
-+
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_uid:
-+			if (match_int(&args[0], &option))
-+				return -EINVAL;
-+			opts->uid = option;
-+			break;
-+		case Opt_gid:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->gid = option;
-+			break;
-+		case Opt_mode:
-+			if (match_octal(&args[0], &option))
-+				return -EINVAL;
-+			opts->mode = option & S_IALLUGO;
-+			break;
-+		/*
-+		 * We might like to report bad mount options here;
-+		 * but traditionally debugfs has ignored all mount options
-+		 */
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int debugfs_apply_options(struct super_block *sb)
-+{
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+	struct inode *inode = sb->s_root->d_inode;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	inode->i_mode &= ~S_IALLUGO;
-+	inode->i_mode |= opts->mode;
-+
-+	inode->i_uid = opts->uid;
-+	inode->i_gid = opts->gid;
-+
-+	return 0;
-+}
-+
-+static int debugfs_remount(struct super_block *sb, int *flags, char *data)
-+{
-+	int err;
-+	struct debugfs_fs_info *fsi = sb->s_fs_info;
-+
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
-+
-+	debugfs_apply_options(sb);
-+
-+fail:
-+	return err;
-+}
-+
-+static int debugfs_show_options(struct seq_file *m, struct vfsmount *mnt)
-+{
-+	struct debugfs_fs_info *fsi = mnt->mnt_sb->s_fs_info;
-+	struct debugfs_mount_opts *opts = &fsi->mount_opts;
-+
-+	if (opts->uid != 0)
-+		seq_printf(m, ",uid=%u", opts->uid);
-+	if (opts->gid != 0)
-+		seq_printf(m, ",gid=%u", opts->gid);
-+	if (opts->mode != DEBUGFS_DEFAULT_MODE)
-+		seq_printf(m, ",mode=%o", opts->mode);
-+
-+	return 0;
-+}
-+
-+static const struct super_operations debugfs_super_operations = {
-+	.statfs		= simple_statfs,
-+	.remount_fs	= debugfs_remount,
-+	.show_options	= debugfs_show_options,
-+};
-+
- static int debug_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	static struct tree_descr debug_files[] = {{""}};
-+	struct debugfs_fs_info *fsi;
-+	int err;
-+
-+	save_mount_options(sb, data);
-+
-+	fsi = kzalloc(sizeof(struct debugfs_fs_info), GFP_KERNEL);
-+	sb->s_fs_info = fsi;
-+	if (!fsi) {
-+		err = -ENOMEM;
-+		goto fail;
-+	}
-+
-+	err = debugfs_parse_options(data, &fsi->mount_opts);
-+	if (err)
-+		goto fail;
-+
-+	err  =  simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+	if (err)
-+		goto fail;
-+
-+	sb->s_op = &debugfs_super_operations;
-+
-+	debugfs_apply_options(sb);
-+
-+	return 0;
- 
--	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files);
-+fail:
-+	kfree(fsi);
-+	sb->s_fs_info = NULL;
-+	return err;
- }
- 
- static struct dentry *debug_mount(struct file_system_type *fs_type,
--- 
-1.7.7
+At that point, there's very little on the stack to begin with. Just the
+one irq frame, and saved regs, plus the stack frame of this function. If
+we are hitting that many NMIs to cause a stack overflow, then I believe
+there's more issues than the overflow itself. Say, a livelock of NMIs?
+
+>  Also, is the stack dump OOPS handler
+> aware of this stack layout that was until now impossible ?
+
+Since NMIs on i386 doesn't change the stack when interrupting the
+kernel, the OOPs handler never was aware of the NMI stack layout.
+
+-- Steve
+
+
 
