@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1LNB33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 20:29:29 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58930 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab1LNB30 (ORCPT
+	id S1756412Ab1LNBcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 20:32:09 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43783 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966Ab1LNBcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 20:29:26 -0500
-Date: Tue, 13 Dec 2011 17:29:22 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohua Li <shaohua.li@intel.com>
-cc: "Shi, Alex" <alex.shi@intel.com>, Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-In-Reply-To: <1323657793.22361.383.camel@sli10-conroe>
-Message-ID: <alpine.DEB.2.00.1112131726140.8593@chino.kir.corp.google.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323076965.16790.670.camel@debian> <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com> <1323234673.22361.372.camel@sli10-conroe>
- <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com> <1323657793.22361.383.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 13 Dec 2011 20:32:05 -0500
+Date: Tue, 13 Dec 2011 17:31:58 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH v2.2 00/23] ext4: Add metadata checksumming
+Message-ID: <20111214013158.GB8233@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com> <20111214011028.GA8233@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111214011028.GA8233@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11121401-1780-0000-0000-0000019BFEE7
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000240; HX=3.00000179; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00095891; UDB=6.00025040; UTC=2011-12-14
+ 01:32:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Dec 2011, Shaohua Li wrote:
+On Tue, Dec 13, 2011 at 05:10:28PM -0800, Darrick J. Wong wrote:
+> On Tue, Dec 13, 2011 at 04:46:14PM -0800, Darrick J. Wong wrote:
+<snip>
+> > This patchset has been tested on 3.2.0-rc5 on x64, i386, ppc64, and ppc32.  The
+> > patches seems to work fine on all four platforms.
+> 
+> OH COME ON!!!!
+> 
+> stgit helpfully changed the From lines, screwing everything up.  Awesome.  I
+> apologize, I wasn't expecting stgit to change the From: lines when I migrated
+> the disk format changes to the front of the set.
+> 
+> I don't really want to respam the list just to fix this one little thing.  If
+> people want more code changes I'll gladly make them and re-send.  If not, then
+> Ted, I can just send you the whole mess as a big mbox file, or post them on a
+> webserver somewhere, with correct attribution.
 
-> With the per-cpu partial list, I didn't see any workload which is still
-> suffering from the list lock, so I suppose both the trashing approach
-> and pick 25% used slab approach don't help.
+The e2fsprogs patchset is also found here:
+http://djwong.org/docs/ext4_checksum_progs/
 
-This doesn't necessarily have anything to do with contention on list_lock, 
-it has to do with the fact that ~99% of allocations come from the slowpath 
-since the cpu slab only has one free object when it is activated, that's 
-what the statistics indicated for kmalloc-256 and kmalloc-2k.  That's what 
-I called "slab thrashing": the continual deactivation of the cpu slab and 
-picking from the partial list that would only have one or two free objects 
-causing the vast majority of allocations to require the slowpath.
+The kernel patchset is also found here:
+http://djwong.org/docs/ext4_checksum_kernel/
+
+(Honestly, I don't enjoy spamming the list with 91 patches.)
+
+--D
+> 
+> --D
+> > 
+> > --D
+> > 
+> > [1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
