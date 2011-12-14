@@ -1,136 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab1LNKWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:22:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56596 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab1LNKWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:22:43 -0500
-Date: Wed, 14 Dec 2011 02:22:24 -0800
-From: "=?UTF-8?B?dGlwLWJvdCBmb3IgRmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?=" 
-	<fernando@oss.ntt.co.jp>
-Message-ID: <tip-vzsp20lo2xdzh5f70g0eis2s@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joern@logfs.org, suresh.b.siddha@intel.com, fernando@oss.ntt.co.jp,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joern@logfs.org, fernando@oss.ntt.co.jp, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86:
-  Add per-cpu stat counter for APIC ICR read tries
-Git-Commit-ID: 346b46be5f10e4d247160ea94ac34450be60ce1e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756793Ab1LNKYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:24:35 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:42973 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752793Ab1LNKYe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:24:34 -0500
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Denis Kuzmenko <linux@solonet.org.ua>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+Date: Wed, 14 Dec 2011 11:23:58 +0100
+Subject: RE: [PATCH] leds: driver for ab5500 high voltage leds
+Thread-Topic: [PATCH] leds: driver for ab5500 high voltage leds
+Thread-Index: Acy1R2OozIiOiFr/T1WpBYTkEBsjrwFAt5cw
+Message-ID: <2E48302EED53D048A7BA72B0A307FB511CF4DFD1C0@EXDCVYMBSTM005.EQ1STM.local>
+References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
+ <4EDAA785.40503@solonet.org.ua>
+ <CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com>
+ <4EDFAA0A.7040607@solonet.org.ua>
+ <20111207160002.8b52df42.akpm@linux-foundation.org>
+ <20111208011904.GD5748@opensource.wolfsonmicro.com>
+In-Reply-To: <20111208011904.GD5748@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Dec 2011 02:22:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  346b46be5f10e4d247160ea94ac34450be60ce1e
-Gitweb:     http://git.kernel.org/tip/346b46be5f10e4d247160ea94ac34450be60ce1e
-Author:     Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
-AuthorDate: Tue, 13 Dec 2011 11:51:53 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 14 Dec 2011 09:32:05 +0100
+Sorry for replying late, I was on vacation.
+To minimize fragmentaion in different mails, I am replying all in this mail.
 
-x86: Add per-cpu stat counter for APIC ICR read tries
+HVLED controller supports up to 20V on each input. In terms of VBAT = max 4.5V,
+20V is considered as high voltage. The voltage must be provided by external
+source, e.g. a boost converter. These converters can be dynamically controlled
+but generally these are configured to provide fixed output voltage and done
+during system design.
 
-In the IPI delivery slow path (NMI delivery) we retry the ICR
-read to check for delivery completion a limited number of times.
+Given a constant external voltage LED(s) in series, max current is fixed based
+on platform. In U5500 platform it is done as -
+        ...
+        max_current = 10, /* wrong value may damage h/w */
+        ...
 
-[ The reason for the limited retries is that some of the places
-  where it is used (cpu boot, kdump, etc) IPI delivery might not
-  succeed (due to a firmware bug or system crash, for example)
-  and in such a case it is better to give up and resume
-  execution of other code. ]
+The max current flowing through pin will be limited in HVLED controller by:
+        MIN(voltage source current drive capability; Set max current)
 
-This patch adds a new entry to /proc/interrupts, RTR, which
-tells user space the number of times we retried the ICR read in
-the IPI delivery slow path.
+The actual amount of current flowing hence brightness variation can then be
+altered using PWM, which is also the case in present driver.
 
-This should give some insight into how well the APIC
-message delivery hardware is working - if the counts are way
-too large then we are hitting a (very-) slow path way too
-often.
+Hence the idea of current control sysfs interface is provided to further
+decrease the max current through the LED(s) if required for saving power
+(but can never exceed the max current set by the platform).
+After fixing the current, "brightness" interface can be used to control
+brightness which internally cofigures the PWM register.
 
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Cc: Jörn Engel <joern@logfs.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/n/tip-vzsp20lo2xdzh5f70g0eis2s@git.kernel.org
-[ extended the changelog ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/apic.h |    3 +++
- arch/x86/kernel/apic/apic.c |    6 ++++++
- arch/x86/kernel/irq.c       |    5 +++++
- 3 files changed, 14 insertions(+), 0 deletions(-)
+Hope adding this information in documentation will help avoiding confusion
+for the users.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 1a6c09a..5fe0bd5 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -410,6 +410,9 @@ extern int wakeup_secondary_cpu_via_nmi(int apicid, unsigned long start_eip);
- #endif
- 
- #ifdef CONFIG_X86_LOCAL_APIC
-+
-+DECLARE_PER_CPU(unsigned, icr_read_retry_count);
-+
- static inline u32 apic_read(u32 reg)
- {
- 	return apic->read(reg);
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index f98d84c..2942794 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -79,6 +79,11 @@ DEFINE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid, BAD_APICID);
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_apicid);
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
- 
-+/*
-+ * ICR read retry counter
-+ */
-+DEFINE_PER_CPU(unsigned, icr_read_retry_count);
-+
- #ifdef CONFIG_X86_32
- 
- /*
-@@ -250,6 +255,7 @@ u32 native_safe_apic_wait_icr_idle(void)
- 		send_status = apic_read(APIC_ICR) & APIC_ICR_BUSY;
- 		if (!send_status)
- 			break;
-+		percpu_inc(icr_read_retry_count);
- 		udelay(100);
- 	} while (timeout++ < 1000);
- 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 429e0c9..4bbf162 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -74,6 +74,10 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_irq_work_irqs);
- 	seq_printf(p, "  IRQ work interrupts\n");
-+	seq_printf(p, "%*s: ", prec, "RTR");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", per_cpu(icr_read_retry_count, j));
-+	seq_printf(p, "  APIC ICR read retries\n");
- #endif
- 	if (x86_platform_ipi_callback) {
- 		seq_printf(p, "%*s: ", prec, "PLT");
-@@ -136,6 +140,7 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- 	sum += irq_stats(cpu)->irq_spurious_count;
- 	sum += irq_stats(cpu)->apic_perf_irqs;
- 	sum += irq_stats(cpu)->apic_irq_work_irqs;
-+	sum += per_cpu(icr_read_retry_count, cpu);
- #endif
- 	if (x86_platform_ipi_callback)
- 		sum += irq_stats(cpu)->x86_platform_ipis;
+Regards,
+Shreshtha
+
+-----Original Message-----
+From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
+Sent: Thursday, December 08, 2011 6:49 AM
+To: Andrew Morton
+Cc: Denis Kuzmenko; Linus Walleij; Linus WALLEIJ; Richard Purdie; linux-kernel@vger.kernel.org; Samuel Ortiz; Shreshtha Kumar SAHU
+Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
+
+On Wed, Dec 07, 2011 at 04:00:02PM -0800, Andrew Morton wrote:
+> Denis Kuzmenko <linux@solonet.org.ua> wrote:
+
+Hrm, for some reason lots of the mails here didn't reach my inbox...
+anyway.
+
+> > > My naive understanding is that you set the current limit and then
+> > > the HV transformer (I guess this is a buck converter of some kind)
+
+Boost convertor.  A buck is always step down I beleive.
+
+> > > will raise the voltage level until it either (A) cannot raise it any more
+> > > at c:a 20V or (b) the current limit is reached.
+
+> > > I suspect this is because for LEDs of this type you get a
+> > > specified current but the voltage just has to be "high enough"
+> > > to break through some diode barrier threshold or so. After
+> > > that intensity is controlled by limiting the current.
+
+> > > Does this suffice as explanation...?
+
+OK, that's exactly the sort of hardware I thought you were driving.
+There's several drivers for this type of LED in the kernel already.
+
+> I won't do anything with this patch yet - I'm waiting to see if Mark
+> stops being surprised ;)
+
+I'm still surprised I'm afraid.  The voltage is generally fixed by the
+platform (approximately anyway) to be whatever is needed to get the LEDs
+to start doing something and the current is varied to control the
+brightness with an upper limit configured based on what the LEDs can
+carry and what is sane for the physical design (blinding users tends not
+to be popular).  The funciton of the current regulator in the system is
+to constrain the brightness of the LED so that it doesn't just go to
+maximum brightness without burning power on a resistive load.
+
+This means that usually the current control does map fairly directly
+onto the LED API brightness, normally with a scaling as the eye
+percieves things on a log scale but we expect brightness to be linear.
+This scaling may be pre-done by the choice of current limits in the
+current regulator.
