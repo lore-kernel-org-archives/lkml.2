@@ -1,161 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1LNKpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:45:05 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32797 "EHLO relay.sw.ru"
+	id S1756871Ab1LNKpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:45:20 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48909 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673Ab1LNKpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:45:02 -0500
-Subject: [PATCH 02/11] SUNRPC: use syctl path instead of dummy parent table
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Wed, 14 Dec 2011 14:44:57 +0300
-Message-ID: <20111214104457.3991.64507.stgit@localhost6.localdomain6>
-In-Reply-To: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1753673Ab1LNKpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:45:14 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <sameo@linux.intel.com>, <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <nsekhar@ti.com>, Afzal Mohammed <afzal@ti.com>
+Subject: [PATCH v3] mfd: TPS65910: Make usable even if interrupt unused
+Date: Wed, 14 Dec 2011 16:05:35 +0530
+Message-ID: <1323858935-25724-1-git-send-email-afzal@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. Parent sunrpc table is redundant. Syctl path can be
-used instead.
+TPS65910 can be used even if interrupt is unused.
+Hence let probe succeed in case interrupt can't be
+configured and let Kernel only to complain about it
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- include/linux/sunrpc/debug.h    |    4 ++++
- net/sunrpc/sysctl.c             |   25 ++++++++++++++-----------
- net/sunrpc/xprtrdma/transport.c |   11 +----------
- net/sunrpc/xprtsock.c           |   11 +----------
- 4 files changed, 20 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/sunrpc/debug.h b/include/linux/sunrpc/debug.h
-index c2786f2..b5e0c46 100644
---- a/include/linux/sunrpc/debug.h
-+++ b/include/linux/sunrpc/debug.h
-@@ -63,8 +63,12 @@ extern unsigned int		nlm_debug;
-  * Sysctl interface for RPC debugging
-  */
- #ifdef RPC_DEBUG
-+
- void		rpc_register_sysctl(void);
- void		rpc_unregister_sysctl(void);
-+
-+struct ctl_table_header *register_sunrpc_sysctl(struct ctl_table *);
-+
- #endif
+v2: free irq only if registered
+
+ drivers/mfd/tps65910-irq.c |    3 ++-
+ drivers/mfd/tps65910.c     |    7 ++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
+index a56be93..95c0d79 100644
+--- a/drivers/mfd/tps65910-irq.c
++++ b/drivers/mfd/tps65910-irq.c
+@@ -215,6 +215,7 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
  
- #endif /* __KERNEL__ */
-diff --git a/net/sunrpc/sysctl.c b/net/sunrpc/sysctl.c
-index af7d339..64c0034 100644
---- a/net/sunrpc/sysctl.c
-+++ b/net/sunrpc/sysctl.c
-@@ -40,13 +40,25 @@ EXPORT_SYMBOL_GPL(nlm_debug);
- #ifdef RPC_DEBUG
- 
- static struct ctl_table_header *sunrpc_table_header;
--static ctl_table		sunrpc_table[];
-+static ctl_table		debug_table[];
-+
-+struct ctl_path sunrpc_path[] = {
-+	{ .procname = "sunrpc", },
-+	{ },
-+};
-+
-+struct ctl_table_header *register_sunrpc_sysctl(struct ctl_table *table)
-+{
-+	return register_sysctl_paths(sunrpc_path, table);
-+
-+}
-+EXPORT_SYMBOL_GPL(register_sunrpc_sysctl);
- 
- void
- rpc_register_sysctl(void)
+ int tps65910_irq_exit(struct tps65910 *tps65910)
  {
- 	if (!sunrpc_table_header)
--		sunrpc_table_header = register_sysctl_table(sunrpc_table);
-+		sunrpc_table_header = register_sunrpc_sysctl(debug_table);
- }
- 
- void
-@@ -173,13 +185,4 @@ static ctl_table debug_table[] = {
- 	{ }
- };
- 
--static ctl_table sunrpc_table[] = {
--	{
--		.procname	= "sunrpc",
--		.mode		= 0555,
--		.child		= debug_table
--	},
--	{ }
--};
--
- #endif
-diff --git a/net/sunrpc/xprtrdma/transport.c b/net/sunrpc/xprtrdma/transport.c
-index b446e10..53a8622 100644
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -137,15 +137,6 @@ static ctl_table xr_tunables_table[] = {
- 	{ },
- };
- 
--static ctl_table sunrpc_table[] = {
--	{
--		.procname	= "sunrpc",
--		.mode		= 0555,
--		.child		= xr_tunables_table
--	},
--	{ },
--};
--
- #endif
- 
- static struct rpc_xprt_ops xprt_rdma_procs;	/* forward reference */
-@@ -771,7 +762,7 @@ static int __init xprt_rdma_init(void)
- 
- #ifdef RPC_DEBUG
- 	if (!sunrpc_table_header)
--		sunrpc_table_header = register_sysctl_table(sunrpc_table);
-+		sunrpc_table_header = register_sunrpc_sysctl(xr_tunables_table);
- #endif
+-	free_irq(tps65910->chip_irq, tps65910);
++	if (tps65910->chip_irq)
++		free_irq(tps65910->chip_irq, tps65910);
  	return 0;
  }
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 55472c4..6f1be96 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -142,15 +142,6 @@ static ctl_table xs_tunables_table[] = {
- 	{ },
- };
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 6f5b8cf..04814a7 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -172,15 +172,12 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
  
--static ctl_table sunrpc_table[] = {
--	{
--		.procname	= "sunrpc",
--		.mode		= 0555,
--		.child		= xs_tunables_table
--	},
--	{ },
--};
--
- #endif
+ 	tps65910_gpio_init(tps65910, pmic_plat_data->gpio_base);
  
- /*
-@@ -2887,7 +2878,7 @@ int init_socket_xprt(void)
+-	ret = tps65910_irq_init(tps65910, init_data->irq, init_data);
+-	if (ret < 0)
+-		goto err;
++	tps65910_irq_init(tps65910, init_data->irq, init_data);
+ 
+ 	kfree(init_data);
+ 	return ret;
+ 
+ err:
+-	mfd_remove_devices(tps65910->dev);
+ 	kfree(tps65910);
+ 	kfree(init_data);
+ 	return ret;
+@@ -190,8 +187,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
  {
- #ifdef RPC_DEBUG
- 	if (!sunrpc_table_header)
--		sunrpc_table_header = register_sysctl_table(sunrpc_table);
-+		sunrpc_table_header = register_sunrpc_sysctl(xs_tunables_table);
- #endif
+ 	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
  
- 	xprt_register_transport(&xs_local_transport);
+-	mfd_remove_devices(tps65910->dev);
+ 	tps65910_irq_exit(tps65910);
++	mfd_remove_devices(tps65910->dev);
+ 	kfree(tps65910);
+ 
+ 	return 0;
+-- 
+1.7.1
 
