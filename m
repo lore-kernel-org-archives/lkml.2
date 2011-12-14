@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1LNGrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 01:47:45 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44760 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752157Ab1LNGrm (ORCPT
+	id S1753445Ab1LNGsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 01:48:13 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:50981 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750942Ab1LNGsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 01:47:42 -0500
-Date: Wed, 14 Dec 2011 08:47:36 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: "Alex,Shi" <alex.shi@intel.com>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
-In-Reply-To: <1323845054.2846.18.camel@edumazet-laptop>
-Message-ID: <alpine.LFD.2.02.1112140846290.1841@tux.localdomain>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>  <alpine.DEB.2.00.1112020842280.10975@router.home>  <1323419402.16790.6105.camel@debian>  <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com> 
- <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>  <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>  <alpine.DEB.2.00.1112131835100.31514@chino.kir.corp.google.com>  <1323842761.16790.8295.camel@debian>
- <1323845054.2846.18.camel@edumazet-laptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 14 Dec 2011 01:48:09 -0500
+Message-ID: <4EE8469B.8050201@st.com>
+Date: Wed, 14 Dec 2011 12:17:55 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Viresh KUMAR <viresh.kumar@st.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>, <linus.walleij@linaro.org>
+Subject: Re: dmaengine/Query: What about scatter/gather for mem to mem transfers.
+References: <4EE038BD.7010705@st.com> <1323329870.1641.27.camel@vkoul-udesk3> <4EE06C3C.8080003@st.com>
+In-Reply-To: <4EE06C3C.8080003@st.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011, Eric Dumazet wrote:
-> We should try to batch things a bit, instead of doing a very small unit
-> of work in slow path.
->
-> We now have a very fast fastpath, but inefficient slow path.
->
-> SLAB has a litle cache per cpu, we could add one to SLUB for freed
-> objects, not belonging to current slab. This could avoid all these
-> activate/deactivate overhead.
+Hello Vinod/Dan,
 
-Yeah, this is definitely worth looking at.
+In continuation to the scatter/gather requirement:
+We might need some generic transfer where source and destination address 
+may be overlapped and also gap between two chunk of source and 
+destination might not be same.
 
- 			Pekka
+For examaple,
+Transfer size is - -0x4000
+Our Src is something like this:
+0x1000 -- 0x2000
+0x3000 -- 0x5000
+0x6000 -- 0x7000
+
+and dst is something like this:
+0x6000 -- 0x8000
+0x9000 -- 0xB000
+
+It seems that device_prep_interleaved_dma would not be able to handle 
+such transfer.
+
+So, what I was thinking that to add following flags in enum dma_ctrl_flags.
+
+DMA_SRC_INC = (1 << 10),
+DMA_SRC_DEC = (2 << 10),
+DMA_SRC_FIX = (3 << 10),
+DMA_DST_INC = (1 << 12),
+DMA_DST_DEC = (2 << 12),
+DMA_DST_FIX = (3 << 12),
+
+Now we can use these flag in device_prep_dma_sg and this function can be 
+implemented for generic cases.
+
+I think, the above modifications will not affect other's platform and 
+should be acceptable.
+
+Whats your opinion?
+
+Regards
+Pratyush
+
+On 12/8/2011 1:20 PM, Viresh KUMAR wrote:
+> On 12/8/2011 1:07 PM, Vinod Koul wrote:
+>> You mean something like:
+>>         struct dma_async_tx_descriptor *(*device_prep_dma_sg)(
+>>                  struct dma_chan *chan,
+>>                  struct scatterlist *dst_sg, unsigned int dst_nents,
+>>                  struct scatterlist *src_sg, unsigned int src_nents,
+>>                  unsigned long flags);
+>>
+>> Its already there, you need to implement in your driver :)
+>
+> Ok. I didn't knew it. :(
+>
+
