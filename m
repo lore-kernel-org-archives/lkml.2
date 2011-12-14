@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab1LNQg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:36:29 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:7603 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757558Ab1LNQg2 (ORCPT
+	id S1757570Ab1LNQhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:37:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59198 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757362Ab1LNQhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:36:28 -0500
-Message-ID: <4EE8D08A.9070202@tilera.com>
-Date: Wed, 14 Dec 2011 11:36:26 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: roel <roel.kluin@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/tile: misplaced parens near likely
-References: <4EE6815E.8090905@gmail.com>
-In-Reply-To: <4EE6815E.8090905@gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 14 Dec 2011 11:37:19 -0500
+X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=mkvx9NrORpUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=T5wkqXLSuSZ8ugCE_pUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1323880637.23971.34.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Wed, 14 Dec 2011 11:37:17 -0500
+In-Reply-To: <20111214163407.GE10791@somewhere.redhat.com>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+	 <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57EE47BC@USINDEVS01.corp.hds.com>
+	 <20111213192556.GD2421@somewhere.redhat.com>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57F7A6D7@USINDEVS01.corp.hds.com>
+	 <20111214163407.GE10791@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 5:34 PM, roel wrote:
-> Parentheses were missing.
->
-> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+On Wed, 2011-12-14 at 17:34 +0100, Frederic Weisbecker wrote:
 
-Thanks, I'll take this into the tile tree.
+> Well ftrace is a whole subsystem that includes the function tracer and also an interface
+> for tracepoints in debugfs. 
 
-> ---
->  arch/tile/lib/spinlock_32.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> This is what it should be, right?
->
-> diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
-> index cb0999f..b16ac49 100644
-> --- a/arch/tile/lib/spinlock_32.c
-> +++ b/arch/tile/lib/spinlock_32.c
-> @@ -144,7 +144,7 @@ void arch_read_unlock(arch_rwlock_t *rwlock)
->  	for (;;) {
->  		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
->  		val = __insn_tns((int *)&rwlock->lock);
-> -		if (likely(val & 1) == 0) {
-> +		if (likely((val & 1) == 0)) {
->  			rwlock->lock = val - (1 << _RD_COUNT_SHIFT);
->  			__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
->  			break;
+Confusing isn't it ;)
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> I was rather suggesting the latter one. This is a good
+> choice for background tracing. And it supports stacktraces. If those generate too much
+> overhead perhaps you can tune the number of entries in the stacktrace, I don't remember
+> if we can do that currently but this can be an interesting feature.
+
+That would probably be trivial to add, especially now that we allow
+pretty much a full stack trace anyway.
+
+-- Steve
+
+
 
