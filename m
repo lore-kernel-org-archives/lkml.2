@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1LNIhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:37:00 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:28048 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab1LNIg4 convert rfc822-to-8bit (ORCPT
+	id S1755440Ab1LNIpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 03:45:42 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36957 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753896Ab1LNIpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:36:56 -0500
-X-SpamScore: -14
-X-BigFish: VS-14(zzbb2dI9371Ic89bh936eK1432N98dKzz1202hzzz2dh2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4EE8612C.9050104@freescale.com>
-Date: Wed, 14 Dec 2011 16:41:16 +0800
-From: LiuShuo <b35362@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>, <dedekind1@gmail.com>
-CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
-        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>   <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>   <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>  <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com> <4EE6BC9B.4000602@freescale.com>
-In-Reply-To: <4EE6BC9B.4000602@freescale.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	Wed, 14 Dec 2011 03:45:42 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linx.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Remove unused wm831x_irq_data_to_mask_reg()
+Date: Wed, 14 Dec 2011 16:45:36 +0800
+Message-Id: <1323852336-7857-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年12月13日 10:46, LiuShuo 写道:
-> 于 2011年12月13日 05:30, Scott Wood 写道:
->> On 12/12/2011 03:19 PM, Artem Bityutskiy wrote:
->>> On Mon, 2011-12-12 at 15:15 -0600, Scott Wood wrote:
->>>> NAND chips come from the factory with bad blocks marked at a certain
->>>> offset into each page.  This offset is normally in the OOB area, but
->>>> since we change the layout from "4k data, 128 byte oob" to "2k 
->>>> data, 64
->>>> byte oob, 2k data, 64 byte oob" the marker is no longer in the 
->>>> oob.  On
->>>> first use we need to migrate the markers so that they are still in 
->>>> the oob.
->>> Ah, I see, thanks. Are you planning to implement in-kernel migration or
->>> use a user-space tool?
->> That's the kind of answer I was hoping to get from Shuo. :-)
-> OK, I try to do this. Wait for a couple of days.
->
-> -LiuShuo
-I found it's too complex to do the migration in Linux driver.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-Maybe we can add a uboot command (e.g. nand bbmigrate) to do it, once is 
-enough.
-And let user ensure it been completed before linux use the Nand flash chip.
-
-Even if we don't do the migration, the bad block also can be marked as bad
-by wearing. So, do we really need to take much time to implement it ?
-(code looks too complex.)
-
--LiuShuo
-
->> Most likely is a firmware-based tool, but I'd like there to be some way
->> for the tool to mark that this has happened, so that the Linux driver
->> can refuse to do non-raw accesses to a chip that isn't marked as having
->> been migrated (or at least yell loudly in the log).
->>
->> Speaking of raw accesses, these are currently broken in the eLBC
->> driver... we need some way for the generic layer to tell us what kind of
->> access it is before the transaction starts, not once it wants to read
->> out the buffer (unless we add more hacks to delay the start of a read
->> transaction until first buffer access...).  We'd be better off with a
->> high-level "read page/write page" function that does the whole thing
->> (not just buffer access, but command issuance as well).
->>
->> -Scott
->
-
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index f4747a4..7be5f09 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -325,11 +325,6 @@ static inline int irq_data_to_status_reg(struct wm831x_irq_data *irq_data)
+ 	return WM831X_INTERRUPT_STATUS_1 - 1 + irq_data->reg;
+ }
+ 
+-static inline int irq_data_to_mask_reg(struct wm831x_irq_data *irq_data)
+-{
+-	return WM831X_INTERRUPT_STATUS_1_MASK - 1 + irq_data->reg;
+-}
+-
+ static inline struct wm831x_irq_data *irq_to_wm831x_irq(struct wm831x *wm831x,
+ 							int irq)
+ {
+-- 
+1.7.7.3
 
