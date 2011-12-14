@@ -1,50 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab1LNIIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:08:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52482 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab1LNIIt (ORCPT
+	id S1754994Ab1LNIKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 03:10:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45640 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab1LNIK2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:08:49 -0500
-Date: Wed, 14 Dec 2011 08:08:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH] Fix kexec reboot on ARM
-Message-ID: <20111214080836.GA15873@n2100.arm.linux.org.uk>
-References: <w4fwgnhkcd.wl%peter@chubb.wattle.id.au> <20111214080802.GD14542@n2100.arm.linux.org.uk>
+	Wed, 14 Dec 2011 03:10:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214080802.GD14542@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20111213142050.de6c1fbc.akpm@linux-foundation.org>
+References: <CAH9NwWfMXKQ5DUeHfXaMzEKK_Zn6TS6E44AdqhcOj-jMuAeGQw@mail.gmail.com>
+ <20111213142050.de6c1fbc.akpm@linux-foundation.org>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Wed, 14 Dec 2011 09:10:07 +0100
+Message-ID: <CAH9NwWcYSkr5ygFEvmqtD=ZjunXhw7E4Ek7_KAmwCUYpUrJqGQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] add led driver for Bachmann's ot200
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, rpurdie@rpsys.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 08:08:02AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Dec 14, 2011 at 03:02:10PM +1100, Peter Chubb wrote:
-> > 
-> > When kexec() runs, it eventually sets up a 1-to-1 memory map, then
-> > invokes cpu_reset(). When it invokes cpu_reset (which turns
-> > off the MMU), it does so at its virtual address.  Across the code that
-> > disables the MMU, virtual and physical addresses have to be the same,
-> > otherwise after disabling the MMU, the PC is invalid.
-> > 
-> > The simplest fix is to invoke cpu_reset() at its one-to-one mapped
-> > address.
-> > 
-> > I've tested on KZM (arm v6) and Beagleboard (omap)
-> 
-> NAK.
-> 
-> Three reasons:
-> 
-> 1. You've not signed-off the patch (please read
->    Documentation/SubmittingPatches)
-> 2. pre-ARMv6 do not expect this, and it will break where
->    PHYS_OFFSET >= PAGE_OFFSET
-> 3. Have you seen what's already queued for the next merge window?
+Hi Andrew
 
-And 4. You didn't cc the linux-arm-kernel mailing list with your patch.
+2011/12/13 Andrew Morton <akpm@linux-foundation.org>:
+> On Tue, 13 Dec 2011 10:57:30 +0100
+> Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
+>
+>> >From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
+>> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> Date: Fri, 18 Nov 2011 10:21:48 +0100
+>> Subject: [PATCH] add led driver for Bachmann's ot200
+>>
+>> This patch adds support for leds on Bachmann's ot200 visualisation device.
+>> The device has three leds on the back panel (led_err, led_init and led_run)
+>> and can handle up to seven leds on the front panel.
+>>
+>> The driver was written by Linutronix on behalf of
+>> Bachmann electronic GmbH.
+>
+> The code uses no tabs and indents with seven-spaces.  Please convert it
+> to use hard tabs in the conventional fashion?  In the Makefile and
+> Kconfig, too.
+
+okay
+
+>
+>>
+>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+>> index ff203a4..6cf0dd6 100644
+>> --- a/drivers/leds/Kconfig
+>> +++ b/drivers/leds/Kconfig
+>> @@ -387,6 +387,14 @@ config LEDS_RENESAS_TPU
+>>          pin function. The latter to support brightness control.
+>>          Brightness control is supported but hardware blinking is not.
+>>
+>> +config LEDS_OT200
+>> +       tristate "LED support for Bachmann OT200"
+>> +       depends on LEDS_CLASS
+>> +       help
+>> +         This option enables support for the LEDs on the Bachmann OT200. The
+>> +         LEDs are controlled through LPC bus.
+>> +         Say Y to enable LEDs on the Bachmann OT200.
+>> +
+>>  config LEDS_TRIGGERS
+>>        bool "LED Trigger support"
+>>        depends on LEDS_CLASS
+>> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+>> index e4f6bf5..0814d42 100644
+>> --- a/drivers/leds/Makefile
+>> +++ b/drivers/leds/Makefile
+>> @@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)                        += leds-ns2.o
+>>  obj-$(CONFIG_LEDS_NETXBIG)             += leds-netxbig.o
+>>  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
+>>  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
+>> +obj-$(CONFIG_LEDS_OT200)               += leds-ot200.o
+>>
+>>  # LED SPI Drivers
+>>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+>> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+>> new file mode 100644
+>> index 0000000..60f118b
+>> --- /dev/null
+>> +++ b/drivers/leds/leds-ot200.c
+>> @@ -0,0 +1,204 @@
+>> +/*
+>> + * Bachmann ot200 leds driver.
+>> + *
+>> + * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> + * License: GPL as published by the FSF.
+>> + */
+>> +
+>> +#include <linux/platform_device.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/leds.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +
+>> +struct ot200_led {
+>> +       struct led_classdev cdev;
+>> +       char name[8];
+>> +       unsigned int num;
+>> +};
+>> +
+>> +static u8 old_val;
+>> +static u8 old_val_back;
+>
+> What's going on here?  The driver is using eight bits to store the
+> current control setting, but the changelog says the driver can handle
+> ten LEDs.
+>
+> <looks>
+>
+> OK, so we're using seven bits in old_val and three in old_val_back.
+>
+
+Exactly.. I have not found a better way to store the led state. Any
+recommendations?
+
+
+>> +DEFINE_SPINLOCK(value_lock);
+>
+> Should be static.
+>
+
+okay
+
+>> +static void ot200_led_set(struct led_classdev *led_cdev,
+>> +                       enum led_brightness value)
+>> +{
+>> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
+>> +       u8 val;
+>> +       u8 mask;
+>> +       unsigned long flags;
+>> +
+>> +       mask = 1 << led->num;
+>> +
+>> +       spin_lock_irqsave(&value_lock, flags);
+>> +       val = old_val;
+>> +
+>> +       if (value == LED_OFF)
+>> +               val &= ~mask;
+>> +       else
+>> +               val |= mask;
+>> +
+>> +       old_val = val;
+>> +       spin_unlock_irqrestore(&value_lock, flags);
+>> +       outb(val, 0x49);
+>> +}
+>
+> It's a bit worrisome doing the outb() outside the locked section, but
+> all the races I can think of result from userspace doing things which
+> were unavoidably indeterminate anyway.
+>
+
+I think that it is really no problem to do outb() in the looked area.
+Will change
+this for v2 of this patch.
+
+>> +static void ot200_led_back_set(struct led_classdev *led_cdev,
+>> +                       enum led_brightness value)
+>> +{
+>> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
+>> +       u8 val;
+>> +       u8 mask;
+>> +       unsigned long flags;
+>> +
+>> +       mask = 1 << led->num;
+>> +
+>> +       spin_lock_irqsave(&value_lock, flags);
+>> +       val = old_val_back;
+>> +
+>> +       if (value == LED_OFF)
+>> +               val &= ~mask;
+>> +       else
+>> +               val |= mask;
+>> +
+>> +       old_val_back = val;
+>> +       spin_unlock_irqrestore(&value_lock, flags);
+>> +       outb(val, 0x5a);
+>> +}
+>> +
+>> +static int __devinit create_ot200_led(struct platform_device *pdev, int num,
+>> +               struct ot200_led *led)
+>> +{
+>> +       int ret;
+>> +
+>> +       num += 1;
+>> +       snprintf(led->name, sizeof(led->name), "led%d", num);
+>> +       led->num = 7 - num;
+>> +       led->cdev.name = led->name;
+>> +       led->cdev.default_trigger = NULL;
+>> +       led->cdev.blink_set = NULL;
+>> +       led->cdev.brightness_set = ot200_led_set;
+>> +
+>> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
+>> +       if (ret < 0)
+>> +               goto out;
+>> +
+>> +       dev_set_drvdata(led->cdev.dev, led);
+>> +       return 0;
+>> +
+>> +       led_classdev_unregister(&led->cdev);
+>> +out:
+>> +       return ret;
+>> +}
+>> +
+>> +static int __devinit create_ot200_led_back(struct platform_device *pdev,
+>> +               int num, struct ot200_led *led)
+>> +{
+>> +       char *led_name;
+>> +       int ret;
+>> +
+>> +       switch (num) {
+>> +       case 0:
+>> +               led_name = "run";
+>> +               break;
+>> +       case 1:
+>> +               led_name = "init";
+>> +               break;
+>> +       case 2:
+>> +               led_name = "err";
+>> +               break;
+>> +       default:
+>> +               BUG();
+>> +       };
+>> +
+>> +       snprintf(led->name, sizeof(led->name), "led_%s", led_name);
+>> +       led->num = num;
+>> +       led->cdev.name = led->name;
+>> +       led->cdev.blink_set = NULL;
+>> +       led->cdev.brightness_set = ot200_led_back_set;
+>> +
+>> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
+>> +       if (ret < 0)
+>> +               goto out;
+>> +
+>> +       dev_set_drvdata(led->cdev.dev, led);
+>> +       return 0;
+>> +
+>> +       led_classdev_unregister(&led->cdev);
+>> +out:
+>> +       return ret;
+>> +
+>> +}
+>
+> This is implementing a userspace API (led_run, led_init, led_err) but
+> that API isn't documented anywhere.  Can we add a few words of
+> Documentation so our users know how to use this driver?
+
+To be exact the driver uses the led subsystem - led_classdev_register() - and
+creates these led devices. So we are not creating any new API, which should
+be documented - or?
+
+# ls /sys/class/leds/ -l
+total 0
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led1 ->
+../../devices/platform/leds-ot200.0/leds/led1
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led2 ->
+../../devices/platform/leds-ot200.0/leds/led2
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led3 ->
+../../devices/platform/leds-ot200.0/leds/led3
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led4 ->
+../../devices/platform/leds-ot200.0/leds/led4
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led5 ->
+../../devices/platform/leds-ot200.0/leds/led5
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led6 ->
+../../devices/platform/leds-ot200.0/leds/led6
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led7 ->
+../../devices/platform/leds-ot200.0/leds/led7
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_err ->
+../../devices/platform/leds-ot200.0/leds/led_err
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_ini ->
+../../devices/platform/leds-ot200.0/leds/led_ini
+lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_run ->
+../../devices/platform/leds-ot200.0/leds/led_run
+
+Thanks for your review.
+--
+Christian Gmeiner, MSc
