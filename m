@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757727Ab1LNRc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:32:59 -0500
+	id S1757781Ab1LNRdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:33:17 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:59303 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756962Ab1LNRcz (ORCPT
+	with ESMTP id S1757750Ab1LNRdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:32:55 -0500
-Message-ID: <4EE8EB95.7040901@mvista.com>
-Date: Wed, 14 Dec 2011 21:31:49 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Jason Baron <jbaron@redhat.com>, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] jump-label: initialize jump-label subsystem somewhat
- later
-References: <1323881315-23245-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1323881315-23245-1-git-send-email-ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Dec 2011 12:33:13 -0500
+Message-ID: <1323883989.2334.68.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "Alex,Shi" <alex.shi@intel.com>, David Rientjes <rientjes@google.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Wed, 14 Dec 2011 18:33:09 +0100
+In-Reply-To: <alpine.DEB.2.00.1112140853540.12235@router.home>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+	  <alpine.DEB.2.00.1112020842280.10975@router.home>
+	  <1323419402.16790.6105.camel@debian>
+	  <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
+	  <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
+	  <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>
+	  <alpine.DEB.2.00.1112131835100.31514@chino.kir.corp.google.com>
+	  <1323842761.16790.8295.camel@debian>
+	  <1323845054.2846.18.camel@edumazet-laptop>
+	 <1323845812.16790.8307.camel@debian>
+	 <alpine.DEB.2.00.1112140853540.12235@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Le mercredi 14 décembre 2011 à 08:59 -0600, Christoph Lameter a écrit :
 
-On 12/14/2011 07:48 PM, David Daney wrote:
+> Many people have done patchsets like this. 
 
-> From: David Daney <david.daney@cavium.com>
+Things changed a lot recently. There is room for improvements.
 
-> commit 97ce2c88f9ad42e3c60a9beb9fca87abf3639faa breaks MIPS.
+At least we can exchange ideas _before_ coding a new patchset ?
 
-    Please also specify that commit's summary (in parens).
+> There are various permutations
+> on SL?B (I dont remember them all SLEB, SLXB, SLQB etc) that have been
+> proposed over the years. Caches tend to grow and get rather numerous (see
+> SLAB) and the design of SLUB was to counter that. There is a reason it was
+> called SLUB. The U stands for Unqueued and was intended to avoid the
+> excessive caching problems that I ended up when reworking SLAB for NUMA
+> support.
 
-> The jump-lable initialization does I-Cache flushing after modifying
+Current 'one active slab' per cpu is a one level cache.
 
-    Label.
+It really is a _queue_ containing a fair amount of objects.
 
-> code.  On MIPS this is done by calling through the function pointer
-> flush_icache_range().  This function pointer is initialized mm_init().
+'Unqueued' in SLUB is marketing hype :=)
 
-    "By" missing?
+When we have one producer (say network interrupt handler) feeding
+millions of network packets to N consumers (other cpus), each free is
+slowpath. They all want to touch page->freelist and slow the producer as
+well because of false sharing.
 
-> As things stand, we cannot be calling jump_label_init() until after
-> mm_init() completes, so we move the call down to satisfy this
-> constraint.
+Furthermore, when the producer hits socket queue limits, it mostly frees
+skbs that were allocated in the 'not very recent past', and its own
+freeing also hit slow path (because memory blocks of the skb are no
+longer in the current active slab). It competes with frees done by
+consumers as well.
 
-> Signed-off-by: David Daney<david.daney@cavium.com>
+Adding a second _small_ cache to queue X objects per cpu would help to
+keep the active slab longer and more 'private' (its 'struct page' not
+touched too often by other cpus) for a given cpu.
 
-WBR, Sergei
+It would limit number of cache line misses we currently have because of
+conflicting accesses to page->freelist just to push one _single_ object
+(and n->list_lock in less extent)
+
+My initial idea would be to use a cache of 4 slots per cpu, but be able
+to queue many objects per slot, if they all belong to same slab/page.
+
+In case we must make room in the cache (all slots occupied), we take one
+slot and dequeue all objects in one round. No extra latency compared to
+current schem.
+
+
+
