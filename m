@@ -1,80 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab1LNU6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 15:58:37 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:56456 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab1LNU6g (ORCPT
+	id S1758104Ab1LNU71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 15:59:27 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49363 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364Ab1LNU7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 15:58:36 -0500
-Date: Wed, 14 Dec 2011 15:58:22 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] AIO: Don't plug the I/O queue in do_io_submit()
-Message-ID: <20111214205822.GM31158@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Dave Kleikamp <dave.kleikamp@oracle.com>,
-	Jeff Moyer <jmoyer@redhat.com>, linux-aio@kvack.org,
-	linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-	Andi Kleen <ak@linux.intel.com>
-References: <4EE7C74D.1020306@oracle.com>
- <x49sjkoi08u.fsf@segfault.boston.devel.redhat.com>
- <4EE7DF0F.4030506@oracle.com>
+	Wed, 14 Dec 2011 15:59:25 -0500
+Date: Wed, 14 Dec 2011 12:48:53 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
+        josh@joshtriplett.org, keescook@chromium.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.3
+Message-ID: <20111214204853.GI2862@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111213230243.GA15127@linux.vnet.ibm.com>
+ <20111214154736.GA2419@elte.hu>
+ <20111214163007.GD10791@somewhere.redhat.com>
+ <20111214174736.GF10791@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EE7DF0F.4030506@oracle.com>
+In-Reply-To: <20111214174736.GF10791@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4EE90DF4.007A,ss=1,re=0.000,fgs=0
+x-cbid: 11121420-5518-0000-0000-000000FF687B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 05:26:07PM -0600, Dave Kleikamp wrote:
-> On 12/13/2011 04:18 PM, Jeff Moyer wrote:
-> > Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+On Wed, Dec 14, 2011 at 06:47:38PM +0100, Frederic Weisbecker wrote:
+> On Wed, Dec 14, 2011 at 05:30:11PM +0100, Frederic Weisbecker wrote:
+> > On Wed, Dec 14, 2011 at 04:47:36PM +0100, Ingo Molnar wrote:
+> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+[ . . . ]
+
+> > > Pulled into tip:core/rcu, thanks a lot Paul!
+> > > 
+> > > Note that this commit from Frederic:
+> > > 
+> > >   69e1e811dcc4: sched, nohz: Track nr_busy_cpus in the sched_group_power
+> > > 
+> > > conflicted with this commit from Suresh in sched/core:
+> > > 
+> > >   69e1e811dcc4: sched, nohz: Track nr_busy_cpus in the sched_group_power
+> > > 
+> > > I resolved it by making the set_cpu_sd_state_idle() call 
+> > > unconditional within the newly decoupled 
+> > > tick_nohz_stop_sched_tick() function - please double check that 
+> > > it's the right resolution.
 > > 
-> >> Asynchronous I/O latency to a solid-state disk greatly increased
-> >> between the 2.6.32 and 3.0 kernels. By removing the plug from
-> >> do_io_submit(), we observed a 34% improvement in the I/O latency.
-> >>
-> >> Unfortunately, at this level, we don't know if the request is to
-> >> a rotating disk or not.
-> > 
-> > I'm guessing I know the answer to this, but what workload were you
-> > testing, and can you provide more concrete evidence than "latency
-> > greatly increased?"
+> > After a quick look, I believe this should rather be under tick_nohz_idle_enter(),
+> > (This is the equivalent of the old tick_nohz_stop_sched_tick(1))
+> > This wants to be set only once we enter idle, not everytime we have an idle
+> > interrupt.
 > 
-> It is a piece of a larger industry-standard benchmark and you're
-> probably guessing correctly. The "greatly increased" latency was
-> actually slightly higher the improvement I get with this patch. So the
-> patch brought the latency nearly down to where it was before.
+> I don't know how you plan to fix the conflict, by redoing the merge or by
+> applying a patch on tip/master.
 > 
->  I will try a microbenchmark to see if I get similar behavior, but I
-> wanted to throw this out here to get input.
+> In any case, here is a patch you can use. Feel free to apply it as is
+> or to just refer to its diff to redo the merge:
+> 
+> (Outrageously only compile tested)
 
-The better IO latency did bump the overall benchmark score by 3%, and it
-did end up bringing our latencies on par with solaris runs on similar
-hardware.
+I have started up a short rcutorture test of this patch on top of
+tip/master, will let you know how it goes.
 
-We didn't find this one through exhaustive tracing...instead we used a more
-traditional approach involving a list of Jens' commits and a dart board.
-So, we don't have a lot of data yet on exactly why the plug is hurting.
+							Thanx, Paul
 
-But, I'm starting to wonder if the plug makes sense here at all.  We're
-queueing up IO in the main submit loop, and the aio submit might be
-spanning any number of devices on a large variety of filesystems.  The
-actual direct IO call may be pretty expensive.
-
-My guess for why this helps is contention on the aio context lock
-between the submission code and the end_io softirq code.  We bash on
-that lock a number of times during the IO submit, and the whole time
-we're holding on to our list of plugged IOs instead of giving the
-hardware the chance to process them.
-
--chris
+> ---
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Wed, 14 Dec 2011 18:36:00 +0100
+> Subject: [PATCH] sched: Only update the CPU idleness in the domain
+>  hierarchy from idle loop entry
+> 
+> We don't need to inform the sched domain hierarchy about the
+> CPU idleness everytime we call tick_nohz_stop_sched_tick() as this
+> includes both idle loop entry and idle interrupt exit.
+> 
+> Doing it once from the idle loop entry is enough, call
+> set_cpu_sd_state_idle() only from tick_nohz_idle_enter() instead
+> to fix this.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/time/tick-sched.c |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 1f6dc515..696c997 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -289,14 +289,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
+>  	now = tick_nohz_start_idle(cpu, ts);
+> 
+>  	/*
+> -	 * Update the idle state in the scheduler domain hierarchy
+> -	 * when tick_nohz_stop_sched_tick() is called from the idle loop.
+> -	 * State will be updated to busy during the first busy tick after
+> -	 * exiting idle.
+> -	 */
+> -	set_cpu_sd_state_idle();
+> -
+> -	/*
+>  	 * If this cpu is offline and it is the one which updates
+>  	 * jiffies, then give up the assignment and let it be taken by
+>  	 * the cpu which runs the tick timer next. If we don't drop
+> @@ -483,6 +475,14 @@ void tick_nohz_idle_enter(void)
+>  	 * update of the idle time accounting in tick_nohz_start_idle().
+>  	 */
+>  	ts->inidle = 1;
+> +
+> +	/*
+> +	 * Update the idle state in the scheduler domain hierarchy
+> +	 * when tick_nohz_idle_enter() is called from the idle loop.
+> +	 * State will be updated to busy during the first busy tick after
+> +	 * exiting idle.
+> +	 */
+> +	set_cpu_sd_state_idle();
+>  	tick_nohz_stop_sched_tick(ts);
+> 
+>  	local_irq_enable();
+> -- 
+> 1.7.5.4
+> 
+> 
 
