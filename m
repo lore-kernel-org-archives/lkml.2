@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab1LNOBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:01:42 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61270 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab1LNOBh (ORCPT
+	id S1757356Ab1LNOBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:01:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56233 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab1LNOBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:01:37 -0500
+	Wed, 14 Dec 2011 09:01:46 -0500
 From: Ming Lei <ming.lei@canonical.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>,
         Tony Lindgren <tony@atomide.com>
 Cc: Sylwester Nawrocki <snjw23@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v2 4/8] media: videobuf2: introduce VIDEOBUF2_PAGE memops
-Date: Wed, 14 Dec 2011 22:00:10 +0800
-Message-Id: <1323871214-25435-5-git-send-email-ming.lei@canonical.com>
+        Ming Lei <ming.lei@canonical.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC PATCH v2 5/8] media: v4l2-ioctl: support 64/32 compatible array parameter
+Date: Wed, 14 Dec 2011 22:00:11 +0800
+Message-Id: <1323871214-25435-6-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323871214-25435-1-git-send-email-ming.lei@canonical.com>
 References: <1323871214-25435-1-git-send-email-ming.lei@canonical.com>
@@ -24,200 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA contig memory resource is very limited and precious, also
-accessing to it from CPU is very slow on some platform.
+This patch supports to handle 64/32 compatible array parameter,
+such as below:
 
-For some cases(such as the comming face detection driver), DMA Streaming
-buffer is enough, so introduce VIDEOBUF2_PAGE to allocate continuous
-physical memory but letting video device driver to handle DMA buffer mapping
-and unmapping things.
+	struct v4l2_fd_result {
+	       __u32   buf_index;
+	       __u32   face_cnt;
+	       __u32   reserved[6];
+	       struct v4l2_fd_detection fd[];
+	};
 
+With this patch, the pointer to user space array needn't be passed
+to kernel any more.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/media/video/Kconfig          |    4 +
- drivers/media/video/Makefile         |    1 +
- drivers/media/video/videobuf2-page.c |  117 ++++++++++++++++++++++++++++++++++
- include/media/videobuf2-page.h       |   20 ++++++
- 4 files changed, 142 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/video/videobuf2-page.c
- create mode 100644 include/media/videobuf2-page.h
+ drivers/media/video/v4l2-ioctl.c |   33 +++++++++++++++++++++++++++++++--
+ 1 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index 4e8a0c4..5684a00 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -60,6 +60,10 @@ config VIDEOBUF2_VMALLOC
- 	select VIDEOBUF2_MEMOPS
- 	tristate
+diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+index e1da8fc..ded8b72 100644
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -2239,6 +2239,11 @@ static int check_array_args(unsigned int cmd, void *parg, size_t *array_size,
+ 	return ret;
+ }
  
-+config VIDEOBUF2_PAGE
-+	select VIDEOBUF2_CORE
-+	select VIDEOBUF2_MEMOPS
-+	tristate
++static int is_64_32_array_args(unsigned int cmd, void *parg, int *extra_len)
++{
++	return 0;
++}
++
+ long
+ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
+ 	       v4l2_kioctl func)
+@@ -2251,6 +2256,7 @@ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
+ 	size_t  array_size = 0;
+ 	void __user *user_ptr = NULL;
+ 	void	**kernel_ptr = NULL;
++	int	extra = 0;
  
- config VIDEOBUF2_DMA_SG
- 	#depends on HAS_DMA
-diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
-index ddeaa6c..bc797f2 100644
---- a/drivers/media/video/Makefile
-+++ b/drivers/media/video/Makefile
-@@ -125,6 +125,7 @@ obj-$(CONFIG_VIDEO_BTCX)  += btcx-risc.o
- obj-$(CONFIG_VIDEOBUF2_CORE)		+= videobuf2-core.o
- obj-$(CONFIG_VIDEOBUF2_MEMOPS)		+= videobuf2-memops.o
- obj-$(CONFIG_VIDEOBUF2_VMALLOC)		+= videobuf2-vmalloc.o
-+obj-$(CONFIG_VIDEOBUF2_PAGE)		+= videobuf2-page.o
- obj-$(CONFIG_VIDEOBUF2_DMA_CONTIG)	+= videobuf2-dma-contig.o
- obj-$(CONFIG_VIDEOBUF2_DMA_SG)		+= videobuf2-dma-sg.o
+ 	/*  Copy arguments into temp kernel buffer  */
+ 	if (_IOC_DIR(cmd) != _IOC_NONE) {
+@@ -2280,9 +2286,32 @@ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
+ 		}
+ 	}
  
-diff --git a/drivers/media/video/videobuf2-page.c b/drivers/media/video/videobuf2-page.c
-new file mode 100644
-index 0000000..6a24a34
---- /dev/null
-+++ b/drivers/media/video/videobuf2-page.c
-@@ -0,0 +1,117 @@
-+/*
-+ * videobuf2-page.c - page memory allocator for videobuf2
-+ *
-+ * Copyright (C) 2011 Canonical Ltd.
-+ *
-+ * Author: Ming Lei <ming.lei@canonical.com>
-+ *
-+ * This file is based on videobuf2-vmalloc.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation.
-+ */
+-	err = check_array_args(cmd, parg, &array_size, &user_ptr, &kernel_ptr);
++	if (is_64_32_array_args(cmd, parg, &extra)) {
++		int size;
++		void *old_mbuf;
 +
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+
-+#include <media/videobuf2-core.h>
-+#include <media/videobuf2-memops.h>
-+
-+struct vb2_page_buf {
-+	void				*vaddr;
-+	unsigned long			size;
-+	atomic_t			refcount;
-+	struct vb2_vmarea_handler	handler;
-+};
-+
-+static void vb2_page_put(void *buf_priv);
-+
-+static void *vb2_page_alloc(void *alloc_ctx, unsigned long size)
-+{
-+	struct vb2_page_buf *buf;
-+
-+	buf = kzalloc(sizeof *buf, GFP_KERNEL);
-+	if (!buf)
-+		return NULL;
-+
-+	buf->size = size;
-+	buf->vaddr = (void *)__get_free_pages(GFP_KERNEL,
-+			get_order(buf->size));
-+	buf->handler.refcount = &buf->refcount;
-+	buf->handler.put = vb2_page_put;
-+	buf->handler.arg = buf;
-+
-+	if (!buf->vaddr) {
-+		printk(KERN_ERR "page of size %ld failed\n", buf->size);
-+		kfree(buf);
-+		return NULL;
++		err = 0;
++		if (!extra)
++			goto handle_array_args;
++		old_mbuf = mbuf;
++		size = extra + _IOC_SIZE(cmd);
++		mbuf = kmalloc(size, GFP_KERNEL);
++		if (NULL == mbuf) {
++			mbuf = old_mbuf;
++			err = -ENOMEM;
++			goto out;
++		}
++		memcpy(mbuf, parg, _IOC_SIZE(cmd));
++		parg = mbuf;
++		kfree(old_mbuf);
++	} else {
++		err = check_array_args(cmd, parg, &array_size,
++				&user_ptr, &kernel_ptr);
 +	}
 +
-+	atomic_inc(&buf->refcount);
-+	printk(KERN_DEBUG "Allocated page buffer of size %ld at vaddr=%p\n",
-+			buf->size, buf->vaddr);
-+
-+	return buf;
-+}
-+
-+static void vb2_page_put(void *buf_priv)
-+{
-+	struct vb2_page_buf *buf = buf_priv;
-+
-+	if (atomic_dec_and_test(&buf->refcount)) {
-+		printk(KERN_DEBUG "%s: Freeing page mem at vaddr=%p\n",
-+			__func__, buf->vaddr);
-+		free_pages((unsigned long)buf->vaddr, get_order(buf->size));
-+		kfree(buf);
-+	}
-+}
-+
-+static void *vb2_page_vaddr(void *buf_priv)
-+{
-+	struct vb2_page_buf *buf = buf_priv;
-+
-+	BUG_ON(!buf);
-+
-+	if (!buf->vaddr) {
-+		printk(KERN_ERR "Address of an unallocated plane requested\n");
-+		return NULL;
-+	}
-+
-+	return buf->vaddr;
-+}
-+
-+static unsigned int vb2_page_num_users(void *buf_priv)
-+{
-+	struct vb2_page_buf *buf = buf_priv;
-+	return atomic_read(&buf->refcount);
-+}
-+
-+static int vb2_page_mmap(void *buf_priv, struct vm_area_struct *vma)
-+{
-+	struct vb2_page_buf *buf = buf_priv;
-+
-+	if (!buf) {
-+		printk(KERN_ERR "No memory to map\n");
-+		return -EINVAL;
-+	}
-+
-+	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
-+	return vb2_mmap_pfn_range(vma, virt_to_phys(buf->vaddr),
-+			buf->size, &vb2_common_vm_ops,
-+			&buf->handler);
-+}
-+
-+const struct vb2_mem_ops vb2_page_memops = {
-+	.alloc		= vb2_page_alloc,
-+	.put		= vb2_page_put,
-+	.vaddr		= vb2_page_vaddr,
-+	.mmap		= vb2_page_mmap,
-+	.num_users	= vb2_page_num_users,
-+};
-+EXPORT_SYMBOL_GPL(vb2_page_memops);
-+
-+MODULE_DESCRIPTION("page memory handling routines for videobuf2");
-+MODULE_AUTHOR("Ming Lei");
-+MODULE_LICENSE("GPL");
-diff --git a/include/media/videobuf2-page.h b/include/media/videobuf2-page.h
-new file mode 100644
-index 0000000..c837456
---- /dev/null
-+++ b/include/media/videobuf2-page.h
-@@ -0,0 +1,20 @@
-+/*
-+ * videobuf2-page.h - page memory allocator for videobuf2
-+ *
-+ * Copyright (C) 2011 Canonical Ltd.
-+ *
-+ * Author: Ming Lei <ming.lei@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation.
-+ */
-+
-+#ifndef _MEDIA_VIDEOBUF2_PAGE_H
-+#define _MEDIA_VIDEOBUF2_PAGE_H
-+
-+#include <media/videobuf2-core.h>
-+
-+extern const struct vb2_mem_ops vb2_page_memops;
-+
-+#endif
+ 	if (err < 0)
+ 		goto out;
++handle_array_args:
+ 	has_array_args = err;
+ 
+ 	if (has_array_args) {
+@@ -2321,7 +2350,7 @@ out_array_args:
+ 	switch (_IOC_DIR(cmd)) {
+ 	case _IOC_READ:
+ 	case (_IOC_WRITE | _IOC_READ):
+-		if (copy_to_user((void __user *)arg, parg, _IOC_SIZE(cmd)))
++		if (copy_to_user((void __user *)arg, parg, _IOC_SIZE(cmd) + extra))
+ 			err = -EFAULT;
+ 		break;
+ 	}
 -- 
 1.7.5.4
 
