@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab1LNNem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:34:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43932 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab1LNNel (ORCPT
+	id S1757230Ab1LNNez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:34:55 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44408 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab1LNNex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:34:41 -0500
-X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ewjKGVC-4pQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=BZMhDRmfmsuKveKUUEsA:9 a=ECpTwJHErp6HUt4qVnIA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1323869678.23971.19.camel@gandalf.stny.rr.com>
-Subject: md: Fix userspace free_pages() macro
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: NeilBrown <neilb@suse.de>, Dan Williams <dan.j.williams@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Wed, 14 Dec 2011 08:34:38 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 14 Dec 2011 08:34:53 -0500
+Date: Wed, 14 Dec 2011 13:34:48 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Neil <neil.jones@imgtec.com>
+Subject: Re: bugs in "ASoC: core - Optimise and refactor pcm_new() to pass
+ only rtd"?
+Message-ID: <20111214133448.GD25088@sirena.org.uk>
+References: <4EE89A06.80101@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE89A06.80101@imgtec.com>
+X-Cookie: Inside, I'm already SOBBING!
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using etags to find free_pages(), I stumbled across this debug
-definition of free_pages() that is to be used while debugging some raid
-code in userspace. The __get_free_pages() allocates the correct size,
-but the free_pages() does not match. free_pages(), like
-__get_free_pages(), takes an order and not a size.
+On Wed, Dec 14, 2011 at 12:43:50PM +0000, James Hogan wrote:
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> I've bisected a problem with an out of tree set of asoc drivers down to commit
+> 552d1ef6b5a98d7b95959d5b139071e3c90cebf1 ("ASoC: core - Optimise and refactor
+> pcm_new() to pass only rtd"). By the looks of it this change was intended not 
+> to change the workings of the code, however the dai parameter of pcm_new used
+> to be passed codec_dai in soc_new_pcm() (initialised from rtd->codec_dai), but
+> each driver now sets it's dai to rtd->cpu_dai instead. This seems to make the
+> driver check the wrong dai's driver->capture.channels_min in the pcm_new
+> callback, which makes it dereference
+> pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream in the driver's
+> preallocate_dma_buffer() function which can be NULL. Is this a bug (in every
+> pcm asoc driver) that just happens not to have been noticed, or have I
+> misunderstood it?
 
-diff --git a/include/linux/raid/pq.h b/include/linux/raid/pq.h
-index 2b59cc8..53272e9 100644
---- a/include/linux/raid/pq.h
-+++ b/include/linux/raid/pq.h
-@@ -132,7 +132,7 @@ void raid6_dual_recov(int disks, size_t bytes, int faila, int failb,
- 						     PROT_READ|PROT_WRITE,   \
- 						     MAP_PRIVATE|MAP_ANONYMOUS,\
- 						     0, 0))
--# define free_pages(x, y)	munmap((void *)(x), (y)*PAGE_SIZE)
-+# define free_pages(x, y)	munmap((void *)(x), PAGE_SIZE << (y))
- 
- static inline void cpu_relax(void)
- {
-
-
+Your drivers should never have beenn relying on this behaviour of the
+core - see changes in the pxa and fsl drivers which remove similar
+assumptions.  The CPU driver should be checking for the substream if
+it's looking to see if a particular substream is present, not peering
+inside the DAI for a random parameter.
