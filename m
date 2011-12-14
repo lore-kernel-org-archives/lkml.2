@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab1LNHBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:01:08 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47015 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab1LNHBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:01:05 -0500
-Date: Wed, 14 Dec 2011 07:59:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg KH <greg@kroah.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: printk() vs tty_io
-Message-ID: <20111214065910.GA25775@elte.hu>
-References: <1323804803.9082.40.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323804803.9082.40.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753946Ab1LNHE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:04:26 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:39758 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab1LNHEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 02:04:23 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-cb-4ee84a76fe74
+From: Chanho Park <chanho61.park@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Cc: "'Stephen Warren'" <swarren@nvidia.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Barry Song'" <21cnbao@gmail.com>,
+        "'Shawn Guo'" <shawn.guo@freescale.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Dong Aisheng'" <dong.aisheng@linaro.org>,
+        "'Rajendra Nayak'" <rajendra.nayak@linaro.org>,
+        "'Haojian Zhuang'" <haojian.zhuang@marvell.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>
+References: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+In-reply-to: <1323431857-8828-1-git-send-email-linus.walleij@stericsson.com>
+Subject: RE: [PATCH v6] pinctrl: add a pin config interface
+Date: Wed, 14 Dec 2011 16:04:22 +0900
+Message-id: <010201ccba2e$9b4564e0$d1d02ea0$%park@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acy2aduow2iQUdYZSC+LK4LEvvgcDADwWsOg
+Content-language: ko
+DLP-Filter: Pass
+X-Brightmail-Tracker: AAAAAQAAAZE=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+> ChangeLog v5->v6:
+> - Change to using a pin name as parameter for the
+>   [get|set]_config() functions, as suggested by Stephen Warren.
+>   This is more natural as names will be what a developer has
+>   access to in written documentation etc.
 
-> Hi tty folks,
-> 
-> I've been poking at reducing the constraints on printk(), like make it
-> work under rq->lock etc..
-> 
-> Aside from a fwd port of the patch that abuses the 
-> console_sem.lock: https://lkml.org/lkml/2011/6/9/298 and a few 
-> other not so very pretty patches, I ran into the following 
-> lockdep splat (using a not so very pretty lockdep 
-> early_printk() patch):
 
-btw., would be nice to also somehow realeasify those debug hacks 
-to preserve them for eternity - doing all lockdep output as 
-earlyprintk while keeping printks working is a great way to 
-debug printk() itself.
+I don't agree with it.
+Someone doesn't like to assign a pin name individually because a
+pin number is sufficient to represent each pin.
+We also provide a macro to define a anonymous pin descriptor.
 
-Those printk lockups also took a *lot* of time for me to bisect.
+/* Convenience macro to define a single named or anonymous pin descriptor */
+#define PINCTRL_PIN(a, b) { .number = a, .name = b }
+#define PINCTRL_PIN_ANON(a) { .number = a }
 
-Thanks,
+If we use only the pin name for [get|set]_config(), we must assign the name
+of all pins.
+IMHO, we also provide pin numbers to control anonymous pins.
 
-	Ingo
+--
+Best Regards,
+Chanho Park
+
