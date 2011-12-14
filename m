@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab1LNQsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:48:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34112 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab1LNQsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:48:45 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Jason Baron <jbaron@redhat.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] jump-label: initialize jump-label subsystem somewhat later
-Date: Wed, 14 Dec 2011 08:48:35 -0800
-Message-Id: <1323881315-23245-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1757588Ab1LNQtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:49:17 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59785 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757368Ab1LNQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 11:49:15 -0500
+Message-ID: <1323881310.6805.41.camel@work-vm>
+Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 14 Dec 2011 08:48:30 -0800
+In-Reply-To: <20111214074640.GB2180@netboy.at.omicron.at>
+References: <cover.1323739287.git.luto@amacapital.net>
+	 <20111213032406.GA9604@netboy.at.omicron.at>
+	 <1323747782.4078.144.camel@work-vm>
+	 <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
+	 <20111214074640.GB2180@netboy.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11121416-9360-0000-0000-000001830F00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Wed, 2011-12-14 at 08:46 +0100, Richard Cochran wrote:
+> On Mon, Dec 12, 2011 at 11:09:29PM -0800, Andy Lutomirski wrote:
+> > On Mon, Dec 12, 2011 at 7:43 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > >> - New name, to distance ourselves from POSIX (clock_ns_get?)
+> > 
+> > I will defer to the bikeshedding consensus :)
+> > 
+> > >> - Family of calls, with set/get
+> > 
+> > Setting the time is a big can of worms.  adjtimex is rather
+> > incomprehensible (without reading lots of source and/or the rfc) and
+> > IMO puts a lot of NTP magic into the kernel, where it doesn't belong.
 
-commit 97ce2c88f9ad42e3c60a9beb9fca87abf3639faa breaks MIPS.
+Honestly, I don't really see how we jumped to adjtimex from setting the
+time, nor the complexity hinted at. First, the rational for getting
+clock_gettime_ns is to avoid the overhead of userland translating from
+timespec to ns.   I doubt there are similar performance needs for
+settimeofday().  Even if it was needed, it shouldn't be more complex
+then the unit conversion done in this abi patch. Am I missing something?
 
-The jump-lable initialization does I-Cache flushing after modifying
-code.  On MIPS this is done by calling through the function pointer
-flush_icache_range().  This function pointer is initialized mm_init().
+> > That being said, it might be nice to do something about leap seconds.
+> > I always thought that the nanosecond count should include every
+> > possible leap second so that every time that actually happens
+> > corresponds to a unique count, but maybe that's just me.
+> 
+> The advantage of working with TAI is that you can use simple addition
+> and substraction (converting the result to UTC or whatever), and the
+> answer is always correct.
 
-As things stand, we cannot be calling jump_label_init() until after
-mm_init() completes, so we move the call down to satisfy this
-constraint.
+But again, the hard part with in-kernel TAI (possibly as the base of
+time)is that initialization of the TAI/UTC offset needs to be able to be
+phased in slowly, as we also have to preserve legacy interfaces and
+behavior. 
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- init/main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> > >> - Sub nanosecond field
+> > 
+> > Me.  A nanosecond is approximately a light-second.  Other than things
+> > local to a single computer, not much of interest happens on a
+> > sub-nanosecond time scale.  Also, a single 64-bit count is nice, and
+> > 2^64 picoseconds isn't very long.
+> 
+> Believe it or not, people (from the Test and Measurement field) have
+> already been asking me about having subnanosecond time values from the
+> kernel.
+> 
+> What about this sort of time value?
+> 
+> struct sys_timeval {
+> 	__s64 nanoseconds;
+> 	__u32 fractional_ns;
+> };
+> 
+> The second field can just be zero, for now.
 
-diff --git a/init/main.c b/init/main.c
-index 217ed23..8c6a155 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -513,8 +513,6 @@ asmlinkage void __init start_kernel(void)
- 		   __stop___param - __start___param,
- 		   &unknown_bootoption);
- 
--	jump_label_init();
--
- 	/*
- 	 * These use large bootmem allocations and must precede
- 	 * kmem_cache_init()
-@@ -526,6 +524,8 @@ asmlinkage void __init start_kernel(void)
- 	trap_init();
- 	mm_init();
- 
-+	jump_label_init();
-+
- 	/*
- 	 * Set up the scheduler prior starting any interrupts (such as the
- 	 * timer interrupt). Full topology setup happens at smp_init()
--- 
-1.7.2.3
+I'm mixed on this. 
+
+We could do this, as the kernel keeps track of sub-ns granularity.
+However, its not stored in a decimal format. So I worry the extra math
+needed to convert it to something usable might add extra overhead,
+removing the gain of the proposed clock_gettime_ns() interface.
+
+
+> > >> - TAI time base (or according to parameter?)
+> > >
+> > > Having a CLOCK_TAI would be interesting across the board. We already
+> > > keep a TAI offset in the ntp code. However, I'm not sure if ntp actually
+> > > sets it these days.
+> > 
+> > A friend of mine would probably appreciate various barycentric time
+> > scales as well.  This would also be a different (and unrelated) patch.
+> 
+> What about this: a new, non-POSIX, rational time interface providing
+> TAI time values, and a user space library for time scale conversion?
+
+Why do we need a new interface for TAI? clock_gettime(CLOCK_TAI,...)
+should be achievable. I do think it would be interesting, but I also
+think its separate from the goal of this proposal.
+
+thanks
+-john
+
 
