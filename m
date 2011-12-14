@@ -1,38 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab1LNAtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:49:19 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37197 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756313Ab1LNAtQ (ORCPT
+	id S1756540Ab1LNAtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:49:39 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37083 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756499Ab1LNAtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:49:16 -0500
-X-Sasl-enc: rjP+7LqsatMd+oHmJIRtHYOmsHgdByMVD8EViOqRLueA 1323823755
-Date: Tue, 13 Dec 2011 16:26:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/29] Staging: comedi: fix line over 80 character issue
- in daqboard2000.c
-Message-ID: <20111214002610.GA15555@kroah.com>
-References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
- <1323667181-17252-10-git-send-email-ravishankar.km@greenturtles.in>
+	Tue, 13 Dec 2011 19:49:04 -0500
+Subject: [PATCH 22/23] jbd2: Checksum data blocks that are stored in the
+	journal
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Tue, 13 Dec 2011 16:48:47 -0800
+Message-ID: <20111214004847.28243.81593.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
+References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323667181-17252-10-git-send-email-ravishankar.km@greenturtles.in>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11121400-6148-0000-0000-000001F10BDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 10:49:22AM +0530, Ravishankar karkala Mallikarjunayya wrote:
-> This is a patch to the daqboard2000.c file that fixes up a
-> line over 80 character warning found by the checkpatch.pl tool.
+Calculate and verify checksums of each data block being stored in the journal.
 
-This doesn't apply without fuzz, so something went wrong, please redo
-it.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+ fs/jbd2/commit.c   |   22 ++++++++++++++++++++++
+ fs/jbd2/journal.c  |   10 ++++++++--
+ fs/jbd2/recovery.c |   30 ++++++++++++++++++++++++++++++
+ 3 files changed, 60 insertions(+), 2 deletions(-)
 
-greg k-h
+
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index ccf0b6f..25bb1c3 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -339,6 +339,26 @@ static void jbd2_descr_block_csum_set(journal_t *j,
+ 	tail->t_checksum = cpu_to_be32(csum);
+ }
+ 
++static void jbd2_block_tag_csum_set(journal_t *j, journal_block_tag_t *tag,
++				    struct buffer_head *bh, __u32 sequence)
++{
++	struct page *page = bh->b_page;
++	__u8 *addr;
++	__u32 csum;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return;
++
++	sequence = cpu_to_be32(sequence);
++	addr = kmap_atomic(page, KM_USER0);
++	csum = jbd2_chksum(j, j->j_csum_seed, (__u8 *)&sequence,
++			  sizeof(sequence));
++	csum = jbd2_chksum(j, csum, addr + offset_in_page(bh->b_data),
++			  bh->b_size);
++	kunmap_atomic(addr, KM_USER0);
++
++	tag->t_checksum = cpu_to_be32(csum);
++}
+ /*
+  * jbd2_journal_commit_transaction
+  *
+@@ -649,6 +669,8 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 		tag = (journal_block_tag_t *) tagp;
+ 		write_tag_block(tag_bytes, tag, jh2bh(jh)->b_blocknr);
+ 		tag->t_flags = cpu_to_be32(tag_flag);
++		jbd2_block_tag_csum_set(journal, tag, jh2bh(new_jh),
++					commit_transaction->t_tid);
+ 		tagp += tag_bytes;
+ 		space_left -= tag_bytes;
+ 
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index bc80533..ff4a870 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -2005,10 +2005,16 @@ int jbd2_journal_blocks_per_page(struct inode *inode)
+  */
+ size_t journal_tag_bytes(journal_t *journal)
+ {
++	journal_block_tag_t tag;
++	size_t x = 0;
++
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		x += sizeof(tag.t_checksum);
++
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
+-		return JBD2_TAG_SIZE64;
++		return x + JBD2_TAG_SIZE64;
+ 	else
+-		return JBD2_TAG_SIZE32;
++		return x + JBD2_TAG_SIZE32;
+ }
+ 
+ /*
+diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+index a757d8d..3dd8544 100644
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -390,6 +390,23 @@ static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
+ 	return provided == calculated;
+ }
+ 
++static int jbd2_block_tag_csum_verify(journal_t *j, journal_block_tag_t *tag,
++				      void *buf, __u32 sequence)
++{
++	__u32 provided, calculated;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return 1;
++
++	sequence = cpu_to_be32(sequence);
++	calculated = jbd2_chksum(j, j->j_csum_seed, (__u8 *)&sequence,
++				 sizeof(sequence));
++	calculated = jbd2_chksum(j, calculated, buf, j->j_blocksize);
++	provided = be32_to_cpu(tag->t_checksum);
++
++	return provided == cpu_to_be32(calculated);
++}
++
+ static int do_one_pass(journal_t *journal,
+ 			struct recovery_info *info, enum passtype pass)
+ {
+@@ -566,6 +583,19 @@ static int do_one_pass(journal_t *journal,
+ 						goto skip_write;
+ 					}
+ 
++					/* Look for block corruption */
++					if (!jbd2_block_tag_csum_verify(
++						journal, tag, obh->b_data,
++						be32_to_cpu(tmp->h_sequence))) {
++						brelse(obh);
++						success = -EIO;
++						printk(KERN_ERR "JBD: Invalid "
++						       "checksum recovering "
++						       "block %llu in log\n",
++						       blocknr);
++						continue;
++					}
++
+ 					/* Find a buffer for the new
+ 					 * data being restored */
+ 					nbh = __getblk(journal->j_fs_dev,
+
