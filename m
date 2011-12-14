@@ -1,210 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab1LNHxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:53:37 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56671 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1LNHxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 02:53:36 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Dec 2011 16:52:26 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: [PATCH 4/4] memcg: simplify LRU handling by new rule
-Message-Id: <20111214165226.1c3b666e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755183Ab1LNHyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:54:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49401 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab1LNHyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 02:54:04 -0500
+Date: Wed, 14 Dec 2011 08:52:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 4/6] x86, mce: Add mechanism to safely save information
+ in MCE handler
+Message-ID: <20111214075210.GE25232@elte.hu>
+References: <cover.1323803130.git.tony.luck@intel.com>
+ <21784ca9d3f0a59c01c9d127a088077561616ba1.1323803130.git.tony.luck@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21784ca9d3f0a59c01c9d127a088077561616ba1.1323803130.git.tony.luck@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Now, at LRU handling, memory cgroup needs to do complicated works
-to see valid pc->mem_cgroup, which may be overwritten.
+* Tony Luck <tony.luck@intel.com> wrote:
 
-This patch is for relaxing the protocol. This patch guarantees
-   - when pc->mem_cgroup is overwritten, page must not be on LRU.
+> Machine checks on Intel cpus interrupt execution on all cpus, regardless
+> of interrupt masking.  We have a need to save some data about the cause
+> of the machine check (physical address) in the machine check handler that
+> can be retrieved later to attempt recovery in a more flexible execution
+> state.
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   51 ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 51 insertions(+), 0 deletions(-)
 
-By this, LRU routine can believe pc->mem_cgroup and don't need to
-check bits on pc->flags. This new rule may adds small overheads to
-swapin. But in most case, lru handling gets faster.
+Just some cleanliness nits:
 
-After this patch, PCG_ACCT_LRU bit is obsolete and removed.
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 43f22c8..9b83b7d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -887,6 +887,57 @@ static void mce_clear_state(unsigned long *toclear)
+>  }
+>  
+>  /*
+> + * Need to save faulting physical address associated with a process
+> + * in the machine check handler some place where we can grab it back
+> + * later in mce_notify_process()
+> + */
+> +#define	MAX_MCE_INFO	16
+> +struct mce_info {
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/page_cgroup.h |    8 -----
- mm/memcontrol.c             |   72 ++++++++++--------------------------------
- 2 files changed, 17 insertions(+), 63 deletions(-)
+please separate non-bulk definitons by newlines.
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index aaa60da..2cddacf 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -10,8 +10,6 @@ enum {
- 	/* flags for mem_cgroup and file and I/O status */
- 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
- 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
--	/* No lock in page_cgroup */
--	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
- 	__NR_PCG_FLAGS,
- };
- 
-@@ -75,12 +73,6 @@ TESTPCGFLAG(Used, USED)
- CLEARPCGFLAG(Used, USED)
- SETPCGFLAG(Used, USED)
- 
--SETPCGFLAG(AcctLRU, ACCT_LRU)
--CLEARPCGFLAG(AcctLRU, ACCT_LRU)
--TESTPCGFLAG(AcctLRU, ACCT_LRU)
--TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
--
--
- SETPCGFLAG(FileMapped, FILE_MAPPED)
- CLEARPCGFLAG(FileMapped, FILE_MAPPED)
- TESTPCGFLAG(FileMapped, FILE_MAPPED)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2ae973d..d5e21e7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -974,30 +974,8 @@ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
- 		return &zone->lruvec;
- 
- 	pc = lookup_page_cgroup(page);
--	VM_BUG_ON(PageCgroupAcctLRU(pc));
--	/*
--	 * putback:				charge:
--	 * SetPageLRU				SetPageCgroupUsed
--	 * smp_mb				smp_mb
--	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
--	 *
--	 * Ensure that one of the two sides adds the page to the memcg
--	 * LRU during a race.
--	 */
--	smp_mb();
--	/*
--	 * If the page is uncharged, it may be freed soon, but it
--	 * could also be swap cache (readahead, swapoff) that needs to
--	 * be reclaimable in the future.  root_mem_cgroup will babysit
--	 * it for the time being.
--	 */
--	if (PageCgroupUsed(pc)) {
--		/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
--		smp_rmb();
--		memcg = pc->mem_cgroup;
--		SetPageCgroupAcctLRU(pc);
--	} else
--		memcg = root_mem_cgroup;
-+	memcg = pc->mem_cgroup;
-+	VM_BUG_ON(!memcg);
- 	mz = page_cgroup_zoneinfo(memcg, page);
- 	/* compound_order() is stabilized through lru_lock */
- 	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
-@@ -1024,18 +1002,8 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- 		return;
- 
- 	pc = lookup_page_cgroup(page);
--	/*
--	 * root_mem_cgroup babysits uncharged LRU pages, but
--	 * PageCgroupUsed is cleared when the page is about to get
--	 * freed.  PageCgroupAcctLRU remembers whether the
--	 * LRU-accounting happened against pc->mem_cgroup or
--	 * root_mem_cgroup.
--	 */
--	if (TestClearPageCgroupAcctLRU(pc)) {
--		VM_BUG_ON(!pc->mem_cgroup);
--		memcg = pc->mem_cgroup;
--	} else
--		memcg = root_mem_cgroup;
-+	memcg = pc->mem_cgroup;
-+	VM_BUG_ON(!memcg);
- 	mz = page_cgroup_zoneinfo(memcg, page);
- 	/* huge page split is done under lru_lock. so, we have no races. */
- 	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
-@@ -2377,6 +2345,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- 
- 	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), nr_pages);
- 	unlock_page_cgroup(pc);
-+	WARN_ON_ONCE(PageLRU(page));
- 	/*
- 	 * "charge_statistics" updated event counter. Then, check it.
- 	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
-@@ -2388,7 +2357,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 
- #define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MOVE_LOCK) |\
--			(1 << PCG_ACCT_LRU) | (1 << PCG_MIGRATION))
-+			(1 << PCG_MIGRATION))
- /*
-  * Because tail pages are not marked as "used", set it. We're under
-  * zone->lru_lock, 'splitting on pmd' and compound_lock.
-@@ -2399,6 +2368,8 @@ void mem_cgroup_split_huge_fixup(struct page *head)
- {
- 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
- 	struct page_cgroup *pc;
-+	struct mem_cgroup_per_zone *mz;
-+	enum lru_list lru;
- 	int i;
- 
- 	if (mem_cgroup_disabled())
-@@ -2407,23 +2378,15 @@ void mem_cgroup_split_huge_fixup(struct page *head)
- 		pc = head_pc + i;
- 		pc->mem_cgroup = head_pc->mem_cgroup;
- 		smp_wmb();/* see __commit_charge() */
--		/*
--		 * LRU flags cannot be copied because we need to add tail
--		 * page to LRU by generic call and our hooks will be called.
--		 */
- 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
- 	}
--
--	if (PageCgroupAcctLRU(head_pc)) {
--		enum lru_list lru;
--		struct mem_cgroup_per_zone *mz;
--		/*
--		 * We hold lru_lock, then, reduce counter directly.
--		 */
--		lru = page_lru(head);
--		mz = page_cgroup_zoneinfo(head_pc->mem_cgroup, head);
--		MEM_CGROUP_ZSTAT(mz, lru) -= HPAGE_PMD_NR - 1;
--	}
-+	/* 
-+	 * Tail pages will be added to LRU.
-+	 * We hold lru_lock,then,reduce counter directly.
-+	 */
-+	lru = page_lru(head);
-+	mz = page_cgroup_zoneinfo(head_pc->mem_cgroup, head);
-+	MEM_CGROUP_ZSTAT(mz, lru) -= HPAGE_PMD_NR - 1;
- }
- #endif
- 
-@@ -2656,10 +2619,9 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 	if (!page_is_file_cache(page))
- 		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
- 
--	if (!PageSwapCache(page)) {
-+	if (!PageSwapCache(page))
- 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
--		WARN_ON_ONCE(PageLRU(page));
--	} else { /* page is swapcache/shmem */
-+	else { /* page is swapcache/shmem */
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
--- 
-1.7.4.1
+> +	atomic_t		inuse;
+> +	struct task_struct	*t;
+> +	__u64			paddr;
+> +} mce_info[MAX_MCE_INFO];
+> +
+> +static void mce_save_info(__u64 addr)
+> +{
+> +	int	i;
 
+that tab looks weird. [there's repeat occurances further below 
+as well]
 
+> +
+> +	for (i = 0; i < MAX_MCE_INFO; i++)
+> +		if (atomic_cmpxchg(&mce_info[i].inuse, 0, 1) == 0) {
+> +			mce_info[i].t = current;
+> +			mce_info[i].paddr = addr;
+> +			return;
+> +		}
+
+We typically use curly braces for all multi-line statements - so 
+two would be needed above.
+
+> +
+> +	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
+> +}
+> +
+> +static int mce_find_info(__u64 *paddr)
+> +{
+> +	int	i;
+> +
+> +	for (i = 0; i < MAX_MCE_INFO; i++)
+> +		if (atomic_read(&mce_info[i].inuse) &&
+> +		    mce_info[i].t == current) {
+> +			*paddr = mce_info[i].paddr;
+> +			return 1;
+> +		}
+> +	return 0;
+> +}
+> +
+> +static void mce_clear_info(void)
+> +{
+> +	int	i;
+> +
+> +	for (i = 0; i < MAX_MCE_INFO; i++)
+> +		if (atomic_read(&mce_info[i].inuse) &&
+> +		    mce_info[i].t == current) {
+
+the line-break shows that the code has complexit troubles. Doing 
+this in the loop iterator:
+
+	struct mce_info *mi = mce_info + i;
+
+would help make it shorter and more readable.
+
+Thanks,
+
+	Ingo
