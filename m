@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab1LNHAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 02:00:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58114 "EHLO mga03.intel.com"
+	id S1753794Ab1LNHBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 02:01:08 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47015 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab1LNG77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 01:59:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85510676"
-Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <1323845054.2846.18.camel@edumazet-laptop>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
-	 <alpine.DEB.2.00.1112020842280.10975@router.home>
-	 <1323419402.16790.6105.camel@debian>
-	 <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>
-	 <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1112131835100.31514@chino.kir.corp.google.com>
-	 <1323842761.16790.8295.camel@debian>
-	 <1323845054.2846.18.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Dec 2011 14:56:52 +0800
-Message-ID: <1323845812.16790.8307.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753617Ab1LNHBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 02:01:05 -0500
+Date: Wed, 14 Dec 2011 07:59:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg KH <greg@kroah.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: printk() vs tty_io
+Message-ID: <20111214065910.GA25775@elte.hu>
+References: <1323804803.9082.40.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323804803.9082.40.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> > Thanks for the data. Real netperf is hard to give enough press on SLUB.
-> > but as I mentioned before, I also didn't find real performance change on
-> > my loopback netperf testing. 
-> > 
-> > I retested hackbench again. about 1% performance increase still exists
-> > on my 2 sockets SNB/WSM and 4 sockets NHM.  and no performance drop for
-> > other machines. 
-> > 
-> > Christoph, what's comments you like to offer for the results or for this
-> > code change? 
+> Hi tty folks,
 > 
-> I believe far more aggressive mechanism is needed to help these
-> workloads.
+> I've been poking at reducing the constraints on printk(), like make it
+> work under rq->lock etc..
 > 
-> Please note that the COLD/HOT page concept is not very well used in
-> kernel, because its not really obvious that some decisions are always
-> good (or maybe this is not well known)
+> Aside from a fwd port of the patch that abuses the 
+> console_sem.lock: https://lkml.org/lkml/2011/6/9/298 and a few 
+> other not so very pretty patches, I ran into the following 
+> lockdep splat (using a not so very pretty lockdep 
+> early_printk() patch):
 
-Hope Christoph know everything of SLUB. :) 
-> 
-> We should try to batch things a bit, instead of doing a very small unit
-> of work in slow path.
-> 
-> We now have a very fast fastpath, but inefficient slow path.
-> 
-> SLAB has a litle cache per cpu, we could add one to SLUB for freed
-> objects, not belonging to current slab. This could avoid all these
-> activate/deactivate overhead.
+btw., would be nice to also somehow realeasify those debug hacks 
+to preserve them for eternity - doing all lockdep output as 
+earlyprintk while keeping printks working is a great way to 
+debug printk() itself.
 
-Maybe worth to try or maybe Christoph had studied this? 
+Those printk lockups also took a *lot* of time for me to bisect.
 
+Thanks,
 
+	Ingo
