@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab1LNQrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 11:47:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59840 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756194Ab1LNQrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 11:47:43 -0500
-Message-ID: <4EE8D305.8020407@zytor.com>
-Date: Wed, 14 Dec 2011 08:47:01 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: build warnings after merge of the final tree
-References: <20111214181545.6e13bc954cb7ddce9086e861@canb.auug.org.au> <1323880322.23971.33.camel@gandalf.stny.rr.com>
-In-Reply-To: <1323880322.23971.33.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757571Ab1LNQsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 11:48:47 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34112 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab1LNQsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 11:48:45 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: ralf@linux-mips.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Jason Baron <jbaron@redhat.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH] jump-label: initialize jump-label subsystem somewhat later
+Date: Wed, 14 Dec 2011 08:48:35 -0800
+Message-Id: <1323881315-23245-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 08:32 AM, Steven Rostedt wrote:
-> On Wed, 2011-12-14 at 18:15 +1100, Stephen Rothwell wrote:
-> 
->> Maybe caused by commit d5e553d6e0a4 ("trace: Include <asm/asm-offsets.h>
->> in trace_syscalls.c") from the tip tree.  These warnings may have been
->> here for a while as it is hard to catch the new ones among the flood.
->>
-> 
-> hpa,
-> 
-> Was this change only needed for x86? If so, could you put that into
-> asm/ftrace.h instead?
-> 
+From: David Daney <david.daney@cavium.com>
 
-Yes (on both accounts).  It was part of the syscall changes; I'll move
-the include.
+commit 97ce2c88f9ad42e3c60a9beb9fca87abf3639faa breaks MIPS.
 
-	-hpa
+The jump-lable initialization does I-Cache flushing after modifying
+code.  On MIPS this is done by calling through the function pointer
+flush_icache_range().  This function pointer is initialized mm_init().
 
+As things stand, we cannot be calling jump_label_init() until after
+mm_init() completes, so we move the call down to satisfy this
+constraint.
 
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ init/main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 217ed23..8c6a155 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -513,8 +513,6 @@ asmlinkage void __init start_kernel(void)
+ 		   __stop___param - __start___param,
+ 		   &unknown_bootoption);
+ 
+-	jump_label_init();
+-
+ 	/*
+ 	 * These use large bootmem allocations and must precede
+ 	 * kmem_cache_init()
+@@ -526,6 +524,8 @@ asmlinkage void __init start_kernel(void)
+ 	trap_init();
+ 	mm_init();
+ 
++	jump_label_init();
++
+ 	/*
+ 	 * Set up the scheduler prior starting any interrupts (such as the
+ 	 * timer interrupt). Full topology setup happens at smp_init()
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.2.3
 
