@@ -1,92 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab1LNO7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:59:35 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20834 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755159Ab1LNO7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:59:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85647085"
-Date: Wed, 14 Dec 2011 22:49:27 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Li Shaohua <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-Message-ID: <20111214144927.GA24288@localhost>
-References: <20111214133400.GA18565@localhost>
- <20111214143014.GB18080@thunk.org>
+	id S1756642Ab1LNPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:00:09 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39276 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751059Ab1LNPAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 10:00:07 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCHv3 00/10] XSHM: Shared Memory Driver for ST-E Thor M7400 LTE modem
+Date: Wed, 14 Dec 2011 15:59:45 +0100
+Message-Id: <1323874795-2488-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214143014.GB18080@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:30:14PM +0800, Theodore Ts'o wrote:
-> On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
-> > Hi,
-> > 
-> > Shaohua recently found that ext4 writeback mode could perform worse
-> > than ordered mode in some cases. It may not be a big problem, however
-> > we'd like to share some information on our findings.
-> > 
-> > I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
-> > The interesting thing is, data=writeback used to run a bit faster
-> > than data=ordered, however situation get inverted presumably by the
-> > IO-less dirty throttling.
-> 
-> Interesting.  What sort of workloads are you using to do these
-> measurements?  How many writer threads; I assume you are doing
-> sequential writes which are extending one or more files, etc?
+Based on review comments from Arnd Bergmann I have the following
+changes since PATCHv2:
+~~~~~~~~~~~~~~~~~~~~~~
+o Move xshm_ipctoc.h from include/linux/xshm to drivers/xshm.
+o Remove #pragma pack.
+o Reduce use of global variables by introducing struct xshm_modem
+  in xshm_boot.c and struct xshm_parent in xshm_dev.c.
+o Remove most of the device lists, and use *_for_each_* instead.
+  In xshm_boot.c an array of configuration entries is kept,
+  instead of device instances. (Device list is in use in xshm_chr.c)
+o request_firmware is implemented instead of home-brewed solution.
+o Minor cleanup of debug macros.
+o Added dependency on CONFIG_NET, issue reported by Randy Dunlap.
+o Dropped __DATE__ macro, issue reported by Michal Marek.
 
-Yes it's mostly simple dd's, and some fio workloads.
+Introduction:
+~~~~~~~~~~~~~
+This patch-set introduces the Shared Memory Driver for ST-Ericsson's
+Thor M7400 LTE modem.
+The shared memory model is implemented for Chip-to-chip and
+uses a reserved memory area and a number of bi-directional
+channels. Each channel has it's own designated data area where payload
+data is copied into.
 
-The test scripts and fio jobs can be found in
+Two different channel types are defined, one stream channel which is
+implemented as a traditional ring-buffer, and a packet channel which
+is a ring-buffer of fix sized buffers where each buffer contains
+an array of CAIF frames.
 
-        https://github.com/fengguang/writeback-tests
+The notification of read and write index updates are handled in a
+separate driver called c2c_genio. This driver will be contributed separately,
+but the API is included in this patch-set.
 
-For example, the run_dd() in
-https://github.com/fengguang/writeback-tests/blob/master/dd-common.sh
+The channel configuration is stored in shared memory, each channel
+has a designated area in shared memory for configuration data,
+read and write indexes and a data area.
 
-and some fio jobs:
-https://github.com/fengguang/writeback-tests/blob/master/fio_fat_rates
-https://github.com/fengguang/writeback-tests/blob/master/fio_fat_mmap_randwrite_4k
-https://github.com/fengguang/writeback-tests/blob/master/fio_fat_mmap_randwrite_64k
+Configuration
+~~~~~~~~~~~~~~~
 
-The meanings in the dirs:
+        IPC-TOC
+        +--------------------+	   Index Area
+        | Channel Descr 0    | -----> +------------+
+	|                    | -+     |	Read Index |
+	|--------------------|	|     |------------|
+	| Channel Descr 1    | 	|     |	Write Index|
+	|                    |	|     +------------+
+	|--------------------|	|   Data Area
+	|       ...    	     |	|     +------------+
+	|                    |	+---> |            |
+	+--------------------+	      |	       	   |
+				      |	       	   |
+				      +------------+
 
-       hostname     dirty_background_bytes
-         |   dirty_bytes  |   FS data=writeback                                                           
-         |          |     |    |   |  # of dd tasks                                    
-         |          |     |    |   |   |      kernel version                                   
-        fat/thresh=1000M:999M/ext4:wb-100dd-1-3.1.0+
-                                            |
-                                            1st test run
-                                 (each test can be repreated several times)
+A IPC-TOC (table of content) is used for holding configuration data
+for the channels (struct xshm_ipctoc). It contains an array of
+channel descriptors (struct xshm_ipctoc_channel). The channel
+descriptors points out the data area and the location of
+read and write indexes.
 
-> I suspect it's due to the throttling meaning that each thread is
-> getting to send less data to the disk, and so there is more seeking
-> going on with data=writeback, where as with data=ordered, at each
-> journal commit we are forcing all of the dirty pages out to disk, one
-> inode at a time, and this is resulting in a more efficient writeback
-> compared to when the writeback code is getting to make its own choices
-> about how much each inode gets to write out at at time.
-> 
-> It would be interesting to see what would happen if in
-> ext4_da_writepages(), we completely ignore how many pages are
-> requested to be written back by the writeback code, and just simply
-> write back all of the dirty pages, and see if that brings the
-> performance back.
+The configuration is provided from user-space using gen-netlink.
+The gen-netlink format is defined in xshm_netlink.h and and handled
+in xshm_boot.c
 
-I can provide more tracing data or test patches on your request.
-But for now, I have to go to bed :-)
+Packet data
+~~~~~~~~~~~
+The packet channel is set up to minimize interrupts needed to
+transfer a packet and to allow efficient DMA operations on the modem.
 
-Thanks,
-Fengguang
+Ring Buffer Indexes:
+    +------------+
+  +-| Read Index |
+  | |------------|
+  | | Write Index|------------------------+
+  | +------------+   		 	  |
+  |    		    			  |
+  V    	  				  |
+Buffer-0:				  V Buffer-1:
+ +----------------------------------------+---------------+---
+ |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
+ +----------------------------------------+---------------+--
+   |      |              ^      ^
+   +---------------------+      |
+	  +---------------------+
+
+Packet data is organized in a channel containing a number of fixed-
+size buffers. The channel has a read and write pointer to a buffer in a normal
+ring-buffer fashion.
+
+Each buffer holds an array of CAIF-frames, and starts with an descriptor array
+containing pointers to the data frames in the buffer. The descriptor array
+contains offset and length of each frame.
+
+The packet device (caif_xshm.c) is implemented as a network interface of
+type ARPHRD_CAIF.
+
+Stream data
+~~~~~~~~~~~
+The driver for the stream channel is implemented as a character device
+interface to user space. The character device implements non-blocking open
+and non-blocking IO in general. The character device is implementing
+a traditional circular buffer directly in the shared memory region for
+the channel.
+
+
+Driver model
+~~~~~~~~~~~~~~
+A XSHM bus is implemented, the example below shows one device
+of each type (stream and packet):
+
+/sys/bus/xshm
+|-- devices
+|   |-- xshm0 -> ../../../devices/xshm/xshm0
+|   `-- xshm1 -> ../../../devices/xshm/xshm1
+|-- drivers
+|   |-- caif_xshm
+|   |   |-- bind
+|   |   |-- module -> ../../../../module/caif_xshm
+|   |   |-- uevent
+|   |   |-- unbind
+|   |   `-- xshm1 -> ../../../../devices/xshm/xshm1
+|   `-- xshm_chr
+|       |-- bind
+|       |-- module -> ../../../../module/xshm_chr
+|       |-- uevent
+|       |-- unbind
+|       `-- xshm0 -> ../../../../devices/xshm/xshm0
+|-- drivers_autoprobe
+|-- drivers_probe
+`-- uevent
+
+
+/sys/devices/xshm/
+|-- bootimg
+|-- caif_ready
+|-- ipc_ready
+|-- uevent
+|-- xshm0
+|   |-- driver -> ../../../bus/xshm/drivers/xshm_chr
+|   |-- misc
+|   |   `-- xshm0
+|   |       |-- dev
+|   |       |-- device -> ../../../xshm0
+|   |       |-- subsystem -> ../../../../../class/misc
+|   |       `-- uevent
+|   |-- subsystem -> ../../../bus/xshm
+|   `-- uevent
+`-- xshm1
+    |-- driver -> ../../../bus/xshm/drivers/caif_xshm
+    |-- subsystem -> ../../../bus/xshm
+    `-- uevent
+
+
+Review comments and feedback is welcome.
+
+Regards,
+Sjur Brændeland
+
+cc: Michal Marek <mmarek@suse.cz>
+cc: Randy Dunlap <rdunlap@xenotime.net>
+
+Sjur Brændeland (10):
+  xshm: Shared Memory layout for ST-E M7400 driver.
+  xshm: Channel config definitions for ST-E M7400 driver.
+  xshm: Configuration for XSHM Channel an devices.
+  xshm: geni/geno driver interface.
+  xshm: genio dummy driver
+  xshm: Add xshm device implementation
+  xshm: XSHM Configuration data handling
+  xshm: Character device for XSHM channel access.
+  xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
+  caif-xshm: Add CAIF driver for Shared memory for M7400
+
+ drivers/Kconfig                   |    2 +
+ drivers/Makefile                  |    1 +
+ drivers/net/caif/Kconfig          |   10 +
+ drivers/net/caif/Makefile         |    1 +
+ drivers/net/caif/caif_xshm.c      |  915 +++++++++++++++++++++++++++
+ drivers/xshm/Kconfig              |   60 ++
+ drivers/xshm/Makefile             |    5 +
+ drivers/xshm/dummy_c2c_genio.c    |   76 +++
+ drivers/xshm/xshm_boot.c          | 1149 +++++++++++++++++++++++++++++++++
+ drivers/xshm/xshm_chr.c           | 1262 +++++++++++++++++++++++++++++++++++++
+ drivers/xshm/xshm_dev.c           |  541 ++++++++++++++++
+ drivers/xshm/xshm_ipctoc.h        |  153 +++++
+ include/linux/Kbuild              |    1 +
+ include/linux/c2c_genio.h         |  195 ++++++
+ include/linux/xshm/Kbuild         |    1 +
+ include/linux/xshm/xshm_dev.h     |  244 +++++++
+ include/linux/xshm/xshm_netlink.h |   95 +++
+ 17 files changed, 4711 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/caif/caif_xshm.c
+ create mode 100644 drivers/xshm/Kconfig
+ create mode 100644 drivers/xshm/Makefile
+ create mode 100644 drivers/xshm/dummy_c2c_genio.c
+ create mode 100644 drivers/xshm/xshm_boot.c
+ create mode 100644 drivers/xshm/xshm_chr.c
+ create mode 100644 drivers/xshm/xshm_dev.c
+ create mode 100644 drivers/xshm/xshm_ipctoc.h
+ create mode 100644 include/linux/c2c_genio.h
+ create mode 100644 include/linux/xshm/Kbuild
+ create mode 100644 include/linux/xshm/xshm_dev.h
+ create mode 100644 include/linux/xshm/xshm_netlink.h
+
