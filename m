@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1LNGsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 01:48:13 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:50981 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750942Ab1LNGsJ (ORCPT
+	id S1753486Ab1LNGvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 01:51:13 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:39342 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab1LNGvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 01:48:09 -0500
-Message-ID: <4EE8469B.8050201@st.com>
-Date: Wed, 14 Dec 2011 12:17:55 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Viresh KUMAR <viresh.kumar@st.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>, <linus.walleij@linaro.org>
-Subject: Re: dmaengine/Query: What about scatter/gather for mem to mem transfers.
-References: <4EE038BD.7010705@st.com> <1323329870.1641.27.camel@vkoul-udesk3> <4EE06C3C.8080003@st.com>
-In-Reply-To: <4EE06C3C.8080003@st.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Dec 2011 01:51:10 -0500
+Date: Wed, 14 Dec 2011 17:51:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: linux-next: manual merge of the akpm tree with the cgroup tree
+Message-Id: <20111214175101.daac0549e5ed9d766c3a9bb5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vinod/Dan,
+--Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In continuation to the scatter/gather requirement:
-We might need some generic transfer where source and destination address 
-may be overlapped and also gap between two chunk of source and 
-destination might not be same.
+Hi Andrew,
 
-For examaple,
-Transfer size is - -0x4000
-Our Src is something like this:
-0x1000 -- 0x2000
-0x3000 -- 0x5000
-0x6000 -- 0x7000
+Today's linux-next merge of the akpme tree got conflicts in several files
+between commits from the cgroup  tree and commit "cgroups: add previous
+cgroup in can_attach_task/attach_task callbacks" from the akpm tree.
 
-and dst is something like this:
-0x6000 -- 0x8000
-0x9000 -- 0xB000
+This got a bit to hard to resolve, so I dropped that patch and the
+following from the akpm tree.
 
-It seems that device_prep_interleaved_dma would not be able to handle 
-such transfer.
+cgroups: new cancel_attach_task() subsystem callback
+cgroups: ability to stop res charge propagation on bounded ancestor
+cgroups: add res counter common ancestor searching
+res_counter: allow charge failure pointer to be null
+cgroups: pull up res counter charge failure interpretation to caller
+cgroups: allow subsystems to cancel a fork
+cgroups: add a task counter subsystem
+cgroups: ERR_PTR needs err.h
+cgroup: Fix task counter common ancestor logic
+cgroup-fix-task-counter-common-ancestor-logic-checkpatch-fixes
 
-So, what I was thinking that to add following flags in enum dma_ctrl_flags.
+I am wondering if that patch set should be included in the cgroup tree?
+Alternatively, you could provide me with a new set of patches based on
+today's linux-next.
 
-DMA_SRC_INC = (1 << 10),
-DMA_SRC_DEC = (2 << 10),
-DMA_SRC_FIX = (3 << 10),
-DMA_DST_INC = (1 << 12),
-DMA_DST_DEC = (2 << 12),
-DMA_DST_FIX = (3 << 12),
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Now we can use these flag in device_prep_dma_sg and this function can be 
-implemented for generic cases.
+--Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b
+Content-Type: application/pgp-signature
 
-I think, the above modifications will not affect other's platform and 
-should be acceptable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Whats your opinion?
+iQIcBAEBCAAGBQJO6EdVAAoJEECxmPOUX5FEA3EP/0SNSUN6Ezd6rIWpBNS3sjDh
+sCtCYUaETv2QcMu/VofCbFRYWW0dmdw9zlbOVlN9FXZIW/0NvEI3LofjzFUTdg4k
+zfWe7WgJ/A3mQafcXoowlmctB5CCzHEKrHDZ5pIVZAskOXT88uxcCRWPBCdrGuzl
+DLnh4HojOJw+CYFGWjX8anI+0VffjF+4ml5PVsMEzE5xS/Zn8Q4qvBESfIm8ozIF
+iTon9yKntiJhbfY4zWax3aFz1as2GfIMIUUbbGvnqAi5n21S75Z2S56LY8wWwnyp
+q9VDaJSB3IqMC0RaEfLAfEHbCrigOAx1VNUhUsErtQhwPewscRvjJp88xj6ezoxX
+HXNiHAhmvh2ufKx4bu3wQCKPMQecDlkO0TiFTg2RAXOu+i1wNt52MLNIM943d4Px
+8y+JDdDYtXodL59q8trC14M9VUkcoyBtLU2B9trnP1rIGp4wbs1OTJUpJRufopz4
+nAO2xNtF/e8OQmAZLIRYtD+q77rkfR+/JrmsmbOMcRkpuveBYb2MpAYLzRkss4yZ
+d5ERnZSGN+zmjenbMjoYHZ34BpwavaPaViUNw2pDuDUTdOnnvKm8Cc+9IigEXxfS
+HSqGGu7QbmjVt9qTG8kTvadlRWwn1Bb9Q5NoaWjTe1Njdpd82MEoAVh7h8XqsUmC
+WMfid3YaPibhvX10MzJ/
+=adP6
+-----END PGP SIGNATURE-----
 
-Regards
-Pratyush
-
-On 12/8/2011 1:20 PM, Viresh KUMAR wrote:
-> On 12/8/2011 1:07 PM, Vinod Koul wrote:
->> You mean something like:
->>         struct dma_async_tx_descriptor *(*device_prep_dma_sg)(
->>                  struct dma_chan *chan,
->>                  struct scatterlist *dst_sg, unsigned int dst_nents,
->>                  struct scatterlist *src_sg, unsigned int src_nents,
->>                  unsigned long flags);
->>
->> Its already there, you need to implement in your driver :)
->
-> Ok. I didn't knew it. :(
->
-
+--Signature=_Wed__14_Dec_2011_17_51_01_+1100_BPp9pIl9ZdQeTu4b--
