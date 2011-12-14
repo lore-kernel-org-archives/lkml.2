@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab1LNODE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:03:04 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:39845 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757294Ab1LNOCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:02:55 -0500
-Date: Wed, 14 Dec 2011 19:31:55 +0530
-From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Denis Kuzmenko <linux@solonet.org.ua>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-Message-ID: <20111214140155.GB3999@bnru02.bnr.st.com>
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
- <4EDAA785.40503@solonet.org.ua>
- <CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com>
- <4EDFAA0A.7040607@solonet.org.ua>
- <20111207160002.8b52df42.akpm@linux-foundation.org>
- <20111208011904.GD5748@opensource.wolfsonmicro.com>
- <2E48302EED53D048A7BA72B0A307FB511CF4DFD1C0@EXDCVYMBSTM005.EQ1STM.local>
- <20111214113714.GJ3072@opensource.wolfsonmicro.com>
+	id S1757278Ab1LNOBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:01:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754861Ab1LNOBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 09:01:08 -0500
+Date: Wed, 14 Dec 2011 12:00:27 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Nate Custer <nate@cpanel.net>, kvm@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: kvm deadlock
+Message-ID: <20111214140027.GF18317@amt.cnet>
+References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
+ <20111214122511.GD18317@amt.cnet>
+ <4EE8A7ED.7060703@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111214113714.GJ3072@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EE8A7ED.7060703@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 12:37:15 +0100, Mark Brown wrote:
-> On Wed, Dec 14, 2011 at 11:23:58AM +0100, Shreshtha Kumar SAHU wrote:
+On Wed, Dec 14, 2011 at 03:43:09PM +0200, Avi Kivity wrote:
+> On 12/14/2011 02:25 PM, Marcelo Tosatti wrote:
+> > On Mon, Dec 05, 2011 at 04:48:16PM -0600, Nate Custer wrote:
+> > > Hello,
+> > > 
+> > > I am struggling with repeatable full hardware locks when running 8-12 KVM vms. At some point before the hard lock I get a inconsistent lock state warning. An example of this can be found here:
+> > > 
+> > > http://pastebin.com/8wKhgE2C
+> > > 
+> > > After that the server continues to run for a while and then starts its death spiral. When it reaches that point it fails to log anything further to the disk, but by attaching a console I have been able to get a stack trace documenting the final implosion:
+> > > 
+> > > http://pastebin.com/PbcN76bd
+> > > 
+> > > All of the cores end up hung and the server stops responding to all input, including SysRq commands. 
+> > > 
+> > > I have seen this behavior on two machines (dual E5606 running Fedora 16) both passed cpuburnin testing and memtest86 scans without error. 
+> > > 
+> > > I have reproduced the crash and stack traces from a Fedora debugging kernel - 3.1.2-1 and with a vanilla 3.1.4 kernel.
+> >
+> > Busted hardware, apparently. Can you reproduce these issues with the
+> > same workload on different hardware?
 > 
-> > The actual amount of current flowing hence brightness variation can then be
-> > altered using PWM, which is also the case in present driver.
+> I don't think it's hardware related.  The second trace (in the first
+> paste) is called during swap, so GFP_FS is set.  The first one is not,
+> so GFP_FS is clear.  Lockdep is worried about the following scenario:
 > 
-> > Hence the idea of current control sysfs interface is provided to further
-> > decrease the max current through the LED(s) if required for saving power
-> > (but can never exceed the max current set by the platform).
-> > After fixing the current, "brightness" interface can be used to control
-> > brightness which internally cofigures the PWM register.
+>   acpi_early_init() is called
+>   calls pcpu_alloc(), which takes pcpu_alloc_mutex
+>   eventually, calls kmalloc(), or some other allocation function
+>   no memory, so swap
+>   call try_to_free_pages()
+>   submit_bio()
+>   blk_throtl_bio()
+>   blkio_alloc_blkg_stats()
+>   alloc_percpu()
+>   pcpu_alloc(), which takes pcpu_alloc_mutex
+>   deadlock
 > 
-> The above basically sounds like you're using the current limit as a way
-> of adjusting the maximum brightness dynamically for power saving
-> reasons.  This doesn't sound like something that individual drivers
-> should be doing, it sounds like something that either the subsystem or
-> userspace code ought to be implementing. 
+> It's a little unlikely that acpi_early_init() will OOM, but lockdep
+> doesn't know that.  Other callers of pcpu_alloc() could trigger the same
+> thing.
+> 
+> When lockdep says
+> 
+> [ 5839.924953] other info that might help us debug this:
+> [ 5839.925396]  Possible unsafe locking scenario:
+> [ 5839.925397]
+> [ 5839.925840]        CPU0
+> [ 5839.926063]        ----
+> [ 5839.926287]   lock(pcpu_alloc_mutex);
+> [ 5839.926533]   <Interrupt>
+> [ 5839.926756]     lock(pcpu_alloc_mutex);
+> [ 5839.926986]
+> 
+> It really means
+> 
+>    <swap, set GFP_FS>
+> 
+> GFP_FS simply marks the beginning of a nested, unrelated context that
+> uses the same thread, just like an interrupt.  Kudos to lockdep for
+> catching that.
+> 
+> I think the allocation in blkio_alloc_blkg_stats() should be moved out
+> of the I/O path into some init function. Copying Jens.
 
-As far as I know some boost converters can be controlled dynamically for
-power optimized operation by PMIC. Yes exactly as you stated, I wanted to
-provide something similar as done to boost converters by exposing current
-control via sysfs. Otherwise this current control from sysfs can be
-completely ignored by the user and simply use brightness for LED control.
-
-> It'd seem more natural for the driver to scale both the PWM and current
-> settings with brightness.
-I will try to implement this. In AB5500, PWM provides 1024 steps from 0 to
-full current, and current 16 steps from 2.5mA to 40mA. I need to derive a
-way to optmially change both PWM and current to get requested brigtness in
-range of 0-255 (i.e. LED_OFF to LED_FULL).
-Bur I fear that changing both PWM and current may lead to non linear
-variation and equation needs to be derived to get it correct which will
-add complexity to ab5500_led_brightness_set and hence API brightness.
-In addition if platform sets max current to 10mA then brightness_set()
-will have only 4 steps for current variation and in thus an overhead if
-we combined current and PWM control calculation.
-Please suggest.
-
-Regards,
-Shreshtha
-
-
+The other traces have apparently bogus NMI interrupts, but it might be a
+software bug, OK.
 
