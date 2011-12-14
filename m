@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab1LNPlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 10:41:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40482 "EHLO mx2.suse.de"
+	id S1757486Ab1LNPlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 10:41:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40497 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab1LNPlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 10:41:46 -0500
+	id S1757461Ab1LNPls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 10:41:48 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/11] mm: vmscan: When reclaiming for compaction, ensure there are sufficient free pages available
-Date: Wed, 14 Dec 2011 15:41:31 +0000
-Message-Id: <1323877293-15401-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their own LRU
+Date: Wed, 14 Dec 2011 15:41:33 +0000
+Message-Id: <1323877293-15401-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1323877293-15401-1-git-send-email-mgorman@suse.de>
 References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
@@ -24,99 +24,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit [e0887c19: vmscan: limit direct reclaim for higher order
-allocations], Rik noted that reclaim was too aggressive when THP was
-enabled. In his initial patch he used the number of free pages to
-decide if reclaim should abort for compaction. My feedback was that
-reclaim and compaction should be using the same logic when deciding if
-reclaim should be aborted.
+It was observed that scan rates from direct reclaim during tests
+writing to both fast and slow storage were extraordinarily high. The
+problem was that while pages were being marked for immediate reclaim
+when writeback completed, the same pages were being encountered over
+and over again during LRU scanning.
 
-Unfortunately, this had the effect of reducing THP success rates when
-the workload included something like streaming reads that continually
-allocated pages. The window during which compaction could run and return
-a THP was too small.
-
-This patch combines Rik's two patches together. compaction_suitable()
-is still used to decide if reclaim should be aborted to allow
-compaction is used. However, it will also ensure that there is a
-reasonable buffer of free pages available. This improves upon the
-THP allocation success rates but bounds the number of pages that are
-freed for compaction.
+This patch isolates file-backed pages that are to be reclaimed when
+clean on their own LRU list.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 39 insertions(+), 5 deletions(-)
+ include/linux/mmzone.h        |    2 +
+ include/linux/vm_event_item.h |    1 +
+ mm/page_alloc.c               |    5 ++-
+ mm/swap.c                     |   74 ++++++++++++++++++++++++++++++++++++++---
+ mm/vmscan.c                   |   11 ++++++
+ mm/vmstat.c                   |    2 +
+ 6 files changed, 89 insertions(+), 6 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 16fb177..d497248 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2122,6 +2122,42 @@ restart:
- 	throttle_vm_writeout(sc->gfp_mask);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index ac5b522..80834eb 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -84,6 +84,7 @@ enum zone_stat_item {
+ 	NR_ACTIVE_ANON,		/*  "     "     "   "       "         */
+ 	NR_INACTIVE_FILE,	/*  "     "     "   "       "         */
+ 	NR_ACTIVE_FILE,		/*  "     "     "   "       "         */
++	NR_IMMEDIATE,		/*  "     "     "   "       "         */
+ 	NR_UNEVICTABLE,		/*  "     "     "   "       "         */
+ 	NR_MLOCK,		/* mlock()ed pages found and moved off LRU */
+ 	NR_ANON_PAGES,	/* Mapped anonymous pages */
+@@ -136,6 +137,7 @@ enum lru_list {
+ 	LRU_ACTIVE_ANON = LRU_BASE + LRU_ACTIVE,
+ 	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
+ 	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
++	LRU_IMMEDIATE,
+ 	LRU_UNEVICTABLE,
+ 	NR_LRU_LISTS
+ };
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cdc..9696fda 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -36,6 +36,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++		PGRESCUED,
+ #ifdef CONFIG_COMPACTION
+ 		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ecaba97..5cf9077 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2590,7 +2590,7 @@ void show_free_areas(unsigned int filter)
+ 
+ 	printk("active_anon:%lu inactive_anon:%lu isolated_anon:%lu\n"
+ 		" active_file:%lu inactive_file:%lu isolated_file:%lu\n"
+-		" unevictable:%lu"
++		" immediate:%lu unevictable:%lu"
+ 		" dirty:%lu writeback:%lu unstable:%lu\n"
+ 		" free:%lu slab_reclaimable:%lu slab_unreclaimable:%lu\n"
+ 		" mapped:%lu shmem:%lu pagetables:%lu bounce:%lu\n",
+@@ -2600,6 +2600,7 @@ void show_free_areas(unsigned int filter)
+ 		global_page_state(NR_ACTIVE_FILE),
+ 		global_page_state(NR_INACTIVE_FILE),
+ 		global_page_state(NR_ISOLATED_FILE),
++		global_page_state(NR_IMMEDIATE),
+ 		global_page_state(NR_UNEVICTABLE),
+ 		global_page_state(NR_FILE_DIRTY),
+ 		global_page_state(NR_WRITEBACK),
+@@ -2627,6 +2628,7 @@ void show_free_areas(unsigned int filter)
+ 			" inactive_anon:%lukB"
+ 			" active_file:%lukB"
+ 			" inactive_file:%lukB"
++			" immediate:%lukB"
+ 			" unevictable:%lukB"
+ 			" isolated(anon):%lukB"
+ 			" isolated(file):%lukB"
+@@ -2655,6 +2657,7 @@ void show_free_areas(unsigned int filter)
+ 			K(zone_page_state(zone, NR_INACTIVE_ANON)),
+ 			K(zone_page_state(zone, NR_ACTIVE_FILE)),
+ 			K(zone_page_state(zone, NR_INACTIVE_FILE)),
++			K(zone_page_state(zone, NR_IMMEDIATE)),
+ 			K(zone_page_state(zone, NR_UNEVICTABLE)),
+ 			K(zone_page_state(zone, NR_ISOLATED_ANON)),
+ 			K(zone_page_state(zone, NR_ISOLATED_FILE)),
+diff --git a/mm/swap.c b/mm/swap.c
+index a91caf7..9973975 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -39,6 +39,7 @@ int page_cluster;
+ 
+ static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
++static DEFINE_PER_CPU(struct pagevec, lru_putback_immediate_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
+ /*
+@@ -255,24 +256,80 @@ static void pagevec_move_tail(struct pagevec *pvec)
  }
  
-+/* Returns true if compaction should go ahead for a high-order request */
-+static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
+ /*
++ * Similar pair of functions to pagevec_move_tail except it is called when
++ * moving a page from the LRU_IMMEDIATE to one of the [in]active_[file|anon]
++ * lists
++ */
++static void pagevec_putback_immediate_fn(struct page *page, void *arg)
 +{
-+	unsigned long balance_gap, watermark;
-+	bool watermark_ok;
++	struct zone *zone = page_zone(page);
 +
-+	/* Do not consider compaction for orders reclaim is meant to satisfy */
-+	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-+		return false;
-+
-+	/*
-+	 * Compaction takes time to run and there are potentially other
-+	 * callers using the pages just freed. Continue reclaiming until
-+	 * there is a buffer of free pages available to give compaction
-+	 * a reasonable chance of completing and allocating the page
-+	 */
-+	balance_gap = min(low_wmark_pages(zone),
-+		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-+			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
-+
-+	/*
-+	 * If compaction is deferred, reclaim up to a point where
-+	 * compaction will have a chance of success when re-enabled
-+	 */
-+	if (compaction_deferred(zone))
-+		return watermark_ok;
-+
-+	/* If compaction is not ready to start, keep reclaiming */
-+	if (!compaction_suitable(zone, sc->order))
-+		return false;
-+
-+	return watermark_ok;
++	if (PageLRU(page)) {
++		enum lru_list lru = page_lru(page);
++		list_move(&page->lru, &zone->lru[lru].list);
++	}
 +}
 +
- /*
-  * This is the direct reclaim path, for page-allocating processes.  We only
-  * try to reclaim pages from zones which will satisfy the caller's allocation
-@@ -2139,8 +2175,8 @@ restart:
-  * scan then give up on it.
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-+ * high-order allocation and compaction is ready to begin. This indicates to
-+ * the caller that it should retry the allocation or fail.
++static void pagevec_putback_immediate(struct pagevec *pvec)
++{
++	pagevec_lru_move_fn(pvec, pagevec_putback_immediate_fn, NULL);
++}
++
++/*
+  * Writeback is about to end against a page which has been marked for immediate
+  * reclaim.  If it still appears to be reclaimable, move it to the tail of the
+  * inactive list.
   */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2174,9 +2210,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * noticable problem, like transparent huge page
- 				 * allocations.
- 				 */
--				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				if (compaction_ready(zone, sc)) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
+ void rotate_reclaimable_page(struct page *page)
+ {
++	struct zone *zone = page_zone(page);
++	struct list_head *page_list;
++	struct pagevec *pvec;
++	unsigned long flags;
++
++	page_cache_get(page);
++	local_irq_save(flags);
++	__mod_zone_page_state(zone, NR_IMMEDIATE, -1);
++
+ 	if (!PageLocked(page) && !PageDirty(page) && !PageActive(page) &&
+ 	    !PageUnevictable(page) && PageLRU(page)) {
+-		struct pagevec *pvec;
+-		unsigned long flags;
+ 
+-		page_cache_get(page);
+-		local_irq_save(flags);
+ 		pvec = &__get_cpu_var(lru_rotate_pvecs);
+ 		if (!pagevec_add(pvec, page))
+ 			pagevec_move_tail(pvec);
+-		local_irq_restore(flags);
++	} else {
++		pvec = &__get_cpu_var(lru_putback_immediate_pvecs);
++		if (!pagevec_add(pvec, page))
++			pagevec_putback_immediate(pvec);
++	}
++
++	/*
++	 * There is a potential race that if a page is set PageReclaim
++	 * and moved to the LRU_IMMEDIATE list after writeback completed,
++	 * it can be left on the LRU_IMMEDATE list with no way for
++	 * reclaim to find it.
++	 *
++	 * This race should be very rare but count how often it happens.
++	 * If it is a continual race, then it's very unsatisfactory as there
++	 * is no guarantee that rotate_reclaimable_page() will be called
++	 * to rescue these pages but finding them in page reclaim is also
++	 * problematic due to the problem of deciding when the right time
++	 * to scan this list is.
++	 */
++	page_list = &zone->lru[LRU_IMMEDIATE].list;
++	if (!zone_page_state(zone, NR_IMMEDIATE) && !list_empty(page_list)) {
++		struct page *page;
++
++		spin_lock(&zone->lru_lock);
++		while (!list_empty(page_list)) {
++			page = list_entry(page_list->prev, struct page, lru);
++			list_move(&page->lru, &zone->lru[page_lru(page)].list);
++			__count_vm_event(PGRESCUED);
++		}
++		spin_unlock(&zone->lru_lock);
+ 	}
++
++	local_irq_restore(flags);
+ }
+ 
+ static void update_page_reclaim_stat(struct zone *zone, struct page *page,
+@@ -475,6 +532,13 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+ 		 * is _really_ small and  it's non-critical problem.
+ 		 */
+ 		SetPageReclaim(page);
++
++		/*
++		 * Move to the LRU_IMMEDIATE list to avoid being scanned
++		 * by page reclaim uselessly.
++		 */
++		list_move_tail(&page->lru, &zone->lru[LRU_IMMEDIATE].list);
++		__mod_zone_page_state(zone, NR_IMMEDIATE, 1);
+ 	} else {
+ 		/*
+ 		 * The page's writeback ends up during pagevec
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 298ceb8..cb28a07 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1404,6 +1404,17 @@ putback_lru_pages(struct zone *zone, struct scan_control *sc,
+ 		}
+ 		SetPageLRU(page);
+ 		lru = page_lru(page);
++
++		/*
++		 * If reclaim has tagged a file page reclaim, move it to
++		 * a separate LRU lists to avoid it being scanned by other
++		 * users. It is expected that as writeback completes that
++		 * they are taken back off and moved to the normal LRU
++		 */
++		if (lru == LRU_INACTIVE_FILE &&
++				PageReclaim(page) && PageWriteback(page))
++			lru = LRU_IMMEDIATE;
++
+ 		add_page_to_lru_list(zone, page, lru);
+ 		if (is_active_lru(lru)) {
+ 			int file = is_file_lru(lru);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 8fd603b..dbfec4c 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -688,6 +688,7 @@ const char * const vmstat_text[] = {
+ 	"nr_active_anon",
+ 	"nr_inactive_file",
+ 	"nr_active_file",
++	"nr_immediate",
+ 	"nr_unevictable",
+ 	"nr_mlock",
+ 	"nr_anon_pages",
+@@ -756,6 +757,7 @@ const char * const vmstat_text[] = {
+ 	"allocstall",
+ 
+ 	"pgrotated",
++	"pgrescued",
+ 
+ #ifdef CONFIG_COMPACTION
+ 	"compact_blocks_moved",
 -- 
 1.7.3.4
 
