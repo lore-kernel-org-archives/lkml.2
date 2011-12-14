@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1LNKmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 05:42:53 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58239 "EHLO
-	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753883Ab1LNKmv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 05:42:51 -0500
-Date: Wed, 14 Dec 2011 10:43:08 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: printk() vs tty_io
-Message-ID: <20111214104308.14d0500c@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
-References: <1323804803.9082.40.camel@twins>
-	<CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755341Ab1LNKor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 05:44:47 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:11777 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903Ab1LNKoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 05:44:46 -0500
+Subject: [PATCH 00/11] SUNRPC: make sysctl per network namespcase context
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Wed, 14 Dec 2011 14:44:39 +0300
+Message-ID: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Dec 2011 15:52:35 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+This patch set make SUNRPC sysctl created per network namspace context.
+It provides the following functionality:
+1) Debug sysctl's ( {rpc,nfs,nlm,nfsd}_debug ) content is modifyable only from
+init_net network context.
+2) Write to rpc_debug prints active RPC tasks in sysctl's creator networks
+context.
+3) xs tunables are per-net now and modified through per-net sysctl's. IOW,
+sysctl creator context is used to get tunable during sysctl read/write access
+(not current tone).
 
-> On Tue, Dec 13, 2011 at 11:33 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > I've been poking at reducing the constraints on printk(), like make it
-> > work under rq->lock etc..
-> 
-> You aren't supposed register a console that wakes things up. But the
-> only console that honors that afaik is the traditional vt console.
-> *Maybe* the network console, I didn't check.
+The following series consists of:
 
-Serial console tries to be good as does netconsole. Serial USB console
-can't so just does its best.
+---
 
-Not sure about some of the DRM framebuffer ones either.
+Stanislav Kinsbursky (11):
+      SYSCTL: export root ans set handling routines
+      SUNRPC: use syctl path instead of dummy parent table
+      SUNRPC: sysctl root for debug table introduced
+      SUNRPC: per-net sysctl's set introduced
+      SUNRPC: register debug sysctl table per network namespace
+      SUNRPC: register xs_tunables sysctl table per network namespace
+      SUNRPC: xs tunables per network namespace introduced
+      SUNRPC: use per-net xs tunables instead of static ones
+      SUNRPC: remove xs_tcp_fin_timeout variable
+      SUNRPC: allow debug flags modifications only from init_net
+      SUNRPC: sysctl table for rpc_debug introduced
+
+
+ include/linux/sunrpc/debug.h    |    9 ++
+ include/linux/sunrpc/sched.h    |    1 
+ include/linux/sunrpc/xprtsock.h |    3 +
+ include/linux/sysctl.h          |    1 
+ kernel/sysctl.c                 |   11 +++
+ net/sunrpc/netns.h              |   12 +++
+ net/sunrpc/sunrpc_syms.c        |   27 ++++++-
+ net/sunrpc/sysctl.c             |  160 ++++++++++++++++++++++++++++++++-------
+ net/sunrpc/xprtrdma/transport.c |   11 ---
+ net/sunrpc/xprtsock.c           |  147 ++++++++++++++++++++++++------------
+ 10 files changed, 293 insertions(+), 89 deletions(-)
+
 
