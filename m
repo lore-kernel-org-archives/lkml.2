@@ -1,141 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab1LNAua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:50:30 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:35645 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756476Ab1LNAsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:48:47 -0500
-Subject: [PATCH 21/23] jbd2: Checksum commit blocks
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Tue, 13 Dec 2011 16:48:38 -0800
-Message-ID: <20111214004838.28243.55518.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
-References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	id S1756568Ab1LNAuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:50:39 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42630 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756432Ab1LNAuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 19:50:35 -0500
+X-Sasl-enc: 9+Bz2FuhIncMlukAUJieKiFIoogp0Li3ugLGJPxvtq0r 1323823834
+Date: Tue, 13 Dec 2011 16:38:36 -0800
+From: Greg KH <greg@kroah.com>
+To: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/29] Staging: comedi: fix brace coding style issue in
+ cb_pcidda.c
+Message-ID: <20111214003836.GA8961@kroah.com>
+References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
+ <1323667181-17252-25-git-send-email-ravishankar.km@greenturtles.in>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11121400-8974-0000-0000-000004358CEF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323667181-17252-25-git-send-email-ravishankar.km@greenturtles.in>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the checksum of commit blocks.  In checksum v2, deprecate
-most of the checksum v1 commit block checksum fields, since each block has its
-own checksum.
+On Mon, Dec 12, 2011 at 10:49:37AM +0530, Ravishankar karkala Mallikarjunayya wrote:
+> This is a patch to the cb_pcidda.c file that fixes up a brace
+> warning found by the checkpatch.pl tool.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- fs/jbd2/commit.c   |   21 ++++++++++++++++++++-
- fs/jbd2/recovery.c |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 1 deletions(-)
+No it isn'!!!
 
+ugh, someone owes me a beer.
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 99dbb9a..ccf0b6f 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -86,6 +86,24 @@ nope:
- 	__brelse(bh);
- }
- 
-+static void jbd2_commit_block_csum_set(journal_t *j,
-+				       struct journal_head *descriptor)
-+{
-+	struct commit_header *h;
-+	__u32 csum;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return;
-+
-+	h = (struct commit_header *)(jh2bh(descriptor)->b_data);
-+	h->h_chksum_type = 0;
-+	h->h_chksum_size = 0;
-+	h->h_chksum[0] = 0;
-+	csum = jbd2_chksum(j, j->j_csum_seed, jh2bh(descriptor)->b_data,
-+			   j->j_blocksize);
-+	h->h_chksum[0] = cpu_to_be32(csum);
-+}
-+
- /*
-  * Done it all: now submit the commit record.  We should have
-  * cleaned up our previous buffers by now, so if we are in abort
-@@ -129,6 +147,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 		tmp->h_chksum_size 	= JBD2_CRC32_CHKSUM_SIZE;
- 		tmp->h_chksum[0] 	= cpu_to_be32(crc32_sum);
- 	}
-+	jbd2_commit_block_csum_set(journal, descriptor);
- 
- 	JBUFFER_TRACE(descriptor, "submit commit block");
- 	lock_buffer(bh);
-@@ -351,7 +370,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	struct blk_plug plug;
- 	int csum_size = 0;
- 
--	if (JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
- 		csum_size = sizeof(struct jbd2_journal_block_tail);
- 
- 	/*
-diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index 513006b..a757d8d 100644
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -372,6 +372,24 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
- 	return 0;
- }
- 
-+static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
-+{
-+	struct commit_header *h;
-+	__u32 provided, calculated;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return 1;
-+
-+	h = buf;
-+	provided = h->h_chksum[0];
-+	h->h_chksum[0] = 0;
-+	calculated = jbd2_chksum(j, j->j_csum_seed, buf, j->j_blocksize);
-+	h->h_chksum[0] = provided;
-+
-+	provided = be32_to_cpu(provided);
-+	return provided == calculated;
-+}
-+
- static int do_one_pass(journal_t *journal,
- 			struct recovery_info *info, enum passtype pass)
- {
-@@ -682,6 +700,19 @@ static int do_one_pass(journal_t *journal,
- 				}
- 				crc32_sum = ~0;
- 			}
-+			if (pass == PASS_SCAN &&
-+			    !jbd2_commit_block_csum_verify(journal,
-+							   bh->b_data)) {
-+				info->end_transaction = next_commit_ID;
-+
-+				if (!JBD2_HAS_INCOMPAT_FEATURE(journal,
-+				     JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
-+					journal->j_failed_commit =
-+						next_commit_ID;
-+					brelse(bh);
-+					break;
-+				}
-+			}
- 			brelse(bh);
- 			next_commit_ID++;
- 			continue;
-
+greg k-h
