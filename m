@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab1LNOBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:01:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754861Ab1LNOBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:01:08 -0500
-Date: Wed, 14 Dec 2011 12:00:27 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Nate Custer <nate@cpanel.net>, kvm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: kvm deadlock
-Message-ID: <20111214140027.GF18317@amt.cnet>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
- <20111214122511.GD18317@amt.cnet>
- <4EE8A7ED.7060703@redhat.com>
+	id S1757284Ab1LNOFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:05:45 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:53286 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756438Ab1LNOFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 09:05:44 -0500
+Date: Wed, 14 Dec 2011 09:05:27 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: printk() vs tty_io
+Message-ID: <20111214140527.GA18080@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg KH <greg@kroah.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@elte.hu>
+References: <1323804803.9082.40.camel@twins>
+ <CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
+ <20111214104308.14d0500c@pyramind.ukuu.org.uk>
+ <1323860206.28489.35.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EE8A7ED.7060703@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1323860206.28489.35.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 03:43:09PM +0200, Avi Kivity wrote:
-> On 12/14/2011 02:25 PM, Marcelo Tosatti wrote:
-> > On Mon, Dec 05, 2011 at 04:48:16PM -0600, Nate Custer wrote:
-> > > Hello,
-> > > 
-> > > I am struggling with repeatable full hardware locks when running 8-12 KVM vms. At some point before the hard lock I get a inconsistent lock state warning. An example of this can be found here:
-> > > 
-> > > http://pastebin.com/8wKhgE2C
-> > > 
-> > > After that the server continues to run for a while and then starts its death spiral. When it reaches that point it fails to log anything further to the disk, but by attaching a console I have been able to get a stack trace documenting the final implosion:
-> > > 
-> > > http://pastebin.com/PbcN76bd
-> > > 
-> > > All of the cores end up hung and the server stops responding to all input, including SysRq commands. 
-> > > 
-> > > I have seen this behavior on two machines (dual E5606 running Fedora 16) both passed cpuburnin testing and memtest86 scans without error. 
-> > > 
-> > > I have reproduced the crash and stack traces from a Fedora debugging kernel - 3.1.2-1 and with a vanilla 3.1.4 kernel.
-> >
-> > Busted hardware, apparently. Can you reproduce these issues with the
-> > same workload on different hardware?
+On Wed, Dec 14, 2011 at 11:56:46AM +0100, Peter Zijlstra wrote:
 > 
-> I don't think it's hardware related.  The second trace (in the first
-> paste) is called during swap, so GFP_FS is set.  The first one is not,
-> so GFP_FS is clear.  Lockdep is worried about the following scenario:
+> Well, this was the 8250 serial port driver doing wakeups. Its a simple
+> on-board serial port,
 > 
->   acpi_early_init() is called
->   calls pcpu_alloc(), which takes pcpu_alloc_mutex
->   eventually, calls kmalloc(), or some other allocation function
->   no memory, so swap
->   call try_to_free_pages()
->   submit_bio()
->   blk_throtl_bio()
->   blkio_alloc_blkg_stats()
->   alloc_percpu()
->   pcpu_alloc(), which takes pcpu_alloc_mutex
->   deadlock
+> [   29.797007]        [<ffffffff8108a650>] __wake_up_common+0x4e/0x84
+> [   29.797007]        [<ffffffff8108d6ea>] __wake_up+0x39/0x4d
+> [   29.797007]        [<ffffffff8135d0db>] tty_wakeup+0x5b/0x60
+> [   29.797007]        [<ffffffff81373fb9>] uart_write_wakeup+0x21/0x23
+> [   29.797007]        [<ffffffff81376899>] transmit_chars+0xd8/0x12f
+> [   29.797007]        [<ffffffff81377f3a>] serial8250_handle_port+0x2d9/0x2fd
+> [   29.797007]        [<ffffffff81377fcb>] serial8250_handle_irq+0x16/0x1d
+> [   29.797007]        [<ffffffff81377ff5>] serial8250_default_handle_irq+0x23/0x27
+> [   29.797007]        [<ffffffff81377ade>] serial8250_interrupt+0x4d/0xc6
+> [   29.797007]        [<ffffffff810c9ae8>] handle_irq_event_percpu+0xab/0x1fc
+> [   29.797007]        [<ffffffff810c9c7a>] handle_irq_event+0x41/0x61
+> [   29.797007]        [<ffffffff810cc4cd>] handle_edge_irq+0xd1/0xf6
+> [   29.797007]        [<ffffffff8103ab85>] handle_irq+0x24/0x2f
+> [   29.797007]        [<ffffffff8150acdd>] do_IRQ+0x4d/0xb3
 > 
-> It's a little unlikely that acpi_early_init() will OOM, but lockdep
-> doesn't know that.  Other callers of pcpu_alloc() could trigger the same
-> thing.
-> 
-> When lockdep says
-> 
-> [ 5839.924953] other info that might help us debug this:
-> [ 5839.925396]  Possible unsafe locking scenario:
-> [ 5839.925397]
-> [ 5839.925840]        CPU0
-> [ 5839.926063]        ----
-> [ 5839.926287]   lock(pcpu_alloc_mutex);
-> [ 5839.926533]   <Interrupt>
-> [ 5839.926756]     lock(pcpu_alloc_mutex);
-> [ 5839.926986]
-> 
-> It really means
-> 
->    <swap, set GFP_FS>
-> 
-> GFP_FS simply marks the beginning of a nested, unrelated context that
-> uses the same thread, just like an interrupt.  Kudos to lockdep for
-> catching that.
-> 
-> I think the allocation in blkio_alloc_blkg_stats() should be moved out
-> of the I/O path into some init function. Copying Jens.
+> which places the wakeup under uport->lock, serial8250_console_write()
+> takes uport->lock, under console_sem, connecting the locks.
 
-The other traces have apparently bogus NMI interrupts, but it might be a
-software bug, OK.
+printk() goes through serial8250_console_write() which writes to the
+UART device using a busy loop, with local IRQ's disabled.  So it's not
+serial8250_console_write() which is waking things up; this is coming
+form interrupt handler running on some different CPU.
+
+Am I missing something?
+
+						- Ted
 
