@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab1LNXS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:18:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58399 "EHLO ogre.sisk.pl"
+	id S1757119Ab1LNXWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 18:22:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34742 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753526Ab1LNXSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:18:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 0/2 v2] PM / Sleep: Simplify generic system suspend callbacks
-Date: Thu, 15 Dec 2011 00:19:39 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <201111180037.22157.rjw@sisk.pl> <201111271341.36155.rjw@sisk.pl> <201112100005.24798.rjw@sisk.pl>
-In-Reply-To: <201112100005.24798.rjw@sisk.pl>
+	id S1753150Ab1LNXWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 18:22:21 -0500
+Message-ID: <4EE92FA4.3030006@zytor.com>
+Date: Wed, 14 Dec 2011 15:22:12 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Mike Waychison <mikew@google.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/4] EFI: Add support for variables longer than 1024 bytes
+References: <1323896791-10858-1-git-send-email-mjg@redhat.com> <1323896791-10858-4-git-send-email-mjg@redhat.com> <CAGTjWtCpt_1h6XMwCFkx1TQnQbagtSuFBejcp6XNr4yhKgNuLg@mail.gmail.com> <20111214223950.GA29264@srcf.ucam.org> <CAGTjWtARm_OA0qy2Cvtc-rrPFpH2+2QdFw4CvBAo-PJsfX6t6w@mail.gmail.com> <4EE92A97.5080606@zytor.com> <CAGTjWtD33=EdOdMCy_TgX=fG0ZiUZTFTOP=Eyv3d7F-46u2pGQ@mail.gmail.com>
+In-Reply-To: <CAGTjWtD33=EdOdMCy_TgX=fG0ZiUZTFTOP=Eyv3d7F-46u2pGQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112150019.39645.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Everyone,
+On 12/14/2011 03:06 PM, Mike Waychison wrote:
+> On Wed, Dec 14, 2011 at 3:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 12/14/2011 02:57 PM, Mike Waychison wrote:
+>>>
+>>> Well,l we could *not* support returning all the data field for
+>>> datasize > 1024, and simply truncate the field.  We are limited by
+>>> PAGE_SIZE by sysfs here anyway (so we don't really want to have a
+>>> variable size memcpy in efivar_show_raw).
+>>>
+>>
+>> That may be the biggest reason to avoid sysfs.  As far as I know sysfs
+>> doesn't allow seq_file to be used.
+>>
+> 
+> Completely agreed.  I don't think a seq_file is warranted in this case
+> in particular, but the dummification of the interfaces in sysfs sure
+> makes it hard to do anything that isn't a "single value string".
+> 
 
-One more udate here.
+Well, seq_file is a good way to deal with arbitrary length data.
 
-I forgot about the comments in this patch:
-
-On Saturday, December 10, 2011, Rafael J. Wysocki wrote:
-> On Sunday, November 27, 2011, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > The pm_runtime_suspended() check in __pm_generic_call() doesn't
-> > really help and may cause problems to happen, because in some cases
-> > the system suspend callbacks need to be called even if the given
-> > device has been suspended by runtime PM.  For example, if the device
-> > generally supports remote wakeup and is not enabled to wake up
-> > the system from sleep, it should be prevented from generating wakeup
-> > signals during system suspend and that has to be done by the
-> > suspend callbacks that the pm_runtime_suspended() check prevents from
-> > being executed.
-> > 
-> > Similarly, it may not be a good idea to unconditionally change
-> > the runtime PM status of the device to 'active' in
-> > __pm_generic_resume(), because the driver may want to leave the
-> > device in the 'suspended' state, depending on what happened to it
-> > before the system suspend and whether or not it is enabled to
-> > wake up the system.
-> > 
-> > For the above reasons, remove the pm_runtime_suspended()
-> > check from __pm_generic_call() and remove the code changing the
-> > device's runtime PM status from __pm_generic_resume().
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-so the updated one becomes [1/2] in the new series.
-
-In addition to that I noticed that __pm_generic_call() and
-__pm_generic_resume() may be merged after [1/2], which is done by [2/2].
-
-I regard these patches as 3.3 material, if there are no objections.
-
-Thanks,
-Rafael
+	-hpa
 
