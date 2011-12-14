@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab1LNSlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:41:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757536Ab1LNSll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:41:41 -0500
-Date: Wed, 14 Dec 2011 13:41:34 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Nate Custer <nate@cpanel.net>,
-        kvm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kvm deadlock
-Message-ID: <20111214184134.GC25484@redhat.com>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
- <20111214122511.GD18317@amt.cnet>
- <4EE8A7ED.7060703@redhat.com>
- <4EE8C8EA.9070207@kernel.dk>
- <20111214170347.GA25484@redhat.com>
- <4EE8D863.5000701@kernel.dk>
- <20111214172234.GB25484@redhat.com>
- <20111214181623.GA20380@google.com>
+	id S1757957Ab1LNSpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:45:05 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45356 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab1LNSpC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 13:45:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214181623.GA20380@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1323832681-7177-4-git-send-email-ming.m.lin@intel.com>
+References: <1323832681-7177-1-git-send-email-ming.m.lin@intel.com>
+	<1323832681-7177-4-git-send-email-ming.m.lin@intel.com>
+Date: Thu, 15 Dec 2011 02:45:01 +0800
+X-Google-Sender-Auth: kb81UDoYSRsPgsD6lnh3EV7kdtM
+Message-ID: <CAF1ivSbt6a=CNqXJ9byrDmTHdhygBKSbr6Pxf+Cwwpa6B++BZw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ata: update ata port's runtime status during system resume
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:16:23AM -0800, Tejun Heo wrote:
+On Wed, Dec 14, 2011 at 11:18 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> The ata port is brought back to full power state during system resume.
+> So its runtime PM status will have to be updated to reflect
+> the actual post-system sleep status.
+>
+> This also fixes below warning during system suspend/resume.
+>
+> WARNING: at /work/linux/drivers/ata/libata-eh.c:4034
+> ata_scsi_port_error_handler+0x89/0x557()
+>
+> 4034         WARN_ON(!(ap->pflags & ATA_PFLAG_SUSPENDED));
+>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 
-[..]
-> > > > Or may be there is a safer version of pcpu alloc which will return
-> > > > without allocation if pcpu_alloc_mutex is already locked.
-> 
-> pcpu alloc depends on vmalloc allocation, so it isn't trivial.  We can
-> try to make percpu keep cache of areas for this type of allocation but
-> I personally think doing percpu allocation from atomic context or IO
-> path is a bad idea.  Hmmm...
+Hi Alan,
 
-Looks like I am running out of options here.  I can't find a suitable path
-where I can allocate these stats out of IO path. Because devices can be
-plugged in dynamically (and these stats are per cgroup, per device), and
-cgroups can be created dynamically after device creation, I can't do any
-static allocation out of IO path. So that kind of makes use of per cpu
-memory areas for stats in this case impossible.
+Would you like to Ack this one also?
 
-For a moment I thought of doing allocation from worker thread after taking
-a reference on the original group. Allow the IO submission to continue without
-blocking. Just that till per cpu areas are allocated, we will not
-collect any stats.
+Thanks,
+Lin Ming
 
-But for locking we rely on request queue lock and request queue might be
-gone by the time per cpu areas are allocated. That means we need a group
-refenrence on the request queue. Request queue referencing and life time
-is already full of bugs. So I don't feel comfortable adding more code
-there (till atleast your cleanup patches go in).
-
-Hmm..., is revert of per cpu blkio group stats the only sane choice left
-now.
-
-Thanks
-Vivek
+> ---
+>  drivers/ata/libata-core.c |   18 ++++++++++++++++--
+>  1 files changed, 16 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 15a3d4d..8996758 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -5298,7 +5298,7 @@ static int ata_port_suspend(struct device *dev)
+>        return ata_port_suspend_common(dev);
+>  }
+>
+> -static int ata_port_resume(struct device *dev)
+> +static int ata_port_resume_common(struct device *dev)
+>  {
+>        struct ata_port *ap = to_ata_port(dev);
+>        int rc;
+> @@ -5308,6 +5308,20 @@ static int ata_port_resume(struct device *dev)
+>        return rc;
+>  }
+>
+> +static int ata_port_resume(struct device *dev)
+> +{
+> +       int rc;
+> +
+> +       rc = ata_port_resume_common(dev);
+> +       if (!rc) {
+> +               pm_runtime_disable(dev);
+> +               pm_runtime_set_active(dev);
+> +               pm_runtime_enable(dev);
+> +       }
+> +
+> +       return rc;
+> +}
+> +
+>  static int ata_port_runtime_idle(struct device *dev)
+>  {
+>        return pm_runtime_suspend(dev);
+> @@ -5318,7 +5332,7 @@ static const struct dev_pm_ops ata_port_pm_ops = {
+>        .resume = ata_port_resume,
+>
+>        .runtime_suspend = ata_port_suspend_common,
+> -       .runtime_resume = ata_port_resume,
+> +       .runtime_resume = ata_port_resume_common,
+>        .runtime_idle = ata_port_runtime_idle,
+>  };
+>
+> --
+> 1.7.2.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
