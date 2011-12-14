@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab1LNM7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 07:59:49 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:48548 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756583Ab1LNM7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 07:59:48 -0500
-X-Greylist: delayed 954 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 07:59:48 EST
-Message-ID: <4EE89A06.80101@imgtec.com>
-Date: Wed, 14 Dec 2011 12:43:50 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S1757159Ab1LNNJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:09:39 -0500
+Received: from ims-d11.mx.aol.com ([205.188.249.148]:52252 "EHLO
+	ims-d11.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139Ab1LNNJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:09:25 -0500
+Message-Id: <201112141305.pBED4tOQ006113@ims-d11.mx.aol.com>
+Reply-To: <s.barristerdavid@yahoo.com.ph>
+From: "Gail Kelly" <gjabaay771@aol.com>
+Subject: Did you instruct Mrs. Jenny Maria Moore?
+Date: Wed, 14 Dec 2011 12:03:55 -0800
 MIME-Version: 1.0
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <alsa-devel@alsa-project.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Neil <neil.jones@imgtec.com>
-Subject: bugs in "ASoC: core - Optimise and refactor pcm_new() to pass only
- rtd"?
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Dec 2011 12:43:50.0546 (UTC) FILETIME=[07AE5720:01CCBA5E]
-X-SEF-Processed: 7_3_0_01158__2011_12_14_12_43_50
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0113_01C2A9A6.645EF424"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76898
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:5:74595688:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/76898
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:5:49678916:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33844ee89eff5ff5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a multi-part message in MIME format.
 
-I've bisected a problem with an out of tree set of asoc drivers down to commit
-552d1ef6b5a98d7b95959d5b139071e3c90cebf1 ("ASoC: core - Optimise and refactor
-pcm_new() to pass only rtd"). By the looks of it this change was intended not 
-to change the workings of the code, however the dai parameter of pcm_new used
-to be passed codec_dai in soc_new_pcm() (initialised from rtd->codec_dai), but
-each driver now sets it's dai to rtd->cpu_dai instead. This seems to make the
-driver check the wrong dai's driver->capture.channels_min in the pcm_new
-callback, which makes it dereference
-pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream in the driver's
-preallocate_dma_buffer() function which can be NULL. Is this a bug (in every
-pcm asoc driver) that just happens not to have been noticed, or have I
-misunderstood it?
+------=_NextPart_000_0113_01C2A9A6.645EF424
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Relevant snippets of the original patch below.
+Did you instruct one Mrs. Jenny Maria Moore, whose information's is below, to claim and receive the payment on your behalf?
+Read the below attached document for complete details and respond promptly
 
-Thanks
-James
+------=_NextPart_000_0113_01C2A9A6.645EF424
+Content-Type: application/octet-stream;
+	name="Message From Gail Kelly.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Message From Gail Kelly.rtf"
 
-diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-index 5cb3b88..9465588 100644
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -425,9 +425,11 @@ static void dma_free_dma_buffers(struct snd_pcm *pcm)
- 
- static u64 dma_mask = DMA_BIT_MASK(32);
- 
--static int dma_new(struct snd_card *card,
--	struct snd_soc_dai *dai, struct snd_pcm *pcm)
-+static int dma_new(struct snd_soc_pcm_runtime *rtd)
- {
-+	struct snd_card *card = rtd->card->snd_card;
-+	struct snd_soc_dai *dai = rtd->cpu_dai;
-+	struct snd_pcm *pcm = rtd->pcm;
- 	int ret = 0;
- 
- 	pr_debug("Entered %s\n", __func__);
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGYwXGZzMjAgV2VsY29tZSB0byBXZXN0cGFjLCBUaGUgQXVzdHJhbGlh
+J3MgRmlyc3QgQmFuay5ccGFyDQoyODMtMjg1IEtlbnQgU3RyZWV0XHBhcg0K
+U3lkbmV5IE5TVyAyMDAwLCBBdXN0cmFsaWFccGFyDQoxMzAwIDM2OSA4NzZc
+cGFyDQpXZWJzaXRlOiBodHRwOi8vd3d3Lndlc3RwYWMuY29tLmF1L1xwYXIN
+ClxwYXINClxwYXINClVQREFURSBZT1VSIE9OTElORSBBQ0NPVU5UIEZPUiBT
+RUNVUklUWSBSRUFTT05TIElOIFJFR0FSRFMgVE8gVEhFIFRSQU5TRkVSIE9G
+IFlPVVIgRlVORC4gXHBhcg0KXHBhcg0KQXR0ZW50aW9uIEZyb20gTXJzLiBH
+YWlsIEtlbGx5IHRoZSAoQ0VPKSBvZiBXZXN0cGFjLCB0aGUgZmlyc3QgZmVt
+YWxlIENFTyBvZiBhIG1ham9yIEF1c3RyYWxpYW4gYmFuay5ccGFyDQpccGFy
+DQpEaWQgeW91IGluc3RydWN0IG9uZSBNcnMuIEplbm55IE1hcmlhIE1vb3Jl
+LCB3aG9zZSBpbmZvcm1hdGlvbidzIGlzIGJlbG93LCB0byBjbGFpbSBhbmQg
+cmVjZWl2ZSB0aGUgcGF5bWVudCBvbiB5b3VyIGJlaGFsZj9ccGFyDQogXHBh
+cg0KVGhpcyBtb3JuaW5nIE1ycy4gSmVubnkgTWFyaWEgTW9vcmUgY2FtZSB0
+byB0aGUgb2ZmaWNlIGNsYWltaW5nIHRoYXQgeW91IGhhdmUgaW5zdHJ1Y3Rl
+ZCBoaW0gdG8gY29tZSByZWNlaXZlIHlvdXIgcGF5bWVudCBvbiB5b3VyIGJl
+aGFsZiwgSSBoYXZlIGFzayBoaW0gdG8gY29tZSBiYWNrIHRvbW9ycm93IGFz
+IHRoZXkgZGlkIG5vdCBwcm92aWRlIGFueSBwb3dlciBvZiBhbiBhdHRvcm5l
+eSBmcm9tIHlvdSB3aGljaCB3aWxsIHByb29mIHRoYXQgeW91IHRob3JvdWdo
+bHkgc2VuZCBoaW0sIFRoaXMgd2FzIHRvIGVuYWJsZSBtZSBjb250YWN0IHlv
+dSB0byB2ZXJpZnkgaG93IGdlbnVpbmUgdGhpcyBwZW9wbGUgYXJlIHRvIHlv
+dS5ccGFyDQpccGFyDQpJIGhlcmVieSBzZW5kIHRvIHlvdSB0aGUgaW5mb3Jt
+YXRpb24gc3VibWl0dGVkIGJ5IE1ycy4gSmVubnkgTWFyaWEgTW9vcmUsIHdp
+dGggYW4gYXBwbGljYXRpb24gdG8gcGF5IHRoZSBhY2Nlc3MgY2hhcmdlIGlu
+IG90aGVyIHRvIGhhdmUgYWNjZXNzIHRvIHRyYW5zZmVyIG1vbmV5IGZyb20g
+eW91ciBvbmxpbmUgYWNjb3VudCB0byBoaXMgYmFuayBhY2NvdW50LCBQbGVh
+c2UgYXMgYSBtYXR0ZXIgb2YgdXJnZW5jeSwgeW91IGFyZSByZXF1aXJlZCB0
+byB2ZXJpZnkgdGhlIGZvbGxvd2luZyBpbmZvcm1hdGlvbiBhbmQgaW5mb3Jt
+IHVzIGlmIHlvdSBhcmUgYXdhcmUgb3Iga25vdyBhbnl0aGluZyBhYm91dCB0
+aGlzLlxwYXINCjIuIERpZCB5b3Ugc2lnbiBhbnkgJ0RlZWQgb2YgQXNzaWdu
+bWVudCcgaW4gaGlzIGZhdm9yIHRoZXJlYnkgbWFraW5nIGhpbSB0aGUgY3Vy
+cmVudCBiZW5lZmljaWFyeSB3aXRoIHRoZSBmb2xsb3dpbmcgYWNjb3VudCBk
+ZXRhaWxzOiBccGFyDQpccGFyDQpBY2NvdW50IE5hbWU6IE1ycy4gSmVubnkg
+TWFyaWEgTW9vcmUgXHBhcg0KQS9DICM6IDExNC0xMDI1NTY3LTgsIFxwYXIN
+CkJhbmsgTmFtZTogQ2l0eSBCYW5rIG9mIENhbmFkYSBccGFyDQpTd2lmdCBD
+b2RlOiBTQkNMIDExSzMzMy5ccGFyDQpccGFyDQpGaW5hbGx5LCB5b3UgYXJl
+IGhlcmVieSBhZHZpc2VkIHRvIGluZGljYXRlIHRvIHRoaXMgaG9ub3JhYmxl
+IG9mZmljZSB3aXRoIGltbWVkaWF0ZSBlZmZlY3QsIGlmIHlvdSBhcmUgdGhl
+IHBlcnNvbiB0aGF0IGluc3RydWN0ZWQgTXJzLiBKZW5ueSBNYXJpYSBNb29y
+ZSB0byBjb21lIGZvciB0aGUgY2xhaW0gb2YgeW91ciBmdW5kIHdvcnRoIG9m
+ICQxMCw1MDAuMDAwLjAwIChUZW4gTWlsbGlvbiwgRml2ZSBIdW5kcmVkIFRo
+b3VzYW5kIFVuaXRlZCBTdGF0ZXMgRG9sbGFycyksIHRvIGVuYWJsZSB1cyBl
+bmRvcnNlIGZvciB0aGUgZmluYWwgcGF5bWVudCBhcHByb3ZhbCBvcmRlciBv
+biBoaXMgYmVoYWxmLCBBcyBoZSBpcyByZWFkeSB0byBwYXkgdGhlIGFjY2Vz
+cyBjaGFyZ2UgdG8gaGF2ZSB0aGUgb25saW5lIGFjY291bnQgZGV0YWlscy4g
+U2hvdWxkIEluIGNhc2UgeW91IG5lZWQgYW55IG1vcmUgaW5mb3JtYXRpb24s
+IEtpbmRseSBsZXQgbWUga25vdy5ccGFyDQpccGFyDQpccGFyDQpFbmRlYXZv
+ciB0byBzZW5kIHlvdXIgcmVwbHkgZm9yIHVyZ2VudCBhdHRlbnRpb24gV2Ug
+c2hhbGwgYmUgd2FpdGluZyBmb3IgeW91ciB1cmdlbnQgYW5kIHByb21wdCBy
+ZXNwb25zZS5ccGFyDQogXHBhcg0KQmVzdCBSZWdhcmRzLFxwYXINCkdhaWwg
+S2VsbHlccGFyDQpDRU8gV2VzdHBhYyBBdXN0cmFsaWEgXHBhcg0KfQ0KAA==
 
-
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index c53f5d5..29bf9fb 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -2143,8 +2143,7 @@ static int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
- 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &soc_pcm_ops);
- 
- 	if (platform->driver->pcm_new) {
--		ret = platform->driver->pcm_new(rtd->card->snd_card,
--						codec_dai, pcm);
-+		ret = platform->driver->pcm_new(rtd);
- 		if (ret < 0) {
- 			pr_err("asoc: platform pcm constructor failed\n");
- 			return ret;
-
+------=_NextPart_000_0113_01C2A9A6.645EF424--
