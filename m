@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1LNJZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 04:25:43 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58413 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab1LNJZI (ORCPT
+	id S1756772Ab1LNJZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 04:25:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47760 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab1LNJZv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 04:25:08 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-62-4ee86b715d69
-From: Donggeun Kim <dg77.kim@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, rpurdie@rpsys.net,
-        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com
-Subject: [PATCH v2 1/2] MFD: MAX8997: add platform data and devices for LED
- control
-Date: Wed, 14 Dec 2011 18:23:55 +0900
-Message-id: <1323854636-5295-2-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1323854636-5295-1-git-send-email-dg77.kim@samsung.com>
-References: <1323854636-5295-1-git-send-email-dg77.kim@samsung.com>
-DLP-Filter: Pass
-X-Brightmail-Tracker: AAAAAQAAAZE=
-X-CFilter-Loop: Reflected
+	Wed, 14 Dec 2011 04:25:51 -0500
+Message-ID: <1323854697.28489.7.camel@twins>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 Dec 2011 10:24:57 +0100
+In-Reply-To: <20111214154844.3ad4e1d685c7987cba0820a0@canb.auug.org.au>
+References: <20111214154844.3ad4e1d685c7987cba0820a0@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997 device does not support LED control function of it.
-To enable MAX8997-LED driver, platform data and devices for LED are updated.
+On Wed, 2011-12-14 at 15:48 +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the driver-core tree, today's linux-next build
+> (powerpc_ppc64_defconfig) failed like this:
+> 
+> In file included from include/linux/slab.h:185:0,
+>                  from include/linux/kref.h:19,
+>                  from include/linux/kobject.h:24,
+>                  from include/linux/sysdev.h:24,
+>                  from include/linux/node.h:17,
+>                  from include/linux/swap.h:10,
+>                  from include/linux/suspend.h:4,
+>                  from arch/powerpc/kernel/asm-offsets.c:24:
+> include/linux/slub_def.h:100:17: error: field 'kobj' has incomplete type
+> 
+> Caused by commit 4af679cd7cbb ("kref: Inline all functions") ... we now
+> have kref.h -> slab.h -> slub_def.h -> kobject.h -> kref.h when
+> CONFIG_SLUB is set.
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Egads, that's nasty.. 
+
+The nicest thing I can come up with is something like the below, but its
+not all that nice at all :/
+
+
+
 ---
- drivers/mfd/max8997.c       |    3 ++-
- include/linux/mfd/max8997.h |   25 ++++++++++++++++++++++++-
- 2 files changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-index 5be53ae..cb83a7a 100644
---- a/drivers/mfd/max8997.c
-+++ b/drivers/mfd/max8997.c
-@@ -43,7 +43,8 @@ static struct mfd_cell max8997_devs[] = {
- 	{ .name = "max8997-battery", },
- 	{ .name = "max8997-haptic", },
- 	{ .name = "max8997-muic", },
--	{ .name = "max8997-flash", },
-+	{ .name = "max8997-led", .id = 1 },
-+	{ .name = "max8997-led", .id = 2 },
- };
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -16,7 +16,8 @@
+ #define _KREF_H_
  
- int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
-diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
-index 49d2a0b..fff5905 100644
---- a/include/linux/mfd/max8997.h
-+++ b/include/linux/mfd/max8997.h
-@@ -131,6 +131,28 @@ struct max8997_muic_platform_data {
- 	int num_init_data;
- };
- 
-+enum max8997_led_mode {
-+	MAX8997_NONE,
-+	MAX8997_FLASH_MODE,
-+	MAX8997_MOVIE_MODE,
-+	MAX8997_FLASH_PIN_CONTROL_MODE,
-+	MAX8997_MOVIE_PIN_CONTROL_MODE,
-+};
+ #include <linux/types.h>
+-#include <linux/slab.h>
 +
-+/**
-+ *  struct max8997_led_platform_data
-+ *  The number of LED devices for MAX8997 is two
-+ *  @mode: LED mode for each LED device
-+ *  @brightness: initial brightness for each LED device
-+ *	range:
-+ *	[0 - 31]: MAX8997_FLASH_MODE and MAX8997_FLASH_PIN_CONTROL_MODE
-+ *	[0 - 15]: MAX8997_MOVIE_MODE and MAX8997_MOVIE_PIN_CONTROL_MODE
-+ */
-+struct max8997_led_platform_data {
-+	enum max8997_led_mode mode[2];
-+	u8 brightness[2];
-+};
-+
- struct max8997_platform_data {
- 	/* IRQ */
- 	int irq_base;
-@@ -172,7 +194,8 @@ struct max8997_platform_data {
++extern void kfree(const void *);
  
- 	/* HAPTIC: Not implemented */
- 	/* RTC: Not implemented */
--	/* Flash: Not implemented */
-+	/* ---- LED ---- */
-+	struct max8997_led_platform_data *led_pdata;
- };
- 
- #endif /* __LINUX_MFD_MAX8998_H */
--- 
-1.7.4.1
+ struct kref {
+ 	atomic_t refcount;
 
