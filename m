@@ -1,99 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab1LNNaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:30:30 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:48224 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752724Ab1LNNa2 (ORCPT
+	id S1752724Ab1LNNaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:30:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:32994 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab1LNNax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:30:28 -0500
-Date: Wed, 14 Dec 2011 08:30:25 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: Re: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
-Message-ID: <20111214133025.GA2882@Krystal>
-References: <20111214025237.457632996@goodmis.org> <20111214025253.519573056@goodmis.org>
+	Wed, 14 Dec 2011 08:30:53 -0500
+Date: Wed, 14 Dec 2011 14:30:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5
+ machine
+In-Reply-To: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
+Message-ID: <alpine.LFD.2.02.1112141423380.3020@ionos>
+References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214025253.519573056@goodmis.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:22:16 up 385 days, 18:25,  2 users,  load average: 0.04, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-[...]> From: Steven Rostedt <srostedt@redhat.com>
-> +#define nmi_preprocess(regs)						\
-> +	do {								\
-> +		if (__get_cpu_var(nmi_state) != NMI_NOT_RUNNING) {	\
-> +			__get_cpu_var(nmi_state) = NMI_LATCHED;		\
-> +			return;						\
-> +		}							\
-> +	nmi_restart:							\
-> +		__get_cpu_var(nmi_state) = NMI_EXECUTING;		\
-> +	} while (0)
-> +
-> +#define nmi_postprocess()						\
-> +	do {								\
-> +		if (cmpxchg(&__get_cpu_var(nmi_state),			\
-> +		    NMI_EXECUTING, NMI_NOT_RUNNING) != NMI_EXECUTING)	\
-> +			goto nmi_restart;				\
-> +	} while (0)
-> +
-[...]
-> +dotraplinkage notrace __kprobes void
-> +do_nmi(struct pt_regs *regs, long error_code)
-> +{
-> +	nmi_preprocess(regs);
-> +
->  	nmi_enter();
->  
->  	inc_irq_stat(__nmi_count);
-> @@ -428,8 +515,7 @@ do_nmi(struct pt_regs *regs, long error_code)
->  
->  	nmi_exit();
->  
-> -	if (unlikely(update_debug_stack))
-> -		reset_debug_stack();
-> +	nmi_postprocess();
+On Wed, 14 Dec 2011, Nikunj A Dadhania wrote:
 
-Just to make sure I understand: if an NMI nests over do_nmi between
-nmi_postprocess() and the following iret (in which case the CPU is in
-state NMI_NOT_RUNNING), we will end up with two NMI handlers nested on
-the stack, right ? Given that there is no upper-bound on the nesting
-level of this situation (although nesting like this more than once is
-extremely unlikely), is this side-effect something we should care about
-in terms of stack space usage ? Also, is the stack dump OOPS handler
-aware of this stack layout that was until now impossible ?
+> Hi,
+> 
+> I was trying the latest tip kernel and I am seeing the following
+> message. After some more logs the machine does not proceed.
+> 
+> ------------[ cut here ]------------
+> WARNING: at kernel/time/clockevents.c:47 clockevent_delta2ns+0x79/0x90()
+
+Ok, that's caused by stupidity in the apic timer code. Fix
+below. Note, that patch wont fix the boot problem. It just prevents
+the warning.
+
+> Hardware name: System x3850 X5 -[71455RQ]-
+> Modules linked in:
+> Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc4-tip #3
+> Call Trace:
+>  [<ffffffff8104d3af>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff8104d40a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff81097ab9>] clockevent_delta2ns+0x79/0x90
+>  [<ffffffff81e49109>] calibrate_APIC_clock+0x16e/0x377
+>  [<ffffffff81e4942c>] setup_boot_APIC_clock+0x59/0x7e
+>  [<ffffffff81e472d1>] native_smp_prepare_cpus+0x1f1/0x205
+>  [<ffffffff81e38767>] kernel_init+0x1b6/0x29a
+>  [<ffffffff815f9ca4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81e385b1>] ? parse_early_options+0x20/0x20
+>  [<ffffffff815f9ca0>] ? gs_change+0x13/0x13
+> ---[ end trace a7919e7f17c0a725 ]---
+> APIC frequency too slow, disabling apic timer
+
+Ouch. This is really bad.
+
+> Performance Events: PEBS fmt1+, Nehalem events, Intel PMU driver.
+> CPU erratum AAJ80 worked around
+> CPUID marked event: 'bus cycles' unavailable
+> ... version:                3
+> ... bit width:              48
+> ... generic registers:      4
+> ... value mask:             0000ffffffffffff
+> ... max period:             000000007fffffff
+> ... fixed-purpose events:   3
+> ... event mask:             000000070000000f
+> NMI watchdog enabled, takes one hw-pmu counter.
+> Booting Node   0, Processors  #1
+> APIC never delivered???
+> APIC delivery error (ef).
+>  #2
+
+And probably caused by non working APIC. From your log:
+ 
+ weird, boot CPU (#255) not listed by the BIOS.
+ LAPIC pending interrupts after 512 EOI
+
+Can you please provide a full boot log up to the point of
+
+Booting Node   0, Processors  #1
+
+Your log is missing the head of the boot process. Can you also add
+"apic=verbose" to the kernel command line please ?
 
 Thanks,
 
-Mathieu
+	tglx
 
->  }
->  
->  void stop_nmi(void)
-> -- 
-> 1.7.7.3
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+---------->
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 39e3eaa..35a5b31 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -696,6 +696,18 @@ static int __init calibrate_APIC_clock(void)
+ 	pm_referenced = !calibrate_by_pmtimer(lapic_cal_pm2 - lapic_cal_pm1,
+ 					&delta, &deltatsc);
+ 
++
++	lapic_timer_frequency = (delta * APIC_DIVISOR) / LAPIC_CAL_LOOPS;
++
++	/*
++	 * Do a sanity check on the APIC calibration result
++	 */
++	if (lapic_timer_frequency < (1000000 / HZ)) {
++		local_irq_enable();
++		pr_warning("APIC frequency too slow, disabling apic timer\n");
++		return -1;
++	}
++
+ 	/* Calculate the scaled math multiplication factor */
+ 	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+ 				       lapic_clockevent.shift);
+@@ -704,8 +716,6 @@ static int __init calibrate_APIC_clock(void)
+ 	lapic_clockevent.min_delta_ns =
+ 		clockevent_delta2ns(0xF, &lapic_clockevent);
+ 
+-	lapic_timer_frequency = (delta * APIC_DIVISOR) / LAPIC_CAL_LOOPS;
+-
+ 	apic_printk(APIC_VERBOSE, "..... delta %ld\n", delta);
+ 	apic_printk(APIC_VERBOSE, "..... mult: %u\n", lapic_clockevent.mult);
+ 	apic_printk(APIC_VERBOSE, "..... calibration result: %u\n",
+@@ -723,15 +733,6 @@ static int __init calibrate_APIC_clock(void)
+ 		    lapic_timer_frequency / (1000000 / HZ),
+ 		    lapic_timer_frequency % (1000000 / HZ));
+ 
+-	/*
+-	 * Do a sanity check on the APIC calibration result
+-	 */
+-	if (lapic_timer_frequency < (1000000 / HZ)) {
+-		local_irq_enable();
+-		pr_warning("APIC frequency too slow, disabling apic timer\n");
+-		return -1;
+-	}
+-
+ 	levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
+ 
+ 	/*
