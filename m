@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab1LNOwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 09:52:46 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:42186 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754380Ab1LNOwo (ORCPT
+	id S1755915Ab1LNOxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 09:53:46 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:35798 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754806Ab1LNOxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 09:52:44 -0500
-Message-ID: <4EE8B810.8040405@tao.ma>
-Date: Wed, 14 Dec 2011 22:52:00 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 14 Dec 2011 09:53:45 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: FwzJKyUVM1kfH378u8pJqVAOsGxtn12yH7ka2bnALVfEZfI
+ XOax8DEs9yv63OHSYwylxAe5JWG31.oJnKL6u6FcoI2rJ2LSVhlZ527UnlH8
+ D5rAXiaMOVqTLy6YVk5WkIHIhiU.8fAp.6P6onQ_260HFYBTRJV7QVDq6o1.
+ 9PXctopSIBNg79iHTONfkGCxq5KV0nQazNJdPa3q3XK42lSd5lDFw8v2q.gL
+ sH_Tff86rkWnr1YuO3gW1zFWEHUzlVHgL_MwK2o5oh_O85r4DEvsTDo.kUi2
+ 0eRZMs6LQIKtsessiBxStmzhqEdYEJNJbH8cbKmVvHJ_lENKpMl2LFMi_FsV
+ h4xeJ7DQMy2ow.kA.j0VCBeeFRsTYAFqsSGUYPAMacW1Taw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 14 Dec 2011 08:53:41 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH 1/3] slub: set a criteria for slub node partial adding
+In-Reply-To: <alpine.LFD.2.02.1112140846290.1841@tux.localdomain>
+Message-ID: <alpine.DEB.2.00.1112140851580.12235@router.home>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>  <alpine.DEB.2.00.1112020842280.10975@router.home>  <1323419402.16790.6105.camel@debian>  <alpine.DEB.2.00.1112090203370.12604@chino.kir.corp.google.com> 
+ <6E3BC7F7C9A4BF4286DD4C043110F30B67236EED18@shsmsx502.ccr.corp.intel.com>  <alpine.DEB.2.00.1112131734070.8593@chino.kir.corp.google.com>  <alpine.DEB.2.00.1112131835100.31514@chino.kir.corp.google.com>  <1323842761.16790.8295.camel@debian>
+ <1323845054.2846.18.camel@edumazet-laptop> <alpine.LFD.2.02.1112140846290.1841@tux.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Li Shaohua <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-References: <20111214133400.GA18565@localhost> <20111214143014.GB18080@thunk.org>
-In-Reply-To: <20111214143014.GB18080@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.102 authed with tm@tao.ma}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted/Fengguang,
-On 12/14/2011 10:30 PM, Ted Ts'o wrote:
-> On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
->> Hi,
->>
->> Shaohua recently found that ext4 writeback mode could perform worse
->> than ordered mode in some cases. It may not be a big problem, however
->> we'd like to share some information on our findings.
->>
->> I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
->> The interesting thing is, data=writeback used to run a bit faster
->> than data=ordered, however situation get inverted presumably by the
->> IO-less dirty throttling.
-> 
-> Interesting.  What sort of workloads are you using to do these
-> measurements?  How many writer threads; I assume you are doing
-> sequential writes which are extending one or more files, etc?
-> 
-> I suspect it's due to the throttling meaning that each thread is
-> getting to send less data to the disk, and so there is more seeking
-> going on with data=writeback, where as with data=ordered, at each
-> journal commit we are forcing all of the dirty pages out to disk, one
-> inode at a time, and this is resulting in a more efficient writeback
-> compared to when the writeback code is getting to make its own choices
-> about how much each inode gets to write out at at time.
-> 
-> It would be interesting to see what would happen if in
-> ext4_da_writepages(), we completely ignore how many pages are
-> requested to be written back by the writeback code, and just simply
-> write back all of the dirty pages, and see if that brings the
-> performance back.
-I guess fengguang's test is a buffer write dd test. Here we have found
-some performance regression from 18 because of the delayed allocation.
-In case of delayed allocation, we will create the extent tree during
-writepages which would delay the write because ext4_da_write_begin would
-down_read the i_data_sem to map the block while writepages would
-down_write it so we have seen some severe delay in ext4_da_write_begin
-(around 3s). And instead of increasing the page numbers of every
-writepages, some tests shows that the decrease makes the performance
-increase. I will dive into it soon to see what's going on there.
+On Wed, 14 Dec 2011, Pekka Enberg wrote:
 
-So Fengguang, would you please keep the page number in
-ext4_da_writepages passed by writeback(instead of the bumping) and check
-the result?
+> On Wed, 14 Dec 2011, Eric Dumazet wrote:
+> > We should try to batch things a bit, instead of doing a very small unit
+> > of work in slow path.
+> >
+> > We now have a very fast fastpath, but inefficient slow path.
+> >
+> > SLAB has a litle cache per cpu, we could add one to SLUB for freed
+> > objects, not belonging to current slab. This could avoid all these
+> > activate/deactivate overhead.
+>
+> Yeah, this is definitely worth looking at.
 
-Thanks
-Tao
+We have been down this road repeatedly. Nick tried it, I tried it and
+neither got us to something we liked. Please consult the archives.
+
+There was a whole patch series last year that I did introducing per cpu
+caches which ended up in the "unified" patches. See the archives for the
+various attempts please.
+
