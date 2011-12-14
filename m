@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab1LNCiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 21:38:24 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:36068 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab1LNCiX convert rfc822-to-8bit (ORCPT
+	id S1756624Ab1LNCiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 21:38:46 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36896 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab1LNCio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 21:38:23 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-65-4ee80c1e57db
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <4EE80C1C.7080704@samsung.com>
-Date: Wed, 14 Dec 2011 11:38:20 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419
- Thunderbird/3.1.9
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH RESEND 1/2] MFD: MAX8997: add platform data and devices for
- LED control
-References: <1323764033-3979-1-git-send-email-dg77.kim@samsung.com>
- <1323764033-3979-2-git-send-email-dg77.kim@samsung.com>
- <20111213205905.GH2796@sortiz-mobl>
-In-reply-to: <20111213205905.GH2796@sortiz-mobl>
-DLP-Filter: Pass
-X-Brightmail-Tracker: AAAAAQAAAZE=
-X-CFilter-Loop: Reflected
+	Tue, 13 Dec 2011 21:38:44 -0500
+Date: Tue, 13 Dec 2011 18:38:41 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: "Shi, Alex" <alex.shi@intel.com>, Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
+In-Reply-To: <1323830622.22361.407.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1112131837160.31514@chino.kir.corp.google.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323076965.16790.670.camel@debian> <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com> <1323234673.22361.372.camel@sli10-conroe>
+ <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com> <1323657793.22361.383.camel@sli10-conroe> <alpine.DEB.2.00.1112131726140.8593@chino.kir.corp.google.com> <1323830622.22361.407.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Wed, 14 Dec 2011, Shaohua Li wrote:
 
-On 2011년 12월 14일 05:59, Samuel Ortiz wrote:
-> Hi Donggeun,
-> 
-> On Tue, Dec 13, 2011 at 05:13:52PM +0900, Donggeun Kim wrote:
->> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
->> index 5be53ae..cb83a7a 100644
->> --- a/drivers/mfd/max8997.c
->> +++ b/drivers/mfd/max8997.c
->> @@ -43,7 +43,8 @@ static struct mfd_cell max8997_devs[] = {
->>  	{ .name = "max8997-battery", },
->>  	{ .name = "max8997-haptic", },
->>  	{ .name = "max8997-muic", },
->> -	{ .name = "max8997-flash", },
-> That doesn't seem to be related to this patch.
-> 
-> 
-Actually, the name of 'max8997-flash' is intended to be used for LED
-driver. I think the device name has 'led' suffix rather than 'flash', as
-the driver of MAX8997 is included in led class.
->> +	{ .name = "max8997-led", .id = 1 },
->> +	{ .name = "max8997-led", .id = 2 },
->>  };
->> @@ -172,7 +194,8 @@ struct max8997_platform_data {
->>  
->>  	/* HAPTIC: Not implemented */
->>  	/* RTC: Not implemented */
->> -	/* Flash: Not implemented */
->> +	/* ---- Flash ---- */
->> +	struct max8997_led_platform_data *led_pdata;
-> This is a bit confusing: Flash and LED ?
-> 
-LED would be better. I will fix it.
-> Cheers,
-> Samuel.
-> 
+> if vast majority of allocation needs picking from partial list of node,
+> the list_lock will have contention too. But I'd say avoiding the slab
+> thrashing does increase fastpath.
 
-Thanks.
--Donggeun
+Right, that's why my 2009 patchset would attempt to grab the partial slab 
+with the highest number of free objects to a certain threshold before 
+falling back to others and it improved performance somewhat.  This was 
+with the per-node partial lists, however, and the slowpath has been 
+significantly rewritten since then.
