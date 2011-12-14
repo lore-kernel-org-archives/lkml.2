@@ -1,299 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab1LNRrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 12:47:47 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63427 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab1LNRrq (ORCPT
+	id S932122Ab1LNRuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 12:50:02 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58908 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab1LNRt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 12:47:46 -0500
-Date: Wed, 14 Dec 2011 18:47:38 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        josh@joshtriplett.org, keescook@chromium.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.3
-Message-ID: <20111214174736.GF10791@somewhere.redhat.com>
-References: <20111213230243.GA15127@linux.vnet.ibm.com>
- <20111214154736.GA2419@elte.hu>
- <20111214163007.GD10791@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214163007.GD10791@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Dec 2011 12:49:59 -0500
+Message-ID: <1323884995.2334.71.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Sparc-32 doesn't work in 3.1.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergei Trofimovich <slyich@gmail.com>
+Cc: Rob Landley <rob@landley.net>,
+        Aboriginal Linux <aboriginal@lists.landley.net>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, tytso@mit.edu,
+        sparclinux@vger.kernel.org, Jakub Jelinek <jakub@redhat.com>
+Date: Wed, 14 Dec 2011 18:49:55 +0100
+In-Reply-To: <20111214204225.7c8ec86c@sf.home>
+References: <4EBEAB5A.5020809@landley.net> <4EBF0A25.20604@landley.net>
+	 <20111211111801.5942ab39@sf.home> <4EE80891.70604@landley.net>
+	 <20111214204225.7c8ec86c@sf.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 05:30:11PM +0100, Frederic Weisbecker wrote:
-> On Wed, Dec 14, 2011 at 04:47:36PM +0100, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > Hello, Ingo,
-> > > 
-> > > The major features of this series are RCU infrastructure in 
-> > > support of Frederic Weisbecker's tickless userspace work and a 
-> > > reworked RCU_FAST_NO_HZ that improves energy efficiency on 
-> > > large lightly loaded SMP systems by allowing the 
-> > > scheduler-clock tick to be turned off more quickly upon entry 
-> > > to idle, even when RCU callbacks are queued on the newly idle 
-> > > CPU.  In addition, RCU_FAST_NO_HZ may now be used on systems 
-> > > running TREE_PREEMPT_RCU, where earlier it was restricted to 
-> > > TREE_RCU.
-> > > 
-> > > In addition, this series provides additional event tracing, 
-> > > rcutorture changes that improve automated KVM-based testing of 
-> > > RCU, introduces an srcu_read_lock_raw() needed by uprobes, and 
-> > > ports a couple of patches from -rt to mainline.  Finally, this 
-> > > series updates documentation, improves diagnostics, and fixes 
-> > > a number of bugs, including a nasty use of RCU from the idle 
-> > > task spotted and fixed by Frederic Weisbecker.
-> > > 
-> > > These commits have been posted to LKML and updated based on 
-> > > feedback:
-> > > 
-> > > 	https://lkml.org/lkml/2011/11/2/363
-> > > 	https://lkml.org/lkml/2011/11/15/302
-> > > 	https://lkml.org/lkml/2011/11/28/588
-> > > 	https://lkml.org/lkml/2011/12/3/77
-> > > 	https://lkml.org/lkml/2011/12/12/625
-> > > 
-> > > They have also been exposed to -next testing.
-> > > 
-> > > These changes are based off of 3.2-rc5 and are available at 
-> > > the git repository at:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> > > 
-> > > Could you please pull them into -tip for additional testing?
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > ------------------>
-> > > Frederic Weisbecker (11):
-> > >       rcu: Detect illegal rcu dereference in extended quiescent state
-> > >       rcu: Inform the user about extended quiescent state on PROVE_RCU warning
-> > >       rcu: Warn when rcu_read_lock() is used in extended quiescent state
-> > >       nohz: Separate out irq exit and idle loop dyntick logic
-> > >       nohz: Allow rcu extended quiescent state handling seperately from tick stop
-> > >       x86: Enter rcu extended qs after idle notifier call
-> > >       x86: Call idle notifier after irq_enter()
-> > >       rcu: Fix early call to rcu_idle_enter()
-> > >       nohz: Remove tick_nohz_idle_enter_norcu() / tick_nohz_idle_exit_norcu()
-> > >       rcu: Don't check irq nesting from rcu idle entry/exit
-> > >       rcu: Irq nesting is always 0 on rcu_enter_idle_common
-> > > 
-> > > Josh Triplett (1):
-> > >       driver-core/cpu: Expose hotpluggability to the rest of the kernel
-> > > 
-> > > Kees Cook (1):
-> > >       docs: Additional LWN links to RCU API
-> > > 
-> > > Paul E. McKenney (49):
-> > >       rcu: ->signaled better named ->fqs_state
-> > >       rcu: Avoid RCU-preempt expedited grace-period botch
-> > >       rcu: Make synchronize_sched_expedited() better at work sharing
-> > >       lockdep: Update documentation for lock-class leak detection
-> > >       rcu: Track idleness independent of idle tasks
-> > >       trace: Allow ftrace_dump() to be called from modules
-> > >       rcu: Add failure tracing to rcutorture
-> > >       rcu: Document failing tick as cause of RCU CPU stall warning
-> > >       rcu: Disable preemption in rcu_is_cpu_idle()
-> > >       rcu: Remove one layer of abstraction from PROVE_RCU checking
-> > >       rcu: Warn when srcu_read_lock() is used in an extended quiescent state
-> > >       rcu: Make srcu_read_lock_held() call common lockdep-enabled function
-> > >       powerpc: Tell RCU about idle after hcall tracing
-> > >       rcu: Introduce raw SRCU read-side primitives
-> > >       rcu: Add documentation for raw SRCU read-side primitives
-> > >       rcu: Deconfuse dynticks entry-exit tracing
-> > >       rcu: Add more information to the wrong-idle-task complaint
-> > >       rcu: Allow dyntick-idle mode for CPUs with callbacks
-> > >       rcu: Fix idle-task checks
-> > >       rcu: Permit RCU_FAST_NO_HZ to be used by TREE_PREEMPT_RCU
-> > >       rcu: Add rcutorture system-shutdown capability
-> > >       rcu: Control rcutorture startup from kernel boot parameters
-> > >       sched: Add is_idle_task() to handle invalidated uses of idle_cpu()
-> > >       rcu: Make RCU use the new is_idle_task() API
-> > >       sparc: Make SPARC use the new is_idle_task() API
-> > >       kdb: Make KDB use the new is_idle_task() API
-> > >       events: Make events use the new is_idle_task() API
-> > >       tile: Make tile use the new is_idle_task() API
-> > >       rcu: Add rcutorture CPU-hotplug capability
-> > >       doc: Add load/store guarantees to Documentation/atomic-ops.txt
-> > >       rcu: Update trace_rcu_dyntick() header comment
-> > >       rcu: Add tracing for RCU_FAST_NO_HZ
-> > >       rcu: Go dyntick-idle more quickly if CPU has serviced current grace period
-> > >       rcu: Avoid needlessly IPIing CPUs at GP end
-> > >       rcu: Eliminate RCU_FAST_NO_HZ grace-period hang
-> > >       rcu: Reduce latency of rcu_prepare_for_idle()
-> > >       rcu: Remove dynticks false positives and RCU failures
-> > >       rcu: Identify dyntick-idle CPUs on first force_quiescent_state() pass
-> > >       rcu: Document same-context read-side constraints
-> > >       rcu: Permit dyntick-idle with callbacks pending
-> > >       rcu: Keep invoking callbacks if CPU otherwise idle
-> > >       rcu: Adaptive dyntick-idle preparation
-> > >       rcu: Remove redundant rcu_cpu_stall_suppress declaration
-> > >       rcu: Make rcutorture test for hotpluggability before offlining CPUs
-> > >       rcu: Add rcutorture tests for srcu_read_lock_raw()
-> > >       rcu: Augment rcu_batch_end tracing for idle and callback state
-> > >       Revert "rcu: Permit rt_mutex_unlock() with irqs disabled"
-> > >       rcu: Apply ACCESS_ONCE() to rcu_boost() return value
-> > >       cpu: Export cpu_up()
-> > > 
-> > > Thomas Gleixner (2):
-> > >       rcu: Omit self-awaken when setting up expedited grace period
-> > >       rcu: Remove redundant return from rcu_report_exp_rnp()
-> > > 
-> > >  Documentation/RCU/checklist.txt          |    6 +
-> > >  Documentation/RCU/rcu.txt                |   10 +-
-> > >  Documentation/RCU/stallwarn.txt          |   16 +-
-> > >  Documentation/RCU/torture.txt            |   13 ++
-> > >  Documentation/RCU/trace.txt              |    4 -
-> > >  Documentation/RCU/whatisRCU.txt          |   19 ++-
-> > >  Documentation/atomic_ops.txt             |   87 +++++++++
-> > >  Documentation/lockdep-design.txt         |   63 +++++++
-> > >  arch/arm/kernel/process.c                |    6 +-
-> > >  arch/avr32/kernel/process.c              |    6 +-
-> > >  arch/blackfin/kernel/process.c           |    6 +-
-> > >  arch/microblaze/kernel/process.c         |    6 +-
-> > >  arch/mips/kernel/process.c               |    6 +-
-> > >  arch/openrisc/kernel/idle.c              |    6 +-
-> > >  arch/powerpc/kernel/idle.c               |   15 ++-
-> > >  arch/powerpc/platforms/iseries/setup.c   |   12 +-
-> > >  arch/powerpc/platforms/pseries/lpar.c    |    4 +
-> > >  arch/s390/kernel/process.c               |    6 +-
-> > >  arch/sh/kernel/idle.c                    |    6 +-
-> > >  arch/sparc/kernel/process_64.c           |    6 +-
-> > >  arch/sparc/kernel/setup_32.c             |    2 +-
-> > >  arch/tile/kernel/process.c               |    6 +-
-> > >  arch/tile/mm/fault.c                     |    4 +-
-> > >  arch/um/kernel/process.c                 |    6 +-
-> > >  arch/unicore32/kernel/process.c          |    6 +-
-> > >  arch/x86/kernel/apic/apic.c              |    6 +-
-> > >  arch/x86/kernel/apic/io_apic.c           |    2 +-
-> > >  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
-> > >  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
-> > >  arch/x86/kernel/irq.c                    |    6 +-
-> > >  arch/x86/kernel/process_32.c             |    6 +-
-> > >  arch/x86/kernel/process_64.c             |   10 +-
-> > >  drivers/base/cpu.c                       |    7 +
-> > >  include/linux/cpu.h                      |    1 +
-> > >  include/linux/hardirq.h                  |   21 ---
-> > >  include/linux/rcupdate.h                 |  115 ++++++++-----
-> > >  include/linux/sched.h                    |    8 +
-> > >  include/linux/srcu.h                     |   87 ++++++++--
-> > >  include/linux/tick.h                     |   11 +-
-> > >  include/trace/events/rcu.h               |  122 +++++++++++--
-> > >  init/Kconfig                             |   10 +-
-> > >  kernel/cpu.c                             |    1 +
-> > >  kernel/debug/kdb/kdb_support.c           |    2 +-
-> > >  kernel/events/core.c                     |    2 +-
-> > >  kernel/lockdep.c                         |   22 +++
-> > >  kernel/rcu.h                             |    7 +
-> > >  kernel/rcupdate.c                        |   12 ++
-> > >  kernel/rcutiny.c                         |  149 +++++++++++++--
-> > >  kernel/rcutiny_plugin.h                  |   29 +++-
-> > >  kernel/rcutorture.c                      |  225 ++++++++++++++++++++++-
-> > >  kernel/rcutree.c                         |  290 +++++++++++++++++++++---------
-> > >  kernel/rcutree.h                         |   26 ++--
-> > >  kernel/rcutree_plugin.h                  |  289 ++++++++++++++++++++++++------
-> > >  kernel/rcutree_trace.c                   |   12 +-
-> > >  kernel/rtmutex.c                         |    8 -
-> > >  kernel/softirq.c                         |    4 +-
-> > >  kernel/time/tick-sched.c                 |   97 ++++++----
-> > >  kernel/trace/trace.c                     |    1 +
-> > >  58 files changed, 1512 insertions(+), 407 deletions(-)
-> > 
-> > Pulled into tip:core/rcu, thanks a lot Paul!
-> > 
-> > Note that this commit from Frederic:
-> > 
-> >   69e1e811dcc4: sched, nohz: Track nr_busy_cpus in the sched_group_power
-> > 
-> > conflicted with this commit from Suresh in sched/core:
-> > 
-> >   69e1e811dcc4: sched, nohz: Track nr_busy_cpus in the sched_group_power
-> > 
-> > I resolved it by making the set_cpu_sd_state_idle() call 
-> > unconditional within the newly decoupled 
-> > tick_nohz_stop_sched_tick() function - please double check that 
-> > it's the right resolution.
+Le mercredi 14 décembre 2011 à 20:42 +0300, Sergei Trofimovich a écrit :
+> [ CCed Jakub ]
 > 
-> After a quick look, I believe this should rather be under tick_nohz_idle_enter(),
-> (This is the equivalent of the old tick_nohz_stop_sched_tick(1))
-> This wants to be set only once we enter idle, not everytime we have an idle
-> interrupt.
+> >>>   Boot time fixup v1.6. 4/Mar/98 Jakub Jelinek (jj@ultra.linux.cz).
+> >>>   Patching kernel for srmmu[Fujitsu TurboSparc]/iommu
+> >>>   Fixup i f029ddfc doesn't refer to a valid instruction at
+> >>>   f00de648[95eea000]
+> >>>   halt, power off
+> 
+> > I put the broken image up at http://landley.net/sparc-image for the
+> > moment, but if you build 3.1 with the attached .config and the toolchain
+> > mentioned last time, it should reproduce for you.  It's 100% reliable
+> > for me...
+> 
+> Nice! With this config it breaks for me on your and mine toolchains.
+> The offending function is ext4_kvmalloc (and similar ext4_kvzalloc).
+> 
+> The usual relocation in sparc looks like a pair of instructions loading
+> two pats of address in 2 instructions:
+> 
+> Like that:
+> >        sethi   %hi(ext4_fill_super), %o4       !, tmp113
+> >        or      %o4, %lo(ext4_fill_super), %o4  ! tmp113,, tmp28
+> 
+> In our case relocatable symbol sits in tail call, so %lo part is in "unusual"
+> RESTORE instruction:
+> 
+> > ext4_kvmalloc:
+> ...
+> >         sethi  %hi(___i_page_kernel), %i2      !, tmp112
+> >        call    __vmalloc, 0    !
+> >         restore %i2, %lo(___i_page_kernel), %o2        ! tmp112,,
+> ...
+> 
+> David: is this code correct? Or it's a compiler bug? I am sparc32 newbie.
+> (C source and asm sources of function are in [1])
+> 
+> I think this kind of code is generated only in -Os.
+> So to workaround it I tried this hack:
+> 
+> > --- a/fs/ext4/super.c
+> > +++ b/fs/ext4/super.c
+> >         ret = kmalloc(size, flags);
+> >         if (!ret)
+> >                 ret = __vmalloc(size, flags, PAGE_KERNEL);
+> > +
+> > +       asm __volatile__("nop":::"memory");
+> > +
+> >         return ret;
+> >  }
+> (for both ext4_kvmalloc / ext4_kvzalloc. Attached workaround as a patch.)
+> 
+> It forces compiler to geterate "usual" pattern for relocation.
+> 
+> I think of 2 solutions:
+> 
+> 1. trying to fix sparc/boot/btfixupprep.c and arch/sparc/mm/btfixup.c
+>    to distinct HI22 and LO10 relocations as different ones.
+>    Right now they are merged into one 'i' type and rely on instruction heuristics to fix it.
+> 2. Add a hack to arch/sparc/mm/btfixup.c to recognize restore instruction as well
+> 
+> Any others?
 
-I don't know how you plan to fix the conflict, by redoing the merge or by
-applying a patch on tip/master.
+3)  Adding a memset() in ext4_kvmalloc() and ext4_kvzalloc() to prefault
+pages ?
 
-In any case, here is a patch you can use. Feel free to apply it as is
-or to just refer to its diff to redo the merge:
+4) (Unrelated) : add __GFP_HIGHMEM to __vmalloc() flags, so that high
+memory pages can be used for large allocations.
 
-(Outrageously only compile tested)
-
----
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 14 Dec 2011 18:36:00 +0100
-Subject: [PATCH] sched: Only update the CPU idleness in the domain
- hierarchy from idle loop entry
-
-We don't need to inform the sched domain hierarchy about the
-CPU idleness everytime we call tick_nohz_stop_sched_tick() as this
-includes both idle loop entry and idle interrupt exit.
-
-Doing it once from the idle loop entry is enough, call
-set_cpu_sd_state_idle() only from tick_nohz_idle_enter() instead
-to fix this.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/time/tick-sched.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 1f6dc515..696c997 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -289,14 +289,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
- 	now = tick_nohz_start_idle(cpu, ts);
- 
- 	/*
--	 * Update the idle state in the scheduler domain hierarchy
--	 * when tick_nohz_stop_sched_tick() is called from the idle loop.
--	 * State will be updated to busy during the first busy tick after
--	 * exiting idle.
--	 */
--	set_cpu_sd_state_idle();
--
--	/*
- 	 * If this cpu is offline and it is the one which updates
- 	 * jiffies, then give up the assignment and let it be taken by
- 	 * the cpu which runs the tick timer next. If we don't drop
-@@ -483,6 +475,14 @@ void tick_nohz_idle_enter(void)
- 	 * update of the idle time accounting in tick_nohz_start_idle().
- 	 */
- 	ts->inidle = 1;
-+
-+	/*
-+	 * Update the idle state in the scheduler domain hierarchy
-+	 * when tick_nohz_idle_enter() is called from the idle loop.
-+	 * State will be updated to busy during the first busy tick after
-+	 * exiting idle.
-+	 */
-+	set_cpu_sd_state_idle();
- 	tick_nohz_stop_sched_tick(ts);
- 
- 	local_irq_enable();
--- 
-1.7.5.4
 
 
