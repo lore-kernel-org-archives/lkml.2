@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab1LNSQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:16:36 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55438 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872Ab1LNSQf (ORCPT
+	id S1757853Ab1LNSSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:18:25 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60039 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193Ab1LNSSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:16:35 -0500
-Date: Wed, 14 Dec 2011 10:16:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Nate Custer <nate@cpanel.net>,
-        kvm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kvm deadlock
-Message-ID: <20111214181623.GA20380@google.com>
-References: <54FC5923-2123-4BDD-A506-EA57DCE0C1F6@cpanel.net>
- <20111214122511.GD18317@amt.cnet>
- <4EE8A7ED.7060703@redhat.com>
- <4EE8C8EA.9070207@kernel.dk>
- <20111214170347.GA25484@redhat.com>
- <4EE8D863.5000701@kernel.dk>
- <20111214172234.GB25484@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214172234.GB25484@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 14 Dec 2011 13:18:24 -0500
+Date: Wed, 14 Dec 2011 13:18:10 -0500 (EST)
+Message-Id: <20111214.131810.916491563666428853.davem@davemloft.net>
+To: slyich@gmail.com
+Cc: rob@landley.net, aboriginal@lists.landley.net,
+        linux-kernel@vger.kernel.org, tytso@mit.edu,
+        sparclinux@vger.kernel.org, jakub@redhat.com
+Subject: Re: Sparc-32 doesn't work in 3.1.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111214.125443.973289484729064945.davem@davemloft.net>
+References: <4EE80891.70604@landley.net>
+	<20111214204225.7c8ec86c@sf.home>
+	<20111214.125443.973289484729064945.davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 14 Dec 2011 10:18:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: David Miller <davem@davemloft.net>
+Date: Wed, 14 Dec 2011 12:54:43 -0500 (EST)
 
-On Wed, Dec 14, 2011 at 12:22:34PM -0500, Vivek Goyal wrote:
-> [..]
-> > __GFP_WAIT isn't the problem, you can block in the IO path. You cannot,
-> > however, recurse back into IO submission. That's why CFQ is using
-> > GFP_NOIO, implying that waiting is OK, but submitting new IO to satisfy
-> > the allocation is not.
-> 
-> Ok. Got it. So even if we implement mutex_is_locked() check, it does not
-> protect me from possiblity of per cpu allocation path recursing into
-> IO submission. That means, there needs to be a variant of per cpu
-> allocation which can take the allocation flags as parameter and honor
-> these flags.
+> The right fix is to simply teach btfixup to be able to patch
+> the 'restore' just as equally as it would patch an 'or'.
 
-Slightly tangential but we actually have a bug here.  Under high
-enough memory pressure, ioc or cic allocation can fail which will make
-request alloc fail and retry, which isn't guaranteed to make forward
-progress.  struct request itself is mempool backed but ioc/cic aren't.
-It seems hitting this problem (and thus IO / memalloc deadlock) isn't
-too difficult w/ memcg.
+Try this:
 
-An easy fix would be using INSERT_BACK instead of INSERT_SORT if
-elevator_set() fails.  I'll soon post patches to fix the problem.
+--------------------
+sparc32: Be less strict in matching %lo part of relocation.
 
-> > > Or may be there is a safer version of pcpu alloc which will return
-> > > without allocation if pcpu_alloc_mutex is already locked.
+The "(insn & 0x01800000) != 0x01800000" test matches 'restore'
+but that is a legitimate place to see the %lo() part of a 32-bit
+symbol relocation, particularly in tail calls.
 
-pcpu alloc depends on vmalloc allocation, so it isn't trivial.  We can
-try to make percpu keep cache of areas for this type of allocation but
-I personally think doing percpu allocation from atomic context or IO
-path is a bad idea.  Hmmm...
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ arch/sparc/mm/btfixup.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Thanks.
-
+diff --git a/arch/sparc/mm/btfixup.c b/arch/sparc/mm/btfixup.c
+index 5175ac2..8a7f817 100644
+--- a/arch/sparc/mm/btfixup.c
++++ b/arch/sparc/mm/btfixup.c
+@@ -302,8 +302,7 @@ void __init btfixup(void)
+ 				case 'i':	/* INT */
+ 					if ((insn & 0xc1c00000) == 0x01000000) /* %HI */
+ 						set_addr(addr, q[1], fmangled, (insn & 0xffc00000) | (p[1] >> 10));
+-					else if ((insn & 0x80002000) == 0x80002000 &&
+-					         (insn & 0x01800000) != 0x01800000) /* %LO */
++					else if ((insn & 0x80002000) == 0x80002000) /* %LO */
+ 						set_addr(addr, q[1], fmangled, (insn & 0xffffe000) | (p[1] & 0x3ff));
+ 					else {
+ 						prom_printf(insn_i, p, addr, insn);
 -- 
-tejun
+1.7.6.401.g6a319
+
