@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab1LNS13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:27:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32935 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756962Ab1LNS12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:27:28 -0500
-Message-ID: <4EE8EA61.9050902@zytor.com>
-Date: Wed, 14 Dec 2011 10:26:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1757921Ab1LNSac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:30:32 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36020 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab1LNSab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 13:30:31 -0500
+Date: Wed, 14 Dec 2011 19:30:25 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
+Message-ID: <20111214183025.GB2465@netboy.at.omicron.at>
+References: <cover.1323739287.git.luto@amacapital.net>
+ <20111213032406.GA9604@netboy.at.omicron.at>
+ <1323747782.4078.144.camel@work-vm>
+ <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
+ <20111214074640.GB2180@netboy.at.omicron.at>
+ <1323881310.6805.41.camel@work-vm>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: Re: [RFC][PATCH 5/5 v2] x86: Allow NMIs to hit breakpoints in i386
-References: <20111214025237.457632996@goodmis.org> <20111214025253.519573056@goodmis.org>
-In-Reply-To: <20111214025253.519573056@goodmis.org>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323881310.6805.41.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 06:52 PM, Steven Rostedt wrote:
-> With i386, NMIs and breakpoints use the current stack and they
-> do not reset the stack pointer to a fix point that might corrupt
-> a previous NMI or breakpoint (as it does in x86_64). But NMIs are
-> still not made to be re-entrant, and need to prevent the case that
-> an NMI hitting a breakpoint (which does an iret), doesn't allow
-> another NMI to run.
+On Wed, Dec 14, 2011 at 08:48:30AM -0800, john stultz wrote:
+> On Wed, 2011-12-14 at 08:46 +0100, Richard Cochran wrote:
+> > On Mon, Dec 12, 2011 at 11:09:29PM -0800, Andy Lutomirski wrote:
+> > > On Mon, Dec 12, 2011 at 7:43 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > > >> - New name, to distance ourselves from POSIX (clock_ns_get?)
+> > > 
+> > > I will defer to the bikeshedding consensus :)
+> > > 
+> > > >> - Family of calls, with set/get
+> > > 
+> > > Setting the time is a big can of worms.  adjtimex is rather
+> > > incomprehensible (without reading lots of source and/or the rfc) and
+> > > IMO puts a lot of NTP magic into the kernel, where it doesn't belong.
+> 
+> Honestly, I don't really see how we jumped to adjtimex from setting the
+> time, nor the complexity hinted at. First, the rational for getting
+> clock_gettime_ns is to avoid the overhead of userland translating from
+> timespec to ns.   I doubt there are similar performance needs for
+> settimeofday().  Even if it was needed, it shouldn't be more complex
+> then the unit conversion done in this abi patch. Am I missing something?
 
-Okay... what about the other way around: avoiding the IRET when invoked
-from an NMI context and therefore leaving NMI disabled until the
-appropriate time?
+So, you agree on adding new syscalls as a performance tweek?
 
-	-hpa
+I am not against it, but I do think syscalls should try to satisfy a
+large number of user cases.
 
+> But again, the hard part with in-kernel TAI (possibly as the base of
+> time)is that initialization of the TAI/UTC offset needs to be able to be
+> phased in slowly, as we also have to preserve legacy interfaces and
+> behavior. 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+With brand new syscall, there are no legacy uses.
 
+> Why do we need a new interface for TAI? clock_gettime(CLOCK_TAI,...)
+> should be achievable. I do think it would be interesting, but I also
+> think its separate from the goal of this proposal.
+
+I mean to define an interface that always returns TAI values, no matter
+what the clock device.
+
+Richard
