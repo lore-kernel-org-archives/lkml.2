@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab1LNSCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 13:02:45 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61971 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272Ab1LNSCo convert rfc822-to-8bit (ORCPT
+	id S1757882Ab1LNSCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 13:02:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52202 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757860Ab1LNSCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 13:02:44 -0500
+	Wed, 14 Dec 2011 13:02:51 -0500
+Date: Thu, 15 Dec 2011 02:02:45 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: linaro-dev@lists.linaro.org, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        paul.liu@linaro.org
+Subject: Re: [Patch 06/06] Regulator: DA9052/53 Regulator support v5
+Message-ID: <20111214180243.GA19898@opensource.wolfsonmicro.com>
+References: <1323440300.23171.74.camel@dhruva>
 MIME-Version: 1.0
-In-Reply-To: <1323878622-26602-4-git-send-email-b29396@freescale.com>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
-	<1323878622-26602-4-git-send-email-b29396@freescale.com>
-Date: Wed, 14 Dec 2011 19:02:42 +0100
-Message-ID: <CACRpkdZhj2cqPL4yt+Xg7vy4jg-eauNzZFBUw2aSfvAauTqP0A@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/4] ARM: imx6q: using pinmux subsystem
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
-        shawn.guo@freescale.com, kernel@pengutronix.de,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323440300.23171.74.camel@dhruva>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 5:03 PM, Dong Aisheng <b29396@freescale.com> wrote:
+On Fri, Dec 09, 2011 at 07:48:20PM +0530, Ashish Jangam wrote:
+> The Dialog PMIC has below featured regulators:-
+> DA9052-BC - 4 DVS Buck converters 0.5V - 3.6V upto 1Amp.
+> DA9053-AA/BX - 4 DVS Buck converters 0.5V - 2.5V upto 3Amp.
+> DA9052/53 - 10 Programmable LDO's High PSSR, 1% accuracy.
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
->
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Shawn Guo <shanw.guo@freescale.com>
+Applied but there are some small issues - please send incremental
+patches fixing these.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> +	if (chip_id == DA9052) {
+> +		for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++) {
+> +			info = &da9052_regulator_info[i];
+> +			if (info->reg_desc.id == id)
+> +				return info;
+> +		}
+> +	} else {
+> +		for (i = 0; i < ARRAY_SIZE(da9053_regulator_info); i++) {
+> +			info = &da9053_regulator_info[i];
+> +			if (info->reg_desc.id == id)
+> +				return info;
+> +		}
+> +	}
 
-> +static struct pinmux_map imx6q_pinmux_map[] = {
-> +       PINMUX_MAP_PRIMARY("usdhc4", "sd4", "219c000.usdhc"),
-> +};
-> +
->  static void __init imx6q_init_machine(void)
->  {
->        of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> -
-> +       pinmux_register_mappings(imx6q_pinmux_map,
-> +                                ARRAY_SIZE(imx6q_pinmux_map));
->        imx6q_pm_init();
->  }
+This would be better written as a switch statement.
 
-So ideally this bit of code should also go into the device tree
-and we should add a DT hook inside drivers/pinctrl/pinmux.c
+> +	regulator = kzalloc(sizeof(struct da9052_regulator), GFP_KERNEL);
+> +	if (!regulator)
+> +		return -ENOMEM;
 
-Please make a patch for this if you have a clear idea on how
-it should work!
-
-Yours,
-Linus Walleij
+You should use devm_kzalloc().
