@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab1LNMCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 07:02:43 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59737 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab1LNMCm (ORCPT
+	id S1756867Ab1LNMLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 07:11:46 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53090 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab1LNMLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 07:02:42 -0500
-Date: Wed, 14 Dec 2011 12:02:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-Message-ID: <20111214120240.GC25088@sirena.org.uk>
-References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <4EE7A31E.7080301@gmail.com>
- <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
-X-Cookie: Inside, I'm already SOBBING!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 14 Dec 2011 07:11:43 -0500
+Subject: Re: hugetlb locking bug.
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        William Irwin <wli@holomorphy.com>, Ingo Molnar <mingo@redhat.com>,
+        Tyler Hicks <tyhicks@canonical.com>
+Date: Wed, 14 Dec 2011 06:59:13 -0500
+In-Reply-To: <BANLkTinSytqYA6ozOQEQ16VkRU4gFYpqvg@mail.gmail.com>
+References: <20110415201652.GA5131@redhat.com>
+	 <BANLkTi=ctr7tQLArfbdHRU3uUvEPh6KbwQ@mail.gmail.com>
+	 <20110415205712.GA13049@infradead.org> <1302901766.2035.39.camel@laptop>
+	 <BANLkTimg+sVCAE17jLE9oz301oruVZbdbw@mail.gmail.com>
+	 <BANLkTinSytqYA6ozOQEQ16VkRU4gFYpqvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323863956.1954.50.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 11121412-6148-0000-0000-000001F362D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 02:44:48PM -0600, Moffett, Kyle D wrote:
+On Fri, 2011-04-15 at 14:27 -0700, Linus Torvalds wrote:
+> On Fri, Apr 15, 2011 at 2:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > (Warning: whitespace damage and TOTALLY UNTESTED)
+> 
+> Gaah. That won't work. Or rather, it probably may work, but while
+> working it will spam the logs with that
+> 
+>     WARN_ON(!(inode->i_state & I_NEW));
+> 
+> thing from unlock_new_inode.
+> 
+> So the sane thing to do would be apparently one of
+> 
+>  (a) ignore the whole thing, and just accept the false lockdep warning.
+> 
+>       which I'd be willing to do, but it might be hiding some real
+> ones, so we probably shouldn't.
+> 
+>  (b) just remove that WARN_ON(), and use the one-liner I suggested
+> 
+>  (c) extract the "set directory i_mutex key" logic into a new helper
+> function for the case of filesystems like hugetlbfs that don't want to
+> use unlock_new_inode() for one reason or another.
+> 
+> Personally, I don't have any really strong preferences and would
+> probably just go for (b) to keep the patch small and simple. Anybody?
+> 
+>                      Linus
 
-> I looked at it a bit when I was generalizing my code, but it seemed
-> dramatically more complicated than I needed, and I couldn't see any
-> reasonable way to hook it from the machine_poweroff() code.
+Since this discussion, commit "e096d0c lockdep: Add helper function for
+dir vs file i_mutex annotation" defined a helper function
+lockdep_annotate_inode_mutex_key(), but only hugetlbfs calls it.  There
+are plenty of other places where new_inode() is called without
+unlock_new_inode() (eg. proc, devpts, debugfs, ramfs, ...).  Is this
+omission intentional or should they be annotated?  
 
-Some ST platform had to do odd stuff with regulators to power off, it
-made a platform device representing the odd poweroff code.
+An incomplete patch was posted
+http://marc.info/?l=linux-fsdevel&m=132369346810326&w=2
 
-> There's also the fact that I was looking for a pure-device-tree type
-> of driver and the regulator framework does not seem to support the
-> standard OF-platform probe system.
+(Tyler Hicks' "vfs: Correctly set the dir i_mutex lockdep class" patch
+http://marc.info/?l=linux-fsdevel&m=132370587315054&w=2 should be
+prereq'ed.)
 
-The regulator API in -next has DT bindings.
+thanks,
+
+Mimi
+
