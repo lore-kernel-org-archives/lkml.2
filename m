@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab1LNNez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:34:55 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44408 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab1LNNex (ORCPT
+	id S1757164Ab1LNNjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 08:39:39 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:38267 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab1LNNji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 08:34:53 -0500
-Date: Wed, 14 Dec 2011 13:34:48 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Neil <neil.jones@imgtec.com>
-Subject: Re: bugs in "ASoC: core - Optimise and refactor pcm_new() to pass
- only rtd"?
-Message-ID: <20111214133448.GD25088@sirena.org.uk>
-References: <4EE89A06.80101@imgtec.com>
+	Wed, 14 Dec 2011 08:39:38 -0500
+Date: Wed, 14 Dec 2011 08:34:29 -0500 (EST)
+From: David Airlie <airlied@redhat.com>
+To: Eugene Teo <eugeneteo@kernel.sg>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Xi Wang <xi.wang@gmail.com>
+Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
+Message-ID: <2486420a-edef-443a-ba5e-18fb5efb0eb9@zmail16.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <CAGyNYUNwMs0ntak4bo5S1EMuEoTuTwsV1dKAc1gu8qF9qQ4ZLg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE89A06.80101@imgtec.com>
-X-Cookie: Inside, I'm already SOBBING!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+X-Originating-IP: [10.36.6.35]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 12:43:50PM +0000, James Hogan wrote:
 
-> I've bisected a problem with an out of tree set of asoc drivers down to commit
-> 552d1ef6b5a98d7b95959d5b139071e3c90cebf1 ("ASoC: core - Optimise and refactor
-> pcm_new() to pass only rtd"). By the looks of it this change was intended not 
-> to change the workings of the code, however the dai parameter of pcm_new used
-> to be passed codec_dai in soc_new_pcm() (initialised from rtd->codec_dai), but
-> each driver now sets it's dai to rtd->cpu_dai instead. This seems to make the
-> driver check the wrong dai's driver->capture.channels_min in the pcm_new
-> callback, which makes it dereference
-> pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream in the driver's
-> preallocate_dma_buffer() function which can be NULL. Is this a bug (in every
-> pcm asoc driver) that just happens not to have been noticed, or have I
-> misunderstood it?
+----- Original Message -----
+> From: "Eugene Teo" <eugeneteo@kernel.sg>
+> To: "Xi Wang" <xi.wang@gmail.com>
+> Cc: "David Airlie" <airlied@linux.ie>, dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+> security@kernel.org, "Dave Airlie" <airlied@redhat.com>
+> Sent: Wednesday, 14 December, 2011 1:16:49 PM
+> Subject: Re: [PATCH] drm: integer overflow in drm_mode_dirtyfb_ioctl()
+> 
+> Cc'ed Dave's work email.
 
-Your drivers should never have beenn relying on this behaviour of the
-core - see changes in the pxa and fsl drivers which remove similar
-assumptions.  The CPU driver should be checking for the substream if
-it's looking to see if a particular substream is present, not peering
-inside the DAI for a random parameter.
+This is already in Linus tree, went there a while ago.
+
+a5cd335165e31db9dbab636fd29895d41da55dd2
+
+Dave.
