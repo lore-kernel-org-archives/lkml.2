@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab1LNWRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 17:17:19 -0500
-Received: from incomingmail.riverbed.com ([208.70.196.45]:27958 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab1LNWRQ (ORCPT
+	id S1758246Ab1LNWWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 17:22:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56936 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab1LNWWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 17:17:16 -0500
-From: Jiang Wang <Jiang.Wang@riverbed.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Prasanna Panchamukhi <Prasanna.Panchamukhi@riverbed.com>,
-        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>,
-        "miles.ito@intel.com" <miles.ito@intel.com>
-Subject: RE: [PATCH 1/2] e100: power down PHY if WOL is not enabled
-Thread-Topic: [PATCH 1/2] e100: power down PHY if WOL is not enabled
-Thread-Index: AQHMupWw3KBVkwNve0CC+hQ7t8HMcZXcT2kA//+RlTCAAImTAP//fCUg
-Date: Wed, 14 Dec 2011 22:16:54 +0000
-Message-ID: <CEE05A0D7856E14880AD5560634EBEA82AA78752@365EXCH-MBX-P5.nbttech.com>
-References: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
-	 <1323894636.2753.2.camel@bwh-desktop>
-	 <CEE05A0D7856E14880AD5560634EBEA82AA78720@365EXCH-MBX-P5.nbttech.com>
- <1323900468.2753.22.camel@bwh-desktop>
-In-Reply-To: <1323900468.2753.22.camel@bwh-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.205.252]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 14 Dec 2011 17:22:37 -0500
+Date: Wed, 14 Dec 2011 22:22:33 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>, Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH] irq: fix crash due to op-less irq domains
+Message-ID: <20111214222232.GA3125@gallagher>
+References: <1323896156-20692-1-git-send-email-linus.walleij@stericsson.com>
+ <4EE91FDD.5070206@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EE91FDD.5070206@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBEMHRCg005059
 
-I see. I will add one more check for that. Thanks.
-
--------------------------------------
-Jiang Wang
-Member of Technical Staff
-Riverbed Technology
-Tel: (408) 522-5109
-Email: Jiang.Wang@riverbed.com
-www.riverbed.com
-
-
------Original Message-----
-From: Ben Hutchings [mailto:bhutchings@solarflare.com] 
-Sent: Wednesday, December 14, 2011 2:08 PM
-To: Jiang Wang
-Cc: Jeff Kirsher; Jesse Brandeburg; Bruce Allan; Carolyn Wyborny; Don Skidmore; Greg Rose; Peter P Waskiewicz Jr; Alex Duyck; John Ronciak; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Prasanna Panchamukhi; Chaitanya Lala; Francis St. Amant; miles.ito@intel.com
-Subject: RE: [PATCH 1/2] e100: power down PHY if WOL is not enabled
-
-On Wed, 2011-12-14 at 21:59 +0000, Jiang Wang wrote:
-> Hi Ben,
+On Wed, Dec 14, 2011 at 04:14:53PM -0600, Rob Herring wrote:
+> Linus,
 > 
-> Do you mean the WOL is enabled but PHY is powered off somehow? That 
-> scenario should never happen. If WOL is enabled, there is no code to 
-> power off PHY.
-[...]
+> On 12/14/2011 02:55 PM, Linus Walleij wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > IRQ domains without ops does not work anymore after commit
+> > "irq: support domains with non-zero hwirq base", since the
+> > check dereferences domain->ops->to_irq without checking of
+> > domain->ops are NULL. This makes U300 (and probably most other
+> > systems using the PL190 VIC) boot again.
+> 
+> I thought the VIC series had the fix for this, but it seems not. NULL
+> ops is considered invalid based on the code comments. The correct fix is
+> this patch:
+> 
+> irqdomain: export irq_domain_simple_ops for !CONFIG_OF
+> http://www.spinics.net/lists/arm-kernel/msg150290.html
+> 
+> I believe this is going in with some iMX changes. But I guess the VIC is
+> going to need a fix to use irq_domain_simple_ops.
 
-Initial conditions: interface up, WOL off, PHY on.
+Yes, Thomas has acked that patch, but it wasn't clear who was going to 
+merge it.  I asked if this could go through Russell along with a patch 
+to make the VIC driver use it but haven't heard anything back yet.  I'll 
+repost them now.
 
-1. Bring interface down. PHY is turned off.
-2. Turn WOL on.  PHY is still off, but needs to be on.
-
-Ben.
-
---
-Ben Hutchings, Staff Engineer, Solarflare Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Jamie
