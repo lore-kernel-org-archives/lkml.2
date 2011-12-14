@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab1LNXGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:06:50 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50068 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164Ab1LNXGt convert rfc822-to-8bit (ORCPT
+	id S1758401Ab1LNXO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 18:14:27 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:48792
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755581Ab1LNXO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:06:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EE92A97.5080606@zytor.com>
-References: <1323896791-10858-1-git-send-email-mjg@redhat.com>
- <1323896791-10858-4-git-send-email-mjg@redhat.com> <CAGTjWtCpt_1h6XMwCFkx1TQnQbagtSuFBejcp6XNr4yhKgNuLg@mail.gmail.com>
- <20111214223950.GA29264@srcf.ucam.org> <CAGTjWtARm_OA0qy2Cvtc-rrPFpH2+2QdFw4CvBAo-PJsfX6t6w@mail.gmail.com>
- <4EE92A97.5080606@zytor.com>
-From: Mike Waychison <mikew@google.com>
-Date: Wed, 14 Dec 2011 15:06:27 -0800
-Message-ID: <CAGTjWtD33=EdOdMCy_TgX=fG0ZiUZTFTOP=Eyv3d7F-46u2pGQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] EFI: Add support for variables longer than 1024 bytes
+	Wed, 14 Dec 2011 18:14:26 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zzbb2dI9371I936eK103dK1432N98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LW7V7U-01-215-02
+X-M-MSG: 
+Date: Wed, 14 Dec 2011 17:14:25 -0600
+From: Jacob Shin <jacob.shin@amd.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai.lu@oracle.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+Message-ID: <20111214231425.GA18068@jshin-Toonie>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+ <4EA09EA2.3030203@zytor.com>
+ <1319149574.13035.6.camel@jshin-Toonie>
+ <4EE9266A.90200@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4EE9266A.90200@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 3:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/14/2011 02:57 PM, Mike Waychison wrote:
->>
->> Well,l we could *not* support returning all the data field for
->> datasize > 1024, and simply truncate the field.  We are limited by
->> PAGE_SIZE by sysfs here anyway (so we don't really want to have a
->> variable size memcpy in efivar_show_raw).
->>
->
-> That may be the biggest reason to avoid sysfs.  As far as I know sysfs
-> doesn't allow seq_file to be used.
->
+On Wed, Dec 14, 2011 at 02:42:50PM -0800, H. Peter Anvin wrote:
+> On 10/20/2011 03:26 PM, Jacob Shin wrote:
+> > On Thu, 2011-10-20 at 17:20 -0500, H. Peter Anvin wrote:
+> >> On 10/20/2011 02:15 PM, Jacob Shin wrote:
+> >>> On systems with very large memory (1 TB in our case), BIOS may report a
+> >>> reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+> >>> these from the direct mapping.
+> >>
+> >>> +			if (ei->type == E820_RESERVED)
+> >>> +				continue;
+> >>
+> >> This should probably be ei->type != E820_RAM or something similar.  I
+> >> haven't looked yet, what does the < 4 GiB code do?
+> > 
+> > Hm, okay, it calls e820_end_of_low_ram_pfn() which effectively is !=
+> > E820_RAM.
+> > 
+> > I'll fix this, test, then resend.
+> > 
+> 
+> I never got any kind of updated patch, did I?
 
-Completely agreed.  I don't think a seq_file is warranted in this case
-in particular, but the dummification of the interfaces in sysfs sure
-makes it hard to do anything that isn't a "single value string".
+No, I never sent one out, because it would have still only covered > 4GB, and
+in later emails, you said that you wanted a general one that covered all x86.
+
+I'll give it another shot at the generic patch, making a special case for the
+< 1MB ISA region.
+
+Thanks!
+
+> 
+> 	-hpa
+> 
+> 
+
