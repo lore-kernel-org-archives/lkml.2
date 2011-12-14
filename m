@@ -1,110 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab1LNNJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 08:09:39 -0500
-Received: from ims-d11.mx.aol.com ([205.188.249.148]:52252 "EHLO
-	ims-d11.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab1LNNJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757077Ab1LNNJZ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Dec 2011 08:09:25 -0500
-Message-Id: <201112141305.pBED4tOQ006113@ims-d11.mx.aol.com>
-Reply-To: <s.barristerdavid@yahoo.com.ph>
-From: "Gail Kelly" <gjabaay771@aol.com>
-Subject: Did you instruct Mrs. Jenny Maria Moore?
-Date: Wed, 14 Dec 2011 12:03:55 -0800
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61358 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab1LNNJX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 08:09:23 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0113_01C2A9A6.645EF424"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76898
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:5:74595688:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/76898
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:5:49678916:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33844ee89eff5ff5
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CABiHV1QBxvWD_VZa2554+c6u-JL5mzas6RxZtEBz5YiaqUP_Cw@mail.gmail.com>
+References: <CANFwon04fJe9z+5wKXp55Kp-SX+FZyAhnNcAH9zi6zBd++GSFg@mail.gmail.com>
+ <CABiHV1ShpvmA0r0wJtepnWyQ2ZT3hXtYFdKMUaZ=axTgC7uR0Q@mail.gmail.com>
+ <CANFwon0eEfaRn_Tbw_+sGeTk+HXVhBMLX0wt7bZ2=az2RFzydA@mail.gmail.com> <CABiHV1QBxvWD_VZa2554+c6u-JL5mzas6RxZtEBz5YiaqUP_Cw@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 14 Dec 2011 21:08:39 +0800
+Message-ID: <CANFwon1YoSLc8BSdf0CKbUY5_jVGcDWeGMMY8AJtRQOhFRUNnQ@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111111 release (Android
+ support OK)
+To: Geunsik Lim <leemgs1@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi Geunsik,
 
-------=_NextPart_000_0113_01C2A9A6.645EF424
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+I just add a new patch gtp_3.0_to_upstream.patch that can patch Linux
+Kernel from 3.0 to upstream in kgtp trunk.
+I think maybe it can handle your issue.
 
-Did you instruct one Mrs. Jenny Maria Moore, whose information's is below, to claim and receive the payment on your behalf?
-Read the below attached document for complete details and respond promptly
+Could you help me try it?
 
-------=_NextPart_000_0113_01C2A9A6.645EF424
-Content-Type: application/octet-stream;
-	name="Message From Gail Kelly.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Message From Gail Kelly.rtf"
+Thanks,
+Hui
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgV2VsY29tZSB0byBXZXN0cGFjLCBUaGUgQXVzdHJhbGlh
-J3MgRmlyc3QgQmFuay5ccGFyDQoyODMtMjg1IEtlbnQgU3RyZWV0XHBhcg0K
-U3lkbmV5IE5TVyAyMDAwLCBBdXN0cmFsaWFccGFyDQoxMzAwIDM2OSA4NzZc
-cGFyDQpXZWJzaXRlOiBodHRwOi8vd3d3Lndlc3RwYWMuY29tLmF1L1xwYXIN
-ClxwYXINClxwYXINClVQREFURSBZT1VSIE9OTElORSBBQ0NPVU5UIEZPUiBT
-RUNVUklUWSBSRUFTT05TIElOIFJFR0FSRFMgVE8gVEhFIFRSQU5TRkVSIE9G
-IFlPVVIgRlVORC4gXHBhcg0KXHBhcg0KQXR0ZW50aW9uIEZyb20gTXJzLiBH
-YWlsIEtlbGx5IHRoZSAoQ0VPKSBvZiBXZXN0cGFjLCB0aGUgZmlyc3QgZmVt
-YWxlIENFTyBvZiBhIG1ham9yIEF1c3RyYWxpYW4gYmFuay5ccGFyDQpccGFy
-DQpEaWQgeW91IGluc3RydWN0IG9uZSBNcnMuIEplbm55IE1hcmlhIE1vb3Jl
-LCB3aG9zZSBpbmZvcm1hdGlvbidzIGlzIGJlbG93LCB0byBjbGFpbSBhbmQg
-cmVjZWl2ZSB0aGUgcGF5bWVudCBvbiB5b3VyIGJlaGFsZj9ccGFyDQogXHBh
-cg0KVGhpcyBtb3JuaW5nIE1ycy4gSmVubnkgTWFyaWEgTW9vcmUgY2FtZSB0
-byB0aGUgb2ZmaWNlIGNsYWltaW5nIHRoYXQgeW91IGhhdmUgaW5zdHJ1Y3Rl
-ZCBoaW0gdG8gY29tZSByZWNlaXZlIHlvdXIgcGF5bWVudCBvbiB5b3VyIGJl
-aGFsZiwgSSBoYXZlIGFzayBoaW0gdG8gY29tZSBiYWNrIHRvbW9ycm93IGFz
-IHRoZXkgZGlkIG5vdCBwcm92aWRlIGFueSBwb3dlciBvZiBhbiBhdHRvcm5l
-eSBmcm9tIHlvdSB3aGljaCB3aWxsIHByb29mIHRoYXQgeW91IHRob3JvdWdo
-bHkgc2VuZCBoaW0sIFRoaXMgd2FzIHRvIGVuYWJsZSBtZSBjb250YWN0IHlv
-dSB0byB2ZXJpZnkgaG93IGdlbnVpbmUgdGhpcyBwZW9wbGUgYXJlIHRvIHlv
-dS5ccGFyDQpccGFyDQpJIGhlcmVieSBzZW5kIHRvIHlvdSB0aGUgaW5mb3Jt
-YXRpb24gc3VibWl0dGVkIGJ5IE1ycy4gSmVubnkgTWFyaWEgTW9vcmUsIHdp
-dGggYW4gYXBwbGljYXRpb24gdG8gcGF5IHRoZSBhY2Nlc3MgY2hhcmdlIGlu
-IG90aGVyIHRvIGhhdmUgYWNjZXNzIHRvIHRyYW5zZmVyIG1vbmV5IGZyb20g
-eW91ciBvbmxpbmUgYWNjb3VudCB0byBoaXMgYmFuayBhY2NvdW50LCBQbGVh
-c2UgYXMgYSBtYXR0ZXIgb2YgdXJnZW5jeSwgeW91IGFyZSByZXF1aXJlZCB0
-byB2ZXJpZnkgdGhlIGZvbGxvd2luZyBpbmZvcm1hdGlvbiBhbmQgaW5mb3Jt
-IHVzIGlmIHlvdSBhcmUgYXdhcmUgb3Iga25vdyBhbnl0aGluZyBhYm91dCB0
-aGlzLlxwYXINCjIuIERpZCB5b3Ugc2lnbiBhbnkgJ0RlZWQgb2YgQXNzaWdu
-bWVudCcgaW4gaGlzIGZhdm9yIHRoZXJlYnkgbWFraW5nIGhpbSB0aGUgY3Vy
-cmVudCBiZW5lZmljaWFyeSB3aXRoIHRoZSBmb2xsb3dpbmcgYWNjb3VudCBk
-ZXRhaWxzOiBccGFyDQpccGFyDQpBY2NvdW50IE5hbWU6IE1ycy4gSmVubnkg
-TWFyaWEgTW9vcmUgXHBhcg0KQS9DICM6IDExNC0xMDI1NTY3LTgsIFxwYXIN
-CkJhbmsgTmFtZTogQ2l0eSBCYW5rIG9mIENhbmFkYSBccGFyDQpTd2lmdCBD
-b2RlOiBTQkNMIDExSzMzMy5ccGFyDQpccGFyDQpGaW5hbGx5LCB5b3UgYXJl
-IGhlcmVieSBhZHZpc2VkIHRvIGluZGljYXRlIHRvIHRoaXMgaG9ub3JhYmxl
-IG9mZmljZSB3aXRoIGltbWVkaWF0ZSBlZmZlY3QsIGlmIHlvdSBhcmUgdGhl
-IHBlcnNvbiB0aGF0IGluc3RydWN0ZWQgTXJzLiBKZW5ueSBNYXJpYSBNb29y
-ZSB0byBjb21lIGZvciB0aGUgY2xhaW0gb2YgeW91ciBmdW5kIHdvcnRoIG9m
-ICQxMCw1MDAuMDAwLjAwIChUZW4gTWlsbGlvbiwgRml2ZSBIdW5kcmVkIFRo
-b3VzYW5kIFVuaXRlZCBTdGF0ZXMgRG9sbGFycyksIHRvIGVuYWJsZSB1cyBl
-bmRvcnNlIGZvciB0aGUgZmluYWwgcGF5bWVudCBhcHByb3ZhbCBvcmRlciBv
-biBoaXMgYmVoYWxmLCBBcyBoZSBpcyByZWFkeSB0byBwYXkgdGhlIGFjY2Vz
-cyBjaGFyZ2UgdG8gaGF2ZSB0aGUgb25saW5lIGFjY291bnQgZGV0YWlscy4g
-U2hvdWxkIEluIGNhc2UgeW91IG5lZWQgYW55IG1vcmUgaW5mb3JtYXRpb24s
-IEtpbmRseSBsZXQgbWUga25vdy5ccGFyDQpccGFyDQpccGFyDQpFbmRlYXZv
-ciB0byBzZW5kIHlvdXIgcmVwbHkgZm9yIHVyZ2VudCBhdHRlbnRpb24gV2Ug
-c2hhbGwgYmUgd2FpdGluZyBmb3IgeW91ciB1cmdlbnQgYW5kIHByb21wdCBy
-ZXNwb25zZS5ccGFyDQogXHBhcg0KQmVzdCBSZWdhcmRzLFxwYXINCkdhaWwg
-S2VsbHlccGFyDQpDRU8gV2VzdHBhYyBBdXN0cmFsaWEgXHBhcg0KfQ0KAA==
-
-------=_NextPart_000_0113_01C2A9A6.645EF424--
+On Tue, Dec 13, 2011 at 09:36, Geunsik Lim <leemgs1@gmail.com> wrote:
+> On Mon, Dec 12, 2011 at 11:05 PM, Hui Zhu <teawater@gmail.com> wrote:
+>> Hi Geunsik,
+>>
+>> Thanks for your patch.
+>> But  Kernel upstream:
+>> struct perf_event *
+>> perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+>>                                 struct task_struct *task,
+>>                                 perf_overflow_handler_t overflow_handler,
+>>                                 void *context)
+>>
+>> I am sorry that gtp.patch is just for the Kernel upstream (Actually,
+>> it just for review).
+>>
+>> I suggest you use LKM if it is OK for you.
+> As you mentioned, LKM is normal in my experience.
+> But, In embedded environment, built-in kernel including KGTP is important
+> to debugging instantly without any manipulation and  to review according to
+> volunteers easily.
+>
+>>
+>> If you want include KGTP into your kernel tree or something, maybe I
+>> can supply a special patch for you.
+> I think that you can just append exception handling to solve this
+> issue like belows.
+> Or, I will suggest for you will keep kgtp-3.1.1.patch  without
+> kgtp.patch like linux-kernel-rt patch for each kernel version
+>
+> ====
+> diff --git a/lib/gtp.c b/lib/gtp.c
+> index 9bdf82c..6253811 100644
+> --- a/lib/gtp.c
+> +++ b/lib/gtp.c
+> @@ -4477,10 +4477,17 @@ restart:
+>                        continue;
+>
+>                /* Get event.  */
+> +#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 1, 0)
+>                tve->pts->event =
+>                        perf_event_create_kernel_counter(&(tve->pts->attr),
+>                                                         tve->pts->cpu,
+>                                                         NULL, NULL, NULL);
+> +#else
+> +               tve->pts->event =
+> +                       perf_event_create_kernel_counter(&(tve->pts->attr),
+> +                                                        tve->pts->cpu,
+> +                                                        NULL, NULL);
+> +#endif
+>                if (IS_ERR(tve->pts->event)) {
+>                        int     ret = PTR_ERR(tve->pts->event);
+>
+> ====
+>
+>>
+>> BTW looks I need release an gtp_auto.patch that can patch to most of
+>> Linux kernel.
+>>
+>> Thanks,
+>> Hui
+>>
+>> On Mon, Dec 12, 2011 at 19:13, Geunsik Lim <leemgs1@gmail.com> wrote:
+>>> On Mon, Nov 14, 2011 at 2:15 PM, Hui Zhu <teawater@gmail.com> wrote:
+>>>> KGTP is a realtime and lightweight Linux Kernel GDB debugger and tracer.
+>>>>
+>>>> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+>>>> current machine or remote machine can debug and trace Linux through
+>>>> GDB tracepoint without stopping the Linux Kernel.
+>>>> And even if the board doesn't have GDB on it and doesn't have
+>>>> interface for remote debug. It can debug the Linux Kernel using
+>>>> offline debug.
+>>>> Now, it supports X86-32, X86-64, MIPS and ARM.
+>>>>
+>>>> Now, KGTP 20111111 release.
+>>>>
+>>>> The change of this release is:
+>>>> Add a doc for use KGTP with Android in
+>>>> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid
+>>>> post_handler will make kprobes-optimization cannot be used. So make
+>>>> gtp_kp_post_handler be call only when tpe->step is true.
+>>>> Make rdtsc_current to x86 special.
+>>>> Register easy Kprobe handler to speed up it when no tracepoint access
+>>>> $cooked_clock, $cooked_rdtsc or "pc_pe" tvariable.
+>>>> Fix a bug of ARM build.
+>>>> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
+>>>>
+>>>> According to the comments of Christoph.  I make a patch for Linux
+>>>> Kernel and make it looks OK with checkpatch.pl.  The file gtp.patch is
+>>>> include in the source of KGTP code.
+>>> Dear Hui Zhu,
+>>>
+>>> Recently, I synchronized KGTP kernel source with svn 838 to test
+>>> built-in kernel
+>>> after adjusting recent bug-fix. I still had a compilation error.
+>>> Please, adjust the below patch content to support  X86/ARM
+>>> architecture normally.
+>>>
+>>> ==========
+>>> From 39d58cc7dab8df5e57fa106e8e7f00e562b45212 Mon Sep 17 00:00:00 2001
+>>> From: Geunsik Lim <geunsik.lim@samsung.com>
+>>> Date: Mon, 10 Dec 2011 18:08:03 +0900
+>>> Subject: [PATCH] Modify perf related func interface.
+>>>
+>>> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>  lib/gtp.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/lib/gtp.c b/lib/gtp.c
+>>> index 9bdf82c..9a2670e 100644
+>>> --- a/lib/gtp.c
+>>> +++ b/lib/gtp.c
+>>> @@ -4480,7 +4480,7 @@ restart:
+>>>                tve->pts->event =
+>>>                        perf_event_create_kernel_counter(&(tve->pts->attr),
+>>>                                                         tve->pts->cpu,
+>>> -                                                        NULL, NULL, NULL);
+>>> +                                                        NULL, NULL);
+>>>                if (IS_ERR(tve->pts->event)) {
+>>>                        int     ret = PTR_ERR(tve->pts->event);
+>>>
+>>> --
+>>> 1.7.3.4
+>>> ==========
+>>>
+>>> Thank you for your contribution for embedded kernel debugging
+>>>
+>>>>
+>>>> Thanks,
+>>>> Hui
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>>
+>>>
+>>> --
+>>> Best regards,
+>>> Geunsik Lim ( Samsung Electronics )
+>>> Blog : http://blog.naver.com/invain/
+>>> Homepage: http://leemgs.fedorapeople.org
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+> --
+> Best regards,
+> Geunsik Lim ( Samsung Electronics )
+> Blog : http://blog.naver.com/invain/
+> Homepage: http://leemgs.fedorapeople.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
