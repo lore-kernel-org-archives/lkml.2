@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1LNAus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 19:50:48 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:49756 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756432Ab1LNAun (ORCPT
+	id S1756586Ab1LNAvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 19:51:22 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35657 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492Ab1LNAvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 19:50:43 -0500
-X-Sasl-enc: 5QNaT8sw/l9/MBN5Vhw9aQY6zJ3OV7znys5zSGnv2MUp 1323823842
-Date: Tue, 13 Dec 2011 16:48:07 -0800
-From: Greg KH <greg@kroah.com>
-To: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 29/29] Staging: comedi: fix printk issue in
- contec_pci_dio.c
-Message-ID: <20111214004807.GB8961@kroah.com>
-References: <1323667181-17252-1-git-send-email-ravishankar.km@greenturtles.in>
- <1323667181-17252-29-git-send-email-ravishankar.km@greenturtles.in>
+	Tue, 13 Dec 2011 19:51:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323667181-17252-29-git-send-email-ravishankar.km@greenturtles.in>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111209223454.GA24987@kroah.com>
+References: <1323309517.979.8.camel@mop> <20111209001145.GB9550@kroah.com>
+ <CAPXgP12tds9gPKie+B6358XkhyP1K2fLFGw698-wwsuKx_bcew@mail.gmail.com>
+ <1323444321.979.39.camel@mop> <20111209223454.GA24987@kroah.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 14 Dec 2011 01:50:57 +0100
+Message-ID: <CAPXgP11fwJ=9E-K4ZpZ-nhf-Ry9=+oX4r7F1mLchxLMmvj_8ZA@mail.gmail.com>
+Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem (needed
+ for CPU modaliases)
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, trenn@suse.de,
+        davej@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 10:49:41AM +0530, Ravishankar karkala Mallikarjunayya wrote:
-> This is a patch to the contec_pci_dio.c file that fixes up a
-> printk warning found by the checkpatch.pl tool.
-> 
-> Converted printks to dev_<levels> and Removed unnecessary
-> printk statements.
+On Fri, Dec 9, 2011 at 23:34, Greg KH <greg@kroah.com> wrote:
+> On Fri, Dec 09, 2011 at 04:25:21PM +0100, Kay Sievers wrote:
+>> Greg, would be nice, if you can take a quick look a the driver core (not
+>> the sysdev) bits in core.c, bus.c, device.h, ... and its interaction, if
+>> they look sane to you. I'll then split the driver core stuff out, so we
+>> can merge that before we port the individual drivers over.
+>
+> Yes, it looks sane to me, thanks again for doing this work.
 
-You forgot to add to the changelog entry this text:
+Split-up patches are here:
+  http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=tree
 
-	Breaks the build.
+That's the size of it:
+  60 files changed, 1170 insertions(+), 1421 deletions(-)
 
-which would have saved me a lot of time tracking down the patch in this
-series that was causing problems.
+The current state and the list of the remaining non-x86 files is here:
+  http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=README;hb=HEAD
 
-{sigh}
+We need a plan now. :)
 
-Your next patch series better come with perfectly spelled changelog
-entries that actually describe what the patches do, numbered properly
-(none of this 30/30 crap after a 00/29 series), not break the build (is
-that asking too much?) apply with no fuzz, and to help it all out, a
-home made holiday bread of your choosing, as long as it's fresh, and
-does not contain dried fruit bits (soaked in liquor can't hurt either.)
-
-Otherwise I'm very tempted to just add you to my kill file, it would
-save me lots of time and frustration, and likewise, I'm sure yours as
-well.
-
-Get baking,
-
-greg k-h
+Kay
