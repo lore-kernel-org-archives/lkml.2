@@ -1,284 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1LNIKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 03:10:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45640 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1LNIK2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 03:10:28 -0500
+	id S1754521Ab1LNIT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 03:19:26 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:48879 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab1LNITZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 03:19:25 -0500
+Subject: [PATCH] SUNRPC: make SUNPRC clients list per network namespace context
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Wed, 14 Dec 2011 12:19:18 +0300
+Message-ID: <20111214081918.2804.59143.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20111213142050.de6c1fbc.akpm@linux-foundation.org>
-References: <CAH9NwWfMXKQ5DUeHfXaMzEKK_Zn6TS6E44AdqhcOj-jMuAeGQw@mail.gmail.com>
- <20111213142050.de6c1fbc.akpm@linux-foundation.org>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Wed, 14 Dec 2011 09:10:07 +0100
-Message-ID: <CAH9NwWcYSkr5ygFEvmqtD=ZjunXhw7E4Ek7_KAmwCUYpUrJqGQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] add led driver for Bachmann's ot200
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, rpurdie@rpsys.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew
+This patch moves static SUNRPC clients list and it's lock to sunrpc_net
+structure.
+Currently this list is used only for debug purposes. But later it will be used
+also for selecting clients by networks namespace on PipeFS mount/umount events.
+Per-network namespace lists will make this faster and simplier.
 
-2011/12/13 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue, 13 Dec 2011 10:57:30 +0100
-> Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
->
->> >From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
->> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> Date: Fri, 18 Nov 2011 10:21:48 +0100
->> Subject: [PATCH] add led driver for Bachmann's ot200
->>
->> This patch adds support for leds on Bachmann's ot200 visualisation device.
->> The device has three leds on the back panel (led_err, led_init and led_run)
->> and can handle up to seven leds on the front panel.
->>
->> The driver was written by Linutronix on behalf of
->> Bachmann electronic GmbH.
->
-> The code uses no tabs and indents with seven-spaces.  Please convert it
-> to use hard tabs in the conventional fashion?  In the Makefile and
-> Kconfig, too.
+Note: client list is taken from "init_net" network namespace context in
+rpc_show_tasks(). This will be changed with making SUNRPC sysctl's per network
+namespace context.
 
-okay
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
->
->>
->> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->> index ff203a4..6cf0dd6 100644
->> --- a/drivers/leds/Kconfig
->> +++ b/drivers/leds/Kconfig
->> @@ -387,6 +387,14 @@ config LEDS_RENESAS_TPU
->>          pin function. The latter to support brightness control.
->>          Brightness control is supported but hardware blinking is not.
->>
->> +config LEDS_OT200
->> +       tristate "LED support for Bachmann OT200"
->> +       depends on LEDS_CLASS
->> +       help
->> +         This option enables support for the LEDs on the Bachmann OT200. The
->> +         LEDs are controlled through LPC bus.
->> +         Say Y to enable LEDs on the Bachmann OT200.
->> +
->>  config LEDS_TRIGGERS
->>        bool "LED Trigger support"
->>        depends on LEDS_CLASS
->> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
->> index e4f6bf5..0814d42 100644
->> --- a/drivers/leds/Makefile
->> +++ b/drivers/leds/Makefile
->> @@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)                        += leds-ns2.o
->>  obj-$(CONFIG_LEDS_NETXBIG)             += leds-netxbig.o
->>  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
->>  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
->> +obj-$(CONFIG_LEDS_OT200)               += leds-ot200.o
->>
->>  # LED SPI Drivers
->>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
->> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
->> new file mode 100644
->> index 0000000..60f118b
->> --- /dev/null
->> +++ b/drivers/leds/leds-ot200.c
->> @@ -0,0 +1,204 @@
->> +/*
->> + * Bachmann ot200 leds driver.
->> + *
->> + * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> + * License: GPL as published by the FSF.
->> + */
->> +
->> +#include <linux/platform_device.h>
->> +#include <linux/slab.h>
->> +#include <linux/leds.h>
->> +#include <linux/io.h>
->> +#include <linux/module.h>
->> +
->> +struct ot200_led {
->> +       struct led_classdev cdev;
->> +       char name[8];
->> +       unsigned int num;
->> +};
->> +
->> +static u8 old_val;
->> +static u8 old_val_back;
->
-> What's going on here?  The driver is using eight bits to store the
-> current control setting, but the changelog says the driver can handle
-> ten LEDs.
->
-> <looks>
->
-> OK, so we're using seven bits in old_val and three in old_val_back.
->
+---
+ include/linux/sunrpc/sched.h |    3 ++-
+ net/sunrpc/clnt.c            |   26 +++++++++++++++-----------
+ net/sunrpc/netns.h           |    3 +++
+ net/sunrpc/sunrpc_syms.c     |    3 +++
+ net/sunrpc/sysctl.c          |    4 +++-
+ 5 files changed, 26 insertions(+), 13 deletions(-)
 
-Exactly.. I have not found a better way to store the led state. Any
-recommendations?
+diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
+index e775689..b16243a 100644
+--- a/include/linux/sunrpc/sched.h
++++ b/include/linux/sunrpc/sched.h
+@@ -244,7 +244,8 @@ int		rpciod_up(void);
+ void		rpciod_down(void);
+ int		__rpc_wait_for_completion_task(struct rpc_task *task, int (*)(void *));
+ #ifdef RPC_DEBUG
+-void		rpc_show_tasks(void);
++struct net;
++void		rpc_show_tasks(struct net *);
+ #endif
+ int		rpc_init_mempool(void);
+ void		rpc_destroy_mempool(void);
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index f0268ea..c5f04aa 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -38,6 +38,7 @@
+ #include <linux/sunrpc/bc_xprt.h>
+ 
+ #include "sunrpc.h"
++#include "netns.h"
+ 
+ #ifdef RPC_DEBUG
+ # define RPCDBG_FACILITY	RPCDBG_CALL
+@@ -50,8 +51,6 @@
+ /*
+  * All RPC clients are linked into this list
+  */
+-static LIST_HEAD(all_clients);
+-static DEFINE_SPINLOCK(rpc_client_lock);
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(destroy_wait);
+ 
+@@ -81,16 +80,20 @@ static int	rpc_ping(struct rpc_clnt *clnt);
+ 
+ static void rpc_register_client(struct rpc_clnt *clnt)
+ {
+-	spin_lock(&rpc_client_lock);
+-	list_add(&clnt->cl_clients, &all_clients);
+-	spin_unlock(&rpc_client_lock);
++	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
++
++	spin_lock(&sn->rpc_client_lock);
++	list_add(&clnt->cl_clients, &sn->all_clients);
++	spin_unlock(&sn->rpc_client_lock);
+ }
+ 
+ static void rpc_unregister_client(struct rpc_clnt *clnt)
+ {
+-	spin_lock(&rpc_client_lock);
++	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
++
++	spin_lock(&sn->rpc_client_lock);
+ 	list_del(&clnt->cl_clients);
+-	spin_unlock(&rpc_client_lock);
++	spin_unlock(&sn->rpc_client_lock);
+ }
+ 
+ static int
+@@ -1852,14 +1855,15 @@ static void rpc_show_task(const struct rpc_clnt *clnt,
+ 		task->tk_action, rpc_waitq);
+ }
+ 
+-void rpc_show_tasks(void)
++void rpc_show_tasks(struct net *net)
+ {
+ 	struct rpc_clnt *clnt;
+ 	struct rpc_task *task;
+ 	int header = 0;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
+-	spin_lock(&rpc_client_lock);
+-	list_for_each_entry(clnt, &all_clients, cl_clients) {
++	spin_lock(&sn->rpc_client_lock);
++	list_for_each_entry(clnt, &sn->all_clients, cl_clients) {
+ 		spin_lock(&clnt->cl_lock);
+ 		list_for_each_entry(task, &clnt->cl_tasks, tk_task) {
+ 			if (!header) {
+@@ -1870,6 +1874,6 @@ void rpc_show_tasks(void)
+ 		}
+ 		spin_unlock(&clnt->cl_lock);
+ 	}
+-	spin_unlock(&rpc_client_lock);
++	spin_unlock(&sn->rpc_client_lock);
+ }
+ #endif
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index d013bf2..6010c46 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -9,6 +9,9 @@ struct cache_detail;
+ struct sunrpc_net {
+ 	struct proc_dir_entry *proc_net_rpc;
+ 	struct cache_detail *ip_map_cache;
++
++	struct list_head all_clients;
++	spinlock_t rpc_client_lock;
+ };
+ 
+ extern int sunrpc_net_id;
+diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
+index 8ec9778..e57aa10 100644
+--- a/net/sunrpc/sunrpc_syms.c
++++ b/net/sunrpc/sunrpc_syms.c
+@@ -29,6 +29,7 @@ int sunrpc_net_id;
+ static __net_init int sunrpc_init_net(struct net *net)
+ {
+ 	int err;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
+ 	err = rpc_proc_init(net);
+ 	if (err)
+@@ -38,6 +39,8 @@ static __net_init int sunrpc_init_net(struct net *net)
+ 	if (err)
+ 		goto err_ipmap;
+ 
++	INIT_LIST_HEAD(&sn->all_clients);
++	spin_lock_init(&sn->rpc_client_lock);
+ 	return 0;
+ 
+ err_ipmap:
+diff --git a/net/sunrpc/sysctl.c b/net/sunrpc/sysctl.c
+index e65dcc6..af7d339 100644
+--- a/net/sunrpc/sysctl.c
++++ b/net/sunrpc/sysctl.c
+@@ -20,6 +20,8 @@
+ #include <linux/sunrpc/stats.h>
+ #include <linux/sunrpc/svc_xprt.h>
+ 
++#include "netns.h"
++
+ /*
+  * Declare the debug flags here
+  */
+@@ -110,7 +112,7 @@ proc_dodebug(ctl_table *table, int write,
+ 		*(unsigned int *) table->data = value;
+ 		/* Display the RPC tasks on writing to rpc_debug */
+ 		if (strcmp(table->procname, "rpc_debug") == 0)
+-			rpc_show_tasks();
++			rpc_show_tasks(&init_net);
+ 	} else {
+ 		if (!access_ok(VERIFY_WRITE, buffer, left))
+ 			return -EFAULT;
 
-
->> +DEFINE_SPINLOCK(value_lock);
->
-> Should be static.
->
-
-okay
-
->> +static void ot200_led_set(struct led_classdev *led_cdev,
->> +                       enum led_brightness value)
->> +{
->> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
->> +       u8 val;
->> +       u8 mask;
->> +       unsigned long flags;
->> +
->> +       mask = 1 << led->num;
->> +
->> +       spin_lock_irqsave(&value_lock, flags);
->> +       val = old_val;
->> +
->> +       if (value == LED_OFF)
->> +               val &= ~mask;
->> +       else
->> +               val |= mask;
->> +
->> +       old_val = val;
->> +       spin_unlock_irqrestore(&value_lock, flags);
->> +       outb(val, 0x49);
->> +}
->
-> It's a bit worrisome doing the outb() outside the locked section, but
-> all the races I can think of result from userspace doing things which
-> were unavoidably indeterminate anyway.
->
-
-I think that it is really no problem to do outb() in the looked area.
-Will change
-this for v2 of this patch.
-
->> +static void ot200_led_back_set(struct led_classdev *led_cdev,
->> +                       enum led_brightness value)
->> +{
->> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
->> +       u8 val;
->> +       u8 mask;
->> +       unsigned long flags;
->> +
->> +       mask = 1 << led->num;
->> +
->> +       spin_lock_irqsave(&value_lock, flags);
->> +       val = old_val_back;
->> +
->> +       if (value == LED_OFF)
->> +               val &= ~mask;
->> +       else
->> +               val |= mask;
->> +
->> +       old_val_back = val;
->> +       spin_unlock_irqrestore(&value_lock, flags);
->> +       outb(val, 0x5a);
->> +}
->> +
->> +static int __devinit create_ot200_led(struct platform_device *pdev, int num,
->> +               struct ot200_led *led)
->> +{
->> +       int ret;
->> +
->> +       num += 1;
->> +       snprintf(led->name, sizeof(led->name), "led%d", num);
->> +       led->num = 7 - num;
->> +       led->cdev.name = led->name;
->> +       led->cdev.default_trigger = NULL;
->> +       led->cdev.blink_set = NULL;
->> +       led->cdev.brightness_set = ot200_led_set;
->> +
->> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
->> +       if (ret < 0)
->> +               goto out;
->> +
->> +       dev_set_drvdata(led->cdev.dev, led);
->> +       return 0;
->> +
->> +       led_classdev_unregister(&led->cdev);
->> +out:
->> +       return ret;
->> +}
->> +
->> +static int __devinit create_ot200_led_back(struct platform_device *pdev,
->> +               int num, struct ot200_led *led)
->> +{
->> +       char *led_name;
->> +       int ret;
->> +
->> +       switch (num) {
->> +       case 0:
->> +               led_name = "run";
->> +               break;
->> +       case 1:
->> +               led_name = "init";
->> +               break;
->> +       case 2:
->> +               led_name = "err";
->> +               break;
->> +       default:
->> +               BUG();
->> +       };
->> +
->> +       snprintf(led->name, sizeof(led->name), "led_%s", led_name);
->> +       led->num = num;
->> +       led->cdev.name = led->name;
->> +       led->cdev.blink_set = NULL;
->> +       led->cdev.brightness_set = ot200_led_back_set;
->> +
->> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
->> +       if (ret < 0)
->> +               goto out;
->> +
->> +       dev_set_drvdata(led->cdev.dev, led);
->> +       return 0;
->> +
->> +       led_classdev_unregister(&led->cdev);
->> +out:
->> +       return ret;
->> +
->> +}
->
-> This is implementing a userspace API (led_run, led_init, led_err) but
-> that API isn't documented anywhere.  Can we add a few words of
-> Documentation so our users know how to use this driver?
-
-To be exact the driver uses the led subsystem - led_classdev_register() - and
-creates these led devices. So we are not creating any new API, which should
-be documented - or?
-
-# ls /sys/class/leds/ -l
-total 0
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led1 ->
-../../devices/platform/leds-ot200.0/leds/led1
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led2 ->
-../../devices/platform/leds-ot200.0/leds/led2
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led3 ->
-../../devices/platform/leds-ot200.0/leds/led3
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led4 ->
-../../devices/platform/leds-ot200.0/leds/led4
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led5 ->
-../../devices/platform/leds-ot200.0/leds/led5
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led6 ->
-../../devices/platform/leds-ot200.0/leds/led6
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led7 ->
-../../devices/platform/leds-ot200.0/leds/led7
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_err ->
-../../devices/platform/leds-ot200.0/leds/led_err
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_ini ->
-../../devices/platform/leds-ot200.0/leds/led_ini
-lrwxrwxrwx 1 root root 0 Dec 14 07:57 led_run ->
-../../devices/platform/leds-ot200.0/leds/led_run
-
-Thanks for your review.
---
-Christian Gmeiner, MSc
