@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab1LOQRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:17:51 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55580 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1LOQRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:17:50 -0500
-Message-ID: <4EEA1DA8.6040705@gmail.com>
-Date: Thu, 15 Dec 2011 10:17:44 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1759107Ab1LOQS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:18:59 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:59166 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758993Ab1LOQS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 11:18:58 -0500
+Message-ID: <4EEA1DCB.7040402@parallels.com>
+Date: Thu, 15 Dec 2011 20:18:19 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Shawn Guo <shawn.guo@freescale.com>, Kevin Hilman <khilman@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/9] irq: convert generic-chip to use irq_domain
-References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-4-git-send-email-robherring2@gmail.com> <20111215052512.GB21815@S2101-09.ap.freescale.net> <20111215055501.GC21815@S2101-09.ap.freescale.net> <4EE9F899.7010402@gmail.com> <4EE9FC99.6030905@gmail.com> <CACxGe6t=ngbzNLkX+df8gP0aoMmgnsVqn2V2eRHpGi5FoFci_w@mail.gmail.com>
-In-Reply-To: <CACxGe6t=ngbzNLkX+df8gP0aoMmgnsVqn2V2eRHpGi5FoFci_w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 2/2] Explicitly call tcp creation and init from memcontrol.c
+References: <1323941672-14324-1-git-send-email-glommer@parallels.com> <1323941672-14324-3-git-send-email-glommer@parallels.com> <20111216011316.8d58bc8f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111216011316.8d58bc8f.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 09:55 AM, Grant Likely wrote:
-> On Thu, Dec 15, 2011 at 6:56 AM, Rob Herring <robherring2@gmail.com> wrote:
->> Shawn,
+On 12/15/2011 08:13 PM, KAMEZAWA Hiroyuki wrote:
+> On Thu, 15 Dec 2011 13:34:32 +0400
+> Glauber Costa<glommer@parallels.com>  wrote:
+>
+>> Walking the proto_list holds a read_lock, which prevents us from doing
+>> allocations. Splitting the tcp create function into create + init is
+>> good, but it is not enough since create_files will do allocations as well
+>> (dentry ones, mostly).
 >>
->> On 12/15/2011 07:39 AM, Rob Herring wrote:
->>> On 12/14/2011 11:55 PM, Shawn Guo wrote:
->>>> On Thu, Dec 15, 2011 at 01:25:20PM +0800, Shawn Guo wrote:
->>>>> On Wed, Dec 14, 2011 at 09:28:52AM -0600, Rob Herring wrote:
->>>>>> From: Rob Herring <rob.herring@calxeda.com>
->>>>>>
->>>>>> Add irq domain support to irq generic-chip. This enables users of
->>>>>> generic-chip to support dynamic irq assignment needed for DT interrupt
->>>>>> binding. Users must be converted to use irq_data.hwirq for determining
->>>>>> local interrupt numbers rather than using the Linux irq number.
->>>>>>
->>>>>> irq_base is kept for now as there are a few users of it. Once they
->>>>>> are converted to use the irq domain, it can be removed.
->>>>>>
->>>>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>>>> ---
->>>>>
->>>>> Tested-by: Shawn Guo <shawn.guo@linaro.org>
->>>>>
->>>> Sorry, I have to take that tag back after I correct my test setup.
->>>> It does not work for imx5 TZIC case, because the following change
->>>> I suggested before is missed.
->>>>
->>>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->>>> index eb763f7..2a2aac1 100644
->>>> --- a/kernel/irq/irqdomain.c
->>>> +++ b/kernel/irq/irqdomain.c
->>>> @@ -39,7 +39,7 @@ void irq_domain_add(struct irq_domain *domain)
->>>>                         return;
->>>>                 }
->>>>                 d->domain = domain;
->>>> -               d->hwirq = hwirq;
->>>> +               d->hwirq = hwirq - domain->hwirq_base;
->>>
->>> This is a problem. It entirely defeats the point of hwirq_base and it
->>> would break the GIC. We need to fix this in the generic irq chip.
->>>
+>> Since this does not involve any protocol state, I propose we call the tcp
+>> functions explicitly from memcontrol.c
 >>
->> I think I found a fix. Can you try 's/d->hwirq/(d->hwirq % 32)/' in
->> generic-chip.c.
-> 
-> Ugh, but that hard codes an assumption that a domain cannot have more
-> that 32 irqs.
-> 
-> /me goes to dig into irq_domain code...
+>> With this, we lose by now the ability of doing cgroup memcontrol for
+>> protocols that are loaded as modules. But at least the ones I have in mind
+>> won't really need it (tcp_ipv6 being the only one, but it uses the same data
+>> structures as tcp_ipv4). So I believe this to be the simpler solution to this
+>> problem.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: David S. Miller<davem@davemloft.net>
+>> CC: Eric Dumazet<eric.dumazet@gmail.com>
+>> CC: Stephen Rothwell<sfr@canb.auug.org.au>
+>
+> Could you remake the patch onto the 'latest' linux-next ?
+> As Dave mentioned, some bandaids are already applied and this patch hunks.
 
-No, it hard codes that generic irq chip is 32 interrupts at most which
-is already the case. That's why the TZIC uses 5 generic irq chip instances.
-
-Rob
+Sure thing.
