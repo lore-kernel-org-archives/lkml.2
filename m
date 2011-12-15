@@ -1,51 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab1LORCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:02:40 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:42347 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759172Ab1LORCj (ORCPT
+	id S1759254Ab1LORCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:02:46 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38280 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759172Ab1LORCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:02:39 -0500
-Date: Thu, 15 Dec 2011 12:00:28 -0500 (EST)
-Message-Id: <20111215.120028.532844419499092747.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        eric.dumazet@gmail.com, sfr@canb.auug.org.au
-Subject: Re: [PATCH 2/2] Explicitly call tcp creation and init from
- memcontrol.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1323941672-14324-3-git-send-email-glommer@parallels.com>
-References: <1323941672-14324-1-git-send-email-glommer@parallels.com>
-	<1323941672-14324-3-git-send-email-glommer@parallels.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 15 Dec 2011 09:00:31 -0800 (PST)
+	Thu, 15 Dec 2011 12:02:43 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LW98EK-02-BPJ-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH v4 1/4] perf, x86: Implement IBS event configuration
+Date: Thu, 15 Dec 2011 17:56:36 +0100
+Message-ID: <1323968199-9326-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
+References: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Thu, 15 Dec 2011 13:34:32 +0400
+This patch implements perf configuration for AMD IBS. The IBS pmu is
+selected using the type attribute in sysfs. There are two types of ibs
+pmus, for instruction fetch (IBS_FETCH) and for instruction execution
+(IBS_OP):
 
-> Walking the proto_list holds a read_lock, which prevents us from doing
-> allocations. Splitting the tcp create function into create + init is
-> good, but it is not enough since create_files will do allocations as well
-> (dentry ones, mostly).
-> 
-> Since this does not involve any protocol state, I propose we call the tcp
-> functions explicitly from memcontrol.c
-> 
-> With this, we lose by now the ability of doing cgroup memcontrol for
-> protocols that are loaded as modules. But at least the ones I have in mind
-> won't really need it (tcp_ipv6 being the only one, but it uses the same data
-> structures as tcp_ipv4). So I believe this to be the simpler solution to this
-> problem.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
+ /sys/bus/event_source/devices/ibs_fetch/type
+ /sys/bus/event_source/devices/ibs_op/type
 
-This is an unnecessary limitation, please fix this properly otherwise
-DCCP, SCTP, etc. won't be supportable with this stuff.
+Except for the sample period IBS can only be set up with raw config
+values and raw data samples. The event attributes for the syscall
+should be programmed like this (IBS_FETCH):
+
+        type = get_pmu_type("/sys/bus/event_source/devices/ibs_fetch/type");
+
+        memset(&attr, 0, sizeof(attr));
+        attr.type        = type;
+        attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
+        attr.config      = IBS_FETCH_CONFIG_DEFAULT;
+
+This implementation does not yet support 64 bit counters. It is
+limited to the hardware counter bit width which is 20 bits. 64 bit
+support can be added later.
+
+V3:
+* disable per-task monitoring (mark pmu with perf_invalid_context),
+  per-task monitoring can be added in a separate patch
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   92 +++++++++++++++++++++++++++--
+ 1 files changed, 85 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index 3b8a2d3..36684eb 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -16,12 +16,67 @@ static u32 ibs_caps;
+ 
+ #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
+ 
+-static struct pmu perf_ibs;
++#define IBS_FETCH_CONFIG_MASK	(IBS_FETCH_RAND_EN | IBS_FETCH_MAX_CNT)
++#define IBS_OP_CONFIG_MASK	IBS_OP_MAX_CNT
++
++struct perf_ibs {
++	struct pmu	pmu;
++	unsigned int	msr;
++	u64		config_mask;
++	u64		cnt_mask;
++	u64		enable_mask;
++};
++
++static struct perf_ibs perf_ibs_fetch;
++static struct perf_ibs perf_ibs_op;
++
++static struct perf_ibs *get_ibs_pmu(int type)
++{
++	if (perf_ibs_fetch.pmu.type == type)
++		return &perf_ibs_fetch;
++	if (perf_ibs_op.pmu.type == type)
++		return &perf_ibs_op;
++	return NULL;
++}
+ 
+ static int perf_ibs_init(struct perf_event *event)
+ {
+-	if (perf_ibs.type != event->attr.type)
++	struct hw_perf_event *hwc = &event->hw;
++	struct perf_ibs *perf_ibs;
++	u64 max_cnt, config;
++
++	perf_ibs = get_ibs_pmu(event->attr.type);
++	if (!perf_ibs)
+ 		return -ENOENT;
++
++	config = event->attr.config;
++	if (config & ~perf_ibs->config_mask)
++		return -EINVAL;
++
++	if (hwc->sample_period) {
++		if (config & perf_ibs->cnt_mask)
++			/* raw max_cnt may not be set */
++			return -EINVAL;
++		if (hwc->sample_period & 0x0f)
++			/* lower 4 bits can not be set in ibs max cnt */
++			return -EINVAL;
++		max_cnt = hwc->sample_period >> 4;
++		if (max_cnt & ~perf_ibs->cnt_mask)
++			/* out of range */
++			return -EINVAL;
++		config |= max_cnt;
++	} else {
++		max_cnt = config & perf_ibs->cnt_mask;
++		event->attr.sample_period = max_cnt << 4;
++		hwc->sample_period = event->attr.sample_period;
++	}
++
++	if (!max_cnt)
++		return -EINVAL;
++
++	hwc->config_base = perf_ibs->msr;
++	hwc->config = config;
++
+ 	return 0;
+ }
+ 
+@@ -34,10 +89,32 @@ static void perf_ibs_del(struct perf_event *event, int flags)
+ {
+ }
+ 
+-static struct pmu perf_ibs = {
+-	.event_init= perf_ibs_init,
+-	.add= perf_ibs_add,
+-	.del= perf_ibs_del,
++static struct perf_ibs perf_ibs_fetch = {
++	.pmu = {
++		.task_ctx_nr	= perf_invalid_context,
++
++		.event_init	= perf_ibs_init,
++		.add		= perf_ibs_add,
++		.del		= perf_ibs_del,
++	},
++	.msr			= MSR_AMD64_IBSFETCHCTL,
++	.config_mask		= IBS_FETCH_CONFIG_MASK,
++	.cnt_mask		= IBS_FETCH_MAX_CNT,
++	.enable_mask		= IBS_FETCH_ENABLE,
++};
++
++static struct perf_ibs perf_ibs_op = {
++	.pmu = {
++		.task_ctx_nr	= perf_invalid_context,
++
++		.event_init	= perf_ibs_init,
++		.add		= perf_ibs_add,
++		.del		= perf_ibs_del,
++	},
++	.msr			= MSR_AMD64_IBSOPCTL,
++	.config_mask		= IBS_OP_CONFIG_MASK,
++	.cnt_mask		= IBS_OP_MAX_CNT,
++	.enable_mask		= IBS_OP_ENABLE,
+ };
+ 
+ static __init int perf_event_ibs_init(void)
+@@ -45,7 +122,8 @@ static __init int perf_event_ibs_init(void)
+ 	if (!ibs_caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	perf_pmu_register(&perf_ibs, "ibs", -1);
++	perf_pmu_register(&perf_ibs_fetch.pmu, "ibs_fetch", -1);
++	perf_pmu_register(&perf_ibs_op.pmu, "ibs_op", -1);
+ 	printk(KERN_INFO "perf: AMD IBS detected (0x%08x)\n", ibs_caps);
+ 
+ 	return 0;
+-- 
+1.7.7
+
+
