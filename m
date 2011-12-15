@@ -1,140 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552Ab1LOBbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 20:31:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35456 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758465Ab1LOBby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 20:31:54 -0500
-Date: Wed, 14 Dec 2011 17:31:06 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-29e9bf1841e4f9df13b4992a716fece7087dd237@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tony.luck@intel.com, bp@amd64.org, fenghua.yu@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, bp@amd64.org, fenghua.yu@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20111215001945.GA21009@linux-os.sc.intel.com>
-References: <20111215001945.GA21009@linux-os.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mce] x86, mce, therm_throt: Don'
- t report power limit and package level thermal throttle events in mcelog
-Git-Commit-ID: 29e9bf1841e4f9df13b4992a716fece7087dd237
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Dec 2011 17:31:13 -0800 (PST)
+	id S1758560Ab1LOBgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 20:36:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:23058 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758521Ab1LOBgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 20:36:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96327474"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH v2 1/2] [SCSI]: runtime resume parent for child's system-resume
+Date: Thu, 15 Dec 2011 09:36:02 +0800
+Message-Id: <1323912963-26146-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1323912963-26146-1-git-send-email-ming.m.lin@intel.com>
+References: <1323912963-26146-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29e9bf1841e4f9df13b4992a716fece7087dd237
-Gitweb:     http://git.kernel.org/tip/29e9bf1841e4f9df13b4992a716fece7087dd237
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Fri, 4 Nov 2011 13:31:23 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 14 Dec 2011 16:25:26 -0800
+[Patch description from Alan Stern]
 
-x86, mce, therm_throt: Don't report power limit and package level thermal throttle events in mcelog
+If a child device was runtime-suspended when a system suspend began,
+then there will be nothing to prevent its parent from
+runtime-suspending as soon as it is woken up during the system resume.
+Then when the time comes to resume the child, the resume will fail
+because the parent is already back at low power.
 
-Thermal throttle and power limit events are not defined as MCE errors in x86
-architecture and should not generate MCE errors in mcelog.
+On the other hand, there are some devices which should remain at low
+power across an entire suspend-resume cycle.  The details depend on the
+device and the platform.
 
-Current kernel generates fake software defined MCE errors for these events.
-This may confuse users because they may think the machine has real MCE errors
-while actually only thermal throttle or power limit events happen.
+This suggests that the PM core is not the right place to solve the
+problem. One possible solution is for the subsystem or device driver
+to call pm_runtime_get_sync(dev->parent) at the start of the
+system-resume procedure and pm_runtime_put_sync(dev->parent) at the
+end.
 
-To make it worse, buggy firmware on some platforms may falsely generate
-the events. Therefore, kernel reports MCE errors which users think as real
-hardware errors. Although the firmware bugs should be fixed, on the other hand,
-kernel should not report MCE errors either.
-
-So mcelog is not a good mechanism to report these events. To report the events, we count them in respective counters (core_power_limit_count,
-package_power_limit_count, core_throttle_count, and package_throttle_count) in
-/sys/devices/system/cpu/cpu#/thermal_throttle/. Users can check the counters
-for each event on each CPU. Please note that all CPU's on one package report
-duplicate counters. It's user application's responsibity to retrieve a package
-level counter for one package.
-
-This patch doesn't report package level power limit, core level power limit, and
-package level thermal throttle events in mcelog. When the events happen, only
-report them in respective counters in sysfs.
-
-Since core level thermal throttle has been legacy code in kernel for a while and
-users accepted it as MCE error in mcelog, core level thermal throttle is still
-reported in mcelog. In the mean time, the event is counted in a counter in sysfs
-as well.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Acked-by: Borislav Petkov <bp@amd64.org>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/20111215001945.GA21009@linux-os.sc.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   29 +++++++----------------------
- 1 files changed, 7 insertions(+), 22 deletions(-)
+ drivers/scsi/scsi_pm.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 787e06c..ce04b58 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -323,17 +323,6 @@ device_initcall(thermal_throttle_init_device);
- 
- #endif /* CONFIG_SYSFS */
- 
--/*
-- * Set up the most two significant bit to notify mce log that this thermal
-- * event type.
-- * This is a temp solution. May be changed in the future with mce log
-- * infrasture.
-- */
--#define CORE_THROTTLED		(0)
--#define CORE_POWER_LIMIT	((__u64)1 << 62)
--#define PACKAGE_THROTTLED	((__u64)2 << 62)
--#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
--
- static void notify_thresholds(__u64 msr_val)
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index a633076..bf8bf79 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -72,8 +72,17 @@ static int scsi_bus_resume_common(struct device *dev)
  {
- 	/* check whether the interrupt handler is defined;
-@@ -363,27 +352,23 @@ static void intel_thermal_interrupt(void)
- 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
- 				THERMAL_THROTTLING_EVENT,
- 				CORE_LEVEL) != 0)
--		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
-+		mce_log_therm_throt_event(msr_val);
+ 	int err = 0;
  
- 	if (this_cpu_has(X86_FEATURE_PLN))
--		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
-+		therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
--					CORE_LEVEL) != 0)
--			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
-+					CORE_LEVEL);
+-	if (scsi_is_sdev_device(dev))
++	if (scsi_is_sdev_device(dev)) {
++		/*
++		 * Parent device may have runtime suspended as soon as
++		 * it is woken up during the system resume.
++		 *
++		 * Resume it on behalf of child.
++		 */
++		pm_runtime_get_sync(dev->parent);
+ 		err = scsi_dev_type_resume(dev);
++		pm_runtime_put_sync(dev->parent);
++	}
  
- 	if (this_cpu_has(X86_FEATURE_PTS)) {
- 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
--		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
-+		therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
- 					THERMAL_THROTTLING_EVENT,
--					PACKAGE_LEVEL) != 0)
--			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
-+					PACKAGE_LEVEL);
- 		if (this_cpu_has(X86_FEATURE_PLN))
--			if (therm_throt_process(msr_val &
-+			therm_throt_process(msr_val &
- 					PACKAGE_THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
--					PACKAGE_LEVEL) != 0)
--				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
--							  | msr_val);
-+					PACKAGE_LEVEL);
- 	}
- }
- 
+ 	if (err == 0) {
+ 		pm_runtime_disable(dev);
+-- 
+1.7.2.5
+
