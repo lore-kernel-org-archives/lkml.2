@@ -1,190 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab1LORCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:02:46 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38280 "EHLO
+	id S1759262Ab1LORDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:03:01 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38792 "EHLO
 	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759172Ab1LORCn (ORCPT
+	by vger.kernel.org with ESMTP id S1759172Ab1LORC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:02:43 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
-X-Spam-TCS-SCL: 0:0
+	Thu, 15 Dec 2011 12:02:59 -0500
+X-SpamScore: -10
+X-BigFish: VPS-10(zzzz1202hzz15d4R8275bhz2dh668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LW98EK-02-BPJ-02
+X-WSS-ID: 0LW9881-02-BD4-02
 X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH v4 1/4] perf, x86: Implement IBS event configuration
-Date: Thu, 15 Dec 2011 17:56:36 +0100
-Message-ID: <1323968199-9326-2-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
-References: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
+Date: Thu, 15 Dec 2011 17:52:48 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
+Message-ID: <20111215165248.GG2112@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements perf configuration for AMD IBS. The IBS pmu is
-selected using the type attribute in sysfs. There are two types of ibs
-pmus, for instruction fetch (IBS_FETCH) and for instruction execution
-(IBS_OP):
+(again with mailing lists on Cc, sorry)
 
- /sys/bus/event_source/devices/ibs_fetch/type
- /sys/bus/event_source/devices/ibs_op/type
+Hi,
 
-Except for the sample period IBS can only be set up with raw config
-values and raw data samples. The event attributes for the syscall
-should be programmed like this (IBS_FETCH):
+I tested current linux-next against my iommu-configs and found a compile
+error in sound/soc/mid-x86/sst_platform.c. The variable ret_val in the
+sst_platform_open() function is used but not declared. Attached patch
+fixes this.
 
-        type = get_pmu_type("/sys/bus/event_source/devices/ibs_fetch/type");
+>From d4e6d3b9ff8084c02eaf50e8212f77bcde5dec9d Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Thu, 15 Dec 2011 17:39:31 +0100
+Subject: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
 
-        memset(&attr, 0, sizeof(attr));
-        attr.type        = type;
-        attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
-        attr.config      = IBS_FETCH_CONFIG_DEFAULT;
+The variable ret_val is used but not declared. Fix this.
 
-This implementation does not yet support 64 bit counters. It is
-limited to the hardware counter bit width which is 20 bits. 64 bit
-support can be added later.
-
-V3:
-* disable per-task monitoring (mark pmu with perf_invalid_context),
-  per-task monitoring can be added in a separate patch
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   92 +++++++++++++++++++++++++++--
- 1 files changed, 85 insertions(+), 7 deletions(-)
+ sound/soc/mid-x86/sst_platform.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index 3b8a2d3..36684eb 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -16,12 +16,67 @@ static u32 ibs_caps;
- 
- #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
- 
--static struct pmu perf_ibs;
-+#define IBS_FETCH_CONFIG_MASK	(IBS_FETCH_RAND_EN | IBS_FETCH_MAX_CNT)
-+#define IBS_OP_CONFIG_MASK	IBS_OP_MAX_CNT
-+
-+struct perf_ibs {
-+	struct pmu	pmu;
-+	unsigned int	msr;
-+	u64		config_mask;
-+	u64		cnt_mask;
-+	u64		enable_mask;
-+};
-+
-+static struct perf_ibs perf_ibs_fetch;
-+static struct perf_ibs perf_ibs_op;
-+
-+static struct perf_ibs *get_ibs_pmu(int type)
-+{
-+	if (perf_ibs_fetch.pmu.type == type)
-+		return &perf_ibs_fetch;
-+	if (perf_ibs_op.pmu.type == type)
-+		return &perf_ibs_op;
-+	return NULL;
-+}
- 
- static int perf_ibs_init(struct perf_event *event)
+diff --git a/sound/soc/mid-x86/sst_platform.c b/sound/soc/mid-x86/sst_platform.c
+index 24f9471..11c39c5 100644
+--- a/sound/soc/mid-x86/sst_platform.c
++++ b/sound/soc/mid-x86/sst_platform.c
+@@ -267,6 +267,7 @@ static int sst_platform_open(struct snd_pcm_substream *substream)
  {
--	if (perf_ibs.type != event->attr.type)
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct perf_ibs *perf_ibs;
-+	u64 max_cnt, config;
-+
-+	perf_ibs = get_ibs_pmu(event->attr.type);
-+	if (!perf_ibs)
- 		return -ENOENT;
-+
-+	config = event->attr.config;
-+	if (config & ~perf_ibs->config_mask)
-+		return -EINVAL;
-+
-+	if (hwc->sample_period) {
-+		if (config & perf_ibs->cnt_mask)
-+			/* raw max_cnt may not be set */
-+			return -EINVAL;
-+		if (hwc->sample_period & 0x0f)
-+			/* lower 4 bits can not be set in ibs max cnt */
-+			return -EINVAL;
-+		max_cnt = hwc->sample_period >> 4;
-+		if (max_cnt & ~perf_ibs->cnt_mask)
-+			/* out of range */
-+			return -EINVAL;
-+		config |= max_cnt;
-+	} else {
-+		max_cnt = config & perf_ibs->cnt_mask;
-+		event->attr.sample_period = max_cnt << 4;
-+		hwc->sample_period = event->attr.sample_period;
-+	}
-+
-+	if (!max_cnt)
-+		return -EINVAL;
-+
-+	hwc->config_base = perf_ibs->msr;
-+	hwc->config = config;
-+
- 	return 0;
- }
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct sst_runtime_stream *stream;
++	int ret_val;
  
-@@ -34,10 +89,32 @@ static void perf_ibs_del(struct perf_event *event, int flags)
- {
- }
+ 	pr_debug("sst_platform_open called\n");
  
--static struct pmu perf_ibs = {
--	.event_init= perf_ibs_init,
--	.add= perf_ibs_add,
--	.del= perf_ibs_del,
-+static struct perf_ibs perf_ibs_fetch = {
-+	.pmu = {
-+		.task_ctx_nr	= perf_invalid_context,
-+
-+		.event_init	= perf_ibs_init,
-+		.add		= perf_ibs_add,
-+		.del		= perf_ibs_del,
-+	},
-+	.msr			= MSR_AMD64_IBSFETCHCTL,
-+	.config_mask		= IBS_FETCH_CONFIG_MASK,
-+	.cnt_mask		= IBS_FETCH_MAX_CNT,
-+	.enable_mask		= IBS_FETCH_ENABLE,
-+};
-+
-+static struct perf_ibs perf_ibs_op = {
-+	.pmu = {
-+		.task_ctx_nr	= perf_invalid_context,
-+
-+		.event_init	= perf_ibs_init,
-+		.add		= perf_ibs_add,
-+		.del		= perf_ibs_del,
-+	},
-+	.msr			= MSR_AMD64_IBSOPCTL,
-+	.config_mask		= IBS_OP_CONFIG_MASK,
-+	.cnt_mask		= IBS_OP_MAX_CNT,
-+	.enable_mask		= IBS_OP_ENABLE,
- };
- 
- static __init int perf_event_ibs_init(void)
-@@ -45,7 +122,8 @@ static __init int perf_event_ibs_init(void)
- 	if (!ibs_caps)
- 		return -ENODEV;	/* ibs not supported by the cpu */
- 
--	perf_pmu_register(&perf_ibs, "ibs", -1);
-+	perf_pmu_register(&perf_ibs_fetch.pmu, "ibs_fetch", -1);
-+	perf_pmu_register(&perf_ibs_op.pmu, "ibs_op", -1);
- 	printk(KERN_INFO "perf: AMD IBS detected (0x%08x)\n", ibs_caps);
- 
- 	return 0;
 -- 
-1.7.7
+1.7.5.4
 
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
