@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab1LOCpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:45:50 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:50933 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755863Ab1LOCpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:45:49 -0500
-Message-ID: <1323917147.29500.9.camel@joe2Laptop>
-Subject: Re: [PATCH 30/30] Staging: comedi: fix printk issue in jr3_pci.c
-From: Joe Perches <joe@perches.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>,
-        gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 14 Dec 2011 18:45:47 -0800
-In-Reply-To: <12715.1323915917@turing-police.cc.vt.edu>
-References: <1323674539-19307-1-git-send-email-ravishankar.km@greenturtles.in>
-	 <12715.1323915917@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758608Ab1LOCuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:50:13 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43705 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab1LOCuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 21:50:11 -0500
+Date: Wed, 14 Dec 2011 18:50:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mike Galbraith <efault@gmx.de>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [resubmit] Re: [patch-final] Re: patch] cpusets, cgroups: disallow
+ attaching kthreadd
+In-Reply-To: <20111214121604.bc26ab42.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1112141845390.27595@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net> <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net>
+ <1318233815.6527.5.camel@marge.simson.net> <1318925436.9641.23.camel@marge.simson.net> <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com> <1319001860.6222.34.camel@marge.simson.net> <alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com> <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com> <20111206144721.7b1d473d.akpm@linux-foundation.org> <alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
+ <1323227914.5057.10.camel@marge.simson.net> <1323232617.5057.50.camel@marge.simson.net> <alpine.DEB.2.00.1112071401431.27360@chino.kir.corp.google.com> <20111214121604.bc26ab42.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 21:25 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 12 Dec 2011 12:52:19 +0530, Ravishankar karkala Mallikarjunayya said:
-> > This is a patch to the jr3_pci.c file that fixes up a
-> > printk warning found by the checkpatch.pl tool.
-[]
-> > diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-[]
-> > @@ -593,24 +593,24 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
-[]
-> > +					printk(KERN_DEBUG "%i ", (min_full_scale).fx);
-> > +					printk(KERN_CONT "%i ", (min_full_scale).fy);
-> > +					printk(KERN_CONT "%i ", (min_full_scale).fz);
-> > +					printk(KERN_CONT "%i ", (min_full_scale).mx);
-> > +					printk(KERN_CONT "%i ", (min_full_scale).my);
-> > +					printk(KERN_CONT "%i ", (min_full_scale).mz);
-> > +					printk(KERN_CONT "\n");
-> Is there a reason that as long as you were fixing this code, you didn't make it
-> one call to printk?
-> 					printk(KERN_DEBUG,"%i %i %i %i %i %i\n",
-> 						(min_full_scale).fx),
-> 						(min_full_scale).fy),
-> 						(min_full_scale).fz),
-> 						(min_full_scale).mx),
-> 						(min_full_scale).my),
-> 						(min_full_scale).mz));
-> Doing it this way helps guarantee that another CPU doesn't inject a printk into
-> the middle and split up your output.
-> Also, there should be at least a *short* text string in that printk saying what
-> it is.  printk(KERN_DEBUG,"jr3_poll %i"   or similar would be a start.
-> Otherwise you get a line with 6 integers in it.
+On Wed, 14 Dec 2011, Andrew Morton wrote:
 
-Use #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-and
-pr_debug(etc...)
+> diff -puN kernel/cpuset.c~cpusets-cgroups-disallow-attaching-kthreadd kernel/cpuset.c
+> --- a/kernel/cpuset.c~cpusets-cgroups-disallow-attaching-kthreadd
+> +++ a/kernel/cpuset.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/kthread.h>
+>  
+>  /*
+>   * Workqueue for cpuset related tasks.
+> @@ -1417,9 +1418,11 @@ static int cpuset_can_attach(struct cgro
+>  		 * unnecessary.  Thus, cpusets are not applicable for such
+>  		 * threads.  This prevents checking for success of
+>  		 * set_cpus_allowed_ptr() on all attached tasks before
+> -		 * cpus_allowed may be changed.
+> +		 * cpus_allowed may be changed.  We also disallow attaching
+> +		 * kthreadd, to prevent its child from becoming trapped should
+> +		 * it then acquire PF_THREAD_BOUND.
+>  		 */
+> -		if (task->flags & PF_THREAD_BOUND)
+> +		if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+>  			return -EINVAL;
+>  		if ((ret = security_task_setscheduler(task)))
+>  			return ret;
+> diff -puN kernel/sched/core.c~cpusets-cgroups-disallow-attaching-kthreadd kernel/sched/core.c
+> --- a/kernel/sched/core.c~cpusets-cgroups-disallow-attaching-kthreadd
+> +++ a/kernel/sched/core.c
+> @@ -71,6 +71,7 @@
+>  #include <linux/ftrace.h>
+>  #include <linux/slab.h>
+>  #include <linux/init_task.h>
+> +#include <linux/kthread.h>
+>  
+>  #include <asm/tlb.h>
+>  #include <asm/irq_regs.h>
+> @@ -7535,6 +7536,14 @@ static int cpu_cgroup_can_attach(struct 
+>  	struct task_struct *task;
+>  
+>  	cgroup_taskset_for_each(task, cgrp, tset) {
+> +		/*
+> +		 * kthreadd can fork workers for an RT workqueue in a cgroup
+> +		 * which may or may not have rt_runtime allocated.  Just say no,
+> +		 * as attaching a global resource to a non-root group  doesn't
+> +		 * make any sense anyway.
+> +		 */
+> +		if (tsk == kthreadd_task)
+> +			return -EINVAL;
+>  #ifdef CONFIG_RT_GROUP_SCHED
+>  		if (!sched_rt_can_attach(cgroup_tg(cgrp), task))
+>  			return -EINVAL;
 
-min_full_scale is a variable and doesn't need parenthesis.
-It's also in my opinion an overly long name.
+Ah, yes, this requires knowledge of the cgroups' proc file trigger to 
+move all threads into the cgroup.  The ->can_attach() functions then 
+have all-or-nothing behavior; either all the threads can be moved or 
+none of them can.  So the above are the correct fixups for both 
+->can_attach() functions.
 
-					mfs =  get_min_full_scales(channel);
-					pr_debug("Got MinFullScales: %i %i %i, %i %i %i\n",
-						 msf.fx, msf.fy, msf.fz,
-						 msf.mx, msf.my, msf.mz);
+The above diff references non-existant symbols (tsk instead of task) in 
+both functions, but it appears (and compiles correctly) in linux-next.  So 
+please preserve my acked-by.
 
-> Also, if you're indented that far to the right, that driver is probably in
-> serious need of some restructuring or refactoring.
-
-I think 5 tab indentation is a lot but 6 tabs is too many.
-
-
+Thanks for fixing this up!
