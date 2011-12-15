@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab1LOSzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:55:53 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64167 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751788Ab1LOSzw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:55:52 -0500
+	id S1759318Ab1LOS6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:58:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63400 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756321Ab1LOS6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 13:58:49 -0500
+Date: Thu, 15 Dec 2011 10:58:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>,
+        Sergei Trofimovich <slyich@gmail.com>,
+        Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 3.2-rc5] block: don't kick empty queue in blk_drain_queue()
+Message-ID: <20111215185842.GB32002@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20111207205459.031a0609@lxorguk.ukuu.org.uk>
-References: <1323280461.10724.13.camel@lenny>
-	<4EDFCDD4.2080603@zytor.com>
-	<20111207205459.031a0609@lxorguk.ukuu.org.uk>
-Date: Thu, 15 Dec 2011 10:55:50 -0800
-X-Google-Sender-Auth: dViUD4VU7bISuwxByfHWH95RvRs
-Message-ID: <CALQRfL6A+XUiLUVzsSOkz52rs7Pejtb_v8QZbpWxh5W8yYDYtg@mail.gmail.com>
-Subject: Re: chroot(2) and bind mounts as non-root
-From: "Andrew G. Morgan" <morgan@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Colin Walters <walters@verbum.org>,
-        LKML <linux-kernel@vger.kernel.org>, serue@us.ibm.com,
-        dhowells@redhat.com, kzak@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm genuinely confused whether all these concerns are valid with file
-capabilities.
+While probing, fd sets up queue, probes hardware and tears down the
+queue if probing fails.  In the process, blk_drain_queue() kicks the
+queue which failed to finish initialization and fd is unhappy about
+that.
 
-Consider (let's say luser is some user that I want to be active inside
-the chroot, but I don't want to allow regular login to my system):
+  floppy0: no floppy controllers found
+  ------------[ cut here ]------------
+  WARNING: at drivers/block/floppy.c:2929 do_fd_request+0xbf/0xd0()
+  Hardware name: To Be Filled By O.E.M.
+  VFS: do_fd_request called on non-open device
+  Modules linked in:
+  Pid: 1, comm: swapper Not tainted 3.2.0-rc4-00077-g5983fe2 #2
+  Call Trace:
+   [<ffffffff81039a6a>] warn_slowpath_common+0x7a/0xb0
+   [<ffffffff81039b41>] warn_slowpath_fmt+0x41/0x50
+   [<ffffffff813d657f>] do_fd_request+0xbf/0xd0
+   [<ffffffff81322b95>] blk_drain_queue+0x65/0x80
+   [<ffffffff81322c93>] blk_cleanup_queue+0xe3/0x1a0
+   [<ffffffff818a809d>] floppy_init+0xdeb/0xe28
+   [<ffffffff818a72b2>] ? daring+0x6b/0x6b
+   [<ffffffff810002af>] do_one_initcall+0x3f/0x170
+   [<ffffffff81884b34>] kernel_init+0x9d/0x11e
+   [<ffffffff810317c2>] ? schedule_tail+0x22/0xa0
+   [<ffffffff815dbb14>] kernel_thread_helper+0x4/0x10
+   [<ffffffff81884a97>] ? start_kernel+0x2be/0x2be
+   [<ffffffff815dbb10>] ? gs_change+0xb/0xb
 
-morgan> sudo su luser
-luser> mkdir /tmp/chroot/
-luser> chmod go-rx /tmp/chroot/
-luser> exit
+Avoid it by making blk_drain_queue() kick queue iff dispatch queue has
+something on it.
 
-morgan> cat > launcher.c <<EOT
-#include <stdio.h>
-#include <unistd.h>
-int main(int argc, char **argv)
-{
-  int ret = chroot("/tmp/chroot");
-  printf("chroot %s.\n", ret ? "failed" : "worked");
-  ret = chdir("/");
-  printf("chdir %s.\n", ret ? "failed" : "worked");
-  // Insert exec code to invoke chroot'd shell or whatever.
-  return ret;
-}
-EOT
-morgan> make launcher
-cc launcher.c -o launcher
-morgan> mv launcher /tmp/
-morgan> sudo -s
-root> setcap cap_sys_chroot=ep /tmp/launcher
-root> cp <files and directories needed in the chroot> /tmp/chroot/
-root> su luser
-
-luser> /tmp/launcher
-
-The last line being something that involves luser only - ie. it gives
-no user privilege away to any child it might launch. Its also the only
-regular user able to chroot to this luser owned chroot (because that
-directory is exclusive to that user).
-
-Is there a need for privileged binaries within /tmp/chroot? If not,
-how might they get there (without help from root, always presuming I
-can prevent luser from logging in outside of this chroot'd
-environment)?
-
-Thanks
-
-Andrew
-
-On Wed, Dec 7, 2011 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 07 Dec 2011 12:34:28 -0800
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
->
->> On 12/07/2011 09:54 AM, Colin Walters wrote:
->> >
->> > The historical reason one can't call chroot(2) as non-root is because of
->> > setuid binaries (hard link a setuid binary into chroot of your choice
->> > with trojaned libc.so).
->>
->> No.  The historical reason is that it lets anyone escape a chroot jail:
->
-> Beg to differ
->
-> Nobody ever considered chroot a jail except a certain brand of
-> urban-legend-programming people. Indeed chroot has never been a jail
-> except in the 'open prison' security sense of it.
->
-> The big problem with chroot was abusing setuid binaries - particularly
-> things like uucp and /bin/mail.
->
->
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+Tested-by: Sergei Trofimovich <slyich@gmail.com>
+---
+ block/blk-core.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+diff --git a/block/blk-core.c b/block/blk-core.c
+index ea70e6c..e9aa3d5 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -366,7 +366,14 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
+ 		if (drain_all)
+ 			blk_throtl_drain(q);
+ 
+-		__blk_run_queue(q);
++		/*
++		 * This function might be called on a queue which failed
++		 * driver init after queue creation.  Some drivers
++		 * (e.g. fd) get unhappy in such cases.  Kick queue iff
++		 * dispatch queue has something on it.
++		 */
++		if (!list_empty(&q->queue_head))
++			__blk_run_queue(q);
+ 
+ 		if (drain_all)
+ 			nr_rqs = q->rq.count[0] + q->rq.count[1];
