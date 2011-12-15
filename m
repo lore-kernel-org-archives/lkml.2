@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758976Ab1LOPbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 10:31:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617Ab1LOPbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 10:31:04 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC 0/3] perf tool: Add new event group management
-Date: Thu, 15 Dec 2011 16:30:36 +0100
-Message-Id: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+	id S1758863Ab1LOPeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 10:34:12 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64736 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab1LOPeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 10:34:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: myungjoo.ham@samsung.com
+Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
+Date: Thu, 15 Dec 2011 15:34:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        =?euc-kr?q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
+References: <33434703.581501323909131767.JavaMail.weblogic@epml15>
+In-Reply-To: <33434703.581501323909131767.JavaMail.weblogic@epml15>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="euc-kr"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112151534.01995.arnd@arndb.de>
+X-Provags-ID: V02:K0:Wo+rClDX0soB2REYMov0urxFlCET5cJFKuhR3f9KRjP
+ ZGytsUUKZuGUx1SSAPcvgNrqD0n6gKwXWrqNkP27AuC0bfZm6i
+ sEs5j5mboANYiXvH3+DxXsSLJxkgt7/i26Rp1L2mbn2QsFYOud
+ lx22uIZw0s9uMbKkensAnygKCYpKeLq5YzjhRXllAO1EHaDqEr
+ 6dN2BSNcogxsu5/MfH5Gyej+sVHo/J6+G1SqkBD+Z+DUwp6ip3
+ Zbn5kKCbqXAz4nDstHYwivT62k6sAdAftAnPwo2h989VYJhG1x
+ SEfdfEFQujbRZFgJZ8LGfWJ8Pzphm5vP3eL+huu0txIOUVkZKr
+ 4AKD5VcH2FIfEod+a2zY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-adding support for creating event groups based on the way they
-are specified on the command line.
+On Thursday 15 December 2011, MyungJoo Ham wrote:
+> Arnd Bergmann wrote:
+> > On Monday 12 December 2011, Samuel Ortiz wrote:
+> > The part that is not clear to me is how this new driver fits in
+> > with the first fsa9480 driver and the currently discussed extcon
+> > subsystem, apparently all written by the same team at Samsung.
+> > Is this misc driver still useful when the extcon framework gets
+> > merged?
+> 
+> When extcom gets merged, this driver should be updated. It looks like allowing
+> the interrupt handler to update extcon state would be enough. Bascially, this
+> is all this driver is required for extcon to work. (and the prvious author of
+> extcon--"extended" switch class at that time--was the author of this patch.)
+> 
+> Anyway, this patch has just told me that I'll need to add more sysfs entries
+> for extcon to show the list of cable names and/or to show the status for each
+> of them, soon or later.
 
-As reading through some lkml postings like:
-http://marc.info/?t=130105133700002&r=1&w=2
-http://marc.info/?t=129065042800002&r=1&w=2
+I think it would be better not to merge this driver until the user interface
+in the extcon framework has been finalized. I don't mind the driver, but I
+want to prevent user interfaces from appearing in the kernel that we
+intend to change anyway.
 
-it seems decided to use bison/flex for event parsing first,
-and do the group management on the top of it.. and thats what
-I'm trying to do in this patchset.
+How about dropping the driver from the mfd tree, and adding it into the
+extcon series for the next posting?
 
-Since this is quite hot code I expect some discussion/reposts ;),
-so sending it first as RFC..
-
-attached patches:
-  1/3 perf, tool: Add parser generator for events parsing
-  2/3 perf, tool: Add new event group management
-  3/3 perf, tool: Add more automated tests for event parsing
-
-thanks for comments,
-jirka
----
- tools/perf/Makefile                  |   23 ++
- tools/perf/builtin-record.c          |    8 +-
- tools/perf/builtin-stat.c            |   10 +-
- tools/perf/builtin-test.c            |  245 ++++++++++++++++++-
- tools/perf/builtin-top.c             |    8 +-
- tools/perf/perf.h                    |    2 +-
- tools/perf/util/evsel.c              |   28 ++-
- tools/perf/util/evsel.h              |    9 +-
- tools/perf/util/group.c              |   23 ++
- tools/perf/util/group.h              |   25 ++
- tools/perf/util/parse-events-bison.y |  119 +++++++++
- tools/perf/util/parse-events-flex.l  |  111 ++++++++
- tools/perf/util/parse-events.c       |  465 ++++++++++++----------------------
- tools/perf/util/parse-events.h       |    9 +
- tools/perf/util/python.c             |    4 +
- tools/perf/util/top.h                |    2 +-
- 16 files changed, 760 insertions(+), 331 deletions(-)
+	Arnd
