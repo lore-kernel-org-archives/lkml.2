@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759648Ab1LOWkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:40:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759582Ab1LOWkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:40:08 -0500
-Message-ID: <1323988789.2437.33.camel@x201.home>
-Subject: Re: [RFC] Device isolation infrastructure v2
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: aik@ozlabs.ru, benh@kernel.crashing.org, joerg.roedel@amd.com,
-        dwmw2@infradead.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com, rusty@rustcorp.com.au,
-        iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 Dec 2011 15:39:49 -0700
-In-Reply-To: <1323972307.2437.19.camel@x201.home>
-References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
-	 <1323972307.2437.19.camel@x201.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759660Ab1LOWma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:42:30 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36387 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759605Ab1LOWm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:42:28 -0500
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>, stable@vger.kernel.org
+Subject: [PATCH] usb: musb: fix pm_runtime mismatch
+Date: Fri, 16 Dec 2011 00:42:14 +0200
+Message-Id: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.8.rc1.14.g248db
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-15 at 11:05 -0700, Alex Williamson wrote:
-> On Thu, 2011-12-15 at 17:25 +1100, David Gibson wrote:
-> > Here's the second spin of my preferred approach to handling grouping
-> > of devices for safe assignment to guests.
-> > 
-> > Changes since v1:
-> >  * Many name changes and file moves for improved consistency
-> >  * Bugfixes and cleanups
-> >  * The interface to the next layer up is considerably fleshed out,
-> >    although it still needs work.
-> >  * Example initialization of groups for p5ioc2 and p7ioc.
-> > 
-> > TODO:
-> >  * Need sample initialization of groups for intel and/or amd iommus
-> 
-> I think this very well might imposed significant bloat for those
-> implementations.  On POWER you typically don't have singleton groups,
-> while it's the norm on x86.  I don't know that either intel or amd iommu
-> code have existing structures that they can simply tack the group
-> pointer to.  Again, this is one of the reasons that I think the current
-> vfio implementation is the right starting point.  We keep groups within
-> vfio, imposing zero overhead for systems not making use of it and only
-> require iommu drivers to implement a trivial function to opt-in.  As we
-> start to make groups more pervasive in the dma layer, independent of
-> userspace driver exposure, we can offload pieces to the core.  Starting
-> with it in the core and hand waving some future use that we don't plan
-> to implement right now seems like the wrong direction.
-> 
-> >  * Use of sysfs attributes to control group permission is probably a
-> >    mistake.  Although it seems a bit odd, registering a chardev for
-> >    each group is probably better, because perms can be set from udev
-> >    rules, just like everything else.
-> 
-> I agree, this is a horrible mistake.  Reinventing file permissions via
-> sysfs is bound to be broken and doesn't account for selinux permissions.
-> Again, I know you don't like aspects of the vfio group management, but
-> it gets this right imho.
-> 
-> >  * Need more details of what the binder structure will need to
-> >    contain.
-> >  * Handle complete removal of groups.
-> >  * Clarify what will need to happen on the hot unplug path.
-> 
-> We're still also removing devices from the driver model, this means
-> drivers like vfio need to re-implement a lot of the driver core for
-> driving each individual device in the group, and as you indicate, it's
-> unclear what happens in the hotplug path and I wonder if things like
-> suspend/resume will also require non-standard support.  I really prefer
-> attaching individual bus drivers to devices using the standard
-> bind/unbind mechanisms.  I have a hard time seeing how this is an
-> improvement from vfio.  Thanks,
+In musb_init_controller() there's a pm_runtime_put(), but there's no
+pm_runtime_get(), which creates a mismatch that causes the driver to
+sleep when it shouldn't.
 
-I should also mention that I just pushed a new version of the vfio
-series out to github, it can be found here:
+This was introduced in 7acc619, but it wasn't triggered until 18a2689
+was merged to Linus' branch at point 6899608.
 
-git://github.com/awilliam/linux-vfio.git vfio-next-20111215
+However, it seems most of the time this is used in a way that keeps the
+counter above 0, so nobody noticed. Also, it seems to depend on the
+configuration used.
 
-This fixes many bugs, including PCI config space access sizes and the
-todo item of actually preventing user access to the MSI-X table area.  I
-think the vfio-pci driver is much closer to being read to submit now.
-It think I've addressed all the previous review comments.  Still pending
-is a documentation refresh and some decision about what and how we
-expose iommu information.
+I found the problem by loading isp1704_charger before any usb gadgets:
+http://article.gmane.org/gmane.linux.kernel/1226122
 
-As usual, the matching qemu tree is here:
+All versions after 2.6.39 are affected.
 
-git://github.com/awilliam/qemu-vfio.git vfio-ng
+Cc: stable@vger.kernel.org
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
+ drivers/usb/musb/musb_core.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-I've tested this with an Intel 82576 (both PF and VF), Broadcom BCM5755,
-Intel HD Audio controller, and legacy PCI SB Live.  Thanks,
-
-Alex
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index b63ab15..920f04e 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	if (status < 0)
+ 		goto fail3;
+ 
+-	pm_runtime_put(musb->controller);
+-
+ 	status = musb_init_debugfs(musb);
+ 	if (status < 0)
+ 		goto fail4;
+-- 
+1.7.8.rc1.14.g248db
 
