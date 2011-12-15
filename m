@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab1LOCmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:42:10 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64986 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab1LOCmI (ORCPT
+	id S1758605Ab1LOCoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:44:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56010 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab1LOCob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:42:08 -0500
-Date: Wed, 14 Dec 2011 18:42:05 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mempolicy.c: use enum value MPOL_REBIND_ONCE instead
- of 0 in mpol_rebind_policy
-In-Reply-To: <4EE8A461.2080406@gmail.com>
-Message-ID: <alpine.DEB.2.00.1112141840550.27595@chino.kir.corp.google.com>
-References: <4EE8A461.2080406@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 Dec 2011 21:44:31 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix for binary_sysctl() memory leak
+Date: Wed, 14 Dec 2011 18:44:12 -0800
+Message-Id: <1323917052-480-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011, Wang Sheng-Hui wrote:
+binary_sysctl() calls sysctl_getname() which allocates from
+names_cache slab usin __getname()
 
-> We have enum definition in mempolicy.h: MPOL_REBIND_ONCE.
-> It should replace the magic number 0 for step comparison in
-> function mpol_rebind_policy.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+The matching function to free the name is __putname(), and not
+putname() which should be used only to match getname() allocations.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ kernel/sysctl_binary.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Tip: when proposing patches, it's helpful to run scripts/get_maintainer.pl 
-on your patch file from git to determine who should be cc'd on the email.
+diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+index e8bffbe..2ce1b30 100644
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -1354,7 +1354,7 @@ static ssize_t binary_sysctl(const int *name, int nlen,
+ 
+ 	fput(file);
+ out_putname:
+-	putname(pathname);
++	__putname(pathname);
+ out:
+ 	return result;
+ }
+-- 
+1.7.3.1
+
