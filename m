@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab1LOQAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:00:16 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:3096 "EHLO relay.sw.ru"
+	id S932518Ab1LOQAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:00:23 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43950 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759019Ab1LOQAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:00:13 -0500
-Subject: [PATCH 3/7] SUNRPC: use proper network namespace in rpcbind
- RPCBPROC_GETADDR procedure
+	id S1759022Ab1LOQAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 11:00:21 -0500
+Subject: [PATCH 4/7] SUNRPC: parametrize local rpcbind clients creation with
+ net ns
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Thu, 15 Dec 2011 20:00:07 +0300
-Message-ID: <20111215160007.2434.30287.stgit@localhost6.localdomain6>
+Date: Thu, 15 Dec 2011 20:00:15 +0300
+Message-ID: <20111215160015.2434.2579.stgit@localhost6.localdomain6>
 In-Reply-To: <20111215155252.2434.39434.stgit@localhost6.localdomain6>
 References: <20111215155252.2434.39434.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,27 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass request socket network namespace to rpc_uaddr2sockaddr() instead of
-hardcoded init_net,  when decoding address in RPCBPROC_GETADDR procedure.
+These client are per network namespace and thus can be created for different
+network namespaces.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/rpcb_clnt.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ include/linux/sunrpc/clnt.h |    4 ++--
+ net/sunrpc/rpcb_clnt.c      |    7 +++----
+ net/sunrpc/svc.c            |    4 ++--
+ 3 files changed, 7 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+index 1e56469..5748807 100644
+--- a/include/linux/sunrpc/clnt.h
++++ b/include/linux/sunrpc/clnt.h
+@@ -136,8 +136,8 @@ void		rpc_shutdown_client(struct rpc_clnt *);
+ void		rpc_release_client(struct rpc_clnt *);
+ void		rpc_task_release_client(struct rpc_task *);
+ 
+-int		rpcb_create_local(void);
+-void		rpcb_put_local(void);
++int		rpcb_create_local(struct net *);
++void		rpcb_put_local(struct net *);
+ int		rpcb_register(struct net *, u32, u32, int, unsigned short);
+ int		rpcb_v4_register(struct net *net, const u32 program,
+ 				 const u32 version,
 diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index ea87b0c..d94f188 100644
+index d94f188..4ce3a8e 100644
 --- a/net/sunrpc/rpcb_clnt.c
 +++ b/net/sunrpc/rpcb_clnt.c
-@@ -935,7 +935,8 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
- 	dprintk("RPC: %5u RPCB_%s reply: %s\n", task->tk_pid,
- 			task->tk_msg.rpc_proc->p_name, (char *)p);
+@@ -175,9 +175,9 @@ static int rpcb_get_local(struct net *net)
+ 	return cnt;
+ }
  
--	if (rpc_uaddr2sockaddr(&init_net, (char *)p, len, sap, sizeof(address)) == 0)
-+	if (rpc_uaddr2sockaddr(req->rq_xprt->xprt_net, (char *)p, len,
-+				sap, sizeof(address)) == 0)
- 		goto out_fail;
- 	rpcb->r_port = rpc_get_port(sap);
+-void rpcb_put_local(void)
++void rpcb_put_local(struct net *net)
+ {
+-	struct sunrpc_net *sn = net_generic(&init_net, sunrpc_net_id);
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
+ 	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
+ 	int shutdown;
+@@ -323,11 +323,10 @@ out:
+  * Returns zero on success, otherwise a negative errno value
+  * is returned.
+  */
+-int rpcb_create_local(void)
++int rpcb_create_local(struct net *net)
+ {
+ 	static DEFINE_MUTEX(rpcb_create_local_mutex);
+ 	int result = 0;
+-	struct net *net = &init_net;
+ 
+ 	if (rpcb_get_local(net))
+ 		return result;
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index e9c42ad..03e9f04 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -370,7 +370,7 @@ static int svc_rpcb_setup(struct svc_serv *serv)
+ {
+ 	int err;
+ 
+-	err = rpcb_create_local();
++	err = rpcb_create_local(&init_net);
+ 	if (err)
+ 		return err;
+ 
+@@ -382,7 +382,7 @@ static int svc_rpcb_setup(struct svc_serv *serv)
+ void svc_rpcb_cleanup(struct svc_serv *serv)
+ {
+ 	svc_unregister(serv);
+-	rpcb_put_local();
++	rpcb_put_local(&init_net);
+ }
+ EXPORT_SYMBOL_GPL(svc_rpcb_cleanup);
  
 
