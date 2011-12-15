@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1LOFt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 00:49:58 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:52048
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517Ab1LOFt5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 00:49:57 -0500
-X-SpamScore: -21
-X-BigFish: VS-21(zzbb2dI9371I1447M542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: RE: [RFC PATCH v2 1/4] dt: add of_get_child_number helper function
-Thread-Topic: [RFC PATCH v2 1/4] dt: add of_get_child_number helper function
-Thread-Index: AQHMuniMNBJVHF9vuECCwPUYFr+qmpXcBUgAgAA8gYCAACPJMA==
-Date: Thu, 15 Dec 2011 05:49:54 +0000
-Message-ID: <7FE21149F4667147B645348EC6057885053036@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
- <1323878622-26602-2-git-send-email-b29396@freescale.com>
- <4EE8E52C.1030506@gmail.com>
- <CACxGe6tQO=5oGXjpZ_VD+Pzs+mPKgdciKBHiA6YBf4PHfe_Q7g@mail.gmail.com>
-In-Reply-To: <CACxGe6tQO=5oGXjpZ_VD+Pzs+mPKgdciKBHiA6YBf4PHfe_Q7g@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1754880Ab1LOGCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:02:39 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:46485 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab1LOGCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 01:02:38 -0500
+Date: Wed, 14 Dec 2011 23:59:20 -0600
+From: David Fries <david@fries.net>
+To: video4linux-list@redhat.com
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Istvan Varga <istvan_v@mailbox.hu>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cx88-dvb avoid dangling core->gate_ctrl pointer
+Message-ID: <20111215055920.GA3948@spacedout.fries.net>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Wed, 14 Dec 2011 23:59:23 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of
-> Grant Likely
-> Sent: Thursday, December 15, 2011 5:41 AM
-> To: Rob Herring
-> Cc: Dong Aisheng-B29396; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linus.walleij@stericsson.com;
-> s.hauer@pengutronix.de; Guo Shawn-R65073; kernel@pengutronix.de
-> Subject: Re: [RFC PATCH v2 1/4] dt: add of_get_child_number helper
-> function
-> Importance: High
-> 
-> On Wed, Dec 14, 2011 at 11:04 AM, Rob Herring <robherring2@gmail.com>
-> wrote:
-> > Dong,
-> >
-> > On 12/14/2011 10:03 AM, Dong Aisheng wrote:
-> >> From: Dong Aisheng <dong.aisheng@linaro.org>
-> >>
-> >> Currently most code to get child number in kernel are almost same,
-> >> add a helper to implement this function for dt to use.
-> >>
-> >> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> >> Cc: Grant Likely <grant.likely@secretlab.ca>
-> >> Cc: Rob Herring <rob.herring@calxeda.com>
-> >> ---
-> >>  include/linux/of.h |   17 +++++++++++++++++
-> >>  1 files changed, 17 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/include/linux/of.h b/include/linux/of.h index
-> >> 4948552..09d53dc 100644
-> >> --- a/include/linux/of.h
-> >> +++ b/include/linux/of.h
-> >> @@ -189,6 +189,18 @@ extern struct device_node
-> >> *of_get_next_child(const struct device_node *node,
-> >>       for (child = of_get_next_child(parent, NULL); child != NULL; \
-> >>            child = of_get_next_child(parent, child))
-> >>
-> >> +static inline int of_get_child_number(struct device_node *np)
-> >
-> > I would call this of_get_child_count instead.
-> 
-> I agree.
-> 
-Yes, will change to that name.
-Thanks for the suggestion.
+From: David Fries <David@Fries.net>
 
-Regards
-Dong Aisheng
+dvb_register calls videobuf_dvb_register_bus, but if that returns
+a failure the module will be unloaded without clearing the
+value of core->gate_ctrl which will cause an oops in macros
+called from video_open in cx88-video.c
 
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Istvan Varga <istvan_v@mailbox.hu>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+---
+This is with 3.2.0-rc5+, and it only fixes the oops, it doesn't
+resolve why cx88-dvb failed to work.  Any ideas?
+
+cx88/2: cx2388x dvb driver version 0.0.9 loaded
+cx88/2: registering cx8802 driver, type: dvb access: shared
+cx88[0]/2: subsystem: 7063:3000, board: pcHDTV HD3000 HDTV [card=22]
+cx88[0]/2: cx2388x based DVB/ATSC card
+cx8802_alloc_frontends() allocating 1 frontend(s)
+tuner-simple 1-0061: attaching existing instance
+tuner-simple 1-0061: type set to 60 (Thomson DTT 761X (ATSC/NTSC))
+DVB: registering new adapter (cx88[0])
+DVB: registering adapter 0 frontend 0 (Oren OR51132 VSB/QAM
+Frontend)...
+cx88[0]: videobuf_dvb_register_frontend failed (errno = -12)
+cx88[0]/2: dvb_register failed (err = -12)
+cx88[0]/2: cx8802 probe failed, err = -12
+
+
+ drivers/media/video/cx88/cx88-dvb.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/video/cx88/cx88-dvb.c b/drivers/media/video/cx88/cx88-dvb.c
+index cf3d33a..3961498 100644
+--- a/drivers/media/video/cx88/cx88-dvb.c
++++ b/drivers/media/video/cx88/cx88-dvb.c
+@@ -954,6 +954,7 @@ static int dvb_register(struct cx8802_dev *dev)
+ 	struct cx88_core *core = dev->core;
+ 	struct videobuf_dvb_frontend *fe0, *fe1 = NULL;
+ 	int mfe_shared = 0; /* bus not shared by default */
++	int res = -EINVAL;
+ 
+ 	if (0 != core->i2c_rc) {
+ 		printk(KERN_ERR "%s/2: no i2c-bus available, cannot attach dvb drivers\n", core->name);
+@@ -1566,13 +1567,16 @@ static int dvb_register(struct cx8802_dev *dev)
+ 	call_all(core, core, s_power, 0);
+ 
+ 	/* register everything */
+-	return videobuf_dvb_register_bus(&dev->frontends, THIS_MODULE, dev,
+-					 &dev->pci->dev, adapter_nr, mfe_shared, NULL);
++	res = videobuf_dvb_register_bus(&dev->frontends, THIS_MODULE, dev,
++		&dev->pci->dev, adapter_nr, mfe_shared, NULL);
++	if (res)
++		goto frontend_detach;
++	return res;
+ 
+ frontend_detach:
+ 	core->gate_ctrl = NULL;
+ 	videobuf_dvb_dealloc_frontends(&dev->frontends);
+-	return -EINVAL;
++	return res;
+ }
+ 
+ /* ----------------------------------------------------------- */
+-- 
+1.7.2.5
 
