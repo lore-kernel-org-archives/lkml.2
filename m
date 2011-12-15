@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab1LOKky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:40:54 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:55653 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753694Ab1LOKkx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:40:53 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: RE: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
-Thread-Topic: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
-Thread-Index: AQHMunirzWtXRBa0wUCO2ofliTlfR5XcOaMAgAAR44CAACoQYIAAku0A//+ubnA=
-Date: Thu, 15 Dec 2011 10:40:44 +0000
-Message-ID: <7FE21149F4667147B645348EC6057885056723@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
- <1323878622-26602-5-git-send-email-b29396@freescale.com>
- <20111214211152.GM27267@pengutronix.de>
- <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
- <7FE21149F4667147B645348EC60578850561FF@039-SN2MPN1-013.039d.mgd.msft.net>
- <20111215093218.GN27267@pengutronix.de>
-In-Reply-To: <20111215093218.GN27267@pengutronix.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1758808Ab1LOKmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:42:53 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:46574 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab1LOKmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 05:42:51 -0500
+Message-ID: <4EE9CF1D.6030109@panasas.com>
+Date: Thu, 15 Dec 2011 12:42:37 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Maxim Uvarov <maxim.uvarov@oracle.com>,
+        NFS list <linux-nfs@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] NFS/INOTIFY: inotify user when deleting files on nfs
+References: <1323901667-3746-1-git-send-email-maxim.uvarov@oracle.com>
+In-Reply-To: <1323901667-3746-1-git-send-email-maxim.uvarov@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
-> Sent: Thursday, December 15, 2011 5:32 PM
-> To: Dong Aisheng-B29396
-> Cc: Linus Walleij; linus.walleij@stericsson.com; linux-
-> kernel@vger.kernel.org; rob.herring@calxeda.com;
-> grant.likely@secretlab.ca; linux-arm-kernel@lists.infradead.org;
-> kernel@pengutronix.de; Guo Shawn-R65073
-> Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux
-> subsystem
-> Importance: High
-> 
-> On Thu, Dec 15, 2011 at 07:23:42AM +0000, Dong Aisheng-B29396 wrote:
-> > > -----Original Message-----
-> > > From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> > > Sent: Thursday, December 15, 2011 6:16 AM
-> > > To: Sascha Hauer
-> > > Cc: Dong Aisheng-B29396; linus.walleij@stericsson.com; linux-
-> > > kernel@vger.kernel.org; rob.herring@calxeda.com;
-> > > grant.likely@secretlab.ca; linux-arm-kernel@lists.infradead.org;
-> > > kernel@pengutronix.de; Guo Shawn-R65073
-> > > Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux
-> > > subsystem
-> > > Importance: High
-> > >
-> > > On Wed, Dec 14, 2011 at 10:11 PM, Sascha Hauer
-> > > <s.hauer@pengutronix.de>
-> > > wrote:
-> > > > On Thu, Dec 15, 2011 at 12:03:42AM +0800, Dong Aisheng wrote:
-> > >
-> > > >> +     pmx = pinmux_get(&pdev->dev, NULL);
-> > > >> +     if (IS_ERR(pmx)) {
-> > > >> +             err = PTR_ERR(pmx);
-> > > >> +             goto err_pmx_get;
-> > > >> +     }
-> > > >> +     err = pinmux_enable(pmx);
-> > > >> +     if (err)
-> > > >> +             goto err_pmx_enable;
-> > > >> +     imx_data->pmx = pmx;
-> > > >> +
-> > > >
-> > > > Won't this break every i.MX except i.MX6?
-> > >
-> >
-> > If not select PINCTRL, pinmux_enable returns ok by default and
-> > pinmux_get Returns NULL which also does not block.
-> > So it will not break other i.MX currently since only mx6q are using
-> PINCTRL.
-> >
-> > > Not this patch on its own, first the machines have to select PINCTRL
-> > > select PINMUX_FOO
-> > >
-> > > *Then* it will break :-D
-> > >
-> >
-> > After we move to one single image for mx5 and mx6, it could be an
-> > issue Since PINCTRL may be selected by default.
-> > So mx5 pinmux driver is in my TODO list.
-> 
-> Add i.MX3 which is compiled together with i.MX6 :)
-> 
-Sure, would like to do it.
-Thanks
+Forwarding to the NFS mailing list ...
 
-Regards
-Dong Aisheng
-
-
+On 12/15/2011 12:27 AM, Maxim Uvarov wrote:
+> This issue was introduced with LTP inotify02 test.
+> If file system is not NFS user inotify application
+> gets IN_DELETE event. But on NFS code avoids d_delete()
+> which sends this event. This patch makes notification
+> on NFS the same as non-NFS. I.e. vfs_unlink still avoids
+> deletion but it sends event for NFS sillyrenamed files.
+> More details here:
+> https://lkml.org/lkml/2011/11/29/421
+> 
+> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+> ---
+>  fs/namei.c |   19 ++++++++++++++++---
+>  1 files changed, 16 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index a9a7166..44a997e 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2737,10 +2737,23 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry)
+>  	}
+>  	mutex_unlock(&dentry->d_inode->i_mutex);
+>  
+> -	/* We don't d_delete() NFS sillyrenamed files--they still exist. */
+> -	if (!error && !(dentry->d_flags & DCACHE_NFSFS_RENAMED)) {
+> +
+> +	if (!error) {
+>  		fsnotify_link_count(dentry->d_inode);
+> -		d_delete(dentry);
+> +		if (!(dentry->d_flags & DCACHE_NFSFS_RENAMED))
+> +			d_delete(dentry);
+> +		else {
+> +			/* We don't d_delete() NFS sillyrenamed files - they
+> +			 * still exist. But from user side this file was
+> +			 * deleted. So that we need to generate notify event
+> +			 * about it.
+> +			 */
+> +			struct inode *inode;
+> +			int isdir;
+> +			inode = dentry->d_inode;
+> +			isdir = S_ISDIR(inode->i_mode);
+> +			fsnotify_nameremove(dentry, isdir);
+> +		}
+>  	}
+>  
+>  	return error;
 
