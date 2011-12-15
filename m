@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab1LOTmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:42:18 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:45823 "EHLO mail.mgebm.net"
+	id S932688Ab1LOTnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:43:01 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53434 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759406Ab1LOTmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:42:11 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
-        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
-        levinsasha928@gmail.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4 V7] Avoid soft lockup message when KVM is stopped by host
-Date: Thu, 15 Dec 2011 14:42:02 -0500
-Message-Id: <1323978126-13222-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
+	id S932579Ab1LOTmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 14:42:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="47653955"
+Subject: [patch] sched: fix select_idle_sibling() regression in selecting an
+ idle SMT sibling
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Dec 2011 11:47:00 -0800
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323978421.1984.244.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from V6:
-Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
+Ingo, Please queue this scheduler patch for the next 3.2-rc release. We
+already have a cleaned up version of this patch queued in -tip. If you
+have any merge problems in tip/master, me or peterz can help resolve it.
 
-Changes from V5:
-Collapse generic check_and_clear_guest_stopped into patch 2
-Include check_and_clear_guest_stopped defintion to ia64, s390, and powerpc
-Change check_and_clear_guest_stopped to use __get_cpu_var instead of taking the
- cpuid arg.
-Protect check_and_clear_guest_stopped declaration with CONFIG_KVM_CLOCK check
+Thanks.
+---
+From: Peter Zijlstra <peterz@infradead.org>
+Subject: sched: fix select_idle_sibling() regression in selecting an idle SMT sibling
 
-Changes from V4:
-Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
-Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
+Mike Galbraith reported that this recent commit,
 
-Changes from V3:
-Include CC's on patch 3
-Drop clear flag ioctl and have the watchdog clear the flag when it is reset
+   commit 4dcfe1025b513c2c1da5bf5586adb0e80148f612
+   Author: Peter Zijlstra <peterz@infradead.org>
+   Date:   Thu Nov 10 13:01:10 2011 +0100
 
-Changes from V2:
-A new kvm functions defined in kvm_para.h, the only change to pvclock is the
-initial flag definition
+       sched: Avoid SMT siblings in select_idle_sibling() if possible
 
-Changes from V1:
-(Thanks Marcelo)
-Host code has all been moved to arch/x86/kvm/x86.c
-KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
+stopped selecting an idle SMT sibling when there are no idle cores in a
+single socket system.
 
-When a guest kernel is stopped by the host hypervisor it can look like a soft
-lockup to the guest kernel.  This false warning can mask later soft lockup
-warnings which may be real.  This patch series adds a method for a host
-hypervisor to communicate to a guest kernel that it is being stopped.  The
-final patch in the series has the watchdog check this flag when it goes to
-issue a soft lockup warning and skip the warning if the guest knows it was
-stopped.
+Intent of the select_idle_sibling() was to fallback to an idle SMT sibling,
+if it fails to identify an idle core. But this fallback was not happening
+on systems where all the scheduler domains had `SD_SHARE_PKG_RESOURCES'
+flag set.
 
-It was attempted to solve this in Qemu, but the side effects of saving and
-restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-by the amount of time of the pause.  This forces a guest to have ntp running
-in order to keep the wall clock accurate.
+Fix it. Slightly bigger patch of cleaning all these goto's etc is
+queued up for the next release.
 
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: arnd@arndb.de
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: jeremy.fitzhardinge@citrix.com
-Cc: levinsasha928@gmail.com
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
+Reported-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched_fair.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-Eric B Munson (4):
-  Add flag to indicate that a vm was stopped by the host
-  Add functions to check if the host has stopped the vm
-  Add ioctl for KVMCLOCK_GUEST_STOPPED
-  Add check for suspended vm in softlockup detector
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index a78ed27..8a39fa3 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2352,13 +2352,11 @@ again:
+ 		if (!smt && (sd->flags & SD_SHARE_CPUPOWER))
+ 			continue;
+ 
+-		if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
+-			if (!smt) {
+-				smt = 1;
+-				goto again;
+-			}
++		if (smt && !(sd->flags & SD_SHARE_CPUPOWER))
++			break;
++
++		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
+ 			break;
+-		}
+ 
+ 		sg = sd->groups;
+ 		do {
+@@ -2378,6 +2376,10 @@ next:
+ 			sg = sg->next;
+ 		} while (sg != sd->groups);
+ 	}
++	if (!smt) {
++		smt = 1;
++		goto again;
++	}
+ done:
+ 	rcu_read_unlock();
+ 
 
- Documentation/virtual/kvm/api.txt   |   12 ++++++++++++
- arch/ia64/include/asm/kvm_para.h    |    5 +++++
- arch/powerpc/include/asm/kvm_para.h |    5 +++++
- arch/s390/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/kvm_host.h     |    2 ++
- arch/x86/include/asm/kvm_para.h     |    8 ++++++++
- arch/x86/include/asm/pvclock-abi.h  |    1 +
- arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
- arch/x86/kvm/x86.c                  |   20 ++++++++++++++++++++
- include/asm-generic/kvm_para.h      |   14 ++++++++++++++
- include/linux/kvm.h                 |    2 ++
- kernel/watchdog.c                   |   12 ++++++++++++
- 12 files changed, 107 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/kvm_para.h
-
--- 
-1.7.5.4
 
