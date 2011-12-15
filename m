@@ -1,148 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab1LOFeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 00:34:07 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:59897 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab1LOFd5 (ORCPT
+	id S1752841Ab1LOFlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 00:41:40 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34919 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab1LOFlj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 00:33:57 -0500
-Message-ID: <4EE9869F.4070702@linux.vnet.ibm.com>
-Date: Thu, 15 Dec 2011 13:33:19 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	Thu, 15 Dec 2011 00:41:39 -0500
 MIME-Version: 1.0
-To: Liu Ping Fan <kernelfans@gmail.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        aliguori@us.ibm.com, gleb@redhat.com, mtosatti@redhat.com,
-        jan.kiszka@web.de
-Subject: Re: [PATCH v4] kvm: make vcpu life cycle separated from kvm instance
-References: <CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com> <1323923328-917-1-git-send-email-kernelfans@gmail.com>
-In-Reply-To: <1323923328-917-1-git-send-email-kernelfans@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11121419-9264-0000-0000-00000067AC61
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20111215010108.GA15650@suse.de>
+References: <1323858508-27198-1-git-send-email-myungjoo.ham@samsung.com>
+	<1323858508-27198-2-git-send-email-myungjoo.ham@samsung.com>
+	<20111215010108.GA15650@suse.de>
+Date: Thu, 15 Dec 2011 14:41:38 +0900
+X-Google-Sender-Auth: q3YiTyGXT0wC4yLtLW43QBIlysk
+Message-ID: <CAJ0PZbRRiMoEDEV5vwr9rREfSejA_hqLMDmLMBoUBZKjafYq1g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] Extcon (external connector): import Android's
+ switch class and modify.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, NeilBrown <neilb@suse.de>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 12:28 PM, Liu Ping Fan wrote:
+On Thu, Dec 15, 2011 at 10:01 AM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Dec 14, 2011 at 07:28:26PM +0900, MyungJoo Ham wrote:
+>> External connector class (extcon) is based on and an extension of Android
+>> kernel's switch class located at linux/drivers/switch/.
+>> This patch provides the before-extension switch class moved to the
+>> location where the extcon will be located (linux/drivers/extcon/).
+>>
+>> The before-extension class, switch class of Android kernel, commits
+>> imported are:
+>>
+>> switch: switch class and GPIO drivers.
+>> Author: Mike Lockwood <lockwood@android.com>
+>>
+>> switch: gpio: Don't call request_irq with interrupts disabled
+>> Author: Arve Hjønnevåg <arve@android.com>
+>>
+>> switch: Use device_create instead of device_create_drvdata.
+>> Author: Arve Hjønnevåg <arve@android.com>
+>>
+>> switch_gpio: Add missing #include <linux/interrupt.h>
+>> Author: Mike Lockwood <lockwood@android.com>
+>>
+>> In this patch, upon the commits of Android kernel, we have added:
+>> - Relocated and renamed for extcon.
+>> - Comments, module name, and author information are updated
+>> - Code clean for successing patches
+>> - Bugfix: enabling write access without write functions
+>
+> Nice, but if we accept this, will someone also make the needed changes
+> to the Android userspace code to handle the user api changes that this
+> causes?
+
+I have no idea about how Android will react to this as I have no
+developmental experiences with Android.
+However, from the perspective of general userspace, this modification
+incurs path changes (/sys/class/switch/.... to /sys/class/extcon/...)
+only.
+
+>
+>> --- /dev/null
+>> +++ b/drivers/extcon/Kconfig
+>> @@ -0,0 +1,22 @@
+>> +menuconfig EXTCON
+>> +     bool "External Connector Class (extcon) support"
+>
+> Why can't this be a module?
+>
+
+I also think this can be a module as well. I'm wondering why I've
+changed it to bool from RFC patchset's tristate. ;(
+
+>> +
+>> +struct class *extcon_class;
+>> +static atomic_t device_count;
+>
+> this should use the idr subsystem, not just an atomic variable, as you
+> aren't properly handling devices being removed (which is something
+> overall this core code needs to properly handle.)
+>
+
+It seems that I need to rewrite extcon_dev_register/unregister
+functions. I was simply reusing that part from android kernel;
+however, this time, they do look ugly.
+
+>
+>> +
+>> +static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+>> +             char *buf)
+>> +{
+>> +     struct extcon_dev *edev = (struct extcon_dev *)
+>> +             dev_get_drvdata(dev);
+>> +
+>> +     if (edev->print_state) {
+>> +             int ret = edev->print_state(edev, buf);
+>> +
+>> +             if (ret >= 0)
+>> +                     return ret;
+>> +             /* Use default if failed */
+>> +     }
+>> +     return sprintf(buf, "%u\n", edev->state);
+>> +}
+>> +
+>> +static ssize_t name_show(struct device *dev, struct device_attribute *attr,
+>> +             char *buf)
+>> +{
+>> +     struct extcon_dev *edev = (struct extcon_dev *)
+>> +             dev_get_drvdata(dev);
+>> +
+>> +     if (edev->print_name) {
+>> +             int ret = edev->print_name(edev, buf);
+>> +             if (ret >= 0)
+>> +                     return ret;
+>> +     }
+>> +     return sprintf(buf, "%s\n", edev->name);
+>> +}
+>
+> Why is the name somehow different from the device name in the first
+> place?
+
+I'll let dev_get_name() return what "name_show" wants. I guess I'll
+keep name_show sysfs entry to be compatible with Android kernel
+(except for the path) and keep the optional "print_name" callback.
 
 
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1833,11 +1833,12 @@ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
-> 
->  static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
->  {
-> -	int i;
->  	struct kvm_vcpu *vcpu;
-> 
-> -	kvm_for_each_vcpu(i, vcpu, kvm)
-> +	rcu_read_lock();
-> +	kvm_for_each_vcpu(vcpu, kvm)
->  		vcpu->arch.last_pte_updated = NULL;
-> +	rcu_read_unlock();
->  }
-> 
+>
+>> +/**
+>> + * extcon_set_state() - Set the cable attach states of the extcon device.
+>> + * @edev:    the extcon device
+>> + * @state:   new cable attach status for @edev
+>> + */
+>> +void extcon_set_state(struct extcon_dev *edev, u32 state)
+>> +{
+>> +     char name_buf[120];
+>> +     char state_buf[120];
+>> +     char *prop_buf;
+>> +     char *envp[3];
+>> +     int env_offset = 0;
+>> +     int length;
+>> +
+>> +     if (edev->state != state) {
+>> +             edev->state = state;
+>> +
+>> +             prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
+>> +             if (prop_buf) {
+>> +                     length = name_show(edev->dev, NULL, prop_buf);
+>
+> Heh, nice hack, but wouldn't it just be simpler to call the
+> evdev->print_name() function directly here?
+
+I didn't do so because print_name callback is optional.
+
+>
+>> +                     if (length > 0) {
+>> +                             if (prop_buf[length - 1] == '\n')
+>> +                                     prop_buf[length - 1] = 0;
+>> +                             snprintf(name_buf, sizeof(name_buf),
+>> +                                     "SWITCH_NAME=%s", prop_buf);
+>> +                             envp[env_offset++] = name_buf;
+>> +                     }
+>> +                     length = state_show(edev->dev, NULL, prop_buf);
+>
+> Same here.
+
+Same here. print_state is also optional. (and I expect many won't use
+these optional callbacks at least including MAX8997, MAX77693, and
+FSA9480)
+
+>> +                     printk(KERN_ERR "out of memory in extcon_set_state\n");
+>
+> dev_err()?
+
+Yes, that looks better.
+
+>
+>> +                     kobject_uevent(&edev->dev->kobj, KOBJ_CHANGE);
+>
+> I really dislike using uevents, what is listening for them?  Are you
+> hooked into udev's event chain in userspace to properly handle this?  If
+> not, what is the point of sending them?
+
+It is to let userspace processes get notified for the events in extcon.
+Do you think sysfs_notify() would be better for this purpose?
+
+>
+>> +
+>> +     ret = device_create_file(edev->dev, &dev_attr_state);
+>> +     if (ret < 0)
+>> +             goto err_create_file_1;
+>> +     ret = device_create_file(edev->dev, &dev_attr_name);
+>> +     if (ret < 0)
+>> +             goto err_create_file_2;
+>
+> Why not use default attributes for the class?  That makes this code go
+> away, and solves the error handling issues as well.
+
+Thanks for the remind! I'll use extcon_class->dev_attrs.
+
+>> + */
+>> +void extcon_dev_unregister(struct extcon_dev *edev)
+>> +{
+>> +     device_remove_file(edev->dev, &dev_attr_name);
+>> +     device_remove_file(edev->dev, &dev_attr_state);
+>> +     device_destroy(extcon_class, MKDEV(0, edev->index));
+>> +     dev_set_drvdata(edev->dev, NULL);
+>> +}
+>> +EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+>
+> As stated before, you forgot to decrement the count, but use the idr
+> subsystem and remember to decrement it here also.
+>
+
+Sure, I'll revise unregister function.
 
 
-I am sure that you should rebase it on the current kvm tree.
-
->  static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c38efd7..acaa154 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1830,11 +1830,13 @@ static int get_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
-> 
->  	switch (msr) {
->  	case HV_X64_MSR_VP_INDEX: {
-> -		int r;
-> +		int r = 0;
->  		struct kvm_vcpu *v;
-> -		kvm_for_each_vcpu(r, v, vcpu->kvm)
-> +		kvm_for_each_vcpu(v, vcpu->kvm) {
->  			if (v == vcpu)
->  				data = r;
-> +			r++;
-> +		}
+Thank you so much.
 
 
-Do not need rcu_lock?
+Cheers!
+MyungJoo
 
-> +struct kvm_vcpu *kvm_vcpu_get(struct kvm_vcpu *vcpu);
-> +void kvm_vcpu_put(struct kvm_vcpu *vcpu);
-> +void kvm_arch_vcpu_zap(struct work_struct *work);
-> +
-> +#define kvm_for_each_vcpu(vcpu, kvm) \
-> +	list_for_each_entry_rcu(vcpu, &kvm->vcpus, list)
-> 
-> -#define kvm_for_each_vcpu(idx, vcpup, kvm) \
-> -	for (idx = 0; \
-> -	     idx < atomic_read(&kvm->online_vcpus) && \
-> -	     (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
-> -	     idx++)
-> +#define kvm_for_each_vcpu_continue(vcpu, kvm) \
-> +	list_for_each_entry_continue_rcu(vcpu, &kvm->vcpus, list)
-> 
-
-
-Where is it used?
-
-> +struct kvm_vcpu *kvm_vcpu_get(struct kvm_vcpu *vcpu)
-> +{
-> +	if (vcpu == NULL)
-> +		return NULL;
-> +	if (atomic_add_unless(&vcpu->refcount, 1, 0))
-
-
-Why do not use atomic_inc()?
-Also, i think a memory barrier is needed after increasing refcount.
-
-> -	kvm->vcpus[atomic_read(&kvm->online_vcpus)] = vcpu;
-> +	/*Protected by kvm->lock*/
-> +	list_add_rcu(&vcpu->list, &kvm->vcpus);
-> +
->  	smp_wmb();
-
-
-This barrier can also be removed.
-
->  	atomic_inc(&kvm->online_vcpus);
-> 
->  #ifdef CONFIG_KVM_APIC_ARCHITECTURE
->  	if (kvm->bsp_vcpu_id == id)
-> -		kvm->bsp_vcpu = vcpu;
-> +		kvm->bsp_vcpu = kvm_vcpu_get(vcpu);
->  #endif
->  	mutex_unlock(&kvm->lock);
->  	return r;
-> @@ -2593,13 +2667,15 @@ static int vcpu_stat_get(void *_offset, u64 *val)
->  	unsigned offset = (long)_offset;
->  	struct kvm *kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i;
-> 
->  	*val = 0;
->  	raw_spin_lock(&kvm_lock);
-> -	list_for_each_entry(kvm, &vm_list, vm_list)
-> -		kvm_for_each_vcpu(i, vcpu, kvm)
-> +	list_for_each_entry(kvm, &vm_list, vm_list) {
-> +		rcu_read_lock();
-> +		kvm_for_each_vcpu(vcpu, kvm)
->  			*val += *(u32 *)((void *)vcpu + offset);
-> +		rcu_read_unlock();
-> +	}
-> 
->  	raw_spin_unlock(&kvm_lock);
->  	return 0;
-> @@ -2765,7 +2841,6 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
->  	kvm_preempt_ops.sched_out = kvm_sched_out;
-> 
->  	kvm_init_debug();
-> -
-
-
-You don not change anything, please do not touch this line.
-
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
