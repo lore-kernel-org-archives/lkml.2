@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab1LOCuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:50:13 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43705 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab1LOCuL (ORCPT
+	id S932217Ab1LOCuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:50:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61278 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758613Ab1LOCub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:50:11 -0500
-Date: Wed, 14 Dec 2011 18:50:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mike Galbraith <efault@gmx.de>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [resubmit] Re: [patch-final] Re: patch] cpusets, cgroups: disallow
- attaching kthreadd
-In-Reply-To: <20111214121604.bc26ab42.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1112141845390.27595@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net> <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net>
- <1318233815.6527.5.camel@marge.simson.net> <1318925436.9641.23.camel@marge.simson.net> <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com> <1319001860.6222.34.camel@marge.simson.net> <alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com> <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com> <20111206144721.7b1d473d.akpm@linux-foundation.org> <alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
- <1323227914.5057.10.camel@marge.simson.net> <1323232617.5057.50.camel@marge.simson.net> <alpine.DEB.2.00.1112071401431.27360@chino.kir.corp.google.com> <20111214121604.bc26ab42.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 14 Dec 2011 21:50:31 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <E1RauNd-0008W1-02@tytso-glaptop.cam.corp.google.com>
+References: <E1RauNd-0008W1-02@tytso-glaptop.cam.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 14 Dec 2011 18:50:07 -0800
+X-Google-Sender-Auth: eRXQNBjpnj7g8sjaOx6y9fDUKyk
+Message-ID: <CA+55aFw6n=WaDWRn7NqtBei1x0-w1PkH5x6r3iQSSPZvxYvDhQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 bugfixes for 3.2-rc5
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011, Andrew Morton wrote:
+On Wed, Dec 14, 2011 at 11:20 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>
+> There is a signed tag tytso-for-linus-20111214 covering these patches,
+> which fix a potential hang, crash (on big endian), and data corruption
+> bugs which show up when using fsx and/or Hugh's kernel compile/mm
+> torture test.
 
-> diff -puN kernel/cpuset.c~cpusets-cgroups-disallow-attaching-kthreadd kernel/cpuset.c
-> --- a/kernel/cpuset.c~cpusets-cgroups-disallow-attaching-kthreadd
-> +++ a/kernel/cpuset.c
-> @@ -59,6 +59,7 @@
->  #include <linux/mutex.h>
->  #include <linux/workqueue.h>
->  #include <linux/cgroup.h>
-> +#include <linux/kthread.h>
->  
->  /*
->   * Workqueue for cpuset related tasks.
-> @@ -1417,9 +1418,11 @@ static int cpuset_can_attach(struct cgro
->  		 * unnecessary.  Thus, cpusets are not applicable for such
->  		 * threads.  This prevents checking for success of
->  		 * set_cpus_allowed_ptr() on all attached tasks before
-> -		 * cpus_allowed may be changed.
-> +		 * cpus_allowed may be changed.  We also disallow attaching
-> +		 * kthreadd, to prevent its child from becoming trapped should
-> +		 * it then acquire PF_THREAD_BOUND.
->  		 */
-> -		if (task->flags & PF_THREAD_BOUND)
-> +		if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
->  			return -EINVAL;
->  		if ((ret = security_task_setscheduler(task)))
->  			return ret;
-> diff -puN kernel/sched/core.c~cpusets-cgroups-disallow-attaching-kthreadd kernel/sched/core.c
-> --- a/kernel/sched/core.c~cpusets-cgroups-disallow-attaching-kthreadd
-> +++ a/kernel/sched/core.c
-> @@ -71,6 +71,7 @@
->  #include <linux/ftrace.h>
->  #include <linux/slab.h>
->  #include <linux/init_task.h>
-> +#include <linux/kthread.h>
->  
->  #include <asm/tlb.h>
->  #include <asm/irq_regs.h>
-> @@ -7535,6 +7536,14 @@ static int cpu_cgroup_can_attach(struct 
->  	struct task_struct *task;
->  
->  	cgroup_taskset_for_each(task, cgrp, tset) {
-> +		/*
-> +		 * kthreadd can fork workers for an RT workqueue in a cgroup
-> +		 * which may or may not have rt_runtime allocated.  Just say no,
-> +		 * as attaching a global resource to a non-root group  doesn't
-> +		 * make any sense anyway.
-> +		 */
-> +		if (tsk == kthreadd_task)
-> +			return -EINVAL;
->  #ifdef CONFIG_RT_GROUP_SCHED
->  		if (!sched_rt_can_attach(cgroup_tg(cgrp), task))
->  			return -EINVAL;
+Ok, since I build my own git versions, I have one that can pull signed
+tags and automatically verifies them and saves the signed tag
+information as part of the commit object.
 
-Ah, yes, this requires knowledge of the cgroups' proc file trigger to 
-move all threads into the cgroup.  The ->can_attach() functions then 
-have all-or-nothing behavior; either all the threads can be moved or 
-none of them can.  So the above are the correct fixups for both 
-->can_attach() functions.
+Which is all fine, but your tag-names are just ugly. I could edit the
+end result (another advantage of the new git version - it starts the
+editor automatically), but I decided to not do so, and instead use
+this as a "teaching moment" for everybody.
 
-The above diff references non-existant symbols (tsk instead of task) in 
-both functions, but it appears (and compiles correctly) in linux-next.  So 
-please preserve my acked-by.
+Everybody: you can now create a signed tag, and just point me at it.
+You don't even have to have a separate branch for me to pull any more,
+just the signed tag is fine.
 
-Thanks for fixing this up!
+So it would actually be nicer if you used temporary tag names the way
+you use temporary branch names when  you ask me to pull. The tag
+*content* will be saved from now on (unless I screw up while traveling
+or something and pull with a machine that has an older git version),
+so there's very little advantage in then saving the tags separately by
+having ugly tag-names with long lifetimes.
+
+I pushed out, so you can see this in action in the current git tree by doing
+
+ [torvalds@i5 linux]$ git show --abbrev-commit 2240a7bb479c
+
+to see the normal commit message. And then to see the actual
+saved-away signed tag information, do
+
+  [torvalds@i5 linux]$ git cat-file commit 2240a7bb479c
+
+which should all work with old versions of git too - it's just the
+merger that needs a new version of git. It's easy to parse: it's the
+standard "git tag" format, except it is indented by a space to show
+that it's part of the header (and then the first empty line is what
+ends the commit object headers). So you can basically do something
+like
+
+   git cat-file commit 2240a7bb479c |
+        awk '/^mergetag /,/^$/ { print }' |
+        sed 's/^mergetag//' |
+        sed 's/^ //'
+
+to re-create the tag object, and then you can verify it (the part
+*before* the "-----BEGIN PGP SIGNATURE-----" line should match the
+signature inside the PGP signature - trivial format).
+
+It got verified when I pulled it (the gpg verification output shows up
+as part of the comments in the commit message editing thing), but
+using the above you can now verify it after-the-fact too, without
+having access to your original tag object - since the data is embedded
+in the git merge commit.
+
+Hmm?
+
+                              Linus
