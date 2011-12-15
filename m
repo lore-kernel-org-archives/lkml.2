@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab1LOHPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 02:15:03 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50447 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab1LOHPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 02:15:01 -0500
-Date: Thu, 15 Dec 2011 08:13:07 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] x86, microcode, AMD: Fixes for next merge window
-Message-ID: <20111215071307.GE14237@elte.hu>
-References: <20111214145846.GD23589@aftab>
+	id S1754023Ab1LOHUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 02:20:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52696 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab1LOHUU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 02:20:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214145846.GD23589@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <20111215070857.GD14237@elte.hu>
+References: <20111214223925.GA27578@www.outflux.net>
+	<20111215070857.GD14237@elte.hu>
+Date: Wed, 14 Dec 2011 23:20:20 -0800
+X-Google-Sender-Auth: DAy2QdFvxmUqwuFhCP85kJvTnco
+Message-ID: <CAGXu5jLEiB4i1_WCkDz3MDM=LBKKWB_cqhOWcpzEYAon0YZp8w@mail.gmail.com>
+Subject: Re: [PATCH] sched: mark parent and real_parent as __rcu
+From: Kees Cook <keescook@chromium.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 11:08 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> * Kees Cook <keescook@chromium.org> wrote:
+>
+>> The parent and real_parent pointers should be considered __rcu, since
+>> they should be held under either tasklist_lock or rcu_read_lock.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  include/linux/sched.h |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> Did you get some warning that alerted you to this problem? If
+> yes then please include it in the changelog, so that people
+> hitting the message can easily find it.
+>
+> Same consideration applies the second patch as well.
 
-* Borislav Petkov <bp@amd64.org> wrote:
+No, this was via code inspection related to reviews of the Yama LSM's
+use of these structures and comparing the RCU and tasklist_lock
+behavior/requirements seen in the rest of the kernel. Most attempts at
+using sparse after this change were not very successful due to the
+high volume of unrelated noise currently seen with "make C=2", but I
+was able to confirm that the apparmor and tomoyo patches were flagged
+by sparse, at least. When this __rcu marking is in place, if there is
+a place that might need rcu_dereference, it would show up as "warning:
+dereference of noderef expression".
 
-> Hi Ingo,
-> 
-> as promised, please pull from the branch below to receive the following
-> fixes, they could be queued for the next merge window and simmer a while
-> in linux-next until then.
-> 
-> Thanks.
-> 
-> The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
-> 
->   Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode-verify-size
-> 
-> Borislav Petkov (5):
->       x86, microcode, AMD: Add a vendor-specific exit function
->       x86, microcode, AMD: Add a reusable buffer
->       x86, microcode, AMD: Simplify ucode verification
->       x86, microcode, AMD: Exit early on success
->       x86, microcode, AMD: Update copyrights
-> 
->  arch/x86/include/asm/microcode.h |    2 +
->  arch/x86/kernel/microcode_amd.c  |  209 +++++++++++++++++++++-----------------
->  arch/x86/kernel/microcode_core.c |    5 +
->  3 files changed, 121 insertions(+), 95 deletions(-)
+-Kees
 
-Pulled, thanks a lot Boris!
-
-	Ingo
+-- 
+Kees Cook
+ChromeOS Security
