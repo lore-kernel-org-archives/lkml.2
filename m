@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863Ab1LONi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 08:38:29 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13939
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751022Ab1LONi1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 08:38:27 -0500
-X-SpamScore: -10
-X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Date: Thu, 15 Dec 2011 21:51:30 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Jamie Iles <jamie@jamieiles.com>, Sascha Hauer <kernel@pengutronix.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-Message-ID: <20111215135129.GA2831@S2100-06.ap.freescale.net>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
- <20111212232903.GC2616@gallagher>
- <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
+	id S1758873Ab1LONjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 08:39:45 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33236 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1LONjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 08:39:44 -0500
+Message-ID: <4EE9F899.7010402@gmail.com>
+Date: Thu, 15 Dec 2011 07:39:37 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/9] irq: convert generic-chip to use irq_domain
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-4-git-send-email-robherring2@gmail.com> <20111215052512.GB21815@S2101-09.ap.freescale.net> <20111215055501.GC21815@S2101-09.ap.freescale.net>
+In-Reply-To: <20111215055501.GC21815@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 10:54:58AM -0700, Grant Likely wrote:
-> On Mon, Dec 12, 2011 at 4:29 PM, Jamie Iles <jamie@jamieiles.com> wrote:
-> > Hi Grant,
-> >
-> > I'm still going through these and trying to digest them but a couple of
-> > quick questions/comments.
-> >
-> > Jamie
-> >
-> > On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
-> >> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> >> new file mode 100644
-> >> index 0000000..e40c436
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> >> @@ -0,0 +1,114 @@
-> >> +This binding is a work-in-progress, and are based on some experimental
-> >> +work by benh[1].
-> >> +
-> >> +Sources of clock signal can be represented by any node in the device
-> >> +tree.  Those nodes are designated as clock providers.  Clock consumer
-> >> +nodes use a phandle and clock specifier pair to connect clock provider
-> >> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
-> >> +specifier is an array of one more more cells identifying the clock
-> >> +output on a device.  The length of a clock specifier is defined by the
-> >> +value of a #clock-cells property in the clock provider node.
-> >> +
-> >> +[1] http://patchwork.ozlabs.org/patch/31551/
-> >> +
-> >> +==Clock providers==
-> >> +
-> >> +Required properties:
-> >> +#clock-cells:           Number of cells in a clock specifier; typically will be
-> >> +                set to 1
-> >
-> > I'm not sure I fully understand what the extra cells actually mean for
-> > clocks.  I think the first integer is the clock output to use but some
-> > of the versatile and highbank ones only have a phandle or is it more
-> > implementation defined?  The clock-output-names description hints at
-> > recommended, so I find this a little confusing, but that could just be
-> > me!
+On 12/14/2011 11:55 PM, Shawn Guo wrote:
+> On Thu, Dec 15, 2011 at 01:25:20PM +0800, Shawn Guo wrote:
+>> On Wed, Dec 14, 2011 at 09:28:52AM -0600, Rob Herring wrote:
+>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> Add irq domain support to irq generic-chip. This enables users of
+>>> generic-chip to support dynamic irq assignment needed for DT interrupt
+>>> binding. Users must be converted to use irq_data.hwirq for determining
+>>> local interrupt numbers rather than using the Linux irq number.
+>>>
+>>> irq_base is kept for now as there are a few users of it. Once they
+>>> are converted to use the irq domain, it can be removed.
+>>>
+>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>> ---
+>>
+>> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+>>
+> Sorry, I have to take that tag back after I correct my test setup.
+> It does not work for imx5 TZIC case, because the following change
+> I suggested before is missed.
 > 
-> I'm following convention here that has been established with
-> interrupts, gpios, and others.  Sometimes more information is needed
-> that just the clock number.  Using #clock-cells gives a clock provider
-> the option of having additional fields for clock flags or other data.
-> This is very much implementation defined.  Simple clock providers that
-> only have a single clock output can easily use #clock-cells = <0>.
-> Providers with multiple outputs will need to use 1 or more cells.
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index eb763f7..2a2aac1 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -39,7 +39,7 @@ void irq_domain_add(struct irq_domain *domain)
+>                         return;
+>                 }
+>                 d->domain = domain;
+> -               d->hwirq = hwirq;
+> +               d->hwirq = hwirq - domain->hwirq_base;
+
+This is a problem. It entirely defeats the point of hwirq_base and it
+would break the GIC. We need to fix this in the generic irq chip.
+
+Rob
+
+>         }
 > 
-It totally destroys my understanding on #clock-cells :)
-
-I thought it's introduced to reduce the clock nodes in dts.  That said,
-#clock-cells stands for the number of clks we describe in the node.
-When #clock-cells > 1 for a node, the node becomes a clk blob which
-actually contains multiple clks.  I migrated the imx6 clock to your
-first post with this approach [1], using 70 nodes to describe 110
-clocks (~35% nodes reduced).
-
-Now, you are saying it's not designed for this purpose.  I'm pretty
-confused, because the only reasonable use of #clock-cells to me is
-just that way, and I fail to see why we need #clock-cells if we do
-not use it that way.
-
-http://comments.gmane.org/gmane.linux.drivers.devicetree/9631
-
--- 
-Regards,
-Shawn
+>         mutex_lock(&irq_domain_mutex);
+> 
 
