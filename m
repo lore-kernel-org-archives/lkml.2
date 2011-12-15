@@ -1,339 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab1LOMKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 07:10:41 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54013 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab1LOMKj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 07:10:39 -0500
+	id S1758795Ab1LOMaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 07:30:03 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:41113 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab1LOMaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 07:30:00 -0500
+Message-ID: <4EE9E81E.2090700@parallels.com>
+Date: Thu, 15 Dec 2011 16:29:18 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <4EE866AE.9090502@metafoo.de>
-References: <CAH9NwWfMXKQ5DUeHfXaMzEKK_Zn6TS6E44AdqhcOj-jMuAeGQw@mail.gmail.com>
- <4EE866AE.9090502@metafoo.de>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Thu, 15 Dec 2011 13:10:17 +0100
-Message-ID: <CAH9NwWdnD8D38FC7Nsk=CcVRkb1O5XQHE37nVhwuOokL-uGBtA@mail.gmail.com>
-Subject: Re: [PATCH RESEND] add led driver for Bachmann's ot200
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, rpurdie@rpsys.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Michal Hocko <mhocko@suse.cz>
+CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <ebiederm@xmission.com>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH v9 1/9] Basic kernel memory functionality for the Memory
+ Controller
+References: <1323676029-5890-1-git-send-email-glommer@parallels.com> <1323676029-5890-2-git-send-email-glommer@parallels.com> <20111214170447.GB4856@tiehlicka.suse.cz>
+In-Reply-To: <20111214170447.GB4856@tiehlicka.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
+On 12/14/2011 09:04 PM, Michal Hocko wrote:
+> [Now with the current patch version, I hope]
+>
+> On Mon 12-12-11 11:47:01, Glauber Costa wrote:
+>> This patch lays down the foundation for the kernel memory component
+>> of the Memory Controller.
+>>
+>> As of today, I am only laying down the following files:
+>>
+>>   * memory.independent_kmem_limit
+>
+> Maybe has been already discussed but the name is rather awkward and it
+> would deserve more clarification. It is independent in the way that it
+> doesn't add up to the standard (user) allocations or it enables/disables
+> accounting?
 
-2011/12/14 Lars-Peter Clausen <lars@metafoo.de>:
-> On 12/13/2011 10:57 AM, Christian Gmeiner wrote:
->> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
->> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> Date: Fri, 18 Nov 2011 10:21:48 +0100
->> Subject: [PATCH] add led driver for Bachmann's ot200
+If turned on, it doesn't add up to the user allocations.
+As for the name, this is marked experimental, so I don't think anyone 
+will be relying on it for a while. We can change it, if you have a 
+better suggestion.
+
+>>   * memory.kmem.limit_in_bytes (currently ignored)
+>
+> What happens if we reach the limit? Are all kernel allocations
+> considered or only selected caches? How do I find out which are those?
+>
+> AFAIU you have implemented it for network buffers at this stage but I
+> guess that dentries will follow...
+
+Further allocations should fail.
+
+About other caches, tcp is a bit different because we are concerned with 
+conditions that applies after the allocation already took place. It is 
+not clear to me if we will treat the other caches as a single entity, or 
+separate them.
+
+>>   * memory.kmem.usage_in_bytes (always zero)
 >>
->> This patch adds support for leds on Bachmann's ot200 visualisation device.
->> The device has three leds on the back panel (led_err, led_init and led_run)
->> and can handle up to seven leds on the front panel.
->>
->> The driver was written by Linutronix on behalf of
->> Bachmann electronic GmbH.
->>
->> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Kirill A. Shutemov<kirill@shutemov.name>
+>> CC: Paul Menage<paul@paulmenage.org>
+>> CC: Greg Thelen<gthelen@google.com>
+>> CC: Johannes Weiner<jweiner@redhat.com>
+>> CC: Michal Hocko<mhocko@suse.cz>
 >> ---
->>  drivers/leds/Kconfig      |    8 ++
->>  drivers/leds/Makefile     |    1 +
->>  drivers/leds/leds-ot200.c |  204 +++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 213 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/leds/leds-ot200.c
+>>   Documentation/cgroups/memory.txt |   40 ++++++++++++++-
+>>   init/Kconfig                     |   11 ++++
+>>   mm/memcontrol.c                  |  105 ++++++++++++++++++++++++++++++++++++--
+>>   3 files changed, 149 insertions(+), 7 deletions(-)
 >>
->> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->> index ff203a4..6cf0dd6 100644
->> --- a/drivers/leds/Kconfig
->> +++ b/drivers/leds/Kconfig
->> @@ -387,6 +387,14 @@ config LEDS_RENESAS_TPU
->>          pin function. The latter to support brightness control.
->>          Brightness control is supported but hardware blinking is not.
+>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+>> index cc0ebc5..f245324 100644
+>> --- a/Documentation/cgroups/memory.txt
+>> +++ b/Documentation/cgroups/memory.txt
+>> @@ -44,8 +44,9 @@ Features:
+>>    - oom-killer disable knob and oom-notifier
+>>    - Root cgroup has no limit controls.
 >>
->> +config LEDS_OT200
->> +       tristate "LED support for Bachmann OT200"
->> +       depends on LEDS_CLASS
->> +       help
->> +         This option enables support for the LEDs on the Bachmann OT200. The
->> +         LEDs are controlled through LPC bus.
->> +         Say Y to enable LEDs on the Bachmann OT200.
->> +
->>  config LEDS_TRIGGERS
->>        bool "LED Trigger support"
->>        depends on LEDS_CLASS
->> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
->> index e4f6bf5..0814d42 100644
->> --- a/drivers/leds/Makefile
->> +++ b/drivers/leds/Makefile
->> @@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)                        += leds-ns2.o
->>  obj-$(CONFIG_LEDS_NETXBIG)             += leds-netxbig.o
->>  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
->>  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
->> +obj-$(CONFIG_LEDS_OT200)               += leds-ot200.o
+>> - Kernel memory and Hugepages are not under control yet. We just manage
+>> - pages on LRU. To add more controls, we have to take care of performance.
+>> + Hugepages is not under control yet. We just manage pages on LRU. To add more
+>
+> Hugepages are not
+> Anyway this sounds outdated as we track both THP and hugetlb, right?
+>
+>> + controls, we have to take care of performance. Kernel memory support is work
+>> + in progress, and the current version provides basically functionality.
+>
+> s/basically/basic/
+>
 >>
->>  # LED SPI Drivers
->>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
->> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
->> new file mode 100644
->> index 0000000..60f118b
->> --- /dev/null
->> +++ b/drivers/leds/leds-ot200.c
->> @@ -0,0 +1,204 @@
->> +/*
->> + * Bachmann ot200 leds driver.
->> + *
->> + * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> + * License: GPL as published by the FSF.
->> + */
+>>   Brief summary of control files.
+>>
+>> @@ -56,8 +57,11 @@ Brief summary of control files.
+>>   				 (See 5.5 for details)
+>>    memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+>>   				 (See 5.5 for details)
+>> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
+>> +				 (See 2.7 for details)
+>>    memory.limit_in_bytes		 # set/show limit of memory usage
+>>    memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+>> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+>>    memory.failcnt			 # show the number of memory usage hits limits
+>>    memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+>>    memory.max_usage_in_bytes	 # show max memory usage recorded
+>> @@ -72,6 +76,9 @@ Brief summary of control files.
+>>    memory.oom_control		 # set/show oom controls.
+>>    memory.numa_stat		 # show the number of memory usage per numa node
+>>
+>> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+>> +				   independent of user limits
 >> +
->> +#include <linux/platform_device.h>
->> +#include <linux/slab.h>
->> +#include <linux/leds.h>
->> +#include <linux/io.h>
->> +#include <linux/module.h>
+>
+> It is not clear what happens in enabled/disabled cases. Let's say they
+> are not independent. Does it form a single limit with user charges or it
+> toggles kmem charging on/off.
+>
+>>   1. History
+>>
+>>   The memory controller has a long history. A request for comments for the memory
+>> @@ -255,6 +262,35 @@ When oom event notifier is registered, event will be delivered.
+>>     per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+>>     zone->lru_lock, it has no lock of its own.
+>>
+>> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
 >> +
->> +struct ot200_led {
->> +       struct led_classdev cdev;
->> +       char name[8];
->> +       unsigned int num;
+>> +With the Kernel memory extension, the Memory Controller is able to limit
+>> +the amount of kernel memory used by the system. Kernel memory is fundamentally
+>> +different than user memory, since it can't be swapped out, which makes it
+>> +possible to DoS the system by consuming too much of this precious resource.
+>> +
+>> +Some kernel memory resources may be accounted and limited separately from the
+>> +main "kmem" resource. For instance, a slab cache that is considered important
+>> +enough to be limited separately may have its own knobs.
+>
+> How do you tell which are those that are accounted to the "main kmem"?
+
+Besides being in this list, they should have they own files, like tcp.
+>
+>> +
+>> +Kernel memory limits are not imposed for the root cgroup. Usage for the root
+>> +cgroup may or may not be accounted.
+>> +
+>> +Memory limits as specified by the standard Memory Controller may or may not
+>> +take kernel memory into consideration. This is achieved through the file
+>> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
+>> +memory to be controlled separately.
+>
+> Separately from user space allocations, right?
+Yes.
+> What happens if we reach the limit in both cases?
+For kernel memory, further allocations should fail.
+
+>
+>> @@ -344,9 +353,14 @@ enum charge_type {
+>>   };
+>>
+>>   /* for encoding cft->private value on file */
+>> -#define _MEM			(0)
+>> -#define _MEMSWAP		(1)
+>> -#define _OOM_TYPE		(2)
+>> +
+>> +enum mem_type {
+>> +	_MEM = 0,
+>> +	_MEMSWAP,
+>> +	_OOM_TYPE,
+>> +	_KMEM,
 >> +};
 >> +
->> +static u8 old_val;
->> +static u8 old_val_back;
->> +DEFINE_SPINLOCK(value_lock);
->> +
->> +static void ot200_led_set(struct led_classdev *led_cdev,
->> +                       enum led_brightness value)
->> +{
->> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
->> +       u8 val;
->> +       u8 mask;
->> +       unsigned long flags;
->> +
->> +       mask = 1 << led->num;
->> +
->> +       spin_lock_irqsave(&value_lock, flags);
->> +       val = old_val;
->> +
->> +       if (value == LED_OFF)
->> +               val &= ~mask;
->> +       else
->> +               val |= mask;
->> +
->> +       old_val = val;
->> +       spin_unlock_irqrestore(&value_lock, flags);
->> +       outb(val, 0x49);
->> +}
->> +
 >
-> These two functions (above and beneath) look rather similar, they could
-> probably share most of their code. Maybe use the leds num field to
-> distinguish between the two types and choose the address where to write the
-> value accordingly.
+> Probably in a separate (cleanup) patch?
+>
+>>   #define MEMFILE_PRIVATE(x, val)	(((x)<<  16) | (val))
+>>   #define MEMFILE_TYPE(val)	(((val)>>  16)&  0xffff)
+>>   #define MEMFILE_ATTR(val)	((val)&  0xffff)
+>> @@ -3848,10 +3862,17 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+>>   	u64 val;
+>>
+>>   	if (!mem_cgroup_is_root(memcg)) {
+>> +		val = 0;
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> +		if (!memcg->kmem_independent_accounting)
+>> +			val = res_counter_read_u64(&memcg->kmem, RES_USAGE);
+>> +#endif
+>>   		if (!swap)
+>> -			return res_counter_read_u64(&memcg->res, RES_USAGE);
+>> +			val += res_counter_read_u64(&memcg->res, RES_USAGE);
+>>   		else
+>> -			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
+>> +			val += res_counter_read_u64(&memcg->memsw, RES_USAGE);
+>> +
+>> +		return val;
+>>   	}
+>
+> So you report kmem+user but we do not consider kmem during charge so one
+> can easily end up with usage_in_bytes over limit but no reclaim is going
+> on. Not good, I would say.
+>
+> OK, so to sum it up. The biggest problem I see is the (non)independent
+> accounting. We simply cannot mix user+kernel limits otherwise we would
+> see issues (like kernel resource hog would force memcg-oom and innocent
+> members would die because their rss is much bigger).
+> It is also not clear to me what should happen when we hit the kmem
+> limit. I guess it will be kmem cache dependent.
 
-Sounds like a good idea.
+So right now, tcp is completely independent, since it is not accounted 
+to kmem. In summary, we still never do non-independent accounting. When 
+we start doing it for the other caches, We will have to add a test at 
+charge time as well.
 
->
->> +static void ot200_led_back_set(struct led_classdev *led_cdev,
->> +                       enum led_brightness value)
->> +{
->> +       struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
->> +       u8 val;
->> +       u8 mask;
->> +       unsigned long flags;
->> +
->> +       mask = 1 << led->num;
->> +
->> +       spin_lock_irqsave(&value_lock, flags);
->> +       val = old_val_back;
->> +
->> +       if (value == LED_OFF)
->> +               val &= ~mask;
->> +       else
->> +               val |= mask;
->> +
->> +       old_val_back = val;
->> +       spin_unlock_irqrestore(&value_lock, flags);
->> +       outb(val, 0x5a);
->> +}
->> +
->> +static int __devinit create_ot200_led(struct platform_device *pdev, int num,
->> +               struct ot200_led *led)
->> +{
->> +       int ret;
->> +
->> +       num += 1;
->> +       snprintf(led->name, sizeof(led->name), "led%d", num);
->> +       led->num = 7 - num;
->> +       led->cdev.name = led->name;
->> +       led->cdev.default_trigger = NULL;
->> +       led->cdev.blink_set = NULL;
->> +       led->cdev.brightness_set = ot200_led_set;
->> +
->> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
->> +       if (ret < 0)
->> +               goto out;
->> +
->> +       dev_set_drvdata(led->cdev.dev, led);
->> +       return 0;
->> +
->> +       led_classdev_unregister(&led->cdev);
->> +out:
->> +       return ret;
->> +}
->
-> These two look also rather similar.
+We still need to keep it separate though, in case the independent flag 
+is turned on/off
 
-Correct... will improve it in v2.
-
->
->> +
->> +static int __devinit create_ot200_led_back(struct platform_device *pdev,
->> +               int num, struct ot200_led *led)
->> +{
->> +       char *led_name;
->> +       int ret;
->> +
->> +       switch (num) {
->> +       case 0:
->> +               led_name = "run";
->> +               break;
->> +       case 1:
->> +               led_name = "init";
->> +               break;
->> +       case 2:
->> +               led_name = "err";
->> +               break;
->> +       default:
->> +               BUG();
->> +       };
->
-> Since your led names are const and do not depend on platform data a global
-> static array containing all the names (including the led prefix) should
-> probably work as well.
->
-
-I am fine with this.
-
->> +
->> +       snprintf(led->name, sizeof(led->name), "led_%s", led_name);
->> +       led->num = num;
->> +       led->cdev.name = led->name;
->> +       led->cdev.blink_set = NULL;
->> +       led->cdev.brightness_set = ot200_led_back_set;
->> +
->> +       ret = led_classdev_register(&pdev->dev, &led->cdev);
->> +       if (ret < 0)
->> +               goto out;
->> +
->> +       dev_set_drvdata(led->cdev.dev, led);
->> +       return 0;
->> +
->> +       led_classdev_unregister(&led->cdev);
->> +out:
->> +       return ret;
->> +
->> +}
->> +
->> +#define NUM_LEDS       7
->> +#define NUM_LEDS_BACK  3
->> +#define NUM_LEDS_TOTAL (NUM_LEDS + NUM_LEDS_BACK)
->> +
->> +static int __devinit ot200_led_probe(struct platform_device *pdev)
->> +{
->> +       struct ot200_led *leds;
->> +       int i;
->> +       int ret;
->> +
->> +       leds = kzalloc(sizeof(struct ot200_led) * NUM_LEDS_TOTAL, GFP_KERNEL);
->
-> kcalloc
->
-
-okay
-
->> +       if (!leds)
->> +               return -ENOMEM;
->> +
->> +       for (i = 0; i < NUM_LEDS; i++) {
->> +               ret = create_ot200_led(pdev, i, &leds[i]);
->> +               if (ret < 0)
->> +                       goto err;
->> +       }
->> +
->> +       for (i = NUM_LEDS; i < NUM_LEDS + NUM_LEDS_BACK; i++) {
->> +               ret = create_ot200_led_back(pdev, i - NUM_LEDS, &leds[i]);
->> +               if (ret < 0)
->> +                       goto err;
->> +       }
->> +
->> +       platform_set_drvdata(pdev, leds);
->> +       outb(0x0, 0x49);        /* turn of all front leds */
->
-> off
->
-
-ups
-
->> +       outb(0x2, 0x5a);        /* turn on init led */
->> +       return 0;
->> +
->> +err:
->> +       for (i = i - 1; i >= 0; i--)
->> +               led_classdev_unregister(&leds[i].cdev);
->> +
->> +       kfree(leds);
->> +
->> +       return ret;
->> +}
->> +
->> +static int __devexit ot200_led_remove(struct platform_device *pdev)
->> +{
->> +       int i;
->> +       struct ot200_led *leds;
->> +
->> +       leds = platform_get_drvdata(pdev);
->> +
->> +       for (i = 0; i < NUM_LEDS_TOTAL; i++)
->> +               led_classdev_unregister(&leds[i].cdev);
->> +
->> +       kfree(leds);
->> +       platform_set_drvdata(pdev, NULL);
->
-> platform_set_drvdata(pdev, NULL) is not necessary.
-
-okay
-
->
->> +
->> +       return 0;
->> +}
->> +
->> +static struct platform_driver ot200_led_driver = {
->> +       .probe          = ot200_led_probe,
->> +       .remove         = __devexit_p(ot200_led_remove),
->> +       .driver         = {
->> +               .name   = "leds-ot200",
->> +               .owner  = THIS_MODULE,
->> +       },
->> +};
->> +
->> +module_platform_driver(ot200_led_driver);
->> +
->> +MODULE_AUTHOR("Sebastian A. Siewior <bigeasy@linutronix.de>");
->> +MODULE_DESCRIPTION("ot200 LED driver");
->> +MODULE_LICENSE("GPL");
->> +MODULE_ALIAS("platform:leds-ot200");
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
