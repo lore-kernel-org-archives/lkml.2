@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab1LORhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:37:42 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35323 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab1LORhl convert rfc822-to-8bit (ORCPT
+	id S1758969Ab1LORiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:38:05 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:17320 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756287Ab1LORiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:37:41 -0500
+	Thu, 15 Dec 2011 12:38:02 -0500
+X-SpamScore: 2
+X-BigFish: VS2(zzbb2dI9371I1432N98dK446uzz1202hzzz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4EEA2F38.2090807@freescale.com>
+Date: Thu, 15 Dec 2011 11:32:40 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20111215151335.GB2831@S2100-06.ap.freescale.net>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
- <20111212232903.GC2616@gallagher> <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
- <20111215135129.GA2831@S2100-06.ap.freescale.net> <4EEA02D5.9020309@gmail.com>
- <20111215151335.GB2831@S2100-06.ap.freescale.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 15 Dec 2011 10:37:19 -0700
-X-Google-Sender-Auth: 5v-Lo8kp1NPyiylUjW4fdc3IDK8
-Message-ID: <CACxGe6t1UyzKhUGQXyYvKd-iNQJNCR7dXUra6pAE-LF_UCNSuw@mail.gmail.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Rob Herring <robherring2@gmail.com>, Jamie Iles <jamie@jamieiles.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Li Yang <leoli@freescale.com>
+CC: <Artem.Bityutskiy@nokia.com>, <dedekind1@gmail.com>,
+        <linuxppc-dev@lists.ozlabs.org>, LiuShuo <b35362@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <shuo.liu@freescale.com>,
+        <linux-mtd@lists.infradead.org>, <akpm@linux-foundation.org>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala> <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com> <4EE6BC9B.4000602@freescale.com> <4EE8612C.9050104@freescale.com> <4EE903CE.1010903@freescale.com> <CADRPPNRRXTWzBEvY=vhe9+v0b8Ntq8KNoaXFN8pQZGmMc-dJYw@mail.gmail.com>
+In-Reply-To: <CADRPPNRRXTWzBEvY=vhe9+v0b8Ntq8KNoaXFN8pQZGmMc-dJYw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 8:13 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> On Thu, Dec 15, 2011 at 08:23:17AM -0600, Rob Herring wrote:
->>
->>
->> On 12/15/2011 07:51 AM, Shawn Guo wrote:
->> > On Tue, Dec 13, 2011 at 10:54:58AM -0700, Grant Likely wrote:
->> >> On Mon, Dec 12, 2011 at 4:29 PM, Jamie Iles <jamie@jamieiles.com> wrote:
->> >>> Hi Grant,
->> >>>
->> >>> I'm still going through these and trying to digest them but a couple of
->> >>> quick questions/comments.
->> >>>
->> >>> Jamie
->> >>>
->> >>> On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
->> >>>> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> >>>> new file mode 100644
->> >>>> index 0000000..e40c436
->> >>>> --- /dev/null
->> >>>> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> >>>> @@ -0,0 +1,114 @@
->> >>>> +This binding is a work-in-progress, and are based on some experimental
->> >>>> +work by benh[1].
->> >>>> +
->> >>>> +Sources of clock signal can be represented by any node in the device
->> >>>> +tree.  Those nodes are designated as clock providers.  Clock consumer
->> >>>> +nodes use a phandle and clock specifier pair to connect clock provider
->> >>>> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
->> >>>> +specifier is an array of one more more cells identifying the clock
->> >>>> +output on a device.  The length of a clock specifier is defined by the
->> >>>> +value of a #clock-cells property in the clock provider node.
->> >>>> +
->> >>>> +[1] http://patchwork.ozlabs.org/patch/31551/
->> >>>> +
->> >>>> +==Clock providers==
->> >>>> +
->> >>>> +Required properties:
->> >>>> +#clock-cells:           Number of cells in a clock specifier; typically will be
->> >>>> +                set to 1
->> >>>
->> >>> I'm not sure I fully understand what the extra cells actually mean for
->> >>> clocks.  I think the first integer is the clock output to use but some
->> >>> of the versatile and highbank ones only have a phandle or is it more
->> >>> implementation defined?  The clock-output-names description hints at
->> >>> recommended, so I find this a little confusing, but that could just be
->> >>> me!
->> >>
->> >> I'm following convention here that has been established with
->> >> interrupts, gpios, and others.  Sometimes more information is needed
->> >> that just the clock number.  Using #clock-cells gives a clock provider
->> >> the option of having additional fields for clock flags or other data.
->> >> This is very much implementation defined.  Simple clock providers that
->> >> only have a single clock output can easily use #clock-cells = <0>.
->> >> Providers with multiple outputs will need to use 1 or more cells.
->> >>
->> > It totally destroys my understanding on #clock-cells :)
->> >
->> > I thought it's introduced to reduce the clock nodes in dts.  That said,
->> > #clock-cells stands for the number of clks we describe in the node.
->> > When #clock-cells > 1 for a node, the node becomes a clk blob which
->> > actually contains multiple clks.  I migrated the imx6 clock to your
->> > first post with this approach [1], using 70 nodes to describe 110
->> > clocks (~35% nodes reduced).
->> >
->> > Now, you are saying it's not designed for this purpose.  I'm pretty
->> > confused, because the only reasonable use of #clock-cells to me is
->> > just that way, and I fail to see why we need #clock-cells if we do
->> > not use it that way.
->> >
->> > http://comments.gmane.org/gmane.linux.drivers.devicetree/9631
->>
->> Think of clock-cells as the size of array elements (minus 1), not the
->> number of array elements. If you have more than 1 clock per node, then
->> you need more information on the clock input side than just a phandle to
->> describe which clock you are using. Typically this would just be the
->> phandle plus index of the clock you want. This is just like gpio where
->> you have controller phandle plus gpio line number.
->>
-> It seems I misunderstood/misused the #clock-cells.  So even we have
-> multiple clks embedded in a node, #clock-cells=1 works for most of the
-> cases, since what really matters is just the index of the clk we want
-> the phandle to point to.  And the clock driver has to figure out how
-> many clks are in there by some other means.  Correct me please, if I
-> still misunderstand it.
+On 12/14/2011 10:59 PM, Li Yang wrote:
+> The limitation of the proposed bad block marker migration is that you
+> need to make sure the migration is done and only done once.  If it is
+> done more than once, the factory bad block marker is totally messed
+> up.  It requires a complex mechanism to automatically guarantee the
+> migration is only done once, and it still won't be 100% safe.
+> 
+> I would suggest we use a much easier compromise that we form the BBT
+> base on the factory bad block marker on first use of the flash, and
+> after that the factory bad block marker is dropped.  We just relies on
+> the BBT for information about bad blocks.  Although by doing so we
+> can't regenerate the BBT again,  as there is mirror for the BBT I
+> don't think we have too much risk.
 
-Yes, it sounds like you have it right.
+I have corrupted the BBT too often during development (e.g. a bug makes
+all accesses fail, so the upper layers decide to mark everything bad) to
+be comfortable with this.
 
-g.
+Elsewhere in the thread I suggested a way to let the marker be in either
+the bbt or in a dedicated block, depending on whether it's a development
+situation where the BBT needs to be erasable.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+-Scott
+
