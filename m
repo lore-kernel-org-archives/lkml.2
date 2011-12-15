@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758819Ab1LOMjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 07:39:33 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36707 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab1LOMjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 07:39:32 -0500
-Date: Thu, 15 Dec 2011 13:39:28 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Clemens Ladisch <clemens@ladisch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: fix number of mapped SG DMA entries
-Message-ID: <20111215123927.GA19650@linutronix.de>
-References: <4EDAA59B.6080900@ladisch.de>
- <Pine.LNX.4.44L0.1112041157370.32730-100000@netrider.rowland.org>
+	id S1758851Ab1LOMlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 07:41:47 -0500
+Received: from diyaorg.dp.ua ([82.207.88.73]:52332 "EHLO diyaorg.dp.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758745Ab1LOMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 07:41:46 -0500
+Message-ID: <4EE9EB08.7060701@oscada.org>
+Date: Thu, 15 Dec 2011 14:41:44 +0200
+From: Roman Savochenko <rom_as@oscada.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.1) Gecko/20110907 Thunderbird/6.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1112041157370.32730-100000@netrider.rowland.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: Regression-broken V4L2 radio API for BTTV cards (PV951)
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=KOI8-U
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alan Stern | 2011-12-04 11:59:32 [-0500]:
+Hello, All
 
->On Sat, 3 Dec 2011, Clemens Ladisch wrote:
->
->> Add a new field num_mapped_sgs to struct urb so that we have a place to
->> store the number of mapped entries and can also retain the original
->> value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
->> would overwrite this with the number of mapped entries, which would
->> break dma_unmap_sg() because it requires the original number of entries.
->> 
->> This fixes warnings like the following when using USB storage devices:
->>  ------------[ cut here ]------------
->>  WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
->>  ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
->
->Interesting.  Do you have any idea why this warning didn't show up 
->earlier?  Is there perhaps a Kconfig option I ought to be using?
+Start from kernel 2.6.39 my TV card's PV951 radio is not work.
+On 2.6.38 it still fine work and form 2.6.39 to present it is not.
+I have seen to source's different for BTTV code from 2.6.38 to 2.6.39
+and have not seen any functional changes then the problem is generic for
+radio API.
 
-My question here is why don't we map the complete sg list but only
-one entry. What happens to the remaining few sg list entries? Don't we
-sent too less data?
-Is there anything special you do to get into this kind of situation?
-Like 16GiB of memory on 32bit with highmem and a brutal disk/io test
-case so?
+For test I call command "v4l2-ctl -d /dev/radio --all -L" on 2.6.32 and
+3.1.4 kernel's versions:
 
->Alan Stern
+***************** 2.6.32 (OK) *************************
+[root@roman ~]# v4l2-ctl -d /dev/radio --all -L
+Driver Info (not using libv4l2):
+        Driver name   : bttv
+        Card type     : BT878 radio (ProVideo PV951)
+        Bus info      : PCI:0000:01:09.0
+        Driver version: 0.9.18
+        Capabilities  : 0x00010000
+                Tuner
+Video input : 0 (Radio: ok)
+Audio input : 0 (Radio)
+Frequency: 1040500 (65.031250 MHz)
+Tuner:
+        Name                 : Radio
+        Capabilities         : 62.5 Hz stereo
+        Frequency range      : 65.0 MHz - 108.0 MHz
+        Signal strength/AFC  : 13%/0
+        Current audio mode   : stereo
+        Available subchannels: mono
+                           mute (bool) : default=0 value=0
 
-Sebastian
+
+
+***************** 3.1.4 (Wrong) *************************
+[root@roman ~]# v4l2-ctl -d /dev/radio --all -L
+Driver Info (not using libv4l2):
+        Driver name   : bttv
+        Card type     : BT878 radio (ProVideo PV951)
+        Bus info      : PCI:0000:01:09.0
+        Driver version: 3.1.4
+        Capabilities  : 0x00010000
+                Tuner
+Video input : 0 (Radio: ok)
+Audio input : 0 (Radio)
+Frequency: 0 (0.000000 MHz)
+Tuner:
+        Name                 : Radio
+        Capabilities         : 62.5 kHz
+        Frequency range      : 0.0 MHz - 0.0 MHz
+        Signal strength/AFC  : 0%/0
+        Current audio mode   : mono
+        Available subchannels:
+                           mute (bool) : default=0 value=0
+
+
+Regards, Roman
