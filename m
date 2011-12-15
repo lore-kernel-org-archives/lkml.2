@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab1LOTKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:10:11 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51322 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751300Ab1LOTKI (ORCPT
+	id S1759378Ab1LOTMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:12:20 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55772 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab1LOTMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:10:08 -0500
-X-Sasl-enc: fgjaplDP6rTW6RBAEWT9atnZ86CZZEcpyeALdQjp/4N8 1323976207
-Date: Thu, 15 Dec 2011 11:09:54 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20111215190954.GA23633@kroah.com>
-References: <20111215173754.87103f66f6188693933cb539@canb.auug.org.au>
- <20111215072103.GA13747@kroah.com>
- <CAPXgP102rHBUAik0pBZuMVG0JVqHeJ8cNgSOzGWci3MBDoRUSg@mail.gmail.com>
+	Thu, 15 Dec 2011 14:12:19 -0500
+Date: Thu, 15 Dec 2011 11:12:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: workqueue_set_max_active(wq, 0)?
+Message-ID: <20111215191212.GD32002@google.com>
+References: <1323424482.3622.8.camel@jlt3.sipsolutions.net>
+ <20111209165702.GD12108@google.com>
+ <1323963492.23550.1.camel@jlt3.sipsolutions.net>
+ <20111215183537.GA32002@google.com>
+ <1323974620.1082.7.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP102rHBUAik0pBZuMVG0JVqHeJ8cNgSOzGWci3MBDoRUSg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1323974620.1082.7.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 11:10:26AM +0100, Kay Sievers wrote:
-> On Thu, Dec 15, 2011 at 08:21, Greg KH <greg@kroah.com> wrote:
-> > On Thu, Dec 15, 2011 at 05:37:54PM +1100, Stephen Rothwell wrote:
-> >> After merging the driver-core tree, today's linux-next build (x86_64
-> >> allmodconfig) failed like this:
-> >>
-> >> drivers/xen/xen-selfballoon.c:305:36: error: expected ')' before '(' token
-> >> drivers/xen/xen-selfballoon.c:327:42: error: expected ')' before '(' token
-> >> drivers/xen/xen-selfballoon.c:349:48: error: expected ')' before '(' token
-> >>
-> >> etc ...
-> >>
-> >> [Along with many warnings like:
-> >>
-> >> drivers/xen/xen-selfballoon.c:284:8: warning: 'struct device_attribute' declared inside parameter list [enabled by default]
-> >> ]
-> >>
-> >> Presumably caused by commit drivers/xen/xen-selfballoon.c ("xen-balloon:
-> >> convert sysdev_class to a regular subsystem").
-> >
-> > Ick, Kay, can you make a fix-up patch?
-> >
-> > And here I thought I built xen in my test kernel, crap, sorry about
-> > that.
+Hello,
+
+On Thu, Dec 15, 2011 at 07:43:40PM +0100, Johannes Berg wrote:
+> Hm, good point. We can't abstract out all of it -- the freezer API
+> doesn't want to wait for it to finish -- but probably a bit of it.
 > 
-> It seems it's a compiler version issue, or similar. I'm unable to
-> reproduce it here, allmodconfig and the Xen part gets through without
-> any problems.
+> How do you iterate workqueues? We'd have to do that for the freezer
+> part, unless we want to work on CWQs again.
+
+By Locking workqueue_lock and walking workqueues list.  Hmmm...
+
+> Actually I'm not really sure I understand the differences between WQ,
+> CWQ and GCWQ...
+
+WQ is workqueue - the part visible to users.
+
+CWQ is cpu workqueue.  Each wq has its own set of cpu workqueues for
+all CPUs (there are exceptions but this should be a good enough
+explanation).  A WQ is always a set of cwq's.  WQ chooses which CWQ to
+use on queue but most of actual processing happens on CWQs.
+
+GCWQ stands for global cpu workqueue - there's one for each CPU.  This
+is per-cpu global worker pool used by all workqueues.  Every CWQ on a
+CPU shares the GCWQ on that CPU.
+
+The reason why FREEZING currently is on GCWQ is because freezing is a
+system wide operation.  If we're gonna implement pause, I think it
+should probably be in cwq.
+
+> > I think it would be great if this can be abstracted out so that both
+> > the freezer and explicit pausing use the same facility.  They aren't
+> > that different after all.
 > 
-> I guess we both have very recent systems again. :)
-> 
-> I expect adding a device.h include will fix it. I'll send you a patch.
+> I'll take a look tomorrow. If you want to beat me to it ... ;-)
 
-Yeah, that fixed it (I was able to duplicate this on my laptop, odd that
-my build machine didn't show it.)
+Heh heh, [un]fortunately, I'm pretty occupied at the moment.  :P
 
-Now pushed out to my tree.
+Thank you.
 
-thanks,
-
-greg k-h
+-- 
+tejun
