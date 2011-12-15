@@ -1,140 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab1LOKAo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:00:44 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:12260 "EHLO
+	id S932426Ab1LOKBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:01:25 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:38425 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1LOKAm (ORCPT
+	with ESMTP id S932400Ab1LOKBX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:00:42 -0500
-Message-ID: <4EE9C532.5050607@atmel.com>
-Date: Thu, 15 Dec 2011 11:00:18 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 15 Dec 2011 05:01:23 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Claudio Scordino <claudio@evidence.eu.com>
-CC: Alan Cox <alan@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Dave Bender <codehero@gmail.com>
-Subject: Re: [PATCH] atmel_serial: fix spinlock lockup in RS485 code
-References: <4EE9B42F.50004@evidence.eu.com>
-In-Reply-To: <4EE9B42F.50004@evidence.eu.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v3 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare() functions
+Date: Thu, 15 Dec 2011 18:00:41 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532803B5255C@penmb01.corp.atmel.com>
+In-Reply-To: <1323339530-26117-2-git-send-email-josh.wu@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v3 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare() functions
+Thread-Index: Acy1ksmUMD6ekrEGTY+MOntut/EfKQFe+pGw
+References: <1323339530-26117-1-git-send-email-josh.wu@atmel.com> <1323339530-26117-2-git-send-email-josh.wu@atmel.com>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Wu, Josh" <Josh.wu@atmel.com>, <g.liakhovetski@gmx.de>,
+        <linux-media@vger.kernel.org>, <linux@arm.linux.org.uk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+X-OriginalArrivalTime: 15 Dec 2011 10:00:46.0053 (UTC) FILETIME=[6A14F150:01CCBB10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 09:47 AM, Claudio Scordino :
-> Hi all.
-> 
-> We have encountered a spinlock lockup in the RS485 part of the
-> atmel_serial driver.
-> 
-> Here is the trace:
-> 
-> [   68.030000] BUG: spinlock lockup on CPU#0, dnp_master/244, c07e82c0
-> [   68.040000] [<c002a790>] (unwind_backtrace+0x0/0xf0) from
-> [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148)
-> [   68.050000] [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148) from
-> [<c015152c>] (atmel_tasklet_func+0x10/0x708)
-> [   68.060000] [<c015152c>] (atmel_tasklet_func+0x10/0x708) from
-> [<c003bfd4>] (tasklet_action+0x8c/0xf4)
-> [   68.070000] [<c003bfd4>] (tasklet_action+0x8c/0xf4) from [<c003c630>]
-> (__do_softirq+0xa4/0x180)
-> [   68.080000] [<c003c630>] (__do_softirq+0xa4/0x180) from [<c003c764>]
-> (irq_exit+0x58/0xb0)
-> [   68.090000] [<c003c764>] (irq_exit+0x58/0xb0) from [<c0021084>]
-> (asm_do_IRQ+0x84/0xa4)
-> [   68.100000] [<c0021084>] (asm_do_IRQ+0x84/0xa4) from [<c002622c>]
-> (__irq_svc+0x4c/0x98)
-> [   68.110000] Exception stack(0xc341fdc8 to 0xc341fe10)
-> [   68.110000] fdc0:                   c07e82c0 00000000 00000200
-> c4818000 c341fe10 c07e82c0
-> [   68.120000] fde0: 00000000 c07e82c0 c38d3318 c341e000 bebcee00
-> 010a0b60 c07e83fc c341fe10
-> [   68.130000] fe00: c0151d54 c023d9c0 60000013 ffffffff
-> [   68.140000] [<c002622c>] (__irq_svc+0x4c/0x98) from [<c023d9c0>]
-> (_raw_spin_unlock+0x0/0x48)
-> [   68.140000] [<c023d9c0>] (_raw_spin_unlock+0x0/0x48) from
-> [<00000000>] (  (null))
-> 
-> The soft lockup occurs later
-> 
-> [  126.750000] BUG: soft lockup - CPU#0 stuck for 61s! [dnp_master:244]
-> [  126.750000] irq event stamp: 0
-> [  126.750000] hardirqs last  enabled at (0): [<  (null)>]   (null)
-> [  126.750000] hardirqs last disabled at (0): [<c0035e30>]
-> copy_process+0x308/0xe78
-> [  126.750000] softirqs last  enabled at (0): [<c0035e30>]
-> copy_process+0x308/0xe78
-> [  126.750000] softirqs last disabled at (0): [<  (null)>]   (null)
-> 
-> 
-> The following patch (already tested by Dave, who also reported the bug)
-> fixes the problem.
-> 
-> Regards,
-> 
->     Claudio
-> 
-> 
-> 
-> 
-> Subject: atmel_serial: fix spinlock lockup in RS485 code
-> 
-> Patch to fix a spinlock lockup in the driver that sometimes happens when
-> the
-> tasklet starts.
-> 
-> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-> Signed-off-by: Dave Bender <codehero@gmail.com>
-> Tested-by: Dave Bender <codehero@gmail.com>
+Hi, Guennadi
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Would you acknowledge these two v3 patches and queue them for 3.3 merge
+window? Thanks.
 
-Claudio, can you please send the patch to Alan with my "Acked-by" and an
-addition to Linux stable just after the signature lines:
+Best Regards,
+Josh Wu
 
-Cc: stable <stable@kernel.org>
+On Thursday, December 08, 2011 6:19 PM, Josh Wu wrote:
 
-Thanks, best regards,
-
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 > ---
->  drivers/tty/serial/atmel_serial.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
+> in v2 version, made the label name to be consistent
+
+> drivers/media/video/atmel-isi.c |   15 +++++++++++++++
+> 1 files changed, 15 insertions(+), 0 deletions(-)
+
+> diff --git a/drivers/media/video/atmel-isi.c
+b/drivers/media/video/atmel-isi.c
+> index ea4eef4..91ebcfb 100644
+> --- a/drivers/media/video/atmel-isi.c
+> +++ b/drivers/media/video/atmel-isi.c
+> @@ -922,7 +922,9 @@ static int __devexit atmel_isi_remove(struct
+platform_device *pdev)
+> 			isi->fb_descriptors_phys);
+ 
+> 	iounmap(isi->regs);
+> +	clk_unprepare(isi->mck);
+> 	clk_put(isi->mck);
+> +	clk_unprepare(isi->pclk);
+> 	clk_put(isi->pclk);
+> 	kfree(isi);
+ 
+> @@ -955,6 +957,12 @@ static int __devinit atmel_isi_probe(struct
+platform_device *pdev)
+>  	if (IS_ERR(pclk))
+> 		return PTR_ERR(pclk);
+ 
+> +	ret = clk_prepare(pclk);
+> +	if (ret) {
+> +		clk_put(pclk);
+> +		return ret;
+> +	}
+> +
+> 	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
+> 	if (!isi) {
+> 		ret = -ENOMEM;
+> @@ -978,6 +986,10 @@ static int __devinit atmel_isi_probe(struct
+platform_device *pdev)
+> 		goto err_clk_get;
+> 	}
 > 
-> diff --git a/drivers/tty/serial/atmel_serial.c
-> b/drivers/tty/serial/atmel_serial.c
-> index 4c823f3..90c8e3a 100644
-> --- a/drivers/tty/serial/atmel_serial.c
-> +++ b/drivers/tty/serial/atmel_serial.c
-> @@ -212,8 +212,9 @@ void atmel_config_rs485(struct uart_port *port,
-> struct serial_rs485 *rs485conf)
->  {
->      struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
->      unsigned int mode;
-> +    unsigned long flags;
->  
-> -    spin_lock(&port->lock);
-> +    spin_lock_irqsave(&port->lock, flags);
->  
->      /* Disable interrupts */
->      UART_PUT_IDR(port, atmel_port->tx_done_mask);
-> @@ -244,7 +245,7 @@ void atmel_config_rs485(struct uart_port *port,
-> struct serial_rs485 *rs485conf)
->      /* Enable interrupts */
->      UART_PUT_IER(port, atmel_port->tx_done_mask);
->  
-> -    spin_unlock(&port->lock);
-> +    spin_unlock_irqrestore(&port->lock, flags);
->  
->  }
->  
+> +	ret = clk_prepare(isi->mck);
+> +	if (ret)
+> +		goto err_clk_prepare_mck;
+> +
+> 	/* Set ISI_MCK's frequency, it should be faster than pixel clock
+*/
+> 	ret = clk_set_rate(isi->mck, pdata->mck_hz);
+> 	if (ret < 0)
+> @@ -1059,10 +1071,13 @@ err_alloc_ctx:
+> 			isi->fb_descriptors_phys);
+> err_alloc_descriptors:
+> err_set_mck_rate:
+> +	clk_unprepare(isi->mck);
+> +err_clk_prepare_mck:
+> 	clk_put(isi->mck);
+> err_clk_get:
+> 	kfree(isi);
+> err_alloc_isi:
+> +	clk_unprepare(pclk);
+> 	clk_put(pclk);
+> 
+> 	return ret;
+> -- 
+> 1.6.3.3
 
-
--- 
-Nicolas Ferre
