@@ -1,234 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab1LOJgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:36:35 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21491 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758738Ab1LOJgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:36:33 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 2/2] Explicitly call tcp creation and init from memcontrol.c
-Date: Thu, 15 Dec 2011 13:34:32 +0400
-Message-Id: <1323941672-14324-3-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1323941672-14324-1-git-send-email-glommer@parallels.com>
-References: <1323941672-14324-1-git-send-email-glommer@parallels.com>
+	id S932445Ab1LOJir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:38:47 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53251 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149Ab1LOJip convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 04:38:45 -0500
+Message-ID: <1323941914.16998.3.camel@hornet.cambridge.arm.com>
+Subject: Re: [PATCH 1/2] params: <level>_initcall-like kernel parameters
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Date: Thu, 15 Dec 2011 09:38:34 +0000
+In-Reply-To: <871us6sdaz.fsf@rustcorp.com.au>
+References: <1323712401.2391.93.camel@hornet.cambridge.arm.com>
+	 <1323712627-17353-1-git-send-email-pawel.moll@arm.com>
+	 <871us6sdaz.fsf@rustcorp.com.au>
+X-Mailer: Evolution 3.2.1-
+Mime-Version: 1.0
+X-OriginalArrivalTime: 15 Dec 2011 09:38:34.0475 (UTC) FILETIME=[506643B0:01CCBB0D]
+X-MC-Unique: 111121509383701601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Walking the proto_list holds a read_lock, which prevents us from doing
-allocations. Splitting the tcp create function into create + init is
-good, but it is not enough since create_files will do allocations as well
-(dentry ones, mostly).
+Morning,
 
-Since this does not involve any protocol state, I propose we call the tcp
-functions explicitly from memcontrol.c
+On Thu, 2011-12-15 at 03:51 +0000, Rusty Russell wrote:
+> On Mon, 12 Dec 2011 17:57:06 +0000, Pawel Moll <pawel.moll@arm.com> wrote:
+> > This patch adds a set of macros that can be used to declare
+> > kernel parameters to be parsed _before_ initcalls at a chosen
+> > level are executed. Such parameters are marked using existing
+> > "flags" field of the "kernel_param" structure.
+> > 
+> > Linker macro collating init calls had to be modified in order
+> > to add additional symbols between levels that are later used
+> > by the init code to split the calls into blocks.
+> 
+> This patch wasn't quite what I was thinking, but I've realized that
+> we can't put the params in the .init section, your approach is probably
+> the best one.
 
-With this, we lose by now the ability of doing cgroup memcontrol for
-protocols that are loaded as modules. But at least the ones I have in mind
-won't really need it (tcp_ipv6 being the only one, but it uses the same data
-structures as tcp_ipv4). So I believe this to be the simpler solution to this
-problem.
+The only way I could think of to put the parameters passing code in
+between levels was adding new linker sections, and that sounded like an
+overkill...
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/net/sock.h           |    2 --
- include/net/tcp_memcontrol.h |   19 ++++++++++++++++++-
- mm/memcontrol.c              |   13 ++++---------
- net/core/sock.c              |   37 -------------------------------------
- net/ipv4/tcp_memcontrol.c    |   11 ++++++-----
- 5 files changed, 28 insertions(+), 54 deletions(-)
+> Note that I've just created a series which gets rid of that silly ISBOOL
+> thing, so you can use the whole field for "level".  Then I set the level
+> to -1 for the normal calls; I want to use -2 for the early calls, but
+> that's not done yet...
+> 
+> I'll rework and rebase your patch like that now.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 1df44e2..6cbee80 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -64,8 +64,6 @@
- #include <net/dst.h>
- #include <net/checksum.h>
- 
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
- /*
-  * This structure really needs to be cleaned up.
-  * Most of it is for TCP, and not used by any of
-diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
-index 3512082..f1ff94a 100644
---- a/include/net/tcp_memcontrol.h
-+++ b/include/net/tcp_memcontrol.h
-@@ -11,9 +11,26 @@ struct tcp_memcontrol {
- 	int tcp_memory_pressure;
- };
- 
--struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
-+struct cgroup;
-+struct cgroup_subsys;
-+#if defined(CONFIG_INET) && defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
- int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
- void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-+void tcp_create_cgroup(struct mem_cgroup *memcg, struct mem_cgroup *parent);
-+#else
-+static inline int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	return 0;
-+}
-+static inline void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+}
-+static inline void
-+tcp_create_cgroup(struct mem_cgroup *memcg, struct mem_cgroup *parent)
-+{
-+}
-+#endif
-+struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
- unsigned long long tcp_max_memory(const struct mem_cgroup *memcg);
- void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx);
- #endif /* _TCP_MEMCG_H */
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7266202..e3d8886 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4749,22 +4749,15 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
- 	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
- 			       ARRAY_SIZE(kmem_cgroup_files));
- 
--	/*
--	 * Part of this would be better living in a separate allocation
--	 * function, leaving us with just the cgroup tree population work.
--	 * We, however, depend on state such as network's proto_list that
--	 * is only initialized after cgroup creation. I found the less
--	 * cumbersome way to deal with it to defer it all to populate time
--	 */
- 	if (!ret)
--		ret = mem_cgroup_sockets_init(cont, ss);
-+		tcp_init_cgroup(cont, ss);
- 	return ret;
- };
- 
- static void kmem_cgroup_destroy(struct cgroup_subsys *ss,
- 				struct cgroup *cont)
- {
--	mem_cgroup_sockets_destroy(cont, ss);
-+	tcp_destroy_cgroup(cont, ss);
- }
- #else
- static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
-@@ -5093,6 +5086,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 		res_counter_init(&memcg->res, &parent->res);
- 		res_counter_init(&memcg->memsw, &parent->memsw);
- 		res_counter_init(&memcg->kmem, &parent->kmem);
-+		tcp_create_cgroup(memcg, parent);
- 		/*
- 		 * We increment refcnt of the parent to ensure that we can
- 		 * safely access it on res_counter_charge/uncharge.
-@@ -5104,6 +5098,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
- 		res_counter_init(&memcg->kmem, NULL);
-+		tcp_create_cgroup(memcg, NULL);
- 	}
- 	memcg->last_scanned_child = 0;
- 	memcg->last_scanned_node = MAX_NUMNODES;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5de62d3..103f246 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -138,43 +138,6 @@
- static DEFINE_RWLOCK(proto_list_lock);
- static LIST_HEAD(proto_list);
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--	int ret = 0;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry(proto, &proto_list, node) {
--		if (proto->init_cgroup) {
--			ret = proto->init_cgroup(cgrp, ss);
--			if (ret)
--				goto out;
--		}
--	}
--
--	read_unlock(&proto_list_lock);
--	return ret;
--out:
--	list_for_each_entry_continue_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--	return ret;
--}
--
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--}
--#endif
--
- /*
-  * Each address family might have different locking rules, so we have
-  * one slock key per address family:
-diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index 171d7b6..1433505 100644
---- a/net/ipv4/tcp_memcontrol.c
-+++ b/net/ipv4/tcp_memcontrol.c
-@@ -49,7 +49,7 @@ static void memcg_tcp_enter_memory_pressure(struct sock *sk)
- }
- EXPORT_SYMBOL(memcg_tcp_enter_memory_pressure);
- 
--int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+void tcp_create_cgroup(struct mem_cgroup *memcg, struct mem_cgroup *parent)
- {
- 	/*
- 	 * The root cgroup does not use res_counters, but rather,
-@@ -59,13 +59,11 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	struct res_counter *res_parent = NULL;
- 	struct cg_proto *cg_proto, *parent_cg;
- 	struct tcp_memcontrol *tcp;
--	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
--	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
- 	struct net *net = current->nsproxy->net_ns;
- 
- 	cg_proto = tcp_prot.proto_cgroup(memcg);
- 	if (!cg_proto)
--		goto create_files;
-+		return;
- 
- 	tcp = tcp_from_cgproto(cg_proto);
- 
-@@ -87,8 +85,11 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	cg_proto->memory_allocated = &tcp->tcp_memory_allocated;
- 	cg_proto->sockets_allocated = &tcp->tcp_sockets_allocated;
- 	cg_proto->memcg = memcg;
-+}
-+EXPORT_SYMBOL(tcp_create_cgroup);
- 
--create_files:
-+int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
- 	return cgroup_add_files(cgrp, ss, tcp_files,
- 				ARRAY_SIZE(tcp_files));
- }
--- 
-1.7.6.4
+Cool, it's all yours, especially now that I'm the last day at work this
+year so won't be able to contribute much in the following weeks... Could
+I just ask you to remember about the virtio_mmio parameters patch if you
+get somewhere with this? I'll be most grateful!
+
+Cheers!
+
+Paweł
+
 
