@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab1LOVzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 16:55:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42200 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab1LOVzv (ORCPT
+	id S1759548Ab1LOV45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 16:56:57 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43448 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab1LOV44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 16:55:51 -0500
-Date: Thu, 15 Dec 2011 13:55:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/1] do_truncate needs to increment iversion
-Message-Id: <20111215135550.748e9aee.akpm@linux-foundation.org>
-In-Reply-To: <09b6266e3209433bac9b57baf39e073945533d5a.1323880769.git.dmitry.kasatkin@intel.com>
-References: <09b6266e3209433bac9b57baf39e073945533d5a.1323880769.git.dmitry.kasatkin@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Dec 2011 16:56:56 -0500
+Date: Thu, 15 Dec 2011 22:56:49 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Siarhei Siamashka <siarhei.siamashka@nokia.com>,
+        Valdis.Kletnieks@vt.edu, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nokia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] [RESEND] Handle instruction cache maintenance fault
+ properly
+Message-ID: <20111215215649.GJ24496@pengutronix.de>
+References: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011 18:44:57 +0200
-Dmitry Kasatkin <dmitry.kasatkin@intel.com> wrote:
+Hello,
 
-> IMA/EVM uses iversion to identify if file content has been changed.
-> It has been found that when file is opened, truncated with ftruncate()
-> and then closed, iversion is not updated.
+On Tue, May 11, 2010 at 01:33:14PM +0300, Kirill A. Shutemov wrote:
+> Between "clean D line..." and "invalidate I line" operations in
+> v7_coherent_user_range(), the memory page may get swapped out.
+> And the fault on "invalidate I line" could not be properly handled
+> causing the oops.
 > 
-> This patch adds iversion incrementation to do_truncate().
+> In ARMv6 "external abort on linefetch" replaced by "instruction cache
+> maintenance fault". Let's handle it as translation fault. It fixes the
+> issue.
+> 
+> I'm not sure if it's reasonable to check arch version in run-time.
+> Let's do it in compile time for now.
+> 
+> Signed-off-by: Siarhei Siamashka <siarhei.siamashka@nokia.com>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+I found this patch in Catalin's stack that I picked up to get support
+for Cortex-M3. Is this still relevant?
 
-I confess that I've never really fully understood what i_version is
-supposed to do, so I'm not in any position to comment on where, when
-and why the thing should be updated.
+Best regards
+Uwe
 
-At present it gets updated in file_update_time() so I suppose that
-we're not calling file_update_time() in the ftruncate case, which
-sounds wrong?
+> Sorry for resend. I've made mistake in maillist address.
+> 
+> ---
+>  arch/arm/mm/fault.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index 9d40c34..7f193ea 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -463,7 +463,12 @@ static struct fsr_info {
+>  	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
+>  	{ do_bad,		SIGKILL, 0,		"terminal exception"		   },
+>  	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
+> +/* Do we need runtime check ? */
+> +#if __LINUX_ARM_ARCH__ < 6
+>  	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
+> +#else
+> +	{ do_translation_fault,	SIGSEGV, SEGV_MAPPER,	"I-cache maintenance
+> fault"	   },
+> +#endif
+>  	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation
+> fault"	   },
+>  	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
+>  	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
+> -- 
+> 1.7.0.4
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-It's notable that file_update_time() will not update i_version if the
-inode has NOCMTIME.  This might be wrong, but one would need to know
-the intent of i_version to be able to say.  Do your files have
-S_NOCMTIME set?
-
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -56,6 +56,8 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
->  		newattrs.ia_valid |= ret | ATTR_FORCE;
->  
->  	mutex_lock(&dentry->d_inode->i_mutex);
-> +	if (IS_I_VERSION(dentry->d_inode))
-> +		inode_inc_iversion(dentry->d_inode);
->  	ret = notify_change(dentry, &newattrs);
->  	mutex_unlock(&dentry->d_inode->i_mutex);
->  	return ret;
-
-With four evaluations, it is time to cache dentry->d_inode in a local.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
