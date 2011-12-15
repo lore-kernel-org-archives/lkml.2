@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759828Ab1LOXbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 18:31:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56581 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab1LOXbC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 18:31:02 -0500
+	id S1759824Ab1LOXgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 18:36:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759670Ab1LOXgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 18:36:49 -0500
+Message-ID: <4EEA8470.9040907@redhat.com>
+Date: Thu, 15 Dec 2011 18:36:16 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111215230143.GA2090@legolas.emea.dhcp.ti.com>
-References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
-	<20111215230143.GA2090@legolas.emea.dhcp.ti.com>
-Date: Fri, 16 Dec 2011 01:31:02 +0200
-Message-ID: <CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
-        Hema Kalliguddi <hemahk@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Nai Xia <nai.xia@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/11] mm: vmscan: Do not OOM if aborting reclaim to start
+ compaction
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de> <1323877293-15401-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1323877293-15401-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 1:01 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Dec 16, 2011 at 12:42:14AM +0200, Felipe Contreras wrote:
->> In musb_init_controller() there's a pm_runtime_put(), but there's no
->> pm_runtime_get(), which creates a mismatch that causes the driver to
->> sleep when it shouldn't.
->>
->> This was introduced in 7acc619, but it wasn't triggered until 18a2689
->> was merged to Linus' branch at point 6899608.
+On 12/14/2011 10:41 AM, Mel Gorman wrote:
+> During direct reclaim it is possible that reclaim will be aborted so
+> that compaction can be attempted to satisfy a high-order allocation. If
+> this decision is made before any pages are reclaimed, it is possible
+> that 0 is returned to the page allocator potentially triggering an
+> OOM. This has not been observed but it is a possibility so this patch
+> addresses it.
 >
-> you need to add the commit description (whatever was the mail's subject)
-> here too. And you should put in Cc the author or those commits too,
-> otherwise we can't poke into their brains to understand what they were
-> thinking when they originally wrote those patches.
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
 
-True, but code is code, and even if you don't know what he was
-thinking, it's clear there's something wrong.
-
->> However, it seems most of the time this is used in a way that keeps the
->> counter above 0, so nobody noticed. Also, it seems to depend on the
->> configuration used.
->>
->> I found the problem by loading isp1704_charger before any usb gadgets:
->> http://article.gmane.org/gmane.linux.kernel/1226122
->>
->> All versions after 2.6.39 are affected.
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> ---
->>  drivers/usb/musb/musb_core.c |    2 --
->>  1 files changed, 0 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
->> index b63ab15..920f04e 100644
->> --- a/drivers/usb/musb/musb_core.c
->> +++ b/drivers/usb/musb/musb_core.c
->> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
->>       if (status < 0)
->>               goto fail3;
->>
->> -     pm_runtime_put(musb->controller);
->
-> To me the real fix would be add the missing pm_runtime_get_sync(). On
-> probe() we're actually accessing MUSB's address space which needs it's
-> clocks turned on. I guess it's only working now by chance, probably
-> because glue layer calls pm_runtime_get_sync() to access it's own
-> address space and that uses the same clocks.
-
-Are you sure it's "musb-hdrc", and not "musb-omap2430" the one
-accessing the relevant address-space? From the runtime_pm
-documentation it looks like only the probe function should deal with
-this.
-
-If "musb-hdrc" was truly accessing these registers, then I would get
-the same failure because the clocks are turned off, but I don't...
-
-Cheers.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Felipe Contreras
+All rights reversed
