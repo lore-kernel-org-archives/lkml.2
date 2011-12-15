@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab1LOIbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:31:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58398 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1LOIbI convert rfc822-to-8bit (ORCPT
+	id S932410Ab1LOIdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:33:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757339Ab1LOId3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:31:08 -0500
+	Thu, 15 Dec 2011 03:33:29 -0500
+Date: Thu, 15 Dec 2011 10:33:25 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Liu ping fan <kernelfans@gmail.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, aliguori@us.ibm.com,
+        jan.kiszka@web.de
+Subject: Re: [PATCH v3] kvm: make vcpu life cycle separated from kvm instance
+Message-ID: <20111215083325.GA21664@redhat.com>
+References: <20111209142303.GC31323@redhat.com>
+ <1323657683-13934-1-git-send-email-kernelfans@gmail.com>
+ <20111213113628.GB31138@amt.cnet>
+ <CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOvLkw08BQjexftPZbKCL83uuSaAS7Cn2q2rAamewDDbVtPcxw@mail.gmail.com>
-References: <CAOvLkw08BQjexftPZbKCL83uuSaAS7Cn2q2rAamewDDbVtPcxw@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 15 Dec 2011 09:30:45 +0100
-Message-ID: <CAK1hOcPd0ubEOPQDtey71giaj0aBTp-k5ZSROQJDakOq=zgUuQ@mail.gmail.com>
-Subject: Re: a problem in cpucheck.c on x86
-To: ttlxzz ccc <boyzccc@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 8:51 AM, ttlxzz ccc <boyzccc@gmail.com> wrote:
-> Hi,all:
->
-> In arch/x86/boot/cpucheck.c
-> static int has_eflag(u32 mask)
-> {
->        u32 f0, f1;
->
->        asm("pushfl ; "
->            "pushfl ; "
->            "popl %0 ; "
->            "movl %0,%1 ; "
->            "xorl %2,%1 ; "
->            "pushl %1 ; "
->            "popfl ; "
->            "pushfl ; "
->            "popl %1 ; "
->            "popfl"
->            : "=&r" (f0), "=&r" (f1)
->            : "ri" (mask));
->
->        return !!((f0^f1) & mask);
-> }
->
->            "pushl %1 ; "
->            "popfl ; "
->            "pushfl ; "
->            "popl %1 ; "
-> I don't know what does above 4 instructions do,
+On Thu, Dec 15, 2011 at 11:21:37AM +0800, Liu ping fan wrote:
+> On Tue, Dec 13, 2011 at 7:36 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Mon, Dec 12, 2011 at 10:41:23AM +0800, Liu Ping Fan wrote:
+> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+> >>
+> >> Currently, vcpu can be destructed only when kvm instance destroyed.
+> >> Change this to vcpu's destruction taken when its refcnt is zero,
+> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+> >>
+> >> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+> >> ---
+> >> šarch/x86/kvm/i8254.c š š | š 10 ++++--
+> >> šarch/x86/kvm/i8259.c š š | š 12 +++++--
+> >> šarch/x86/kvm/mmu.c š š š | š š7 ++--
+> >> šarch/x86/kvm/x86.c š š š | š 54 +++++++++++++++++++----------------
+> >> šinclude/linux/kvm_host.h | š 71 ++++++++++++++++++++++++++++++++++++++++++----
+> >> švirt/kvm/irq_comm.c š š š| š š7 +++-
+> >> švirt/kvm/kvm_main.c š š š| š 62 +++++++++++++++++++++++++++++++++------
+> >> š7 files changed, 170 insertions(+), 53 deletions(-)
+> >
+> > This needs a full audit of paths that access vcpus. See for one example
+> > bsp_vcpu pointer.
+> >
+> Yes, I had missed it and just paid attention to the access path to
+> vcpu in kvm_lapic and the path used in async_pf. I will correct it
+> later.
+> BTW, I want to make it sure that because kvm_lapic will be destroyed
+> before vcpu, so  it is safe to bypass the access path there, and the
+> situation is the same in async_pf for we have called
+> kvm_clear_async_pf_completion_queue before zapping vcpu.  Am I right?
+> 
+> As to the scene like bsp_vcpu, I think that introducing refcount like
+> in V2 can handle it easier. Please help to review these changes in V4
+> which I will send a little later.
+> 
+Since bsp_vcpu pointer will never be released or re-assigned introducing
+reference count to keep the pointer valid is not necessary. The counter
+will never reach 0 and bsp vcpu will never be freed. Just disallow
+removal of bsp_vcpu. Or better get rid of bsp_vcpu at all since its only
+use is invalid anyway.
 
-They move value from register %1 to EFLAGS register, and back.
-Some bits in EFLAGS are immutable, thus this operation
-can change %1.
-
-Basically, this operation checks whether bit we flipped by xor
-is really mutable in EFLAGS, or not.
-
-> and I rewirte it like this:
->
-> static int has_eflag(u32 mask)
-> {
->        u32 f0;
->
->        asm("pushfl ; "
->            "pushfl ; "
->            "popl %0 ; "
->            "popfl"
->            : "=&r" (f0));
-
-Well, you can get rid of outer pair of pushfl/popfl too, then...
-
->        return ~f0 & mask;
->
-> }
-> It works well, and I just want to know is there some special meanings
-> of the 4 instructions?
-
-Maybe it works on your particular CPU (meaning: kernel doesn't
-misdetect anything dangerous on your CPU), but in general
-what you did is wrong, and will surely cause breakage on other CPUs.
-
--- 
-vda
+--
+			Gleb.
