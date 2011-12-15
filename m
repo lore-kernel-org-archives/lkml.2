@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab1LOWgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:36:45 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60306 "EHLO ogre.sisk.pl"
+	id S932692Ab1LOWg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:36:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60328 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759632Ab1LOWgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:36:42 -0500
+	id S932668Ab1LOWgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:36:53 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [Update][PATCH 3/5] PM / Sleep: Remove forward-only callbacks from platform bus type
-Date: Thu, 15 Dec 2011 23:37:19 +0100
+Subject: [Update][PATCH 5/5] PM: Drop generic_subsys_pm_ops
+Date: Thu, 15 Dec 2011 23:39:15 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -21,258 +21,100 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112152337.20006.rjw@sisk.pl>
+Message-Id: <201112152339.15825.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The forward-only PM callbacks provided by the platform bus type are
-not necessary any more, because the PM core executes driver callbacks
-when the corresponding subsystem callbacks are not present, so drop
-them.
+Since the PM core is now going to execute driver callbacks directly
+if the corresponding subsystem callbacks are not present,
+forward-only subsystem callbacks (i.e. such that only execute the
+corresponding driver callbacks) are not necessary any more.  Thus
+it is possible to remove generic_subsys_pm_ops, because the only
+callback in there that is not forward-only, .runtime_idle, is not
+really used by the only user of generic_subsys_pm_ops, which is
+vio_bus_type.
+
+However, the generic callback routines themselves cannot be removed
+from generic_ops.c, because they are used individually by a number
+of subsystems.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/platform.c         |  115 ----------------------------------------
- include/linux/platform_device.h |   30 ----------
- 2 files changed, 1 insertion(+), 144 deletions(-)
+ arch/powerpc/kernel/vio.c        |    1 -
+ drivers/base/power/generic_ops.c |   25 -------------------------
+ include/linux/pm.h               |   13 -------------
+ 3 files changed, 39 deletions(-)
 
-Index: linux/drivers/base/platform.c
+Index: linux/drivers/base/power/generic_ops.c
 ===================================================================
---- linux.orig/drivers/base/platform.c
-+++ linux/drivers/base/platform.c
-@@ -700,25 +700,6 @@ static int platform_legacy_resume(struct
- 	return ret;
+--- linux.orig/drivers/base/power/generic_ops.c
++++ linux/drivers/base/power/generic_ops.c
+@@ -302,28 +302,3 @@ void pm_generic_complete(struct device *
+ 	pm_runtime_idle(dev);
  }
- 
--int platform_pm_prepare(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (drv && drv->pm && drv->pm->prepare)
--		ret = drv->pm->prepare(dev);
--
--	return ret;
--}
--
--void platform_pm_complete(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--
--	if (drv && drv->pm && drv->pm->complete)
--		drv->pm->complete(dev);
--}
--
  #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_SUSPEND
-@@ -741,22 +722,6 @@ int platform_pm_suspend(struct device *d
- 	return ret;
- }
- 
--int platform_pm_suspend_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
 -
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->suspend_noirq)
--			ret = drv->pm->suspend_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_resume(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -775,22 +740,6 @@ int platform_pm_resume(struct device *de
- 	return ret;
- }
- 
--int platform_pm_resume_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->resume_noirq)
--			ret = drv->pm->resume_noirq(dev);
--	}
--
--	return ret;
--}
--
- #endif /* CONFIG_SUSPEND */
- 
- #ifdef CONFIG_HIBERNATE_CALLBACKS
-@@ -813,22 +762,6 @@ int platform_pm_freeze(struct device *de
- 	return ret;
- }
- 
--int platform_pm_freeze_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->freeze_noirq)
--			ret = drv->pm->freeze_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_thaw(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -847,22 +780,6 @@ int platform_pm_thaw(struct device *dev)
- 	return ret;
- }
- 
--int platform_pm_thaw_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->thaw_noirq)
--			ret = drv->pm->thaw_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_poweroff(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -881,22 +798,6 @@ int platform_pm_poweroff(struct device *
- 	return ret;
- }
- 
--int platform_pm_poweroff_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->poweroff_noirq)
--			ret = drv->pm->poweroff_noirq(dev);
--	}
--
--	return ret;
--}
--
- int platform_pm_restore(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -913,22 +814,6 @@ int platform_pm_restore(struct device *d
- 	}
- 
- 	return ret;
--}
--
--int platform_pm_restore_noirq(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--	int ret = 0;
--
--	if (!drv)
--		return 0;
--
--	if (drv->pm) {
--		if (drv->pm->restore_noirq)
--			ret = drv->pm->restore_noirq(dev);
--	}
--
--	return ret;
- }
- 
- #endif /* CONFIG_HIBERNATE_CALLBACKS */
-Index: linux/include/linux/platform_device.h
-===================================================================
---- linux.orig/include/linux/platform_device.h
-+++ linux/include/linux/platform_device.h
-@@ -264,62 +264,34 @@ static inline char *early_platform_drive
- }
- #endif /* MODULE */
- 
+-struct dev_pm_ops generic_subsys_pm_ops = {
 -#ifdef CONFIG_PM_SLEEP
--extern int platform_pm_prepare(struct device *dev);
--extern void platform_pm_complete(struct device *dev);
+-	.prepare = pm_generic_prepare,
+-	.suspend = pm_generic_suspend,
+-	.suspend_noirq = pm_generic_suspend_noirq,
+-	.resume = pm_generic_resume,
+-	.resume_noirq = pm_generic_resume_noirq,
+-	.freeze = pm_generic_freeze,
+-	.freeze_noirq = pm_generic_freeze_noirq,
+-	.thaw = pm_generic_thaw,
+-	.thaw_noirq = pm_generic_thaw_noirq,
+-	.poweroff = pm_generic_poweroff,
+-	.poweroff_noirq = pm_generic_poweroff_noirq,
+-	.restore = pm_generic_restore,
+-	.restore_noirq = pm_generic_restore_noirq,
+-	.complete = pm_generic_complete,
+-#endif
+-#ifdef CONFIG_PM_RUNTIME
+-	.runtime_suspend = pm_generic_runtime_suspend,
+-	.runtime_resume = pm_generic_runtime_resume,
+-	.runtime_idle = pm_generic_runtime_idle,
+-#endif
+-};
+-EXPORT_SYMBOL_GPL(generic_subsys_pm_ops);
+Index: linux/include/linux/pm.h
+===================================================================
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -300,19 +300,6 @@ const struct dev_pm_ops name = { \
+ 	SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
+ }
+ 
+-/*
+- * Use this for subsystems (bus types, device types, device classes) that don't
+- * need any special suspend/resume handling in addition to invoking the PM
+- * callbacks provided by device drivers supporting both the system sleep PM and
+- * runtime PM, make the pm member point to generic_subsys_pm_ops.
+- */
+-#ifdef CONFIG_PM
+-extern struct dev_pm_ops generic_subsys_pm_ops;
+-#define GENERIC_SUBSYS_PM_OPS	(&generic_subsys_pm_ops)
 -#else
--#define platform_pm_prepare	NULL
--#define platform_pm_complete	NULL
+-#define GENERIC_SUBSYS_PM_OPS	NULL
 -#endif
 -
- #ifdef CONFIG_SUSPEND
- extern int platform_pm_suspend(struct device *dev);
--extern int platform_pm_suspend_noirq(struct device *dev);
- extern int platform_pm_resume(struct device *dev);
--extern int platform_pm_resume_noirq(struct device *dev);
- #else
- #define platform_pm_suspend		NULL
- #define platform_pm_resume		NULL
--#define platform_pm_suspend_noirq	NULL
--#define platform_pm_resume_noirq	NULL
- #endif
+ /**
+  * PM_EVENT_ messages
+  *
+Index: linux/arch/powerpc/kernel/vio.c
+===================================================================
+--- linux.orig/arch/powerpc/kernel/vio.c
++++ linux/arch/powerpc/kernel/vio.c
+@@ -1406,7 +1406,6 @@ static struct bus_type vio_bus_type = {
+ 	.match = vio_bus_match,
+ 	.probe = vio_bus_probe,
+ 	.remove = vio_bus_remove,
+-	.pm = GENERIC_SUBSYS_PM_OPS,
+ };
  
- #ifdef CONFIG_HIBERNATE_CALLBACKS
- extern int platform_pm_freeze(struct device *dev);
--extern int platform_pm_freeze_noirq(struct device *dev);
- extern int platform_pm_thaw(struct device *dev);
--extern int platform_pm_thaw_noirq(struct device *dev);
- extern int platform_pm_poweroff(struct device *dev);
--extern int platform_pm_poweroff_noirq(struct device *dev);
- extern int platform_pm_restore(struct device *dev);
--extern int platform_pm_restore_noirq(struct device *dev);
- #else
- #define platform_pm_freeze		NULL
- #define platform_pm_thaw		NULL
- #define platform_pm_poweroff		NULL
- #define platform_pm_restore		NULL
--#define platform_pm_freeze_noirq	NULL
--#define platform_pm_thaw_noirq		NULL
--#define platform_pm_poweroff_noirq	NULL
--#define platform_pm_restore_noirq	NULL
- #endif
- 
- #ifdef CONFIG_PM_SLEEP
- #define USE_PLATFORM_PM_SLEEP_OPS \
--	.prepare = platform_pm_prepare, \
--	.complete = platform_pm_complete, \
- 	.suspend = platform_pm_suspend, \
- 	.resume = platform_pm_resume, \
- 	.freeze = platform_pm_freeze, \
- 	.thaw = platform_pm_thaw, \
- 	.poweroff = platform_pm_poweroff, \
--	.restore = platform_pm_restore, \
--	.suspend_noirq = platform_pm_suspend_noirq, \
--	.resume_noirq = platform_pm_resume_noirq, \
--	.freeze_noirq = platform_pm_freeze_noirq, \
--	.thaw_noirq = platform_pm_thaw_noirq, \
--	.poweroff_noirq = platform_pm_poweroff_noirq, \
--	.restore_noirq = platform_pm_restore_noirq,
-+	.restore = platform_pm_restore,
- #else
- #define USE_PLATFORM_PM_SLEEP_OPS
- #endif
+ /**
 
