@@ -1,48 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1LOIJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:09:38 -0500
-Received: from h1778886.stratoserver.net ([85.214.133.74]:57157 "EHLO
-	h1778886.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab1LOIJh (ORCPT
+	id S1757616Ab1LOIKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:10:01 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58559 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757321Ab1LOIJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:09:37 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: axel.lin@gmail.com
-Subject: Re: [linux-next] make s5p64x0_defconfig build error
-Date: Thu, 15 Dec 2011 09:09:25 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <1323838630.18517.1.camel@phoenix> <028901ccbab8$c2c43890$484ca9b0$%kim@samsung.com> <CAF+7xWn80ZsgBNS80f0JYUXx2KN3VGM-Y2EOba7OLMwMGNfbKg@mail.gmail.com>
-In-Reply-To: <CAF+7xWn80ZsgBNS80f0JYUXx2KN3VGM-Y2EOba7OLMwMGNfbKg@mail.gmail.com>
+	Thu, 15 Dec 2011 03:09:53 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Thu, 15 Dec 2011 16:18:28 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Dong Aisheng <b29396@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
+        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>
+Subject: Re: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
+Message-ID: <20111215081825.GB22541@S2101-09.ap.freescale.net>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+ <1323878622-26602-3-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112150909.26229.heiko@sntech.de>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1323878622-26602-3-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 15. Dezember 2011, 00:54:58 schrieb Axel Lin:
-> Hi Kukjin,
+On Thu, Dec 15, 2011 at 12:03:40AM +0800, Dong Aisheng wrote:
+> The driver contains the initial support for imx53 and
+> imx6q.
 > 
-> > Axel and Will, thanks for pointing out.
-> > 
-> > Oops, I couldn't have much time to follow up :(
-> > But let me look at that in this weekend and I know, it can be escaped
-> > before merge window :)
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Shawn Guo <shanw.guo@freescale.com>
+> ---
+>  drivers/pinctrl/Kconfig           |   20 ++
+>  drivers/pinctrl/Makefile          |    3 +
+>  drivers/pinctrl/pinmux-imx-core.c |  435 ++++++++++++++++++++++++++++++++++++
+>  drivers/pinctrl/pinmux-imx-core.h |   86 +++++++
+>  drivers/pinctrl/pinmux-imx53.c    |  443 +++++++++++++++++++++++++++++++++++++
+>  drivers/pinctrl/pinmux-imx6q.c    |  433 ++++++++++++++++++++++++++++++++++++
+>  6 files changed, 1420 insertions(+), 0 deletions(-)
 > 
-> I also found the same build errors by:
-> make s5pc100_defconfig
-> make s5pv210_defconfig
-> make exynos4_defconfig
+> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+> index e17e2f8..268c212 100644
+> --- a/drivers/pinctrl/Kconfig
+> +++ b/drivers/pinctrl/Kconfig
+> @@ -20,6 +20,26 @@ config DEBUG_PINCTRL
+>  	help
+>  	  Say Y here to add some extra checks and diagnostics to PINCTRL calls.
+>  
+> +config PINMUX_IMX
+> +	bool "Freescale IMX core pinmux driver"
+> +	depends on ARCH_MXC
+> +
+> +config PINMUX_IMX53
+> +	bool "IMX53 pinmux driver"
+> +	depends on ARCH_MX5
+> +	select PINMUX
+> +	select PINMUX_IMX
+> +	help
+> +	  Say Y here to enable the imx6q pinmux driver
 
-make s3c2410_defconfig
-also produces the build errors
+s/imx6q/imx53
 
-Heiko
+> +
+> +config PINMUX_IMX6Q
+> +	bool "IMX6Q pinmux driver"
+> +	depends on SOC_IMX6Q
+> +	select PINMUX
+> +	select PINMUX_IMX
+> +	help
+> +	  Say Y here to enable the imx6q pinmux driver
+> +
+
+[...]
+
+> +#ifdef CONFIG_OF
+> +static int __devinit imx_pmx_parse_functions(struct device_node *np,
+> +			struct imx_pinctrl_info *info, u32 num)
+> +{
+> +	struct imx_pmx_func *function;
+> +	struct imx_pin_group *group;
+> +	int ret, len;
+> +
+> +	dev_dbg(info->dev, "parse function %d\n", num);
+> +
+> +	group = &info->groups[num];
+> +	function = &info->functions[num];
+> +
+> +	/* Initialise group */
+> +	ret = of_property_read_string(np, "grp_name", &group->name);
+> +	if (ret) {
+> +		dev_err(info->dev, "failed to get grp_name\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = of_property_read_u32(np, "num_pins", &group->num_pins);
+> +	if (ret) {
+> +		dev_err(info->dev, "failed to get num_pins\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = of_property_read_u32(np, "num_mux", &group->num_mux);
+> +	if (ret) {
+> +		dev_err(info->dev, "failed to get num_mux\n");
+> +		return ret;
+> +	}
+> +
+> +	if (group->num_pins != group->num_mux)
+> +		return -EINVAL;
+> +
+> +	group->pins = devm_kzalloc(info->dev, group->num_pins * sizeof(unsigned int),
+> +				GFP_KERNEL);
+> +	group->mux_mode = devm_kzalloc(info->dev, group->num_mux * sizeof(unsigned int),
+> +				GFP_KERNEL);
+> +	if (!group->pins || !group->mux_mode)
+> +		return -ENOMEM;
+> +
+> +	/* sanity check */
+> +	if (of_get_property(np, "grp_pins", &len) &&
+> +		len != group->num_pins * sizeof(unsigned int)) {
+
+Since we can figure out the 'num_pins' here, why do we bother to
+encode it in dts?
+
+> +		dev_err(info->dev, "wrong pins number?\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (of_get_property(np, "grp_mux", &len) &&
+> +		len != group->num_mux * sizeof(unsigned int)) {
+
+ditto
+
+> +		dev_err(info->dev, "wrong pin mux number?\n");
+> +		return -EINVAL;
+> +	}
+
+-- 
+Regards,
+Shawn
+
