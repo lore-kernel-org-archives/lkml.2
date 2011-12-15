@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1LOFqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 00:46:32 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:40263
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752514Ab1LOFqb (ORCPT
+	id S1755181Ab1LOFsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 00:48:46 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:37333 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752592Ab1LOFso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 00:46:31 -0500
-X-SpamScore: -2
-X-BigFish: VS-2(z1039oz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+	Thu, 15 Dec 2011 00:48:44 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371Ic89bh542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h93fh61h)
+X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 15 Dec 2011 13:55:04 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/9] irq: convert generic-chip to use irq_domain
-Message-ID: <20111215055501.GC21815@S2101-09.ap.freescale.net>
-References: <1323876538-20406-1-git-send-email-robherring2@gmail.com>
- <1323876538-20406-4-git-send-email-robherring2@gmail.com>
- <20111215052512.GB21815@S2101-09.ap.freescale.net>
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>
+Subject: RE: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
+Thread-Topic: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
+Thread-Index: AQHMunjd/61Fyc2SoU2quzVm3Ah6epXb4tOAgACCD7A=
+Date: Thu, 15 Dec 2011 05:48:38 +0000
+Message-ID: <7FE21149F4667147B645348EC6057885052C1B@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+	<1323878622-26602-3-git-send-email-b29396@freescale.com>
+ <CAOMZO5DVsk_iNCrMaBbK4kuehhL1C71fKqC65isybJDknzWrRQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5DVsk_iNCrMaBbK4kuehhL1C71fKqC65isybJDknzWrRQ@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.198]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111215052512.GB21815@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBF5mq0W006842
 
-On Thu, Dec 15, 2011 at 01:25:20PM +0800, Shawn Guo wrote:
-> On Wed, Dec 14, 2011 at 09:28:52AM -0600, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > Add irq domain support to irq generic-chip. This enables users of
-> > generic-chip to support dynamic irq assignment needed for DT interrupt
-> > binding. Users must be converted to use irq_data.hwirq for determining
-> > local interrupt numbers rather than using the Linux irq number.
-> > 
-> > irq_base is kept for now as there are a few users of it. Once they
-> > are converted to use the irq domain, it can be removed.
-> > 
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > ---
+> -----Original Message-----
+> From: Fabio Estevam [mailto:festevam@gmail.com]
+> Sent: Thursday, December 15, 2011 12:01 AM
+> To: Dong Aisheng-B29396
+> Cc: linux-kernel@vger.kernel.org; linus.walleij@stericsson.com;
+> s.hauer@pengutronix.de; rob.herring@calxeda.com;
+> grant.likely@secretlab.ca; linux-arm-kernel@lists.infradead.org;
+> kernel@pengutronix.de; Guo Shawn-R65073
+> Subject: Re: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
+> Importance: High
 > 
-> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+> On Wed, Dec 14, 2011 at 2:03 PM, Dong Aisheng <b29396@freescale.com>
+> wrote:
 > 
-Sorry, I have to take that tag back after I correct my test setup.
-It does not work for imx5 TZIC case, because the following change
-I suggested before is missed.
+> > +config PINMUX_IMX53
+> > + Â  Â  Â  bool "IMX53 pinmux driver"
+> > + Â  Â  Â  depends on ARCH_MX5
+> 
+> Shouldn't this be SOC_IMX53 instead?
+> 
+Yes, it should be SOC_IMX53.
+Thanks.
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index eb763f7..2a2aac1 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -39,7 +39,7 @@ void irq_domain_add(struct irq_domain *domain)
-                        return;
-                }
-                d->domain = domain;
--               d->hwirq = hwirq;
-+               d->hwirq = hwirq - domain->hwirq_base;
-        }
+Regards
+Dong Aisheng
 
-        mutex_lock(&irq_domain_mutex);
-
--- 
-Regards,
-Shawn
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
