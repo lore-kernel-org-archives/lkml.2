@@ -1,284 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab1LOVM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 16:12:29 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:39434 "EHLO mx2.parallels.com"
+	id S1759500Ab1LOVRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 16:17:41 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22091 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab1LOVM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 16:12:28 -0500
-Message-ID: <4EEA6288.1080405@parallels.com>
-Date: Fri, 16 Dec 2011 01:11:36 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <eric.dumazet@gmail.com>, <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 2/2] Explicitly call tcp creation and init from memcontrol.c
-References: <1323941672-14324-1-git-send-email-glommer@parallels.com> <1323941672-14324-3-git-send-email-glommer@parallels.com> <20111215.120028.532844419499092747.davem@davemloft.net>
-In-Reply-To: <20111215.120028.532844419499092747.davem@davemloft.net>
-Content-Type: multipart/mixed;
-	boundary="------------090403050008060201020709"
-X-Originating-IP: [83.149.8.31]
+	id S1751855Ab1LOVRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 16:17:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="87046868"
+Message-Id: <ee8051a64e591cff72846f7fbde0889a7ad1cdee.1323979146.git.tony.luck@intel.com>
+In-Reply-To: <cover.1323979146.git.tony.luck@intel.com>
+References: <cover.1323979146.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Thu, 15 Dec 2011 10:48:12 -0800
+Subject: [PATCH 1/6] HWPOISON: clean up memory_failure() vs. __memory_failure()
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------090403050008060201020709
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+There is only one caller of memory_failure(), all other users call
+__memory_failure() and pass in the flags argument explicitly. The
+lone user of memory_failure() will soon need to pass flags too.
 
-On 12/15/2011 09:00 PM, David Miller wrote:
-> From: Glauber Costa<glommer@parallels.com>
-> Date: Thu, 15 Dec 2011 13:34:32 +0400
->
->> Walking the proto_list holds a read_lock, which prevents us from doing
->> allocations. Splitting the tcp create function into create + init is
->> good, but it is not enough since create_files will do allocations as well
->> (dentry ones, mostly).
->>
->> Since this does not involve any protocol state, I propose we call the tcp
->> functions explicitly from memcontrol.c
->>
->> With this, we lose by now the ability of doing cgroup memcontrol for
->> protocols that are loaded as modules. But at least the ones I have in mind
->> won't really need it (tcp_ipv6 being the only one, but it uses the same data
->> structures as tcp_ipv4). So I believe this to be the simpler solution to this
->> problem.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->
-> This is an unnecessary limitation, please fix this properly otherwise
-> DCCP, SCTP, etc. won't be supportable with this stuff.
+Add flags argument to the callsite in mce.c. Delete the old memory_failure()
+function, and then rename __memory_failure() without the leading "__".
 
-How about the following patch then ? I am keeping protocols that has the 
-cgroup stuff on in a separate list, that can be protected by a mutex. 
-Therefore we can allocate without going into troubles.
+Provide clearer message when action optional memory errors are ignored.
 
-Let me know if you still have objections, I'll be happy to address them.
-
---------------090403050008060201020709
-Content-Type: text/plain;
-	name="0001-fix-sleeping-while-atomic-problem-in-sock-mem_cgroup.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename*0="0001-fix-sleeping-while-atomic-problem-in-sock-mem_cgroup.pa";
-	filename*1="tch"
-
->From c8fe669a9cbc7c7cbd87ce48d7eb91ed6c96cbde Mon Sep 17 00:00:00 2001
-From: Glauber Costa <glommer@parallels.com>
-Date: Thu, 15 Dec 2011 23:47:06 +0300
-Subject: [PATCH] fix sleeping while atomic problem in sock mem_cgroup.
-
-Since we can't scan the proto_list to initialize sock cgroups, as it
-holds a rwlock, and we also want to keep the code generic enough to
-avoid calling the initialization functions of protocols directly,
-I propose we keep the interested parties in a separate list. This list
-is protected by a mutex so we can sleep and do the necessary allocations.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- include/linux/memcontrol.h   |    4 +++
- include/net/sock.h           |    5 +---
- include/net/tcp_memcontrol.h |    2 +
- mm/memcontrol.c              |   52 ++++++++++++++++++++++++++++++++++++++++++
- net/core/sock.c              |   48 +++++++++-----------------------------
- 5 files changed, 70 insertions(+), 41 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   12 ++++++---
+ drivers/base/memory.c            |    2 +-
+ include/linux/mm.h               |    3 +-
+ mm/hwpoison-inject.c             |    4 +-
+ mm/madvise.c                     |    2 +-
+ mm/memory-failure.c              |   46 +++++++++++++++++--------------------
+ 6 files changed, 34 insertions(+), 35 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 9b296ea..1edd0e3 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -390,6 +390,10 @@ enum {
- 	OVER_LIMIT,
- };
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2af127d..1a08ce5 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1046,11 +1046,15 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(do_machine_check);
  
-+struct proto;
-+void register_sock_cgroup(struct proto *prot);
-+void unregister_sock_cgroup(struct proto *prot);
-+
- #ifdef CONFIG_INET
- struct sock;
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 6fe0dae..f8237a3 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -64,10 +64,6 @@
- #include <net/dst.h>
- #include <net/checksum.h>
- 
--struct cgroup;
--struct cgroup_subsys;
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
- /*
-  * This structure really needs to be cleaned up.
-  * Most of it is for TCP, and not used by any of
-@@ -858,6 +854,7 @@ struct proto {
- 	void			(*destroy_cgroup)(struct cgroup *cgrp,
- 						  struct cgroup_subsys *ss);
- 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
-+	struct list_head	cgroup_node;
- #endif
- };
- 
-diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
-index 3512082..5aa7c4b 100644
---- a/include/net/tcp_memcontrol.h
-+++ b/include/net/tcp_memcontrol.h
-@@ -11,6 +11,8 @@ struct tcp_memcontrol {
- 	int tcp_memory_pressure;
- };
- 
-+struct cgroup;
-+struct cgroup_subsys;
- struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
- int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
- void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7266202..6ee250d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4742,6 +4742,58 @@ static struct cftype kmem_cgroup_files[] = {
- 	},
- };
- 
-+static DEFINE_MUTEX(cgroup_proto_list_lock);
-+static LIST_HEAD(cgroup_proto_list);
-+
-+static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+	int ret = 0;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
-+		if (proto->init_cgroup) {
-+			ret = proto->init_cgroup(cgrp, ss);
-+			if (ret)
-+				goto out;
-+		}
-+	}
-+
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+out:
-+	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+}
-+
-+static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void register_sock_cgroup(struct proto *prot)
-+{
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_add(&prot->cgroup_node, &cgroup_proto_list);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void unregister_sock_cgroup(struct proto *prot)
-+{
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_del(&prot->cgroup_node);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
- static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+-/* dummy to break dependency. actual code is in mm/memory-failure.c */
+-void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
++#ifndef CONFIG_MEMORY_FAILURE
++int memory_failure(unsigned long pfn, int vector, int flags)
  {
- 	int ret = 0;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5a6a906..3728b50 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -139,43 +139,6 @@
- static DEFINE_RWLOCK(proto_list_lock);
- static LIST_HEAD(proto_list);
+-	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
++	printk(KERN_ERR "Uncorrected memory error in page 0x%lx ignored\n"
++		"Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling\n", pfn);
++
++	return 0;
+ }
++#endif
  
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--	int ret = 0;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry(proto, &proto_list, node) {
--		if (proto->init_cgroup) {
--			ret = proto->init_cgroup(cgrp, ss);
--			if (ret)
--				goto out;
--		}
--	}
--
--	read_unlock(&proto_list_lock);
--	return ret;
--out:
--	list_for_each_entry_continue_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--	return ret;
--}
--
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--}
--#endif
--
  /*
-  * Each address family might have different locking rules, so we have
-  * one slock key per address family:
-@@ -2483,6 +2446,12 @@ int proto_register(struct proto *prot, int alloc_slab)
- 	list_add(&prot->node, &proto_list);
- 	assign_proto_idx(prot);
- 	write_unlock(&proto_list_lock);
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (prot->proto_cgroup)
-+		register_sock_cgroup(prot);
-+#endif
-+
- 	return 0;
+  * Called after mce notification in process context. This code
+@@ -1068,7 +1072,7 @@ void mce_notify_process(void)
+ 	unsigned long pfn;
+ 	mce_notify_irq();
+ 	while (mce_ring_get(&pfn))
+-		memory_failure(pfn, MCE_VECTOR);
++		memory_failure(pfn, MCE_VECTOR, 0);
+ }
  
- out_free_timewait_sock_slab_name:
-@@ -2510,6 +2479,11 @@ void proto_unregister(struct proto *prot)
- 	list_del(&prot->node);
- 	write_unlock(&proto_list_lock);
+ static void mce_process_work(struct work_struct *dummy)
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 8272d92..9a92444 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -474,7 +474,7 @@ store_hard_offline_page(struct class *class,
+ 	if (strict_strtoull(buf, 0, &pfn) < 0)
+ 		return -EINVAL;
+ 	pfn >>= PAGE_SHIFT;
+-	ret = __memory_failure(pfn, 0, 0);
++	ret = memory_failure(pfn, 0, 0);
+ 	return ret ? ret : count;
+ }
  
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (prot->proto_cgroup != NULL)
-+		unregister_sock_cgroup(prot);
-+#endif
-+
- 	if (prot->slab != NULL) {
- 		kmem_cache_destroy(prot->slab);
- 		prot->slab = NULL;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4baadd1..bcc5234 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1607,8 +1607,7 @@ void vmemmap_populate_print_last(void);
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+ };
+-extern void memory_failure(unsigned long pfn, int trapno);
+-extern int __memory_failure(unsigned long pfn, int trapno, int flags);
++extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
+index c7fc7fd..cc448bb 100644
+--- a/mm/hwpoison-inject.c
++++ b/mm/hwpoison-inject.c
+@@ -45,7 +45,7 @@ static int hwpoison_inject(void *data, u64 val)
+ 	 * do a racy check with elevated page count, to make sure PG_hwpoison
+ 	 * will only be set for the targeted owner (or on a free page).
+ 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
+-	 * __memory_failure() will redo the check reliably inside page lock.
++	 * memory_failure() will redo the check reliably inside page lock.
+ 	 */
+ 	lock_page(hpage);
+ 	err = hwpoison_filter(hpage);
+@@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
+ 
+ inject:
+ 	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
+-	return __memory_failure(pfn, 18, MF_COUNT_INCREASED);
++	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
+ }
+ 
+ static int hwpoison_unpoison(void *data, u64 val)
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 74bf193..f5ab745 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -251,7 +251,7 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ 		printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
+ 		       page_to_pfn(p), start);
+ 		/* Ignore return value for now */
+-		__memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
++		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
+ 	}
+ 	return ret;
+ }
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 06d3479..ab259bb 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -984,7 +984,25 @@ static void clear_page_hwpoison_huge_page(struct page *hpage)
+ 		ClearPageHWPoison(hpage + i);
+ }
+ 
+-int __memory_failure(unsigned long pfn, int trapno, int flags)
++/**
++ * memory_failure - Handle memory failure of a page.
++ * @pfn: Page Number of the corrupted page
++ * @trapno: Trap number reported in the signal to user space.
++ * @flags: fine tune action taken
++ *
++ * This function is called by the low level machine check code
++ * of an architecture when it detects hardware memory corruption
++ * of a page. It tries its best to recover, which includes
++ * dropping pages, killing processes etc.
++ *
++ * The function is primarily of use for corruptions that
++ * happen outside the current execution context (e.g. when
++ * detected by a background scrubber)
++ *
++ * Must run in process context (e.g. a work queue) with interrupts
++ * enabled and no spinlocks hold.
++ */
++int memory_failure(unsigned long pfn, int trapno, int flags)
+ {
+ 	struct page_state *ps;
+ 	struct page *p;
+@@ -1156,29 +1174,7 @@ out:
+ 	unlock_page(hpage);
+ 	return res;
+ }
+-EXPORT_SYMBOL_GPL(__memory_failure);
+-
+-/**
+- * memory_failure - Handle memory failure of a page.
+- * @pfn: Page Number of the corrupted page
+- * @trapno: Trap number reported in the signal to user space.
+- *
+- * This function is called by the low level machine check code
+- * of an architecture when it detects hardware memory corruption
+- * of a page. It tries its best to recover, which includes
+- * dropping pages, killing processes etc.
+- *
+- * The function is primarily of use for corruptions that
+- * happen outside the current execution context (e.g. when
+- * detected by a background scrubber)
+- *
+- * Must run in process context (e.g. a work queue) with interrupts
+- * enabled and no spinlocks hold.
+- */
+-void memory_failure(unsigned long pfn, int trapno)
+-{
+-	__memory_failure(pfn, trapno, 0);
+-}
++EXPORT_SYMBOL_GPL(memory_failure);
+ 
+ #define MEMORY_FAILURE_FIFO_ORDER	4
+ #define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
+@@ -1251,7 +1247,7 @@ static void memory_failure_work_func(struct work_struct *work)
+ 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+ 		if (!gotten)
+ 			break;
+-		__memory_failure(entry.pfn, entry.trapno, entry.flags);
++		memory_failure(entry.pfn, entry.trapno, entry.flags);
+ 	}
+ }
+ 
 -- 
-1.7.6.4
+1.7.3.1
 
-
---------------090403050008060201020709--
