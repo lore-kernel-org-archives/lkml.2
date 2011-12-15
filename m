@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab1LOWoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:44:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:40716 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759512Ab1LOWoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:44:08 -0500
-Date: Thu, 15 Dec 2011 22:44:01 +1100
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next bad Kconfig for drivers/hid
-Message-ID: <20111215114401.GA3089@thor.bakeyournoodle.com>
-Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
-	Jeremy Fitzhardinge <jeremy@goop.org>,
-	LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-	Linux Kernel ML <linux-kernel@vger.kernel.org>
-References: <20111209012746.GC20353@thor.bakeyournoodle.com>
- <4EE19DA0.5010705@goop.org>
- <alpine.LNX.2.00.1112120020330.21970@pobox.suse.cz>
- <20111212003140.GA16353@thor.bakeyournoodle.com>
- <alpine.LNX.2.00.1112151107020.21970@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1112151107020.21970@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932709Ab1LOWoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:44:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42718 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932676Ab1LOWoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:44:13 -0500
+Date: Thu, 15 Dec 2011 14:44:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix for binary_sysctl() memory leak
+Message-Id: <20111215144411.930dd860.akpm@linux-foundation.org>
+In-Reply-To: <CANN689EViJYxDRr48wK1=_Lpb62wB5tj4-fnN1-MY8y-1L33fw@mail.gmail.com>
+References: <1323917052-480-1-git-send-email-walken@google.com>
+	<20111215141945.add405d5.akpm@linux-foundation.org>
+	<CANN689EViJYxDRr48wK1=_Lpb62wB5tj4-fnN1-MY8y-1L33fw@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 15 Dec 2011 14:38:58 -0800
+Michel Lespinasse <walken@google.com> wrote:
 
---OgqxwSJOaUobr8KG
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Dec 15, 2011 at 2:19 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > I think the patch is correct but the description is misleading?
+> >
+> > I see no memory leak here. __Calling __putname() directly simply
+> > bypasses some audit-related stuff.
+> 
+> Hmmm, maybe I wasn't explicit enough about it. We are definitely
+> seeing a memory leak without the patch.
+> 
+> When auditing is enabled, putname() calls audit_putname *instead* (not
+> in addition) to __putname(). Then, if a syscall is in progress,
+> audit_putname does not release the name - instead, it expects the name
+> to get released when the syscall completes, but that will happen only
+> if audit_getname() was called previously, i.e. if the name was
+> allocated with getname() rather than the naked __getname(). So,
+> __getname() followed by putname() ends up leaking memory.
+> 
 
-On Thu, Dec 15, 2011 at 11:08:08AM +0100, Jiri Kosina wrote:
-=20
-> Tony,
->=20
-> have you actually tested this one to work in the configuration you have=
-=20
-> been seeing it to fail?
->=20
-> I don't seem to be able to find any use of '=3D=3D' in other Kconfig file=
-s=20
-> (and never used it myself), so I'd like to have confirmation that it=20
-> actually works and fixes the problem before I apply it :)
+OK.  Please resend with a new changelog?
 
-Sorry I used '=3D' instead of '=3D=3D' and that worked.  I figured the '=3D=
-=3D'
-was just a typo.
+The bug surprises me - it seems that it makes it trivial for userspace
+to cause leaking of mad amounts of kernel memory, which would cause the
+bug to be found and fixed quickly.
 
-Yours Tony
+Is it a recent regression, or does the bug trigger only in weird
+circumstances, or what?
 
---OgqxwSJOaUobr8KG
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO6d2BAAoJEEsCiJRY75GK/QgP/3FzHR7duM7jp6hH8xwwr3pI
-dctYJTjnx3+cnjKBoCtqrVaobAswHcvzHuDv2vK/orcwL69LmGNYekBMSwY2HFG+
-ZF+AyEN2wcDV2yPwsMLXm0LJuSuywMz5k/X8zGMub2vYyWaEWtjUOIpEeIu2Ys0f
-NbXee9KZ0o8Na7plAR7zHlrBTBB9F9mbgd9JD5HCrI2WlsGmIsaqPC6kWy5LiPnd
-eN/Df3kw4HLPWsWRqN9TKpSgVS0QGmRb03GGKI9TW6TpLmlkjCOSvRhkJ/BitZki
-Kk4apNqL/YB7ODbHWeOgyFg4A7xV30rvDV34sqPUoOxUoeCKjEEw5VeoE1NOSkYX
-YHJIdHNMJwgzCl4/i0XFnnAJwO5wu619J7sldb4CyarRpCtPeuWW/6RVC2ZCipv1
-0pknFBXopiPYafbRZAJ13zJFVNV2peeW9lbd1d0YDkXYW7vcDpf13sC5z5ouUXPB
-/+UzYs6WN/RUwCDwJHjLm1TvDYgmMZzoA0j/mkoYvwuLCnP9G3o6uSOPe4spVrYe
-L9XtO+QxY/u4EQd3rpRlGVHdJMxWJcPC2UwYlUHsfaanwPtdTfubZtF39T33yC5E
-GQoGsitZ++RhbWfO2gW8JarVMB+P5UcPmMmTaHuY7eJWu/ZPVoZiuidz/1OsWqgc
-EQvuzn6eo3Jsnpc47TDd
-=ymIJ
------END PGP SIGNATURE-----
-
---OgqxwSJOaUobr8KG--
