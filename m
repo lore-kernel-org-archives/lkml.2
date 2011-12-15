@@ -1,146 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab1LOJ0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:26:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46034 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab1LOJ0q (ORCPT
+	id S1758724Ab1LOJ2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:28:33 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37830 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab1LOJ23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:26:46 -0500
-Date: Thu, 15 Dec 2011 10:26:33 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Nick Bowler <nbowler@elliptictech.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Massive log spam loading modules on ARM after 3.2-rc5
- (regression)
-Message-ID: <20111215092633.GD24496@pengutronix.de>
-References: <20111214215133.GA7780@elliptictech.com>
+	Thu, 15 Dec 2011 04:28:29 -0500
+Date: Thu, 15 Dec 2011 01:28:24 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: batouzo <batouzo@gmx.com>, David Airlie <airlied@linux.ie>
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [3.1.4] mm slub memory corruption in drm_vblank_cleanup
+In-Reply-To: <jc7q4e$qv9$1@dough.gmane.org>
+Message-ID: <alpine.DEB.2.00.1112150126220.10848@chino.kir.corp.google.com>
+References: <jc7q4e$qv9$1@dough.gmane.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111214215133.GA7780@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 04:51:33PM -0500, Nick Bowler wrote:
-> Hi folks,
-> 
-> With latest Linus' master, I'm faced with massive log spam on our ARM
-> Versatile Express platform when using modules.  Here's an example:
-> 
->   # modprobe sp805-wdt
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   sp805-wdt mb:wdt: registration successful
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
->   unwind: Unknown symbol address 7f802009
->   unwind: Index not found 7f802009
-> 
-> The message only seem to get printed at module load time.  Other than
-> the noise, things _seem_ to be working.  Nevertheless, it's a regression
-> introduced after 3.2-rc5 by the following commit:
-> 
->   de66a979012dbc66b1ec0125795a3f79ee667b8a is the first bad commit
->   commit de66a979012dbc66b1ec0125795a3f79ee667b8a
->   Author: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->   Date:   Mon Dec 5 09:39:59 2011 +0100
-> 
->       ARM: 7187/1: fix unwinding for XIP kernels
-> 
->       The linker places the unwind tables in readonly sections. So when using
->       an XIP kernel these are located in ROM and cannot be modified.
->       For that reason the current approach to convert the relative offsets in
->       the unwind index to absolute addresses early in the boot process doesn't
->       work with XIP.
-> 
->       The offsets in the unwind index section are signed 31 bit numbers and
->       the structs are sorted by this offset. So it first has offsets between
->       0x40000000 and 0x7fffffff (i.e. the negative offsets) and then offsets
->       between 0x00000000 and 0x3fffffff. When seperating these two blocks the
->       numbers are sorted even when interpreting the offsets as unsigned longs.
-> 
->       So determine the first non-negative entry once and track that using the
->       new origin pointer. The actual bisection can then use a plain unsigned
->       long comparison. The only thing that makes the new bisection more
->       complicated is that the offsets are relative to their position in the
->       index section, so the key to search needs to be adapted accordingly in
->       each step.
-> 
->       Moreover several consts are added to catch future writes and rename the
->       member "addr" of struct unwind_idx to "addr_offset" to better match the
->       new semantic. (This has the additional benefit of breaking eventual
->       users at compile time to make them aware of the change.)
-> 
->       In my tests the new algorithm was a tad faster than the original and has
->       the additional upside of not needing the initial conversion and so saves
->       some boot time and it's possible to unwind even earlier.
-> 
->       Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->       Acked-by: Nicolas Pitre <nico@fluxnic.net>
->       Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->       Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> 
->   :040000 040000 9c4363228515808d71dac84a4a16e0aa0cf4ceaa 65b80d4e51fabf0a3142a880be795f4b38f4d9fe M	arch
-> 
-> I am *not* using XIP.  Reverting this commit resolves the issue.
-> 
-> Let me know if you need any more info,
-Can you provide me your .config please? I cannot reproduce your problems
-with modprobe on an i.MX28 based tx28 machine.
+On Tue, 13 Dec 2011, batouzo wrote:
 
-Russell, maybe this makes you a bit less annoyed?
+> Hello, we where building 3.1.4 kernel when we noticed BUG()s on bootup.
+> 
+> After some debugging it seems to be use after freed memory corruption
+> caused by radeon driver.
 
-Best regards
-Uwe
+That's not what's indicated here, this is the poison value being 
+overwritten and detected on free.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> With radeon + kms the bug happens around 1 in 3 boot ups, right after
+> the radeon is enabled (with slub debugging) or later with no debug (few
+> seconds later or on shutdown esp. in rmmod).
+> 
+> When disabling radeon and KMS the bug was not seen;
+> 
+> 
+> Allocated in drm_vblank_init+0x139/0x260 [drm] + Freed in
+> drm_vblank_cleanup+0x78/0x90 [drm]
+> Allocated in drm_vblank_init+0xbe/0x260 [drm] + Freed in
+> drm_vblank_cleanup+0x48/0x90 [drm]
+> 
+> It is Amd Bulldozer computer, with Radeon card:
+> 01:00.0 VGA compatible controller: ATI Technologies Inc Cedar PRO
+> [Radeon HD 5450]
+> 
+> Debian stable. Builded with make-kpkg using gcc 4.4.5
+> 
+>    messages: http://pastebin.com/NXN5EPtG
+> config used: http://pastebin.com/AeVxEX7c
+> 
+> Interesting part of the messages linked above is:
+> 
+> 
+> [   94.401991] fb0: radeondrmfb frame buffer device
+> [   94.401992] drm: registered panic notifier
+> [   94.402033] [drm] Initialized radeon 2.11.0 20080528 for 0000:01:00.0
+> on minor 0
+> [   94.402921]
+> =============================================================================
+> [   94.402961] BUG kmalloc-16: Poison overwritten
+> [   94.402982]
+> -----------------------------------------------------------------------------
+> [   94.402983]
+> [   94.403025] INFO: 0xffff880137dbbc38-0xffff880137dbbc3b. First byte
+> 0x0 instead of 0x6b
+> [   94.403066] INFO: Allocated in drm_vblank_init+0x139/0x260 [drm]
+> age=253 cpu=3 pid=535
+> [   94.403103]  set_track+0x58/0x100
+> [   94.403119]  alloc_debug_processing+0x160/0x170
+> [   94.403140]  __slab_alloc+0x26d/0x440
+> [   94.403160]  drm_vblank_init+0x139/0x260 [drm]
+> [   94.403182]  drm_debugfs_create_files+0xcb/0x1a0 [drm]
+> [   94.403208]  drm_vblank_init+0x139/0x260 [drm]
+> [   94.403228]  __kmalloc+0x100/0x180
+> [   94.403247]  drm_vblank_init+0x139/0x260 [drm]
+> [   94.403276]  radeon_irq_kms_init+0x6d/0x160 [radeon]
+> [   94.403303]  evergreen_init+0x11c/0x2a0 [radeon]
+> [   94.403337]  radeon_device_init+0x3c9/0x470 [radeon]
+> [   94.403367]  radeon_driver_load_kms+0xad/0x160 [radeon]
+> [   94.403394]  drm_get_pci_dev+0x198/0x2c0 [drm]
+> [   94.403416]  local_pci_probe+0x55/0xd0
+> [   94.403433]  pci_device_probe+0x10a/0x130
+> [   94.403453]  driver_sysfs_add+0x72/0xa0
+> [   94.403474] INFO: Freed in drm_vblank_cleanup+0x78/0x90 [drm] age=235
+> cpu=0 pid=535
+> [   94.403508]  set_track+0x58/0x100
+> [   94.403524]  free_debug_processing+0x1f3/0x240
+> [   94.403545]  __slab_free+0x1a6/0x2b0
+> [   94.403562]  native_read_tsc+0x2/0x20
+> [   94.403580]  delay_tsc+0x42/0x80
+> [   94.403598]  drm_vblank_cleanup+0x78/0x90 [drm]
+> [   94.403625]  radeon_irq_kms_fini+0xd/0x60 [radeon]
+> [   94.403651]  evergreen_init+0x289/0x2a0 [radeon]
+> [   94.403677]  radeon_device_init+0x3c9/0x470 [radeon]
+> [   94.403704]  radeon_driver_load_kms+0xad/0x160 [radeon]
+> [   94.403731]  drm_get_pci_dev+0x198/0x2c0 [drm]
+> [   94.403751]  local_pci_probe+0x55/0xd0
+> [   94.403772]  pci_device_probe+0x10a/0x130
+> [   94.403791]  driver_sysfs_add+0x72/0xa0
+> [   94.404806]  driver_probe_device+0x8e/0x1b0
+> [   94.405782]  __driver_attach+0x93/0xa0
+> [   94.406031] INFO: Slab 0xffffea0004df6e80 objects=23 used=23 fp=0x
+>        (null) flags=0x200000000004080
+> [   94.406031] INFO: Object 0xffff880137dbbc38 @offset=7224
+> fp=0xffff880137dbb830
+> [   94.406031]
+> [   94.406031] Bytes b4 0xffff880137dbbc28:  06 0e ff ff 00 00 00 00 5a
+> 5a 5a 5a 5a 5a 5a 5a ..??????....ZZZZZZZZ
+> [   94.406031]   Object 0xffff880137dbbc38:  00 00 00 00 6b 6b 6b 6b 6b
+> 6b 6b 6b 6b 6b 6b a5 ....kkkkkkkkkkk???
+> [   94.406031]  Redzone 0xffff880137dbbc48:  bb bb bb bb bb bb bb bb
+>                      ????????????????????????
+> [   94.406031]  Padding 0xffff880137dbbd88:  5a 5a 5a 5a 5a 5a 5a 5a
+>                      ZZZZZZZZ
+> [   94.406031] Pid: 466, comm: udevd Not tainted 3.1.4-norm007+dbg #1
+> [   94.406031] Call Trace:
+> [   94.406031]  [] ? check_bytes_and_report+0x110/0x150
+> [   94.406031]  [] ? check_object+0x1fe/0x250
+> [   94.406031]  [] ? shmem_symlink+0xd4/0x220
+> [   94.406031]  [] ? shmem_symlink+0xd4/0x220
+> [   94.406031]  [] ? alloc_debug_processing+0xee/0x170
+> [   94.406031]  [] ? __slab_alloc+0x26d/0x440
+> [   94.406031]  [] ? shmem_symlink+0xd4/0x220
+> [   94.406031]  [] ? inode_init_always+0xfc/0x1b0
+> [   94.406031]  [] ? alloc_inode+0x32/0x90
+> [   94.406031]  [] ? shmem_symlink+0xd4/0x220
+> [   94.406031]  [] ? __kmalloc_track_caller+0xf8/0x180
+> [   94.406031]  [] ? kmemdup+0x27/0x60
+> [   94.406031]  [] ? shmem_symlink+0xd4/0x220
+> [   94.406031]  [] ? vfs_symlink+0x87/0xa0
+> [   94.406031]  [] ? sys_symlinkat+0xdc/0xf0
+> [   94.406031]  [] ? system_call_fastpath+0x16/0x1b
+> [   94.406031] FIX kmalloc-16: Restoring
+> 0xffff880137dbbc38-0xffff880137dbbc3b=0x6b
+
+Looks like ->vblank_inmodeset.  Adding David and dri-devel to cc.
