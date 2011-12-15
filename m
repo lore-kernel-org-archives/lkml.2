@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab1LORQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:16:53 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40193 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759032Ab1LORQw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:16:52 -0500
+	id S1759260Ab1LORVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:21:19 -0500
+Received: from mga11.intel.com ([192.55.52.93]:23607 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759238Ab1LORVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 12:21:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96603499"
+Date: Thu, 15 Dec 2011 18:25:45 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: myungjoo.ham@samsung.com, =?utf-8?B?6rmA64+Z6re8?= <dg77.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
+Message-ID: <20111215172545.GB20840@sortiz-mobl>
+References: <33434703.581501323909131767.JavaMail.weblogic@epml15>
+ <201112151534.01995.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20111215165248.GG2112@amd.com>
-References: <20111215165248.GG2112@amd.com>
-Date: Thu, 15 Dec 2011 23:16:52 +0600
-Message-ID: <CADZ9YHi4XX4gzPvbqxBndgNGoMMNzdQH9DqjC4fT7bKRpxjcXQ@mail.gmail.com>
-Subject: Re: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112151534.01995.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 10:52 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> (again with mailing lists on Cc, sorry)
->
-> Hi,
->
-> I tested current linux-next against my iommu-configs and found a compile
-> error in sound/soc/mid-x86/sst_platform.c. The variable ret_val in the
-> sst_platform_open() function is used but not declared. Attached patch
-> fixes this.
->
+Hi Arnd,
 
-While fixing any kind of error/warning, it's nice to have
-error/warning message in changelog.
+On Thu, Dec 15, 2011 at 03:34:01PM +0000, Arnd Bergmann wrote:
+> On Thursday 15 December 2011, MyungJoo Ham wrote:
+> > Arnd Bergmann wrote:
+> > > On Monday 12 December 2011, Samuel Ortiz wrote:
+> > > The part that is not clear to me is how this new driver fits in
+> > > with the first fsa9480 driver and the currently discussed extcon
+> > > subsystem, apparently all written by the same team at Samsung.
+> > > Is this misc driver still useful when the extcon framework gets
+> > > merged?
+> > 
+> > When extcom gets merged, this driver should be updated. It looks like allowing
+> > the interrupt handler to update extcon state would be enough. Bascially, this
+> > is all this driver is required for extcon to work. (and the prvious author of
+> > extcon--"extended" switch class at that time--was the author of this patch.)
+> > 
+> > Anyway, this patch has just told me that I'll need to add more sysfs entries
+> > for extcon to show the list of cable names and/or to show the status for each
+> > of them, soon or later.
+> 
+> I think it would be better not to merge this driver until the user interface
+> in the extcon framework has been finalized. I don't mind the driver, but I
+> want to prevent user interfaces from appearing in the kernel that we
+> intend to change anyway.
+> 
+> How about dropping the driver from the mfd tree, and adding it into the
+> extcon series for the next posting?
+Sounds good to me, I'll drop it.
 
-Thanks,
-Rakib
+Cheers,
+Samuel.
 
-> From d4e6d3b9ff8084c02eaf50e8212f77bcde5dec9d Mon Sep 17 00:00:00 2001
-> From: Joerg Roedel <joerg.roedel@amd.com>
-> Date: Thu, 15 Dec 2011 17:39:31 +0100
-> Subject: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
->
-> The variable ret_val is used but not declared. Fix this.
->
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  sound/soc/mid-x86/sst_platform.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/sound/soc/mid-x86/sst_platform.c b/sound/soc/mid-x86/sst_platform.c
-> index 24f9471..11c39c5 100644
-> --- a/sound/soc/mid-x86/sst_platform.c
-> +++ b/sound/soc/mid-x86/sst_platform.c
-> @@ -267,6 +267,7 @@ static int sst_platform_open(struct snd_pcm_substream *substream)
->  {
->        struct snd_pcm_runtime *runtime = substream->runtime;
->        struct sst_runtime_stream *stream;
-> +       int ret_val;
->
->        pr_debug("sst_platform_open called\n");
->
-> --
-> 1.7.5.4
->
-> --
-> AMD Operating System Research Center
->
-> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-> General Managers: Alberto Bozzo, Andrew Bowd
-> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
