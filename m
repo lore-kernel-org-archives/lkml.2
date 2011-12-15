@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab1LOJf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:35:26 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:18196 "EHLO relay.sw.ru"
+	id S932476Ab1LOJgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:36:36 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10990 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758373Ab1LOJfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:35:24 -0500
+	id S1758741Ab1LOJgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 04:36:33 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: [PATCH 0/2] Proposed fixes for tcp memory pressure
-Date: Thu, 15 Dec 2011 13:34:30 +0400
-Message-Id: <1323941672-14324-1-git-send-email-glommer@parallels.com>
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 1/2] Move limit definitions outside CONFIG_INET
+Date: Thu, 15 Dec 2011 13:34:31 +0400
+Message-Id: <1323941672-14324-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1323941672-14324-1-git-send-email-glommer@parallels.com>
+References: <1323941672-14324-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+They need to be available for other protocols as well, since
+they are used in sock.c openly
 
-I propose the following two fixes for the issues we're having in
-linux-next.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/memcontrol.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The first one just moves the definition out of the CONFIG_INET,
-and should fix the compile problems with allnoconfig.
-
-The second one is a bit bigger, and takes away the socket
-registration functions. As I've explained in the Changelog,
-I believe this to be the saner way to do it. We need to do allocations
-in both create and init time. 
-
-This was compile tested with 4 different randconfigs, CGROUPS off,
-KMEM cgroup off, INET off, all them on, and boot tested with
-everything on.
-
-Thanks.
-
-Glauber Costa (2):
-  Move limit definitions outside CONFIG_INET
-  Explicitly call tcp creation and init from memcontrol.c
-
- include/linux/memcontrol.h   |    2 +-
- include/net/sock.h           |    2 --
- include/net/tcp_memcontrol.h |   19 ++++++++++++++++++-
- mm/memcontrol.c              |   13 ++++---------
- net/core/sock.c              |   37 -------------------------------------
- net/ipv4/tcp_memcontrol.c    |   11 ++++++-----
- 6 files changed, 29 insertions(+), 55 deletions(-)
-
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 1513994..9b296ea 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -384,13 +384,13 @@ mem_cgroup_print_bad_page(struct page *page)
+ }
+ #endif
+ 
+-#ifdef CONFIG_INET
+ enum {
+ 	UNDER_LIMIT,
+ 	SOFT_LIMIT,
+ 	OVER_LIMIT,
+ };
+ 
++#ifdef CONFIG_INET
+ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ void sock_update_memcg(struct sock *sk);
 -- 
 1.7.6.4
 
