@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759793Ab1LOXaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 18:30:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47489 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab1LOXaF convert rfc822-to-8bit (ORCPT
+	id S1759828Ab1LOXbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 18:31:05 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56581 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756395Ab1LOXbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 18:30:05 -0500
+	Thu, 15 Dec 2011 18:31:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111215192131.GE32002@google.com>
-References: <1323954769-3918-1-git-send-email-ming.m.lin@intel.com>
- <1323954769-3918-5-git-send-email-ming.m.lin@intel.com> <20111215192131.GE32002@google.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 16 Dec 2011 00:29:44 +0100
-Message-ID: <CAPXgP12mEC_p_7Xi-pzKwUCNV1=WTj7rW+upXK6gUbGwg3S2NA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/4] ahci: support hot plug when port/controller is
- runtime suspended
-To: Tejun Heo <tj@kernel.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, David Zeuthen <zeuthen@gmail.com>
+In-Reply-To: <20111215230143.GA2090@legolas.emea.dhcp.ti.com>
+References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+	<20111215230143.GA2090@legolas.emea.dhcp.ti.com>
+Date: Fri, 16 Dec 2011 01:31:02 +0200
+Message-ID: <CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
+        Hema Kalliguddi <hemahk@ti.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 20:21, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Dec 15, 2011 at 09:12:49PM +0800, Lin Ming wrote:
->> I use eSATA to test disk hot plug.
->> With previous 3 patches applied, disk hot plug does not wok
->> when ahci port/controller is runtime suspended.
+On Fri, Dec 16, 2011 at 1:01 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Dec 16, 2011 at 12:42:14AM +0200, Felipe Contreras wrote:
+>> In musb_init_controller() there's a pm_runtime_put(), but there's no
+>> pm_runtime_get(), which creates a mismatch that causes the driver to
+>> sleep when it shouldn't.
 >>
->> There are 2 cases we need to handle for hot plug:
->>
->> 1. port suspended, controller active
->>    Is IRQ need to be enabled for port to detect hot plug?
->>
->> 2. port suspended, controller suspended
->>    Will controller get a PME when hot plug happens?
->>
->> I'm still investigating hot plug support.
->>
->> Anyone has comment?
+>> This was introduced in 7acc619, but it wasn't triggered until 18a2689
+>> was merged to Linus' branch at point 6899608.
 >
-> SATA link detection requires hot wire and keeping wire hot takes
-> power.
+> you need to add the commit description (whatever was the mail's subject)
+> here too. And you should put in Cc the author or those commits too,
+> otherwise we can't poke into their brains to understand what they were
+> thinking when they originally wrote those patches.
 
-Oh, hardware in general just sucks. :)
+True, but code is code, and even if you don't know what he was
+thinking, it's clear there's something wrong.
 
-> I think it's fair tradeoff to not support hotplug while
-> powersaving is on.  We have warm plug mechanism (the SCSI rescan
-> trigger via sysfs) after all.  It would be nice if things like that is
-> somehow exported to userland in easy way tho (cc'ing Kay), but I
-> frankly don't have much idea where that would fit.
+>> However, it seems most of the time this is used in a way that keeps the
+>> counter above 0, so nobody noticed. Also, it seems to depend on the
+>> configuration used.
+>>
+>> I found the problem by loading isp1704_charger before any usb gadgets:
+>> http://article.gmane.org/gmane.linux.kernel/1226122
+>>
+>> All versions after 2.6.39 are affected.
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> ---
+>>  drivers/usb/musb/musb_core.c |    2 --
+>>  1 files changed, 0 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+>> index b63ab15..920f04e 100644
+>> --- a/drivers/usb/musb/musb_core.c
+>> +++ b/drivers/usb/musb/musb_core.c
+>> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+>>       if (status < 0)
+>>               goto fail3;
+>>
+>> -     pm_runtime_put(musb->controller);
+>
+> To me the real fix would be add the missing pm_runtime_get_sync(). On
+> probe() we're actually accessing MUSB's address space which needs it's
+> clocks turned on. I guess it's only working now by chance, probably
+> because glue layer calls pm_runtime_get_sync() to access it's own
+> address space and that uses the same clocks.
 
-Getting David in the loop. He might have an idea.
+Are you sure it's "musb-hdrc", and not "musb-omap2430" the one
+accessing the relevant address-space? From the runtime_pm
+documentation it looks like only the probe function should deal with
+this.
 
-Kay
+If "musb-hdrc" was truly accessing these registers, then I would get
+the same failure because the clocks are turned off, but I don't...
+
+Cheers.
+
+-- 
+Felipe Contreras
