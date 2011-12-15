@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab1LOMrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 07:47:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47743 "EHLO mx1.redhat.com"
+	id S932601Ab1LOMrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 07:47:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932562Ab1LOMrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 07:47:08 -0500
+	id S932587Ab1LOMrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 07:47:16 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v5 07/11] virtio: net: Move vq initialization into separate function
-Date: Thu, 15 Dec 2011 18:15:53 +0530
-Message-Id: <f3794de842f237ed0d55d332176ce7840a99bf76.1323952934.git.amit.shah@redhat.com>
+Subject: [PATCH v5 09/11] virtio: net: Add freeze, restore handlers to support S4
+Date: Thu, 15 Dec 2011 18:15:55 +0530
+Message-Id: <a231970091c84b19445f7637cac494e9c4c6b52a.1323952934.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
 References: <cover.1323952933.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
@@ -23,86 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe and PM restore functions will share this code.
+Remove all the vqs, disable napi and detach from the netdev on
+hibernation.
+
+Re-create vqs after restoring from a hibernated image, re-enable napi
+and re-attach the netdev.  This keeps networking working across
+hibernation.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/net/virtio_net.c |   47 +++++++++++++++++++++++++++------------------
- 1 files changed, 28 insertions(+), 19 deletions(-)
+ drivers/net/virtio_net.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 6ee8410..6baa563 100644
+index 697a0fc..1378f3c 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -954,15 +954,38 @@ static void virtnet_config_changed(struct virtio_device *vdev)
- 	virtnet_update_status(vi);
+@@ -1151,6 +1151,38 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+ 	free_netdev(vi->dev);
  }
  
-+static int init_vqs(struct virtnet_info *vi)
++#ifdef CONFIG_PM
++static int virtnet_freeze(struct virtio_device *vdev)
 +{
-+	struct virtqueue *vqs[3];
-+	vq_callback_t *callbacks[] = { skb_recv_done, skb_xmit_done, NULL};
-+	const char *names[] = { "input", "output", "control" };
-+	int nvqs, err;
++	struct virtnet_info *vi = vdev->priv;
 +
-+	/* We expect two virtqueues, receive then send,
-+	 * and optionally control. */
-+	nvqs = virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) ? 3 : 2;
++	netif_device_detach(vi->dev);
++	if (netif_running(vi->dev))
++		napi_disable(&vi->napi);
 +
-+	err = vi->vdev->config->find_vqs(vi->vdev, nvqs, vqs, callbacks, names);
-+	if (err)
-+		return err;
++	remove_vq_common(vi);
 +
-+	vi->rvq = vqs[0];
-+	vi->svq = vqs[1];
-+
-+	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)) {
-+		vi->cvq = vqs[2];
-+
-+		if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
-+			vi->dev->features |= NETIF_F_HW_VLAN_FILTER;
-+	}
 +	return 0;
 +}
 +
- static int virtnet_probe(struct virtio_device *vdev)
- {
- 	int err;
- 	struct net_device *dev;
- 	struct virtnet_info *vi;
--	struct virtqueue *vqs[3];
--	vq_callback_t *callbacks[] = { skb_recv_done, skb_xmit_done, NULL};
--	const char *names[] = { "input", "output", "control" };
--	int nvqs;
- 
- 	/* Allocate ourselves a network device with room for our info */
- 	dev = alloc_etherdev(sizeof(struct virtnet_info));
-@@ -1034,24 +1057,10 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
- 		vi->mergeable_rx_bufs = true;
- 
--	/* We expect two virtqueues, receive then send,
--	 * and optionally control. */
--	nvqs = virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) ? 3 : 2;
--
--	err = vdev->config->find_vqs(vdev, nvqs, vqs, callbacks, names);
++static int virtnet_restore(struct virtio_device *vdev)
++{
++	struct virtnet_info *vi = vdev->priv;
++	int err;
++
 +	err = init_vqs(vi);
- 	if (err)
- 		goto free_stats;
++	if (err)
++		return err;
++
++	try_fill_recv(vi, GFP_KERNEL);
++	if (netif_running(vi->dev))
++		virtnet_napi_enable(vi);
++
++	netif_device_attach(vi->dev);
++	return 0;
++}
++#endif
++
+ static struct virtio_device_id id_table[] = {
+ 	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
+ 	{ 0 },
+@@ -1175,6 +1207,10 @@ static struct virtio_driver virtio_net_driver = {
+ 	.probe =	virtnet_probe,
+ 	.remove =	__devexit_p(virtnet_remove),
+ 	.config_changed = virtnet_config_changed,
++#ifdef CONFIG_PM
++	.freeze =	virtnet_freeze,
++	.restore =	virtnet_restore,
++#endif
+ };
  
--	vi->rvq = vqs[0];
--	vi->svq = vqs[1];
--
--	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ)) {
--		vi->cvq = vqs[2];
--
--		if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
--			dev->features |= NETIF_F_HW_VLAN_FILTER;
--	}
--
- 	err = register_netdev(dev);
- 	if (err) {
- 		pr_debug("virtio_net: registering device failed\n");
+ static int __init init(void)
 -- 
 1.7.7.3
 
