@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab1LODVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 22:21:07 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35591 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758600Ab1LODVF (ORCPT
+	id S1758671Ab1LODVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 22:21:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49634 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758600Ab1LODVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 22:21:05 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: signedness bug in cma3000_thread_irq()
-In-Reply-To: Your message of "Wed, 14 Dec 2011 21:35:22 EST."
-             <ECD4A42B-AC97-417B-99CA-3856B5DAFAC6@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1323672566-16738-1-git-send-email-xi.wang@gmail.com> <12775.1323916035@turing-police.cc.vt.edu>
-            <ECD4A42B-AC97-417B-99CA-3856B5DAFAC6@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1323919260_3689P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 14 Dec 2011 22:21:00 -0500
-Message-ID: <3797.1323919260@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4EE9679F.00B4,ss=1,re=0.000,fgs=0,
-	ip=71.62.120.57,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 14 Dec 2011 22:21:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111213113628.GB31138@amt.cnet>
+References: <20111209142303.GC31323@redhat.com>
+	<1323657683-13934-1-git-send-email-kernelfans@gmail.com>
+	<20111213113628.GB31138@amt.cnet>
+Date: Thu, 15 Dec 2011 11:21:37 +0800
+Message-ID: <CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com>
+Subject: Re: [PATCH v3] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        aliguori@us.ibm.com, jan.kiszka@web.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1323919260_3689P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 14 Dec 2011 21:35:22 EST, Xi Wang said:
-> On Dec 14, 2011, at 9:27 PM, Valdis.Kletnieks@vt.edu wrote:
-> > That will fix the signed/unsigned issue.  However, was there a reason
-> > the field was an 8-bit-wide to begin with?
+On Tue, Dec 13, 2011 at 7:36 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Mon, Dec 12, 2011 at 10:41:23AM +0800, Liu Ping Fan wrote:
+>> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>>
+>> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> Change this to vcpu's destruction taken when its refcnt is zero,
+>> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>>
+>> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/i8254.c     |   10 ++++--
+>>  arch/x86/kvm/i8259.c     |   12 +++++--
+>>  arch/x86/kvm/mmu.c       |    7 ++--
+>>  arch/x86/kvm/x86.c       |   54 +++++++++++++++++++----------------
+>>  include/linux/kvm_host.h |   71 ++++++++++++++++++++++++++++++++++++++++++----
+>>  virt/kvm/irq_comm.c      |    7 +++-
+>>  virt/kvm/kvm_main.c      |   62 +++++++++++++++++++++++++++++++++------
+>>  7 files changed, 170 insertions(+), 53 deletions(-)
 >
-> Which field?  The ->read() function pointer?
+> This needs a full audit of paths that access vcpus. See for one example
+> bsp_vcpu pointer.
+>
+Yes, I had missed it and just paid attention to the access path to
+vcpu in kvm_lapic and the path used in async_pf. I will correct it
+later.
+BTW, I want to make it sure that because kvm_lapic will be destroyed
+before vcpu, so  it is safe to bypass the access path there, and the
+situation is the same in async_pf for we have called
+kvm_clear_async_pf_completion_queue before zapping vcpu.  Am I right?
 
-No, the variable that used to be a u8 - was it 8 bits wide for a reason?
+As to the scene like bsp_vcpu, I think that introducing refcount like
+in V2 can handle it easier. Please help to review these changes in V4
+which I will send a little later.
 
---==_Exmh_1323919260_3689P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFO6WeccC3lWbTT17ARAl/dAKDZxg4rTZak3KJBZLvQLzCCxJIBiwCghJiq
-9f1CjeffPASHIzxSOkxpr/c=
-=yKs9
------END PGP SIGNATURE-----
-
---==_Exmh_1323919260_3689P--
-
+Thanks and regards
+ping fan
+>
