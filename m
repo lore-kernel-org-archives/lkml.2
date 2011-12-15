@@ -1,159 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759429Ab1LOTZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:25:39 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33859 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759387Ab1LOTZh (ORCPT
+	id S1759443Ab1LOT0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:26:05 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:36458 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759387Ab1LOT0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:25:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111214043113.GC20129@parisc-linux.org>
-References: <1323767154-6859-1-git-send-email-yinghai@kernel.org>
-	<20111214043113.GC20129@parisc-linux.org>
-Date: Thu, 15 Dec 2011 11:25:37 -0800
-X-Google-Sender-Auth: 70_yyJzqjwagyijqotx9tXoW0bg
-Message-ID: <CAE9FiQW=2toydSnx7H7d6YnQKkZCpMQK8GcarscbyoNWp9VTVg@mail.gmail.com>
-Subject: Re: [PATCH] pciehp: Checking pci conf reading to new added device
- instead of sleep 1s
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3040e986f30e7504b42672ea
+	Thu, 15 Dec 2011 14:26:03 -0500
+Subject: Re: workqueue_set_max_active(wq, 0)?
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111215191212.GD32002@google.com> (sfid-20111215_201251_422219_444A9248)
+References: <1323424482.3622.8.camel@jlt3.sipsolutions.net>
+	 <20111209165702.GD12108@google.com>
+	 <1323963492.23550.1.camel@jlt3.sipsolutions.net>
+	 <20111215183537.GA32002@google.com>
+	 <1323974620.1082.7.camel@jlt3.sipsolutions.net>
+	 <20111215191212.GD32002@google.com> (sfid-20111215_201251_422219_444A9248)
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Dec 2011 20:26:01 +0100
+Message-ID: <1323977161.1082.12.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3040e986f30e7504b42672ea
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-12-15 at 11:12 -0800, Tejun Heo wrote:
 
-On Tue, Dec 13, 2011 at 8:31 PM, Matthew Wilcox <matthew@wil.cx> wrote:
-> This code looks similar to (but not identical to) the code in
-> pci_scan_device(). =A0Please make that code a common function that can be
-> called from all PCI hotplug drivers, not just this one.
+> > Hm, good point. We can't abstract out all of it -- the freezer API
+> > doesn't want to wait for it to finish -- but probably a bit of it.
+> > 
+> > How do you iterate workqueues? We'd have to do that for the freezer
+> > part, unless we want to work on CWQs again.
+> 
+> By Locking workqueue_lock and walking workqueues list.  Hmmm...
 
-it seems that other hotplug like acpiphp does not check link status.
+Ah. So fundamentally, the freeze code does:
 
-Please if you are happy with attached version.
-it separates some code from pci_scan_device()
+ * set each gcwq frozen
+ * set max_active=0 for each CWQ in each WQ
 
-Thanks
+but it interleaves the two loops. I guess this would have to be
+untangled if we want to share it so it sets all gcwq frozen and then
+iterates the workqueues and their CWQs. Locking seems a bit hairy
+though, why does the current code keep the GCWQ lock over CWQ changes? I
+guess that's so nothing can work on the CWQ?
 
-Yinghai
+> > Actually I'm not really sure I understand the differences between WQ,
+> > CWQ and GCWQ...
+> 
+[snip explanation]
 
---20cf3040e986f30e7504b42672ea
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="pciehp_debug_x_3_1_access_pci_conf.patch"
-Content-Disposition: attachment; 
-	filename="pciehp_debug_x_3_1_access_pci_conf.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gw85qasd0
+thanks.
 
-RnJvbTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpTdWJqZWN0OiBbUEFUQ0ggLXYy
-XSBwY2llaHA6IENoZWNraW5nIHBjaSBjb25mIHJlYWRpbmcgdG8gbmV3IGFkZGVkIGRldmljZSBp
-bnN0ZWFkIG9mIHNsZWVwIDFzCgpEdXJpbmcgcmV2aWV3aW5nCnwJUENJOiBwY2llaHA6IHdhaXQg
-MTAwMCBtcyBiZWZvcmUgTGluayBUcmFpbmluZyBjaGVjawpMaW51cyBzYWlkOgo+Li4uCj4gVGhh
-dCdzIGEgKmxvbmcqIHRpbWUsIGFuZCBpdCdzIGlycml0YXRpbmcgdG8gdGhlIHVzZXIuIEl0IG1h
-a2VzIHRoZQo+IHVzZXIgdGhpbmsgInRoZSBtYWNoaW5lIGlzIHNsb3ciLgo+Li4uCj4gQW5kIHF1
-aXRlIGZyYW5rbHksIGFuIHVuY29uZGl0aW9uYWwgb25lLXNlY29uZCBkZWxheSBoZXJlIHNlZW1z
-IGJhZC4KPlR3byBzZWNvbmRzIHdhcyB1bmFjY2VwdGFibGUsIG9uZSBzZWNvbmQgaXMganVzdCBi
-YWQuCgpUcnkgdG8gYWNjZXNzIHRoZSBwY2kgY29uZiBvZiBwY2kgZGV2aWNlIHRoYXQgaXMgc3Vw
-cG9zZWQgdG8gc2hvdyB1cCBpbiAxcywKaWYgY291bGQgcmVhZCBiYWNrIHZhbGlkIHZlbmRlci9k
-ZXZpY2UgaWQsIGNvdWxkIGJhaWwgb3V0IGVhcmx5LgoKUmVsYXRlZCBkaXNjdXNzaW9uIGNvdWxk
-IGJlIGZvdW5kOgoJaHR0cHM6Ly9sa21sLm9yZy9sa21sLzIwMTEvMTIvNi8zMzkKCi12Mjogc2Vw
-ZXJhdGUgY29kZSB0byBwY2lfYnVzX3JlYWRfZGV2X3ZlbmRvcl9pZCgpIGZyb20gcGNpX3NjYW5f
-ZGV2aWNlKCkKICAgIGFuZCByZXVzZSBpdCBmcm9tIHBjaWVocCBjb2RlLiBTdWdnZXN0ZWQgYnkg
-TWF0dGhldyBXaWxjb3guCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5l
-bC5vcmc+CgotLS0KIGRyaXZlcnMvcGNpL2hvdHBsdWcvcGNpZWhwX2hwYy5jIHwgICA0OSArKysr
-KysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0KIGRyaXZlcnMvcGNpL3BjaS5oICAg
-ICAgICAgICAgICAgIHwgICAgMiArCiBkcml2ZXJzL3BjaS9wcm9iZS5jICAgICAgICAgICAgICB8
-ICAgNDQgKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0KIDMgZmlsZXMgY2hhbmdl
-ZCwgNjMgaW5zZXJ0aW9ucygrKSwgMzIgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2Ry
-aXZlcnMvcGNpL2hvdHBsdWcvcGNpZWhwX2hwYy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5v
-cmlnL2RyaXZlcnMvcGNpL2hvdHBsdWcvcGNpZWhwX2hwYy5jCisrKyBsaW51eC0yLjYvZHJpdmVy
-cy9wY2kvaG90cGx1Zy9wY2llaHBfaHBjLmMKQEAgLTI2NSw2ICsyNjUsMzcgQEAgc3RhdGljIHZv
-aWQgcGNpZV93YWl0X2xpbmtfYWN0aXZlKHN0cnVjdAogCWN0cmxfZGJnKGN0cmwsICJEYXRhIExp
-bmsgTGF5ZXIgTGluayBBY3RpdmUgbm90IHNldCBpbiAxMDAwIG1zZWNcbiIpOwogfQogCitzdGF0
-aWMgYm9vbCBwY2lfYnVzX2NoZWNrX2RldihzdHJ1Y3QgcGNpX2J1cyAqYnVzLCBpbnQgZGV2Zm4p
-Cit7CisJdTMyIGw7CisJaW50IGNvdW50ID0gMDsKKwl1MzIgbHhbNTBdOworCWludCBkZWxheSA9
-IDEwMDAsIHN0ZXAgPSAyMDsKKwlib29sIGZvdW5kID0gZmFsc2U7CisKKwlkbyB7CisJCWZvdW5k
-ID0gcGNpX2J1c19yZWFkX2Rldl92ZW5kb3JfaWQoYnVzLCBkZXZmbiwgJmwsIHN0ZXApOworCQls
-eFtjb3VudCsrXSA9IGw7CisKKwkJaWYgKGZvdW5kKQorCQkJYnJlYWs7CisKKwkJbXNsZWVwKHN0
-ZXApOworCQlkZWxheSAtPSBzdGVwOworCX0gd2hpbGUgKGRlbGF5ID4gMCk7CisKKwlpZiAoY291
-bnQgPiAxICYmIHBjaWVocF9kZWJ1ZykgeworCQlpbnQgaTsKKwkJcHJpbnRrKEtFUk5fREVCVUcg
-InBjaSAlMDR4OiUwMng6JTAyeC4lZCBpZCByZWFkaW5nIHRyeSAlZCB0aW1lcyB3aXRoIGludGVy
-dmFsICVkIG1zXG4iLAorCQkJcGNpX2RvbWFpbl9ucihidXMpLCBidXMtPm51bWJlciwgUENJX1NM
-T1QoZGV2Zm4pLAorCQkJUENJX0ZVTkMoZGV2Zm4pLCBjb3VudCwgc3RlcCk7CisJCWZvciAoaSA9
-IDA7IGkgPCBjb3VudDsgaSsrKQorCQkJcHJpbnRrKEtFUk5fREVCVUcgIiAgWyUwMmRdPSUwOHhc
-biIsIGksIGx4W2ldKTsKKwl9CisKKwlyZXR1cm4gZm91bmQ7Cit9CisKIGludCBwY2llaHBfY2hl
-Y2tfbGlua19zdGF0dXMoc3RydWN0IGNvbnRyb2xsZXIgKmN0cmwpCiB7CiAJdTE2IGxua19zdGF0
-dXM7CkBAIC0yODAsMTMgKzMxMSw5IEBAIGludCBwY2llaHBfY2hlY2tfbGlua19zdGF0dXMoc3Ry
-dWN0IGNvbnQKICAgICAgICAgZWxzZQogICAgICAgICAgICAgICAgIG1zbGVlcCgxMDAwKTsKIAot
-CS8qCi0JICogTmVlZCB0byB3YWl0IGZvciAxMDAwIG1zIGFmdGVyIERhdGEgTGluayBMYXllciBM
-aW5rIEFjdGl2ZQotCSAqIChETExMQSkgYml0IHJlYWRzIDFiIGJlZm9yZSBzZW5kaW5nIGNvbmZp
-Z3VyYXRpb24gcmVxdWVzdC4KLQkgKiBXZSBuZWVkIGl0IGJlZm9yZSBjaGVja2luZyBMaW5rIFRy
-YWluaW5nIChMVCkgYml0IGJlY3Vhc2UKLQkgKiBMVCBpcyBzdGlsbCBzZXQgZXZlbiBhZnRlciBE
-TExMQSBiaXQgaXMgc2V0IG9uIHNvbWUgcGxhdGZvcm0uCi0JICovCi0JbXNsZWVwKDEwMDApOwor
-CS8qIHdhaXQgMTAwbXMgYmVmb3JlIHJlYWQgcGNpIGNvbmYsIGFuZCB0cnkgaW4gMXMgKi8KKwlt
-c2xlZXAoMTAwKTsKKwlwY2lfYnVzX2NoZWNrX2RldihjdHJsLT5wY2llLT5wb3J0LT5zdWJvcmRp
-bmF0ZSwgUENJX0RFVkZOKDAsIDApKTsKIAogCXJldHZhbCA9IHBjaWVocF9yZWFkdyhjdHJsLCBQ
-Q0lfRVhQX0xOS1NUQSwgJmxua19zdGF0dXMpOwogCWlmIChyZXR2YWwpIHsKQEAgLTMwMiwxNCAr
-MzI5LDYgQEAgaW50IHBjaWVocF9jaGVja19saW5rX3N0YXR1cyhzdHJ1Y3QgY29udAogCQlyZXR1
-cm4gcmV0dmFsOwogCX0KIAotCS8qCi0JICogSWYgdGhlIHBvcnQgc3VwcG9ydHMgTGluayBzcGVl
-ZHMgZ3JlYXRlciB0aGFuIDUuMCBHVC9zLCB3ZQotCSAqIG11c3Qgd2FpdCBmb3IgMTAwIG1zIGFm
-dGVyIExpbmsgdHJhaW5pbmcgY29tcGxldGVzIGJlZm9yZQotCSAqIHNlbmRpbmcgY29uZmlndXJh
-dGlvbiByZXF1ZXN0LgotCSAqLwotCWlmIChjdHJsLT5wY2llLT5wb3J0LT5zdWJvcmRpbmF0ZS0+
-bWF4X2J1c19zcGVlZCA+IFBDSUVfU1BFRURfNV8wR1QpCi0JCW1zbGVlcCgxMDApOwotCiAJcGNp
-ZV91cGRhdGVfbGlua19zcGVlZChjdHJsLT5wY2llLT5wb3J0LT5zdWJvcmRpbmF0ZSwgbG5rX3N0
-YXR1cyk7CiAKIAlyZXR1cm4gcmV0dmFsOwpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3By
-b2JlLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcHJvYmUuYwor
-KysgbGludXgtMi42L2RyaXZlcnMvcGNpL3Byb2JlLmMKQEAgLTExMTksNDAgKzExMTksNTAgQEAg
-c3RydWN0IHBjaV9kZXYgKmFsbG9jX3BjaV9kZXYodm9pZCkKIH0KIEVYUE9SVF9TWU1CT0woYWxs
-b2NfcGNpX2Rldik7CiAKLS8qCi0gKiBSZWFkIHRoZSBjb25maWcgZGF0YSBmb3IgYSBQQ0kgZGV2
-aWNlLCBzYW5pdHktY2hlY2sgaXQKLSAqIGFuZCBmaWxsIGluIHRoZSBkZXYgc3RydWN0dXJlLi4u
-Ci0gKi8KLXN0YXRpYyBzdHJ1Y3QgcGNpX2RldiAqcGNpX3NjYW5fZGV2aWNlKHN0cnVjdCBwY2lf
-YnVzICpidXMsIGludCBkZXZmbikKK2Jvb2wgcGNpX2J1c19yZWFkX2Rldl92ZW5kb3JfaWQoc3Ry
-dWN0IHBjaV9idXMgKmJ1cywgaW50IGRldmZuLCB1MzIgKmwsCisJCQkJIGludCBjcnNfdGltZW91
-dCkKIHsKLQlzdHJ1Y3QgcGNpX2RldiAqZGV2OwotCXUzMiBsOwogCWludCBkZWxheSA9IDE7CiAK
-LQlpZiAocGNpX2J1c19yZWFkX2NvbmZpZ19kd29yZChidXMsIGRldmZuLCBQQ0lfVkVORE9SX0lE
-LCAmbCkpCi0JCXJldHVybiBOVUxMOworCWlmIChwY2lfYnVzX3JlYWRfY29uZmlnX2R3b3JkKGJ1
-cywgZGV2Zm4sIFBDSV9WRU5ET1JfSUQsIGwpKQorCQlyZXR1cm4gZmFsc2U7CiAKIAkvKiBzb21l
-IGJyb2tlbiBib2FyZHMgcmV0dXJuIDAgb3IgfjAgaWYgYSBzbG90IGlzIGVtcHR5OiAqLwotCWlm
-IChsID09IDB4ZmZmZmZmZmYgfHwgbCA9PSAweDAwMDAwMDAwIHx8Ci0JICAgIGwgPT0gMHgwMDAw
-ZmZmZiB8fCBsID09IDB4ZmZmZjAwMDApCi0JCXJldHVybiBOVUxMOworCWlmICgqbCA9PSAweGZm
-ZmZmZmZmIHx8ICpsID09IDB4MDAwMDAwMDAgfHwKKwkgICAgKmwgPT0gMHgwMDAwZmZmZiB8fCAq
-bCA9PSAweGZmZmYwMDAwKQorCQlyZXR1cm4gZmFsc2U7CiAKIAkvKiBDb25maWd1cmF0aW9uIHJl
-cXVlc3QgUmV0cnkgU3RhdHVzICovCi0Jd2hpbGUgKGwgPT0gMHhmZmZmMDAwMSkgeworCXdoaWxl
-ICgqbCA9PSAweGZmZmYwMDAxKSB7CiAJCW1zbGVlcChkZWxheSk7CiAJCWRlbGF5ICo9IDI7Ci0J
-CWlmIChwY2lfYnVzX3JlYWRfY29uZmlnX2R3b3JkKGJ1cywgZGV2Zm4sIFBDSV9WRU5ET1JfSUQs
-ICZsKSkKLQkJCXJldHVybiBOVUxMOworCQlpZiAocGNpX2J1c19yZWFkX2NvbmZpZ19kd29yZChi
-dXMsIGRldmZuLCBQQ0lfVkVORE9SX0lELCBsKSkKKwkJCXJldHVybiBmYWxzZTsKIAkJLyogQ2Fy
-ZCBoYXNuJ3QgcmVzcG9uZGVkIGluIDYwIHNlY29uZHM/ICBNdXN0IGJlIHN0dWNrLiAqLwotCQlp
-ZiAoZGVsYXkgPiA2MCAqIDEwMDApIHsKKwkJaWYgKGRlbGF5ID4gY3JzX3RpbWVvdXQpIHsKIAkJ
-CXByaW50ayhLRVJOX1dBUk5JTkcgInBjaSAlMDR4OiUwMng6JTAyeC4lZDogbm90ICIKIAkJCQkJ
-InJlc3BvbmRpbmdcbiIsIHBjaV9kb21haW5fbnIoYnVzKSwKIAkJCQkJYnVzLT5udW1iZXIsIFBD
-SV9TTE9UKGRldmZuKSwKIAkJCQkJUENJX0ZVTkMoZGV2Zm4pKTsKLQkJCXJldHVybiBOVUxMOwor
-CQkJcmV0dXJuIGZhbHNlOwogCQl9CiAJfQogCisJcmV0dXJuIHRydWU7Cit9CisKKy8qCisgKiBS
-ZWFkIHRoZSBjb25maWcgZGF0YSBmb3IgYSBQQ0kgZGV2aWNlLCBzYW5pdHktY2hlY2sgaXQKKyAq
-IGFuZCBmaWxsIGluIHRoZSBkZXYgc3RydWN0dXJlLi4uCisgKi8KK3N0YXRpYyBzdHJ1Y3QgcGNp
-X2RldiAqcGNpX3NjYW5fZGV2aWNlKHN0cnVjdCBwY2lfYnVzICpidXMsIGludCBkZXZmbikKK3sK
-KwlzdHJ1Y3QgcGNpX2RldiAqZGV2OworCXUzMiBsOworCisJaWYgKCFwY2lfYnVzX3JlYWRfZGV2
-X3ZlbmRvcl9pZChidXMsIGRldmZuLCAmbCwgNjAqMTAwMCkpCisJCXJldHVybiBOVUxMOworCiAJ
-ZGV2ID0gYWxsb2NfcGNpX2RldigpOwogCWlmICghZGV2KQogCQlyZXR1cm4gTlVMTDsKSW5kZXg6
-IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9wY2kuaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9kcml2ZXJzL3BjaS9wY2kuaAorKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3BjaS5oCkBAIC0y
-MDgsNiArMjA4LDggQEAgZW51bSBwY2lfYmFyX3R5cGUgewogCXBjaV9iYXJfbWVtNjQsCQkvKiBB
-IDY0LWJpdCBtZW1vcnkgQkFSICovCiB9OwogCitib29sIHBjaV9idXNfcmVhZF9kZXZfdmVuZG9y
-X2lkKHN0cnVjdCBwY2lfYnVzICpidXMsIGludCBkZXZmbiwgdTMyICpwbCwKKyAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgIGludCBjcnNfdGltZW91dCk7CiBleHRlcm4gaW50IHBjaV9z
-ZXR1cF9kZXZpY2Uoc3RydWN0IHBjaV9kZXYgKmRldik7CiBleHRlcm4gaW50IF9fcGNpX3JlYWRf
-YmFzZShzdHJ1Y3QgcGNpX2RldiAqZGV2LCBlbnVtIHBjaV9iYXJfdHlwZSB0eXBlLAogCQkJCXN0
-cnVjdCByZXNvdXJjZSAqcmVzLCB1bnNpZ25lZCBpbnQgcmVnKTsK
---20cf3040e986f30e7504b42672ea--
+> The reason why FREEZING currently is on GCWQ is because freezing is a
+> system wide operation.  If we're gonna implement pause, I think it
+> should probably be in cwq.
+
+Ok, makes sense too.
+
+I think I'm going to do something simpler first though, the locking
+scares me a bit. I'll do something for my single-threaded max-active=1
+workqueue first directly in mac80211 to try out the idea ...
+
+johannes
+
