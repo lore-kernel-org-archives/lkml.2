@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660Ab1LOWma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:42:30 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36387 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759605Ab1LOWm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:42:28 -0500
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>, stable@vger.kernel.org
-Subject: [PATCH] usb: musb: fix pm_runtime mismatch
-Date: Fri, 16 Dec 2011 00:42:14 +0200
-Message-Id: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.7.8.rc1.14.g248db
+	id S932671Ab1LOWnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:43:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43537 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759632Ab1LOWnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:43:02 -0500
+Message-ID: <4EEA77E1.6050009@zytor.com>
+Date: Thu, 15 Dec 2011 14:42:41 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: David Howells <dhowells@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Alexander van Heukelum <heukelum@mailshack.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: x86: fls64() exported to user space but not fls()?
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In musb_init_controller() there's a pm_runtime_put(), but there's no
-pm_runtime_get(), which creates a mismatch that causes the driver to
-sleep when it shouldn't.
+I'm trying to grok why fls64() seems to be exported to user space in
+<asm/bitops.h> on x86 by unconditional inclusion of
+<asm-generic/bitops/fls64.h>:
 
-This was introduced in 7acc619, but it wasn't triggered until 18a2689
-was merged to Linus' branch at point 6899608.
+...
+#endif /* __KERNEL__ */
 
-However, it seems most of the time this is used in a way that keeps the
-counter above 0, so nobody noticed. Also, it seems to depend on the
-configuration used.
+#include <asm-generic/bitops/fls64.h>
 
-I found the problem by loading isp1704_charger before any usb gadgets:
-http://article.gmane.org/gmane.linux.kernel/1226122
+#ifdef __KERNEL__
+...
 
-All versions after 2.6.39 are affected.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- drivers/usb/musb/musb_core.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ whereas fls() isn't (although __fls() is!)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index b63ab15..920f04e 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	if (status < 0)
- 		goto fail3;
- 
--	pm_runtime_put(musb->controller);
--
- 	status = musb_init_debugfs(musb);
- 	if (status < 0)
- 		goto fail4;
--- 
-1.7.8.rc1.14.g248db
+This is even more bizarre since <asm-generic/bitops/fls64.h> contains:
 
+...
+#if BITS_PER_LONG == 32
+static __always_inline int fls64(__u64 x)
+{
+        __u32 h = x >> 32;
+        if (h)
+                return fls(h) + 32;
+        return fls(x);
+}
+#elif BITS_PER_LONG == 64
+static __always_inline int fls64(__u64 x)
+{
+        if (x == 0)
+                return 0;
+        return __fls(x) + 1;
+}
+#else
+#error BITS_PER_LONG not 32 or 64
+#endif
+...
+
+Both BITS_PER_LONG and fls() are non-user-visible symbols, so this code
+should fail on user space.  Finally, <asm-generic/bitops/*> are
+non-exported headers; they are not installed by make headers_install.
+
+Is the #endif..#ifdef in <asm/bitops.h> a bug, plain and simple?
+
+	-hpa
