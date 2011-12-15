@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759608Ab1LOWVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:21:51 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:36591 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab1LOWVu (ORCPT
+	id S1759627Ab1LOWWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:22:03 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:60805 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756480Ab1LOWV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:21:50 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Paul Menage <paul@paulmenage.org>
-Subject: [PATCH] cgroups: remove redundant get/put of css_set from css_set_check_fetched()
-Date: Thu, 15 Dec 2011 14:21:26 -0800
-Message-Id: <1323987686-17968-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 15 Dec 2011 17:21:59 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <samuel.ortiz@intel.com>
+Subject: [PATCH] mfd/db8500-prcmu: remove support for early silicon revisions
+Date: Thu, 15 Dec 2011 23:21:43 +0100
+Message-ID: <1323987703-27525-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already have a reference to all elements in newcg_list.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
-Cc: Paul Menage <paul@paulmenage.org>
+The DB8500 ED (Early Drop) and V1 are only available inside of
+ST-Ericsson or partners, we have actively replaced and scrapped
+these prototypes. All Nova products on the open market (such as
+the Snowball board) are based on V2 and later ASIC variants.
+So let us focus on supporting the silicon that will be used and
+delete this to get a clear overview.
+
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- kernel/cgroup.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+Sam if this is OK with you I'd prefer to take this one patch
+through the ux500 tree since it depends on other changes there
+so your ACK would be appreciated!
+---
+ drivers/mfd/db8500-prcmu.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d9d5648..a7e00b9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1935,23 +1935,17 @@ static bool css_set_check_fetched(struct cgroup *cgrp,
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index a25ab9c..af8e0ef 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2102,14 +2102,11 @@ static struct irq_chip prcmu_irq_chip = {
+ void __init db8500_prcmu_early_init(void)
+ {
+ 	unsigned int i;
+-
+-	if (cpu_is_u8500v1()) {
+-		tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE_V1);
+-	} else if (cpu_is_u8500v2()) {
++	if (cpu_is_u8500v2()) {
+ 		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
  
- 	read_lock(&css_set_lock);
- 	newcg = find_existing_css_set(cg, cgrp, template);
--	if (newcg)
--		get_css_set(newcg);
- 	read_unlock(&css_set_lock);
- 
- 	/* doesn't exist at all? */
- 	if (!newcg)
- 		return false;
- 	/* see if it's already in the list */
--	list_for_each_entry(cg_entry, newcg_list, links) {
--		if (cg_entry->cg == newcg) {
--			put_css_set(newcg);
-+	list_for_each_entry(cg_entry, newcg_list, links)
-+		if (cg_entry->cg == newcg)
- 			return true;
--		}
--	}
- 
- 	/* not found */
--	put_css_set(newcg);
- 	return false;
- }
- 
+ 		if (tcpm_base != NULL) {
+-			int version;
++			u32 version;
+ 			version = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
+ 			prcmu_version.project_number = version & 0xFF;
+ 			prcmu_version.api_version = (version >> 8) & 0xFF;
 -- 
-1.7.3.1
+1.7.3.2
 
