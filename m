@@ -1,186 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab1LORYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:24:06 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:57190
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759238Ab1LORYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:24:04 -0500
-X-SpamScore: 7
-X-BigFish: VPS7(z1039ozzz1202hzz8275bhz2dh668h839h)
+	id S1759284Ab1LORZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:25:08 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:46092
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759032Ab1LORZG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 12:25:06 -0500
+X-SpamScore: -25
+X-BigFish: VPS-25(zz9371Ic89bh154dM1432N98dKzz1202hzz15d4R8275bhz2dh668h839h93fh)
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-FB-SS: 13,
-X-WSS-ID: 0LW99NX-01-A8G-02
+X-WSS-ID: 0LW99PJ-01-AC1-02
 X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 3/4] perf script: Add generic perl handler to process events
-Date: Thu, 15 Dec 2011 18:23:43 +0100
-Message-ID: <1323969824-9711-4-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
-References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
+Date: Thu, 15 Dec 2011 18:24:54 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+CC: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
+Message-ID: <20111215172453.GH2112@amd.com>
+References: <20111215165248.GG2112@amd.com>
+ <CADZ9YHi4XX4gzPvbqxBndgNGoMMNzdQH9DqjC4fT7bKRpxjcXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <CADZ9YHi4XX4gzPvbqxBndgNGoMMNzdQH9DqjC4fT7bKRpxjcXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current perf scripting facility only supports tracepoints. This
-patch implements a generic perl handler to support other events than
-tracepoints too.
+On Thu, Dec 15, 2011 at 11:16:52PM +0600, Rakib Mullick wrote:
+> On Thu, Dec 15, 2011 at 10:52 PM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> > (again with mailing lists on Cc, sorry)
+> >
+> > Hi,
+> >
+> > I tested current linux-next against my iommu-configs and found a compile
+> > error in sound/soc/mid-x86/sst_platform.c. The variable ret_val in the
+> > sst_platform_open() function is used but not declared. Attached patch
+> > fixes this.
+> >
+> 
+> While fixing any kind of error/warning, it's nice to have
+> error/warning message in changelog.
 
-This patch introduces a function process_event() that is called by
-perf for each sample. The function is called with byte streams as
-arguments containing information about the event, its attributes, the
-sample and raw data. Perl's unpack() function can easily be used for
-byte decoding. The following is the default implementation for
-process_event() that can also be generated with perf script:
+Okay, here it is:
 
- # Packed byte string args of process_event():
- #
- # $event:       union perf_event        util/event.h
- # $attr:        struct perf_event_attr  linux/perf_event.h
- # $sample:      struct perf_sample      util/event.h
- # $raw_data:    perf_sample->raw_data   util/event.h
+>From 9d0876632c4fc07254eafbe5018e68963bdcfe17 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Thu, 15 Dec 2011 17:39:31 +0100
+Subject: [PATCH] Fix compile error in sound/soc/mid-x86/sst_platform.c
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
- sub process_event
- {
-         my ($event, $attr, $sample, $raw_data) = @_;
+The variable ret_val is used but not declared. This causes
+the following compile error:
 
-         my @event       = unpack("LSS", $event);
-         my @attr        = unpack("LLQQQQQLLQQ", $attr);
-         my @sample      = unpack("QLLQQQQQLL", $sample);
-         my @raw_data    = unpack("C*", $raw_data);
+sound/soc/mid-x86/sst_platform.c: In function ‘sst_platform_open’:
+sound/soc/mid-x86/sst_platform.c:274:2: error: ‘ret_val’ undeclared (first use in this function)
+sound/soc/mid-x86/sst_platform.c:274:2: note: each undeclared identifier is reported only once for each function it appears in
+make[1]: *** [sound/soc/mid-x86/sst_platform.o] Error 1
 
-         use Data::Dumper;
-         print Dumper \@event, \@attr, \@sample, \@raw_data;
- }
+Fix this.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- .../perf/util/scripting-engines/trace-event-perl.c |   73 ++++++++++++++++++--
- 1 files changed, 67 insertions(+), 6 deletions(-)
+ sound/soc/mid-x86/sst_platform.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index a82ce43..e30749e 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -30,6 +30,7 @@
- #include "../thread.h"
- #include "../event.h"
- #include "../trace-event.h"
-+#include "../evsel.h"
- 
- #include <EXTERN.h>
- #include <perl.h>
-@@ -247,11 +248,11 @@ static inline struct event *find_cache_event(int type)
- 	return event;
- }
- 
--static void perl_process_event(union perf_event *pevent __unused,
--			       struct perf_sample *sample,
--			       struct perf_evsel *evsel,
--			       struct machine *machine __unused,
--			       struct thread *thread)
-+static void perl_process_tracepoint(union perf_event *pevent __unused,
-+				    struct perf_sample *sample,
-+				    struct perf_evsel *evsel,
-+				    struct machine *machine __unused,
-+				    struct thread *thread)
+diff --git a/sound/soc/mid-x86/sst_platform.c b/sound/soc/mid-x86/sst_platform.c
+index 24f9471..11c39c5 100644
+--- a/sound/soc/mid-x86/sst_platform.c
++++ b/sound/soc/mid-x86/sst_platform.c
+@@ -267,6 +267,7 @@ static int sst_platform_open(struct snd_pcm_substream *substream)
  {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -267,6 +268,9 @@ static void perl_process_event(union perf_event *pevent __unused,
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct sst_runtime_stream *stream;
++	int ret_val;
  
- 	dSP;
- 
-+	if (evsel->attr.type != PERF_TYPE_TRACEPOINT)
-+		return;
-+
- 	type = trace_parse_common_type(data);
- 
- 	event = find_cache_event(type);
-@@ -334,6 +338,42 @@ static void perl_process_event(union perf_event *pevent __unused,
- 	LEAVE;
- }
- 
-+static void perl_process_event_generic(union perf_event *pevent __unused,
-+				       struct perf_sample *sample,
-+				       struct perf_evsel *evsel __unused,
-+				       struct machine *machine __unused,
-+				       struct thread *thread __unused)
-+{
-+	dSP;
-+
-+	if (!get_cv("process_event", 0))
-+		return;
-+
-+	ENTER;
-+	SAVETMPS;
-+	PUSHMARK(SP);
-+	XPUSHs(sv_2mortal(newSVpvn((const char *)pevent, pevent->header.size)));
-+	XPUSHs(sv_2mortal(newSVpvn((const char *)&evsel->attr, sizeof(evsel->attr))));
-+	XPUSHs(sv_2mortal(newSVpvn((const char *)sample, sizeof(*sample))));
-+	XPUSHs(sv_2mortal(newSVpvn((const char *)sample->raw_data, sample->raw_size)));
-+	PUTBACK;
-+	call_pv("process_event", G_SCALAR);
-+	SPAGAIN;
-+	PUTBACK;
-+	FREETMPS;
-+	LEAVE;
-+}
-+
-+static void perl_process_event(union perf_event *pevent,
-+			       struct perf_sample *sample,
-+			       struct perf_evsel *evsel,
-+			       struct machine *machine,
-+			       struct thread *thread)
-+{
-+	perl_process_tracepoint(pevent, sample, evsel, machine, thread);
-+	perl_process_event_generic(pevent, sample, evsel, machine, thread);
-+}
-+
- static void run_start_sub(void)
- {
- 	dSP; /* access to Perl stack */
-@@ -555,7 +595,28 @@ static int perl_generate_script(const char *outfile)
- 	fprintf(ofp, "sub print_header\n{\n"
- 		"\tmy ($event_name, $cpu, $secs, $nsecs, $pid, $comm) = @_;\n\n"
- 		"\tprintf(\"%%-20s %%5u %%05u.%%09u %%8u %%-20s \",\n\t       "
--		"$event_name, $cpu, $secs, $nsecs, $pid, $comm);\n}");
-+		"$event_name, $cpu, $secs, $nsecs, $pid, $comm);\n}\n");
-+
-+	fprintf(ofp,
-+		"\n# Packed byte string args of process_event():\n"
-+		"#\n"
-+		"# $event:\tunion perf_event\tutil/event.h\n"
-+		"# $attr:\tstruct perf_event_attr\tlinux/perf_event.h\n"
-+		"# $sample:\tstruct perf_sample\tutil/event.h\n"
-+		"# $raw_data:\tperf_sample->raw_data\tutil/event.h\n"
-+		"\n"
-+		"sub process_event\n"
-+		"{\n"
-+		"\tmy ($event, $attr, $sample, $raw_data) = @_;\n"
-+		"\n"
-+		"\tmy @event\t= unpack(\"LSS\", $event);\n"
-+		"\tmy @attr\t= unpack(\"LLQQQQQLLQQ\", $attr);\n"
-+		"\tmy @sample\t= unpack(\"QLLQQQQQLL\", $sample);\n"
-+		"\tmy @raw_data\t= unpack(\"C*\", $raw_data);\n"
-+		"\n"
-+		"\tuse Data::Dumper;\n"
-+		"\tprint Dumper \\@event, \\@attr, \\@sample, \\@raw_data;\n"
-+		"}\n");
- 
- 	fclose(ofp);
+ 	pr_debug("sst_platform_open called\n");
  
 -- 
-1.7.7
+1.7.5.4
 
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
