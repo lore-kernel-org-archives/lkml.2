@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab1LOBUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 20:20:45 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60584 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab1LOBUn (ORCPT
+	id S1758501Ab1LOBXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 20:23:50 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:41758 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab1LOBXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 20:20:43 -0500
-Date: Wed, 14 Dec 2011 17:20:39 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-Message-ID: <20111215012039.GC8233@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111214133400.GA18565@localhost> <20111214143014.GB18080@thunk.org> <1323910977.22361.423.camel@sli10-conroe>
+	Wed, 14 Dec 2011 20:23:49 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Will Deacon <will.deacon@arm.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org
+References: <20111214183446.GB12703@mudshark.cambridge.arm.com>
+Date: Wed, 14 Dec 2011 17:25:19 -0800
+In-Reply-To: <20111214183446.GB12703@mudshark.cambridge.arm.com> (Will
+	Deacon's message of "Wed, 14 Dec 2011 18:34:47 +0000")
+Message-ID: <m1bora8w3k.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323910977.22361.423.camel@sli10-conroe>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11121501-3270-0000-0000-000002907067
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/c6yzyV4hZbiuraMe7/c9VHobnFQGhyh0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Will Deacon <will.deacon@arm.com>
+X-Spam-Relay-Country: **
+Subject: Re: IRQ migration on CPU offline path
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 09:02:57AM +0800, Shaohua Li wrote:
-> On Wed, 2011-12-14 at 22:30 +0800, Ted Ts'o wrote:
-> > On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
-> > > Hi,
-> > > 
-> > > Shaohua recently found that ext4 writeback mode could perform worse
-> > > than ordered mode in some cases. It may not be a big problem, however
-> > > we'd like to share some information on our findings.
-> > > 
-> > > I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
-> > > The interesting thing is, data=writeback used to run a bit faster
-> > > than data=ordered, however situation get inverted presumably by the
-> > > IO-less dirty throttling.
-> > 
-> > Interesting.  What sort of workloads are you using to do these
-> > measurements?  How many writer threads; I assume you are doing
-> > sequential writes which are extending one or more files, etc?
-> > 
-> > I suspect it's due to the throttling meaning that each thread is
-> > getting to send less data to the disk, and so there is more seeking
-> > going on with data=writeback, where as with data=ordered, at each
-> > journal commit we are forcing all of the dirty pages out to disk, one
-> > inode at a time, and this is resulting in a more efficient writeback
-> > compared to when the writeback code is getting to make its own choices
-> > about how much each inode gets to write out at at time.
-> > 
-> > It would be interesting to see what would happen if in
-> > ext4_da_writepages(), we completely ignore how many pages are
-> > requested to be written back by the writeback code, and just simply
-> > write back all of the dirty pages, and see if that brings the
-> > performance back.
-> I saw the issue in a machine with a LSI 1068e HBA card and 12 disks.
-> there is about 20% performance regression with data=writeback comparing
-> 3.1 and 3.2-rc. with data=order, there is small regression too.
-> Reverting writeback changes recover the regression for both cases.
-> 
-> My investigation shows the block size writing to disk isn't changed with
-> data=writeback. The block size is still very big, 256k IIRC, which is
-> the max block size in the disks. And I just have one thread for each
-> disk, so seek definitely isn't a problem in my workload.
-> 
-> I found sometimes one disk hasn't any request inflight, but we can't
-> send request to the disk, because the scsi host's resource (the queue
-> depth) is used out, looks we send too many requests from other disks and
-> leave some disks starved. The resource imbalance in scsi isn't a new
+Will Deacon <will.deacon@arm.com> writes:
 
-I wonder, does the patch in:
-http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/02339.html
-help with this starvation problem?  I noticed a similar problem and sent a
-patch, but LSI folks never responded.  Maybe two complaining users can change
-that.  The biggest MaxQ I've seen on LSI SAS is 511, and the driver clamps the
-value it passes to the SCSI layer to whatever the controller reports as its
-MaxQ (in /proc/mpt/summary).
+> Hi Thomas,
+>
+> I've been looking at the IRQ migration code on x86 (fixup_irqs) for the CPU
+> hotplug path in order to try and fix a bug we have on ARM with the
+> desc->affinity mask not getting updated. Compared to irq_set_affinity, the code
+> is pretty whacky (I guess because it's called via stop_machine) so I wondered if
+> you could help me understand a few points:
 
---D
-> problem, even 3.1 has such issue, so I'd think writeback introduces new
-> imbalance between the 12 disks. In fact, if I limit disk's queue depth
-> to 10, in this way the 12 disks will not impact each other in scsi
-> layer, the performance regression fully disappears for both writeback
-> and order mode.
-> 
-> Thanks,
-> Shaohua
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+There is a lot of craziness on that path because of poor hardware design
+on x86 we can't know when an irq has actually be migrated, and other
+nasties.
 
+There is also the issue that I expect is still the case that we have the
+generic layer asking us to cpu migration and the associated irq
+migrations with the irqs disabled which at least for the bits of poorly
+designed hardware made the entire path a best effort beast.
+
+> (1) Affinity notifiers - we seem to ignore these and I guess they don't expect
+>     to be called from this context. It could lead to the cpu_rmap stuff being
+>     bogus, but that's not used for anything much. Do we just depend on people
+>     having hotplug notifiers to deal with this?
+
+> (2) Threaded handlers - I can't see where we update irqaction->thread_flags with
+>     IRQTF_AFFINITY for handlers that are migrated by the scheduler when a CPU
+>     goes down. Is this required?
+>
+> (3) On x86, we rely on the irq_chip updating the desc->affinity mask in
+>     ->irq_set_affinity. It seems like we could use IRQ_SET_MASK_OK{_NOCOPY} for
+>     this and, in the case of the ioapic, return IRQ_SET_MASK_OK_NOCOPY (removing
+>     a redundant copy from the usual affinity path).
+
+Possibly.  I forget which direction this code has gone, but we have the
+interesting case that frequently on x86 we can be pinned to multiple and
+the hardware only supports being pinned to a single cpu at a time.  So
+the original logic was to put in the affinity mask what we had actually
+done instead of what was requested.  And in that case the mask changes
+so a NOCOPY doesn't feel appropriate but I don't understand that code.
+
+> Of course, I could just be completely confused, which is why I haven't started
+> hacking code just yet :)
+
+If x86 becomes a good clean example in this corner case I would be
+amazed.  Last I looked I almost marked it all as CONFIG_BROKEN because
+we were trying to do the impossible.  Unfortunately peoples laptops
+go through this path when they suspend and so it was more painful to
+disable hacky racy mess than to keep living with it.
+
+There has been an increase in the number of cases where it is possible
+to actually perform the migration with irqs disabled so on a good day
+that code might even work.  
+
+Eric
