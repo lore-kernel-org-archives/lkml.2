@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab1LONgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 08:36:36 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:61380 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1LONgf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 08:36:35 -0500
+	id S1758863Ab1LONi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 08:38:29 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13939
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751022Ab1LONi1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 08:38:27 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Date: Thu, 15 Dec 2011 21:51:30 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Jamie Iles <jamie@jamieiles.com>, Sascha Hauer <kernel@pengutronix.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+Message-ID: <20111215135129.GA2831@S2100-06.ap.freescale.net>
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
+ <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+ <20111212232903.GC2616@gallagher>
+ <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1323943710.18942.24.camel@twins>
-References: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
-	<1323943710.18942.24.camel@twins>
-Date: Thu, 15 Dec 2011 14:36:34 +0100
-Message-ID: <CAKfTPtB7Lib71iGrf=fGC5qtKFwD_qw3yz2OSkNy+CW7fCDtgw@mail.gmail.com>
-Subject: Re: [RFC] sched: Ensure cpu_power periodic update
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 December 2011 11:08, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2011-12-12 at 20:21 +0100, Vincent Guittot wrote:
->> With a lot of small tasks, the softirq sched is nearly never called
->> when no_hz is enable. In this case the load_balance is mainly called with
->> the newly_idle mode which doesn't update the cpu_power.
->> Add a next_update field which ensure a maximum update period when
->> there is short activity
->
->> +     if (local_group) {
->> +             if (idle != CPU_NEWLY_IDLE) {
->> +                     if (balance_cpu != this_cpu) {
->> +                             *balance = 0;
->> +                             return;
->> +                     }
->> +                     update_group_power(sd, this_cpu);
->> +             } else if (time_after_eq(jiffies, group->sgp->next_update))
->> +                     update_group_power(sd, this_cpu);
->>       }
->
-> Hmm, I would have expected it to be called from the NOHZ balancing path
-> instead of the new_idle path. Your changelog fails to mentions any
-> considerations on this..
->
+On Tue, Dec 13, 2011 at 10:54:58AM -0700, Grant Likely wrote:
+> On Mon, Dec 12, 2011 at 4:29 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+> > Hi Grant,
+> >
+> > I'm still going through these and trying to digest them but a couple of
+> > quick questions/comments.
+> >
+> > Jamie
+> >
+> > On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
+> >> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> >> new file mode 100644
+> >> index 0000000..e40c436
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> >> @@ -0,0 +1,114 @@
+> >> +This binding is a work-in-progress, and are based on some experimental
+> >> +work by benh[1].
+> >> +
+> >> +Sources of clock signal can be represented by any node in the device
+> >> +tree.  Those nodes are designated as clock providers.  Clock consumer
+> >> +nodes use a phandle and clock specifier pair to connect clock provider
+> >> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
+> >> +specifier is an array of one more more cells identifying the clock
+> >> +output on a device.  The length of a clock specifier is defined by the
+> >> +value of a #clock-cells property in the clock provider node.
+> >> +
+> >> +[1] http://patchwork.ozlabs.org/patch/31551/
+> >> +
+> >> +==Clock providers==
+> >> +
+> >> +Required properties:
+> >> +#clock-cells:           Number of cells in a clock specifier; typically will be
+> >> +                set to 1
+> >
+> > I'm not sure I fully understand what the extra cells actually mean for
+> > clocks.  I think the first integer is the clock output to use but some
+> > of the versatile and highbank ones only have a phandle or is it more
+> > implementation defined?  The clock-output-names description hints at
+> > recommended, so I find this a little confusing, but that could just be
+> > me!
+> 
+> I'm following convention here that has been established with
+> interrupts, gpios, and others.  Sometimes more information is needed
+> that just the clock number.  Using #clock-cells gives a clock provider
+> the option of having additional fields for clock flags or other data.
+> This is very much implementation defined.  Simple clock providers that
+> only have a single clock output can easily use #clock-cells = <0>.
+> Providers with multiple outputs will need to use 1 or more cells.
+> 
+It totally destroys my understanding on #clock-cells :)
 
-As we are not lucky, the small tasks are mainly running between ticks
-and  the timer interrupt doesn't fire which implies that both
-rebalance_domain of the cpu and nohz_balancer_kick are not called. We
-have a lot of call to idle_balance() when cpus become idle and very
-few calls to rebalance or nohz_idle_balance. If some tasks are rt
-tasks, the cpu_power should be updated regularly to reflect current
-use of the cpu by rt scheduler.
+I thought it's introduced to reduce the clock nodes in dts.  That said,
+#clock-cells stands for the number of clks we describe in the node.
+When #clock-cells > 1 for a node, the node becomes a clk blob which
+actually contains multiple clks.  I migrated the imx6 clock to your
+first post with this approach [1], using 70 nodes to describe 110
+clocks (~35% nodes reduced).
 
-I'm using cyclictest to easily reproduce the problem on my dual cortex-A9
+Now, you are saying it's not designed for this purpose.  I'm pretty
+confused, because the only reasonable use of #clock-cells to me is
+just that way, and I fail to see why we need #clock-cells if we do
+not use it that way.
 
-> Then again, its probably easier to keep update_group_power on this_cpu
-> than to allow a remote update of your cpu_power.
->
+http://comments.gmane.org/gmane.linux.drivers.devicetree/9631
 
-This additional path for updating the cpu_power will only be used by
-this_cpu because it is called by idle_balance. But we still have a
-call to update_group_power by a remote cpu when nohz_idle_balance is
-called.
+-- 
+Regards,
+Shawn
 
-> So I'm not opposed to this patch, I'd just like a little extra
-> clarification.
-
-Vincent
