@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387Ab1LOFJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 00:09:52 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:59359 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1LOFJv (ORCPT
+	id S1751500Ab1LOFPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 00:15:04 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:12269 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab1LOFPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 00:09:51 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-e0-4ee9811db518
-Date: Thu, 15 Dec 2011 14:10:13 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, myungjoo.ham@gmail.com
-Subject: [PATCH] devfreq: Add devfreq maintainer entry
-Message-id: <20111215051013.GA23030@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
+	Thu, 15 Dec 2011 00:15:02 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 15 Dec 2011 13:23:26 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Barry Song <baohua.song@csr.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/9] irq: check domain hwirq range for DT translate
+Message-ID: <20111215052314.GA21815@S2101-09.ap.freescale.net>
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com>
+ <1323876538-20406-3-git-send-email-robherring2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1323876538-20406-3-git-send-email-robherring2@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On Wed, Dec 14, 2011 at 09:28:51AM -0600, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> A DT node may have more than 1 domain associated with it, so make sure
+> the hwirq number is within range when doing DT translation.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> ---
 
-As devfreq is merged at mainline. Also update the maintainer entry.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b9db108..a5d2840 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2192,6 +2192,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
- S:	Maintained
- F:	drivers/usb/dwc3/
- 
-+DEVICE FREQUENCY (DEVFREQ)
-+M:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+M:	Kyungmin Park <kyungmin.park@samsung.com>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+F:	drivers/devfreq/
-+
- DEVICE NUMBER REGISTRY
- M:	Torben Mathiasen <device@lanana.org>
- W:	http://lanana.org/docs/device-list/index.html
+-- 
+Regards,
+Shawn
+
