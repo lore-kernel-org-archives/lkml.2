@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758790Ab1LOKXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:23:36 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:28706
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755414Ab1LOKXd (ORCPT
+	id S1758815Ab1LOKXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:23:51 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:3695 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758792Ab1LOKXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:23:33 -0500
+	Thu, 15 Dec 2011 05:23:37 -0500
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LW8Q74-02-EHE-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LW8Q77-01-29M-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/3] iommu/amd: Add amd_iommu_device_info() function
-Date: Thu, 15 Dec 2011 11:23:21 +0100
-Message-ID: <1323944602-26155-3-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 3/3] iommu/amd: Add invalidate-context call-back
+Date: Thu, 15 Dec 2011 11:23:22 +0100
+Message-ID: <1323944602-26155-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323944602-26155-1-git-send-email-joerg.roedel@amd.com>
 References: <1323944602-26155-1-git-send-email-joerg.roedel@amd.com>
@@ -28,99 +30,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function can be used to find out which features
-necessary for IOMMUv2 usage are available on a given device.
+This call-back is invoked when the task that is bound to a
+pasid is about to exit. The driver can use it to shutdown
+all context related to that context in a safe way.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/amd-iommu.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 69 insertions(+), 0 deletions(-)
+ drivers/iommu/amd_iommu_v2.c |   35 +++++++++++++++++++++++++++++++++++
+ include/linux/amd-iommu.h    |   17 +++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index d5074f4..03944e7 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3565,3 +3565,46 @@ void amd_iommu_enable_device_erratum(struct pci_dev *pdev, u32 erratum)
- 	dev_data->errata |= (1 << erratum);
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index fe812e2..8add9f1 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -63,6 +63,7 @@ struct device_state {
+ 	int pasid_levels;
+ 	int max_pasids;
+ 	amd_iommu_invalid_ppr_cb inv_ppr_cb;
++	amd_iommu_invalidate_ctx inv_ctx_cb;
+ 	spinlock_t lock;
+ 	wait_queue_head_t wq;
+ };
+@@ -637,6 +638,9 @@ again:
+ 		dev_state = pasid_state->device_state;
+ 		pasid     = pasid_state->pasid;
+ 
++		if (pasid_state->device_state->inv_ctx_cb)
++			dev_state->inv_ctx_cb(dev_state->pdev, pasid);
++
+ 		unbind_pasid(dev_state, pasid);
+ 
+ 		/* Task may be in the list multiple times */
+@@ -881,6 +885,37 @@ out_unlock:
  }
- EXPORT_SYMBOL(amd_iommu_enable_device_erratum);
-+
-+int amd_iommu_device_info(struct pci_dev *pdev,
-+                          struct amd_iommu_device_info *info)
+ EXPORT_SYMBOL(amd_iommu_set_invalid_ppr_cb);
+ 
++int amd_iommu_set_invalidate_ctx_cb(struct pci_dev *pdev,
++				    amd_iommu_invalidate_ctx cb)
 +{
-+	int max_pasids;
-+	int pos;
-+
-+	if (pdev == NULL || info == NULL)
-+		return -EINVAL;
++	struct device_state *dev_state;
++	unsigned long flags;
++	u16 devid;
++	int ret;
 +
 +	if (!amd_iommu_v2_supported())
-+		return -EINVAL;
++		return -ENODEV;
 +
-+	memset(info, 0, sizeof(*info));
++	devid = device_id(pdev);
 +
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ATS);
-+	if (pos)
-+		info->flags |= AMD_IOMMU_DEVICE_FLAG_ATS_SUP;
++	spin_lock_irqsave(&state_lock, flags);
 +
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
-+	if (pos)
-+		info->flags |= AMD_IOMMU_DEVICE_FLAG_PRI_SUP;
++	ret = -EINVAL;
++	dev_state = state_table[devid];
++	if (dev_state == NULL)
++		goto out_unlock;
 +
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
-+	if (pos) {
-+		int features;
++	dev_state->inv_ctx_cb = cb;
 +
-+		max_pasids = 1 << (9 * (amd_iommu_max_glx_val + 1));
-+		max_pasids = min(max_pasids, (1 << 20));
++	ret = 0;
 +
-+		info->flags |= AMD_IOMMU_DEVICE_FLAG_PASID_SUP;
-+		info->max_pasids = min(pci_max_pasids(pdev), max_pasids);
++out_unlock:
++	spin_unlock_irqrestore(&state_lock, flags);
 +
-+		features = pci_pasid_features(pdev);
-+		if (features & PCI_PASID_CAP_EXEC)
-+			info->flags |= AMD_IOMMU_DEVICE_FLAG_EXEC_SUP;
-+		if (features & PCI_PASID_CAP_PRIV)
-+			info->flags |= AMD_IOMMU_DEVICE_FLAG_PRIV_SUP;
-+	}
-+
-+	return 0;
++	return ret;
 +}
-+EXPORT_SYMBOL(amd_iommu_device_info);
++EXPORT_SYMBOL(amd_iommu_set_invalidate_ctx_cb);
++
+ static int __init amd_iommu_v2_init(void)
+ {
+ 	size_t state_table_size;
 diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
-index 06688c4..c03c281 100644
+index c03c281..ef00610 100644
 --- a/include/linux/amd-iommu.h
 +++ b/include/linux/amd-iommu.h
-@@ -119,6 +119,32 @@ typedef int (*amd_iommu_invalid_ppr_cb)(struct pci_dev *pdev,
- extern int amd_iommu_set_invalid_ppr_cb(struct pci_dev *pdev,
- 					amd_iommu_invalid_ppr_cb cb);
+@@ -145,6 +145,23 @@ struct amd_iommu_device_info {
+ extern int amd_iommu_device_info(struct pci_dev *pdev,
+ 				 struct amd_iommu_device_info *info);
  
 +/**
-+ * amd_iommu_device_info() - Get information about IOMMUv2 support of a
-+ *			     PCI device
-+ * @pdev: PCI device to query information from
-+ * @info: A pointer to an amd_iommu_device_info structure which will contain
-+ *	  the information about the PCI device
++ * amd_iommu_set_invalidate_ctx_cb() - Register a call-back for invalidating
++ *				       a pasid context. This call-back is
++ *				       invoked when the IOMMUv2 driver needs to
++ *				       invalidate a PASID context, for example
++ *				       because the task that is bound to that
++ *				       context is about to exit.
 + *
-+ * Returns 0 on success, negative value on error
++ * @pdev: The PCI device the call-back should be registered for
++ * @cb: The call-back function
 + */
 +
-+#define AMD_IOMMU_DEVICE_FLAG_ATS_SUP     0x1    /* ATS feature supported */
-+#define AMD_IOMMU_DEVICE_FLAG_PRI_SUP     0x2    /* PRI feature supported */
-+#define AMD_IOMMU_DEVICE_FLAG_PASID_SUP   0x4    /* PASID context supported */
-+#define AMD_IOMMU_DEVICE_FLAG_EXEC_SUP    0x8    /* Device may request execution
-+						    on memory pages */
-+#define AMD_IOMMU_DEVICE_FLAG_PRIV_SUP   0x10    /* Device may request
-+						    super-user privileges */
++typedef void (*amd_iommu_invalidate_ctx)(struct pci_dev *pdev, int pasid);
 +
-+struct amd_iommu_device_info {
-+	int max_pasids;
-+	u32 flags;
-+};
-+
-+extern int amd_iommu_device_info(struct pci_dev *pdev,
-+				 struct amd_iommu_device_info *info);
++extern int amd_iommu_set_invalidate_ctx_cb(struct pci_dev *pdev,
++					   amd_iommu_invalidate_ctx cb);
 +
  #else
  
