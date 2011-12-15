@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab1LOSG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:06:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34918 "EHLO
+	id S1759307Ab1LOSHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:07:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34925 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1LOSG6 (ORCPT
+	with ESMTP id S1759239Ab1LOSHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:06:58 -0500
+	Thu, 15 Dec 2011 13:07:07 -0500
 From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        linux-kernel@vger.kernel.org,
+To: Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>
+Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH 0/4] toshiba_acpi: Expanded hotkey support
-Date: Thu, 15 Dec 2011 12:06:07 -0600
-Message-Id: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
+Date: Thu, 15 Dec 2011 12:06:08 -0600
+Message-Id: <1323972371-13189-2-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+toshiba_acpi needs to execute an AML method within the EC namespace
+to make hotkeys work on some platforms. Provide an interface to
+allow it to easily get a handle to the EC namespace for this purpose.
 
-The following patches expand toshiba_acpi's hotkey support to include
-many additional models. Here's the high-level summary:
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/acpi/ec.c    |   10 ++++++++++
+ include/linux/acpi.h |    1 +
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
- * Add support for reading scancodes using the INFO method when
-   avaialable and for generating hotkey notifications by filtering Fn
-   key presses from the keyboard
- * Adds a new EC interface allowing toshiba_acpi to get a handle to the
-   EC, which is needed because the NTFY method used to generate the
-   hotkey notifications is in the EC namespace
- * Support some additional hotkey scancodes
- * Blacklist hotkey support for the Satellite C670-10V due to a buggy
-   implementation of the INFO method on this model
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index b19a18d..e37615f 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -445,6 +445,16 @@ int ec_transaction(u8 command,
+ 
+ EXPORT_SYMBOL(ec_transaction);
+ 
++/* Get the handle to the EC device */
++acpi_handle ec_get_handle(void)
++{
++	if (!first_ec)
++		return NULL;
++	return first_ec->handle;
++}
++
++EXPORT_SYMBOL(ec_get_handle);
++
+ void acpi_ec_block_transactions(void)
+ {
+ 	struct acpi_ec *ec = first_ec;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 6001b4da..ecccbb7 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -151,6 +151,7 @@ extern int ec_write(u8 addr, u8 val);
+ extern int ec_transaction(u8 command,
+                           const u8 *wdata, unsigned wdata_len,
+                           u8 *rdata, unsigned rdata_len);
++extern acpi_handle ec_get_handle(void);
+ 
+ #if defined(CONFIG_ACPI_WMI) || defined(CONFIG_ACPI_WMI_MODULE)
+ 
+-- 
+1.7.5.4
 
-More details can be found in the individual patch descriptions.
-
-Cc-ing the ACPI folks on the full series to provide context regarding
-how toshiba_acpi will use the new EC interface.
-
-Thanks,
-Seth
-
-
-Azael Avalos (1):
-  toshiba_acpi: Support additional hotkey scancodes
-
-Seth Forshee (3):
-  ACPI: EC: Add ec_get_handle()
-  toshiba_acpi: Support alternate hotkey interfaces
-  toshiba_acpi: Add blacklist for devices with hotkey problems
-
- drivers/acpi/ec.c                   |   10 ++
- drivers/platform/x86/toshiba_acpi.c |  254 ++++++++++++++++++++++++++++++-----
- include/linux/acpi.h                |    1 +
- 3 files changed, 228 insertions(+), 37 deletions(-)
