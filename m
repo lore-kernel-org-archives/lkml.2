@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597Ab1LOWTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:19:19 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60692 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab1LOWTS (ORCPT
+	id S1759613Ab1LOWTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:19:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42452 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab1LOWTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:19:18 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] Added some addition debug prints for pb_keys
-To: mingo@elte.hu, linux-kernel@vger.kernel.org
-Date: Thu, 15 Dec 2011 22:31:23 +0000
-Message-ID: <20111215223116.10166.50803.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 15 Dec 2011 17:19:46 -0500
+Date: Thu, 15 Dec 2011 14:19:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix for binary_sysctl() memory leak
+Message-Id: <20111215141945.add405d5.akpm@linux-foundation.org>
+In-Reply-To: <1323917052-480-1-git-send-email-walken@google.com>
+References: <1323917052-480-1-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Demeter <michael.demeter@intel.com>
+On Wed, 14 Dec 2011 18:44:12 -0800
+Michel Lespinasse <walken@google.com> wrote:
 
-Added additional debug output that we always seem to add
-during power ons to validate firmware operation.
+> binary_sysctl() calls sysctl_getname() which allocates from
+> names_cache slab usin __getname()
+> 
+> The matching function to free the name is __putname(), and not
+> putname() which should be used only to match getname() allocations.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> ---
+>  kernel/sysctl_binary.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+> index e8bffbe..2ce1b30 100644
+> --- a/kernel/sysctl_binary.c
+> +++ b/kernel/sysctl_binary.c
+> @@ -1354,7 +1354,7 @@ static ssize_t binary_sysctl(const int *name, int nlen,
+>  
+>  	fput(file);
+>  out_putname:
+> -	putname(pathname);
+> +	__putname(pathname);
+>  out:
+>  	return result;
+>  }
 
-Signed-off-by: Michael Demeter <michael.demeter@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+I think the patch is correct but the description is misleading?
 
- arch/x86/platform/mrst/mrst.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index a9a4732..3002cc86 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -1035,6 +1035,8 @@ static int __init pb_keys_init(void)
- 	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
- 	for (i = 0; i < num; i++) {
- 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
-+		pr_debug("info[%2d]: name = %s,"
-+				"gpio = %d\n", i, gb[i].desc, gb[i].gpio);
- 		if (gb[i].gpio == -1)
- 			continue;
- 
-
+I see no memory leak here.  Calling __putname() directly simply
+bypasses some audit-related stuff.
