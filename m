@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab1LOAZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 19:25:56 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43546 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab1LOAZx convert rfc822-to-8bit (ORCPT
+	id S1758345Ab1LOAcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 19:32:20 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:27580 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758144Ab1LOAcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 19:25:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323848398.3063.12.camel@dabdike>
-References: <1323688722-25400-1-git-send-email-amit.sahrawat83@gmail.com>
-	<1323694267.20451.5.camel@dabdike>
-	<CAKYAXd-3LYJUWbAqaT4XfbNXJ_F0L1Lxu1evUxLyu=poHLMFug@mail.gmail.com>
-	<1323766382.8163.12.camel@dabdike>
-	<4EE7B7B9.7060700@garzik.org>
-	<CADDb1s1JwTbeFMsL4Vcz99PhgZKAMG05rgqankYCNeJLFRQSMg@mail.gmail.com>
-	<1323848398.3063.12.camel@dabdike>
-Date: Thu, 15 Dec 2011 09:25:51 +0900
-Message-ID: <CAKYAXd9ncxETxTEP0Vy8CVyDJODsGuVT4jnpfQYCkcU8tXRtDA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] scsi: retrieve cache mode using ATA_16 if normal
- routine fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>, Jeff Garzik <jeff@garzik.org>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mdharm-usb@one-eyed-alien.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Dec 2011 19:32:19 -0500
+X-AuditID: cbfee612-b7c0fae0000024d1-34-4ee9400d9f0a
+Date: Thu, 15 Dec 2011 00:32:13 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
+To: Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20111215000848258@myungjoo.ham
+Msgkey: 20111215000848258@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20111215000848258@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <33434703.581501323909131767.JavaMail.weblogic@epml15>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBF0WaVZ005522
 
-2011/12/14 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> On Wed, 2011-12-14 at 09:14 +0530, Amit Sahrawat wrote:
->> Just to add a thought - this issues is not related with ATA, this is
->> primarily related with HDD's with a USB interface i.e., SCSI <-> USB.
->> And, when I check my kernel config, CONFIG_ATA is not selected,
->> libata-scsi - this gets compiled only in case CONFIG_ATA is on.
->> Are these two things inter-related?
->
-Hi. James.
+> On Monday 12 December 2011, Samuel Ortiz wrote:
+> > On Thu, Nov 24, 2011 at 06:12:18PM +0900, Donggeun Kim wrote:
+> > > The MUIC function in MAX8997 device can be used as
+> > > a USB port detector and switch.
+> > > This patch supports the MUIC feature of MAX8997.
+> > 
+> > I'm queueing this one to my for-next branch as it depends on your previous MFD
+> > patch.
+> > I'm also cc'ing Arnd in case he has some objections.
+> 
+> Thanks for the notification!
+> 
+> First of all, every new user space interface including new sysfs files
+> and uevent messages needs documentation in the Documentation/ABI
+> directory.
+> 
+> The part that is not clear to me is how this new driver fits in
+> with the first fsa9480 driver and the currently discussed extcon
+> subsystem, apparently all written by the same team at Samsung.
+> Is this misc driver still useful when the extcon framework gets
+> merged?
 
-> OK, so what you're telling us is that you're trying to correct a
-> deficiency in a SATL inside a USB device? Â The device itself is ATA but
-> it doesn't use our libata connectors.
->
-> I think in that case, the best way forwards is a mini-SATL correction
-> layer within USB storage. Â USB storage is certainly the place to
-> black/white list whether this should be done. Â ATA_16 is a bit of a
-> dangerous command to be throwing around because it's known to crash
-> various USB devices (and some old SCSI ones might even choke on it).
-Okay, how about make some option in Kconfig of scsi or usb storage to
-protect from the a bit of risk ATA_16 ?
-The user can select this option to use stable filesystem on USB HDD.
->
-> depending on how big this SATL ends up being we should consider whether
-> it should share processing with the libata SATL. Â If it's just a single
-> mode sense, my instinct is that it's probably OK to implement separately
-> (however, you need to use the libata headers ... no duplication of
-> libata opcodes and status defines like you had in the original SCSI
-> patch). Â If there are more commands to correct on the way, it might be
-> better as shared code.
-I agree. I and Amit will check the best way between SATL or miniSATL
-in usb_storage accoding to your advice.
+When extcom gets merged, this driver should be updated. It looks like allowing the interrupt handler to update extcon state would be enough. Bascially, this is all this driver is required for extcon to work. (and the prvious author of extcon--"extended" switch class at that time--was the author of this patch.)
 
-> James
->
->
+Anyway, this patch has just told me that I'll need to add more sysfs entries for extcon to show the list of cable names and/or to show the status for each of them, soon or later.
+
+> 
+> I very much believe that we should avoid introducing user interfaces
+> in a driver specific way when we have multiple pieces of hardware
+> that try to do the same thing. The extcon subsystem seems to handle
+> this correctly on the high-level (I have not done a detailed
+> review yet but I trust that it will be ok), so I don't understand
+> why we want another driver for the MAX8997 MUIC.
+
+This sysfs entry is a bit confusing to me (that userspace may update this CONTROL register). I'll consult Donggeun when he arrives and will write again about this one. If it is not writable, this is supported by extcon framework, so this sysfs entry will disappear adapting extcon.
+
+
+Cheers!
+MyungJoo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
