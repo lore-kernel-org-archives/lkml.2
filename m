@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab1LOIzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:55:45 -0500
-Received: from mga14.intel.com ([143.182.124.37]:64875 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1LOIzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:55:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="85958661"
-Date: Thu, 15 Dec 2011 16:55:41 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] proc: show readahead state in fdinfo
-Message-ID: <20111215085540.GA23966@localhost>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.278516066@intel.com>
- <20111129175743.GP24062@one.firstfloor.org>
+	id S932445Ab1LOIzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:55:51 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49882 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758522Ab1LOIzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 03:55:48 -0500
+Date: Thu, 15 Dec 2011 00:55:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4] oom: add trace points for debugging.
+In-Reply-To: <20111213181225.673e19db.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1112150055010.10848@chino.kir.corp.google.com>
+References: <20111213181225.673e19db.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129175743.GP24062@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 01:57:43AM +0800, Andi Kleen wrote:
-> On Tue, Nov 29, 2011 at 09:09:03PM +0800, Wu Fengguang wrote:
-> > Record the readahead pattern in ra->pattern and extend the ra_submit()
-> > parameters, to be used by the next readahead tracing/stats patches.
+On Tue, 13 Dec 2011, KAMEZAWA Hiroyuki wrote:
+
+> Subject: [PATCH] tracepoint: add tracepoints for debugging oom_score_adj.
 > 
-> I like this, could it be exported it a bit more formally in /proc for 
-> each file descriptor?
+> oom_score_adj is used for guarding processes from OOM-Killer. One of problem
+> is that it's inherited at fork(). When a daemon set oom_score_adj and
+> make children, it's hard to know where the value is set.
+> 
+> This patch adds some tracepoints useful for debugging. This patch adds
+> 3 trace points.
+>   - creating new task
+>   - renaming a task (exec)
+>   - set oom_score_adj
+> 
+> To debug, users need to enable some trace pointer. Maybe filtering is useful as
+> 
+> # EVENT=/sys/kernel/debug/tracing/events/task/
+> # echo "oom_score_adj != 0" > $EVENT/task_newtask/filter
+> # echo "oom_score_adj != 0" > $EVENT/task_rename/filter
+> # echo 1 > $EVENT/enable
+> # EVENT=/sys/kernel/debug/tracing/events/oom/
+> # echo 1 > $EVENT/enable
+> 
+> output will be like this.
+> # grep oom /sys/kernel/debug/tracing/trace
+> bash-7699  [007] d..3  5140.744510: oom_score_adj_update: pid=7699 comm=bash oom_score_adj=-1000
+> bash-7699  [007] ...1  5151.818022: task_newtask: pid=7729 comm=bash clone_flags=1200011 oom_score_adj=-1000
+> ls-7729  [003] ...2  5151.818504: task_rename: pid=7729 oldcomm=bash newcomm=ls oom_score_adj=-1000
+> bash-7699  [002] ...1  5175.701468: task_newtask: pid=7730 comm=bash clone_flags=1200011 oom_score_adj=-1000
+> grep-7730  [007] ...2  5175.701993: task_rename: pid=7730 oldcomm=bash newcomm=grep oom_score_adj=-1000
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-How about this?
----
-Subject: proc: show readahead state in fdinfo
-Date: Thu Dec 15 14:35:56 CST 2011
+Acked-by: David Rientjes <rientjes@google.com>
 
-Append three readahead states to /proc/<PID>/fdinfo/<FD>:
-
-	# cat /proc/self/fdinfo/0
-	pos:            0
-	flags:          0100002
-+	ra_pattern:     initial
-+	ra_start:       0		# pages
-+	ra_size:        0		# pages
-
-As proposed by Andi: I could imagine a monitoring tool that you run on a
-process that tells you what pattern state the various file descriptors
-are in and how large the window is.  That would be similar to the tools
-for monitoring network connections, which are extremely useful in practice.
-
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/proc/base.c     |   14 ++++++++++----
- include/linux/fs.h |    1 +
- mm/readahead.c     |    2 +-
- 3 files changed, 12 insertions(+), 5 deletions(-)
-
---- linux-next.orig/fs/proc/base.c	2011-12-15 14:36:04.000000000 +0800
-+++ linux-next/fs/proc/base.c	2011-12-15 15:51:35.000000000 +0800
-@@ -1885,7 +1885,7 @@ out:
- 	return ~0U;
- }
- 
--#define PROC_FDINFO_MAX 64
-+#define PROC_FDINFO_MAX 128
- 
- static int proc_fd_info(struct inode *inode, struct path *path, char *info)
- {
-@@ -1920,10 +1920,16 @@ static int proc_fd_info(struct inode *in
- 			}
- 			if (info)
- 				snprintf(info, PROC_FDINFO_MAX,
--					 "pos:\t%lli\n"
--					 "flags:\t0%o\n",
-+					 "pos:\t\t%lli\n"
-+					 "flags:\t\t0%o\n"
-+					 "ra_pattern:\t%s\n"
-+					 "ra_start:\t%lu\n"
-+					 "ra_size:\t%u\n",
- 					 (long long) file->f_pos,
--					 f_flags);
-+					 f_flags,
-+					 ra_pattern_names[file->f_ra.pattern],
-+					 file->f_ra.start,
-+					 file->f_ra.size);
- 			spin_unlock(&files->file_lock);
- 			put_files_struct(files);
- 			return 0;
---- linux-next.orig/include/linux/fs.h	2011-12-15 14:36:41.000000000 +0800
-+++ linux-next/include/linux/fs.h	2011-12-15 14:36:57.000000000 +0800
-@@ -953,6 +953,7 @@ struct file_ra_state {
- 
- 	loff_t prev_pos;		/* Cache last read() position */
- };
-+extern const char * const ra_pattern_names[];
- 
- /*
-  * Which policy makes decision to do the current read-ahead IO?
---- linux-next.orig/mm/readahead.c	2011-12-15 14:36:28.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-12-15 14:36:33.000000000 +0800
-@@ -19,7 +19,7 @@
- #include <linux/pagemap.h>
- #include <trace/events/vfs.h>
- 
--static const char * const ra_pattern_names[] = {
-+const char * const ra_pattern_names[] = {
- 	[RA_PATTERN_INITIAL]            = "initial",
- 	[RA_PATTERN_SUBSEQUENT]         = "subsequent",
- 	[RA_PATTERN_CONTEXT]            = "context",
+Thanks for being persistant with this!
