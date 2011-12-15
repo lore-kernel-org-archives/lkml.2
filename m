@@ -1,72 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab1LOVFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 16:05:49 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58184 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab1LOVFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 16:05:48 -0500
-Date: Thu, 15 Dec 2011 16:05:39 -0500
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: pjones@redhat.com, yinghai@kernel.org
-Subject: [GIT PULL] ibft fix for 3.2-rc6
-Message-ID: <20111215210538.GA12248@konrad-lan>
+	id S1759498Ab1LOVM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 16:12:29 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:39434 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811Ab1LOVM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 16:12:28 -0500
+Message-ID: <4EEA6288.1080405@parallels.com>
+Date: Fri, 16 Dec 2011 01:11:36 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <eric.dumazet@gmail.com>, <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 2/2] Explicitly call tcp creation and init from memcontrol.c
+References: <1323941672-14324-1-git-send-email-glommer@parallels.com> <1323941672-14324-3-git-send-email-glommer@parallels.com> <20111215.120028.532844419499092747.davem@davemloft.net>
+In-Reply-To: <20111215.120028.532844419499092747.davem@davemloft.net>
+Content-Type: multipart/mixed;
+	boundary="------------090403050008060201020709"
+X-Originating-IP: [83.149.8.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--------------090403050008060201020709
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 12/15/2011 09:00 PM, David Miller wrote:
+> From: Glauber Costa<glommer@parallels.com>
+> Date: Thu, 15 Dec 2011 13:34:32 +0400
+>
+>> Walking the proto_list holds a read_lock, which prevents us from doing
+>> allocations. Splitting the tcp create function into create + init is
+>> good, but it is not enough since create_files will do allocations as well
+>> (dentry ones, mostly).
+>>
+>> Since this does not involve any protocol state, I propose we call the tcp
+>> functions explicitly from memcontrol.c
+>>
+>> With this, we lose by now the ability of doing cgroup memcontrol for
+>> protocols that are loaded as modules. But at least the ones I have in mind
+>> won't really need it (tcp_ipv6 being the only one, but it uses the same data
+>> structures as tcp_ipv4). So I believe this to be the simpler solution to this
+>> problem.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>
+> This is an unnecessary limitation, please fix this properly otherwise
+> DCCP, SCTP, etc. won't be supportable with this stuff.
 
-Hey Linus,
+How about the following patch then ? I am keeping protocols that has the 
+cgroup stuff on in a separate list, that can be protected by a mutex. 
+Therefore we can allocate without going into troubles.
 
-Please git pull the following branch:
+Let me know if you still have objections, I'll be happy to address them.
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft.git linux-next
+--------------090403050008060201020709
+Content-Type: text/plain;
+	name="0001-fix-sleeping-while-atomic-problem-in-sock-mem_cgroup.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0001-fix-sleeping-while-atomic-problem-in-sock-mem_cgroup.pa";
+	filename*1="tch"
 
-which has a fix to make the ACPI table called 'iSCSI Boot Format Table'
-(IBFT) be found by the iscsi-ibft driver when booting under UEFI.
+>From c8fe669a9cbc7c7cbd87ce48d7eb91ed6c96cbde Mon Sep 17 00:00:00 2001
+From: Glauber Costa <glommer@parallels.com>
+Date: Thu, 15 Dec 2011 23:47:06 +0300
+Subject: [PATCH] fix sleeping while atomic problem in sock mem_cgroup.
 
-The functionality to grab the APCI IBFT was added some time ago, but we
-did not have the UEFI box to test it. Now that it has been tested it was
-uncovered that the ACPI parser code was run way to early - so it did not
-parse the iBFT table at all. This patch fixes it by doing the ACPI parsing later.
-The legacy iBFT searching is not affected (which is to scan 640K->1MB
-for the iBFT signature) and works correctly.
+Since we can't scan the proto_list to initialize sock cgroups, as it
+holds a rwlock, and we also want to keep the code generic enough to
+avoid calling the initialization functions of protocols directly,
+I propose we keep the interested parties in a separate list. This list
+is protected by a mutex so we can sleep and do the necessary allocations.
 
-Please pull!
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/memcontrol.h   |    4 +++
+ include/net/sock.h           |    5 +---
+ include/net/tcp_memcontrol.h |    2 +
+ mm/memcontrol.c              |   52 ++++++++++++++++++++++++++++++++++++++++++
+ net/core/sock.c              |   48 +++++++++-----------------------------
+ 5 files changed, 70 insertions(+), 41 deletions(-)
 
-Yinghai Lu (1):
-      ibft: Fix finding IBFT ACPI table on UEFI
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 9b296ea..1edd0e3 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -390,6 +390,10 @@ enum {
+ 	OVER_LIMIT,
+ };
+ 
++struct proto;
++void register_sock_cgroup(struct proto *prot);
++void unregister_sock_cgroup(struct proto *prot);
++
+ #ifdef CONFIG_INET
+ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 6fe0dae..f8237a3 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -64,10 +64,6 @@
+ #include <net/dst.h>
+ #include <net/checksum.h>
+ 
+-struct cgroup;
+-struct cgroup_subsys;
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ /*
+  * This structure really needs to be cleaned up.
+  * Most of it is for TCP, and not used by any of
+@@ -858,6 +854,7 @@ struct proto {
+ 	void			(*destroy_cgroup)(struct cgroup *cgrp,
+ 						  struct cgroup_subsys *ss);
+ 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
++	struct list_head	cgroup_node;
+ #endif
+ };
+ 
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+index 3512082..5aa7c4b 100644
+--- a/include/net/tcp_memcontrol.h
++++ b/include/net/tcp_memcontrol.h
+@@ -11,6 +11,8 @@ struct tcp_memcontrol {
+ 	int tcp_memory_pressure;
+ };
+ 
++struct cgroup;
++struct cgroup_subsys;
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7266202..6ee250d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4742,6 +4742,58 @@ static struct cftype kmem_cgroup_files[] = {
+ 	},
+ };
+ 
++static DEFINE_MUTEX(cgroup_proto_list_lock);
++static LIST_HEAD(cgroup_proto_list);
++
++static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++	int ret = 0;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
++		if (proto->init_cgroup) {
++			ret = proto->init_cgroup(cgrp, ss);
++			if (ret)
++				goto out;
++		}
++	}
++
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++out:
++	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++}
++
++static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void register_sock_cgroup(struct proto *prot)
++{
++	mutex_lock(&cgroup_proto_list_lock);
++	list_add(&prot->cgroup_node, &cgroup_proto_list);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void unregister_sock_cgroup(struct proto *prot)
++{
++	mutex_lock(&cgroup_proto_list_lock);
++	list_del(&prot->cgroup_node);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ {
+ 	int ret = 0;
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 5a6a906..3728b50 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -139,43 +139,6 @@
+ static DEFINE_RWLOCK(proto_list_lock);
+ static LIST_HEAD(proto_list);
+ 
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-	int ret = 0;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry(proto, &proto_list, node) {
+-		if (proto->init_cgroup) {
+-			ret = proto->init_cgroup(cgrp, ss);
+-			if (ret)
+-				goto out;
+-		}
+-	}
+-
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-out:
+-	list_for_each_entry_continue_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-}
+-
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-}
+-#endif
+-
+ /*
+  * Each address family might have different locking rules, so we have
+  * one slock key per address family:
+@@ -2483,6 +2446,12 @@ int proto_register(struct proto *prot, int alloc_slab)
+ 	list_add(&prot->node, &proto_list);
+ 	assign_proto_idx(prot);
+ 	write_unlock(&proto_list_lock);
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (prot->proto_cgroup)
++		register_sock_cgroup(prot);
++#endif
++
+ 	return 0;
+ 
+ out_free_timewait_sock_slab_name:
+@@ -2510,6 +2479,11 @@ void proto_unregister(struct proto *prot)
+ 	list_del(&prot->node);
+ 	write_unlock(&proto_list_lock);
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (prot->proto_cgroup != NULL)
++		unregister_sock_cgroup(prot);
++#endif
++
+ 	if (prot->slab != NULL) {
+ 		kmem_cache_destroy(prot->slab);
+ 		prot->slab = NULL;
+-- 
+1.7.6.4
 
- drivers/firmware/iscsi_ibft.c      |   42 ++++++++++++++++++++++++++++++++++-
- drivers/firmware/iscsi_ibft_find.c |   26 +--------------------
- 2 files changed, 42 insertions(+), 26 deletions(-)
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJO6mEeAAoJEFjIrFwIi8fJaYUH/3noSP91XL8h422izYd6v52C
-3IFLDqH7XCQ+LEaHdJ06CM9/EYzouzHbw+aCLY8sH4bIKa0aG8ZpK9c+vcy3vrcs
-QolmQGTTaKT4MUZ4473L/uSnQt9ZLT2NtiBh9jFwYOApwzQPRg9PQjhIh4hcecVt
-k2LKXvIua4OHvmZSO5UXwYQVc/GrI56MPQ/ovySF6IfwV8kz3rxVUKcvwaog9N4N
-xP3L6YSNr5+lOk4IW91Pp9m7/7YXfaJ+17sfm0QWzHlvvFld9t52njTeVw9O7P5B
-ZhwLx+Tw76RCjlQR0ZKii7dSfLx9Hd3E6b1Sksz1mBmn/G4hb+jjOe5KCO0tWyI=
-=nORH
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
+--------------090403050008060201020709--
