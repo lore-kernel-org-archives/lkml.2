@@ -1,44 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab1LOSko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:40:44 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58758 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab1LOSkn (ORCPT
+	id S1758942Ab1LOSnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:43:43 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:58383 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab1LOSnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:40:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112151139.32224.ptesarik@suse.cz>
-References: <201112140033.58951.ptesarik@suse.cz>
-	<CAM_iQpUr3MqwWzeD4Z8KzyErEM4utT=CkpbyecPu75-QDDznHQ@mail.gmail.com>
-	<201112151139.32224.ptesarik@suse.cz>
-Date: Thu, 15 Dec 2011 10:40:42 -0800
-X-Google-Sender-Auth: 6AtDKlStZP8EzlJscRygr6hNAWg
-Message-ID: <CAOS58YP8o9xQvZJtpEJobChhJ+pSDQ9PqDwaXFS_h+JFd65jOw@mail.gmail.com>
-Subject: Re: Is per_cpu_ptr_to_phys broken?
-From: Tejun Heo <tj@kernel.org>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        surovegin@google.com, gthelen@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 Dec 2011 13:43:41 -0500
+Subject: Re: workqueue_set_max_active(wq, 0)?
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111215183537.GA32002@google.com> (sfid-20111215_193615_022231_7F17D027)
+References: <1323424482.3622.8.camel@jlt3.sipsolutions.net>
+	 <20111209165702.GD12108@google.com>
+	 <1323963492.23550.1.camel@jlt3.sipsolutions.net>
+	 <20111215183537.GA32002@google.com> (sfid-20111215_193615_022231_7F17D027)
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Dec 2011 19:43:40 +0100
+Message-ID: <1323974620.1082.7.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-> Now, per_cpu_ptr() gives the correct virtual address, but
-> per_cpu_ptr_to_phys() gets the result wrong, regardless whether it thinks that
-> the address is in the first chunk or not:
+> > @@ -51,6 +51,7 @@ enum {
+> >  	GCWQ_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
+> >  	GCWQ_FREEZING		= 1 << 3,	/* freeze in progress */
+> >  	GCWQ_HIGHPRI_PENDING	= 1 << 4,	/* highpri works on queue */
+> > +	GCWQ_PAUSING		= 1 << 5,
+> 
+> Hmmm... confused.  Pausing is per-wq, why is this flag on gcwq?
+> Shouldn't it be on workqueue_struct?
 
-Yeah, that's me forgetting "+ offset_in_page()" after vmalloc page
-translation, which incidentally was also discovered by surovegin last
-night. It has been broken forever, by which I mean longer than six
-months. I wonder why this is coming up only now. Anyways, please send
-me a patch, I'll be push it mainline & to stable.
+Hm, no idea :-)
+I just copied FREEZING really without knowing what I was doing. I'm not
+very familiar with this code (yet).
 
-Thanks.
+> > +void pause_workqueue(struct workqueue_struct *wq)
+> > +{
+> > +	unsigned int cpu;
+> > +
+> > +	for_each_cwq_cpu(cpu, wq) {
+> > +		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+> > +		struct global_cwq *gcwq = cwq->gcwq;
+> > +
+> > +		spin_lock_irq(&gcwq->lock);
+> > +
+> > +		WARN_ON(gcwq->flags & GCWQ_PAUSING);
+> > +		gcwq->flags |= GCWQ_PAUSING;
+> > +
+> > +		cwq->max_active = 0;
+> > +
+> > +		spin_unlock_irq(&gcwq->lock);
+> > +	}
+> > +
+> > +	wait_event(wq->waitq, count_active(wq) == 0);
+> > +}
+> > +EXPORT_SYMBOL(pause_workqueue);
+> 
+> What if there are multiple callers of this function on the same wq?
+> Maybe something like wq->pause_depth and also use it from freeze path?
 
--- 
-tejun
+Hm, good point. We can't abstract out all of it -- the freezer API
+doesn't want to wait for it to finish -- but probably a bit of it.
+
+How do you iterate workqueues? We'd have to do that for the freezer
+part, unless we want to work on CWQs again.
+
+Actually I'm not really sure I understand the differences between WQ,
+CWQ and GCWQ...
+
+> > +void resume_workqueue(struct workqueue_struct *wq)
+> > +{
+> > +	unsigned int cpu;
+> > +
+> > +	for_each_cwq_cpu(cpu, wq) {
+> > +		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
+> > +		struct global_cwq *gcwq = cwq->gcwq;
+> > +
+> > +		spin_lock_irq(&gcwq->lock);
+> > +
+> > +		WARN_ON(!(gcwq->flags & GCWQ_PAUSING));
+> > +		gcwq->flags &= ~GCWQ_PAUSING;
+> > +
+> > +		cwq->max_active = wq->saved_max_active;
+> > +
+> > +		wake_up_worker(gcwq);
+> > +		spin_unlock_irq(&gcwq->lock);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL(resume_workqueue);
+> 
+> I don't think wake_up_worker() would be sufficient.
+> cwq_activate_first_delayed() needs to be called to kick the delayed
+> work items.
+
+Hm, ok.
+
+> I think it would be great if this can be abstracted out so that both
+> the freezer and explicit pausing use the same facility.  They aren't
+> that different after all.
+
+I'll take a look tomorrow. If you want to beat me to it ... ;-)
+
+johannes
+
