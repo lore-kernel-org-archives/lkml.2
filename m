@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab1LOIf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:35:58 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52694 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757625Ab1LOIf5 convert rfc822-to-8bit (ORCPT
+	id S1758522Ab1LOIk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:40:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40179 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1LOIk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:35:57 -0500
+	Thu, 15 Dec 2011 03:40:56 -0500
+Date: Thu, 15 Dec 2011 08:40:50 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Eric Paris <eparis@redhat.com>,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] audit: fix mark refcounting
+Message-ID: <20111215084050.GQ2203@ZenIV.linux.org.uk>
+References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu>
+ <87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
+ <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1323931602.3305.1.camel@phoenix>
-References: <1323931602.3305.1.camel@phoenix>
-Date: Thu, 15 Dec 2011 16:35:56 +0800
-Message-ID: <CAN1soZyfvkkRG4oU-6POPEG0vwcuhLPYgbv39wbMrzxOBHBq2w@mail.gmail.com>
-Subject: Re: [PATCH RESEND] rtc: convert drivers/rtc/* to use module_platform_driver()
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Ben Dooks <ben@simtec.co.uk>,
-        John Stultz <john.stultz@linaro.org>, rtc-linux@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 2:46 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> This patch converts the drivers in drivers/rtc/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
->
-> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Mike Frysinger <vapier.adi@gmail.com>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Ben Dooks <ben@simtec.co.uk>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Mike Frysinger <vapier@gentoo.org>
-> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> This patch was sent on https://lkml.org/lkml/2011/11/25/127.
-> I regenerate the patch against linux-next 20111214.
-> Also Cc Andrew Morton who seems to be mostly handing
-> the RTC stuff at the moment.
->
-> Axel
->
->  drivers/rtc/rtc-88pm860x.c |   12 +-----------
->  drivers/rtc/rtc-ab8500.c   |   12 +-----------
->  drivers/rtc/rtc-bfin.c     |   13 +------------
->  drivers/rtc/rtc-bq4802.c   |   13 +------------
->  drivers/rtc/rtc-dm355evm.c |   12 +-----------
->  drivers/rtc/rtc-ds1286.c   |   13 +------------
->  drivers/rtc/rtc-ds1511.c   |   15 +--------------
->  drivers/rtc/rtc-ds1553.c   |   13 +------------
->  drivers/rtc/rtc-ds1742.c   |   13 +------------
->  drivers/rtc/rtc-jz4740.c   |   12 +-----------
->  drivers/rtc/rtc-lpc32xx.c  |   12 +-----------
->  drivers/rtc/rtc-m48t35.c   |   13 +------------
->  drivers/rtc/rtc-m48t59.c   |   13 +------------
->  drivers/rtc/rtc-m48t86.c   |   13 +------------
->  drivers/rtc/rtc-max8925.c  |   12 +-----------
->  drivers/rtc/rtc-max8998.c  |   12 +-----------
->  drivers/rtc/rtc-mpc5121.c  |   12 +-----------
->  drivers/rtc/rtc-mrst.c     |   13 +------------
->  drivers/rtc/rtc-pcf50633.c |   12 +-----------
->  drivers/rtc/rtc-pm8xxx.c   |   12 +-----------
->  drivers/rtc/rtc-puv3.c     |   16 +---------------
->  drivers/rtc/rtc-s3c.c      |   16 +---------------
->  drivers/rtc/rtc-sa1100.c   |   13 +------------
->  drivers/rtc/rtc-spear.c    |   12 +-----------
->  drivers/rtc/rtc-stk17ta8.c |   13 +------------
->  drivers/rtc/rtc-stmp3xxx.c |   13 +------------
->  drivers/rtc/rtc-v3020.c    |   13 +------------
->  drivers/rtc/rtc-vr41xx.c   |   13 +------------
->  drivers/rtc/rtc-vt8500.c   |   12 +-----------
->  drivers/rtc/rtc-wm831x.c   |   12 +-----------
->  drivers/rtc/rtc-wm8350.c   |   12 +-----------
->  31 files changed, 31 insertions(+), 366 deletions(-)
->
+On Wed, Dec 14, 2011 at 06:15:11PM -0800, Linus Torvalds wrote:
+> Looks reasonable, but why doesn't all callers have that "put_mark()" thing?
+> 
+> And if/when all callers *do* have that put_mark() thing, maybe we
+> should make destroy_mark() just do it?
+> 
+> In particular, a quick grep shows that there are destroy_mark users still in:
+> 
+>  - fs/notify/fanotify/fanotify_user.c
+> 
+>  - fs/notify/dnotify/dnotify.c (2 of them)
+> 
+>  - fs/notify/inotify/inotify_fsnotify.c
+> 
+> 
+> that don't do "put_mark()" after the destroy. Why is it ok there?
 
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Um?  dnotify has fsnotify_put_mark() called in both cases...
+ 
+> I don't know the code, it's probably fine, but I'd like to know why
+> the audit code needs it but not the other sites (but my grep didn't
+> look at context)
+> 
+> And I'd like Al to say something. Al?
+
+I don't like it; it's called from ->handle_event() and parent->mark is
+exactly the inode_mark argument of that method.  It ought to be pinned
+by caller.  In other places we *do* need get/put around that destroy
+and we generally do that.
+
+AFAICS, we have the following picture:
+	* that place in audit_watch - argument of ->handle_event()
+	* audit_remove_watch_rule() - pinned explicitly
+	* audit_tree - pinned explicitly
+	* dnotify (both callrs) - pinned explicitly, and refcount is
+dropped unconditionally while fsnotify_destroy_mark() is *not*; IOW,
+that's a very strong argument against folding put_mark into destroy_mark.
+	* inotify_fsnotify.c - argument of ->handle_event()
+	* fanotify_user.c - pinned and dropped by caller; again, refcount
+manipulations are unconditional while destroy_mark is not; it's even
+worse than in dnotify case, since here we do put_mark is a place where
+we don't *know* whether destroy_mark has happened.  We could move the
+calls of fsnotify_put_mark() into the fanotify_mark_remove_from_mask()
+(where destroy_mark is done), but then we'll get something like
+	if (!(oldmask & ~mask))
+                fsnotify_destroy_mark(fsn_mark);
+	else
+                fsnotify_put_mark(fsn_mark);
+in there, which is IMO ugly.
+
+Guys, does anybody have a real demonstration of the breakage cured by
+pinning the mark down in audit_watch.c ->handle_event()?  Or is that
+a pure theory?
+
+Is ->handle_event() argument held by caller?  Eric?  If that's the case,
+we don't need to do anything with audit_watch.c instance; otherwise,
+both that one and inotify_handle_event() are in trouble...
