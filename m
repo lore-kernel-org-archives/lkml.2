@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab1LOIk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:40:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40179 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1LOIk4 (ORCPT
+	id S1758617Ab1LOIrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:47:53 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33803 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab1LOIrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:40:56 -0500
-Date: Thu, 15 Dec 2011 08:40:50 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Eric Paris <eparis@redhat.com>,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] audit: fix mark refcounting
-Message-ID: <20111215084050.GQ2203@ZenIV.linux.org.uk>
-References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu>
- <87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
- <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
+	Thu, 15 Dec 2011 03:47:49 -0500
+Message-ID: <4EE9B42F.50004@evidence.eu.com>
+Date: Thu, 15 Dec 2011 09:47:43 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, Alan Cox <alan@linux.intel.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Dave Bender <codehero@gmail.com>
+Subject: [PATCH] atmel_serial: fix spinlock lockup in RS485 code
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 06:15:11PM -0800, Linus Torvalds wrote:
-> Looks reasonable, but why doesn't all callers have that "put_mark()" thing?
-> 
-> And if/when all callers *do* have that put_mark() thing, maybe we
-> should make destroy_mark() just do it?
-> 
-> In particular, a quick grep shows that there are destroy_mark users still in:
-> 
->  - fs/notify/fanotify/fanotify_user.c
-> 
->  - fs/notify/dnotify/dnotify.c (2 of them)
-> 
->  - fs/notify/inotify/inotify_fsnotify.c
-> 
-> 
-> that don't do "put_mark()" after the destroy. Why is it ok there?
+Hi all.
 
-Um?  dnotify has fsnotify_put_mark() called in both cases...
- 
-> I don't know the code, it's probably fine, but I'd like to know why
-> the audit code needs it but not the other sites (but my grep didn't
-> look at context)
-> 
-> And I'd like Al to say something. Al?
+We have encountered a spinlock lockup in the RS485 part of the atmel_serial driver.
 
-I don't like it; it's called from ->handle_event() and parent->mark is
-exactly the inode_mark argument of that method.  It ought to be pinned
-by caller.  In other places we *do* need get/put around that destroy
-and we generally do that.
+Here is the trace:
 
-AFAICS, we have the following picture:
-	* that place in audit_watch - argument of ->handle_event()
-	* audit_remove_watch_rule() - pinned explicitly
-	* audit_tree - pinned explicitly
-	* dnotify (both callrs) - pinned explicitly, and refcount is
-dropped unconditionally while fsnotify_destroy_mark() is *not*; IOW,
-that's a very strong argument against folding put_mark into destroy_mark.
-	* inotify_fsnotify.c - argument of ->handle_event()
-	* fanotify_user.c - pinned and dropped by caller; again, refcount
-manipulations are unconditional while destroy_mark is not; it's even
-worse than in dnotify case, since here we do put_mark is a place where
-we don't *know* whether destroy_mark has happened.  We could move the
-calls of fsnotify_put_mark() into the fanotify_mark_remove_from_mask()
-(where destroy_mark is done), but then we'll get something like
-	if (!(oldmask & ~mask))
-                fsnotify_destroy_mark(fsn_mark);
-	else
-                fsnotify_put_mark(fsn_mark);
-in there, which is IMO ugly.
+[   68.030000] BUG: spinlock lockup on CPU#0, dnp_master/244, c07e82c0
+[   68.040000] [<c002a790>] (unwind_backtrace+0x0/0xf0) from [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148)
+[   68.050000] [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148) from [<c015152c>] (atmel_tasklet_func+0x10/0x708)
+[   68.060000] [<c015152c>] (atmel_tasklet_func+0x10/0x708) from [<c003bfd4>] (tasklet_action+0x8c/0xf4)
+[   68.070000] [<c003bfd4>] (tasklet_action+0x8c/0xf4) from [<c003c630>] (__do_softirq+0xa4/0x180)
+[   68.080000] [<c003c630>] (__do_softirq+0xa4/0x180) from [<c003c764>] (irq_exit+0x58/0xb0)
+[   68.090000] [<c003c764>] (irq_exit+0x58/0xb0) from [<c0021084>] (asm_do_IRQ+0x84/0xa4)
+[   68.100000] [<c0021084>] (asm_do_IRQ+0x84/0xa4) from [<c002622c>] (__irq_svc+0x4c/0x98)
+[   68.110000] Exception stack(0xc341fdc8 to 0xc341fe10)
+[   68.110000] fdc0:                   c07e82c0 00000000 00000200 c4818000 c341fe10 c07e82c0
+[   68.120000] fde0: 00000000 c07e82c0 c38d3318 c341e000 bebcee00 010a0b60 c07e83fc c341fe10
+[   68.130000] fe00: c0151d54 c023d9c0 60000013 ffffffff
+[   68.140000] [<c002622c>] (__irq_svc+0x4c/0x98) from [<c023d9c0>] (_raw_spin_unlock+0x0/0x48)
+[   68.140000] [<c023d9c0>] (_raw_spin_unlock+0x0/0x48) from [<00000000>] (  (null))
 
-Guys, does anybody have a real demonstration of the breakage cured by
-pinning the mark down in audit_watch.c ->handle_event()?  Or is that
-a pure theory?
+The soft lockup occurs later
 
-Is ->handle_event() argument held by caller?  Eric?  If that's the case,
-we don't need to do anything with audit_watch.c instance; otherwise,
-both that one and inotify_handle_event() are in trouble...
+[  126.750000] BUG: soft lockup - CPU#0 stuck for 61s! [dnp_master:244]
+[  126.750000] irq event stamp: 0
+[  126.750000] hardirqs last  enabled at (0): [<  (null)>]   (null)
+[  126.750000] hardirqs last disabled at (0): [<c0035e30>] copy_process+0x308/0xe78
+[  126.750000] softirqs last  enabled at (0): [<c0035e30>] copy_process+0x308/0xe78
+[  126.750000] softirqs last disabled at (0): [<  (null)>]   (null)
+
+
+The following patch (already tested by Dave, who also reported the bug) fixes the problem.
+
+Regards,
+
+	Claudio
+
+
+
+
+Subject: atmel_serial: fix spinlock lockup in RS485 code
+
+Patch to fix a spinlock lockup in the driver that sometimes happens when the
+tasklet starts.
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Signed-off-by: Dave Bender <codehero@gmail.com>
+Tested-by: Dave Bender <codehero@gmail.com>
+---
+  drivers/tty/serial/atmel_serial.c |    5 +++--
+  1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 4c823f3..90c8e3a 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -212,8 +212,9 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+  {
+  	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+  	unsigned int mode;
++	unsigned long flags;
+  
+-	spin_lock(&port->lock);
++	spin_lock_irqsave(&port->lock, flags);
+  
+  	/* Disable interrupts */
+  	UART_PUT_IDR(port, atmel_port->tx_done_mask);
+@@ -244,7 +245,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+  	/* Enable interrupts */
+  	UART_PUT_IER(port, atmel_port->tx_done_mask);
+  
+-	spin_unlock(&port->lock);
++	spin_unlock_irqrestore(&port->lock, flags);
+  
+  }
+  
+-- 
+1.7.1
+
+
