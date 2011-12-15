@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab1LOSHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:07:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34940 "EHLO
+	id S1759344Ab1LOSHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:07:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759123Ab1LOSHP (ORCPT
+	with ESMTP id S1759313Ab1LOSHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:07:15 -0500
+	Thu, 15 Dec 2011 13:07:12 -0500
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
         platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH 4/4] toshiba_acpi: Add blacklist for devices with hotkey problems
-Date: Thu, 15 Dec 2011 12:06:11 -0600
-Message-Id: <1323972371-13189-5-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 3/4] toshiba_acpi: Support additional hotkey scancodes
+Date: Thu, 15 Dec 2011 12:06:10 -0600
+Message-Id: <1323972371-13189-4-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
 References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
@@ -23,68 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Satellite C670-10V has buggy implementation of the INFO method that
-causes ACPI exceptions when executed:
+From: Azael Avalos <coproscefalo@gmail.com>
 
- ACPI Error: Result stack is empty! State=ffff88012d70f800 (20110413/dswstate-98)
- ACPI Exception: AE_AML_NO_RETURN_VALUE, Missing or null operand (20110413/dsutils-646)
- ACPI Exception: AE_AML_NO_RETURN_VALUE, While creating Arg 0 (20110413/dsutils-763)
- ACPI Error: Method parse/execution failed [\_SB_.VALZ.GETE] (Node ffff880131175eb0), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
- ACPI Error: Method parse/execution failed [\_SB_.VALZ.INFO] (Node ffff880131175ed8), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
- toshiba_acpi: ACPI INFO method execution failed
- toshiba_acpi: Failed to query hotkey event
+These scancodes are used by many of the models now supported with
+the addition of TOS1900 device support.
 
-To work around this, add a blacklist of models with hotkey problems and
-add this model to that list.
-
+Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/platform/x86/toshiba_acpi.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/platform/x86/toshiba_acpi.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 6824bf7..a2f7cce 100644
+index 1d83884..6824bf7 100644
 --- a/drivers/platform/x86/toshiba_acpi.c
 +++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -54,6 +54,7 @@
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include <linux/i8042.h>
-+#include <linux/dmi.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -174,6 +175,18 @@ static const struct key_entry toshiba_acpi_keymap[] __devinitconst = {
+@@ -150,6 +150,8 @@ static const struct key_entry toshiba_acpi_keymap[] __devinitconst = {
+ 	{ KE_KEY, 0x101, { KEY_MUTE } },
+ 	{ KE_KEY, 0x102, { KEY_ZOOMOUT } },
+ 	{ KE_KEY, 0x103, { KEY_ZOOMIN } },
++	{ KE_KEY, 0x12c, { KEY_KBDILLUMTOGGLE } },
++	{ KE_KEY, 0x139, { KEY_ZOOMRESET } },
+ 	{ KE_KEY, 0x13b, { KEY_COFFEE } },
+ 	{ KE_KEY, 0x13c, { KEY_BATTERY } },
+ 	{ KE_KEY, 0x13d, { KEY_SLEEP } },
+@@ -158,7 +160,7 @@ static const struct key_entry toshiba_acpi_keymap[] __devinitconst = {
+ 	{ KE_KEY, 0x140, { KEY_BRIGHTNESSDOWN } },
+ 	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
+ 	{ KE_KEY, 0x142, { KEY_WLAN } },
+-	{ KE_KEY, 0x143, { KEY_PROG1 } },
++	{ KE_KEY, 0x143, { KEY_TOUCHPAD_TOGGLE } },
+ 	{ KE_KEY, 0x17f, { KEY_FN } },
+ 	{ KE_KEY, 0xb05, { KEY_PROG2 } },
+ 	{ KE_KEY, 0xb06, { KEY_WWW } },
+@@ -168,6 +170,7 @@ static const struct key_entry toshiba_acpi_keymap[] __devinitconst = {
+ 	{ KE_KEY, 0xb32, { KEY_NEXTSONG } },
+ 	{ KE_KEY, 0xb33, { KEY_PLAYPAUSE } },
+ 	{ KE_KEY, 0xb5a, { KEY_MEDIA } },
++	{ KE_IGNORE, 0x1430, { KEY_RESERVED } },
  	{ KE_END, 0 },
  };
  
-+/* Machines for which hotkeys should not be enabled */
-+static struct dmi_system_id __devinitdata toshiba_hotkey_blacklist[] = {
-+	{
-+		.ident = "Toshiba Satellite C670-10V",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "SATELLITE C670-10V"),
-+		},
-+	},
-+	{}
-+};
-+
- /* utility
-  */
- 
-@@ -935,6 +948,11 @@ static int __devinit toshiba_acpi_setup_keyboard(struct toshiba_acpi_dev *dev)
- 	int error;
- 	u32 hci_result;
- 
-+	if (dmi_check_system(toshiba_hotkey_blacklist)) {
-+		pr_info("Model has known hotkey problems, hotkeys will be disabled\n");
-+		return 0;
-+	}
-+
- 	dev->hotkey_dev = input_allocate_device();
- 	if (!dev->hotkey_dev) {
- 		pr_info("Unable to register input device\n");
 -- 
 1.7.5.4
 
