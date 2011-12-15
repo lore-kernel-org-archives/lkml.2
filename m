@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab1LOAcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 19:32:20 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:27580 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab1LOAcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 19:32:19 -0500
-X-AuditID: cbfee612-b7c0fae0000024d1-34-4ee9400d9f0a
-Date: Thu, 15 Dec 2011 00:32:13 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
-To: Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20111215000848258@myungjoo.ham
-Msgkey: 20111215000848258@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20111215000848258@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <33434703.581501323909131767.JavaMail.weblogic@epml15>
-X-Brightmail-Tracker: AAAAAA==
+	id S1758386Ab1LOAd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 19:33:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757905Ab1LOAdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 19:33:53 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFxEszjub9-MJD0irFs8y3hzGe3Ph=7RqWfkJ-0jKFtCeA@mail.gmail.com>
+References: <CA+55aFxEszjub9-MJD0irFs8y3hzGe3Ph=7RqWfkJ-0jKFtCeA@mail.gmail.com> <20111214114016.9441.12006.stgit@warthog.procyon.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>
+Subject: Re: [PATCH] Fix order_base_2(0)
+Date: Thu, 15 Dec 2011 00:33:44 +0000
+Message-ID: <24657.1323909224@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBF0WaVZ005522
 
-> On Monday 12 December 2011, Samuel Ortiz wrote:
-> > On Thu, Nov 24, 2011 at 06:12:18PM +0900, Donggeun Kim wrote:
-> > > The MUIC function in MAX8997 device can be used as
-> > > a USB port detector and switch.
-> > > This patch supports the MUIC feature of MAX8997.
-> > 
-> > I'm queueing this one to my for-next branch as it depends on your previous MFD
-> > patch.
-> > I'm also cc'ing Arnd in case he has some objections.
-> 
-> Thanks for the notification!
-> 
-> First of all, every new user space interface including new sysfs files
-> and uevent messages needs documentation in the Documentation/ABI
-> directory.
-> 
-> The part that is not clear to me is how this new driver fits in
-> with the first fsa9480 driver and the currently discussed extcon
-> subsystem, apparently all written by the same team at Samsung.
-> Is this misc driver still useful when the extcon framework gets
-> merged?
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-When extcom gets merged, this driver should be updated. It looks like allowing the interrupt handler to update extcon state would be enough. Bascially, this is all this driver is required for extcon to work. (and the prvious author of extcon--"extended" switch class at that time--was the author of this patch.)
+> Does anybody actually *want* order_base_2(0)?
 
-Anyway, this patch has just told me that I'll need to add more sysfs entries for extcon to show the list of cable names and/or to show the status for each of them, soon or later.
+There aren't actually that many users:
 
-> 
-> I very much believe that we should avoid introducing user interfaces
-> in a driver specific way when we have multiple pieces of hardware
-> that try to do the same thing. The extcon subsystem seems to handle
-> this correctly on the high-level (I have not done a detailed
-> review yet but I trust that it will be ok), so I don't understand
-> why we want another driver for the MAX8997 MUIC.
+| arch/mips/include/asm/mach-powertv/ioremap.h:#define _IOR_OFFSET_WIDTH(n)    (1 << order_base_2(n))
 
-This sysfs entry is a bit confusing to me (that userspace may update this CONTROL register). I'll consult Donggeun when he arrives and will write again about this one. If it is not writable, this is supported by extcon framework, so this sysfs entry will disappear adapting extcon.
+Doesn't look like it should ever be 0.  In fact, this looks like a case for
+using roundup_pow_of_two() directly.
 
+| arch/powerpc/platforms/pseries/iommu.c:       len = order_base_2(max_addr);
 
-Cheers!
-MyungJoo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Not sure.  Doesn't look likely, but can memory_hotplug_max() be 0 if hotplug
+is not supported?
+
+| arch/x86/kvm/x86.c:   return hash_32(gfn & 0xffffffff, order_base_2(ASYNC_PF_PER_VCPU));
+
+Constant 64.  Can't be 0.
+
+| fs/ext4/indirect.c:   blk_bits = order_base_2(lblock);
+
+lblock *could* perhaps be 0.  Being negative is checked for, but not for it
+being 0.
+
+| fs/ext4/mballoc.c:    int blocksize_bits = order_base_2(size);
+| fs/jbd2/journal.c:    int i = order_base_2(size) - 10;
+
+Can't be 0.
+
+| fs/jbd2/journal.c:    int i = order_base_2(size) - 10;
+
+Hmmm...  Can jbd2_alloc() be given a 0 size?  (Or jbd2_free() for that matter)
+
+| mm/percpu-km.c:       pages = alloc_pages(GFP_KERNEL, order_base_2(nr_pages));
+| mm/percpu-km.c:               __free_pages(chunk->data, order_base_2(nr_pages));
+
+Can pcpu_group_sizes[0] be less than PAGE_SIZE?
+
+I can't tell from a cursory inspection of pcpu_setup_first_chunk().
+
+In fact, pcpu_create_chunk() could do order_base_2() then subtract PAGE_SHIFT
+rather than shifting and then taking the log.
+
+David
