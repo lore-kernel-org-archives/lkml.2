@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab1LOKmx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:42:53 -0500
-Received: from natasha.panasas.com ([67.152.220.90]:46574 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab1LOKmv (ORCPT
+	id S1758763Ab1LOK4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:56:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51515 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab1LOK4U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:42:51 -0500
-Message-ID: <4EE9CF1D.6030109@panasas.com>
-Date: Thu, 15 Dec 2011 12:42:37 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Maxim Uvarov <maxim.uvarov@oracle.com>,
-        NFS list <linux-nfs@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] NFS/INOTIFY: inotify user when deleting files on nfs
-References: <1323901667-3746-1-git-send-email-maxim.uvarov@oracle.com>
-In-Reply-To: <1323901667-3746-1-git-send-email-maxim.uvarov@oracle.com>
+	Thu, 15 Dec 2011 05:56:20 -0500
+Message-ID: <1323946517.18942.29.camel@twins>
+Subject: Re: printk() vs tty_io
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 15 Dec 2011 11:55:17 +0100
+In-Reply-To: <20111215103220.7c08498f@pyramind.ukuu.org.uk>
+References: <1323804803.9082.40.camel@twins>
+	 <CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
+	 <20111214104308.14d0500c@pyramind.ukuu.org.uk>
+	 <1323860206.28489.35.camel@twins> <20111214140527.GA18080@thunk.org>
+	 <1323872631.28489.37.camel@twins>
+	 <CA+55aFwu+oSPtqfN+bS3_fHXWU+VMd5BGhNd=J4MjuAJZT+fTQ@mail.gmail.com>
+	 <1323943005.18942.18.camel@twins>
+	 <20111215103220.7c08498f@pyramind.ukuu.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forwarding to the NFS mailing list ...
+On Thu, 2011-12-15 at 10:32 +0000, Alan Cox wrote:
 
-On 12/15/2011 12:27 AM, Maxim Uvarov wrote:
-> This issue was introduced with LTP inotify02 test.
-> If file system is not NFS user inotify application
-> gets IN_DELETE event. But on NFS code avoids d_delete()
-> which sends this event. This patch makes notification
-> on NFS the same as non-NFS. I.e. vfs_unlink still avoids
-> deletion but it sends event for NFS sillyrenamed files.
-> More details here:
-> https://lkml.org/lkml/2011/11/29/421
-> 
-> Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
-> ---
->  fs/namei.c |   19 ++++++++++++++++---
->  1 files changed, 16 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index a9a7166..44a997e 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2737,10 +2737,23 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry)
->  	}
->  	mutex_unlock(&dentry->d_inode->i_mutex);
->  
-> -	/* We don't d_delete() NFS sillyrenamed files--they still exist. */
-> -	if (!error && !(dentry->d_flags & DCACHE_NFSFS_RENAMED)) {
-> +
-> +	if (!error) {
->  		fsnotify_link_count(dentry->d_inode);
-> -		d_delete(dentry);
-> +		if (!(dentry->d_flags & DCACHE_NFSFS_RENAMED))
-> +			d_delete(dentry);
-> +		else {
-> +			/* We don't d_delete() NFS sillyrenamed files - they
-> +			 * still exist. But from user side this file was
-> +			 * deleted. So that we need to generate notify event
-> +			 * about it.
-> +			 */
-> +			struct inode *inode;
-> +			int isdir;
-> +			inode = dentry->d_inode;
-> +			isdir = S_ISDIR(inode->i_mode);
-> +			fsnotify_nameremove(dentry, isdir);
-> +		}
->  	}
->  
->  	return error;
+> For lockdep spews do they need to be spewed synchronously - clearly it's
+> good if they can be but its possible that they could be buffered ?
+
+This wasn't about lockdep per-se, it all started with me trying to
+cleanup printk()'s abuse of lockdep_off()/lockdep_on. Which then grew
+into something a little bigger.
+
+I'm fine with dropping the larger goal of making printk() work in all
+but NMI context and focus on the initial cleanup.
+
 
