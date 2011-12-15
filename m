@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab1LONV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 08:21:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46280 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1LONVz (ORCPT
+	id S1758856Ab1LONXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 08:23:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49641 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1LONXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 08:21:55 -0500
-Message-ID: <4EE9F46A.9090603@canonical.com>
-Date: Thu, 15 Dec 2011 05:21:46 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 15 Dec 2011 08:23:44 -0500
+Date: Thu, 15 Dec 2011 14:23:36 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
+Message-ID: <20111215132336.GR27267@pengutronix.de>
+References: <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
+ <20111215070505.GA22541@S2101-09.ap.freescale.net>
+ <CACRpkdbN26q1_d4tPkJp4f4_KdvoEEk9uCCRyOfEU97DOWAnEw@mail.gmail.com>
+ <7FE21149F4667147B645348EC60578850564C5@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20111215093319.GO27267@pengutronix.de>
+ <20111215112140.GA10522@S2101-09.ap.freescale.net>
+ <7FE21149F4667147B645348EC60578850567C3@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20111215115300.GB10522@S2101-09.ap.freescale.net>
+ <20111215115428.GQ27267@pengutronix.de>
+ <20111215121752.GD10522@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 8/15] apparmor: fix module parameter handling
-References: <87pqfqsf4r.fsf@rustcorp.com.au>
-In-Reply-To: <87pqfqsf4r.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111215121752.GD10522@S2101-09.ap.freescale.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:08:24 up 32 days, 20:55, 57 users,  load average: 0.00, 2.85,
+ 9.72
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 07:11 PM, Rusty Russell wrote:
-> The 'aabool' wrappers actually pass off to the 'bool' parse functions,
-> so you should use the same check function.  Similarly for aauint and
-> uint.
-> 
-yep, thanks Rusty
+On Thu, Dec 15, 2011 at 08:17:54PM +0800, Shawn Guo wrote:
+> On Thu, Dec 15, 2011 at 12:54:28PM +0100, Sascha Hauer wrote:
+> > On Thu, Dec 15, 2011 at 07:53:05PM +0800, Shawn Guo wrote:
+> > > On Thu, Dec 15, 2011 at 07:28:18PM +0800, Dong Aisheng-B29396 wrote:
+> > > > > -----Original Message-----
+> > > > > 
+> > > > My understanding is that pinmux_get will return an error if no proper pinmux
+> > > > Found without dummy pinmux. That's a real error.
+> > > > But with dummy pinmux, if no proper pinmux found, the pinctrl core may check
+> > > > If dummy pinmux is supported, if supported, it will fakely success with returning
+> > > > a dummy pinmux. Then real error is hiden.
+> > > > This is due to for supporting one single image, the dummy pinmux may also be enabled
+> > > > For platforms like mx6q with real pinmux.
+> > > > 
+> > > Got your point.  So your concern is about the fake success when dummy
+> > > pinmux comes to play rather than 'fake error'.  I'm not concerned about
+> > > that case much, since we will know the failure with a simple debug/info
+> > > message in the pinmux core, saying 'I do not find any available pinmux,
+> > > and I'm falling into the dummy pinmux'.  When you see this message
+> > > imx6q, you know something goes wrong.
+> > 
+> > So i.MX3/5 people must know that it's safe to ignore this message
+> > whereas i.MX6 people must know there's something wrong Adding messages
+> > saying "there might or might not be something wrong" is not good.
+> > People will frequently ask on the mailing list about these messages.
+> > 
+> Usually, people checking the serial output and asking question on list
+> are developers not users.  It's not too hard for developers to figure
+> out such message.  Or we can making it a debug message, and when some
+> driver is not working, turn on debug option, you know where it goes
+> wrong.
 
-> (Note that 'bool' module parameters also allow 'int', which is why you
-> got away with this, but that's changing very soon.)
-> 
-> Cc: John Johansen <john.johansen@canonical.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: linux-security-module@vger.kernel.org
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: John Johansen <john.johansen@canonical.com>
+So we as developers have to figure out ourselves what can go wrong and
+the users, well who cares about users?
 
-> ---
->  security/apparmor/lsm.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-> --- a/security/apparmor/lsm.c
-> +++ b/security/apparmor/lsm.c
-> @@ -671,7 +671,7 @@ static struct security_operations apparm
->  
->  static int param_set_aabool(const char *val, const struct kernel_param *kp);
->  static int param_get_aabool(char *buffer, const struct kernel_param *kp);
-> -#define param_check_aabool(name, p) __param_check(name, p, int)
-> +#define param_check_aabool param_check_bool
->  static struct kernel_param_ops param_ops_aabool = {
->  	.set = param_set_aabool,
->  	.get = param_get_aabool
-> @@ -679,7 +679,7 @@ static struct kernel_param_ops param_ops
->  
->  static int param_set_aauint(const char *val, const struct kernel_param *kp);
->  static int param_get_aauint(char *buffer, const struct kernel_param *kp);
-> -#define param_check_aauint(name, p) __param_check(name, p, int)
-> +#define param_check_aauint param_check_uint
->  static struct kernel_param_ops param_ops_aauint = {
->  	.set = param_set_aauint,
->  	.get = param_get_aauint
-> @@ -687,7 +687,7 @@ static struct kernel_param_ops param_ops
->  
->  static int param_set_aalockpolicy(const char *val, const struct kernel_param *kp);
->  static int param_get_aalockpolicy(char *buffer, const struct kernel_param *kp);
-> -#define param_check_aalockpolicy(name, p) __param_check(name, p, int)
-> +#define param_check_aalockpolicy param_check_bool
->  static struct kernel_param_ops param_ops_aalockpolicy = {
->  	.set = param_set_aalockpolicy,
->  	.get = param_get_aalockpolicy
+> Anyway, it's not a problem to me.  I have seen similar messages on my
+> kernel serial output.  I fail to see why pinmux can not do something
+> that other subsystems are doing.
 
+Yes, and everytime I see such a message I dig through the sourcecode
+trying to find out if that's important or not. That's easy for me on
+the systems I work with, but on my PC I am only a user, and honestly
+on my PC I *want* to be only a user.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
