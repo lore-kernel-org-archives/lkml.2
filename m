@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab1LOG4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 01:56:09 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:38287 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab1LOG4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 01:56:08 -0500
-Message-ID: <4EE999F9.7000804@eukrea.com>
-Date: Thu, 15 Dec 2011 07:55:53 +0100
-From: =?UTF-8?B?RXJpYyBCw6luYXJk?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S932375Ab1LOG4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:56:34 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:34129
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755702Ab1LOG4d convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 01:56:33 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 15 Dec 2011 15:05:08 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, Dong Aisheng <b29396@freescale.com>,
+        <linus.walleij@stericsson.com>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>
+Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
+Message-ID: <20111215070505.GA22541@S2101-09.ap.freescale.net>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+ <1323878622-26602-5-git-send-email-b29396@freescale.com>
+ <20111214211152.GM27267@pengutronix.de>
+ <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Amit Kucheria <amit.kucheria@canonical.com>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/19] eukrea-cpuimx51: remove board
-References: <1323757911-25217-1-git-send-email-eric@eukrea.com> <1323757911-25217-16-git-send-email-eric@eukrea.com> <20111213100532.GH27267@pengutronix.de> <4EE7253E.2030604@eukrea.com> <20111215035854.GA24039@avalanche>
-In-Reply-To: <20111215035854.GA24039@avalanche>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
+On Wed, Dec 14, 2011 at 11:15:53PM +0100, Linus Walleij wrote:
+> On Wed, Dec 14, 2011 at 10:11 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Thu, Dec 15, 2011 at 12:03:42AM +0800, Dong Aisheng wrote:
+> 
+> >> +     pmx = pinmux_get(&pdev->dev, NULL);
+> >> +     if (IS_ERR(pmx)) {
+> >> +             err = PTR_ERR(pmx);
+> >> +             goto err_pmx_get;
+> >> +     }
+> >> +     err = pinmux_enable(pmx);
+> >> +     if (err)
+> >> +             goto err_pmx_enable;
+> >> +     imx_data->pmx = pmx;
+> >> +
+> >
+> > Won't this break every i.MX except i.MX6?
+> 
+It will not if we do not compile other imx together with imx6, because
+there are a set of empty functions defined in
+include/linux/pinctrl/pinmux.h for those builds without pinctrl enabled.
+But yes, it's actually broken since we are on the way to compile imx3,
+imx5 and imx6 as single image.
 
-Le 15/12/2011 04:58, Amit Kucheria a Ã©crit :
- > On 11 Dec 13, Eric BÃ©nard wrote:
- >> Hi Sascha,
- >>
- >> Le 13/12/2011 11:05, Sascha Hauer a Ã©crit :
- >>> On Tue, Dec 13, 2011 at 07:31:48AM +0100, Eric BÃ©nard wrote:
- >>>> this board is not maintained anymore and is replaced by cpuimx51sd
- >>>
- >>> I'm happy to remove this code, but aren't there any users of this board?
- >>>
- >> not any that would need a kernel upgrade considering the Freescale
- >> proprietary drivers used on it :-(
- >> Thanks,
- >> Eric
- >
- > Just for posterity, could you list the drivers that make an upgrade
- > impossible?
- >
-at least gpu (AMD/FSL proprietary) & iirc video codecs (not all proprietary 
-but far from mainline unless I missed something). In fact in the end these 
-boards were using Freescale's kernel.
+> Not this patch on its own, first the machines have to
+> select PINCTRL
+> select PINMUX_FOO
+> 
+> *Then* it will break :-D
+> 
+> So if you want to do this for i.MX you need something like
+> selectable dummy pinmuxes, i.e. pinmux_get() to return something
+> that just say "OK" to everything like the dummy regulators.
+> 
+> Shall I try to create something like that?
+> 
+Isn't the empty functions defined in include/linux/pinctrl/pinmux.h
+for this purpose?  It does not solve the problem with single image.
+You might probably mean that we create a dummy_pinctrl_desc and register
+it to pinctrl core with pinctrl_register() if we detect that the kernel
+is running on a soc that has no pinctrl support?
 
- > IMHO, if these boards were sold commercially we should maintain support if
- > there is a chance that we will get open drivers in the future.
- >
- > OTOH, if you can tell who each of these boards to, it is probably a good
- > target for removal. :)
- >
-I confirm that's a good target for removal as our i.MX51 customers are 
-actually using cpuimx51sd (actually without 3D & codecs actually but not 
-everyone need these peripherals in industrial applications). Moreover, if all 
-the drivers are mainlined we will be able to use dt if we want to upgrade 
-cpuimx51.
+This is not a problem to pinctrl migration only.  We have the same
+problem with common clk migration.  Unless we migrate imx3, imx5 and
+imx6 to common clk at the same time, single image build just does not
+cope with clk_* api.
 
-Thanks,
-Eric
+-- 
+Regards,
+Shawn
+
