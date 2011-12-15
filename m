@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab1LOTcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:32:41 -0500
-Received: from gate.ebshome.net ([173.228.72.32]:53065 "EHLO gate.ebshome.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab1LOTck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:32:40 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Dec 2011 14:32:40 EST
-Date: Thu, 15 Dec 2011 11:25:59 -0800
-From: Eugene Surovegin <ebs@ebshome.net>
-To: tj@kernel.org
-Cc: ptesarik@suse.cz, xiyou.wangcong@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Subject: [PATCH] percpu: fix per_cpu_ptr_to_phys() handling of
- non-page-aligned addresses.
-Message-ID: <20111215192559.GA28283@gate.ebshome.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-ICQ-UIN: 1193073
-X-Operating-System: Linux i686
-X-PGP-Key: http://www.ebshome.net/pubkey.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759458Ab1LOThD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:37:03 -0500
+Received: from mail-gy0-f202.google.com ([209.85.160.202]:60978 "EHLO
+	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756537Ab1LOThA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 14:37:00 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, stable@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, Olof Johansson <olofj@chromium.org>
+Subject: [PATCH] cgroups: fix a css_set not found bug in cgroup_attach_proc
+Date: Thu, 15 Dec 2011 11:36:43 -0800
+Message-Id: <1323977803-5385-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-per_cpu_ptr_to_phys() incorrectly rounds up its result for non-kmalloc case
-to the page boundary, which is bogus for any non-page-aligned address.
+There is a BUG when migrating a PF_EXITING proc. Since css_set_prefetch()
+is not called for the PF_EXITING case, find_existing_css_set() will return
+NULL inside cgroup_task_migrate() causing a BUG.
 
-This fixes the only in-tree user of this function - sysfs handler for
-per-cpu 'crash_notes' physical address. The manifestation of this bug is
-missing 'CORE' ELF notes in kdump.
+This bug is easy to reproduce. Create a zombie and echo its pid to
+cgroup.procs.
 
-Signed-off-by: Eugene Surovegin <ebs@ebshome.net>
+$ cat zombie.c
+\#include <unistd.h>
+
+int main()
+{
+  if (fork())
+      pause();
+  return 0;
+}
+$
+
+We are hitting this bug pretty regularly on ChromeOS.
+
+This bug is already fixed by Tejun Heo's cgroup patchset which is
+targetted for the next merge window:
+
+https://lkml.org/lkml/2011/11/1/356
+
+I've create a smaller patch here which just fixes this bug so that a
+fix can be merged into the current release and stable.
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Downstream-Bug-Report: http://crosbug.com/23953
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
+Cc: stable@kernel.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Olof Johansson <olofj@chromium.org>
 ---
- mm/percpu.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ kernel/cgroup.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 3bb810a..716eb4a 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1023,9 +1023,11 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
- 		if (!is_vmalloc_addr(addr))
- 			return __pa(addr);
- 		else
--			return page_to_phys(vmalloc_to_page(addr));
-+			return page_to_phys(vmalloc_to_page(addr)) +
-+			       offset_in_page(addr);
- 	} else
--		return page_to_phys(pcpu_addr_to_page(addr));
-+		return page_to_phys(pcpu_addr_to_page(addr)) +
-+		       offset_in_page(addr);
- }
- 
- /**
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index d9d5648..a184470 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2098,11 +2098,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 			continue;
+ 		/* get old css_set pointer */
+ 		task_lock(tsk);
+-		if (tsk->flags & PF_EXITING) {
+-			/* ignore this task if it's going away */
+-			task_unlock(tsk);
+-			continue;
+-		}
+ 		oldcg = tsk->cgroups;
+ 		get_css_set(oldcg);
+ 		task_unlock(tsk);
 -- 
-1.7.5.1
+1.7.3.1
 
