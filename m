@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322Ab1LOALj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 19:11:39 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35224 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab1LOALi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 19:11:38 -0500
-Message-ID: <1323907885.7773.0.camel@phoenix>
-Subject: [PATCH] spi: Convert to DEFINE_PCI_DEVICE_TABLE
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Feng Tang <feng.tang@intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net
-Date: Thu, 15 Dec 2011 08:11:25 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758282Ab1LOAOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 19:14:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753150Ab1LOAOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 19:14:53 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87obvdtdwz.fsf@rustcorp.com.au>
+References: <87obvdtdwz.fsf@rustcorp.com.au> <87ty56taup.fsf@rustcorp.com.au> <87obvfogc6.fsf@rustcorp.com.au> <8739csq5ac.fsf@rustcorp.com.au> <87boriouwa.fsf@rustcorp.com.au> <20111202184229.21874.25782.stgit@warthog.procyon.org.uk> <20111202184651.21874.57769.stgit@warthog.procyon.org.uk> <2657.1323456206@redhat.com> <30007.1323526114@redhat.com> <26644.1323652900@redhat.com> <21605.1323706287@redhat.com> 
+To: Rusty Russell <rusty@ozlabs.org>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan.van.de.ven@intel.com, alan.cox@intel.com,
+        Jon Masters <jcm@jonmasters.org>
+Subject: Re: [PATCH 21/21] MODSIGN: Apply signature checking to modules on module load [ver #3]
+Date: Thu, 15 Dec 2011 00:14:31 +0000
+Message-ID: <24260.1323908071@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
-tables.
+Rusty Russell <rusty@ozlabs.org> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/spi/spi-dw-pci.c       |    2 +-
- drivers/spi/spi-pxa2xx-pci.c   |    2 +-
- drivers/spi/spi-topcliff-pch.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+> > > We can have false positives, but at worst that make us report EINVAL
+> > > (bad signature) instead of ENOENT (no signature).
+> > 
+> > EKEYREJECTED please; that way it's the same as RHEL does now.
+> 
+> OK, sure (who knew that was there?).
 
-diff --git a/drivers/spi/spi-dw-pci.c b/drivers/spi/spi-dw-pci.c
-index f64250e..14f7cc9 100644
---- a/drivers/spi/spi-dw-pci.c
-+++ b/drivers/spi/spi-dw-pci.c
-@@ -149,7 +149,7 @@ static int spi_resume(struct pci_dev *pdev)
- #define spi_resume	NULL
- #endif
- 
--static const struct pci_device_id pci_ids[] __devinitdata = {
-+static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
- 	/* Intel MID platform SPI controller 0 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0800) },
- 	{},
-diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
-index 8caa07d..3fb44af 100644
---- a/drivers/spi/spi-pxa2xx-pci.c
-+++ b/drivers/spi/spi-pxa2xx-pci.c
-@@ -151,7 +151,7 @@ static void __devexit ce4100_spi_remove(struct pci_dev *dev)
- 	kfree(spi_info);
- }
- 
--static struct pci_device_id ce4100_spi_devices[] __devinitdata = {
-+static DEFINE_PCI_DEVICE_TABLE(ce4100_spi_devices) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2e6a) },
- 	{ },
- };
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 99ec279..17274a5 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -214,7 +214,7 @@ struct pch_pd_dev_save {
- 	struct pch_spi_board_data *board_dat;
- };
- 
--static struct pci_device_id pch_spi_pcidev_id[] = {
-+static DEFINE_PCI_DEVICE_TABLE(pch_spi_pcidev_id) = {
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_GE_SPI),    1, },
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_SPI), 2, },
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_SPI), 1, },
--- 
-1.7.5.4
+Second paragraph in the description of patch #21:
 
+	These patches have been in use by RHEL and Fedora kernels for years,
+	and so have been thoroughly tested.
 
+Further down the description:
 
+	Any module for which the kernel has a key, but which proves to have a
+	signature mismatch will not be permitted to load (returning
+	EKEYREJECTED).
+
+David
