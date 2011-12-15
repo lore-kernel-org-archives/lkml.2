@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab1LOFsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 00:48:46 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:37333 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab1LOFso (ORCPT
+	id S932221Ab1LOFtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 00:49:04 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:36887 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab1LOFtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 00:48:44 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371Ic89bh542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Fabio Estevam <festevam@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: RE: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
-Thread-Topic: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
-Thread-Index: AQHMunjd/61Fyc2SoU2quzVm3Ah6epXb4tOAgACCD7A=
-Date: Thu, 15 Dec 2011 05:48:38 +0000
-Message-ID: <7FE21149F4667147B645348EC6057885052C1B@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
-	<1323878622-26602-3-git-send-email-b29396@freescale.com>
- <CAOMZO5DVsk_iNCrMaBbK4kuehhL1C71fKqC65isybJDknzWrRQ@mail.gmail.com>
-In-Reply-To: <CAOMZO5DVsk_iNCrMaBbK4kuehhL1C71fKqC65isybJDknzWrRQ@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Thu, 15 Dec 2011 00:49:01 -0500
+Date: Thu, 15 Dec 2011 00:48:36 -0500 (EST)
+Message-Id: <20111215.004836.402973956281143052.davem@davemloft.net>
+To: kamezawa.hiroyu@jp.fujitsu.com
+Cc: glommer@parallels.com, linux-kernel@vger.kernel.org, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, ebiederm@xmission.com, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH v9 0/9] Request for inclusion: per-cgroup tcp memory
+ pressure controls
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111215144019.03706ff7.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1323676029-5890-1-git-send-email-glommer@parallels.com>
+	<20111215144019.03706ff7.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 14 Dec 2011 21:48:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBF5mq0W006842
 
-> -----Original Message-----
-> From: Fabio Estevam [mailto:festevam@gmail.com]
-> Sent: Thursday, December 15, 2011 12:01 AM
-> To: Dong Aisheng-B29396
-> Cc: linux-kernel@vger.kernel.org; linus.walleij@stericsson.com;
-> s.hauer@pengutronix.de; rob.herring@calxeda.com;
-> grant.likely@secretlab.ca; linux-arm-kernel@lists.infradead.org;
-> kernel@pengutronix.de; Guo Shawn-R65073
-> Subject: Re: [RFC PATCH v2 2/4] pinctrl: imx: add pinmux imx driver
-> Importance: High
-> 
-> On Wed, Dec 14, 2011 at 2:03 PM, Dong Aisheng <b29396@freescale.com>
-> wrote:
-> 
-> > +config PINMUX_IMX53
-> > + Â  Â  Â  bool "IMX53 pinmux driver"
-> > + Â  Â  Â  depends on ARCH_MX5
-> 
-> Shouldn't this be SOC_IMX53 instead?
-> 
-Yes, it should be SOC_IMX53.
-Thanks.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 15 Dec 2011 14:40:19 +0900
 
-Regards
-Dong Aisheng
+> I met this bug at _1st_ run. Please enable _all_ debug options!.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Plus the CONFIG_NET=n and other build failures.
+
+This patch series was seriously rushed, and very poorly handled.
+
+Yet I kept getting so much pressure to review, comment upon, and
+ultimately apply these patches.  Never, ever, do this to me ever
+again.
+
+If I don't feel your patches are high priority enough or ready enough
+for me to review, then TOO BAD.  Don't ask people to pressure me or
+get my attention.  Instead, ask others for help and do testing before
+wasting MY time and crapping up MY tree.
+
+I should have noticed a red flag when I have James Bottomly asking me
+to look at these patches, I should have pushed back.  Instead, I
+relented, and now I'm very seriously regretting it.
+
+All the regressions in the net-next tree over the past several days
+have been due to this patch set, and this patch set alone.
+
+This code wasn't ready and needed, at a minimum, several more weeks of
+work before being put in.
+
+Instead, we're going to bandaid patch it up after the fact, rather
+than just letting these changes mature naturally during the review
+process.
