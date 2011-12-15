@@ -1,188 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab1LOTmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:42:14 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:45810 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759380Ab1LOTmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:42:11 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
-        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4 V7] Add functions to check if the host has stopped the vm
-Date: Thu, 15 Dec 2011 14:42:04 -0500
-Message-Id: <1323978126-13222-3-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323978126-13222-1-git-send-email-emunson@mgebm.net>
-References: <1323978126-13222-1-git-send-email-emunson@mgebm.net>
+	id S1759486Ab1LOTnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:43:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61471 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab1LOTnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 14:43:46 -0500
+Date: Thu, 15 Dec 2011 11:43:41 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Eugene Surovegin <ebs@ebshome.net>
+Cc: ptesarik@suse.cz, xiyou.wangcong@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, vgoyal@redhat.com
+Subject: [PATCH] percpu: fix per_cpu_ptr_to_phys() handling of
+ non-page-aligned addresses
+Message-ID: <20111215194341.GG32002@google.com>
+References: <20111215192559.GA28283@gate.ebshome.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111215192559.GA28283@gate.ebshome.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a host stops or suspends a VM it will set a flag to show this.  The
-watchdog will use these functions to determine if a softlockup is real, or the
-result of a suspended VM.
+>From 9f57bd4d6dc69a4e3bf43044fa00fcd24dd363e3 Mon Sep 17 00:00:00 2001
+From: Eugene Surovegin <ebs@ebshome.net>
+Date: Thu, 15 Dec 2011 11:25:59 -0800
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: arnd@arndb.de
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: jeremy.fitzhardinge@citrix.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
+per_cpu_ptr_to_phys() incorrectly rounds up its result for non-kmalloc
+case to the page boundary, which is bogus for any non-page-aligned
+address.
+
+This affects the only in-tree user of this function - sysfs handler
+for per-cpu 'crash_notes' physical address.  The trouble is that the
+crash_notes per-cpu variable is not page-aligned:
+
+crash_notes = 0xc08e8ed4
+PER-CPU OFFSET VALUES:
+ CPU 0: 3711f000
+ CPU 1: 37129000
+ CPU 2: 37133000
+ CPU 3: 3713d000
+
+So, the per-cpu addresses are:
+ crash_notes on CPU 0: f7a07ed4 => phys 36b57ed4
+ crash_notes on CPU 1: f7a11ed4 => phys 36b4ded4
+ crash_notes on CPU 2: f7a1bed4 => phys 36b43ed4
+ crash_notes on CPU 3: f7a25ed4 => phys 36b39ed4
+
+However, /sys/devices/system/cpu/cpu*/crash_notes says:
+ /sys/devices/system/cpu/cpu0/crash_notes: 36b57000
+ /sys/devices/system/cpu/cpu1/crash_notes: 36b4d000
+ /sys/devices/system/cpu/cpu2/crash_notes: 36b43000
+ /sys/devices/system/cpu/cpu3/crash_notes: 36b39000
+
+As you can see, all values are rounded down to a page
+boundary. Consequently, this is where kexec sets up the NOTE segments,
+and thus where the secondary kernel is looking for them. However, when
+the first kernel crashes, it saves the notes to the unaligned
+addresses, where they are not found.
+
+Fix it by adding offset_in_page() to the translated page address.
+
+-tj: Combined Eugene's and Petr's commit messages.
+
+Signed-off-by: Eugene Surovegin <ebs@ebshome.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Petr Tesarik <ptesarik@suse.cz>
+Cc: stable@kernel.org
 ---
-Changes from V6:
- Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
+I combined Petr's explanation into patch description and committed it
+into percpu/for-3.2-fixes.  Will push it to Linus in a few days.
 
-Changes from V5:
- Collapse generic stubs into this patch
- check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
- Include individual definitions in ia64, s390, and powerpc
+Thank you.
 
- arch/ia64/include/asm/kvm_para.h    |    5 +++++
- arch/powerpc/include/asm/kvm_para.h |    5 +++++
- arch/s390/include/asm/kvm_para.h    |    5 +++++
- arch/x86/include/asm/kvm_para.h     |    8 ++++++++
- arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
- include/asm-generic/kvm_para.h      |   14 ++++++++++++++
- 6 files changed, 58 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/kvm_para.h
+ mm/percpu.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
-index 1588aee..2019cb9 100644
---- a/arch/ia64/include/asm/kvm_para.h
-+++ b/arch/ia64/include/asm/kvm_para.h
-@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 3bb810a..716eb4a 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1023,9 +1023,11 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ 		if (!is_vmalloc_addr(addr))
+ 			return __pa(addr);
+ 		else
+-			return page_to_phys(vmalloc_to_page(addr));
++			return page_to_phys(vmalloc_to_page(addr)) +
++			       offset_in_page(addr);
+ 	} else
+-		return page_to_phys(pcpu_addr_to_page(addr));
++		return page_to_phys(pcpu_addr_to_page(addr)) +
++		       offset_in_page(addr);
  }
  
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif
-diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
-index 50533f9..1f80293 100644
---- a/arch/powerpc/include/asm/kvm_para.h
-+++ b/arch/powerpc/include/asm/kvm_para.h
-@@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return r;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __POWERPC_KVM_PARA_H__ */
-diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
-index 6964db2..a988329 100644
---- a/arch/s390/include/asm/kvm_para.h
-+++ b/arch/s390/include/asm/kvm_para.h
-@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
- 	return 0;
- }
- 
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
- #endif
- 
- #endif /* __S390_KVM_PARA_H */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 734c376..99c4bbe 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
- extern void kvmclock_init(void);
- extern int kvm_register_clock(char *txt);
- 
-+#ifdef CONFIG_KVM_CLOCK
-+bool kvm_check_and_clear_guest_paused(void);
-+#else
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+#endif /* CONFIG_KVMCLOCK */
- 
- /* This instruction is vmcall.  On non-VT architectures, it will generate a
-  * trap that we will then rewrite to the appropriate instruction.
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 44842d7..bdf6423 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -22,6 +22,7 @@
- #include <asm/msr.h>
- #include <asm/apic.h>
- #include <linux/percpu.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
-@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
- 	preset_lpj = lpj;
- }
- 
-+bool kvm_check_and_clear_guest_paused(void)
-+{
-+	bool ret = false;
-+	struct pvclock_vcpu_time_info *src;
-+
-+	/*
-+	 * per_cpu() is safe here because this function is only called from
-+	 * timer functions where preemption is already disabled.
-+	 */
-+	WARN_ON(!in_atomic());
-+	src = &__get_cpu_var(hv_clock);
-+	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-+		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
-+		ret = true;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-+
- static struct clocksource kvm_clock = {
- 	.name = "kvm-clock",
- 	.read = kvm_clock_get_cycles,
-diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
-new file mode 100644
-index 0000000..05ef7e7
---- /dev/null
-+++ b/include/asm-generic/kvm_para.h
-@@ -0,0 +1,14 @@
-+#ifndef _ASM_GENERIC_KVM_PARA_H
-+#define _ASM_GENERIC_KVM_PARA_H
-+
-+
-+/*
-+ * This function is used by architectures that support kvm to avoid issuing
-+ * false soft lockup messages.
-+ */
-+static inline bool kvm_check_and_clear_guest_paused(void)
-+{
-+	return false;
-+}
-+
-+#endif
+ /**
 -- 
-1.7.5.4
+1.7.3.1
 
