@@ -1,94 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab1LOVSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 16:18:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:65366 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759523Ab1LOVSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 16:18:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="86206938"
-Message-Id: <5d6588ab3dadabd8334cffee06b3e87abe3b81b7.1323979146.git.tony.luck@intel.com>
-In-Reply-To: <cover.1323979146.git.tony.luck@intel.com>
-References: <cover.1323979146.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Wed, 14 Dec 2011 15:55:20 -0800
-Subject: [PATCH 4/6] x86, mce: Add mechanism to safely save information in MCE handler
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+	id S1759509Ab1LOVVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 16:21:40 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35933 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759349Ab1LOVVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 16:21:39 -0500
+Date: Thu, 15 Dec 2011 21:22:01 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: printk() vs tty_io
+Message-ID: <20111215212201.3b1ab204@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFwhFoU5Fp_VTMtVU7XFMZiNvy1J7n7YJsVBu+-k-EH0Nw@mail.gmail.com>
+References: <1323804803.9082.40.camel@twins>
+	<CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
+	<20111214104308.14d0500c@pyramind.ukuu.org.uk>
+	<1323860206.28489.35.camel@twins>
+	<20111214140527.GA18080@thunk.org>
+	<1323872631.28489.37.camel@twins>
+	<CA+55aFwu+oSPtqfN+bS3_fHXWU+VMd5BGhNd=J4MjuAJZT+fTQ@mail.gmail.com>
+	<1323943005.18942.18.camel@twins>
+	<CA+55aFwhFoU5Fp_VTMtVU7XFMZiNvy1J7n7YJsVBu+-k-EH0Nw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Machine checks on Intel cpus interrupt execution on all cpus, regardless
-of interrupt masking.  We have a need to save some data about the cause
-of the machine check (physical address) in the machine check handler that
-can be retrieved later to attempt recovery in a more flexible execution
-state.
+>  - Make a special "debug printk" that is not synchronous. Just make it
+> buffer things, and have it actually print out from a worker thread or
+> whatever. This one *only* takes the lock for that buffer itself, and
+> works everywhere. We could probably even do tricks to make it
+> NMI-safe.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   43 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+No buffer lock needed within limits - our kfifo implementation doesn't
+need them on sensible hardware.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 645070f..7d7303a 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -887,6 +887,49 @@ static void mce_clear_state(unsigned long *toclear)
- }
- 
- /*
-+ * Need to save faulting physical address associated with a process
-+ * in the machine check handler some place where we can grab it back
-+ * later in mce_notify_process()
-+ */
-+#define	MAX_MCE_INFO	16
-+
-+struct mce_info {
-+	atomic_t		inuse;
-+	struct task_struct	*t;
-+	__u64			paddr;
-+} mce_info[MAX_MCE_INFO];
-+
-+static void mce_save_info(__u64 addr)
-+{
-+	struct mce_info *mi;
-+
-+	for (mi = mce_info; mi < &mce_info[MAX_MCE_INFO]; mi++) {
-+		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
-+			mi->t = current;
-+			mi->paddr = addr;
-+			return;
-+		}
-+	}
-+
-+	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
-+}
-+
-+static struct mce_info *mce_find_info(void)
-+{
-+	struct mce_info *mi;
-+
-+	for (mi = mce_info; mi < &mce_info[MAX_MCE_INFO]; mi++)
-+		if (atomic_read(&mi->inuse) && mi->t == current)
-+			return mi;
-+	return NULL;
-+}
-+
-+static void mce_clear_info(struct mce_info *mi)
-+{
-+	atomic_set(&mi->inuse, 0);
-+}
-+
-+/*
-  * The actual machine check handler. This only handles real
-  * exceptions when something got corrupted coming in through int 18.
-  *
--- 
-1.7.3.1
-
+Alan
