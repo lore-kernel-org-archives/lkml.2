@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab1LOGsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 01:48:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:46260 "EHLO ozlabs.org"
+	id S932325Ab1LOGtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:49:10 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:41880 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754894Ab1LOGsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 01:48:45 -0500
-Message-ID: <1323931718.13200.1.camel@concordia>
-Subject: Re: [Qemu-devel] [PATCH 2/2] device_isolation: Support isolation on
- POWER p7ioc (IODA) bridges
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: alex.williamson@redhat.com, chrisw@redhat.com, aik@ozlabs.ru,
-        agraf@suse.de, qemu-devel@nongnu.org, B08248@freescale.com,
-        iommu@lists.linux-foundation.org, joerg.roedel@amd.com,
-        scottwood@freescale.com, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 Dec 2011 17:48:38 +1100
-In-Reply-To: <1323929329-23927-2-git-send-email-david@gibson.dropbear.id.au>
-References: <1323929329-23927-2-git-send-email-david@gibson.dropbear.id.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-QYH+fw4/Q1tGGLCFKC3B"
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1755231Ab1LOGtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 01:49:08 -0500
+Message-ID: <4EE9983A.3060101@parallels.com>
+Date: Thu, 15 Dec 2011 10:48:26 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <kamezawa.hiroyu@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v9 0/9] Request for inclusion: per-cgroup tcp memory pressure
+ controls
+References: <1323676029-5890-1-git-send-email-glommer@parallels.com> <20111215144019.03706ff7.kamezawa.hiroyu@jp.fujitsu.com> <20111215.004836.402973956281143052.davem@davemloft.net>
+In-Reply-To: <20111215.004836.402973956281143052.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/15/2011 09:48 AM, David Miller wrote:
+> From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 15 Dec 2011 14:40:19 +0900
+>
+>> I met this bug at _1st_ run. Please enable _all_ debug options!.
+>
+> Plus the CONFIG_NET=n and other build failures.
+>
+> This patch series was seriously rushed, and very poorly handled.
+>
+> Yet I kept getting so much pressure to review, comment upon, and
+> ultimately apply these patches.  Never, ever, do this to me ever
+> again.
+>
+> If I don't feel your patches are high priority enough or ready enough
+> for me to review, then TOO BAD.  Don't ask people to pressure me or
+> get my attention.  Instead, ask others for help and do testing before
+> wasting MY time and crapping up MY tree.
+>
+> I should have noticed a red flag when I have James Bottomly asking me
+> to look at these patches, I should have pushed back.  Instead, I
+> relented, and now I'm very seriously regretting it.
+>
+> All the regressions in the net-next tree over the past several days
+> have been due to this patch set, and this patch set alone.
+>
+> This code wasn't ready and needed, at a minimum, several more weeks of
+> work before being put in.
+>
+> Instead, we're going to bandaid patch it up after the fact, rather
+> than just letting these changes mature naturally during the review
+> process.
+Hi Dave,
 
---=-QYH+fw4/Q1tGGLCFKC3B
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+You are right about all points. I will admit to it, face it, and 
+apologize it.
+I guess the best I can do right now is fix whatever you guys point me to 
+and not repeat it in the future.
 
-On Thu, 2011-12-15 at 17:08 +1100, David Gibson wrote:
-> This patch adds code to the code for the powernv platform to create
-> and populate isolation groups on hardware using the p7ioc (aka IODA) PCI =
-host
-> bridge used on some IBM POWER systems.
-
-> diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/pla=
-tforms/powernv/pci-ioda.c
-> index 0cdc8302..6df632e 100644
-> --- a/arch/powerpc/platforms/powernv/pci-ioda.c
-> +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-> @@ -861,6 +862,9 @@ static void __devinit pnv_ioda_setup_bus_dma(struct p=
-nv_ioda_pe *pe,
->  		set_iommu_table_base(&dev->dev, &pe->tce32_table);
->  		if (dev->subordinate)
->  			pnv_ioda_setup_bus_dma(pe, dev->subordinate);
-> +#ifdef CONFIG_DEVICE_ISOLATION
-> +		device_isolation_dev_add(&pe->di_group, &dev->dev);
-> +#endif
-
-You already have a nop version of that in device_isolation.h, so the
-ifdef is not required AFAICS.
-
-And similarly elsewhere.
-
-cheers
-
-
-
---=-QYH+fw4/Q1tGGLCFKC3B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk7pmEYACgkQdSjSd0sB4dKXIQCgyG1SuZio/KZT2DB049N39tlQ
-rlkAnRjZJKyfiHOlRtqsDig46UDiQ0l3
-=ap4Z
------END PGP SIGNATURE-----
-
---=-QYH+fw4/Q1tGGLCFKC3B--
-
+Thanks
