@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab1LOWe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:34:56 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47099 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759565Ab1LOWey convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:34:54 -0500
+	id S1759629Ab1LOWgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:36:39 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60294 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756480Ab1LOWgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:36:37 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [Update][PATCH 0/5] PM: Make the PM core execute driver callbacks if subsystem ones are not present
+Date: Thu, 15 Dec 2011 23:34:16 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201112100018.38536.rjw@sisk.pl>
+In-Reply-To: <201112100018.38536.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1323988092.22363.11.camel@localhost>
-References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu> <87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
- <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
- <20111215084050.GQ2203@ZenIV.linux.org.uk> <87fwgmjjr9.fsf@tucsk.pomaz.szeredi.hu>
- <87aa6ujjf6.fsf@tucsk.pomaz.szeredi.hu> <20111215200631.GA2379@Neptun> <1323988092.22363.11.camel@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 15 Dec 2011 14:34:32 -0800
-X-Google-Sender-Auth: H8yxrtCNlrmeoW9rHjefbeipk84
-Message-ID: <CA+55aFz6vpv01OAGcq9n8Q4bVgihqSiwz2qwNjBAHeFFvUD5Hg@mail.gmail.com>
-Subject: Re: [PATCH resend] audit: fix mark refcounting
-To: Eric Paris <eparis@redhat.com>
-Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112152334.16527.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 2:28 PM, Eric Paris <eparis@redhat.com> wrote:
->
-> How expensive is an atomic_inc()/atomic_dec() combo?  If it's mostly
-> free we can do it in the right place.
+Hi,
 
-It's pretty expensive, but it depends a lot on cache details etc. It
-involves a memory barrier on x86 too, and depending on architecture it
-might be anything from 150 cycles (P4 - but by now probably nobody
-cares) to "a few tens" of cycles (roughly 10-35 on modern x86).
+I have one more patch for this series and a couple of fixes.
 
-The cache miss itself - if it happens - is not counted in the above cost.
+On Saturday, December 10, 2011, Rafael J. Wysocki wrote:
+> 
+> The following patchset changes the PM core so that driver callbacks
+> are executed automatically when subsystem ones are not present and
+> uses the new PM core's behavior to simplify the platform and AMBA bus
+> types (there probably are many more bus types that may be simplified
+> this way, but those two were the easiest targets for me).
+> 
+> The reasons why to do this are outlined in the changelog of the second patch.
 
-A totally uncontended spinlock is actually cheaper than a pair of
-atomic ops. So if it's a hot path it probably should be moved
-elsewhere if possible.
+[1/5] - Make pm_op and pm_noirq_op return callbacks
+[2/5] - Make PM core call driver callbacks directly if subsystem ones are not present
+[3/5] - Remove unnecessary bus type PM callback from platform bus type
+[4/5] - Remove unnecessary bus type PM callback from AMBA bus type
+[5/5] - Drop generic_subsys_pm_ops
 
-                       Linus
+If there are no objections, I'd like to take these patches for 3.3.
+
+Thanks,
+Rafael
