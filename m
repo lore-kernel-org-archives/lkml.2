@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab1LOGZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 01:25:55 -0500
-Received: from ozlabs.org ([203.10.76.45]:50883 "EHLO ozlabs.org"
+	id S932305Ab1LOGZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:25:54 -0500
+Received: from ozlabs.org ([203.10.76.45]:41623 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab1LOGZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755722Ab1LOGZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Dec 2011 01:25:52 -0500
 From: David Gibson <david@gibson.dropbear.id.au>
 To: alex.williamson@redhat.com
@@ -13,31 +13,29 @@ Cc: aik@ozlabs.ru, benh@kernel.crashing.org, joerg.roedel@amd.com,
         scottwood@freescale.com, B08248@freescale.com,
         iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] device_isolation: Support isolation on POWER p7ioc (IODA) bridges
-Date: Thu, 15 Dec 2011 17:09:18 +1100
-Message-Id: <1323929358-23982-3-git-send-email-david@gibson.dropbear.id.au>
+Subject: [PATCH 2/3] device_isolation: Support isolation on POWER p5ioc2 bridges
+Date: Thu, 15 Dec 2011 17:09:17 +1100
+Message-Id: <1323929358-23982-2-git-send-email-david@gibson.dropbear.id.au>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323929358-23982-2-git-send-email-david@gibson.dropbear.id.au>
-References: <1323929358-23982-2-git-send-email-david@gibson.dropbear.id.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch adds code to the code for the powernv platform to create
-and populate isolation groups on hardware using the p7ioc (aka IODA) PCI host
+and populate isolation groups on hardware using the p5ioc2 PCI host
 bridge used on some IBM POWER systems.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c |   18 ++++++++++++++++--
- arch/powerpc/platforms/powernv/pci.h      |    6 ++++++
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/powernv/pci-p5ioc2.c |   14 +++++++++++++-
+ arch/powerpc/platforms/powernv/pci.h        |    3 +++
+ 2 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 0cdc8302..6df632e 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+index 4c80f7c..24847a9 100644
+--- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
++++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
 @@ -20,6 +20,7 @@
  #include <linux/irq.h>
  #include <linux/io.h>
@@ -46,64 +44,43 @@ index 0cdc8302..6df632e 100644
  
  #include <asm/sections.h>
  #include <asm/io.h>
-@@ -861,6 +862,9 @@ static void __devinit pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe,
- 		set_iommu_table_base(&dev->dev, &pe->tce32_table);
- 		if (dev->subordinate)
- 			pnv_ioda_setup_bus_dma(pe, dev->subordinate);
+@@ -88,10 +89,21 @@ static void pnv_pci_init_p5ioc2_msis(struct pnv_phb *phb) { }
+ static void __devinit pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
+ 						   struct pci_dev *pdev)
+ {
+-	if (phb->p5ioc2.iommu_table.it_map == NULL)
++	if (phb->p5ioc2.iommu_table.it_map == NULL) {
+ 		iommu_init_table(&phb->p5ioc2.iommu_table, phb->hose->node);
 +#ifdef CONFIG_DEVICE_ISOLATION
-+		device_isolation_dev_add(&pe->di_group, &dev->dev);
++		phb->p5ioc2.di_group = kzalloc(sizeof(*(phb->p5ioc2.di_group)),
++					       GFP_KERNEL);
++		BUG_ON(!phb->p5ioc2.di_group ||
++		       (device_isolation_group_init(phb->p5ioc2.di_group,
++						    "p5ioc2:%llx", phb->opal_id) < 0));
 +#endif
- 	}
++	}
+ 
+ 	set_iommu_table_base(&pdev->dev, &phb->p5ioc2.iommu_table);
++#ifdef CONFIG_DEVICE_ISOLATION
++	device_isolation_dev_add(phb->p5ioc2.di_group, &pdev->dev);
++#endif
  }
  
-@@ -941,11 +945,21 @@ static void __devinit pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
- 	}
- 	iommu_init_table(tbl, phb->hose->node);
- 
--	if (pe->pdev)
-+#ifdef CONFIG_DEVICE_ISOLATION
-+	BUG_ON(device_isolation_group_init(&pe->di_group, "ioda:rid%x-pe%x",
-+					   pe->rid, pe->pe_number) < 0);
-+#endif
-+
-+	if (pe->pdev) {
- 		set_iommu_table_base(&pe->pdev->dev, tbl);
--	else
-+#ifdef CONFIG_DEVICE_ISOLATION
-+		device_isolation_dev_add(&pe->di_group, &pe->pdev->dev);
-+#endif
-+	} else
- 		pnv_ioda_setup_bus_dma(pe, pe->pbus);
- 
-+
-+
- 	return;
-  fail:
- 	/* XXX Failure: Try to fallback to 64-bit only ? */
+ static void __init pnv_pci_init_p5ioc2_phb(struct device_node *np,
 diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
-index a2dc071..d663a26 100644
+index 28ae4ca..a2dc071 100644
 --- a/arch/powerpc/platforms/powernv/pci.h
 +++ b/arch/powerpc/platforms/powernv/pci.h
-@@ -1,6 +1,8 @@
- #ifndef __POWERNV_PCI_H
- #define __POWERNV_PCI_H
- 
-+#include <linux/device_isolation.h>
-+
- struct pci_dn;
- 
- enum pnv_phb_type {
-@@ -51,6 +53,10 @@ struct pnv_ioda_pe {
- 
- 	/* Link in list of PE#s */
- 	struct list_head	link;
-+
+@@ -77,6 +77,9 @@ struct pnv_phb {
+ 	union {
+ 		struct {
+ 			struct iommu_table iommu_table;
 +#ifdef CONFIG_DEVICE_ISOLATION
-+	struct device_isolation_group di_group;
++			struct device_isolation_group *di_group;
 +#endif
- };
+ 		} p5ioc2;
  
- struct pnv_phb {
+ 		struct {
 -- 
 1.7.7.3
 
