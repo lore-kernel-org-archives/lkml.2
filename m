@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab1LOHLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 02:11:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53377 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751721Ab1LOHLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 02:11:19 -0500
-Date: Thu, 15 Dec 2011 15:11:14 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Denis Kuzmenko <linux@solonet.org.ua>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-Message-ID: <20111215071113.GD24248@opensource.wolfsonmicro.com>
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
- <4EDAA785.40503@solonet.org.ua>
- <CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com>
- <4EDFAA0A.7040607@solonet.org.ua>
- <20111207160002.8b52df42.akpm@linux-foundation.org>
- <20111208011904.GD5748@opensource.wolfsonmicro.com>
- <2E48302EED53D048A7BA72B0A307FB511CF4DFD1C0@EXDCVYMBSTM005.EQ1STM.local>
- <20111214113714.GJ3072@opensource.wolfsonmicro.com>
- <20111214140155.GB3999@bnru02.bnr.st.com>
- <CACRpkdaE16-bbvsfzAK2DAmZRqswPvubzt_5ScLpQhDvcDc3uw@mail.gmail.com>
+	id S932387Ab1LOHL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 02:11:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50176 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752336Ab1LOHL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 02:11:26 -0500
+Message-ID: <4EE99D65.3060302@cn.fujitsu.com>
+Date: Thu, 15 Dec 2011 15:10:29 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaE16-bbvsfzAK2DAmZRqswPvubzt_5ScLpQhDvcDc3uw@mail.gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamal Mostafa <kamal@canonical.com>
+CC: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH v2 4/7] VFS: Rename and refactor writeback_inodes_sb_if_idle
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com> <1323367477-21685-5-git-send-email-kamal@canonical.com> <4EE6C7AD.3020907@cn.fujitsu.com>
+In-Reply-To: <4EE6C7AD.3020907@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-15 15:10:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-15 15:10:49,
+	Serialize complete at 2011-12-15 15:10:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 07:34:50PM +0100, Linus Walleij wrote:
+Ping...
 
-> The problem is I think this table is dependent on the LED fitted
-> and needs to be supplied as platform data from the board,
-> which knows which LED is on that board.
+On tue, 13 Dec 2011 11:34:05 +0800, Miao Xie wrote:
+> On thu, 8 Dec 2011 10:04:34 -0800, Kamal Mostafa wrote:
+>>  /**
+>> - * writeback_inodes_sb_if_idle	-	start writeback if none underway
+>> + * try_to_writeback_inodes_sb_nr	-	start writeback if none underway
+>>   * @sb: the superblock
+>>   * @nr: the number of pages to write
+>>   *
+>>   * Invoke writeback_inodes_sb if no writeback is currently underway.
+>>   * Returns 1 if writeback was started, 0 if not.
+>>   */
+>> -int writeback_inodes_sb_nr_if_idle(struct super_block *sb,
+>> +int try_to_writeback_inodes_sb_nr(struct super_block *sb,
+>>  				   unsigned long nr,
+>>  				   enum wb_reason reason)
+>>  {
+>>  	if (!writeback_in_progress(sb->s_bdi)) {
+>>  		down_read(&sb->s_umount);
+>> -		writeback_inodes_sb_nr(sb, nr, reason);
+>> +		if (nr == 0)
+>> +			writeback_inodes_sb(sb, reason);
+>> +		else
+>> +			writeback_inodes_sb_nr(sb, nr, reason);
+>>  		up_read(&sb->s_umount);
+>>  		return 1;
+>>  	} else
+>>  		return 0;
+> 
+> The comment said "Returns 1 if writeback was started", so if writeback_in_progress()
+> return true, I think this function also should return 1.
+> 
+> BTW: Does anyone know when this patchset will be merged into the main tree?
+> 
+> Thanks
+> Miao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-To a good approximation the restriction from the LED comes from the
-maximum current it can sustain so it's usually a fairly simple input.
