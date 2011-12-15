@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab1LOSLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:11:08 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33684 "EHLO mx2.mail.elte.hu"
+	id S1759330Ab1LOSLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:11:50 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35213 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759235Ab1LOSLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:11:05 -0500
-Date: Thu, 15 Dec 2011 19:09:06 +0100
+	id S1759063Ab1LOSLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 13:11:48 -0500
+Date: Thu, 15 Dec 2011 19:09:52 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
- __memory_failure()
-Message-ID: <20111215180906.GB30567@elte.hu>
-References: <cover.1323803130.git.tony.luck@intel.com>
- <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
- <20111214074749.GD25232@elte.hu>
- <20111214160702.GH23589@aftab>
- <20111214165459.GB32305@elte.hu>
- <0207C53569FE594381A4F2EB66570B2A019147EF6A@orsmsx508.amr.corp.intel.com>
- <20111215064444.GA14237@elte.hu>
- <CA+8MBbLRSnVFyxe=QcWyRdiMyU-MUYmtJXoZMfw8aC3tPj1BHw@mail.gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Tony Luck <tony.luck@intel.com>, edac-devel <linux-edac@vger.kernel.org>,
+        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86, MCE: Decode early errors too
+Message-ID: <20111215180952.GC30567@elte.hu>
+References: <20111214150252.GE23589@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+8MBbLRSnVFyxe=QcWyRdiMyU-MUYmtJXoZMfw8aC3tPj1BHw@mail.gmail.com>
+In-Reply-To: <20111214150252.GE23589@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,20 +32,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Tony Luck <tony.luck@intel.com> wrote:
+* Borislav Petkov <bp@amd64.org> wrote:
 
-> On Wed, Dec 14, 2011 at 10:44 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> The overall meaning is "land mine seen but not stepped on yet"
-> >
-> > Perfect message!
+> Hi Ingo,
 > 
-> How about:
+> please pull from the branch below to receive the functionality which
+> enables decoding of MCEs which have happened early during boot, before
+> MCA has been initiated.
 > 
-> Uncorrected memory error in page 0x%lx ignored
-> Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling
+> Also for the next merge window.
+> Thanks.
+> 
+> The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
+> 
+>   Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git early-mce-decode
+> 
+> Borislav Petkov (2):
+>       x86, mce: Add wrappers for registering on the decode chain
+>       x86, MCE: Drain mcelog buffer
+> 
+>  arch/x86/include/asm/mce.h       |    3 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c |   64 +++++++++++++++++++++++++++++++++----
+>  drivers/edac/i7core_edac.c       |    4 +-
+>  drivers/edac/mce_amd.c           |    4 +-
+>  drivers/edac/sb_edac.c           |    6 +--
+>  5 files changed, 65 insertions(+), 16 deletions(-)
 
-Yeah, sounds good.
-
-Thanks,
+Pulled, thanks Boris!
 
 	Ingo
