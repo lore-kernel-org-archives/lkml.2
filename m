@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1LOMrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 07:47:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31360 "EHLO mx1.redhat.com"
+	id S932514Ab1LOMqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 07:46:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612Ab1LOMr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 07:47:26 -0500
+	id S1756143Ab1LOMqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 07:46:51 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v5 11/11] virtio: balloon: Add freeze, restore handlers to support S4
-Date: Thu, 15 Dec 2011 18:15:57 +0530
-Message-Id: <a25590de10d16905372ea3d96b259c95dfa6f6e9.1323952934.git.amit.shah@redhat.com>
+Subject: [PATCH v5 03/11] virtio: console: Move vq and vq buf removal into separate functions
+Date: Thu, 15 Dec 2011 18:15:49 +0530
+Message-Id: <6064de73e48118cbfe7c3eccd53b702ccf7d82b5.1323952933.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
 References: <cover.1323952933.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
@@ -23,112 +23,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handling balloon hibernate / restore is tricky.  If the balloon was
-inflated before going into the hibernation state, upon resume, the host
-will not have any memory of that.  Any pages that were passed on to the
-host earlier would most likely be invalid, and the host will have to
-re-balloon to the previous value to get in the pre-hibernate state.
-
-So the only sane thing for the guest to do here is to discard all the
-pages that were put in the balloon.  When to discard the pages is the
-next question.
-
-One solution is to deflate the balloon just before writing the image to
-the disk (in the freeze() PM callback).  However, asking for pages from
-the host just to discard them immediately after seems wasteful of
-resources.  Hence, it makes sense to do this by just fudging our
-counters soon after wakeup.  This means we don't deflate the balloon
-before sleep, and also don't put unnecessary pressure on the host.
-
-This also helps in the thaw case: if the freeze fails for whatever
-reason, the balloon should continue to remain in the inflated state.
-This was tested by issuing 'swapoff -a' and trying to go into the S4
-state.  That fails, and the balloon stays inflated, as expected.  Both
-the host and the guest are happy.
-
-Finally, in the restore() callback, we empty the list of pages that were
-previously given off to the host, add the appropriate number of pages to
-the totalram_pages counter, reset the num_pages counter to 0, and
-all is fine.
-
-As a last step, delete the vqs on the freeze callback to prepare for
-hibernation, and re-create them in the restore and thaw callbacks to
-resume normal operation.
-
-The kthread doesn't race with any operations here, since it's frozen
-before the freeze() call and is thawed after the thaw() and restore()
-callbacks, so we're safe with that.
+This common code will be shared with the PM freeze function.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/virtio/virtio_balloon.c |   47 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/char/virtio_console.c |   68 ++++++++++++++++++++++++-----------------
+ 1 files changed, 40 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 1ff3cf4..4c327c7 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -363,6 +363,48 @@ static void __devexit virtballoon_remove(struct virtio_device *vdev)
- 	kfree(vb);
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 8e3c46d..e14f5aa 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1271,6 +1271,20 @@ static void remove_port(struct kref *kref)
+ 	kfree(port);
  }
  
-+#ifdef CONFIG_PM
-+static int virtballoon_freeze(struct virtio_device *vdev)
++static void remove_port_data(struct port *port)
 +{
-+	/*
-+	 * The kthread is already frozen by the PM core before this
-+	 * function is called.
-+	 */
++	struct port_buffer *buf;
 +
-+	/* Ensure we don't get any more requests from the host */
-+	vdev->config->reset(vdev);
-+	vdev->config->del_vqs(vdev);
-+	return 0;
++	/* Remove unused data this port might have received. */
++	discard_port_data(port);
++
++	reclaim_consumed_buffers(port);
++
++	/* Remove buffers we queued up for the Host to send us data in. */
++	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
++		free_buf(buf);
 +}
 +
-+static int virtballoon_thaw(struct virtio_device *vdev)
-+{
-+	return init_vqs(vdev->priv);
-+}
-+
-+static int virtballoon_restore(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb = vdev->priv;
-+	struct page *page, *page2;
-+
-+	/* We're starting from a clean slate */
-+	vb->num_pages = 0;
-+
-+	/*
-+	 * If a request wasn't complete at the time of freezing, this
-+	 * could have been set.
-+	 */
-+	vb->need_stats_update = 0;
-+
-+	/* We don't have these pages in the balloon anymore! */
-+	list_for_each_entry_safe(page, page2, &vb->pages, lru) {
-+		list_del(&page->lru);
-+		totalram_pages++;
-+	}
-+	return init_vqs(vdev->priv);
-+}
-+#endif
-+
- static unsigned int features[] = {
- 	VIRTIO_BALLOON_F_MUST_TELL_HOST,
- 	VIRTIO_BALLOON_F_STATS_VQ,
-@@ -377,6 +419,11 @@ static struct virtio_driver virtio_balloon_driver = {
- 	.probe =	virtballoon_probe,
- 	.remove =	__devexit_p(virtballoon_remove),
- 	.config_changed = virtballoon_changed,
-+#ifdef CONFIG_PM
-+	.freeze	=	virtballoon_freeze,
-+	.restore =	virtballoon_restore,
-+	.thaw =		virtballoon_thaw,
-+#endif
+ /*
+  * Port got unplugged.  Remove port from portdev's list and drop the
+  * kref reference.  If no userspace has this port opened, it will
+@@ -1278,8 +1292,6 @@ static void remove_port(struct kref *kref)
+  */
+ static void unplug_port(struct port *port)
+ {
+-	struct port_buffer *buf;
+-
+ 	spin_lock_irq(&port->portdev->ports_lock);
+ 	list_del(&port->list);
+ 	spin_unlock_irq(&port->portdev->ports_lock);
+@@ -1300,14 +1312,7 @@ static void unplug_port(struct port *port)
+ 		hvc_remove(port->cons.hvc);
+ 	}
+ 
+-	/* Remove unused data this port might have received. */
+-	discard_port_data(port);
+-
+-	reclaim_consumed_buffers(port);
+-
+-	/* Remove buffers we queued up for the Host to send us data in. */
+-	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+-		free_buf(buf);
++	remove_port_data(port);
+ 
+ 	/*
+ 	 * We should just assume the device itself has gone off --
+@@ -1659,6 +1664,28 @@ static const struct file_operations portdev_fops = {
+ 	.owner = THIS_MODULE,
  };
  
- static int __init init(void)
++static void remove_vqs(struct ports_device *portdev)
++{
++	portdev->vdev->config->del_vqs(portdev->vdev);
++	kfree(portdev->in_vqs);
++	kfree(portdev->out_vqs);
++}
++
++static void remove_controlq_data(struct ports_device *portdev)
++{
++	struct port_buffer *buf;
++	unsigned int len;
++
++	if (!use_multiport(portdev))
++		return;
++
++	while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
++		free_buf(buf);
++
++	while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
++		free_buf(buf);
++}
++
+ /*
+  * Once we're further in boot, we get probed like any other virtio
+  * device.
+@@ -1764,9 +1791,7 @@ free_vqs:
+ 	/* The host might want to notify mgmt sw about device add failure */
+ 	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
+ 			   VIRTIO_CONSOLE_DEVICE_READY, 0);
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
++	remove_vqs(portdev);
+ free_chrdev:
+ 	unregister_chrdev(portdev->chr_major, "virtio-portsdev");
+ free:
+@@ -1804,21 +1829,8 @@ static void virtcons_remove(struct virtio_device *vdev)
+ 	 * have to just stop using the port, as the vqs are going
+ 	 * away.
+ 	 */
+-	if (use_multiport(portdev)) {
+-		struct port_buffer *buf;
+-		unsigned int len;
+-
+-		while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
+-			free_buf(buf);
+-
+-		while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
+-			free_buf(buf);
+-	}
+-
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
+-
++	remove_controlq_data(portdev);
++	remove_vqs(portdev);
+ 	kfree(portdev);
+ }
+ 
 -- 
 1.7.7.3
 
