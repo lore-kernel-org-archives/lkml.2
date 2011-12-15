@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab1LOHEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 02:04:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59603 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932268Ab1LOHEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 02:04:04 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        David Dajun Chen <dchen@diasemi.com>, Liam girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Update da9052-regulator for DT changes
-Date: Thu, 15 Dec 2011 15:03:59 +0800
-Message-Id: <1323932639-5640-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S932397Ab1LOHET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 02:04:19 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:54712 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932268Ab1LOHEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 02:04:16 -0500
+Message-ID: <4EE99BCA.1010505@parallels.com>
+Date: Thu, 15 Dec 2011 11:03:38 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizf@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        <jbottomley@parallels.com>, <cgroups@vger.kernel.org>,
+        <bsingharora@gmail.com>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/3] make clone_children a flag
+References: <1323614738-7405-1-git-send-email-glommer@parallels.com> <1323614738-7405-4-git-send-email-glommer@parallels.com> <20111213153921.GE25802@google.com> <4EE80A0D.7090808@cn.fujitsu.com> <4EE84B9A.90901@parallels.com> <20111214181852.GB20380@google.com>
+In-Reply-To: <20111214181852.GB20380@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/da9052-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 12/14/2011 10:18 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Wed, Dec 14, 2011 at 11:09:14AM +0400, Glauber Costa wrote:
+>> That's indeed confusing, and it comes from the fact that we always
+>> inherit clone_children from the parent - which is sane, IMHO. So
+>> this flag only has any value in establishing the initial behaviour
+>> of the top root cgroup. I wonder then if it wouldn't better to just
+>> be explicit and fail in this case ?
+>
+> I don't think all current behaviors are sane and if not let's change
+> them, but those things have to be explicit with proper description and
+> rationale.
+>
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index 30c647f..bdb4375 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -547,7 +547,7 @@ static int __devinit da9052_regulator_probe(struct platform_device *pdev)
- 	regulator->rdev = regulator_register(&regulator->info->reg_desc,
- 					     &pdev->dev,
- 					     pdata->regulators[pdev->id],
--					     regulator);
-+					     regulator, NULL);
- 	if (IS_ERR(regulator->rdev)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
- 			regulator->info->reg_desc.name);
--- 
-1.7.7.3
+140 % agree to that. As I said, I wrongly believed it to be functionally 
+equivalent when I sent it, but missed the flags remount check.
+
+If you believe the behavior we now get is saner, I can rewrite the 
+Changelog and resend it.
 
