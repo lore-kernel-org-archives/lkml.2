@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab1LOWnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:43:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43537 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759632Ab1LOWnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:43:02 -0500
-Message-ID: <4EEA77E1.6050009@zytor.com>
-Date: Thu, 15 Dec 2011 14:42:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1759657Ab1LOWno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:43:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40377 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab1LOWnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 17:43:43 -0500
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alexander van Heukelum <heukelum@mailshack.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: x86: fls64() exported to user space but not fls()?
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1322831793-25602-1-git-send-email-linus.walleij@stericsson.com>
+References: <1322831793-25602-1-git-send-email-linus.walleij@stericsson.com>
+Date: Thu, 15 Dec 2011 23:43:42 +0100
+Message-ID: <CACRpkdZEPz-WpGRtPekkRwALjPxYvJ6FEgapNd+SH-jAc1XO1A@mail.gmail.com>
+Subject: Re: [PATCH] mfd/abx500: unify abx500 headers in mfd/abx500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to grok why fls64() seems to be exported to user space in
-<asm/bitops.h> on x86 by unconditional inclusion of
-<asm-generic/bitops/fls64.h>:
+As I'm anyway around the MFD part of the tree...
 
-...
-#endif /* __KERNEL__ */
+Sam is this patch OK?
 
-#include <asm-generic/bitops/fls64.h>
+On Fri, Dec 2, 2011 at 2:16 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
 
-#ifdef __KERNEL__
-...
+> This moves all the header files related to the abx500 family into
+> a common include directory below mfd. From now on we place any
+> subchip header in that directory. Headers previously in e.g.
+> <linux/mfd/ab8500/gpio.h> get prefixed and are now e.g.
+> <linux/mfd/abx500/ab8500-gpio.h>. The top-level abstract interface
+> remains in <linux/mfd/abx500.h>.
+>
+> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-
- whereas fls() isn't (although __fls() is!)
-
-This is even more bizarre since <asm-generic/bitops/fls64.h> contains:
-
-...
-#if BITS_PER_LONG == 32
-static __always_inline int fls64(__u64 x)
-{
-        __u32 h = x >> 32;
-        if (h)
-                return fls(h) + 32;
-        return fls(x);
-}
-#elif BITS_PER_LONG == 64
-static __always_inline int fls64(__u64 x)
-{
-        if (x == 0)
-                return 0;
-        return __fls(x) + 1;
-}
-#else
-#error BITS_PER_LONG not 32 or 64
-#endif
-...
-
-Both BITS_PER_LONG and fls() are non-user-visible symbols, so this code
-should fail on user space.  Finally, <asm-generic/bitops/*> are
-non-exported headers; they are not installed by make headers_install.
-
-Is the #endif..#ifdef in <asm/bitops.h> a bug, plain and simple?
-
-	-hpa
+Yours,
+Linus Walleij
