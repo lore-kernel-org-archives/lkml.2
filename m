@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab1LORvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:51:50 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47366 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954Ab1LORvs convert rfc822-to-8bit (ORCPT
+	id S1759303Ab1LORwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:52:04 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42400 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759246Ab1LORwD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:51:48 -0500
+	Thu, 15 Dec 2011 12:52:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s2M8cFM5AhjMwbFJZpQtbYe13w9bswTRhap97nOCyZVfQ@mail.gmail.com>
-References: <CAMP44s2M8cFM5AhjMwbFJZpQtbYe13w9bswTRhap97nOCyZVfQ@mail.gmail.com>
-Date: Thu, 15 Dec 2011 19:51:47 +0200
-Message-ID: <CAMP44s08uBK1Vm0Bx_0NouaaNHU0D2kp9AiL+1LPrT1BZURj0A@mail.gmail.com>
-Subject: Re: Issue with isp1704 loaded too soon
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAOh0hwP_GDqBmo3+PK5zdZxpsnxfs5bsrdgPM+DV4QPd_=fY1Q@mail.gmail.com>
+References: <CAOh0hwN-BqULvgRJtVBoiOYu=yr_8+tYmmkZ9RavztR2PoxHxQ@mail.gmail.com>
+ <CAOh0hwPWk_VSj08W=RRjnV6=ZfJL-3A9p_b=yyV8ryKmbLzprg@mail.gmail.com>
+ <20111215095156.3264d9b2@dt> <CAOh0hwP_GDqBmo3+PK5zdZxpsnxfs5bsrdgPM+DV4QPd_=fY1Q@mail.gmail.com>
+From: Gaurav Saxena <grvsaxena419@gmail.com>
+Date: Thu, 15 Dec 2011 23:21:28 +0530
+Message-ID: <CAOh0hwN-ovwyk08hjU7zVJMfig7SHxmY7gVdwLqNjy3P3k-VDA@mail.gmail.com>
+Subject: Fwd: Six month major project on kernel
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 1:15 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Tue, Dec 13, 2011 at 11:19 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
->>> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
->>> non isp1704_charger change has broke it as there hasn't been changes on it.
->>
->> Actually it's broken in 3.0 as well, try this configuration:
->>
->>        # CONFIG_USB_MUSB_HOST is not set
->>        # CONFIG_USB_MUSB_PERIPHERAL is not set
->>        CONFIG_USB_MUSB_OTG=y
->>        CONFIG_USB_GADGET_MUSB_HDRC=y
->>        CONFIG_USB_MUSB_HDRC_HCD=y
->>
->>        CONFIG_USB_GADGET_SELECTED=y
->>        # CONFIG_USB_GADGET_FUSB300 is not set
->>        # CONFIG_USB_GADGET_OMAP is not set
->>        # CONFIG_USB_GADGET_R8A66597 is not set
->>        # CONFIG_USB_GADGET_PXA_U2O is not set
->>        # CONFIG_USB_GADGET_M66592 is not set
->>        # CONFIG_USB_GADGET_DUMMY_HCD is not set
->>
->> I will try to find where the issues started to happen, but it's a bit
->> difficult because all this USB Kconfig stuff is completely messed up.
->>
->> *Sigh*
+Hello Jonathan, Thank you very much for your reply.
+
+On Thu, Dec 15, 2011 at 10:21 PM, Jonathan Corbet <corbet@lwn.net> wrote:
 >
-> Ok, I made some progress.
+> On Thu, 15 Dec 2011 10:13:51 +0530
+> Gaurav Saxena <grvsaxena419@gmail.com> wrote:
 >
-> The issue appeared on 2.6.39, specifically, on commit 0df0914, which
-> is a merge from Linus. The issue doesn't appear in any of the two
-> parents of that merge.
+> > I am interested in doing my final year computer scence project on
+> > linux kernel . I would be having a duration of six months to work on
+> > the project. Could you please suggest me some good project ideas that
+> > would be helpful to me as well as linux. I am interested in parallel
+> > computing, data structures , operating system. I am well versed in
+> > C/C++. I think there might be projects which need to be done, I would
+> > like to work on them.
 >
-> I manually merged various commits, and the first one that triggered
-> the problem is 18a2689, but the commit itself is not the problem but
-> something that was already merged to Linus' tree, specifically at
-> point 6899608.
+> Your interest in working on the kernel is welcome, but, sadly, you are
+> unlikely to get much help with this particular approach. �Kernel
+> developers tend to be busy, they have little time to spend hand-holding
+> well-meaning students with vague ideas of doing a kernel project.
+> Experience shows that much better results happen when developers join our
+> community with a specific project that they are interested in working on.
 >
-> IOW, it's a mixture of two changes that appear together at point,
-> 0df0914, one of them is 18a2689, the other one I still don't know.
+> My advice to you would be to spend some time studying the working of the
+> kernel, perhaps fixing a few bugs while you are at it. �Eventually you
+> will come across something that does not work as well as you think it
+> should; at that point, perhaps, you will be able to conceive of a specific
+> project to make things better. �Come back with specific ideas - and,
+> preferably, some code - and you will have a much better chance of getting
+> some attention from the development community.
+
+Oh I see, yeah I understand, Thanks a lot again for guiding me, I will
+see for bugs this would really help me in increasing my understanding
+of kernel, and of course try to come up with a good idea myself.
 >
-> Unless you can find what's wrong with this commit:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/arm/mach-omap2/usb-musb.c;h=a9d4d143086d73463b97c093cc9f022de8e1d679;hp=9788b4941857f40d50d48fa6470ee14e179bc373;hb=18a2689;hpb=273ff8c3bc04cf358c131f49ee7a11efa7ec73d7
 >
-> I guess the safest route is to continue with the manual merges to find
-> the second relevant commit =/
+> Thanks,
+>
+> jon
+>
 
-Found it.
 
-So, the first commit is this one:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=18a2689
 
-Which needs this one:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=870ea2b
+--
+Thanks and Regards ,
+Gaurav
 
-But it's only triggered with this other one:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=7acc619
 
-Seems to be some power management stuff, and it's only triggered with
-certain configurations.
 
-And this concludes the most tedious git bisect in history =/
-
-Cheers.
-
--- 
-Felipe Contreras
+--
+Thanks and Regards ,
+Gaurav
