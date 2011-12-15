@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab1LOPsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 10:48:53 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:58873 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1LOPsw (ORCPT
+	id S1758973Ab1LOPzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 10:55:55 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:52474 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab1LOPzy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 10:48:52 -0500
-Date: Thu, 15 Dec 2011 15:48:50 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Waychison <mikew@google.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 3/4] EFI: Add support for variables longer than 1024
- bytes
-Message-ID: <20111215154850.GA10582@srcf.ucam.org>
-References: <1323896791-10858-1-git-send-email-mjg@redhat.com>
- <1323896791-10858-4-git-send-email-mjg@redhat.com>
- <CAGTjWtCpt_1h6XMwCFkx1TQnQbagtSuFBejcp6XNr4yhKgNuLg@mail.gmail.com>
- <20111214223950.GA29264@srcf.ucam.org>
- <CAGTjWtARm_OA0qy2Cvtc-rrPFpH2+2QdFw4CvBAo-PJsfX6t6w@mail.gmail.com>
- <20111215154356.GA10486@srcf.ucam.org>
- <4EEA1664.1050402@zytor.com>
+	Thu, 15 Dec 2011 10:55:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEA1664.1050402@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4EE9FC99.6030905@gmail.com>
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com>
+ <1323876538-20406-4-git-send-email-robherring2@gmail.com> <20111215052512.GB21815@S2101-09.ap.freescale.net>
+ <20111215055501.GC21815@S2101-09.ap.freescale.net> <4EE9F899.7010402@gmail.com>
+ <4EE9FC99.6030905@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 15 Dec 2011 08:55:32 -0700
+X-Google-Sender-Auth: Q80rQtpHG_GPRJ8jXGtqm_Q2jBY
+Message-ID: <CACxGe6t=ngbzNLkX+df8gP0aoMmgnsVqn2V2eRHpGi5FoFci_w@mail.gmail.com>
+Subject: Re: [PATCH 3/9] irq: convert generic-chip to use irq_domain
+To: Rob Herring <robherring2@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Kevin Hilman <khilman@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 07:46:44AM -0800, H. Peter Anvin wrote:
-> On 12/15/2011 07:43 AM, Matthew Garrett wrote:
-> >
-> >We'll pretty much definitely want to be able to read values>  1024 once
-> >people start shoving keys in there. The PAGE_SIZE limit is one that I'd
-> >forgotten about, though.
-> >
-> 
-> The jump from 1024 to 4096 seems to not be very long... hence I
-> think we may need a different approach.
+On Thu, Dec 15, 2011 at 6:56 AM, Rob Herring <robherring2@gmail.com> wrote:
+> Shawn,
+>
+> On 12/15/2011 07:39 AM, Rob Herring wrote:
+>> On 12/14/2011 11:55 PM, Shawn Guo wrote:
+>>> On Thu, Dec 15, 2011 at 01:25:20PM +0800, Shawn Guo wrote:
+>>>> On Wed, Dec 14, 2011 at 09:28:52AM -0600, Rob Herring wrote:
+>>>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>>>
+>>>>> Add irq domain support to irq generic-chip. This enables users of
+>>>>> generic-chip to support dynamic irq assignment needed for DT interrupt
+>>>>> binding. Users must be converted to use irq_data.hwirq for determining
+>>>>> local interrupt numbers rather than using the Linux irq number.
+>>>>>
+>>>>> irq_base is kept for now as there are a few users of it. Once they
+>>>>> are converted to use the irq domain, it can be removed.
+>>>>>
+>>>>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>> ---
+>>>>
+>>>> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+>>>>
+>>> Sorry, I have to take that tag back after I correct my test setup.
+>>> It does not work for imx5 TZIC case, because the following change
+>>> I suggested before is missed.
+>>>
+>>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>>> index eb763f7..2a2aac1 100644
+>>> --- a/kernel/irq/irqdomain.c
+>>> +++ b/kernel/irq/irqdomain.c
+>>> @@ -39,7 +39,7 @@ void irq_domain_add(struct irq_domain *domain)
+>>>                         return;
+>>>                 }
+>>>                 d->domain = domain;
+>>> -               d->hwirq = hwirq;
+>>> +               d->hwirq = hwirq - domain->hwirq_base;
+>>
+>> This is a problem. It entirely defeats the point of hwirq_base and it
+>> would break the GIC. We need to fix this in the generic irq chip.
+>>
+>
+> I think I found a fix. Can you try 's/d->hwirq/(d->hwirq % 32)/' in
+> generic-chip.c.
 
-Yeah. I'll start thinking about the most sensible filesystem interface 
-for this.
+Ugh, but that hard codes an assumption that a domain cannot have more
+that 32 irqs.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+/me goes to dig into irq_domain code...
+
+g.
