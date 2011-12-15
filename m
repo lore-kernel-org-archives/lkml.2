@@ -1,85 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab1LOIu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 03:50:56 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:27465
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932268Ab1LOIuz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 03:50:55 -0500
-X-SpamScore: -10
-X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 15 Dec 2011 17:03:58 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, Dong Aisheng <b29396@freescale.com>,
-        <linus.walleij@stericsson.com>, <linux-kernel@vger.kernel.org>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>
-Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
-Message-ID: <20111215090357.GA2267@S2100-06.ap.freescale.net>
-References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
- <1323878622-26602-5-git-send-email-b29396@freescale.com>
- <20111214211152.GM27267@pengutronix.de>
- <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
- <20111215070505.GA22541@S2101-09.ap.freescale.net>
- <CACRpkdbN26q1_d4tPkJp4f4_KdvoEEk9uCCRyOfEU97DOWAnEw@mail.gmail.com>
+	id S932417Ab1LOIzp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 03:55:45 -0500
+Received: from mga14.intel.com ([143.182.124.37]:64875 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab1LOIzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 03:55:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="85958661"
+Date: Thu, 15 Dec 2011 16:55:41 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] proc: show readahead state in fdinfo
+Message-ID: <20111215085540.GA23966@localhost>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.278516066@intel.com>
+ <20111129175743.GP24062@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdbN26q1_d4tPkJp4f4_KdvoEEk9uCCRyOfEU97DOWAnEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20111129175743.GP24062@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 09:26:40AM +0100, Linus Walleij wrote:
-> On Thu, Dec 15, 2011 at 8:05 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> >[Me]
-> >> So if you want to do this for i.MX you need something like
-> >> selectable dummy pinmuxes, i.e. pinmux_get() to return something
-> >> that just say "OK" to everything like the dummy regulators.
-> >>
-> >> Shall I try to create something like that?
-> >>
-> > Isn't the empty functions defined in include/linux/pinctrl/pinmux.h
-> > for this purpose?
+On Wed, Nov 30, 2011 at 01:57:43AM +0800, Andi Kleen wrote:
+> On Tue, Nov 29, 2011 at 09:09:03PM +0800, Wu Fengguang wrote:
+> > Record the readahead pattern in ra->pattern and extend the ra_submit()
+> > parameters, to be used by the next readahead tracing/stats patches.
 > 
-> No, these are for compiling it *out*, dummy pinmuxes would
-> be if you compile it *in*, but don't find an apropriate pinmux,
-> you still get something that does nothing and still works.
-> 
-> Dummy regulators work exactly this way.
-> 
-> > It does not solve the problem with single image.
-> 
-> I think it does.
-> 
-> > You might probably mean that we create a dummy_pinctrl_desc and register
-> > it to pinctrl core with pinctrl_register() if we detect that the kernel
-> > is running on a soc that has no pinctrl support?
-> 
-> No. You have a #ifdef CONFIG_PINMUX_DUMMY in pinmux_get()
-> that makes sure you return a working no-op pinmux handle even
-> though there is no real pinmux behind it.
-> 
-Ah, ok.  So the problem will be sorted out at pinctrl core level, and
-pinctrl driver will not be bothered at all.  Yes, please, we need this.
+> I like this, could it be exported it a bit more formally in /proc for 
+> each file descriptor?
 
-> > This is not a problem to pinctrl migration only.  We have the same
-> > problem with common clk migration.  Unless we migrate imx3, imx5 and
-> > imx6 to common clk at the same time, single image build just does not
-> > cope with clk_* api.
-> 
-> And  you could have the same problem with regulator migration...
-> Luckily dummy regulators saves you in that case.
-> 
-Not sure what will save me in common clk case though.
+How about this?
+---
+Subject: proc: show readahead state in fdinfo
+Date: Thu Dec 15 14:35:56 CST 2011
 
--- 
-Regards,
-Shawn
+Append three readahead states to /proc/<PID>/fdinfo/<FD>:
 
+	# cat /proc/self/fdinfo/0
+	pos:            0
+	flags:          0100002
++	ra_pattern:     initial
++	ra_start:       0		# pages
++	ra_size:        0		# pages
+
+As proposed by Andi: I could imagine a monitoring tool that you run on a
+process that tells you what pattern state the various file descriptors
+are in and how large the window is.  That would be similar to the tools
+for monitoring network connections, which are extremely useful in practice.
+
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/proc/base.c     |   14 ++++++++++----
+ include/linux/fs.h |    1 +
+ mm/readahead.c     |    2 +-
+ 3 files changed, 12 insertions(+), 5 deletions(-)
+
+--- linux-next.orig/fs/proc/base.c	2011-12-15 14:36:04.000000000 +0800
++++ linux-next/fs/proc/base.c	2011-12-15 15:51:35.000000000 +0800
+@@ -1885,7 +1885,7 @@ out:
+ 	return ~0U;
+ }
+ 
+-#define PROC_FDINFO_MAX 64
++#define PROC_FDINFO_MAX 128
+ 
+ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
+ {
+@@ -1920,10 +1920,16 @@ static int proc_fd_info(struct inode *in
+ 			}
+ 			if (info)
+ 				snprintf(info, PROC_FDINFO_MAX,
+-					 "pos:\t%lli\n"
+-					 "flags:\t0%o\n",
++					 "pos:\t\t%lli\n"
++					 "flags:\t\t0%o\n"
++					 "ra_pattern:\t%s\n"
++					 "ra_start:\t%lu\n"
++					 "ra_size:\t%u\n",
+ 					 (long long) file->f_pos,
+-					 f_flags);
++					 f_flags,
++					 ra_pattern_names[file->f_ra.pattern],
++					 file->f_ra.start,
++					 file->f_ra.size);
+ 			spin_unlock(&files->file_lock);
+ 			put_files_struct(files);
+ 			return 0;
+--- linux-next.orig/include/linux/fs.h	2011-12-15 14:36:41.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-12-15 14:36:57.000000000 +0800
+@@ -953,6 +953,7 @@ struct file_ra_state {
+ 
+ 	loff_t prev_pos;		/* Cache last read() position */
+ };
++extern const char * const ra_pattern_names[];
+ 
+ /*
+  * Which policy makes decision to do the current read-ahead IO?
+--- linux-next.orig/mm/readahead.c	2011-12-15 14:36:28.000000000 +0800
++++ linux-next/mm/readahead.c	2011-12-15 14:36:33.000000000 +0800
+@@ -19,7 +19,7 @@
+ #include <linux/pagemap.h>
+ #include <trace/events/vfs.h>
+ 
+-static const char * const ra_pattern_names[] = {
++const char * const ra_pattern_names[] = {
+ 	[RA_PATTERN_INITIAL]            = "initial",
+ 	[RA_PATTERN_SUBSEQUENT]         = "subsequent",
+ 	[RA_PATTERN_CONTEXT]            = "context",
