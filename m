@@ -1,42 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab1LNXz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 18:55:58 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33295 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab1LNXz4 convert rfc822-to-8bit (ORCPT
+	id S1758322Ab1LOALj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 19:11:39 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35224 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab1LOALi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 18:55:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111214114016.9441.12006.stgit@warthog.procyon.org.uk>
-References: <20111214114016.9441.12006.stgit@warthog.procyon.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 14 Dec 2011 15:55:34 -0800
-X-Google-Sender-Auth: LSpojl4aWtWgYjgaRdasz2cH9M4
-Message-ID: <CA+55aFxEszjub9-MJD0irFs8y3hzGe3Ph=7RqWfkJ-0jKFtCeA@mail.gmail.com>
-Subject: Re: [PATCH] Fix order_base_2(0)
-To: David Howells <dhowells@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Dec 2011 19:11:38 -0500
+Message-ID: <1323907885.7773.0.camel@phoenix>
+Subject: [PATCH] spi: Convert to DEFINE_PCI_DEVICE_TABLE
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Feng Tang <feng.tang@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
+Date: Thu, 15 Dec 2011 08:11:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 3:40 AM, David Howells <dhowells@redhat.com> wrote:
-> The order_base_2() function is either wrongly documented or wrongly
-> implemented.  In the preceding comment, it says that:
->
->        ob2(0) = 0
+Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+tables.
 
-Let's just remove that comment. That's just crazy math and makes no
-sense. Why would anybody do ilog2() on zero and expect anything valid?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/spi/spi-dw-pci.c       |    2 +-
+ drivers/spi/spi-pxa2xx-pci.c   |    2 +-
+ drivers/spi/spi-topcliff-pch.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-At least "-1" would make a tiny amount as sense as an error return or
-"underflow" or whatever. But returning 0 is just wrong. That's
-ilog2(1), not 0.
+diff --git a/drivers/spi/spi-dw-pci.c b/drivers/spi/spi-dw-pci.c
+index f64250e..14f7cc9 100644
+--- a/drivers/spi/spi-dw-pci.c
++++ b/drivers/spi/spi-dw-pci.c
+@@ -149,7 +149,7 @@ static int spi_resume(struct pci_dev *pdev)
+ #define spi_resume	NULL
+ #endif
+ 
+-static const struct pci_device_id pci_ids[] __devinitdata = {
++static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
+ 	/* Intel MID platform SPI controller 0 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0800) },
+ 	{},
+diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
+index 8caa07d..3fb44af 100644
+--- a/drivers/spi/spi-pxa2xx-pci.c
++++ b/drivers/spi/spi-pxa2xx-pci.c
+@@ -151,7 +151,7 @@ static void __devexit ce4100_spi_remove(struct pci_dev *dev)
+ 	kfree(spi_info);
+ }
+ 
+-static struct pci_device_id ce4100_spi_devices[] __devinitdata = {
++static DEFINE_PCI_DEVICE_TABLE(ce4100_spi_devices) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2e6a) },
+ 	{ },
+ };
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 99ec279..17274a5 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -214,7 +214,7 @@ struct pch_pd_dev_save {
+ 	struct pch_spi_board_data *board_dat;
+ };
+ 
+-static struct pci_device_id pch_spi_pcidev_id[] = {
++static DEFINE_PCI_DEVICE_TABLE(pch_spi_pcidev_id) = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_GE_SPI),    1, },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_SPI), 2, },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_SPI), 1, },
+-- 
+1.7.5.4
 
-Does anybody actually *want* order_base_2(0)?
 
-                      Linus
+
