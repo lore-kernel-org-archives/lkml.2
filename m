@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab1LOKXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:23:40 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:8933
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755414Ab1LOKXh (ORCPT
+	id S932471Ab1LOKcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:32:00 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60893 "EHLO
+	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751990Ab1LOKb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:23:37 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LW8Q77-01-29S-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/3] iommu/amd: Adapt IOMMU driver to PCI register name changes
-Date: Thu, 15 Dec 2011 11:23:20 +0100
-Message-ID: <1323944602-26155-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323944602-26155-1-git-send-email-joerg.roedel@amd.com>
-References: <1323944602-26155-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Thu, 15 Dec 2011 05:31:59 -0500
+Date: Thu, 15 Dec 2011 10:32:20 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: printk() vs tty_io
+Message-ID: <20111215103220.7c08498f@pyramind.ukuu.org.uk>
+In-Reply-To: <1323943005.18942.18.camel@twins>
+References: <1323804803.9082.40.camel@twins>
+	<CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
+	<20111214104308.14d0500c@pyramind.ukuu.org.uk>
+	<1323860206.28489.35.camel@twins>
+	<20111214140527.GA18080@thunk.org>
+	<1323872631.28489.37.camel@twins>
+	<CA+55aFwu+oSPtqfN+bS3_fHXWU+VMd5BGhNd=J4MjuAJZT+fTQ@mail.gmail.com>
+	<1323943005.18942.18.camel@twins>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbolic register names for PCI and PASID changed in
-PCI code. This patch adapts the AMD IOMMU driver to these
-changes.
+> We probably could, I can have a closer look, but the main question is,
+> are we going to commit to no wakeups from console implementations? That
+> would mean removing the USB serial console support and other such stuff.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+That's a non starter.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index a7cbcd4..d5074f4 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -176,8 +176,8 @@ static bool pci_iommuv2_capable(struct pci_dev *pdev)
- {
- 	static const int caps[] = {
- 		PCI_EXT_CAP_ID_ATS,
--		PCI_PRI_CAP,
--		PCI_PASID_CAP,
-+		PCI_EXT_CAP_ID_PRI,
-+		PCI_EXT_CAP_ID_PASID,
- 	};
- 	int i, pos;
- 
-@@ -1978,13 +1978,13 @@ static int pri_reset_while_enabled(struct pci_dev *pdev)
- 	u16 control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return -EINVAL;
- 
--	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
--	control |= PCI_PRI_RESET;
--	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
-+	pci_read_config_word(pdev, pos + PCI_PRI_CTRL, &control);
-+	control |= PCI_PRI_CTRL_RESET;
-+	pci_write_config_word(pdev, pos + PCI_PRI_CTRL, control);
- 
- 	return 0;
- }
-@@ -2042,11 +2042,11 @@ bool pci_pri_tlp_required(struct pci_dev *pdev)
- 	u16 control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return false;
- 
--	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
-+	pci_read_config_word(pdev, pos + PCI_PRI_CTRL, &control);
- 
- 	return (control & PCI_PRI_TLP_OFF) ? true : false;
- }
--- 
-1.7.5.4
+> [ Personally I think USB serial console is insane, if you really need
+> something like that use the ehci-dbgp thing, that at least has a chance
+> of working. ]
 
+Sometimes USB serial console is the best you've got.
 
+> If we're not going to commit to that (which would be valid choice given
+> where we are), my printk efforts are pointless and I'll reconsider.
+
+For lockdep spews do they need to be spewed synchronously - clearly it's
+good if they can be but its possible that they could be buffered ?
+
+Alan
