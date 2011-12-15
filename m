@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab1LOJAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:00:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33888 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab1LOJAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:00:22 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-Date: Thu, 15 Dec 2011 10:01:52 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <201112141222.41006.oneukum@suse.de> <CAGS+omB8kmALYg+m__WpiGzcpTdFEzHz1x3gFFkyqofpnANvNQ@mail.gmail.com>
-In-Reply-To: <CAGS+omB8kmALYg+m__WpiGzcpTdFEzHz1x3gFFkyqofpnANvNQ@mail.gmail.com>
+	id S1758674Ab1LOJB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:01:29 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36747 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab1LOJB1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 04:01:27 -0500
+Message-ID: <4EE9B75C.9060204@infradead.org>
+Date: Thu, 15 Dec 2011 07:01:16 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Luca Risolia <luca.risolia@studio.unibo.it>,
+        Eric Piel <eric.piel@tremplin-utc.net>, linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/15] module_param: check type correctness for module_param_array
+References: <87aa6utu6s.fsf@rustcorp.com.au>
+In-Reply-To: <87aa6utu6s.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112151001.52761.oneukum@suse.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 15. Dezember 2011, 07:43:09 schrieb Daniel Kurtz:
+On 15-12-2011 01:00, Rusty Russell wrote:
+> module_param_array(), unlike its non-array cousins, didn't check the type
+> of the variable.  Fixing this found two bugs.
+> 
+> Cc: Luca Risolia <luca.risolia@studio.unibo.it>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Eric Piel <eric.piel@tremplin-utc.net>
+> Cc: linux-media@vger.kernel.org
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>  drivers/media/video/et61x251/et61x251_core.c |    4 ++--
+>  drivers/media/video/sn9c102/sn9c102_core.c   |    4 ++--
 
-Hi,
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-> I'm sorry, I'm not seeing how using a workqueue to set the LEDs
-> changes anything with respect to how the driver deals with USB reset.
+>  drivers/mfd/janz-cmodio.c                    |    2 +-
+>  drivers/misc/lis3lv02d/lis3lv02d.c           |    2 ++
+>  include/linux/moduleparam.h                  |    1 +
+>  5 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/media/video/et61x251/et61x251_core.c b/drivers/media/video/et61x251/et61x251_core.c
+> --- a/drivers/media/video/et61x251/et61x251_core.c
+> +++ b/drivers/media/video/et61x251/et61x251_core.c
+> @@ -76,8 +76,8 @@ MODULE_PARM_DESC(video_nr,
+>  		 "\none and for every other camera."
+>  		 "\n");
+>  
+> -static short force_munmap[] = {[0 ... ET61X251_MAX_DEVICES-1] =
+> -			       ET61X251_FORCE_MUNMAP};
+> +static bool force_munmap[] = {[0 ... ET61X251_MAX_DEVICES-1] =
+> +			      ET61X251_FORCE_MUNMAP};
+>  module_param_array(force_munmap, bool, NULL, 0444);
+>  MODULE_PARM_DESC(force_munmap,
+>  		 "\n<0|1[,...]> Force the application to unmap previously"
+> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
+> --- a/drivers/media/video/sn9c102/sn9c102_core.c
+> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
+> @@ -75,8 +75,8 @@ MODULE_PARM_DESC(video_nr,
+>  		 "\none and for every other camera."
+>  		 "\n");
+>  
+> -static short force_munmap[] = {[0 ... SN9C102_MAX_DEVICES-1] =
+> -			       SN9C102_FORCE_MUNMAP};
+> +static bool force_munmap[] = {[0 ... SN9C102_MAX_DEVICES-1] =
+> +			      SN9C102_FORCE_MUNMAP};
+>  module_param_array(force_munmap, bool, NULL, 0444);
+>  MODULE_PARM_DESC(force_munmap,
+>  		 " <0|1[,...]>"
+> diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
+> --- a/drivers/mfd/janz-cmodio.c
+> +++ b/drivers/mfd/janz-cmodio.c
+> @@ -33,7 +33,7 @@
+>  
+>  /* Module Parameters */
+>  static unsigned int num_modules = CMODIO_MAX_MODULES;
+> -static unsigned char *modules[CMODIO_MAX_MODULES] = {
+> +static char *modules[CMODIO_MAX_MODULES] = {
+>  	"empty", "empty", "empty", "empty",
+>  };
+>  
+> diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+> --- a/drivers/misc/lis3lv02d/lis3lv02d.c
+> +++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+> @@ -111,6 +111,8 @@ static struct kernel_param_ops param_ops
+>  	.get = param_get_int,
+>  };
+>  
+> +#define param_check_axis(name, p) param_check_int(name, p)
+> +
+>  module_param_array_named(axes, lis3_dev.ac.as_array, axis, NULL, 0644);
+>  MODULE_PARM_DESC(axes, "Axis-mapping for x,y,z directions");
+>  
+> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+> --- a/include/linux/moduleparam.h
+> +++ b/include/linux/moduleparam.h
+> @@ -395,6 +395,7 @@ extern int param_get_invbool(char *buffe
+>   * module_param_named() for why this might be necessary.
+>   */
+>  #define module_param_array_named(name, array, type, nump, perm)		\
+> +	param_check_##type(name, &(array)[0]);				\
+>  	static const struct kparam_array __param_arr_##name		\
+>  	= { .max = ARRAY_SIZE(array), .num = nump,                      \
+>  	    .ops = &param_ops_##type,					\
 
-You are unfortunately right. This means that the driver currently is already
-buggy.
- 
-> With or without a workqueue, LED control urbs are being queued and/or
-> submitted asynchronously to reset.  AFAICT, the only thing that
-> changes here is exactly when __usbhid_submit_report() is called.  In
-> the original case, this happens directly in the input event handler.
-> In the workqueue case, it happens in a system worker thread some short
-> time after the input handler finishes.
-
-The current driver kills the ctrl URB in cease_io() which is not enough
-to prevent new IO.
-
-> Could you please be more specific about what this patch breaks and
-> perhaps give some guidance on how to fix it?
-
-It breaks nothing. It just continues a bug and I assumed it was not present.
-Basically the work queue must do nothing after pre_reset() and post_reset()
-ought to rerun the work in case some request came down during that time.
-
-	Regards
-		Oliver
