@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab1LOPKH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 10:10:07 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:33040 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1LOPKG (ORCPT
+	id S1758908Ab1LOPUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 10:20:03 -0500
+Received: from mail01.manz-automation.com ([88.79.234.227]:14917 "EHLO
+	mail01.manz-automation.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751544Ab1LOPUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 10:10:06 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 15 Dec 2011 23:19:51 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Mike Turquette <mturquette@ti.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [RFC v2 5/9] dt/clock: Add handling for fixed clocks and a clock
- node setup iterator
-Message-ID: <20111215151950.GC2831@S2100-06.ap.freescale.net>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-5-git-send-email-grant.likely@secretlab.ca>
+	Thu, 15 Dec 2011 10:20:02 -0500
+Message-ID: <1323962398.11872.3.camel@raz>
+Subject: Re: Subject:[PATCH 1:1] boot paramer "root=" gets a list of devices
+From: Raz Ben Yehuda <rbenyehuda@manz.com>
+Reply-To: <rbenyehuda@manz.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "wad@chromium.org" <wad@chromium.org>,
+        "kay.sievers@vrfy.org" <kay.sievers@vrfy.org>,
+        Rasty Slutsker <RSlutsker@manz.com>, Lior Brafman <LBrafman@manz.com>,
+        <raziebe@gmail.com>, <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Dec 2011 17:19:58 +0200
+In-Reply-To: <4EEA0C05.4030907@zytor.com>
+References: <1323940396.16032.2.camel@raz> <4EEA0C05.4030907@zytor.com>
+Organization: Manz
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1323727329-4989-5-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Mon, Dec 12, 2011 at 03:02:05PM -0700, Grant Likely wrote:
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/of/clock.c     |   43 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_clk.h |    4 ++++
->  2 files changed, 47 insertions(+), 0 deletions(-)
+On Thu, 2011-12-15 at 16:02 +0100, H. Peter Anvin wrote:
+> On 12/15/2011 01:13 AM, Raz Ben Yehuda wrote:
+> > From: Raz ben yehuda<rbenyehuda@manz.com>
+> >
+> > Patch is aimed to bypass the need for initramfs when it is not
+> > known which disk has the root file system.
+> >
+> > Example: The kernel boot parameter "root=/dev/sda1,/dev/sdc1,/dev/sdb4".
+> > Check if /dev/sda1 exists ,if /dev/sda1 does not exist then try
+> > /dev/sdc1 an so on upto the first a device that exists ( ROOT_DEV != 0 ),
+> > else use the last device as the mount device.
+> >
+> > patch is on top of 3.2-rc5.
+> >
+> > Signed-off-by: Raz Ben Yehuda<rbenyehuda@manz.com>
+> >
 > 
-> diff --git a/drivers/of/clock.c b/drivers/of/clock.c
-> index 6519e96..1c189b4 100644
-> --- a/drivers/of/clock.c
-> +++ b/drivers/of/clock.c
-> @@ -3,6 +3,7 @@
->   */
->  
->  #include <linux/clk.h>
-> +#include <linux/clkdev.h>
->  #include <linux/err.h>
->  #include <linux/errno.h>
->  #include <linux/module.h>
-> @@ -163,3 +164,45 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
->  
->  	return clk;
->  }
-> +
-> +/**
-> + * of_clk_init() - Scan and init clock providers from the DT
-> + * @matches: array of compatible values and init functions for providers.
-> + *
-> + * This function scans the device tree for matching clock providers and
-> + * calls their initialization functions
-> + */
-> +void __init of_clk_init(const struct of_device_id *matches)
-> +{
-> +	struct device_node *np;
-> +
-> +	for_each_matching_node(np, matches) {
-> +		const struct of_device_id *match = of_match_node(matches, np);
-> +		of_clk_init_cb_t clk_init_cb = match->data;
-> +		clk_init_cb(np);
-> +	}
-> +}
-> +
-> +static struct clk *of_fixed_clk_get(struct of_phandle_args *a, void *data)
-> +{
-> +	return data;
-> +}
-> +
-> +/**
-> + * of_fixed_clk_setup() - Setup function for simple fixed rate clock
-> + */
-> +void __init of_fixed_clk_setup(struct device_node *node)
-> +{
-> +	struct clk *clk;
-> +	u32 rate;
-> +
-> +	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +		return;
-> +
-> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> +	if (!clk)
-> +		return;
-> +	clk->rate = rate;
-> +
-> +	of_clk_add_provider(node, of_fixed_clk_get, clk);
-> +}
+> To which point I have to ask, once again, at which point we stop putting 
+> this stuff in the kernel to "bypass the need for initramfs"...
+because there are times where we cannot use initramfs. is this a problem
+with way i phrase or with with the whole idea ?  
 
-Just take the fixed clk as example, I have a node below as a blob,
-which has 3 fixed clks encoded.
+> 	-hpa
 
-ref_clk: ref {
-	compatible = "fixed-clock", "basic-clock";
-	#clock-cells = <1>;
-	clock-frequency = <24000000 32768 0>;
-	clock-output-name = "osc",
-			    "ckil",
-			    "ckih";
-};
-
-If this is valid, the of_fixed_clk_setup() should scan the node for
-multiple clks, right?
-
--- 
-Regards,
-Shawn
 
