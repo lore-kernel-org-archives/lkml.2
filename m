@@ -1,157 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab1LOTPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:15:40 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51808 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1LOTPj (ORCPT
+	id S1759404Ab1LOTQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:16:56 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58802 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab1LOTQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:15:39 -0500
-X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Wdbr4zj3n9AA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=jfOaFXndxd3Fg1AisQcA:9 a=JZ4WC9B1xLZ6WGaHKm8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1323976535.23971.112.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 4/5 v2] x86: Keep current stack in NMI breakpoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Thu, 15 Dec 2011 14:16:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111215071901.GF14237@elte.hu>
+References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
+	<alpine.LFD.2.02.1112141423380.3020@ionos>
+	<alpine.LFD.2.02.1112142116540.3020@ionos>
+	<CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
+	<87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
+	<CAE9FiQXL3N6UZ6REfdUT_o1b-ed_KnYqKm_wSEhsaRPeaE9-9Q@mail.gmail.com>
+	<20111215071901.GF14237@elte.hu>
+Date: Thu, 15 Dec 2011 11:16:54 -0800
+X-Google-Sender-Auth: -WmTWJnV_U3yV74rX84QZ_JC9Tc
+Message-ID: <CAE9FiQXh8tiJ0Aa80uGJBiVv_3-rirMt1roQwZ3dBws-p0=j9A@mail.gmail.com>
+Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5 machine
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>
-Date: Thu, 15 Dec 2011 14:15:35 -0500
-In-Reply-To: <20111214134325.GB2882@Krystal>
-References: <20111214025237.457632996@goodmis.org>
-	 <20111214025252.684160446@goodmis.org> <20111214134325.GB2882@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: multipart/mixed; boundary=001636c92b3ad1c82c04b426533a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 08:43 -0500, Mathieu Desnoyers wrote:
+--001636c92b3ad1c82c04b426533a
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> What happens to the following sequence ?
-> 
-> - Hit a breakpoint.
-> - Execute an interrupt handler nesting over breakpoint handler (made
->   possible by preempt_conditional_sti(regs) in do_int3()).
->   (or take any kind of fault that switch the current stack)
-> - NMI fires, not detecting that it is nested over a breakpoint handler,
->   thus potentially corrupting the DEBUG stack.
-> 
-> Instead of trying to detect if we nest on a stack to find out if we need
-> to change the IDT, I would recommend to unconditionally switch the int3
-> IDT to use the current stack upon outermost NMI entry, and set it back
-> to its usual behavior upon outermost NMI exit.
+On Wed, Dec 14, 2011 at 11:19 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> On Wed, Dec 14, 2011 at 6:24 PM, Nikunj A Dadhania
+>> <nikunj@linux.vnet.ibm.com> wrote:
+>> >>
+>> >> BIOS pre-enabled x2apic, and kernel config does not have x2apic enabl=
+ed?
+>> > make oldconfig somehow skipped this!! I can see my previous kernel con=
+fig
+>> > having this enabled.
+>>
+>> looks like recent dmar table related DMAR changing cause that.
+>
+> Which one would that be? Perhaps:
+>
+> =A0 =A0 =A0iommu: Rename the DMAR and INTR_REMAP config options
+>
+> ? They then need to be fixed if it can be done sanely.
 
-There's also this simple patch to guarantee that NMIs know the debug
-stack is in use:
+yes.
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index d748d1f..2fef5ba 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -402,6 +402,8 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
- DECLARE_PER_CPU(unsigned int, irq_count);
- extern unsigned long kernel_eflags;
- extern asmlinkage void ignore_sysret(void);
-+void inc_debug_stack_usage(void);
-+void dec_debug_stack_usage(void);
- int is_debug_stack(unsigned long addr);
- void zero_debug_stack(void);
- void reset_debug_stack(void);
-@@ -420,6 +422,8 @@ struct stack_canary {
- DECLARE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
- #endif
- static inline int is_debug_stack(unsigned long addr) { return 0; }
-+static inline void inc_debug_stack_usage(void) { }
-+static inline void dec_debug_stack_usage(void) { }
- static inline void zero_debug_stack(void) { }
- static inline void reset_debug_stack(void) { }
- #endif	/* X86_64 */
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 98faeff..f1ec612 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1093,11 +1093,23 @@ unsigned long kernel_eflags;
- DEFINE_PER_CPU(struct orig_ist, orig_ist);
- 
- static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
-+static DEFINE_PER_CPU(int, debug_stack_usage);
-+
-+void inc_debug_stack_usage(void)
-+{
-+	__get_cpu_var(debug_stack_usage)++;
-+}
-+
-+void dec_debug_stack_usage(void)
-+{
-+	__get_cpu_var(debug_stack_usage)--;
-+}
- 
- int is_debug_stack(unsigned long addr)
- {
--	return addr <= __get_cpu_var(debug_stack_addr) &&
--		addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ);
-+	return __get_cpu_var(debug_stack_usage) ||
-+		(addr <= __get_cpu_var(debug_stack_addr) &&
-+		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
- }
- 
- void zero_debug_stack(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a93c5ca..d2510e7 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -316,9 +316,15 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
- 		return;
- #endif
- 
-+	/*
-+	 * Let others (NMI) know that the debug stack is in use
-+	 * as we may switch to the interrupt stack.
-+	 */
-+	inc_debug_stack_usage();
- 	preempt_conditional_sti(regs);
- 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
-+	dec_debug_stack_usage();
- }
- 
- #ifdef CONFIG_X86_64
-@@ -411,6 +417,12 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 							SIGTRAP) == NOTIFY_STOP)
- 		return;
- 
-+	/*
-+	 * Let others (NMI) know that the debug stack is in use
-+	 * as we may switch to the interrupt stack.
-+	 */
-+	inc_debug_stack_usage();
-+
- 	/* It's safe to allow irq's after DR6 has been saved */
- 	preempt_conditional_sti(regs);
- 
-@@ -418,6 +430,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, 1);
- 		preempt_conditional_cli(regs);
-+		dec_debug_stack_usage();
- 		return;
- 	}
- 
-@@ -437,6 +450,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
- 		send_sigtrap(tsk, regs, error_code, si_code);
- 	preempt_conditional_cli(regs);
-+	dec_debug_stack_usage();
- 
- 	return;
- }
+@@ -287,7 +287,7 @@ config SMP
+
+ config X86_X2APIC
+        bool "Support x2apic"
+-       depends on X86_LOCAL_APIC && X86_64 && INTR_REMAP
++       depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+        ---help---
+          This enables x2apic support on CPUs that have this feature.
 
 
+renaming INTR_REMAP IRQ_REMAP cause that.
+
+Attached patch should fix the problem.
+
+Thanks
+
+Yinghai
+
+--001636c92b3ad1c82c04b426533a
+Content-Type: text/x-patch; charset=US-ASCII; name="x2apic_select_irq_remap_again.patch"
+Content-Disposition: attachment; 
+	filename="x2apic_select_irq_remap_again.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gw85geu80
+
+W1BBVENIXSB4ODYsIHgyYXBpYzogc2VsZWN0IElSUV9SRU1BUCBpbnN0ZWFkIG9mIGRlcGVuZHMg
+b24gaXQKCk5pa3VuaiBBIERhZGhhbmlhIGZvdW5kIG9uZSBYMzg1MCB4NSwgZm91bmQgbG90IG9m
+IGFwaWMgd2llcmRuZXNzIHdpdGggMy4yLTNjNS4KCkl0IHR1cm5zIG91dCBtYWtlIG9sZGNvbmZp
+ZyB3aWxsIGRpc2FibGUgeDJhcGljIGluIG5ldyBjb25maWcsIGl0IHdpbGwKbWFrZSB4MmFwaWMg
+cHJlLWVuYWJsZWQgc3lzdGVtIGNvbmZ1c2VkLgoKSXQgaXMgY2F1c2VkIGJ5CnwgaW9tbXU6IFJl
+bmFtZSB0aGUgRE1BUiBhbmQgSU5UUl9SRU1BUCBjb25maWcgb3B0aW9ucwoKd2hpY2ggcmVuYW1l
+ZCBJTlRSX1JFTUFQIHRvIElSUV9SRU1BUC4KCkF0IHZlcnkgYmVnaW5uaW5nLCB3ZSBkbyB1c2Ug
+c2VsZWN0IGluc3RlYWQgb2YgZGVwZW5kcywgYnV0CnwgICAgeDg2LCBpbnRlbC1pb21tdTogZml4
+IFgyQVBJQyAmJiAhQUNQSSBidWlsZCBmYWlsdXJlCmNoYW5nZWQgc2VsZWN0IHRvIGRlcGVuZHMg
+dG8gc29sdmUgIURNQVIgY29tcGlsaW5nIGVycm9yLgoKTm93IHdlIGhhdmUKfCBpb21tdS9jb3Jl
+OiBGaXggYnVpbGQgd2l0aCBJTlRSX1JFTUFQPXkgJiYgQ09ORklHX0RNQVI9bgpha2Egc2VwZXJh
+dGUgSU5UUl9SRU1BUCBhbmQgRE1BUiwgYW5kIG1ha2UgdGhlbSBzZWxlY3QgRE1BUl9UQUJMRQoK
+U28gd2UgY291bGQgY2hhbmdlIGJhY2sgdG8gc2VsZWN0IHdpdGggb3V0IGNvbXBpbGluZyB3aXRo
+ICFETUFSLgoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoK
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L0tjb25maWcgYi9hcmNoL3g4Ni9LY29uZmlnCmluZGV4IDlj
+MWM1ZTAuLmY3ODZjYTYgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L0tjb25maWcKKysrIGIvYXJjaC94
+ODYvS2NvbmZpZwpAQCAtMjg2LDcgKzI4Niw4IEBAIGNvbmZpZyBTTVAKIAogY29uZmlnIFg4Nl9Y
+MkFQSUMKIAlib29sICJTdXBwb3J0IHgyYXBpYyIKLQlkZXBlbmRzIG9uIFg4Nl9MT0NBTF9BUElD
+ICYmIFg4Nl82NCAmJiBJUlFfUkVNQVAKKwlkZXBlbmRzIG9uIFg4Nl9MT0NBTF9BUElDICYmIFg4
+Nl82NAorCXNlbGVjdCBJUlFfUkVNQVAKIAktLS1oZWxwLS0tCiAJICBUaGlzIGVuYWJsZXMgeDJh
+cGljIHN1cHBvcnQgb24gQ1BVcyB0aGF0IGhhdmUgdGhpcyBmZWF0dXJlLgogCg==
+--001636c92b3ad1c82c04b426533a--
