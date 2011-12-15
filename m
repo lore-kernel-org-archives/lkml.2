@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab1LOCxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:53:42 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:36054 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab1LOCxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:53:40 -0500
-Date: Thu, 15 Dec 2011 13:53:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20111215135330.94caf28045fd307801fa5ef9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Dec_2011_13_53_30_+1100_.a=RkJxFFstiaaIk"
+	id S1758623Ab1LOC4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:56:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:4221 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755357Ab1LOC4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 21:56:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102375295"
+Message-ID: <4EE961EC.3050706@linux.intel.com>
+Date: Thu, 15 Dec 2011 10:56:44 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@intel.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Borislav Petkov <bp@amd64.org>, "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 5/6] x86, mce: handle "action required" errors
+References: <cover.1323803130.git.tony.luck@intel.com> <80cbf65ae6e4bd610523cc8568b0c2dcb8c629b6.1323803130.git.tony.luck@intel.com> <4EE86C3A.2070304@linux.intel.com> <CA+8MBbLmeTb3808Xs4boH6KwDqfeSi69yzvHVpOMUzQg47bBZQ@mail.gmail.com>
+In-Reply-To: <CA+8MBbLmeTb3808Xs4boH6KwDqfeSi69yzvHVpOMUzQg47bBZQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Dec_2011_13_53_30_+1100_.a=RkJxFFstiaaIk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2011/12/15 5:30, Tony Luck 写道:
+> On Wed, Dec 14, 2011 at 1:28 AM, Chen Gong<gong.chen@linux.intel.com>  wrote:
+>>> -       if (kill_it&&    tolerant<    3)
+>>>
+>>> +       if (worst != MCE_AR_SEVERITY&&    kill_it&&    tolerant<    3)
+>>>                 force_sig(SIGBUS, current);
+>>
+>>
+>> I think here it should add more comments to clarify why not killing *AR*
+>> case.
+>> Such as: "for SRAR errors, such as DCU/IFU error, on affected logical
+>> processors, it is reasonable that RIPV is 0."
+>
+> I'll look at this - the reason to not kill for AR is that we want to
+> try to recover
+> first (e.g. page could be re-read from disk into a different physical page).
+> In some cases we can recover transparently to the application.
 
-Hi all,
+Oh, yes, these reasons are very important why not killing *AR* events. But my
+point is in a *AR* supported environment, "kill_it" should not be true like
+below:
+         if (!(m.mcgstatus & MCG_STATUS_RIPV))
+                 kill_it = 1;
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-agn.c between commit 81670a491849
-("iwlwifi: tx_sync only on PAN context") from the wireless tree and
-commits from the net-next tree.
+the reason is what I said before. But at that time the worst severity hasn't
+been determined so we have to wati until it is out.
 
-I used the version of this file from the wireless-next tree (where this
-conflict has been resolved).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__15_Dec_2011_13_53_30_+1100_.a=RkJxFFstiaaIk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO6WEqAAoJEECxmPOUX5FEcoMP/1i9u2ihOpZ9mCZkWRJTuqTf
-AqfiZ/+daoePJxB61QM/92rKLGhkD8Lluqvbt53yoXUed6jNUksyhVnJWI7OnleZ
-spXr2LrifDtKMbbzkX2X2VsFRiy2IalcVbhGLJNTPJ2nNEszZzIcaTDkeJ+wfe5w
-ijeAYdihm7qjzga5KaKx5BTX6d75y6eQVF9tq6cZIKAAlfkibWTTaxEmtxKwY7t5
-+VtER+D5ftePTSjl6YgKgIY0xGnQb5uxs75XTsa3ElW0pKtUphXUYeaidh8BF9e3
-2/btAzQIgvGjAV1ZKYgP2Fmw1B6TcgASZT03Nn1N/wHjptCeCnakwAB2CNIq5SWi
-fFrAN9PW8ZjAfSElY57BJbiiDsxr4tGgX09F9dGpV/Lc9JmRnNxei4maRVcgO5Ck
-fsqiylLPBafn016QxXj82X0ScW1aUj/b4DXU3gX8aYJNH9URA9mce6gKW+Uq+hv0
-URFdTDkBZ2+rpnUQxlpVD2s9+ALoqYOOd0Q4ehKQzE2wgv3ZRiwIkaFCM0Z1CbE/
-upp177pQ0Mi5U1qhgFvk1tEC6NgIZkGT4+teAFD7aNgjwFAbAKyysRS2W4PvEd4G
-jZMyuZUe5BWDo2on7FyEDJ/Hvcdizg9cNiv9b91IzcIHmmANR0iRkvhYPyHi2BxS
-zmGAxcrV6UhN2jv8cidQ
-=H9+7
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Dec_2011_13_53_30_+1100_.a=RkJxFFstiaaIk--
+anyway, it is an interesting coincidence, isn't it? :-)
