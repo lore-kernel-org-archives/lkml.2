@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451Ab1LOBE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 20:04:29 -0500
-Received: from mail-pz0-f56.google.com ([209.85.210.56]:64624 "EHLO
-	mail-pz0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758428Ab1LOBE1 convert rfc822-to-8bit (ORCPT
+	id S1758449Ab1LOBJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 20:09:07 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54405 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1LOBJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 20:04:27 -0500
-X-Greylist: delayed 697 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Dec 2011 20:04:27 EST
+	Wed, 14 Dec 2011 20:09:05 -0500
 MIME-Version: 1.0
-Authentication-Results: ls.google.com; spf=pass (google.com: domain of
- csnook@google.com designates internal as permitted sender)
- smtp.mail=csnook@google.com; dkim=pass
- header.i=@google.com
-Date: Wed, 14 Dec 2011 16:52:50 -0800 (PST)
-In-Reply-To: <CAEas1LKNMSxhp-7DpsOOCu0fx6kx5ya-zqsZQgnf6JwzX0E0gw@mail.gmail.com>
-References: <CAEas1LKNMSxhp-7DpsOOCu0fx6kx5ya-zqsZQgnf6JwzX0E0gw@mail.gmail.com>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-Header-Order: ASELCHRU
-X-HTTP-UserAgent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.7 (KHTML,
- like Gecko) Chrome/16.0.912.63 Safari/535.7,gzip(gfe)
-X-Google-IP: 127.6.6.6
-Message-ID: <daec6a41-d318-4142-a3e1-14b8af64af66@b14g2000prn.googlegroups.com>
-Subject: Re: question: why use vzalloc() and vzfree() in mem_cgroup_alloc()
- and mem_cgroup_free()
-From: Chris Snook <csnook@google.com>
-To: Kernel-team <kernel-team@google.com>
-Cc: Laurent Chavey <chavey@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, glommer@parallels.com
+In-Reply-To: <4EE7C74D.1020306@oracle.com>
+References: <4EE7C74D.1020306@oracle.com>
+Date: Thu, 15 Dec 2011 09:09:04 +0800
+X-Google-Sender-Auth: oER8BUkLIKPwINpHmF2-MuT7zQo
+Message-ID: <CANejiEU3v9EwhBaL6+nWLrsp-jetV=TVWU7v4vy1cU34qA92gw@mail.gmail.com>
+Subject: Re: [PATCH] AIO: Don't plug the I/O queue in do_io_submit()
+From: Shaohua Li <shli@kernel.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Andi Kleen <ak@linux.intel.com>, Jeff Moyer <jmoyer@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 14, 12:12 pm, Laurent Chavey <chavey@google.com> wrote:
-> context:
+2011/12/14 Dave Kleikamp <dave.kleikamp@oracle.com>:
+> Asynchronous I/O latency to a solid-state disk greatly increased
+> between the 2.6.32 and 3.0 kernels. By removing the plug from
+> do_io_submit(), we observed a 34% improvement in the I/O latency.
 >
-> While testing patches from Glauber Costa, "adding support
-> for tcp memory allocation in kmem cgroup", we hit a
-> BUG_ON(in_interrupt()) in vfree(). The code path in question
-> is taken because the izeof(struct mem_cgroup) is
+> Unfortunately, at this level, we don't know if the request is to
+> a rotating disk or not.
 >
-> >= PAGE_SIZE in the call to mem_cgroup_free(),
-
-Still, or again? A cursory search turns up this patch:
-
-https://lkml.org/lkml/2010/9/27/147
-
-but I don't have handy any further information about how it fared.
-
-> Since socket may get free in an interrupt context,
-> the combination of vzalloc(), vfree() should not be used
-> when accounting for socket mem (unless the code is modified).
-
-Agreed, but why does socket freeing cause struct mem_cgroup to be
-freed? I think I'm missing something about the kmem cgroup
-implementation.
-
-> question:
+> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> Cc: linux-aio@kvack.org
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
 >
-> Is there reasons why vzalloc() is used in mem_cgroup_alloc() ?
->     . are we seeing mem fragmentations to level that fail
->       kzalloc() or kmalloc().
->     . do we have empirical data that shows the allocation failure
->       rate for kmalloc(), kzalloc() per alloc size (num pages)
-
-Laziness? Last I checked, OpenAFS still called vmalloc() in the
-pageout path, which is a no-no of similar magnitude, because handling
-the failure properly is difficult to code and even more difficult to
-test, and nobody is seeing machines deadlock often enough to justify
-the development effort.
-
-If we're having significant failures in allocating two consecutive
-pages, we'll probably have other problems too, but there are
-conditions where being able to vzalloc that could save you. I suspect
-they're less common than conditions where vzalloc in interrupt context
-would burn you, but I have no empirical data to support that.
-
--- Chris
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 78c514c..d131a2c 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -1696,7 +1696,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>        struct kioctx *ctx;
+>        long ret = 0;
+>        int i = 0;
+> -       struct blk_plug plug;
+>        struct kiocb_batch batch;
+>
+>        if (unlikely(nr < 0))
+> @@ -1716,8 +1715,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>
+>        kiocb_batch_init(&batch, nr);
+>
+> -       blk_start_plug(&plug);
+> -
+>        /*
+>         * AKPM: should this return a partial result if some of the IOs were
+>         * successfully submitted?
+> @@ -1740,7 +1737,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>                if (ret)
+>                        break;
+>        }
+> -       blk_finish_plug(&plug);
+>
+>        kiocb_batch_free(&batch);
+>        put_ioctx(ctx);
+can you explain why this can help? Note, in 3.1 kernel we now force flush
+plug list if the list is too long, which will remove a lot of latency.
