@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1LOGnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 01:43:33 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65057 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab1LOGnc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 01:43:32 -0500
+	id S932234Ab1LOGqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:46:44 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35954 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753748Ab1LOGqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 01:46:43 -0500
+Date: Thu, 15 Dec 2011 07:44:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
+ __memory_failure()
+Message-ID: <20111215064444.GA14237@elte.hu>
+References: <cover.1323803130.git.tony.luck@intel.com>
+ <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
+ <20111214074749.GD25232@elte.hu>
+ <20111214160702.GH23589@aftab>
+ <20111214165459.GB32305@elte.hu>
+ <0207C53569FE594381A4F2EB66570B2A019147EF6A@orsmsx508.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <201112141222.41006.oneukum@suse.de>
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org>
- <201112140901.35203.oneukum@suse.de> <CAGS+omA=9qfqDYtaLp67Xz+WhcpW_=jn9hoiaad43Z+oexjsFQ@mail.gmail.com>
- <201112141222.41006.oneukum@suse.de>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 15 Dec 2011 14:43:09 +0800
-X-Google-Sender-Auth: ubN5qlzETGXLRK2qSAp4sRHN3HM
-Message-ID: <CAGS+omB8kmALYg+m__WpiGzcpTdFEzHz1x3gFFkyqofpnANvNQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-To: Oliver Neukum <oneukum@suse.de>
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0207C53569FE594381A4F2EB66570B2A019147EF6A@orsmsx508.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 7:22 PM, Oliver Neukum <oneukum@suse.de> wrote:
-> Am Mittwoch, 14. Dezember 2011, 11:33:03 schrieb Daniel Kurtz:
->> On Wed, Dec 14, 2011 at 4:01 PM, Oliver Neukum <oneukum@suse.de> wrote:
->> > Am Donnerstag, 17. November 2011, 12:23:50 schrieb Daniel Kurtz:
->> >> Defer LED setting action to a workqueue.
->> >> This is more likely to send all LED change events in a single URB.
->> >
->> > Hi,
->> >
->> > I hope I am looking at the correct version of this patch.
->> > But as far as I can see the work for handling LEDs is not delayed
->> > while a reset is going on. That is wrong.
->>
->> Actually, I'm not sure why this is wrong.  I find the reset handling
->> quite confusing in this driver.
->> Can you point out what will fail, and recommend how to fix it?
->
-> That is part of the workings of a USB driver. After you return from
-> pre_reset() you don't do IO to the device. After post_reset() the
-> device should be in its default state whose LED states won't match
-> what they ought to be.
 
-Hi Oliver,
+* Luck, Tony <tony.luck@intel.com> wrote:
 
-I'm sorry, I'm not seeing how using a workqueue to set the LEDs
-changes anything with respect to how the driver deals with USB reset.
+> > > >  	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
+> > > 
+> > > Btw., while at it, could we phrase this message in a more 
+> > > obvious way to users, such as 'Non-fatal memory failure at 
+> > > %lx ignored'?
+> > 
+> > Yeah, that's might not be as correct as we want it to be. AO 
+> > means it is an uncorrectable error, i.e. it will become fatal 
+> > if we'd consumed it, but it isn't that now because we just saw 
+> > it passing by in the cacheline...
+> > 
+> > Maybe "Fatal, unconsumed error ignored..."
+> 
+> The overall meaning is "land mine seen but not stepped on yet"
 
-With or without a workqueue, LED control urbs are being queued and/or
-submitted asynchronously to reset.  AFAICT, the only thing that
-changes here is exactly when __usbhid_submit_report() is called.  In
-the original case, this happens directly in the input event handler.
-In the workqueue case, it happens in a system worker thread some short
-time after the input handler finishes.
+Perfect message!
 
-Could you please be more specific about what this patch breaks and
-perhaps give some guidance on how to fix it?
+Thanks,
 
-Thanks and Best Regards,
--Daniel
-
->
->        Regards
->                Oliver
+	Ingo
