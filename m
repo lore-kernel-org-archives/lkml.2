@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab1LODFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 22:05:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48020 "EHLO
+	id S1758645Ab1LODKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 22:10:23 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43727 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab1LODFY (ORCPT
+	with ESMTP id S1755964Ab1LODKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 22:05:24 -0500
-Date: Wed, 14 Dec 2011 19:05:21 -0800 (PST)
+	Wed, 14 Dec 2011 22:10:22 -0500
+Date: Wed, 14 Dec 2011 19:10:19 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Pekka Enberg <penberg@kernel.org>
 cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: slub: Fix per cpu partial statistics
-In-Reply-To: <alpine.LFD.2.02.1112120913000.2555@tux.localdomain>
-Message-ID: <alpine.DEB.2.00.1112141858380.27595@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111230924500.16544@router.home> <alpine.LFD.2.02.1112120913000.2555@tux.localdomain>
+Subject: Re: Switch per cpu partial page support off for debugging
+In-Reply-To: <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
+Message-ID: <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111230923260.16544@router.home> <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,57 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 12 Dec 2011, Pekka Enberg wrote:
 
-> > Subject: slub: Fix per cpu partial statistics
+> > Eric saw an issue with accounting of slabs during validation. Its not
+> > possible to determine accurately how many per cpu partial slabs exist at
+> > any time so this switches off per cpu partial pages during debug.
 > > 
-> > Support for SO_OBJECTS was not properly added to show_slab_objects().
+> > Subject: Switch per cpu partial page support off for debugging
 > > 
-> > If SO_OBJECTS is not set then the number of slab pages needs to be
-> > returned and not the number of objects in the partial slabs as now.
-> > 
-> > We do not have that number so just return 1 until we find a better
-> > way to determine that.
+> > Otherwise we have accounting issues.
 > > 
 > > Signed-off-by: Christoph Lameter <cl@linux.com>
 > > 
+> > 
 > > ---
-> > mm/slub.c |   10 +++++++---
-> > 1 file changed, 7 insertions(+), 3 deletions(-)
+> > mm/slub.c |    4 +++-
+> > 1 file changed, 3 insertions(+), 1 deletion(-)
 > > 
 > > Index: linux-2.6/mm/slub.c
 > > ===================================================================
-> > --- linux-2.6.orig/mm/slub.c	2011-11-22 13:42:23.000000000 -0600
-> > +++ linux-2.6/mm/slub.c	2011-11-22 13:47:52.000000000 -0600
-> > @@ -4451,8 +4451,8 @@ static ssize_t show_slab_objects(struct
-> > 				continue;
-> > 
-> > 			if (c->page) {
-> > -					if (flags & SO_TOTAL)
-> > -						x = c->page->objects;
-> > +				if (flags & SO_TOTAL)
-> > +					x = c->page->objects;
-> > 				else if (flags & SO_OBJECTS)
-> > 					x = c->page->inuse;
-> > 				else
+> > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
+> > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
+> > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
+> > 	 *    per node list when we run out of per cpu objects. We only fetch
+> > 50%
+> > 	 *    to keep some capacity around for frees.
+> > 	 */
+> > -	if (s->size >= PAGE_SIZE)
+> > +	if (kmem_cache_debug(s))
+> > +		s->cpu_partial = 0;
+> > +	else if (s->size >= PAGE_SIZE)
+> > 		s->cpu_partial = 2;
+> > 	else if (s->size >= 1024)
+> > 		s->cpu_partial = 6;
 
-This was already fixed up by "slub: avoid potential NULL dereference or 
-corruption" in slab/next, so I suggest dropping this hunk.
-
-> > @@ -4464,7 +4464,11 @@ static ssize_t show_slab_objects(struct
-> > 			page = c->partial;
-> > 
-> > 			if (page) {
-> > -				x = page->pobjects;
-> > +				if (flags & SO_OBJECTS)
-> > +					x = page->pobjects;
-> > +				else
-> > +					/* Assume one */
-> > +					x = 1;
-> >                                 total += x;
-> >                                 nodes[c->node] += x;
-> > 			}
-> > 
-> 
-> Looks OK to me. David, Eric?
-> 
-
-I thought page->pages would be better?
+I think this deserves a comment since it's not clear why it's being done 
+neither in the code or by the changelog.  Also, you'd want a check for 
+kmem_cache_debug() when storing to /sys/kernel/slab/cache/cpu_partial as 
+well, otherwise this could easily be broken from userspace again.  (It 
+also seems like Documentation/ABI/testing/sysfs-kernel-slab got left out 
+of an update when that was added, too.)
