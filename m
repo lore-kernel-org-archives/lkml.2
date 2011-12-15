@@ -1,112 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547Ab1LOBal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 20:30:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22175 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758465Ab1LOBak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 20:30:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="86700815"
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.3
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Dec 2011 17:35:22 -0800
-In-Reply-To: <20111214174736.GF10791@somewhere.redhat.com>
-References: <20111213230243.GA15127@linux.vnet.ibm.com>
-	 <20111214154736.GA2419@elte.hu>
-	 <20111214163007.GD10791@somewhere.redhat.com>
-	 <20111214174736.GF10791@somewhere.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323912922.1984.229.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1758552Ab1LOBbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 20:31:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35456 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758465Ab1LOBby (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Dec 2011 20:31:54 -0500
+Date: Wed, 14 Dec 2011 17:31:06 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-29e9bf1841e4f9df13b4992a716fece7087dd237@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tony.luck@intel.com, bp@amd64.org, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tony.luck@intel.com, bp@amd64.org, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20111215001945.GA21009@linux-os.sc.intel.com>
+References: <20111215001945.GA21009@linux-os.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mce] x86, mce, therm_throt: Don'
+ t report power limit and package level thermal throttle events in mcelog
+Git-Commit-ID: 29e9bf1841e4f9df13b4992a716fece7087dd237
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Dec 2011 17:31:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-14 at 09:47 -0800, Frederic Weisbecker wrote:
-> I don't know how you plan to fix the conflict, by redoing the merge or by
-> applying a patch on tip/master.
-> 
-> In any case, here is a patch you can use. Feel free to apply it as is
-> or to just refer to its diff to redo the merge:
-> 
-> (Outrageously only compile tested)
-> 
-> ---
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Date: Wed, 14 Dec 2011 18:36:00 +0100
-> Subject: [PATCH] sched: Only update the CPU idleness in the domain
->  hierarchy from idle loop entry
-> 
-> We don't need to inform the sched domain hierarchy about the
-> CPU idleness everytime we call tick_nohz_stop_sched_tick() as this
-> includes both idle loop entry and idle interrupt exit.
-> 
-> Doing it once from the idle loop entry is enough, call
-> set_cpu_sd_state_idle() only from tick_nohz_idle_enter() instead
-> to fix this.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Commit-ID:  29e9bf1841e4f9df13b4992a716fece7087dd237
+Gitweb:     http://git.kernel.org/tip/29e9bf1841e4f9df13b4992a716fece7087dd237
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Fri, 4 Nov 2011 13:31:23 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 14 Dec 2011 16:25:26 -0800
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+x86, mce, therm_throt: Don't report power limit and package level thermal throttle events in mcelog
 
-> ---
->  kernel/time/tick-sched.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 1f6dc515..696c997 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -289,14 +289,6 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
->         now = tick_nohz_start_idle(cpu, ts);
-> 
->         /*
-> -        * Update the idle state in the scheduler domain hierarchy
-> -        * when tick_nohz_stop_sched_tick() is called from the idle loop.
-> -        * State will be updated to busy during the first busy tick after
-> -        * exiting idle.
-> -        */
-> -       set_cpu_sd_state_idle();
-> -
-> -       /*
->          * If this cpu is offline and it is the one which updates
->          * jiffies, then give up the assignment and let it be taken by
->          * the cpu which runs the tick timer next. If we don't drop
-> @@ -483,6 +475,14 @@ void tick_nohz_idle_enter(void)
->          * update of the idle time accounting in tick_nohz_start_idle().
->          */
->         ts->inidle = 1;
-> +
-> +       /*
-> +        * Update the idle state in the scheduler domain hierarchy
-> +        * when tick_nohz_idle_enter() is called from the idle loop.
-> +        * State will be updated to busy during the first busy tick after
-> +        * exiting idle.
-> +        */
-> +       set_cpu_sd_state_idle();
->         tick_nohz_stop_sched_tick(ts);
-> 
->         local_irq_enable();
-> --
-> 1.7.5.4
-> 
-> 
+Thermal throttle and power limit events are not defined as MCE errors in x86
+architecture and should not generate MCE errors in mcelog.
 
+Current kernel generates fake software defined MCE errors for these events.
+This may confuse users because they may think the machine has real MCE errors
+while actually only thermal throttle or power limit events happen.
 
+To make it worse, buggy firmware on some platforms may falsely generate
+the events. Therefore, kernel reports MCE errors which users think as real
+hardware errors. Although the firmware bugs should be fixed, on the other hand,
+kernel should not report MCE errors either.
+
+So mcelog is not a good mechanism to report these events. To report the events, we count them in respective counters (core_power_limit_count,
+package_power_limit_count, core_throttle_count, and package_throttle_count) in
+/sys/devices/system/cpu/cpu#/thermal_throttle/. Users can check the counters
+for each event on each CPU. Please note that all CPU's on one package report
+duplicate counters. It's user application's responsibity to retrieve a package
+level counter for one package.
+
+This patch doesn't report package level power limit, core level power limit, and
+package level thermal throttle events in mcelog. When the events happen, only
+report them in respective counters in sysfs.
+
+Since core level thermal throttle has been legacy code in kernel for a while and
+users accepted it as MCE error in mcelog, core level thermal throttle is still
+reported in mcelog. In the mean time, the event is counted in a counter in sysfs
+as well.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Acked-by: Borislav Petkov <bp@amd64.org>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/20111215001945.GA21009@linux-os.sc.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   29 +++++++----------------------
+ 1 files changed, 7 insertions(+), 22 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 787e06c..ce04b58 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -323,17 +323,6 @@ device_initcall(thermal_throttle_init_device);
+ 
+ #endif /* CONFIG_SYSFS */
+ 
+-/*
+- * Set up the most two significant bit to notify mce log that this thermal
+- * event type.
+- * This is a temp solution. May be changed in the future with mce log
+- * infrasture.
+- */
+-#define CORE_THROTTLED		(0)
+-#define CORE_POWER_LIMIT	((__u64)1 << 62)
+-#define PACKAGE_THROTTLED	((__u64)2 << 62)
+-#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
+-
+ static void notify_thresholds(__u64 msr_val)
+ {
+ 	/* check whether the interrupt handler is defined;
+@@ -363,27 +352,23 @@ static void intel_thermal_interrupt(void)
+ 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
+ 				THERMAL_THROTTLING_EVENT,
+ 				CORE_LEVEL) != 0)
+-		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
++		mce_log_therm_throt_event(msr_val);
+ 
+ 	if (this_cpu_has(X86_FEATURE_PLN))
+-		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
++		therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
+-					CORE_LEVEL) != 0)
+-			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
++					CORE_LEVEL);
+ 
+ 	if (this_cpu_has(X86_FEATURE_PTS)) {
+ 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
+-		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
++		therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
+ 					THERMAL_THROTTLING_EVENT,
+-					PACKAGE_LEVEL) != 0)
+-			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
++					PACKAGE_LEVEL);
+ 		if (this_cpu_has(X86_FEATURE_PLN))
+-			if (therm_throt_process(msr_val &
++			therm_throt_process(msr_val &
+ 					PACKAGE_THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
+-					PACKAGE_LEVEL) != 0)
+-				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
+-							  | msr_val);
++					PACKAGE_LEVEL);
+ 	}
+ }
+ 
