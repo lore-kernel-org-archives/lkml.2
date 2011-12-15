@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab1LOC1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:27:19 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50891 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab1LOC1S (ORCPT
+	id S1758595Ab1LOC3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:29:13 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:53295 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab1LOC3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:27:18 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: signedness bug in cma3000_thread_irq()
-In-Reply-To: Your message of "Mon, 12 Dec 2011 01:49:26 EST."
-             <1323672566-16738-1-git-send-email-xi.wang@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1323672566-16738-1-git-send-email-xi.wang@gmail.com>
+	Wed, 14 Dec 2011 21:29:12 -0500
+Date: Thu, 15 Dec 2011 13:29:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bart Van Assche <bvanassche@acm.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: linux-next: build failure after merge of the target-merge tree
+Message-Id: <20111215132902.d0a90a93696702e09b0c60bf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1323916035_2907P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 14 Dec 2011 21:27:15 -0500
-Message-ID: <12775.1323916035@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4EE95B04.0102,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Dec_2011_13_29_02_+1100_HXTn+6Gah25Ftrjk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1323916035_2907P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Thu__15_Dec_2011_13_29_02_+1100_HXTn+6Gah25Ftrjk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 12 Dec 2011 01:49:26 EST, Xi Wang said:
-> The error check (intr_status < 0) didn't work because intr_status is
-> a u8.  Change its type to signed int.
->
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> ---
->  drivers/input/misc/cma3000_d0x.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+Hi Nicholas,
 
-That will fix the signed/unsigned issue.  However, was there a reason
-the field was an 8-bit-wide to begin with?
+After merging the target-merge tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
---==_Exmh_1323916035_2907P
+drivers/infiniband/ulp/srpt/ib_srpt.c:48:39: fatal error: target/target_cor=
+e_device.h: No such file or directory
+
+Caused by commit e0d85e515640 ("ib_srpt: Initial SRP Target merge for
+v3.2-rc1") interacting with commit c4795fb20edf ("target: header
+reshuffle, part2") from the target-updates tree which removed
+include/target/target_core_device.h.
+
+I tried to figure out what set of include files is now needed, but
+couldn't easily, so I have dropped the target-merge tree for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__15_Dec_2011_13_29_02_+1100_HXTn+6Gah25Ftrjk
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFO6VsDcC3lWbTT17ARAn69AJ96UuKJDzCv61DL5GyNr1/V+n1LCgCgiFlq
-lNcRNQJ1S3082GWov4TpFBk=
-=f98b
+iQIcBAEBCAAGBQJO6VtuAAoJEECxmPOUX5FE+awP/0BK60Sa3X830mTQrczL0caW
+kEwTSII3jjV0/PgnAA5Wl0L6e4eEqtCsrAzqY1rdvWJx/tYScbW+RFSSGmJfU8oN
+W6b9DLzjdXVMjVYaHrA/sZ7/Y6s0Uyq14tsGvJ8XhSwIhbhsWFvKPTdYKSUodb46
+dgCtja2xwcQ7YEpwW6UBXrXWVkrvK2/WhhNo5hrbHsj7wRGvBUIDUWyAsD0DydW/
+BOfzj5c6oXzOeNDi1jL2uFEqoALIQJWWDN32ANhLM9wO3U92oQ6e/K8eOZcykNpa
+HSw5Ze8hqxRCKs114iFqGFE6Qk++yIHRAyBI+Ux8CbNsh7aSW3XZzcDahxKTUo5k
+K/TaTppvfjPTIqS4WVU/AmLQBwYeAdZyFbgn6ievOhBpSFhV54EPESl1iK/BuBvx
+LibP1HGG2gGDLTXTZELyS9WYcBVlHuAUm8IY9JTvxfzJ3bclsUhi6RsMr6eSJDeF
+398zr0rb0PtX6FnipzThxNVX0/1FunPVaJRf6VwjL4L5rIEEu3fplJq9DLT9MwZH
+VZrwCjb1y4D+C00GYnmcjszoHydANP+rZK7yPxUIhCXaWc39Lg4Oay5o9AOEaCDc
+CNx7lp+ZduFef5yAr38kBacloq5HW726CI2rODVW1bV+Eexm3EHEBZlCZ8abDMGV
+eUzzSF4cRCDi/C/XpSK2
+=Nyev
 -----END PGP SIGNATURE-----
 
---==_Exmh_1323916035_2907P--
-
+--Signature=_Thu__15_Dec_2011_13_29_02_+1100_HXTn+6Gah25Ftrjk--
