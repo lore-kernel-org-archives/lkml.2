@@ -1,94 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab1LOOHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 09:07:45 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:37811 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1LOOHn (ORCPT
+	id S1758795Ab1LOOXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 09:23:24 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35055 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1LOOXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 09:07:43 -0500
-Subject: Re: iwlagn is getting very shaky
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: Norbert Preining <preining@logic.at>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>
-In-Reply-To: <CANUX_P0sCPAWTsSVXpL3w5witnVi6wrtzTgJ0y6HjC-TYC9swg@mail.gmail.com> (sfid-20111211_205719_337550_081FCE1C)
-References: <20111125122143.GA30404@gamma.logic.tuwien.ac.at>
-	 <CANUX_P1hFzSVPQzd6gq3tLY7hu+LX5suph6uHP+hq6+7rdAK1w@mail.gmail.com>
-	 <20111125123720.GA31564@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2mGQX9H-f7OFusjUrv8ey56JNzFVEdKJkAejsg9zVNkQ@mail.gmail.com>
-	 <CANUX_P1aAz-4TpgSzQ2G=RkJOxXCAVQBja3GNsj_HpMNmqxeUw@mail.gmail.com>
-	 <1322387175.4044.16.camel@jlt3.sipsolutions.net>
-	 <CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com>
-	 <20111128035627.GH1422@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2kYiFCP8uAhLZC_kVEjoyxabRBx3Pn+ndtFus=6hJN7Q@mail.gmail.com>
-	 <20111128042343.GA4619@gamma.logic.tuwien.ac.at>
-	 <20111128232525.GA12719@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2b_ZYr4hHigA+tGa9uakcq3hQXnOiP5isQtfcYxCaxcw@mail.gmail.com>
-	 <1322555472.4110.8.camel@jlt3.sipsolutions.net>
-	 <CANUX_P2YeE1ixzFU5VM-oex0aTURqr54VHt5FVAL9BJ0PuRX_A@mail.gmail.com>
-	 <CANUX_P0sCPAWTsSVXpL3w5witnVi6wrtzTgJ0y6HjC-TYC9swg@mail.gmail.com>
-	 (sfid-20111211_205719_337550_081FCE1C)
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Dec 2011 15:07:33 +0100
-Message-ID: <1323958053.3337.48.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 15 Dec 2011 09:23:23 -0500
+Message-ID: <4EEA02D5.9020309@gmail.com>
+Date: Thu, 15 Dec 2011 08:23:17 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Jamie Iles <jamie@jamieiles.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca> <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca> <20111212232903.GC2616@gallagher> <CACxGe6t50zJNpo=QWPzgFMpQ6Cfi9YZyrKuMSTrrA2oYiLF2Pw@mail.gmail.com> <20111215135129.GA2831@S2100-06.ap.freescale.net>
+In-Reply-To: <20111215135129.GA2831@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I finally looked at this ...
 
-On Sun, 2011-12-11 at 21:56 +0200, Emmanuel Grumbach wrote:
-> >> Could something be hogging the workqueues?
 
-> > So I tried to understand what is going on with the workqueue and ended
-> > up to see that if we are lucky, we can need the workqueue for the BA
-> > handshake (could be AddBA / DelBA handling, or driver callback) while
-> > we are scanning. Which basically means that we will need to wait until
-> > the scan is over to handle these frames / callbacks. I got these
-> > measurements while stopping the BA session:
-> >
-> > * scanning working for roughly 3 seconds (pardon me not being precise,
-> > but with this order of magnitude I don't care much about the single
-> > millisecond..)
-
-Oh. I see, while scanning we won't process the work queue.
-
-> > * when scanning is over, the while loop in ieee80211_iface_work
-> > consumes 73 mgmt for about 34ms.
-> > ( how come we have so many beacons during those 3 seconds..., or maybe
-> > all the BCAST probe request ?, my network is quite busy...)
-> > * then the finally my stop_tx_ba_cb was served which took 10ms (time
-> > takes by the driver).
-> > * another series of beacons (10ms).
+On 12/15/2011 07:51 AM, Shawn Guo wrote:
+> On Tue, Dec 13, 2011 at 10:54:58AM -0700, Grant Likely wrote:
+>> On Mon, Dec 12, 2011 at 4:29 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+>>> Hi Grant,
+>>>
+>>> I'm still going through these and trying to digest them but a couple of
+>>> quick questions/comments.
+>>>
+>>> Jamie
+>>>
+>>> On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
+>>>> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>>> new file mode 100644
+>>>> index 0000000..e40c436
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>>> @@ -0,0 +1,114 @@
+>>>> +This binding is a work-in-progress, and are based on some experimental
+>>>> +work by benh[1].
+>>>> +
+>>>> +Sources of clock signal can be represented by any node in the device
+>>>> +tree.  Those nodes are designated as clock providers.  Clock consumer
+>>>> +nodes use a phandle and clock specifier pair to connect clock provider
+>>>> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
+>>>> +specifier is an array of one more more cells identifying the clock
+>>>> +output on a device.  The length of a clock specifier is defined by the
+>>>> +value of a #clock-cells property in the clock provider node.
+>>>> +
+>>>> +[1] http://patchwork.ozlabs.org/patch/31551/
+>>>> +
+>>>> +==Clock providers==
+>>>> +
+>>>> +Required properties:
+>>>> +#clock-cells:           Number of cells in a clock specifier; typically will be
+>>>> +                set to 1
+>>>
+>>> I'm not sure I fully understand what the extra cells actually mean for
+>>> clocks.  I think the first integer is the clock output to use but some
+>>> of the versatile and highbank ones only have a phandle or is it more
+>>> implementation defined?  The clock-output-names description hints at
+>>> recommended, so I find this a little confusing, but that could just be
+>>> me!
+>>
+>> I'm following convention here that has been established with
+>> interrupts, gpios, and others.  Sometimes more information is needed
+>> that just the clock number.  Using #clock-cells gives a clock provider
+>> the option of having additional fields for clock flags or other data.
+>> This is very much implementation defined.  Simple clock providers that
+>> only have a single clock output can easily use #clock-cells = <0>.
+>> Providers with multiple outputs will need to use 1 or more cells.
+>>
+> It totally destroys my understanding on #clock-cells :)
 > 
-> What about flushing the workqueue before we scan ?
-> This is not a bullet proof solution of course, we will still encounter
-> bad races, but at least  we would flush what we can before the
-> workqueue becomes unable for 4 seconds (!).
+> I thought it's introduced to reduce the clock nodes in dts.  That said,
+> #clock-cells stands for the number of clks we describe in the node.
+> When #clock-cells > 1 for a node, the node becomes a clk blob which
+> actually contains multiple clks.  I migrated the imx6 clock to your
+> first post with this approach [1], using 70 nodes to describe 110
+> clocks (~35% nodes reduced).
+> 
+> Now, you are saying it's not designed for this purpose.  I'm pretty
+> confused, because the only reasonable use of #clock-cells to me is
+> just that way, and I fail to see why we need #clock-cells if we do
+> not use it that way.
+> 
+> http://comments.gmane.org/gmane.linux.drivers.devicetree/9631
 
-Yeah, that seems like a good thing. Actually I had an idea about this
-before -- drain & stop the workqueue for any functions in mac80211/cfg.c
-so that mac80211 essentially becomes single-threaded.
+Think of clock-cells as the size of array elements (minus 1), not the
+number of array elements. If you have more than 1 clock per node, then
+you need more information on the clock input side than just a phandle to
+describe which clock you are using. Typically this would just be the
+phandle plus index of the clock you want. This is just like gpio where
+you have controller phandle plus gpio line number.
 
-> We can also delay the scan if we are in the middle of {add,del}BA
-> handshake, which is the only flow I can think about that needs
-> responsiveness. The other frame exchanges are MLME ones and involve
-> the wpa_supplicant (unless we are using the late WEXT). Hopefully the
-> wpa_supplicant won't request to scan in the middle of association or
-> so. There might be other features (mesh or whatever), that may be
-> hidden from the wpa_supplicant and require good responsiveness from
-> the wq too.
-
-Hm, yeah, that would be an idea too, but I'm not sure it's easy to do
-right now.
-
-johannes
-
+Rob
