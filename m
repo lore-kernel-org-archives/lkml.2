@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942Ab1LOSnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:43:43 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:58383 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1LOSnl (ORCPT
+	id S1759298Ab1LOSny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:43:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50034 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759165Ab1LOSnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:43:41 -0500
-Subject: Re: workqueue_set_max_active(wq, 0)?
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111215183537.GA32002@google.com> (sfid-20111215_193615_022231_7F17D027)
-References: <1323424482.3622.8.camel@jlt3.sipsolutions.net>
-	 <20111209165702.GD12108@google.com>
-	 <1323963492.23550.1.camel@jlt3.sipsolutions.net>
-	 <20111215183537.GA32002@google.com> (sfid-20111215_193615_022231_7F17D027)
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Dec 2011 19:43:40 +0100
-Message-ID: <1323974620.1082.7.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Dec 2011 13:43:52 -0500
+Date: Thu, 15 Dec 2011 22:43:46 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, balbi@ti.com, linux-ide@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>, Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH v2] ahci: platform support for suspend/resume
+Message-ID: <20111215184346.GA15602@oksana.dev.rtsoft.ru>
+References: <1321643410-16102-1-git-send-email-computersforpeace@gmail.com>
+ <20111118192809.GF11736@legolas.emea.dhcp.ti.com>
+ <CAN8TOE-yZyHC3n+dSu9wZ=UBmenD67OHbAyrF2K_sgf0O7oUJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAN8TOE-yZyHC3n+dSu9wZ=UBmenD67OHbAyrF2K_sgf0O7oUJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> > @@ -51,6 +51,7 @@ enum {
-> >  	GCWQ_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
-> >  	GCWQ_FREEZING		= 1 << 3,	/* freeze in progress */
-> >  	GCWQ_HIGHPRI_PENDING	= 1 << 4,	/* highpri works on queue */
-> > +	GCWQ_PAUSING		= 1 << 5,
+On Thu, Dec 15, 2011 at 10:13:19AM -0800, Brian Norris wrote:
+> On Fri, Nov 18, 2011 at 11:28 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Fri, Nov 18, 2011 at 11:10:10AM -0800, Brian Norris wrote:
+> >> Add platform hooks for custom suspend() and resume() functions. The
+> >> generic suspend/resume code in drivers/ata/ahci_platform.c is adapted
+> >> from the PCI version in drivers/ata/ahci.c.
+> >>
+> >> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> >
+> > Reviewed-by: Felipe Balbi <balbi@ti.com>
 > 
-> Hmmm... confused.  Pausing is per-wq, why is this flag on gcwq?
-> Shouldn't it be on workqueue_struct?
-
-Hm, no idea :-)
-I just copied FREEZING really without knowing what I was doing. I'm not
-very familiar with this code (yet).
-
-> > +void pause_workqueue(struct workqueue_struct *wq)
-> > +{
-> > +	unsigned int cpu;
-> > +
-> > +	for_each_cwq_cpu(cpu, wq) {
-> > +		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-> > +		struct global_cwq *gcwq = cwq->gcwq;
-> > +
-> > +		spin_lock_irq(&gcwq->lock);
-> > +
-> > +		WARN_ON(gcwq->flags & GCWQ_PAUSING);
-> > +		gcwq->flags |= GCWQ_PAUSING;
-> > +
-> > +		cwq->max_active = 0;
-> > +
-> > +		spin_unlock_irq(&gcwq->lock);
-> > +	}
-> > +
-> > +	wait_event(wq->waitq, count_active(wq) == 0);
-> > +}
-> > +EXPORT_SYMBOL(pause_workqueue);
+> Thanks for the review, Felipe.
 > 
-> What if there are multiple callers of this function on the same wq?
-> Maybe something like wq->pause_depth and also use it from freeze path?
+> What's the status on this? There have been no comments for almost a
+> month. Can it be merged?
 
-Hm, good point. We can't abstract out all of it -- the freezer API
-doesn't want to wait for it to finish -- but probably a bit of it.
+FWIW, the patch looks quite useful. Hope this will help:
 
-How do you iterate workqueues? We'd have to do that for the freezer
-part, unless we want to work on CWQs again.
+Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
 
-Actually I'm not really sure I understand the differences between WQ,
-CWQ and GCWQ...
+Thanks!
 
-> > +void resume_workqueue(struct workqueue_struct *wq)
-> > +{
-> > +	unsigned int cpu;
-> > +
-> > +	for_each_cwq_cpu(cpu, wq) {
-> > +		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-> > +		struct global_cwq *gcwq = cwq->gcwq;
-> > +
-> > +		spin_lock_irq(&gcwq->lock);
-> > +
-> > +		WARN_ON(!(gcwq->flags & GCWQ_PAUSING));
-> > +		gcwq->flags &= ~GCWQ_PAUSING;
-> > +
-> > +		cwq->max_active = wq->saved_max_active;
-> > +
-> > +		wake_up_worker(gcwq);
-> > +		spin_unlock_irq(&gcwq->lock);
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(resume_workqueue);
-> 
-> I don't think wake_up_worker() would be sufficient.
-> cwq_activate_first_delayed() needs to be called to kick the delayed
-> work items.
-
-Hm, ok.
-
-> I think it would be great if this can be abstracted out so that both
-> the freezer and explicit pausing use the same facility.  They aren't
-> that different after all.
-
-I'll take a look tomorrow. If you want to beat me to it ... ;-)
-
-johannes
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
