@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab1LOThD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:37:03 -0500
-Received: from mail-gy0-f202.google.com ([209.85.160.202]:60978 "EHLO
-	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab1LOThA (ORCPT
+	id S1756481Ab1LOTmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:42:00 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39233 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751504Ab1LOTl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:37:00 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, stable@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>, Olof Johansson <olofj@chromium.org>
-Subject: [PATCH] cgroups: fix a css_set not found bug in cgroup_attach_proc
-Date: Thu, 15 Dec 2011 11:36:43 -0800
-Message-Id: <1323977803-5385-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 15 Dec 2011 14:41:58 -0500
+X-Sasl-enc: diyArKhT91kqTJEtOTJ57iVK7RAGA0Nj8qM8MKW+w4dW 1323978117
+Date: Thu, 15 Dec 2011 11:41:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] more USB fixes for 3.2
+Message-ID: <20111215194149.GA24990@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a BUG when migrating a PF_EXITING proc. Since css_set_prefetch()
-is not called for the PF_EXITING case, find_existing_css_set() will return
-NULL inside cgroup_task_migrate() causing a BUG.
+Here are a small number of USB fixes and new device ids for the 3.2 tree.
 
-This bug is easy to reproduce. Create a zombie and echo its pid to
-cgroup.procs.
+All pretty minor, full details are in the shortlog below.
 
-$ cat zombie.c
-\#include <unistd.h>
+Please pull from:
+	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-linus
 
-int main()
-{
-  if (fork())
-      pause();
-  return 0;
-}
-$
+All have been in the -next releases for a while.
 
-We are hitting this bug pretty regularly on ChromeOS.
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
-This bug is already fixed by Tejun Heo's cgroup patchset which is
-targetted for the next merge window:
+thanks,
 
-https://lkml.org/lkml/2011/11/1/356
+greg k-h
 
-I've create a smaller patch here which just fixes this bug so that a
-fix can be merged into the current release and stable.
+------------
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Downstream-Bug-Report: http://crosbug.com/23953
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
-Cc: stable@kernel.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Olof Johansson <olofj@chromium.org>
----
- kernel/cgroup.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c          |   10 ++++++++++
+ drivers/usb/gadget/f_mass_storage.c  |    1 +
+ drivers/usb/renesas_usbhs/mod.c      |    2 +-
+ drivers/usb/renesas_usbhs/mod_host.c |    1 +
+ drivers/usb/serial/option.c          |    7 ++++++-
+ 5 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d9d5648..a184470 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2098,11 +2098,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 			continue;
- 		/* get old css_set pointer */
- 		task_lock(tsk);
--		if (tsk->flags & PF_EXITING) {
--			/* ignore this task if it's going away */
--			task_unlock(tsk);
--			continue;
--		}
- 		oldcg = tsk->cgroups;
- 		get_css_set(oldcg);
- 		task_unlock(tsk);
--- 
-1.7.3.1
+---------------
+
+Alex Hermann (1):
+      usb: option: Add Huawei E398 controlling interfaces
+
+Bjørn Mork (1):
+      USB: option: Removing one bogus and adding some new Huawei combinations
+
+Krzysztof Hałasa (1):
+      USB: cdc-acm: add IDs for Motorola H24 HSPA USB module.
+
+Kuninori Morimoto (2):
+      usb: renesas_usbhs: typofix: irq_dtch control DTCHE
+      usb: renesas_usbhs: add hcd->has_tt for low/full speed
+
+Yu Xu (1):
+      usb: gadget: storage: release superspeed descriptors.
 
