@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274Ab1LOSLF (ORCPT <rfc822;w@1wt.eu>);
+	id S1759313Ab1LOSLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:11:08 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33684 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759235Ab1LOSLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Dec 2011 13:11:05 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60833 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756308Ab1LOSLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:11:03 -0500
-Date: Thu, 15 Dec 2011 10:10:44 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: ext4 data=writeback performs worse than data=ordered now
-Message-ID: <20111215181044.GD8233@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111214133400.GA18565@localhost> <20111214143014.GB18080@thunk.org> <1323910977.22361.423.camel@sli10-conroe> <20111215012039.GC8233@tux1.beaverton.ibm.com> <1323913345.22361.442.camel@sli10-conroe>
+Date: Thu, 15 Dec 2011 19:09:06 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 1/6] HWPOISON: clean up memory_failure() vs.
+ __memory_failure()
+Message-ID: <20111215180906.GB30567@elte.hu>
+References: <cover.1323803130.git.tony.luck@intel.com>
+ <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
+ <20111214074749.GD25232@elte.hu>
+ <20111214160702.GH23589@aftab>
+ <20111214165459.GB32305@elte.hu>
+ <0207C53569FE594381A4F2EB66570B2A019147EF6A@orsmsx508.amr.corp.intel.com>
+ <20111215064444.GA14237@elte.hu>
+ <CA+8MBbLRSnVFyxe=QcWyRdiMyU-MUYmtJXoZMfw8aC3tPj1BHw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323913345.22361.442.camel@sli10-conroe>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11121518-5518-0000-0000-0000010446AB
+In-Reply-To: <CA+8MBbLRSnVFyxe=QcWyRdiMyU-MUYmtJXoZMfw8aC3tPj1BHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 09:42:25AM +0800, Shaohua Li wrote:
-> On Thu, 2011-12-15 at 09:20 +0800, Darrick J. Wong wrote:
-> > On Thu, Dec 15, 2011 at 09:02:57AM +0800, Shaohua Li wrote:
-> > > On Wed, 2011-12-14 at 22:30 +0800, Ted Ts'o wrote:
-> > > > On Wed, Dec 14, 2011 at 09:34:00PM +0800, Wu Fengguang wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > Shaohua recently found that ext4 writeback mode could perform worse
-> > > > > than ordered mode in some cases. It may not be a big problem, however
-> > > > > we'd like to share some information on our findings.
-> > > > > 
-> > > > > I tested both 3.2 and 3.1 kernels on normal SATA disks and USB key.
-> > > > > The interesting thing is, data=writeback used to run a bit faster
-> > > > > than data=ordered, however situation get inverted presumably by the
-> > > > > IO-less dirty throttling.
-> > > > 
-> > > > Interesting.  What sort of workloads are you using to do these
-> > > > measurements?  How many writer threads; I assume you are doing
-> > > > sequential writes which are extending one or more files, etc?
-> > > > 
-> > > > I suspect it's due to the throttling meaning that each thread is
-> > > > getting to send less data to the disk, and so there is more seeking
-> > > > going on with data=writeback, where as with data=ordered, at each
-> > > > journal commit we are forcing all of the dirty pages out to disk, one
-> > > > inode at a time, and this is resulting in a more efficient writeback
-> > > > compared to when the writeback code is getting to make its own choices
-> > > > about how much each inode gets to write out at at time.
-> > > > 
-> > > > It would be interesting to see what would happen if in
-> > > > ext4_da_writepages(), we completely ignore how many pages are
-> > > > requested to be written back by the writeback code, and just simply
-> > > > write back all of the dirty pages, and see if that brings the
-> > > > performance back.
-> > > I saw the issue in a machine with a LSI 1068e HBA card and 12 disks.
-> > > there is about 20% performance regression with data=writeback comparing
-> > > 3.1 and 3.2-rc. with data=order, there is small regression too.
-> > > Reverting writeback changes recover the regression for both cases.
-> > > 
-> > > My investigation shows the block size writing to disk isn't changed with
-> > > data=writeback. The block size is still very big, 256k IIRC, which is
-> > > the max block size in the disks. And I just have one thread for each
-> > > disk, so seek definitely isn't a problem in my workload.
-> > > 
-> > > I found sometimes one disk hasn't any request inflight, but we can't
-> > > send request to the disk, because the scsi host's resource (the queue
-> > > depth) is used out, looks we send too many requests from other disks and
-> > > leave some disks starved. The resource imbalance in scsi isn't a new
-> > 
-> > I wonder, does the patch in:
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/02339.html
-> > help with this starvation problem?  I noticed a similar problem and sent a
-> > patch, but LSI folks never responded.  Maybe two complaining users can change
-> > that.  The biggest MaxQ I've seen on LSI SAS is 511, and the driver clamps the
-> > value it passes to the SCSI layer to whatever the controller reports as its
-> > MaxQ (in /proc/mpt/summary).
-> this should recover the regression too. But I'm afraid it's just a
-> workaround and will hide some issues. what if I have 120 disks instead
-> of 12 disks? I observed one disk can burst 20 requests while the total
-> the scsi host queue depth is 127, leaving other disks starved. I'm
-> hoping to understand why there is such imbalance.
 
-<shrug> I didn't say it would /fix/ the imbalanced-starvation problem, but we
-might as well take full advantage of the hardware.  Even if all it does is
-enable the user to plug in more disks before things get whacky, I was hoping
-that someone else could at least give it a spin and say "Yes, this does what
-it's alleged to do, and without breaking things". :)
+* Tony Luck <tony.luck@intel.com> wrote:
 
-afaict SCSI doesn't try to balance requests heading towards the HBA; it's all
-FCFS.
-
---D
+> On Wed, Dec 14, 2011 at 10:44 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >> The overall meaning is "land mine seen but not stepped on yet"
+> >
+> > Perfect message!
 > 
-> Thanks,
-> Shaohua
+> How about:
 > 
+> Uncorrected memory error in page 0x%lx ignored
+> Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling
 
+Yeah, sounds good.
+
+Thanks,
+
+	Ingo
