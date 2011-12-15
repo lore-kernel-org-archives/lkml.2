@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759548Ab1LOV45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 16:56:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43448 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab1LOV44 (ORCPT
+	id S1759563Ab1LOWAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:00:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42217 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab1LOWAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 16:56:56 -0500
-Date: Thu, 15 Dec 2011 22:56:49 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Siarhei Siamashka <siarhei.siamashka@nokia.com>,
-        Valdis.Kletnieks@vt.edu, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nokia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] [RESEND] Handle instruction cache maintenance fault
- properly
-Message-ID: <20111215215649.GJ24496@pengutronix.de>
-References: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 15 Dec 2011 17:00:30 -0500
+Date: Thu, 15 Dec 2011 14:00:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>, serge.hallyn@canonical.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
+Subject: Re: [PATCH][V4] Add reboot_pid_ns to handle the reboot syscall
+Message-Id: <20111215140028.e1b8a6a7.akpm@linux-foundation.org>
+In-Reply-To: <20111214191739.GA14693@redhat.com>
+References: <1323649064-7960-1-git-send-email-daniel.lezcano@free.fr>
+	<1323649064-7960-2-git-send-email-daniel.lezcano@free.fr>
+	<20111213162242.1ab3cb1a.akpm@linux-foundation.org>
+	<20111214191739.GA14693@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 14 Dec 2011 20:17:39 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-On Tue, May 11, 2010 at 01:33:14PM +0300, Kirill A. Shutemov wrote:
-> Between "clean D line..." and "invalidate I line" operations in
-> v7_coherent_user_range(), the memory page may get swapped out.
-> And the fault on "invalidate I line" could not be properly handled
-> causing the oops.
+> > It would be
+> > better to do
+> >
+> > #ifdef CONFIG_PID_NS
+> > extern void pidns_handle_reboot(int cmd);
+> > #else
+> > static inline void pidns_handle_reboot(int cmd)
+> > {
+> > }
+> > #endif
 > 
-> In ARMv6 "external abort on linefetch" replaced by "instruction cache
-> maintenance fault". Let's handle it as translation fault. It fixes the
-> issue.
+> Can't resist.
 > 
-> I'm not sure if it's reasonable to check arch version in run-time.
-> Let's do it in compile time for now.
+> Why the kernel always prefers to do it this way, adding the ugly
+> do-nothing inlines?
 > 
-> Signed-off-by: Siarhei Siamashka <siarhei.siamashka@nokia.com>
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-I found this patch in Catalin's stack that I picked up to get support
-for Cortex-M3. Is this still relevant?
+> Isn't it better to simply call pidns_handle_reboot(cmd) under
+> CONFIG_PID_NS in sys_reboot() ?
+> 
+> 	#ifdef CONFIG_PID_NS
+> 	if (task_active_pid_ns(current) != &init_pid_ns)
+> 		return reboot_pid_ns(cmd);
+> 	#endif
 
-Best regards
-Uwe
-
-> Sorry for resend. I've made mistake in maillist address.
-> 
-> ---
->  arch/arm/mm/fault.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> index 9d40c34..7f193ea 100644
-> --- a/arch/arm/mm/fault.c
-> +++ b/arch/arm/mm/fault.c
-> @@ -463,7 +463,12 @@ static struct fsr_info {
->  	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
->  	{ do_bad,		SIGKILL, 0,		"terminal exception"		   },
->  	{ do_bad,		SIGILL,	 BUS_ADRALN,	"alignment exception"		   },
-> +/* Do we need runtime check ? */
-> +#if __LINUX_ARM_ARCH__ < 6
->  	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
-> +#else
-> +	{ do_translation_fault,	SIGSEGV, SEGV_MAPPER,	"I-cache maintenance
-> fault"	   },
-> +#endif
->  	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation
-> fault"	   },
->  	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
->  	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
-> -- 
-> 1.7.0.4
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Imagine what the code would look like if we took all the existing empty
+inline stubs and replaced them with #if/#else/#endif.
