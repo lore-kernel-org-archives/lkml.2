@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab1LOTJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:09:17 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56264 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751300Ab1LOTJQ (ORCPT
+	id S1759394Ab1LOTKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:10:11 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51322 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751300Ab1LOTKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:09:16 -0500
-Message-ID: <4EEA45C6.2020106@fb.com>
-Date: Thu, 15 Dec 2011 11:08:54 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 15 Dec 2011 14:10:08 -0500
+X-Sasl-enc: fgjaplDP6rTW6RBAEWT9atnZ86CZZEcpyeALdQjp/4N8 1323976207
+Date: Thu, 15 Dec 2011 11:09:54 -0800
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20111215190954.GA23633@kroah.com>
+References: <20111215173754.87103f66f6188693933cb539@canb.auug.org.au>
+ <20111215072103.GA13747@kroah.com>
+ <CAPXgP102rHBUAik0pBZuMVG0JVqHeJ8cNgSOzGWci3MBDoRUSg@mail.gmail.com>
 MIME-Version: 1.0
-To: <avagin@gmail.com>
-CC: <avagin@openvz.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 3/4] trace: add ability to collect call chain of non-current
- task.
-References: <1317052535-1765247-1-git-send-email-avagin@openvz.org> <1317052535-1765247-4-git-send-email-avagin@openvz.org> <1317132351.15383.66.camel@twins> <20110927205548.GN18553@somewhere> <4EE01ACB.1000102@fb.com> <4EE1EC0B.4020600@openvz.org> <4EE903B1.7000600@fb.com> <4EEA101C.7060505@gmail.com>
-In-Reply-To: <4EEA101C.7060505@gmail.com>
-Content-Type: text/plain; charset="KOI8-R"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-15_05:2011-12-15,2011-12-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP102rHBUAik0pBZuMVG0JVqHeJ8cNgSOzGWci3MBDoRUSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 15, 2011 at 11:10:26AM +0100, Kay Sievers wrote:
+> On Thu, Dec 15, 2011 at 08:21, Greg KH <greg@kroah.com> wrote:
+> > On Thu, Dec 15, 2011 at 05:37:54PM +1100, Stephen Rothwell wrote:
+> >> After merging the driver-core tree, today's linux-next build (x86_64
+> >> allmodconfig) failed like this:
+> >>
+> >> drivers/xen/xen-selfballoon.c:305:36: error: expected ')' before '(' token
+> >> drivers/xen/xen-selfballoon.c:327:42: error: expected ')' before '(' token
+> >> drivers/xen/xen-selfballoon.c:349:48: error: expected ')' before '(' token
+> >>
+> >> etc ...
+> >>
+> >> [Along with many warnings like:
+> >>
+> >> drivers/xen/xen-selfballoon.c:284:8: warning: 'struct device_attribute' declared inside parameter list [enabled by default]
+> >> ]
+> >>
+> >> Presumably caused by commit drivers/xen/xen-selfballoon.c ("xen-balloon:
+> >> convert sysdev_class to a regular subsystem").
+> >
+> > Ick, Kay, can you make a fix-up patch?
+> >
+> > And here I thought I built xen in my test kernel, crap, sorry about
+> > that.
+> 
+> It seems it's a compiler version issue, or similar. I'm unable to
+> reproduce it here, allmodconfig and the Xen part gets through without
+> any problems.
+> 
+> I guess we both have very recent systems again. :)
+> 
+> I expect adding a device.h include will fix it. I'll send you a patch.
 
+Yeah, that fixed it (I was able to duplicate this on my laptop, odd that
+my build machine didn't show it.)
 
-On 12/15/11 7:19 AM, Andrew Vagin wrote:
+Now pushed out to my tree.
 
->>> * It doesn't distinguish blocking time and sleeping time.
->>
->> Can't we distinguish based on next->state?
-> It will be "Running". We can distinguish based on block_start of
-> sleep_start
+thanks,
 
-Sounds good.
-
->>
->>> * This patch does a bit mess between subsystems...
->>
->> Which subsystems?
-> sched_switch belongs to scheduler.
-> sched_stat belongs to sched_fair.
->
-
-My reading of the code is that 'struct sched_statistics' is independent 
-of the scheduling class. But only sched_fair.c is actually populating 
-the stats. Other classes could populate those fields if they choose to.
-
-> It works for me. You can find output of commands bellow.
->
-> # ./perf record -e sched:sched_switch -agP
-
-Thanks. I forgot to use the -P option you added on my cmdline.
-
-I still need to investigate why per-process mode (command line without 
--a) doesn't work. Will send an updated patch once that's fixed.
-
-  -Arun
-
+greg k-h
