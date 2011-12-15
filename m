@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab1LOGtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 01:49:10 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:41880 "EHLO mx2.parallels.com"
+	id S1757187Ab1LOGuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 01:50:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40139 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755231Ab1LOGtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 01:49:08 -0500
-Message-ID: <4EE9983A.3060101@parallels.com>
-Date: Thu, 15 Dec 2011 10:48:26 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755231Ab1LOGuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 01:50:17 -0500
+Date: Thu, 15 Dec 2011 07:48:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2011.2] fs: symlink restrictions on sticky directories
+Message-ID: <20111215064817.GB14237@elte.hu>
+References: <20111215004311.GA11049@www.outflux.net>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <kamezawa.hiroyu@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v9 0/9] Request for inclusion: per-cgroup tcp memory pressure
- controls
-References: <1323676029-5890-1-git-send-email-glommer@parallels.com> <20111215144019.03706ff7.kamezawa.hiroyu@jp.fujitsu.com> <20111215.004836.402973956281143052.davem@davemloft.net>
-In-Reply-To: <20111215.004836.402973956281143052.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111215004311.GA11049@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 09:48 AM, David Miller wrote:
-> From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 15 Dec 2011 14:40:19 +0900
->
->> I met this bug at _1st_ run. Please enable _all_ debug options!.
->
-> Plus the CONFIG_NET=n and other build failures.
->
-> This patch series was seriously rushed, and very poorly handled.
->
-> Yet I kept getting so much pressure to review, comment upon, and
-> ultimately apply these patches.  Never, ever, do this to me ever
-> again.
->
-> If I don't feel your patches are high priority enough or ready enough
-> for me to review, then TOO BAD.  Don't ask people to pressure me or
-> get my attention.  Instead, ask others for help and do testing before
-> wasting MY time and crapping up MY tree.
->
-> I should have noticed a red flag when I have James Bottomly asking me
-> to look at these patches, I should have pushed back.  Instead, I
-> relented, and now I'm very seriously regretting it.
->
-> All the regressions in the net-next tree over the past several days
-> have been due to this patch set, and this patch set alone.
->
-> This code wasn't ready and needed, at a minimum, several more weeks of
-> work before being put in.
->
-> Instead, we're going to bandaid patch it up after the fact, rather
-> than just letting these changes mature naturally during the review
-> process.
-Hi Dave,
 
-You are right about all points. I will admit to it, face it, and 
-apologize it.
-I guess the best I can do right now is fix whatever you guys point me to 
-and not repeat it in the future.
+* Kees Cook <keescook@chromium.org> wrote:
 
-Thanks
+> +	/* Check parent directory mode and owner. */
+> +	spin_lock(&dentry->d_lock);
+> +	parent = dentry->d_parent->d_inode;
+> +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
+> +	    parent->i_uid != inode->i_uid) {
+> +		error = -EACCES;
+> +	}
+> +	spin_unlock(&dentry->d_lock);
+> +
+> +#ifdef CONFIG_AUDIT
+> +	if (error) {
+> +		struct audit_buffer *ab;
+> +
+> +		ab = audit_log_start(current->audit_context,
+> +				     GFP_ATOMIC, AUDIT_AVC);
+> +		audit_log_format(ab, "op=follow_link action=denied");
+> +		audit_log_d_path(ab, "path=", &nameidata->path);
+> +		audit_log_format(ab, " name=");
+> +		audit_log_untrustedstring(ab, dentry->d_name.name);
+> +		audit_log_format(ab, " dev=%s ino=%lu",
+> +				 inode->i_sb->s_id,
+> +				 inode->i_ino);
+> +		audit_log_end(ab);
+> +	}
+> +#endif
+
+Hm, is GFP_ATOMIC really necessary here? Why not GFP_KERNEL? 
+This is in VFS process context, not in some atomic context that 
+has to be careful about allocations, right?
+
+Thanks,
+
+	Ingo
