@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab1LOQi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:38:29 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:57770 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758988Ab1LOQi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:38:28 -0500
-X-SpamScore: 7
-X-BigFish: VPS7(z1039ozzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LW97AY-01-5FI-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 2/4] perf record: Make feature initialization generic
-Date: Thu, 15 Dec 2011 17:32:40 +0100
-Message-ID: <1323966762-8574-3-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1323966762-8574-1-git-send-email-robert.richter@amd.com>
-References: <1323966762-8574-1-git-send-email-robert.richter@amd.com>
+	id S932613Ab1LOQig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:38:36 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55139 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759053Ab1LOQia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 11:38:30 -0500
+From: <pavan_savoy@ti.com>
+To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH v2 1/3] drivers:misc: ti-st: protect registrations
+Date: Thu, 15 Dec 2011 10:38:20 -0600
+Message-ID: <1323967102-13380-2-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1323967102-13380-1-git-send-email-pavan_savoy@ti.com>
+References: <1323967102-13380-1-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loop over all features to enable it instead of explicitly enabling
-every single feature. Reducing duplicate code and making it more
-robust to later changes e.g. when adding more features.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Concurrent access to UART2/combo-interface by multiple protocol drivers such
+as BT, FM and GPS caused issues during firmware download failure cases or
+cases when the firmware download took longer than usual.
+
+This was because of un-safe access to protos_registered & st_states.
+Protecting this will also make the registration complete callback un-safe for
+sleep.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- tools/perf/builtin-record.c |   28 +++++++++-------------------
- tools/perf/util/header.h    |    1 +
- 2 files changed, 10 insertions(+), 19 deletions(-)
+ drivers/misc/ti-st/st_core.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index ec230e2..4684e7f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -375,7 +375,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index ba168a7..2b62232 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -137,6 +137,8 @@ void st_send_frame(unsigned char chnl_id, struct st_data_s *st_gdata)
+  * st_reg_complete -
+  * to call registration complete callbacks
+  * of all protocol stack drivers
++ * This function is being called with spin lock held, protocol drivers are
++ * only expected to complete their waits and do nothing more than that.
+  */
+ void st_reg_complete(struct st_data_s *st_gdata, char err)
  {
- 	struct stat st;
- 	int flags;
--	int err, output;
-+	int err, output, feat;
- 	unsigned long waking = 0;
- 	const bool forks = argc > 0;
- 	struct machine *machine;
-@@ -442,8 +442,14 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+@@ -538,11 +540,12 @@ long st_register(struct st_proto_s *new_proto)
+ 		set_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
+ 		st_recv = st_kim_recv;
  
- 	rec->session = session;
- 
--	if (!rec->no_buildid)
--		perf_header__set_feat(&session->header, HEADER_BUILD_ID);
-+	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
-+		perf_header__set_feat(&session->header, feat);
++		/* enable the ST LL - to set default chip state */
++		st_ll_enable(st_gdata);
 +
-+	if (rec->no_buildid)
-+		perf_header__clear_feat(&session->header, HEADER_BUILD_ID);
+ 		/* release lock previously held - re-locked below */
+ 		spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 
+-		/* enable the ST LL - to set default chip state */
+-		st_ll_enable(st_gdata);
+ 		/* this may take a while to complete
+ 		 * since it involves BT fw download
+ 		 */
+@@ -553,10 +556,13 @@ long st_register(struct st_proto_s *new_proto)
+ 			    (test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
+ 				pr_err(" KIM failure complete callback ");
+ 				st_reg_complete(st_gdata, err);
++				clear_bit(ST_REG_PENDING, &st_gdata->st_state);
+ 			}
+ 			return -EINVAL;
+ 		}
+ 
++		spin_lock_irqsave(&st_gdata->lock, flags);
 +
-+	if (!have_tracepoints(&evsel_list->entries))
-+		perf_header__clear_feat(&session->header, HEADER_TRACE_INFO);
+ 		clear_bit(ST_REG_IN_PROGRESS, &st_gdata->st_state);
+ 		st_recv = st_int_recv;
  
- 	if (!rec->file_new) {
- 		err = perf_session__read_header(session, output);
-@@ -451,22 +457,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 			goto out_delete_session;
- 	}
+@@ -576,10 +582,10 @@ long st_register(struct st_proto_s *new_proto)
+ 		if (st_gdata->is_registered[new_proto->chnl_id] == true) {
+ 			pr_err(" proto %d already registered ",
+ 				   new_proto->chnl_id);
++			spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 			return -EALREADY;
+ 		}
  
--	if (have_tracepoints(&evsel_list->entries))
--		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
--
--	perf_header__set_feat(&session->header, HEADER_HOSTNAME);
--	perf_header__set_feat(&session->header, HEADER_OSRELEASE);
--	perf_header__set_feat(&session->header, HEADER_ARCH);
--	perf_header__set_feat(&session->header, HEADER_CPUDESC);
--	perf_header__set_feat(&session->header, HEADER_NRCPUS);
--	perf_header__set_feat(&session->header, HEADER_EVENT_DESC);
--	perf_header__set_feat(&session->header, HEADER_CMDLINE);
--	perf_header__set_feat(&session->header, HEADER_VERSION);
--	perf_header__set_feat(&session->header, HEADER_CPU_TOPOLOGY);
--	perf_header__set_feat(&session->header, HEADER_TOTAL_MEM);
--	perf_header__set_feat(&session->header, HEADER_NUMA_TOPOLOGY);
--	perf_header__set_feat(&session->header, HEADER_CPUID);
--
- 	if (forks) {
- 		err = perf_evlist__prepare_workload(evsel_list, opts, argv);
- 		if (err < 0) {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index ac4ec95..e68f617 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -11,6 +11,7 @@
+-		spin_lock_irqsave(&st_gdata->lock, flags);
+ 		add_channel_to_table(st_gdata, new_proto);
+ 		st_gdata->protos_registered++;
+ 		new_proto->write = st_write;
+@@ -619,7 +625,7 @@ long st_unregister(struct st_proto_s *proto)
  
- enum {
- 	HEADER_RESERVED		= 0,	/* always cleared */
-+	HEADER_FIRST_FEATURE	= 1,
- 	HEADER_TRACE_INFO	= 1,
- 	HEADER_BUILD_ID,
+ 	spin_lock_irqsave(&st_gdata->lock, flags);
  
+-	if (st_gdata->list[proto->chnl_id] == NULL) {
++	if (st_gdata->is_registered[proto->chnl_id] == false) {
+ 		pr_err(" chnl_id %d not registered", proto->chnl_id);
+ 		spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 		return -EPROTONOSUPPORT;
+@@ -629,6 +635,10 @@ long st_unregister(struct st_proto_s *proto)
+ 	remove_channel_from_table(st_gdata, proto);
+ 	spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 
++	/* paranoid check */
++	if (st_gdata->protos_registered < ST_EMPTY)
++		st_gdata->protos_registered = ST_EMPTY;
++
+ 	if ((st_gdata->protos_registered == ST_EMPTY) &&
+ 	    (!test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
+ 		pr_info(" all chnl_ids unregistered ");
 -- 
-1.7.7
-
+1.7.4.1
 
