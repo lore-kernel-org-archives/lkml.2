@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759129Ab1LOQnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:43:37 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:47743 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751798Ab1LOQng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:43:36 -0500
-Message-ID: <4EEA31CB.7070205@xenotime.net>
-Date: Thu, 15 Dec 2011 09:43:39 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S932656Ab1LOQrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:47:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38538 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932640Ab1LOQra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 11:47:30 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Masanari Iida <standby24x7@gmail.com>
+Subject: Re: [PATCH] ACPI: kernel-parameters.txt : Add intel_idle.max_cstate
+Date: Thu, 15 Dec 2011 17:47:28 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        rdunlap@xenotime.net, lenb@kernel.org
+References: <1323879532-10490-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1323879532-10490-1-git-send-email-standby24x7@gmail.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Tony Breeds <tony@bakeyournoodle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next bad Kconfig for drivers/hid
-References: <20111209012746.GC20353@thor.bakeyournoodle.com> <4EE19DA0.5010705@goop.org> <alpine.LNX.2.00.1112120020330.21970@pobox.suse.cz> <20111212003140.GA16353@thor.bakeyournoodle.com> <alpine.LNX.2.00.1112151107020.21970@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1112151107020.21970@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201112151747.28366.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 02:08 AM, Jiri Kosina wrote:
-> On Mon, 12 Dec 2011, Tony Breeds wrote:
-> 
->> On Mon, Dec 12, 2011 at 12:21:16AM +0100, Jiri Kosina wrote:
->>> On Thu, 8 Dec 2011, Jeremy Fitzhardinge wrote:
->>>>
->>>> Hm.  How about making it "depends on HID && POWER_SUPPLY"?  I think that
->>>> would needlessly disable it if HID is also modular, but I'm not sure how
->>>> to fix that.  "depends on HID && POWER_SUPPLY && HID == POWER_SUPPLY"?
->>
->> That would work, but I think technically I think you could end up with
->> HID=m and POWER_SUPPLY=m which would still allow HID_BATTERY_STRENGTH=y
->> which is the same problem.
->>
->> I don't know what kind of .config contortions you'd need to do to get
->> there.
->>  
->>> How about making it 'default POWER_SUPPLY' instead?
->>
->> By itself that wont help as POWER_SUPPLY=m statisfies.
->>
->> So it looks like we have Jeremy's:
->> 	HID && POWER_SUPPLY && HID == POWER_SUPPLY
-> 
-> Tony,
-> 
-> have you actually tested this one to work in the configuration you have 
-> been seeing it to fail?
-> 
-> I don't seem to be able to find any use of '==' in other Kconfig files 
-> (and never used it myself), so I'd like to have confirmation that it 
-> actually works and fixes the problem before I apply it :)
+On Wednesday, December 14, 2011 05:18:52 PM Masanari Iida wrote:
+> Add missing intel_idle.max_cstate in kernel-parameters.txt
+I wonder whether this one should get documented at all.
 
-Documentation/kbuild/kconfig-language.txt does not list "==":
+Better would be to work towards a general cpuidle.max_state=
+param which deprecates processor.max_cstate= (acpi_idle driver) and
+intel_idle.max_cstate= and enables this functionality for all
+other cpuidle drivers out there as well.
 
-<expr> ::= <symbol>                             (1)
-           <symbol> '=' <symbol>                (2)
-           <symbol> '!=' <symbol>               (3)
-           '(' <expr> ')'                       (4)
-           '!' <expr>                           (5)
-           <expr> '&&' <expr>                   (6)
-           <expr> '||' <expr>                   (7)
+Something to turn off intel_idle driver and favor the acpi_idle
+driver for debugging would still be needed then.
 
+   Thomas
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> Signed-off-by Masanari Iida <standby24x7@gmail.com>
+> cc:Len Brown <lenb@kernel.org>
+> cc:Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  Documentation/kernel-parameters.txt |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-
+parameters.txt
+> index 81c287f..c6a56d8 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1035,6 +1035,11 @@ bytes respectively. Such letter suffixes can also 
+be entirely omitted.
+>  			By default, super page will be supported if Intel IOMMU
+>  			has the capability. With this option, super page will
+>  			not be supported.
+> +
+> +	intel_idle.max_cstate=	[KNL,HW,ACPI,X86]
+> +			0	disables intel_idle and fall back on acpi_idle.
+> +			1 to 6	specify maximum depth of C-state.
+> +
+>  	intremap=	[X86-64, Intel-IOMMU]
+>  			on	enable Interrupt Remapping (default)
+>  			off	disable Interrupt Remapping
+> -- 
+> 1.7.6.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
