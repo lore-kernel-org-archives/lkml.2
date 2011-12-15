@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1LOCkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Dec 2011 21:40:55 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33286 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab1LOCky (ORCPT
+	id S1758528Ab1LOCmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Dec 2011 21:42:10 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64986 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab1LOCmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Dec 2011 21:40:54 -0500
+	Wed, 14 Dec 2011 21:42:08 -0500
+Date: Wed, 14 Dec 2011 18:42:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/mempolicy.c: use enum value MPOL_REBIND_ONCE instead
+ of 0 in mpol_rebind_policy
+In-Reply-To: <4EE8A461.2080406@gmail.com>
+Message-ID: <alpine.DEB.2.00.1112141840550.27595@chino.kir.corp.google.com>
+References: <4EE8A461.2080406@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
-References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
-	<alpine.LFD.2.02.1112141423380.3020@ionos>
-	<alpine.LFD.2.02.1112142116540.3020@ionos>
-	<CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
-	<87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
-Date: Wed, 14 Dec 2011 18:40:53 -0800
-X-Google-Sender-Auth: Uq2y8_mkqx9g4fXiEkEUIc_xYE0
-Message-ID: <CAE9FiQXL3N6UZ6REfdUT_o1b-ed_KnYqKm_wSEhsaRPeaE9-9Q@mail.gmail.com>
-Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5 machine
-From: Yinghai Lu <yinghai@kernel.org>
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 6:24 PM, Nikunj A Dadhania
-<nikunj@linux.vnet.ibm.com> wrote:
->>
->> BIOS pre-enabled x2apic, and kernel config does not have x2apic enabled?
-> make oldconfig somehow skipped this!! I can see my previous kernel config
-> having this enabled.
+On Wed, 14 Dec 2011, Wang Sheng-Hui wrote:
 
-looks like recent dmar table related DMAR changing cause that.
+> We have enum definition in mempolicy.h: MPOL_REBIND_ONCE.
+> It should replace the magic number 0 for step comparison in
+> function mpol_rebind_policy.
+> 
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
 
-Yinghai
+Acked-by: David Rientjes <rientjes@google.com>
+
+Tip: when proposing patches, it's helpful to run scripts/get_maintainer.pl 
+on your patch file from git to determine who should be cc'd on the email.
