@@ -1,154 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab1LOLNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 06:13:11 -0500
-Received: from bishop.asidev.net ([95.141.38.214]:42479 "EHLO
-	bishop.asidev.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab1LOLNJ (ORCPT
+	id S1758755Ab1LOLNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 06:13:10 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:27178
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755662Ab1LOLNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 06:13:09 -0500
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Dec 2011 06:13:08 EST
-Message-ID: <4EE9D44A.6010300@evidence.eu.com>
-Date: Thu, 15 Dec 2011 12:04:42 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Thu, 15 Dec 2011 06:13:08 -0500
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371I168aJ542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Date: Thu, 15 Dec 2011 19:21:45 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux subsystem
+Message-ID: <20111215112140.GA10522@S2101-09.ap.freescale.net>
+References: <1323878622-26602-1-git-send-email-b29396@freescale.com>
+ <1323878622-26602-5-git-send-email-b29396@freescale.com>
+ <20111214211152.GM27267@pengutronix.de>
+ <CACRpkdYHtgx3Qgx4QRdgOahQXjvSWE_iogWCZjaYQ-VnyS62uQ@mail.gmail.com>
+ <20111215070505.GA22541@S2101-09.ap.freescale.net>
+ <CACRpkdbN26q1_d4tPkJp4f4_KdvoEEk9uCCRyOfEU97DOWAnEw@mail.gmail.com>
+ <7FE21149F4667147B645348EC60578850564C5@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20111215093319.GO27267@pengutronix.de>
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Dave Bender <codehero@gmail.com>
-Subject: Re: [PATCH] atmel_serial: fix spinlock lockup in RS485 code
-References: <4EE9B42F.50004@evidence.eu.com> <4EE9C532.5050607@atmel.com>
-In-Reply-To: <4EE9C532.5050607@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111215093319.GO27267@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/12/2011 11:00, Nicolas Ferre ha scritto:
-> On 12/15/2011 09:47 AM, Claudio Scordino :
->> Hi all.
->>
->> We have encountered a spinlock lockup in the RS485 part of the
->> atmel_serial driver.
->>
->> Here is the trace:
->>
->> [   68.030000] BUG: spinlock lockup on CPU#0, dnp_master/244, c07e82c0
->> [   68.040000] [<c002a790>] (unwind_backtrace+0x0/0xf0) from
->> [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148)
->> [   68.050000] [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148) from
->> [<c015152c>] (atmel_tasklet_func+0x10/0x708)
->> [   68.060000] [<c015152c>] (atmel_tasklet_func+0x10/0x708) from
->> [<c003bfd4>] (tasklet_action+0x8c/0xf4)
->> [   68.070000] [<c003bfd4>] (tasklet_action+0x8c/0xf4) from [<c003c630>]
->> (__do_softirq+0xa4/0x180)
->> [   68.080000] [<c003c630>] (__do_softirq+0xa4/0x180) from [<c003c764>]
->> (irq_exit+0x58/0xb0)
->> [   68.090000] [<c003c764>] (irq_exit+0x58/0xb0) from [<c0021084>]
->> (asm_do_IRQ+0x84/0xa4)
->> [   68.100000] [<c0021084>] (asm_do_IRQ+0x84/0xa4) from [<c002622c>]
->> (__irq_svc+0x4c/0x98)
->> [   68.110000] Exception stack(0xc341fdc8 to 0xc341fe10)
->> [   68.110000] fdc0:                   c07e82c0 00000000 00000200
->> c4818000 c341fe10 c07e82c0
->> [   68.120000] fde0: 00000000 c07e82c0 c38d3318 c341e000 bebcee00
->> 010a0b60 c07e83fc c341fe10
->> [   68.130000] fe00: c0151d54 c023d9c0 60000013 ffffffff
->> [   68.140000] [<c002622c>] (__irq_svc+0x4c/0x98) from [<c023d9c0>]
->> (_raw_spin_unlock+0x0/0x48)
->> [   68.140000] [<c023d9c0>] (_raw_spin_unlock+0x0/0x48) from
->> [<00000000>] (  (null))
->>
->> The soft lockup occurs later
->>
->> [  126.750000] BUG: soft lockup - CPU#0 stuck for 61s! [dnp_master:244]
->> [  126.750000] irq event stamp: 0
->> [  126.750000] hardirqs last  enabled at (0): [<   (null)>]   (null)
->> [  126.750000] hardirqs last disabled at (0): [<c0035e30>]
->> copy_process+0x308/0xe78
->> [  126.750000] softirqs last  enabled at (0): [<c0035e30>]
->> copy_process+0x308/0xe78
->> [  126.750000] softirqs last disabled at (0): [<   (null)>]   (null)
->>
->>
->> The following patch (already tested by Dave, who also reported the bug)
->> fixes the problem.
->>
->> Regards,
->>
->>      Claudio
->>
->>
->>
->>
->> Subject: atmel_serial: fix spinlock lockup in RS485 code
->>
->> Patch to fix a spinlock lockup in the driver that sometimes happens when
->> the
->> tasklet starts.
->>
->> Signed-off-by: Claudio Scordino<claudio@evidence.eu.com>
->> Signed-off-by: Dave Bender<codehero@gmail.com>
->> Tested-by: Dave Bender<codehero@gmail.com>
->
-> Acked-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->
-> Claudio, can you please send the patch to Alan with my "Acked-by" and an
-> addition to Linux stable just after the signature lines:
->
-> Cc: stable<stable@kernel.org>
+On Thu, Dec 15, 2011 at 10:33:19AM +0100, Sascha Hauer wrote:
+> On Thu, Dec 15, 2011 at 08:59:28AM +0000, Dong Aisheng-B29396 wrote:
+> > > -----Original Message-----
+> > > From: Linus Walleij [mailto:linus.walleij@linaro.org]
+> > > Sent: Thursday, December 15, 2011 4:27 PM
+> > > To: Guo Shawn-R65073
+> > > Cc: Sascha Hauer; Dong Aisheng-B29396; linus.walleij@stericsson.com;
+> > > linux-kernel@vger.kernel.org; rob.herring@calxeda.com;
+> > > grant.likely@secretlab.ca; linux-arm-kernel@lists.infradead.org;
+> > > kernel@pengutronix.de
+> > > Subject: Re: [RFC PATCH v2 4/4] mmc: sdhci-esdhc-imx: using pinmux
+> > > subsystem
+> > > Importance: High
+> > > 
+> > > On Thu, Dec 15, 2011 at 8:05 AM, Shawn Guo <shawn.guo@freescale.com>
+> > > wrote:
+> > > >[Me]
+> > > >> So if you want to do this for i.MX you need something like selectable
+> > > >> dummy pinmuxes, i.e. pinmux_get() to return something that just say
+> > > >> "OK" to everything like the dummy regulators.
+> > > >>
+> > > >> Shall I try to create something like that?
+> > > >>
+> > > > Isn't the empty functions defined in include/linux/pinctrl/pinmux.h
+> > > > for this purpose?
+> > > 
+> > > No, these are for compiling it *out*, dummy pinmuxes would be if you
+> > > compile it *in*, but don't find an apropriate pinmux, you still get
+> > > something that does nothing and still works.
+> > > 
+> > > Dummy regulators work exactly this way.
+> > > 
+> > 
+> > I did not read the dummy regulator code too much.
+> > But does it mean that the dummy regulator or dummy pinmux will also hide the
+> > Real errors since it will always get a available one?
 
-Dear Alan,
+What do you mean 'real error'?  When driver calls pimnux api on a
+platform with real pinmux support, the error is error.  When driver
+calls pinmux api on a platform support with dummy pinmux, it's totally
+error free, as the pinmux core will ensure all the pinmux_* calls
+always return success.
 
-	here is the patch with all the acked-bys.
+> > How do we distinguish between the two case(real error and fake error)?
+> 
+What do we need to distinguish between two cases?  The real success for
+real pinmux from the fake success for the dummy pinmux?  It does not
+really matter.
 
-Many thanks,
+> We don't :(
+> 
+> That's the problem with the dummy regulator.
+> 
+What is the problem exactly?  I do not quite understand.
 
-	Claudio
-
-
-Subject: atmel_serial: fix spinlock lockup in RS485 code
-
-Patch to fix a spinlock lockup in the driver that sometimes happens when the
-tasklet starts.
-
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Signed-off-by: Dave Bender <codehero@gmail.com>
-Tested-by: Dave Bender <codehero@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Cc: stable <stable@kernel.org>
----
-  drivers/tty/serial/atmel_serial.c |    5 +++--
-  1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 4c823f3..90c8e3a 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -212,8 +212,9 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
-  {
-  	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
-  	unsigned int mode;
-+	unsigned long flags;
-  
--	spin_lock(&port->lock);
-+	spin_lock_irqsave(&port->lock, flags);
-  
-  	/* Disable interrupts */
-  	UART_PUT_IDR(port, atmel_port->tx_done_mask);
-@@ -244,7 +245,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
-  	/* Enable interrupts */
-  	UART_PUT_IER(port, atmel_port->tx_done_mask);
-  
--	spin_unlock(&port->lock);
-+	spin_unlock_irqrestore(&port->lock, flags);
-  
-  }
-  
 -- 
-1.7.1
+Regards,
+Shawn
 
