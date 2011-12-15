@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab1LOSxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:53:51 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:45597 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759239Ab1LOSxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:53:48 -0500
-Date: Thu, 15 Dec 2011 13:53:46 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Avi Kivity <avi@redhat.com>
-Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
-        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped by
- host
-Message-ID: <20111215185346.GA2829@mgebm.net>
-References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
- <4EDF7B0D.4060001@redhat.com>
- <20111208151929.GA6301@mgebm.net>
- <4EE8BBF4.8070108@redhat.com>
- <20111214175844.GD4075@mgebm.net>
- <4EE9C274.3030603@redhat.com>
+	id S1759244Ab1LOSzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:55:53 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64167 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751788Ab1LOSzw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 13:55:52 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Dxnq1zWXvFF0Q93v"
-Content-Disposition: inline
-In-Reply-To: <4EE9C274.3030603@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111207205459.031a0609@lxorguk.ukuu.org.uk>
+References: <1323280461.10724.13.camel@lenny>
+	<4EDFCDD4.2080603@zytor.com>
+	<20111207205459.031a0609@lxorguk.ukuu.org.uk>
+Date: Thu, 15 Dec 2011 10:55:50 -0800
+X-Google-Sender-Auth: dViUD4VU7bISuwxByfHWH95RvRs
+Message-ID: <CALQRfL6A+XUiLUVzsSOkz52rs7Pejtb_v8QZbpWxh5W8yYDYtg@mail.gmail.com>
+Subject: Re: chroot(2) and bind mounts as non-root
+From: "Andrew G. Morgan" <morgan@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Colin Walters <walters@verbum.org>,
+        LKML <linux-kernel@vger.kernel.org>, serue@us.ibm.com,
+        dhowells@redhat.com, kzak@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm genuinely confused whether all these concerns are valid with file
+capabilities.
 
---Dxnq1zWXvFF0Q93v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Consider (let's say luser is some user that I want to be active inside
+the chroot, but I don't want to allow regular login to my system):
 
-On Thu, 15 Dec 2011, Avi Kivity wrote:
+morgan> sudo su luser
+luser> mkdir /tmp/chroot/
+luser> chmod go-rx /tmp/chroot/
+luser> exit
 
-> On 12/14/2011 07:58 PM, Eric B Munson wrote:
-> > > I don't think you should see a guest softlockup if the host is
-> > > overloaded.  Nor should you see it due to a long live migration pause,
-> > > or STOP/CONT.  You should see a guest softlockup if it is spinning due
-> > > to a guest bug, and not for any other reason.
-> > >=20
-> > > I think we need a mix of the ioctl (for STOP/CONT and voluntary pause=
-s,
-> > > like live migration or qemu stop/cont) and preempt notifiers (together
-> > > with a check for TASK_RUNNING/TASK_UNINTERRUPTIBLE, for scheduling or
-> > > swap delays)
-> > >=20
-> >
-> > Do you want the preemption notifier work in before you will consider me=
-rging
-> > this set, or can that be a follow on?
->=20
-> Yes please.
->=20
-> --=20
-> error compiling committee.c: too many arguments to function
->=20
+morgan> cat > launcher.c <<EOT
+#include <stdio.h>
+#include <unistd.h>
+int main(int argc, char **argv)
+{
+  int ret = chroot("/tmp/chroot");
+  printf("chroot %s.\n", ret ? "failed" : "worked");
+  ret = chdir("/");
+  printf("chdir %s.\n", ret ? "failed" : "worked");
+  // Insert exec code to invoke chroot'd shell or whatever.
+  return ret;
+}
+EOT
+morgan> make launcher
+cc launcher.c -o launcher
+morgan> mv launcher /tmp/
+morgan> sudo -s
+root> setcap cap_sys_chroot=ep /tmp/launcher
+root> cp <files and directories needed in the chroot> /tmp/chroot/
+root> su luser
 
-I am working on V7 to incorporate the __this_cpu_and suggestion, would you
-consider that for inclusion and we can continue discussing the need for the
-preemption notification work?  I think that having a guest complain when the
-host is so loaded that the guest watchdog threads can't make any progress is
-desirable behavior, it may be the only notification that an admin gets that=
- a
-particular host is over loaded.
+luser> /tmp/launcher
 
-Eric
+The last line being something that involves luser only - ie. it gives
+no user privilege away to any child it might launch. Its also the only
+regular user able to chroot to this luser owned chroot (because that
+directory is exclusive to that user).
 
---Dxnq1zWXvFF0Q93v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Is there a need for privileged binaries within /tmp/chroot? If not,
+how might they get there (without help from root, always presuming I
+can prevent luser from logging in outside of this chroot'd
+environment)?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks
 
-iQIcBAEBAgAGBQJO6kI6AAoJEKhG9nGc1bpJIbUP/3G9PFXfFMlQ1URaJG5PAGHT
-0UNQ1DYgJhHhh4nZ8Xvvbu3KFpgtTI7ZLt+tFHyVy4dUv13P4M7w995zUgVPMwzO
-IxTRtTpCNDou2bQv6iZSQpBqQ2EPniWt0ST3Rm+OztAwedX5govi0uYHJKhh5fJA
-9E8FmfhpyYYrM/UPDL9l1OtMMfIrdNBT1u7IjCKfSB/8hmOoCFtJocHVdqDhGia4
-RGPgjEy+KfPBaqE6MkUWEgyWrVw72vmP7aMRE6sLEywjjR4jbD5LVeNl9q6b6whY
-Oinqb6GavyttXHn2aVIxZw5DfGPsfzrh8VLDc9fV8SItKnqNm6quvWO5eLgUPxPL
-5b6KsjMMm8m9c4UK6qZHOVS7AXxUx5HSzGIQJlqUS/piLBFuzFQNi91EHRic+4cq
-nXKojyqUOqg67gimibBJMGSijs+BdB9RuNciqi65eMp6Yspk51p1WtPCZzXaH1hY
-cuSUGXf5E+GNHOrAxLfRGErs3t4tuYaZl+osqyFfJuYFzP8NMWVdvN5vTirxd6C7
-XPVeGzWdDGGtUD5jt0A2ZaNuiu8ZUAj23GWGkEebL1hr2glPQT6eNGOzMdQfHDUl
-ss7BbxJBUlXgn0GmmDKw2qZyiP68CA1tnjC4/JdJmH/oq4jc/hrhkaPpJyf/Ln+r
-gmgDTEKoMJNlzwE+GBvF
-=Ifx8
------END PGP SIGNATURE-----
+Andrew
 
---Dxnq1zWXvFF0Q93v--
+On Wed, Dec 7, 2011 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Wed, 07 Dec 2011 12:34:28 -0800
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+>
+>> On 12/07/2011 09:54 AM, Colin Walters wrote:
+>> >
+>> > The historical reason one can't call chroot(2) as non-root is because of
+>> > setuid binaries (hard link a setuid binary into chroot of your choice
+>> > with trojaned libc.so).
+>>
+>> No.  The historical reason is that it lets anyone escape a chroot jail:
+>
+> Beg to differ
+>
+> Nobody ever considered chroot a jail except a certain brand of
+> urban-legend-programming people. Indeed chroot has never been a jail
+> except in the 'open prison' security sense of it.
+>
+> The big problem with chroot was abusing setuid binaries - particularly
+> things like uucp and /bin/mail.
+>
+>
