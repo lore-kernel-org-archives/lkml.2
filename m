@@ -1,77 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab1LORXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:23:34 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:54020 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759000Ab1LORXd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:23:33 -0500
-Date: Thu, 15 Dec 2011 12:22:22 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Leonid.Kalev@ca.com, Neal.Taylor@ca.com, george.shuklin@gmail.com,
-        david.vrabel@citrix.com, ian.campbell@citrix.com
-Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.2 for 3.2-rc6
-Message-ID: <20111215172222.GD7272@phenom.dumpdata.com>
+	id S1759292Ab1LORYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:24:11 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:42394
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759238Ab1LORYH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 12:24:07 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzc89bhzz1202hzz8275bhz2dh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LW99NY-02-0QU-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>
+Subject: [PATCH 1/4] perf tool: Parse general/raw events from sysfs
+Date: Thu, 15 Dec 2011 18:23:41 +0100
+Message-ID: <1323969824-9711-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
+References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4EEA2D0A.00AD,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lin Ming <ming.m.lin@intel.com>
 
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+PMU can export general events to sysfs, for example,
 
-Hey Linus,
+/sys/bus/event_source/devices/uncore/events
+└── cycle
 
-Please git pull this branch:
+Then specify the event as <pmu>:<event>,
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-fixes-3.2
+$ sudo perf stat -a -C 0 -e uncore:cycle
+^C
+ Performance counter stats for 'CPU 0':
 
-which has two bug-fixes found recently. One of them is for how memory
-is populated for a guest when the 'max memory' vs 'the initial amount of memory
-the guest is going to launch with' is different. We used the wrong metric resulting
-in capping the memory to 'the initial amount of  memory the guest is going to launch
-with' and never being able to go to 'max memory'. The other bug is a boot-up bug found
-with Dell hardware were none of the PCI devices were able to set their DMA mask. The fix
-is rather embarrassing as I was the one who committed a similar fix to generic SWIOTLB a
-year ago and completly forgot to propagate it to the Xen SWIOTLB library.
+        56,547,314 uncore:cycle
 
-Please pull!
+Raw event can be specified as <pmu>:rXXXX
 
- arch/x86/xen/setup.c      |   18 +++++++++++++++---
- drivers/xen/swiotlb-xen.c |    4 ++--
- 2 files changed, 17 insertions(+), 5 deletions(-)
+$ sudo perf stat -a -C 0 -e uncore:r0101
+^C
+ Performance counter stats for 'CPU 0':
 
-Ian Campbell (1):
-      xen: only limit memory map to maximum reservation for domain 0.
+             8,504 uncore:r0101
 
-Konrad Rzeszutek Wilk (1):
-      xen/swiotlb: Use page alignment for early buffer allocation.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/util/parse-events.c |   84 +++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 82 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 586ab3f..4ce9404 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -685,7 +685,7 @@ parse_symbolic_event(const char **strp, struct perf_event_attr *attr)
+ }
+ 
+ static enum event_result
+-parse_raw_event(const char **strp, struct perf_event_attr *attr)
++parse_raw_config(const char **strp, struct perf_event_attr *attr)
+ {
+ 	const char *str = *strp;
+ 	u64 config;
+@@ -700,7 +700,6 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
+ 			return EVT_FAILED;
+ 
+ 		*strp = end;
+-		attr->type = PERF_TYPE_RAW;
+ 		attr->config = config;
+ 		return EVT_HANDLED;
+ 	}
+@@ -708,6 +707,83 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
+ }
+ 
+ static enum event_result
++parse_raw_event(const char **strp, struct perf_event_attr *attr)
++{
++	if (parse_raw_config(strp, attr) != EVT_HANDLED)
++		return EVT_FAILED;
++
++	attr->type = PERF_TYPE_RAW;
++	return EVT_HANDLED;
++}
++
++#define EVENT_SOURCE_DIR "/sys/bus/event_source/devices"
++
++static u64 read_sysfs_entry(const char *path)
++{
++	char buf[19];
++	int fd;
++
++	fd = open(path, O_RDONLY);
++	if (fd < 0)
++		return -1;
++
++	if (read(fd, buf, sizeof(buf)) < 0) {
++		close(fd);
++		return -1;
++	}
++
++	close(fd);
++	return atoll(buf);
++}
++
++static u64 get_pmu_type(const char *pmu_name)
++{
++	char evt_path[MAXPATHLEN];
++
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/type", EVENT_SOURCE_DIR,
++		 pmu_name);
++
++	return read_sysfs_entry(evt_path);
++}
++
++static u64 get_pmu_event_config(const char *pmu_name, const char *evt_name)
++{
++	char evt_path[MAXPATHLEN];
++
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/events/%s", EVENT_SOURCE_DIR,
++		 pmu_name, evt_name);
++
++	return read_sysfs_entry(evt_path);
++}
++
++static enum event_result
++parse_sysfs_event(const char **strp, struct perf_event_attr *attr)
++{
++	char *pmu_name, *evt_name;
++	u64 type, config;
++
++	pmu_name = strchr(*strp, ':');
++	if (!pmu_name)
++		return EVT_FAILED;
++	pmu_name = strndup(*strp, pmu_name - *strp);
++	type = get_pmu_type(pmu_name);
++	if ((int)type < 0)
++		return EVT_FAILED;
++	attr->type = type;
++
++	evt_name = strchr(*strp, ':') + 1;
++	config = get_pmu_event_config(pmu_name, evt_name);
++	*strp += strlen(pmu_name) + 1; /* + 1 for the ':' */
++
++	if ((int)config < 0)
++		return parse_raw_config(strp, attr);
++
++	attr->config = config;
++	*strp += strlen(evt_name);
++	return EVT_HANDLED;
++}
++
++static enum event_result
+ parse_numeric_event(const char **strp, struct perf_event_attr *attr)
+ {
+ 	const char *str = *strp;
+@@ -788,6 +864,10 @@ parse_event_symbols(struct perf_evlist *evlist, const char **str,
+ {
+ 	enum event_result ret;
+ 
++	ret = parse_sysfs_event(str, attr);
++	if (ret != EVT_FAILED)
++		goto modifier;
++
+ 	ret = parse_tracepoint_event(evlist, str, attr);
+ 	if (ret != EVT_FAILED)
+ 		goto modifier;
+-- 
+1.7.7
 
 
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJO6izJAAoJEFjIrFwIi8fJsboH/imFThWU+psNBOMYcy5rD2GT
-MTv3sD2xKbdB6TMHEg/rol80BUVzbI2v1gJXbS2kfP9BZnLr7XAjeiqFzN4Gkhc8
-uWSFeLawAwvnC75LRNiisF4GvORhGdbTtkcwlNP+zOqlcjT2gKchWPfxbTIeXUVz
-hOR4T7r3q0mmsOGgPC1VDu7NDOFUfanf+ICUTNG5jJdLWN4nQzEl11i+5l1vyjUs
-tKc9kI5NJ41O5JaQN892iwRwZgKI2BlmgNI4cR8mxn7eFYIKlXPRty5bSq6PtR39
-XIM6vteavDdwSwfQf685NGxwf2xi35vN3RtP7/ul0VLTu0dy3Ux2uvR+/ji3Qf4=
-=Mm5t
------END PGP SIGNATURE-----
-
---ZPt4rx8FFjLCG7dd--
