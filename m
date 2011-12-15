@@ -1,125 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759137Ab1LOQk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:40:59 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:35071 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1LOQk5 (ORCPT
+	id S932607Ab1LOQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:41:09 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:55278 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308Ab1LOQlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:40:57 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LW97AV-01-5FG-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/4] perf tools: Factor out feature op to process header sections
-Date: Thu, 15 Dec 2011 17:32:42 +0100
-Message-ID: <1323966762-8574-5-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1323966762-8574-1-git-send-email-robert.richter@amd.com>
-References: <1323966762-8574-1-git-send-email-robert.richter@amd.com>
+	Thu, 15 Dec 2011 11:41:02 -0500
+Date: Thu, 15 Dec 2011 11:40:49 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Shaohua Li <shli@kernel.org>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] AIO: Don't plug the I/O queue in do_io_submit()
+Message-ID: <20111215164049.GH18252@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
+	Dave Kleikamp <dave.kleikamp@oracle.com>, linux-aio@kvack.org,
+	linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Jeff Moyer <jmoyer@redhat.com>
+References: <4EE7C74D.1020306@oracle.com>
+ <CANejiEU3v9EwhBaL6+nWLrsp-jetV=TVWU7v4vy1cU34qA92gw@mail.gmail.com>
+ <4EEA1D1E.8030008@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEA1D1E.8030008@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4EEA2316.00B3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is individual code for each feature to process header sections.
-Adding a function pointer .process to struct feature_ops for keeping
-the implementation in separate functions. Code to process header
-sections is now a generic function.
+On Thu, Dec 15, 2011 at 05:15:26PM +0100, Jens Axboe wrote:
+> On 2011-12-15 02:09, Shaohua Li wrote:
+> > 2011/12/14 Dave Kleikamp <dave.kleikamp@oracle.com>:
+> >> Asynchronous I/O latency to a solid-state disk greatly increased
+> >> between the 2.6.32 and 3.0 kernels. By removing the plug from
+> >> do_io_submit(), we observed a 34% improvement in the I/O latency.
+> >>
+> >> Unfortunately, at this level, we don't know if the request is to
+> >> a rotating disk or not.
+> >>
+> >> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> >> Cc: linux-aio@kvack.org
+> >> Cc: Chris Mason <chris.mason@oracle.com>
+> >> Cc: Jens Axboe <axboe@kernel.dk>
+> >> Cc: Andi Kleen <ak@linux.intel.com>
+> >> Cc: Jeff Moyer <jmoyer@redhat.com>
+> >>
+> >> diff --git a/fs/aio.c b/fs/aio.c
+> >> index 78c514c..d131a2c 100644
+> >> --- a/fs/aio.c
+> >> +++ b/fs/aio.c
+> >> @@ -1696,7 +1696,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+> >>        struct kioctx *ctx;
+> >>        long ret = 0;
+> >>        int i = 0;
+> >> -       struct blk_plug plug;
+> >>        struct kiocb_batch batch;
+> >>
+> >>        if (unlikely(nr < 0))
+> >> @@ -1716,8 +1715,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+> >>
+> >>        kiocb_batch_init(&batch, nr);
+> >>
+> >> -       blk_start_plug(&plug);
+> >> -
+> >>        /*
+> >>         * AKPM: should this return a partial result if some of the IOs were
+> >>         * successfully submitted?
+> >> @@ -1740,7 +1737,6 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+> >>                if (ret)
+> >>                        break;
+> >>        }
+> >> -       blk_finish_plug(&plug);
+> >>
+> >>        kiocb_batch_free(&batch);
+> >>        put_ioctx(ctx);
+> > can you explain why this can help? Note, in 3.1 kernel we now force flush
+> > plug list if the list is too long, which will remove a lot of latency.
+> 
+> I think that would indeed be an interesting addition to test on top of
+> the 3.0 kernel being used.
+> 
+> This is a bit of a sticky situation. We want the plugging and merging on
+> rotational storage, and on SSDs we want the batch addition to the queue
+> to avoid hammering on the queue lock. At this level, we have no idea.
+> But we don't want to introduce longer latencies. So the question is, are
+> these latencies due to long queues (and hence would be helped with the
+> auto-replug on 3.1 and newer), or are they due to the submissions
+> running for too long. If the latter, then we can either look into
+> reducing the time spent between submitting the individual pieces. Or at
+> least not holding up too long.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/header.c |   44 +++++++++++++++++++++++++++++---------------
- 1 files changed, 29 insertions(+), 15 deletions(-)
+Each io_submit call is sending down about 34K of IO to two different devices.
+The latencies were measured just on the process writing the redo
+logs, so it is a very specific subset of the overall benchmark.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 65cfabc..1e38c10 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1455,25 +1455,48 @@ out:
- 	return err;
- }
- 
-+static int process_trace_info(struct perf_file_section *section __unused,
-+			      struct perf_header *ph __unused,
-+			      int feat __unused, int fd)
-+{
-+	trace_report(fd, false);
-+	return 0;
-+}
-+
-+static int process_build_id(struct perf_file_section *section,
-+			    struct perf_header *ph,
-+			    int feat __unused, int fd)
-+{
-+	if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
-+		pr_debug("Failed to read buildids, continuing...\n");
-+	return 0;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-+	int (*process)(struct perf_file_section *section,
-+		       struct perf_header *h, int feat, int fd);
- 	const char *name;
- 	bool full_only;
- };
- 
- #define FEAT_OPA(n, func) \
- 	[n] = { .name = #n, .write = write_##func, .print = print_##func }
-+#define FEAT_OPP(n, func) \
-+	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-+		.process = process_##func }
- #define FEAT_OPF(n, func) \
--	[n] = { .name = #n, .write = write_##func, .print = print_##func, .full_only = true }
-+	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-+		.full_only = true }
- 
- /* feature_ops not implemented: */
- #define print_trace_info		NULL
- #define print_build_id			NULL
- 
- static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
--	FEAT_OPA(HEADER_TRACE_INFO,	trace_info),
--	FEAT_OPA(HEADER_BUILD_ID,	build_id),
-+	FEAT_OPP(HEADER_TRACE_INFO,	trace_info),
-+	FEAT_OPP(HEADER_BUILD_ID,	build_id),
- 	FEAT_OPA(HEADER_HOSTNAME,	hostname),
- 	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
- 	FEAT_OPA(HEADER_VERSION,	version),
-@@ -1857,19 +1880,10 @@ static int perf_file_section__process(struct perf_file_section *section,
- 		return 0;
- 	}
- 
--	switch (feat) {
--	case HEADER_TRACE_INFO:
--		trace_report(fd, false);
--		break;
--	case HEADER_BUILD_ID:
--		if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
--			pr_debug("Failed to read buildids, continuing...\n");
--		break;
--	default:
--		break;
--	}
-+	if (!feat_ops[feat].process)
-+		return 0;
- 
--	return 0;
-+	return feat_ops[feat].process(section, ph, feat, fd);
- }
- 
- static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
--- 
-1.7.7
+The patched kernel only does 4x more iops for the redo logs than the
+unpatched kernel, so we're talking ~8K ios here.
 
+-chris
 
