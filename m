@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab1LOQBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 11:01:34 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:17495 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542Ab1LOQAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 11:00:37 -0500
-Subject: [PATCH 6/7] SUNRPC: register service on creation in current network
- namespace
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Thu, 15 Dec 2011 20:00:32 +0300
-Message-ID: <20111215160031.2434.9937.stgit@localhost6.localdomain6>
-In-Reply-To: <20111215155252.2434.39434.stgit@localhost6.localdomain6>
-References: <20111215155252.2434.39434.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S932624Ab1LOQBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 11:01:45 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47477 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932541Ab1LOQBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 11:01:42 -0500
+Date: Thu, 15 Dec 2011 11:01:41 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: Clemens Ladisch <clemens@ladisch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: fix number of mapped SG DMA entries
+In-Reply-To: <20111215123927.GA19650@linutronix.de>
+Message-ID: <Pine.LNX.4.44L0.1112151058090.1644-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Service, using rpcbind (Lockd, NFSd) are starting from userspace call and thus
-we can use current network namespace.
-There could be a problem with NFSd service, because it's creation can be called
-through NFSd fs from different network namespace. But this is a part of "NFSd
-per net ns" task and will be fixed in future.
+On Thu, 15 Dec 2011, Sebastian Andrzej Siewior wrote:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> * Alan Stern | 2011-12-04 11:59:32 [-0500]:
+> 
+> >On Sat, 3 Dec 2011, Clemens Ladisch wrote:
+> >
+> >> Add a new field num_mapped_sgs to struct urb so that we have a place to
+> >> store the number of mapped entries and can also retain the original
+> >> value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
+> >> would overwrite this with the number of mapped entries, which would
+> >> break dma_unmap_sg() because it requires the original number of entries.
+> >> 
+> >> This fixes warnings like the following when using USB storage devices:
+> >>  ------------[ cut here ]------------
+> >>  WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
+> >>  ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
+> >
+> >Interesting.  Do you have any idea why this warning didn't show up 
+> >earlier?  Is there perhaps a Kconfig option I ought to be using?
+> 
+> My question here is why don't we map the complete sg list but only
+> one entry. What happens to the remaining few sg list entries? Don't we
+> sent too less data?
 
----
- net/sunrpc/svc.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+I don't know exactly what happened in this particular case -- probably 
+there's no way to find out.  However, all the data is supposed to be 
+mapped, regardless of the number of entries.
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 137475a..578f962 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -20,6 +20,7 @@
- #include <linux/module.h>
- #include <linux/kthread.h>
- #include <linux/slab.h>
-+#include <linux/nsproxy.h>
- 
- #include <linux/sunrpc/types.h>
- #include <linux/sunrpc/xdr.h>
-@@ -366,16 +367,16 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
- 	return &serv->sv_pools[pidx % serv->sv_nrpools];
- }
- 
--static int svc_rpcb_setup(struct svc_serv *serv)
-+static int svc_rpcb_setup(struct svc_serv *serv, struct net *net)
- {
- 	int err;
- 
--	err = rpcb_create_local(&init_net);
-+	err = rpcb_create_local(net);
- 	if (err)
- 		return err;
- 
- 	/* Remove any stale portmap registrations */
--	svc_unregister(serv, &init_net);
-+	svc_unregister(serv, net);
- 	return 0;
- }
- 
-@@ -468,7 +469,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 	}
- 
- 	if (svc_uses_rpcbind(serv)) {
--	       	if (svc_rpcb_setup(serv) < 0) {
-+	       	if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
- 			kfree(serv->sv_pools);
- 			kfree(serv);
- 			return NULL;
+> Is there anything special you do to get into this kind of situation?
+> Like 16GiB of memory on 32bit with highmem and a brutal disk/io test
+> case so?
+
+As I understand it, the typical case is that two SG entries in a row 
+refer to adjacent pages of physical memory.  The mapping routine then 
+collapses them into a single entry referring to all the pages.
+
+However, this is not the sort of thing you can deliberately cause, 
+unless you set up your SG list by hand.
+
+Alan Stern
 
