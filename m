@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab1LOKVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:21:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1LOKVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:21:35 -0500
-Message-ID: <4EE9CA1C.3010801@redhat.com>
-Date: Thu, 15 Dec 2011 12:21:16 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1758778Ab1LOKXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:23:34 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:16452 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab1LOKXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 05:23:33 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LW8Q73-02-EHD-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] Additional AMD IOMMUv2 patches
+Date: Thu, 15 Dec 2011 11:23:19 +0100
+Message-ID: <1323944602-26155-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
-        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
-        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped
- by host
-References: <1323116344-17911-1-git-send-email-emunson@mgebm.net> <4EDF7B0D.4060001@redhat.com> <20111214121622.GB18317@amt.cnet> <4EE8B53C.6070502@redhat.com> <20111214182101.GB21945@amt.cnet>
-In-Reply-To: <20111214182101.GB21945@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 08:21 PM, Marcelo Tosatti wrote:
-> On Wed, Dec 14, 2011 at 04:39:56PM +0200, Avi Kivity wrote:
-> > On 12/14/2011 02:16 PM, Marcelo Tosatti wrote:
-> > > > Having this controlled from userspace means it doesn't work for SIGSTOP
-> > > > or for long scheduling delays.  What about doing this automatically
-> > > > based on preempt notifiers?
-> > >
-> > > Long scheduling delays should be considered hangups from the guest
-> > > perspective.
-> > 
-> > Why?  To the guest it looks like slow hardware, but it will interpret it
-> > as a softlockup.
->
-> Slow enough that progress of the watchdog thread is unable to keep up
-> with timer interrupt processing. This is considered a hang and
-> should be reported.
+Hi,
 
-It's not a guest hang though!
+here are 3 additional patches I have in my queue for the AMD IOMMUv2 driver.
+The patches extend the exposed API a little bit and fix the build error in
+linux-next.
 
--- 
-error compiling committee.c: too many arguments to function
+Regards,
+
+	Joerg
+
+Diffstat:
+
+ drivers/iommu/amd_iommu.c    |   59 ++++++++++++++++++++++++++++++++++++-----
+ drivers/iommu/amd_iommu_v2.c |   35 +++++++++++++++++++++++++
+ include/linux/amd-iommu.h    |   43 ++++++++++++++++++++++++++++++
+ 3 files changed, 129 insertions(+), 8 deletions(-)
+
 
