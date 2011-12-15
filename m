@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1LOKJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 05:09:18 -0500
-Received: from 8bytes.org ([88.198.83.132]:47514 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932453Ab1LOKJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 05:09:17 -0500
-Date: Thu, 15 Dec 2011 11:09:15 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: build failure after merge of the iommu tree
-Message-ID: <20111215100915.GD4475@8bytes.org>
-References: <20111215154051.e8bb4a174259e910a3045f0e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111215154051.e8bb4a174259e910a3045f0e@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932503Ab1LOKJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 05:09:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40218 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab1LOKJ2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 05:09:28 -0500
+Message-ID: <1323943710.18942.24.camel@twins>
+Subject: Re: [RFC] sched: Ensure cpu_power periodic update
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Thu, 15 Dec 2011 11:08:30 +0100
+In-Reply-To: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
+References: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, 2011-12-12 at 20:21 +0100, Vincent Guittot wrote:
+> With a lot of small tasks, the softirq sched is nearly never called
+> when no_hz is enable. In this case the load_balance is mainly called with
+> the newly_idle mode which doesn't update the cpu_power.
+> Add a next_update field which ensure a maximum update period when
+> there is short activity
 
-On Thu, Dec 15, 2011 at 03:40:51PM +1100, Stephen Rothwell wrote:
-> After merging the iommu tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/iommu/amd_iommu.c: In function 'pci_iommuv2_capable':
-> drivers/iommu/amd_iommu.c:179:3: error: 'PCI_PRI_CAP' undeclared (first use in this function)
-> drivers/iommu/amd_iommu.c:180:3: error: 'PCI_PASID_CAP' undeclared (first use in this function)
-> drivers/iommu/amd_iommu.c: In function 'pri_reset_while_enabled':
-> drivers/iommu/amd_iommu.c:1981:38: error: 'PCI_PRI_CAP' undeclared (first use in this function)
-> drivers/iommu/amd_iommu.c:1981:2: warning: passing argument 2 of 'pci_find_ext_capability' makes integer from pointer without a cast [enabled by default]
-> include/linux/pci.h:712:5: note: expected 'int' but argument is of type 'const int *'
-> drivers/iommu/amd_iommu.c: In function 'pci_pri_tlp_required':
-> drivers/iommu/amd_iommu.c:2045:38: error: 'PCI_PRI_CAP' undeclared (first use in this function)
-> drivers/iommu/amd_iommu.c:2045:2: warning: passing argument 2 of 'pci_find_ext_capability' makes integer from pointer without a cast [enabled by default]
-> include/linux/pci.h:712:5: note: expected 'int' but argument is of type 'const int *'
-> 
-> Caused by commit 56288ab6e949 ("PCI: Fix PRI and PASID consistency") from
-> the pci tree interacting with various commits from the iommu tree.
-> 
-> I have added the following merge fix patch (and can carry it as
-> necessary).
+> +	if (local_group) {
+> +		if (idle != CPU_NEWLY_IDLE) {
+> +			if (balance_cpu != this_cpu) {
+> +				*balance = 0;
+> +				return;
+> +			}
+> +			update_group_power(sd, this_cpu);
+> +		} else if (time_after_eq(jiffies, group->sgp->next_update))
+> +			update_group_power(sd, this_cpu);
+>  	}
 
-Thanks for resolving this too. I already have a patch for this, it was
-just not queued yet. I will queue it in my tree and update my next
-branch.
-Jesse already provided me a branch which I can pull in, so some of the
-patches in his tree will also be in the iommu-tree then.
+Hmm, I would have expected it to be called from the NOHZ balancing path
+instead of the new_idle path. Your changelog fails to mentions any
+considerations on this..
 
+Then again, its probably easier to keep update_group_power on this_cpu
+than to allow a remote update of your cpu_power.
 
-	Joerg
-
+So I'm not opposed to this patch, I'd just like a little extra
+clarification.
