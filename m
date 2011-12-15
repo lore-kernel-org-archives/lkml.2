@@ -1,136 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab1LOJXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:23:18 -0500
-Received: from mail01.manz-automation.com ([88.79.234.227]:57407 "EHLO
-	mail01.manz-automation.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752667Ab1LOJXQ (ORCPT
+	id S1758373Ab1LOJ0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:26:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46034 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab1LOJ0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:23:16 -0500
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Dec 2011 04:23:15 EST
-Message-ID: <1323940664.16032.6.camel@raz>
-Subject: Subject:[PATCH 1:1] boot paramer "root=" gets a list of devices
-From: Raz Ben Yehuda <rbenyehuda@manz.com>
-Reply-To: rbenyehuda@manz.com
-To: <linux-kernel@vger.kernel.org>
-Date: Thu, 15 Dec 2011 11:17:44 +0200
-Organization: Manz
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Dec 2011 04:26:46 -0500
+Date: Thu, 15 Dec 2011 10:26:33 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Nick Bowler <nbowler@elliptictech.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Massive log spam loading modules on ARM after 3.2-rc5
+ (regression)
+Message-ID: <20111215092633.GD24496@pengutronix.de>
+References: <20111214215133.GA7780@elliptictech.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111214215133.GA7780@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raz ben yehuda <rbenyehuda@manz.com>
+On Wed, Dec 14, 2011 at 04:51:33PM -0500, Nick Bowler wrote:
+> Hi folks,
+> 
+> With latest Linus' master, I'm faced with massive log spam on our ARM
+> Versatile Express platform when using modules.  Here's an example:
+> 
+>   # modprobe sp805-wdt
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   sp805-wdt mb:wdt: registration successful
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+>   unwind: Unknown symbol address 7f802009
+>   unwind: Index not found 7f802009
+> 
+> The message only seem to get printed at module load time.  Other than
+> the noise, things _seem_ to be working.  Nevertheless, it's a regression
+> introduced after 3.2-rc5 by the following commit:
+> 
+>   de66a979012dbc66b1ec0125795a3f79ee667b8a is the first bad commit
+>   commit de66a979012dbc66b1ec0125795a3f79ee667b8a
+>   Author: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>   Date:   Mon Dec 5 09:39:59 2011 +0100
+> 
+>       ARM: 7187/1: fix unwinding for XIP kernels
+> 
+>       The linker places the unwind tables in readonly sections. So when using
+>       an XIP kernel these are located in ROM and cannot be modified.
+>       For that reason the current approach to convert the relative offsets in
+>       the unwind index to absolute addresses early in the boot process doesn't
+>       work with XIP.
+> 
+>       The offsets in the unwind index section are signed 31 bit numbers and
+>       the structs are sorted by this offset. So it first has offsets between
+>       0x40000000 and 0x7fffffff (i.e. the negative offsets) and then offsets
+>       between 0x00000000 and 0x3fffffff. When seperating these two blocks the
+>       numbers are sorted even when interpreting the offsets as unsigned longs.
+> 
+>       So determine the first non-negative entry once and track that using the
+>       new origin pointer. The actual bisection can then use a plain unsigned
+>       long comparison. The only thing that makes the new bisection more
+>       complicated is that the offsets are relative to their position in the
+>       index section, so the key to search needs to be adapted accordingly in
+>       each step.
+> 
+>       Moreover several consts are added to catch future writes and rename the
+>       member "addr" of struct unwind_idx to "addr_offset" to better match the
+>       new semantic. (This has the additional benefit of breaking eventual
+>       users at compile time to make them aware of the change.)
+> 
+>       In my tests the new algorithm was a tad faster than the original and has
+>       the additional upside of not needing the initial conversion and so saves
+>       some boot time and it's possible to unwind even earlier.
+> 
+>       Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+>       Acked-by: Nicolas Pitre <nico@fluxnic.net>
+>       Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>       Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> 
+>   :040000 040000 9c4363228515808d71dac84a4a16e0aa0cf4ceaa 65b80d4e51fabf0a3142a880be795f4b38f4d9fe M	arch
+> 
+> I am *not* using XIP.  Reverting this commit resolves the issue.
+> 
+> Let me know if you need any more info,
+Can you provide me your .config please? I cannot reproduce your problems
+with modprobe on an i.MX28 based tx28 machine.
 
-Patch is aimed to bypass the need for initramfs when it is not
-known which disk has the root file system.
+Russell, maybe this makes you a bit less annoyed?
 
-Example: The kernel boot parameter "root=/dev/sda1,/dev/sdc1,/dev/sdb4".
-Check if /dev/sda1 exists ,if /dev/sda1 does not exist then try
-/dev/sdc1 an so on upto the first a device that exists ( ROOT_DEV != 0 ), 
-else use the last device as the mount device.
+Best regards
+Uwe
 
-Signed-off-by: Raz Ben Yehuda <rbenyehuda@manz.com>
-
----
-
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 0f6e1d9..02ed235 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -162,9 +162,10 @@ done:
-  *         of partition - device number of disk plus the partition number
-  *	5) /dev/<disk_name>p<decimal> - same as the above, that form is
-  *	   used when disk name of partitioned disk ends on a digit.
-- *	6) PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF representing the
-+ *	6) /dev/<disk name><decimal>,/dev/<disk name><decimal>,...
-+ *	7) PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF representing the
-  *	   unique id of a partition if the partition table provides it.
-- *	7) PARTUUID=<UUID>/PARTNROFF=<int> to select a partition in relation to
-+ *	8) PARTUUID=<UUID>/PARTNROFF=<int> to select a partition in relation to
-  *	   a partition with a known unique id.
-  *
-  *	If name doesn't have fall into the categories above, we return (0,0).
-@@ -469,6 +470,63 @@ void __init mount_root(void)
- #endif
- }
- 
-+void scan_root_dev_list(void)
-+{
-+	char *root_device_eol;
-+	char *tmp_dev_name = saved_root_name;
-+	char *comma;
-+
-+	comma = root_device_name;
-+	root_device_eol = root_device_name + strlen(root_device_name);
-+
-+	for (; comma != root_device_eol ;) {
-+		char dev_name[64];
-+		/*
-+		 * scan for active device from
-+		 * root=/dev/sda1,/dev/sda2,...
-+		*/
-+		comma = strchr(tmp_dev_name, ',');
-+		if (!comma) {
-+			/*
-+			 * if there is no list of devices
-+			 * ( root=/dev/sdaX) or we are at the end
-+			*/
-+			root_device_name = tmp_dev_name;
-+			ROOT_DEV = name_to_dev_t(root_device_name);
-+			printk(KERN_INFO "trying device %s\n",
-+				root_device_name);
-+			break;
-+		}
-+		/*
-+		 * ok, we failed with first device,
-+		 * move to next one in the comma separated list
-+		 */
-+		memset(dev_name, 0, sizeof(dev_name));
-+		strncpy(dev_name, tmp_dev_name,
-+					(long)comma - (long)tmp_dev_name);
-+		ROOT_DEV = name_to_dev_t(dev_name);
-+		printk(KERN_INFO "trying device %s\n", dev_name);
-+		if (ROOT_DEV == 0) {
-+			tmp_dev_name = comma + 1;
-+			if (tmp_dev_name < root_device_eol)
-+				continue;
-+			break;
-+		}
-+		/*
-+		 * we're lucky, we have a device,
-+		 * let set root_device_name to point at it
-+		*/
-+		strcpy(root_device_name, dev_name);
-+		break;
-+	}
-+	if (ROOT_DEV == 0) {
-+		printk(KERN_INFO "kernel is likely to panic aiee..\n");
-+		return;
-+	}
-+	printk(KERN_INFO "Found %s appropriate for boot\n",
-+		root_device_name);
-+}
-+
- /*
-  * Prepare the namespace - decide what/where to mount, load ramdisks, etc.
-  */
-@@ -500,10 +558,10 @@ void __init prepare_namespace(void)
- 			mount_block_root(root_device_name, root_mountflags);
- 			goto out;
- 		}
--		ROOT_DEV = name_to_dev_t(root_device_name);
--		if (strncmp(root_device_name, "/dev/", 5) == 0)
--			root_device_name += 5;
-+		scan_root_dev_list();
- 	}
-+	if (strncmp(root_device_name, "/dev/", 5) == 0)
-+			root_device_name += 5;
- 
- 	if (initrd_load())
- 		goto out;
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
