@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab1LOND1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 08:03:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab1LOND0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 08:03:26 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Fix a cast to pointer from integer of different size warning
- in intel_idle
-To: lenb@kernel.org, deepthi@linux.vnet.ibm.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Thu, 15 Dec 2011 13:03:14 +0000
-Message-ID: <20111215130314.4804.78941.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1758869Ab1LONER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 08:04:17 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39393 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab1LONEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 08:04:16 -0500
+Message-ID: <4EE9F04C.6080906@atmel.com>
+Date: Thu, 15 Dec 2011 14:04:12 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: voice <voice.shen@atmel.com>
+CC: linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
+        JM.Lin@atmel.com, Hong.Xu@atmel.com
+Subject: Re: [PATCH] atmel ac97c: using software reset instead hardware reset
+ if not available
+References: <1322042701-32100-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1322042701-32100-1-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following warning:
+On 11/23/2011 11:05 AM, voice :
+> Using software reset instead hardware reset if not available
 
-drivers/idle/intel_idle.c: In function 'intel_idle_cpuidle_devices_init':
-drivers/idle/intel_idle.c:518:5: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+Ping?
+Can you please tell me what is the status of this fix? Will it go
+upstream for 3.3?
 
-By making get_driver_data() return a long instead of an int.
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> ---
+>  sound/atmel/ac97c.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+> index 6e5adde..73516f6 100644
+> --- a/sound/atmel/ac97c.c
+> +++ b/sound/atmel/ac97c.c
+> @@ -899,6 +899,10 @@ static void atmel_ac97c_reset(struct atmel_ac97c *chip)
+>  		/* AC97 v2.2 specifications says minimum 1 us. */
+>  		udelay(2);
+>  		gpio_set_value(chip->reset_pin, 1);
+> +	} else {
+> +		ac97c_writel(chip, MR, AC97C_MR_WRST | AC97C_MR_ENA);
+> +		udelay(2);
+> +		ac97c_writel(chip, MR, AC97C_MR_ENA);
+>  	}
+>  }
+>  
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
 
- drivers/idle/intel_idle.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 5d2f8e1..4304e24 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -197,7 +197,7 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 		.enter = &intel_idle },
- };
- 
--static int get_driver_data(int cstate)
-+static long get_driver_data(int cstate)
- {
- 	int driver_data;
- 	switch (cstate) {
-
+-- 
+Nicolas Ferre
