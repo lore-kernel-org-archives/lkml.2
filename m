@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759214Ab1LORIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 12:08:55 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62769 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356Ab1LORIy (ORCPT
+	id S1759177Ab1LORMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 12:12:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42273 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1LORL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 12:08:54 -0500
+	Thu, 15 Dec 2011 12:11:59 -0500
+Message-ID: <4EEA2A5A.2050008@gmail.com>
+Date: Thu, 15 Dec 2011 09:11:54 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1323943005.18942.18.camel@twins>
-References: <1323804803.9082.40.camel@twins> <CA+55aFxNWiRQ1CkifhgcnnBqBa-xRNdM9Ze6bnxhsYd4ZYPg6A@mail.gmail.com>
- <20111214104308.14d0500c@pyramind.ukuu.org.uk> <1323860206.28489.35.camel@twins>
- <20111214140527.GA18080@thunk.org> <1323872631.28489.37.camel@twins>
- <CA+55aFwu+oSPtqfN+bS3_fHXWU+VMd5BGhNd=J4MjuAJZT+fTQ@mail.gmail.com> <1323943005.18942.18.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 15 Dec 2011 09:08:32 -0800
-X-Google-Sender-Auth: 72p_0X-A06ZSvj9RWiZkEBGWoGE
-Message-ID: <CA+55aFwhFoU5Fp_VTMtVU7XFMZiNvy1J7n7YJsVBu+-k-EH0Nw@mail.gmail.com>
-Subject: Re: printk() vs tty_io
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/3]arch:powerpc:sysdev:mpic.c Remove extra semicolon.
+References: <1321893808-3721-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1321893808-3721-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 1:56 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+what would be the status of these? should I resend/rebase to the current 
+etc?..
+
+On 11/21/2011 08:43 AM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock"<justinmattock@gmail.com>
 >
-> We probably could, I can have a closer look, but the main question is,
-> are we going to commit to no wakeups from console implementations? That
-> would mean removing the USB serial console support and other such stuff.
+> The patch below removes an extra semicolon.
+>
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> CC: linuxppc-dev@lists.ozlabs.org
+> CC: Paul Mackerras<paulus@samba.org>
+> ---
+>   arch/powerpc/sysdev/mpic.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
+> index 8c7e852..b3fa3d7 100644
+> --- a/arch/powerpc/sysdev/mpic.c
+> +++ b/arch/powerpc/sysdev/mpic.c
+> @@ -901,7 +901,7 @@ int mpic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+>   	if (vold != vnew)
+>   		mpic_irq_write(src, MPIC_INFO(IRQ_VECTOR_PRI), vnew);
+>
+> -	return IRQ_SET_MASK_OK_NOCOPY;;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>   }
+>
+>   void mpic_set_vector(unsigned int virq, unsigned int vector)
 
-I guess we can't.
-
-So new approach:
-
- - screw it. the rq lock is just too central, you cannot call printk
-from under it. And if you have an oops under it, you're screwed.
-
-   Peter, why do you want to try to work from under the rq lock?
-
- - Make a special "debug printk" that is not synchronous. Just make it
-buffer things, and have it actually print out from a worker thread or
-whatever. This one *only* takes the lock for that buffer itself, and
-works everywhere. We could probably even do tricks to make it
-NMI-safe.
-
-   Make code that isn't an oops or other very synchronous "have to
-print out *now*" aim to use this "softer" printk.
-
-Hmm?
-
-                   Linus
