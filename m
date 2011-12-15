@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab1LOUEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 15:04:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59645 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab1LOUEb convert rfc822-to-8bit (ORCPT
+	id S1759460Ab1LOUGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 15:06:46 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:34582 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751400Ab1LOUGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 15:04:31 -0500
+	Thu, 15 Dec 2011 15:06:45 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX19pe6JFjgVpt4zbYwivn2xV5spyS9LsBCDpQpHbsB
+	hJ0+OLGO4Mw7nt
+Date: Thu, 15 Dec 2011 21:06:31 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] audit: fix mark refcounting
+Message-ID: <20111215200631.GA2379@Neptun>
+References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu>
+ <87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
+ <CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
+ <20111215084050.GQ2203@ZenIV.linux.org.uk>
+ <87fwgmjjr9.fsf@tucsk.pomaz.szeredi.hu>
+ <87aa6ujjf6.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <20111215191523.GA2561@tuxdriver.com>
-References: <20111215191523.GA2561@tuxdriver.com>
-Date: Thu, 15 Dec 2011 21:04:29 +0100
-Message-ID: <CACna6rw736JdkoM8zKxorCFd5oy08QTwWZ6PutoJPSr3ZN8hTg@mail.gmail.com>
-Subject: Re: pull request: wireless 2011-12-15
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: davem@davemloft.net, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87aa6ujjf6.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/15 John W. Linville <linville@tuxdriver.com>:
-> commit 42a3b63bb2ca4996a3d1210a004eae2333f1119e
->
-> Dave,
->
-> Here are a few more fixes intended for the 3.2 release.  They are
-> all small and narrowly focused.
+On Thu, Dec 15, 2011 at 10:03:41AM +0100, Miklos Szeredi wrote:
+>  
+> +	audit_get_parent(parent);
+>  	fsnotify_destroy_mark(&parent->mark);
+> +	audit_put_parent(parent);
 
-John, I've made a mistake and didn't use [PATCH 3.2] header to make it
-clean my patch is fix. Could you take a look at
-[PATCH] bcma: support for suspend and resume
-please?
+Hi,
 
-It's not one-liner, but fixes lock ups, which I believe - we really
-want to avoid.
+What about taking an extra ref on an inode mark in send_to_group()
+before we call handle_event()?
+So we dont have to handle the cases in which a mark is destroyed
+explicitly...
 
--- 
-Rafał
+Lino
+
