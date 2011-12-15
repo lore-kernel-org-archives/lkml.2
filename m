@@ -1,42 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759678Ab1LOWq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:46:26 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:45046 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759349Ab1LOWqZ (ORCPT
+	id S932695Ab1LOWuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:50:44 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42399 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab1LOWun convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:46:25 -0500
-Date: Thu, 15 Dec 2011 17:44:11 -0500 (EST)
-Message-Id: <20111215.174411.213210944798851570.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        eric.dumazet@gmail.com, sfr@canb.auug.org.au
-Subject: Re: [PATCH 2/2] Explicitly call tcp creation and init from
- memcontrol.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4EEA6288.1080405@parallels.com>
-References: <1323941672-14324-3-git-send-email-glommer@parallels.com>
-	<20111215.120028.532844419499092747.davem@davemloft.net>
-	<4EEA6288.1080405@parallels.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 15 Dec 2011 14:44:15 -0800 (PST)
+	Thu, 15 Dec 2011 17:50:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMP44s08uBK1Vm0Bx_0NouaaNHU0D2kp9AiL+1LPrT1BZURj0A@mail.gmail.com>
+References: <CAMP44s2M8cFM5AhjMwbFJZpQtbYe13w9bswTRhap97nOCyZVfQ@mail.gmail.com>
+	<CAMP44s08uBK1Vm0Bx_0NouaaNHU0D2kp9AiL+1LPrT1BZURj0A@mail.gmail.com>
+Date: Fri, 16 Dec 2011 00:50:42 +0200
+Message-ID: <CAMP44s1-c965bfTvijrerdVwuLZddKUFvA7X7vDd5Pu+7zeCdw@mail.gmail.com>
+Subject: Re: Issue with isp1704 loaded too soon
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri, 16 Dec 2011 01:11:36 +0400
+On Thu, Dec 15, 2011 at 7:51 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Thu, Dec 15, 2011 at 1:15 AM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>> On Tue, Dec 13, 2011 at 11:19 PM, Felipe Contreras
+>> <felipe.contreras@gmail.com> wrote:
+>>> On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
+>>>> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
+>>>> non isp1704_charger change has broke it as there hasn't been changes on it.
+>>>
+>>> Actually it's broken in 3.0 as well, try this configuration:
+>>>
+>>>        # CONFIG_USB_MUSB_HOST is not set
+>>>        # CONFIG_USB_MUSB_PERIPHERAL is not set
+>>>        CONFIG_USB_MUSB_OTG=y
+>>>        CONFIG_USB_GADGET_MUSB_HDRC=y
+>>>        CONFIG_USB_MUSB_HDRC_HCD=y
+>>>
+>>>        CONFIG_USB_GADGET_SELECTED=y
+>>>        # CONFIG_USB_GADGET_FUSB300 is not set
+>>>        # CONFIG_USB_GADGET_OMAP is not set
+>>>        # CONFIG_USB_GADGET_R8A66597 is not set
+>>>        # CONFIG_USB_GADGET_PXA_U2O is not set
+>>>        # CONFIG_USB_GADGET_M66592 is not set
+>>>        # CONFIG_USB_GADGET_DUMMY_HCD is not set
+>>>
+>>> I will try to find where the issues started to happen, but it's a bit
+>>> difficult because all this USB Kconfig stuff is completely messed up.
+>>>
+>>> *Sigh*
+>>
+>> Ok, I made some progress.
+>>
+>> The issue appeared on 2.6.39, specifically, on commit 0df0914, which
+>> is a merge from Linus. The issue doesn't appear in any of the two
+>> parents of that merge.
+>>
+>> I manually merged various commits, and the first one that triggered
+>> the problem is 18a2689, but the commit itself is not the problem but
+>> something that was already merged to Linus' tree, specifically at
+>> point 6899608.
+>>
+>> IOW, it's a mixture of two changes that appear together at point,
+>> 0df0914, one of them is 18a2689, the other one I still don't know.
+>>
+>> Unless you can find what's wrong with this commit:
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/arm/mach-omap2/usb-musb.c;h=a9d4d143086d73463b97c093cc9f022de8e1d679;hp=9788b4941857f40d50d48fa6470ee14e179bc373;hb=18a2689;hpb=273ff8c3bc04cf358c131f49ee7a11efa7ec73d7
+>>
+>> I guess the safest route is to continue with the manual merges to find
+>> the second relevant commit =/
+>
+> Found it.
+>
+> So, the first commit is this one:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=18a2689
+>
+> Which needs this one:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=870ea2b
+>
+> But it's only triggered with this other one:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=7acc619
+>
+> Seems to be some power management stuff, and it's only triggered with
+> certain configurations.
+>
+> And this concludes the most tedious git bisect in history =/
 
-> How about the following patch then ? I am keeping protocols that has
-> the cgroup stuff on in a separate list, that can be protected by a
-> mutex. Therefore we can allocate without going into troubles.
+It seems I found the fix:
+http://mid.gmane.org/1323988934-11350-1-git-send-email-felipe.contreras@gmail.com
 
-This is a significantly better approach, please test and submit this
-patch formally.
-
-Thanks.
+-- 
+Felipe Contreras
