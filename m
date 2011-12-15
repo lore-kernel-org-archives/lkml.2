@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab1LOWuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 17:50:44 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42399 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab1LOWun convert rfc822-to-8bit (ORCPT
+	id S932728Ab1LOWw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 17:52:56 -0500
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:21903 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932540Ab1LOWwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 17:50:43 -0500
+	Thu, 15 Dec 2011 17:52:55 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: CDqkOa8VM1nb8gMzZ7nN1W_gVkLO_grV9b7xXsgGnAJmNgS
+ rlCHL1iEkKluosZpxfxE.irU2hK_MpBLd100ZU3XsgQoPDL7f9.xA0q2XTvA
+ kTMiUAuJgsujbK801Rtt2MCiDQD3sgHrhJB.ls0zN32jPGj2pW5bTwSW.Uca
+ aDJtqp3qHLUZp2qBmkvdUJKwhNMSq6V0qoo6LZ3xhixM3cwQzN4lB7tHwKWx
+ lSVQj3uen2uJvkyDf6BdSExL9tilHqdVGXaJHj.meundwxmgMJ1m4T8y4aAh
+ lwPPVEj03mHFuSZoxV5oy_HqeyfYilgJ9Ao6cYCnDVdVneWzcI5AyQbVuoUV
+ 1zYYjMI3l6BvF3pvuu3ErTrb60OQFI5JfsaV9rEscXG_tr.t5M_kgPF7OWeb
+ NrwXglif55nHQkKpixXQYhw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 15 Dec 2011 16:52:50 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: jbeulich@suse.com, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, dhowells@redhat.com, akpm@linux-foundation.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/asm] x86: Fix and improve
+ percpu_cmpxchg{8,16}b_double()
+In-Reply-To: <tip-cebef5beed3de3037de85a521495897256b2c5da@git.kernel.org>
+Message-ID: <alpine.DEB.2.00.1112151627060.11871@router.home>
+References: <4EE86D6502000078000679FE@nat28.tlf.novell.com> <tip-cebef5beed3de3037de85a521495897256b2c5da@git.kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s08uBK1Vm0Bx_0NouaaNHU0D2kp9AiL+1LPrT1BZURj0A@mail.gmail.com>
-References: <CAMP44s2M8cFM5AhjMwbFJZpQtbYe13w9bswTRhap97nOCyZVfQ@mail.gmail.com>
-	<CAMP44s08uBK1Vm0Bx_0NouaaNHU0D2kp9AiL+1LPrT1BZURj0A@mail.gmail.com>
-Date: Fri, 16 Dec 2011 00:50:42 +0200
-Message-ID: <CAMP44s1-c965bfTvijrerdVwuLZddKUFvA7X7vDd5Pu+7zeCdw@mail.gmail.com>
-Subject: Re: Issue with isp1704 loaded too soon
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 7:51 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Thu, Dec 15, 2011 at 1:15 AM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Tue, Dec 13, 2011 at 11:19 PM, Felipe Contreras
->> <felipe.contreras@gmail.com> wrote:
->>> On Mon, Dec 12, 2011 at 9:09 AM, Jarkko Nikula <jarkko.nikula@bitmer.com> wrote:
->>>> Indeed yes. I checked that in 3.0 it still works but not in 3.1 so some
->>>> non isp1704_charger change has broke it as there hasn't been changes on it.
->>>
->>> Actually it's broken in 3.0 as well, try this configuration:
->>>
->>>        # CONFIG_USB_MUSB_HOST is not set
->>>        # CONFIG_USB_MUSB_PERIPHERAL is not set
->>>        CONFIG_USB_MUSB_OTG=y
->>>        CONFIG_USB_GADGET_MUSB_HDRC=y
->>>        CONFIG_USB_MUSB_HDRC_HCD=y
->>>
->>>        CONFIG_USB_GADGET_SELECTED=y
->>>        # CONFIG_USB_GADGET_FUSB300 is not set
->>>        # CONFIG_USB_GADGET_OMAP is not set
->>>        # CONFIG_USB_GADGET_R8A66597 is not set
->>>        # CONFIG_USB_GADGET_PXA_U2O is not set
->>>        # CONFIG_USB_GADGET_M66592 is not set
->>>        # CONFIG_USB_GADGET_DUMMY_HCD is not set
->>>
->>> I will try to find where the issues started to happen, but it's a bit
->>> difficult because all this USB Kconfig stuff is completely messed up.
->>>
->>> *Sigh*
->>
->> Ok, I made some progress.
->>
->> The issue appeared on 2.6.39, specifically, on commit 0df0914, which
->> is a merge from Linus. The issue doesn't appear in any of the two
->> parents of that merge.
->>
->> I manually merged various commits, and the first one that triggered
->> the problem is 18a2689, but the commit itself is not the problem but
->> something that was already merged to Linus' tree, specifically at
->> point 6899608.
->>
->> IOW, it's a mixture of two changes that appear together at point,
->> 0df0914, one of them is 18a2689, the other one I still don't know.
->>
->> Unless you can find what's wrong with this commit:
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=arch/arm/mach-omap2/usb-musb.c;h=a9d4d143086d73463b97c093cc9f022de8e1d679;hp=9788b4941857f40d50d48fa6470ee14e179bc373;hb=18a2689;hpb=273ff8c3bc04cf358c131f49ee7a11efa7ec73d7
->>
->> I guess the safest route is to continue with the manual merges to find
->> the second relevant commit =/
->
-> Found it.
->
-> So, the first commit is this one:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=18a2689
->
-> Which needs this one:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=870ea2b
->
-> But it's only triggered with this other one:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=7acc619
->
-> Seems to be some power management stuff, and it's only triggered with
-> certain configurations.
->
-> And this concludes the most tedious git bisect in history =/
+On Thu, 15 Dec 2011, tip-bot for Jan Beulich wrote:
 
-It seems I found the fix:
-http://mid.gmane.org/1323988934-11350-1-git-send-email-felipe.contreras@gmail.com
+> x86: Fix and improve percpu_cmpxchg{8,16}b_double()
 
--- 
-Felipe Contreras
+Great. Thanks. I wish you would have been there when I had to put this
+together. Had a difficult time finding relevant docs etc on how to exactly
+do this. And the failure messages from the inline asm parser were not that
+helpful.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+
+> The __dummy variable was pointless (and needlessly initialized
+> in the 2x32-bit case), given that local copies of the inputs
+> already exist.
+
+Hmm... I had some failures if I did not specify that dummy in the
+inline asm. Does this work for all gcc versions?
+
+> The 2x64-bit variant forced the address of the first object into
+> %rsi, even though this is needed only for the call to the
+> emulation function. The real cmpxchg16b can operate on an
+> memory.
+
+Yup. Good idea to code the load into the alternative code path to avoid
+the cmpxchg of the primary code path to be restricted to %si register.
+
+You dropped the padding with NOPs. Are the instructions on both paths
+always the same length?
+
