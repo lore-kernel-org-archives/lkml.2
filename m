@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab1LOXrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 18:47:37 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:3220
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759690Ab1LOXrf (ORCPT
+	id S1759872Ab1LOXu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 18:50:26 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:48767 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759835Ab1LOXuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 18:47:35 -0500
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LW9RF3-02-9RA-02
-X-M-MSG: 
-Date: Fri, 16 Dec 2011 00:47:28 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
- samples
-Message-ID: <20111215234727.GJ15738@erda.amd.com>
-References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
- <1323969824-9711-5-git-send-email-robert.richter@amd.com>
- <4EEA4827.2000302@gmail.com>
+	Thu, 15 Dec 2011 18:50:25 -0500
+Date: Fri, 16 Dec 2011 01:50:18 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
+        Hema Kalliguddi <hemahk@ti.com>
+Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
+Message-ID: <20111215235017.GA2242@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+ <20111215230143.GA2090@legolas.emea.dhcp.ti.com>
+ <CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
 Content-Disposition: inline
-In-Reply-To: <4EEA4827.2000302@gmail.com>
+In-Reply-To: <CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.12.11 12:19:03, David Ahern wrote:
 
-> > +sub process_event
-> > +{
-> > +	my ($event, $attr, $sample, $raw_data) = @_;
-> > +
-> > +	my ($type)		= (unpack("LSS", $event))[0];
-> > +	my ($sample_type)	= (unpack("LLQQQQQLLQQ", $attr))[4];
-> > +	my ($cpu, $raw_size)	= (unpack("QLLQQQQQLL", $sample))[8, 9];
-> > +	my ($caps, @ibs_data)	= unpack("LQ*", $raw_data);
-> > +
-> > +	return if (!$raw_size);		# no raw data
-> > +
-> > +	if (scalar(@ibs_data) ==  3) {
-> > +	        printf("IBS_FETCH sample on cpu%d\tIBS0: 0x%016x IBS1: 0x%016x IBS2:0x%016x\n",
-> > +		       $cpu, @ibs_data);
-> > +	} else {
-> > +	        printf("IBS_OP sample on cpu%d\t" .
-> > +		       "\t IBS0: 0x%016x IBS1: 0x%016x IBS2: 0x%016x\n" .
-> > +		       "\tIBS3: 0x%016x IBS4: 0x%016x IBS5: 0x%016x IBS6: 0x%016x\n",
-> > +		       cpu, @ibs_data);
-> > +	}
-> > +}
-> 
-> Doesn't seem like you are verifying that the tracepoints fed to this
-> script are actually ibs related. For example, if a user points to the
-> wrong perf.data which has raw data in it this script would happily parse
-> and display numbers.
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For 'perf script ibs' and 'perf script record ibs' this does not
-matter as the builtin perf record wrapper is used that always creates
-ibs data. For 'perf script report ibs' the perf.data file is not
-checked for valid ibs samples. In case you point to a wrong file your
-report will be wrong too. I don't think this is an issue for this
-initial version. The pmu mapping is already in the header so
-implementing a check is generally possible.
+On Fri, Dec 16, 2011 at 01:31:02AM +0200, Felipe Contreras wrote:
+> On Fri, Dec 16, 2011 at 1:01 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Fri, Dec 16, 2011 at 12:42:14AM +0200, Felipe Contreras wrote:
+> >> In musb_init_controller() there's a pm_runtime_put(), but there's no
+> >> pm_runtime_get(), which creates a mismatch that causes the driver to
+> >> sleep when it shouldn't.
+> >>
+> >> This was introduced in 7acc619, but it wasn't triggered until 18a2689
+> >> was merged to Linus' branch at point 6899608.
+> >
+> > you need to add the commit description (whatever was the mail's subject)
+> > here too. And you should put in Cc the author or those commits too,
+> > otherwise we can't poke into their brains to understand what they were
+> > thinking when they originally wrote those patches.
+>=20
+> True, but code is code, and even if you don't know what he was
+> thinking, it's clear there's something wrong.
+>=20
+> >> However, it seems most of the time this is used in a way that keeps the
+> >> counter above 0, so nobody noticed. Also, it seems to depend on the
+> >> configuration used.
+> >>
+> >> I found the problem by loading isp1704_charger before any usb gadgets:
+> >> http://article.gmane.org/gmane.linux.kernel/1226122
+> >>
+> >> All versions after 2.6.39 are affected.
+> >>
+> >> Cc: stable@vger.kernel.org
+> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> >> ---
+> >> =A0drivers/usb/musb/musb_core.c | =A0 =A02 --
+> >> =A01 files changed, 0 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core=
+=2Ec
+> >> index b63ab15..920f04e 100644
+> >> --- a/drivers/usb/musb/musb_core.c
+> >> +++ b/drivers/usb/musb/musb_core.c
+> >> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIr=
+q, void __iomem *ctrl)
+> >> =A0 =A0 =A0 if (status < 0)
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 goto fail3;
+> >>
+> >> - =A0 =A0 pm_runtime_put(musb->controller);
+> >
+> > To me the real fix would be add the missing pm_runtime_get_sync(). On
+> > probe() we're actually accessing MUSB's address space which needs it's
+> > clocks turned on. I guess it's only working now by chance, probably
+> > because glue layer calls pm_runtime_get_sync() to access it's own
+> > address space and that uses the same clocks.
+>=20
+> Are you sure it's "musb-hdrc", and not "musb-omap2430" the one
+> accessing the relevant address-space? From the runtime_pm
+> documentation it looks like only the probe function should deal with
+> this.
+>=20
+> If "musb-hdrc" was truly accessing these registers, then I would get
+> the same failure because the clocks are turned off, but I don't...
 
-> Also, why a perl script versus the builtin dumping capability of
-> perf-script? e.g., add ibs to the fields and while processing the event
-> verify that the tracepoint is ibs related.
+see musb_core_init(); You don't see any problems when accessing those
+addresses because musb_platform_init() will fall into
+omap2430_musb_init() which calls pm_runtime_get_sync(), and the same
+clock actually enables both address spaces (musb-omap2430 and
+musb-hdrc).
 
-IBS samples are not tracepoints but some special kind of hardware
-event. It would be hard to reuse the tracing framework for this. Also,
-the parser above is intended to be a reference implementation of how
-to generate and decode ibs samples. It should be the basis for
-customized scripts to extract information from ibs data.
+(now, this was all from memory, so it could be wrong ;-)
 
--Robert
+--=20
+balbi
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO6oe5AAoJEIaOsuA1yqREz6kP/1YeW1iMmk3rW52Yagvqko3P
+Ku1dZ01sH6lj4Kx87Kx2yoazl5kUPN6ahYKa+yEJDOjgkCRG+SHBPMBwJ3A/gcb+
+t57J3E+nndvyD6tSMGkJkjv7Ic8f+1EZvkuZwJg1IYXdHM7IiE2af2t412ceMpDC
+D0PbAdXljRdHi4sRILTfbeqtHv0FVbXTr/7u8EtFzQZIVFrA0qdHSyKiUZYONqsc
+vhbFRzFVvqSagVu3kg3o+EeRyeGvQmHi8ZiYCLkdSWGWLO9KL5SQwfvuZ8UQYGDM
+wudSbCbrlSWvlLyw9bAVsCi89e2baaRAD/8L3UwMSVDzxBR+xg/SuYe9IMnnBDeq
+sex92QDo7Joijycq+WUsVnR8MZdBS1AhUBcFEOMD4Elq+FHtzfwAFEcHdh3xFmp5
+LMo8SyeGwpgXXtzV+HRLIOCpiNT56vqCpVfGriZlnL4paUc40ATyA40/Em4D6THb
+dD3nYGovyERNLyIUbBY46yG98Lb2DTY2EO1+IPBZ5crSNxSVGvsfO4LF2TLOMQXB
+ZLKjgyGXeP/HCuGW4u2coUUWqPSSJGzH8uKuTH0aU1J7w9k3mTNf/+yfhnGrx3Jm
+DNF2S5pvmxTbaiarHHI7tq5hpOIM/7N3wrRFoXCDN7tKFRCUSaQkkL4VUB4drnfZ
+q2P92WZWdkq699HRjLFc
+=1BNu
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
