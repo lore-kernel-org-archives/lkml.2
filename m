@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab1LOJEe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 04:04:34 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63239 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab1LOJEb (ORCPT
+	id S1758705Ab1LOJGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 04:06:16 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60083 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab1LOJGK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 04:04:31 -0500
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] audit: fix mark refcounting
-References: <87obwof06x.fsf@tucsk.pomaz.szeredi.hu>
-	<87ipljcjc2.fsf@tucsk.pomaz.szeredi.hu>
-	<CA+55aFxuGPj5rhFYt3O1yci_CqHe+Xs8U7WrWOih2W9U73N69w@mail.gmail.com>
-	<20111215084050.GQ2203@ZenIV.linux.org.uk>
-	<87fwgmjjr9.fsf@tucsk.pomaz.szeredi.hu>
-Date: Thu, 15 Dec 2011 10:03:41 +0100
-In-Reply-To: <87fwgmjjr9.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
-	of "Thu, 15 Dec 2011 09:56:26 +0100")
-Message-ID: <87aa6ujjf6.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 15 Dec 2011 04:06:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20111215083325.GA21664@redhat.com>
+References: <20111209142303.GC31323@redhat.com>
+	<1323657683-13934-1-git-send-email-kernelfans@gmail.com>
+	<20111213113628.GB31138@amt.cnet>
+	<CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com>
+	<20111215083325.GA21664@redhat.com>
+Date: Thu, 15 Dec 2011 17:06:09 +0800
+Message-ID: <CAFgQCTs8fQbAc8+aEJ58yYnCUQQO+g1UgT8cY1ZDiq5XJ8h48w@mail.gmail.com>
+Subject: Re: [PATCH v3] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, aliguori@us.ibm.com,
+        jan.kiszka@web.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated patch:
+2011/12/15 Gleb Natapov <gleb@redhat.com>:
+> On Thu, Dec 15, 2011 at 11:21:37AM +0800, Liu ping fan wrote:
+>> On Tue, Dec 13, 2011 at 7:36 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>> > On Mon, Dec 12, 2011 at 10:41:23AM +0800, Liu Ping Fan wrote:
+>> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> >>
+>> >> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> >> Change this to vcpu's destruction taken when its refcnt is zero,
+>> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>> >>
+>> >> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> >> ---
+>> >>  arch/x86/kvm/i8254.c     |   10 ++++--
+>> >>  arch/x86/kvm/i8259.c     |   12 +++++--
+>> >>  arch/x86/kvm/mmu.c       |    7 ++--
+>> >>  arch/x86/kvm/x86.c       |   54 +++++++++++++++++++----------------
+>> >>  include/linux/kvm_host.h |   71 ++++++++++++++++++++++++++++++++++++++++++----
+>> >>  virt/kvm/irq_comm.c      |    7 +++-
+>> >>  virt/kvm/kvm_main.c      |   62 +++++++++++++++++++++++++++++++++------
+>> >>  7 files changed, 170 insertions(+), 53 deletions(-)
+>> >
+>> > This needs a full audit of paths that access vcpus. See for one example
+>> > bsp_vcpu pointer.
+>> >
+>> Yes, I had missed it and just paid attention to the access path to
+>> vcpu in kvm_lapic and the path used in async_pf. I will correct it
+>> later.
+>> BTW, I want to make it sure that because kvm_lapic will be destroyed
+>> before vcpu, so  it is safe to bypass the access path there, and the
+>> situation is the same in async_pf for we have called
+>> kvm_clear_async_pf_completion_queue before zapping vcpu.  Am I right?
+>>
+>> As to the scene like bsp_vcpu, I think that introducing refcount like
+>> in V2 can handle it easier. Please help to review these changes in V4
+>> which I will send a little later.
+>>
+> Since bsp_vcpu pointer will never be released or re-assigned introducing
+> reference count to keep the pointer valid is not necessary. The counter
+> will never reach 0 and bsp vcpu will never be freed. Just disallow
 
-----
-From: Miklos Szeredi <mszeredi@suse.cz>
-Subject: fsnotify: hold reference to mark around destroy
+OK. And I have a question -- who will play the role to guard bsp_vcpu?
+kernel or qemu?  Must I add something in kernel to protect the
+bsp_vcpu
 
-Removing the parent of a watched file results in "kernel BUG at
-fs/notify/mark.c:139".
+> removal of bsp_vcpu. Or better get rid of bsp_vcpu at all since its only
+> use is invalid anyway.
+>
+I will dig into it and see how to handle it.
 
-To reproduce
-
-  add "-w /tmp/audit/dir/watched_file" to audit.rules
-  rm -rf /tmp/audit/dir
-
-This is caused by fsnotify_destroy_mark() being called without an
-extra reference taken by the caller.
-
-Reported by Francesco Cosoleto here:
-
-  https://bugzilla.novell.com/show_bug.cgi?id=689860
-
-Linus noticed that the call in
-
- fs/notify/inotify/inotify_fsnotify.c
-
-has also missing reference to mark.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Al Viro <viro@zeniv.linux.org.uk>
-CC: Eric Paris <eparis@redhat.com>
-CC: stable@vger.kernel.org
----
- fs/notify/inotify/inotify_fsnotify.c |    5 ++++-
- kernel/audit_watch.c                 |    2 ++
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-Index: linux.git/kernel/audit_watch.c
-===================================================================
---- linux.git.orig/kernel/audit_watch.c	2011-12-14 13:59:47.000000000 +0100
-+++ linux.git/kernel/audit_watch.c	2011-12-15 09:57:53.000000000 +0100
-@@ -349,7 +349,9 @@ static void audit_remove_parent_watches(
- 	}
- 	mutex_unlock(&audit_filter_mutex);
- 
-+	audit_get_parent(parent);
- 	fsnotify_destroy_mark(&parent->mark);
-+	audit_put_parent(parent);
- }
- 
- /* Get path information necessary for adding watches. */
-Index: linux.git/fs/notify/inotify/inotify_fsnotify.c
-===================================================================
---- linux.git.orig/fs/notify/inotify/inotify_fsnotify.c	2011-09-13 16:08:20.000000000 +0200
-+++ linux.git/fs/notify/inotify/inotify_fsnotify.c	2011-12-15 09:59:15.000000000 +0100
-@@ -130,8 +130,11 @@ static int inotify_handle_event(struct f
- 			ret = PTR_ERR(added_event);
- 	}
- 
--	if (inode_mark->mask & IN_ONESHOT)
-+	if (inode_mark->mask & IN_ONESHOT) {
-+		fsnotify_get_mark(inode_mark);
- 		fsnotify_destroy_mark(inode_mark);
-+		fsnotify_put_mark(inode_mark);
-+	}
- 
- 	return ret;
- }
+Thanks and regards,
+ping fan
+> --
+>                        Gleb.
