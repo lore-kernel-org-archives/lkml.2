@@ -1,149 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1LOMqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 07:46:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60953 "EHLO mx1.redhat.com"
+	id S1758767Ab1LOMz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 07:55:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143Ab1LOMqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 07:46:51 -0500
-From: Amit Shah <amit.shah@redhat.com>
-To: Virtualization List <virtualization@lists.linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v5 03/11] virtio: console: Move vq and vq buf removal into separate functions
-Date: Thu, 15 Dec 2011 18:15:49 +0530
-Message-Id: <6064de73e48118cbfe7c3eccd53b702ccf7d82b5.1323952933.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
-References: <cover.1323952933.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1323952933.git.amit.shah@redhat.com>
-References: <cover.1323952933.git.amit.shah@redhat.com>
+	id S1751245Ab1LOMz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 07:55:57 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix order_base_2(0) [ver #2]
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>, stable@kernel.org
+Date: Thu, 15 Dec 2011 12:55:38 +0000
+Message-ID: <20111215125538.2838.41548.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This common code will be shared with the PM freeze function.
+The order_base_2() function is either wrongly documented or wrongly
+implemented.  In the preceding comment, it says that:
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
+	ob2(0) = 0
+
+but this is not valid as roundup_pow_of_two()'s documentation asserts that:
+
+	* - the result is undefined when n == 0
+
+Remove the bit of comment that says order_base_2(0) returns 0.
+
+Add comments to order_base_2() and other functions in the same header file to
+indicate that the result is undefined if n <= 0.  Note that it is possible to
+give ilog2() a negative number if passing a constant value and this will result
+in a compilation failure (it'll try and reference ____ilog2_NaN because n < 1).
+
+Also, whilst we're at it, stick brackets around the body of order_base_2().
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Robert P. J. Day <rpjday@crashcourse.ca>
+cc: stable@kernel.org
 ---
- drivers/char/virtio_console.c |   68 ++++++++++++++++++++++++-----------------
- 1 files changed, 40 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 8e3c46d..e14f5aa 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1271,6 +1271,20 @@ static void remove_port(struct kref *kref)
- 	kfree(port);
- }
- 
-+static void remove_port_data(struct port *port)
-+{
-+	struct port_buffer *buf;
-+
-+	/* Remove unused data this port might have received. */
-+	discard_port_data(port);
-+
-+	reclaim_consumed_buffers(port);
-+
-+	/* Remove buffers we queued up for the Host to send us data in. */
-+	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
-+		free_buf(buf);
-+}
-+
- /*
-  * Port got unplugged.  Remove port from portdev's list and drop the
-  * kref reference.  If no userspace has this port opened, it will
-@@ -1278,8 +1292,6 @@ static void remove_port(struct kref *kref)
+ include/linux/log2.h |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/log2.h b/include/linux/log2.h
+index fd7ff3d..358620d 100644
+--- a/include/linux/log2.h
++++ b/include/linux/log2.h
+@@ -81,6 +81,8 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+  *   the massive ternary operator construction
+  *
+  * selects the appropriately-sized optimised version depending on sizeof(n)
++ *
++ * The result is undefined if n <= 0.
   */
- static void unplug_port(struct port *port)
- {
--	struct port_buffer *buf;
+ #define ilog2(n)				\
+ (						\
+@@ -162,7 +164,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+  * @n - parameter
+  *
+  * round the given value up to the nearest power of two
+- * - the result is undefined when n == 0
++ * - the result is undefined when n <= 0
+  * - this can be used to initialise global variables from constant data
+  */
+ #define roundup_pow_of_two(n)			\
+@@ -179,7 +181,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+  * @n - parameter
+  *
+  * round the given value down to the nearest power of two
+- * - the result is undefined when n == 0
++ * - the result is undefined when n <= 0
+  * - this can be used to initialise global variables from constant data
+  */
+ #define rounddown_pow_of_two(n)			\
+@@ -194,15 +196,15 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+  * @n: parameter
+  *
+  * The first few values calculated by this routine:
+- *  ob2(0) = 0
+  *  ob2(1) = 0
+  *  ob2(2) = 1
+  *  ob2(3) = 2
+  *  ob2(4) = 2
+  *  ob2(5) = 3
+  *  ... and so on.
++ *
++ * The result is undefined if n <= 0.
+  */
 -
- 	spin_lock_irq(&port->portdev->ports_lock);
- 	list_del(&port->list);
- 	spin_unlock_irq(&port->portdev->ports_lock);
-@@ -1300,14 +1312,7 @@ static void unplug_port(struct port *port)
- 		hvc_remove(port->cons.hvc);
- 	}
+-#define order_base_2(n) ilog2(roundup_pow_of_two(n))
++#define order_base_2(n) (ilog2(roundup_pow_of_two(n)))
  
--	/* Remove unused data this port might have received. */
--	discard_port_data(port);
--
--	reclaim_consumed_buffers(port);
--
--	/* Remove buffers we queued up for the Host to send us data in. */
--	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
--		free_buf(buf);
-+	remove_port_data(port);
- 
- 	/*
- 	 * We should just assume the device itself has gone off --
-@@ -1659,6 +1664,28 @@ static const struct file_operations portdev_fops = {
- 	.owner = THIS_MODULE,
- };
- 
-+static void remove_vqs(struct ports_device *portdev)
-+{
-+	portdev->vdev->config->del_vqs(portdev->vdev);
-+	kfree(portdev->in_vqs);
-+	kfree(portdev->out_vqs);
-+}
-+
-+static void remove_controlq_data(struct ports_device *portdev)
-+{
-+	struct port_buffer *buf;
-+	unsigned int len;
-+
-+	if (!use_multiport(portdev))
-+		return;
-+
-+	while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
-+		free_buf(buf);
-+
-+	while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
-+		free_buf(buf);
-+}
-+
- /*
-  * Once we're further in boot, we get probed like any other virtio
-  * device.
-@@ -1764,9 +1791,7 @@ free_vqs:
- 	/* The host might want to notify mgmt sw about device add failure */
- 	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
- 			   VIRTIO_CONSOLE_DEVICE_READY, 0);
--	vdev->config->del_vqs(vdev);
--	kfree(portdev->in_vqs);
--	kfree(portdev->out_vqs);
-+	remove_vqs(portdev);
- free_chrdev:
- 	unregister_chrdev(portdev->chr_major, "virtio-portsdev");
- free:
-@@ -1804,21 +1829,8 @@ static void virtcons_remove(struct virtio_device *vdev)
- 	 * have to just stop using the port, as the vqs are going
- 	 * away.
- 	 */
--	if (use_multiport(portdev)) {
--		struct port_buffer *buf;
--		unsigned int len;
--
--		while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
--			free_buf(buf);
--
--		while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
--			free_buf(buf);
--	}
--
--	vdev->config->del_vqs(vdev);
--	kfree(portdev->in_vqs);
--	kfree(portdev->out_vqs);
--
-+	remove_controlq_data(portdev);
-+	remove_vqs(portdev);
- 	kfree(portdev);
- }
- 
--- 
-1.7.7.3
+ #endif /* _LINUX_LOG2_H */
 
