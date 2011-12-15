@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759334Ab1LOSoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 13:44:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50034 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759252Ab1LOSoL (ORCPT
+	id S1756451Ab1LOSxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 13:53:31 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:34976 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab1LOSxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 13:44:11 -0500
+	Thu, 15 Dec 2011 13:53:30 -0500
+Date: Thu, 15 Dec 2011 19:54:15 +0100
+From: tino.keitel+xorg@tikei.de
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rocko Requin <rockorequin@hotmail.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at drivers/gpu/drm/i915/i915_gem
+Message-ID: <20111215185415.GA3445@mac.home>
+Mail-Followup-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Rocko Requin <rockorequin@hotmail.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
+ <CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com>
+ <BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl>
+ <CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com>
+ <BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl>
+ <CAKMK7uGpn6AJGtbMCYWW1ziR=Zs+E9LB=aiB5aUu0unfVW=2oA@mail.gmail.com>
+ <20111214195751.GA31690@mac.home>
 MIME-Version: 1.0
-In-Reply-To: <4EEA0C39.4050900@canonical.com>
-References: <4EEA0C39.4050900@canonical.com>
-Date: Thu, 15 Dec 2011 10:44:10 -0800
-X-Google-Sender-Auth: A-R2s2Q17xpNYtHGuMl1w3WPiF0
-Message-ID: <CAOS58YPj1Qc_dfMc83P3ifRAnKW7d828SBxTZK1dc=wMDb6iXQ@mail.gmail.com>
-Subject: Re: WARNING: at drivers/block/floppy.c:2929 do_fd_request+0xb7/0xb9()
-From: Tejun Heo <tj@kernel.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111214195751.GA31690@mac.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Dec 14, 2011 at 20:57:51 +0100, tino.keitel+xorg@tikei.de wrote:
 
-On Thu, Dec 15, 2011 at 7:03 AM, Tim Gardner <tim.gardner@canonical.com> wrote:
-> Tejun - is your patch from https://lkml.org/lkml/2011/12/5/421 in the
-> pipeline ? We've got some test machines that are incurring many instances of
-> this warning. I noticed that Wu Fengguang also complained about it in
-> https://lkml.org/lkml/2011/11/2/208.
+[...]
 
-Ooh, I think I forgot to send proper patch for that. Sending it now.
+> it looks I stumbled over the same:
+> 
+> [88399.844150] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:1952!
+> 2011-12-14_19:28:56.93083 <0>[88399.844182] invalid opcode: 0000 [#1]
+> SMP 
+> 
+> While doing this I was running a 32 bit photo software (Bibble 5 pro)
+> in fullscreen on an otherwise 64 bit system.
+> 
+> The full log including the trace is attached.
+> 
+> I'll try with the patch applied.
 
-Thanks for reminding me.
+I just got the same hang again with the patch applied.
 
--- 
-tejun
+Regards,
+Tino
