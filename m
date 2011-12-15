@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759382Ab1LOTIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 14:08:50 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:35635 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759360Ab1LOTIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 14:08:49 -0500
-Date: Thu, 15 Dec 2011 14:08:46 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 bugfixes for 3.2-rc5
-Message-ID: <20111215190846.GA2709@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1RauNd-0008W1-02@tytso-glaptop.cam.corp.google.com>
- <CA+55aFw6n=WaDWRn7NqtBei1x0-w1PkH5x6r3iQSSPZvxYvDhQ@mail.gmail.com>
+	id S1759400Ab1LOTJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 14:09:17 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56264 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751300Ab1LOTJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 14:09:16 -0500
+Message-ID: <4EEA45C6.2020106@fb.com>
+Date: Thu, 15 Dec 2011 11:08:54 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw6n=WaDWRn7NqtBei1x0-w1PkH5x6r3iQSSPZvxYvDhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: <avagin@gmail.com>
+CC: <avagin@openvz.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 3/4] trace: add ability to collect call chain of non-current
+ task.
+References: <1317052535-1765247-1-git-send-email-avagin@openvz.org> <1317052535-1765247-4-git-send-email-avagin@openvz.org> <1317132351.15383.66.camel@twins> <20110927205548.GN18553@somewhere> <4EE01ACB.1000102@fb.com> <4EE1EC0B.4020600@openvz.org> <4EE903B1.7000600@fb.com> <4EEA101C.7060505@gmail.com>
+In-Reply-To: <4EEA101C.7060505@gmail.com>
+Content-Type: text/plain; charset="KOI8-R"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-15_05:2011-12-15,2011-12-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 06:50:07PM -0800, Linus Torvalds wrote:
-> On Wed, Dec 14, 2011 at 11:20 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >
-> > There is a signed tag tytso-for-linus-20111214 covering these patches,
-> > which fix a potential hang, crash (on big endian), and data corruption
-> > bugs which show up when using fsx and/or Hugh's kernel compile/mm
-> > torture test.
-> 
-> Ok, since I build my own git versions, I have one that can pull signed
-> tags and automatically verifies them and saves the signed tag
-> information as part of the commit object.
 
-Cool!  Does it save enough that GPG signature information can be
-verified later?  I'm a little fuzzy on what is covered by the
-signature which gets verified when you run the command "git verify-tag
-tytso-for-linus-20111214".  Better yet, does the new version of git
-have a command that will automatically verify the digital signature
-found in a merge commit?
 
-And this isn't in 1.7.8 yet, right?  I'd have to build version of git
-based on the next branch to play with this new signatury goodness?
+On 12/15/11 7:19 AM, Andrew Vagin wrote:
 
-      	     	  	    	      - Ted
+>>> * It doesn't distinguish blocking time and sleeping time.
+>>
+>> Can't we distinguish based on next->state?
+> It will be "Running". We can distinguish based on block_start of
+> sleep_start
+
+Sounds good.
+
+>>
+>>> * This patch does a bit mess between subsystems...
+>>
+>> Which subsystems?
+> sched_switch belongs to scheduler.
+> sched_stat belongs to sched_fair.
+>
+
+My reading of the code is that 'struct sched_statistics' is independent 
+of the scheduling class. But only sched_fair.c is actually populating 
+the stats. Other classes could populate those fields if they choose to.
+
+> It works for me. You can find output of commands bellow.
+>
+> # ./perf record -e sched:sched_switch -agP
+
+Thanks. I forgot to use the -P option you added on my cmdline.
+
+I still need to investigate why per-process mode (command line without 
+-a) doesn't work. Will send an updated patch once that's fixed.
+
+  -Arun
+
