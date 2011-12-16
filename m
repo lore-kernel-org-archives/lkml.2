@@ -1,179 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863Ab1LPT6x (ORCPT <rfc822;w@1wt.eu>);
+	id S1030208Ab1LPT7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:59:11 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:58092 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932884Ab1LPT6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Dec 2011 14:58:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45405 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964901Ab1LPTxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:53:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:13 2011
-Message-Id: <20111216194213.685433813@clark.kroah.org>
-User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:49 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [42/45] ibft: Fix finding IBFT ACPI table on UEFI
-In-Reply-To: <20111216194603.GA15028@kroah.com>
+Date: Fri, 16 Dec 2011 11:58:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 10/15] module_param: make bool parameters really bool
+ (core code)
+Message-ID: <20111216195830.GH2419@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <87k45ysf1n.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k45ysf1n.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11121619-1780-0000-0000-000001B19459
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000241; HX=3.00000180; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00096675; UDB=6.00025173; UTC=2011-12-16
+ 19:58:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 15, 2011 at 01:43:24PM +1030, Rusty Russell wrote:
+> module_param(bool) used to counter-intuitively take an int.  In
+> fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
+> trick.
+> 
+> It's time to remove the int/unsigned int option.  For this version
+> it'll simply give a warning, but it'll break next kernel version.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-------------------
+For the rcutorture component:
 
-From: Yinghai Lu <yinghai.lu@oracle.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-commit 935a9fee51c945b8942be2d7b4bae069167b4886 upstream.
+Given that this portion of the patch is self-sufficient, I have queued
+the rcutorture portion of this patch with your signed-off-by, which I
+can push for either 3.3 or 3.4 (default is most likely 3.4).  Of course,
+if you would prefer some other approach, please let me know.
 
-Found one system with UEFI/iBFT, kernel does not detect the iBFT during
-iscsi_ibft module loading.
+							Thanx, Paul
 
-Root cause: on x86 (UEFI), we are calling of find_ibft_region() much earlier
-- specifically in setup_arch() before ACPI is enabled.
-
-Try to split acpi checking code out and call that later
-
-At that time ACPI iBFT already get permanent mapped with ioremap.
-So isa_virt_to_bus() will get wrong phys from right virt address.
-We could just skip that phys address printing.
-
-For legacy one, print the found address early.
-
--v2: update comments and description according to Konrad.
--v3: fix problem about module use case that is found by Konrad.
--v4: use acpi_get_table() instead of acpi_table_parse() to handle module use case that is found by Konrad again..
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/firmware/iscsi_ibft.c      |   42 +++++++++++++++++++++++++++++++++++--
- drivers/firmware/iscsi_ibft_find.c |   26 +---------------------
- 2 files changed, 42 insertions(+), 26 deletions(-)
-
---- a/drivers/firmware/iscsi_ibft.c
-+++ b/drivers/firmware/iscsi_ibft.c
-@@ -738,6 +738,37 @@ static void __exit ibft_exit(void)
- 	ibft_cleanup();
- }
- 
-+#ifdef CONFIG_ACPI
-+static const struct {
-+	char *sign;
-+} ibft_signs[] = {
-+	/*
-+	 * One spec says "IBFT", the other says "iBFT". We have to check
-+	 * for both.
-+	 */
-+	{ ACPI_SIG_IBFT },
-+	{ "iBFT" },
-+};
-+
-+static void __init acpi_find_ibft_region(void)
-+{
-+	int i;
-+	struct acpi_table_header *table = NULL;
-+
-+	if (acpi_disabled)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++) {
-+		acpi_get_table(ibft_signs[i].sign, 0, &table);
-+		ibft_addr = (struct acpi_table_ibft *)table;
-+	}
-+}
-+#else
-+static void __init acpi_find_ibft_region(void)
-+{
-+}
-+#endif
-+
- /*
-  * ibft_init() - creates sysfs tree entries for the iBFT data.
-  */
-@@ -745,9 +776,16 @@ static int __init ibft_init(void)
- {
- 	int rc = 0;
- 
-+	/*
-+	   As on UEFI systems the setup_arch()/find_ibft_region()
-+	   is called before ACPI tables are parsed and it only does
-+	   legacy finding.
-+	*/
-+	if (!ibft_addr)
-+		acpi_find_ibft_region();
-+
- 	if (ibft_addr) {
--		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
--		       (u64)isa_virt_to_bus(ibft_addr));
-+		pr_info("iBFT detected.\n");
- 
- 		rc = ibft_check_device();
- 		if (rc)
---- a/drivers/firmware/iscsi_ibft_find.c
-+++ b/drivers/firmware/iscsi_ibft_find.c
-@@ -45,13 +45,6 @@ EXPORT_SYMBOL_GPL(ibft_addr);
- static const struct {
- 	char *sign;
- } ibft_signs[] = {
--#ifdef CONFIG_ACPI
--	/*
--	 * One spec says "IBFT", the other says "iBFT". We have to check
--	 * for both.
--	 */
--	{ ACPI_SIG_IBFT },
--#endif
- 	{ "iBFT" },
- 	{ "BIFT" },	/* Broadcom iSCSI Offload */
- };
-@@ -62,14 +55,6 @@ static const struct {
- #define VGA_MEM 0xA0000 /* VGA buffer */
- #define VGA_SIZE 0x20000 /* 128kB */
- 
--#ifdef CONFIG_ACPI
--static int __init acpi_find_ibft(struct acpi_table_header *header)
--{
--	ibft_addr = (struct acpi_table_ibft *)header;
--	return 0;
--}
--#endif /* CONFIG_ACPI */
--
- static int __init find_ibft_in_mem(void)
- {
- 	unsigned long pos;
-@@ -94,6 +79,7 @@ static int __init find_ibft_in_mem(void)
- 				 * the table cannot be valid. */
- 				if (pos + len <= (IBFT_END-1)) {
- 					ibft_addr = (struct acpi_table_ibft *)virt;
-+					pr_info("iBFT found at 0x%lx.\n", pos);
- 					goto done;
- 				}
- 			}
-@@ -108,20 +94,12 @@ done:
-  */
- unsigned long __init find_ibft_region(unsigned long *sizep)
- {
--#ifdef CONFIG_ACPI
--	int i;
--#endif
- 	ibft_addr = NULL;
- 
--#ifdef CONFIG_ACPI
--	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
--		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
--#endif /* CONFIG_ACPI */
--
- 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
- 	 * only use ACPI for this */
- 
--	if (!ibft_addr && !efi_enabled)
-+	if (!efi_enabled)
- 		find_ibft_in_mem();
- 
- 	if (ibft_addr) {
-
+> ---
+>  include/linux/init.h   |    3 ++-
+>  init/main.c            |    2 +-
+>  kernel/irq/internals.h |    2 +-
+>  kernel/irq/spurious.c  |    2 +-
+>  kernel/printk.c        |    8 ++++----
+>  kernel/rcutorture.c    |    4 ++--
+>  6 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/init.h b/include/linux/init.h
+> --- a/include/linux/init.h
+> +++ b/include/linux/init.h
+> @@ -2,6 +2,7 @@
+>  #define _LINUX_INIT_H
+> 
+>  #include <linux/compiler.h>
+> +#include <linux/types.h>
+> 
+>  /* These macros are used to mark some functions or 
+>   * initialized data (doesn't apply to uninitialized data)
+> @@ -156,7 +157,7 @@ void prepare_namespace(void);
+> 
+>  extern void (*late_time_init)(void);
+> 
+> -extern int initcall_debug;
+> +extern bool initcall_debug;
+> 
+>  #endif
+>    
+> diff --git a/init/main.c b/init/main.c
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -654,7 +654,7 @@ static void __init do_ctors(void)
+>  #endif
+>  }
+> 
+> -int initcall_debug;
+> +bool initcall_debug;
+>  core_param(initcall_debug, initcall_debug, bool, 0644);
+> 
+>  static char msgbuf[64];
+> diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+> --- a/kernel/irq/internals.h
+> +++ b/kernel/irq/internals.h
+> @@ -15,7 +15,7 @@
+> 
+>  #define istate core_internal_state__do_not_mess_with_it
+> 
+> -extern int noirqdebug;
+> +extern bool noirqdebug;
+> 
+>  /*
+>   * Bits used by threaded handlers:
+> diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+> --- a/kernel/irq/spurious.c
+> +++ b/kernel/irq/spurious.c
+> @@ -325,7 +325,7 @@ void note_interrupt(unsigned int irq, st
+>  	desc->irqs_unhandled = 0;
+>  }
+> 
+> -int noirqdebug __read_mostly;
+> +bool noirqdebug __read_mostly;
+> 
+>  int noirqdebug_setup(char *str)
+>  {
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -521,7 +521,7 @@ static void __call_console_drivers(unsig
+>  	}
+>  }
+> 
+> -static int __read_mostly ignore_loglevel;
+> +static bool __read_mostly ignore_loglevel;
+> 
+>  static int __init ignore_loglevel_setup(char *str)
+>  {
+> @@ -695,9 +695,9 @@ static void zap_locks(void)
+>  }
+> 
+>  #if defined(CONFIG_PRINTK_TIME)
+> -static int printk_time = 1;
+> +static bool printk_time = 1;
+>  #else
+> -static int printk_time = 0;
+> +static bool printk_time = 0;
+>  #endif
+>  module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+> 
+> @@ -1099,7 +1099,7 @@ int update_console_cmdline(char *name, i
+>  	return -1;
+>  }
+> 
+> -int console_suspend_enabled = 1;
+> +bool console_suspend_enabled = 1;
+>  EXPORT_SYMBOL(console_suspend_enabled);
+> 
+>  static int __init console_suspend_disable(char *str)
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -56,8 +56,8 @@ static int nreaders = -1;	/* # reader th
+>  static int nfakewriters = 4;	/* # fake writer threads */
+>  static int stat_interval;	/* Interval between stats, in seconds. */
+>  				/*  Defaults to "only at end of test". */
+> -static int verbose;		/* Print more debug info. */
+> -static int test_no_idle_hz;	/* Test RCU's support for tickless idle CPUs. */
+> +static bool verbose;		/* Print more debug info. */
+> +static bool test_no_idle_hz;	/* Test RCU's support for tickless idle CPUs. */
+>  static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
+>  static int stutter = 5;		/* Start/stop testing interval (in sec) */
+>  static int irqreader = 1;	/* RCU readers from irq (timers). */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
