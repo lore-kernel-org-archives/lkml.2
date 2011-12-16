@@ -1,79 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760051Ab1LPC2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 21:28:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59915 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759998Ab1LPC2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 21:28:38 -0500
-Message-ID: <4EEAAD45.5030407@cn.fujitsu.com>
-Date: Fri, 16 Dec 2011 10:30:29 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1760060Ab1LPC3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 21:29:17 -0500
+Received: from eng.riverbed.com ([208.70.196.45]:42143 "EHLO
+	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759764Ab1LPC3P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 21:29:15 -0500
+From: Jiang Wang <Jiang.Wang@riverbed.com>
+To: Jiang Wang <Jiang.Wang@riverbed.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Prasanna Panchamukhi <Prasanna.Panchamukhi@riverbed.com>,
+        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
+        "Francis St. Amant" <Francis.St.Amant@riverbed.com>,
+        "miles.ito@intel.com" <miles.ito@intel.com>
+Subject: RE: [PATCH 2/2] e100: power off PHY after reset when interface is
+ down
+Thread-Topic: [PATCH 2/2] e100: power off PHY after reset when interface is
+ down
+Thread-Index: AQHMupWy7Dun8/ezFEO6lmrZJjJoIZXdv5Dg
+Date: Fri, 16 Dec 2011 02:29:14 +0000
+Message-ID: <CEE05A0D7856E14880AD5560634EBEA82AA789DD@365EXCH-MBX-P5.nbttech.com>
+References: <1323830996-16388-1-git-send-email-Jiang.Wang@riverbed.com>
+ <1323830996-16388-2-git-send-email-Jiang.Wang@riverbed.com>
+In-Reply-To: <1323830996-16388-2-git-send-email-Jiang.Wang@riverbed.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.205.252]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mandeep Singh Baines <msb@chromium.org>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH] cgroups: remove redundant get/put of css_set from css_set_check_fetched()
-References: <1323987686-17968-1-git-send-email-msb@chromium.org>
-In-Reply-To: <1323987686-17968-1-git-send-email-msb@chromium.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-16 10:27:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-16 10:27:50,
-	Serialize complete at 2011-12-16 10:27:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandeep Singh Baines wrote:
-> We already have a reference to all elements in newcg_list.
-> 
+Modified the patch.
 
-Indeed. The patch looks good to me.
+>From a74d3114934a82d17a43eae7b5bb1488d2c1b6c8 Mon Sep 17 00:00:00 2001
+From: Jiang Wang <Jiang.Wang@riverbed.com>
+Date: Thu, 15 Dec 2011 17:44:20 -0800
+Subject: [PATCH 2/2] e100: power off PHY after reset when interface is down
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+PHYs supported by e100 re-starts auto-negotiation after writing to
+BMCR_RESET bit. This patch powers down PHY when the interface is down
+and reset is issued.
 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |   10 ++--------
->  1 files changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index d9d5648..a7e00b9 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1935,23 +1935,17 @@ static bool css_set_check_fetched(struct cgroup *cgrp,
->  
->  	read_lock(&css_set_lock);
->  	newcg = find_existing_css_set(cg, cgrp, template);
-> -	if (newcg)
-> -		get_css_set(newcg);
->  	read_unlock(&css_set_lock);
->  
->  	/* doesn't exist at all? */
->  	if (!newcg)
->  		return false;
->  	/* see if it's already in the list */
-> -	list_for_each_entry(cg_entry, newcg_list, links) {
-> -		if (cg_entry->cg == newcg) {
-> -			put_css_set(newcg);
-> +	list_for_each_entry(cg_entry, newcg_list, links)
-> +		if (cg_entry->cg == newcg)
->  			return true;
-> -		}
-> -	}
->  
->  	/* not found */
-> -	put_css_set(newcg);
->  	return false;
->  }
->  
+Signed-off-by: Jiang Wang <Jiang.Wang@riverbed.com>
+---
+ drivers/net/ethernet/intel/e100.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
+index ca994da..2764cdd 100644
+--- a/drivers/net/ethernet/intel/e100.c
++++ b/drivers/net/ethernet/intel/e100.c
+@@ -589,6 +589,7 @@ struct nic {
+ 		multicast_all      = (1 << 2),
+ 		wol_magic          = (1 << 3),
+ 		ich_10h_workaround = (1 << 4),
++		powered_off        = (1 << 5),
+ 	} flags					____cacheline_aligned;
+ 
+ 	enum mac mac;
+@@ -1454,6 +1455,8 @@ static int e100_phy_init(struct nic *nic)
+ 	phy_data &= ~BMCR_PDOWN;
+ 	mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
+ 
++	nic->flags &= ~powered_off;
++
+ 	/* Get phy ID */
+ 	id_lo = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID1);
+ 	id_hi = mdio_read(netdev, nic->mii.phy_id, MII_PHYSID2);
+@@ -2273,6 +2276,7 @@ static void e100_down(struct nic *nic)
+ 		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
+ 		phy_data |= BMCR_PDOWN;
+ 		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
++		nic->flags |= powered_off;
+ 	}
+ 
+ 	free_irq(nic->pdev->irq, nic->netdev);
+@@ -2383,6 +2387,13 @@ static int e100_set_settings(struct net_device *netdev, struct ethtool_cmd *cmd)
+ 	err = mii_ethtool_sset(&nic->mii, cmd);
+ 	e100_exec_cb(nic, NULL, e100_configure);
+ 
++	if (nic->flags & powered_off) {
++		uint16_t phy_data;
++		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
++		phy_data |= BMCR_PDOWN;
++		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
++	}
++
+ 	return err;
+ }
+ 
+-- 
+1.7.1
+
+
+-------------------------------------
+Jiang Wang
+Member of Technical Staff
+Riverbed Technology
+Tel: (408) 522-5109
+Email: Jiang.Wang@riverbed.com
+www.riverbed.com
+
+
+-----Original Message-----
+From: Jiang Wang [mailto:Jiang.Wang@riverbed.com] 
+Sent: Tuesday, December 13, 2011 6:50 PM
+To: Jeff Kirsher; Jesse Brandeburg; Bruce Allan; Carolyn Wyborny; Don Skidmore; Greg Rose; Peter P Waskiewicz Jr; Alex Duyck; John Ronciak; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Cc: Prasanna Panchamukhi; Chaitanya Lala; Francis St. Amant; miles.ito@intel.com; Jiang Wang
+Subject: [PATCH 2/2] e100: power off PHY after reset when interface is down
+
+PHYs supported by e100 re-starts auto-negotiation after writing to BMCR_RESET bit. This patch powers down PHY when the interface is down and reset is issued.
+
+Signed-off-by: Jiang Wang <Jiang.Wang@riverbed.com>
+---
+ drivers/net/ethernet/intel/e100.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
+index 9824e0a..b8e4910 100644
+--- a/drivers/net/ethernet/intel/e100.c
++++ b/drivers/net/ethernet/intel/e100.c
+@@ -2386,6 +2386,13 @@ static int e100_set_settings(struct net_device *netdev, struct ethtool_cmd *cmd)
+ 	err = mii_ethtool_sset(&nic->mii, cmd);
+ 	e100_exec_cb(nic, NULL, e100_configure);
+ 
++	if (!netif_running(netdev) && !(nic->flags & wol_magic)) {
++		uint16_t phy_data;
++		phy_data = mdio_read(nic->netdev, nic->mii.phy_id, MII_BMCR);
++		phy_data |= BMCR_PDOWN;
++		mdio_write(nic->netdev, nic->mii.phy_id, MII_BMCR, phy_data);
++	}
++
+ 	return err;
+ }
+ 
+--
+1.7.1
+
