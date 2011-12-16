@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab1LPUA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:00:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45332 "EHLO mx2.suse.de"
+	id S1030203Ab1LPUAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:00:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45314 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964839Ab1LPTwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:52:22 -0500
+	id S964823Ab1LPTwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:52:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:11 2011
-Message-Id: <20111216194211.520533536@clark.kroah.org>
+Message-Id: <20111216194211.190237974@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:36 -0800
+Date: Fri, 16 Dec 2011 11:40:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
-        Jeff Mahoney <jeffm@suse.com>, Christoph Hellwig <hch@lst.de>,
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Eryu Guan <guaneryu@gmail.com>, "Theodore Tso" <tytso@mit.edu>,
         =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <jmm@inutil.org>
-Subject: [29/45] hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
+Subject: [27/45] jbd/jbd2: validate sb->s_first in journal_get_superblock()
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phillip Lougher <plougher@redhat.com>
+From: Eryu Guan <guaneryu@gmail.com>
 
-commit 434a964daa14b9db083ce20404a4a2add54d037a upstream.
+commit 8762202dd0d6e46854f786bdb6fb3780a1625efe upstream.
 
-Clement Lecigne reports a filesystem which causes a kernel oops in
-hfs_find_init() trying to dereference sb->ext_tree which is NULL.
+I hit a J_ASSERT(blocknr != 0) failure in cleanup_journal_tail() when
+mounting a fsfuzzed ext3 image. It turns out that the corrupted ext3
+image has s_first = 0 in journal superblock, and the 0 is passed to
+journal->j_head in journal_reset(), then to blocknr in
+cleanup_journal_tail(), in the end the J_ASSERT failed.
 
-This proves to be because the filesystem has a corrupted MDB extent
-record, where the extents file does not fit into the first three extents
-in the file record (the first blocks).
+So validate s_first after reading journal superblock from disk in
+journal_get_superblock() to ensure s_first is valid.
 
-In hfs_get_block() when looking up the blocks for the extent file
-(HFS_EXT_CNID), it fails the first blocks special case, and falls
-through to the extent code (which ultimately calls hfs_find_init())
-which is in the process of being initialised.
+The following script could reproduce it:
 
-Hfs avoids this scenario by always having the extents b-tree fitting
-into the first blocks (the extents B-tree can't have overflow extents).
+fstype=ext3
+blocksize=1024
+img=$fstype.img
+offset=0
+found=0
+magic="c0 3b 39 98"
 
-The fix is to check at mount time that the B-tree fits into first
-blocks, i.e.  fail if HFS_I(inode)->alloc_blocks >=
-HFS_I(inode)->first_blocks
+dd if=/dev/zero of=$img bs=1M count=8
+mkfs -t $fstype -b $blocksize -F $img
+filesize=`stat -c %s $img`
+while [ $offset -lt $filesize ]
+do
+        if od -j $offset -N 4 -t x1 $img | grep -i "$magic";then
+                echo "Found journal: $offset"
+                found=1
+                break
+        fi
+        offset=`echo "$offset+$blocksize" | bc`
+done
 
-Note, the existing commit 47f365eb57573 ("hfs: fix oops on mount with
-corrupted btree extent records") becomes subsumed into this as a special
-case, but only for the extents B-tree (HFS_EXT_CNID), it is perfectly
-acceptable for the catalog B-Tree file to grow beyond three extents,
-with the remaining extent descriptors in the extents overfow.
+if [ $found -ne 1 ];then
+        echo "Magic \"$magic\" not found"
+        exit 1
+fi
 
-This fixes CVE-2011-2203
+dd if=/dev/zero of=$img seek=$(($offset+23)) conv=notrunc bs=1 count=1
 
-Reported-by: Clement LECIGNE <clement.lecigne@netasq.com>
-Signed-off-by: Phillip Lougher <plougher@redhat.com>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+mkdir -p ./mnt
+mount -o loop $img ./mnt
+
+Cc: Jan Kara <jack@suse.cz>
+Signed-off-by: Eryu Guan <guaneryu@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Cc: Moritz Mühlenhoff <jmm@inutil.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/hfs/btree.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ fs/jbd/journal.c  |    8 ++++++++
+ fs/jbd2/journal.c |    8 ++++++++
+ 2 files changed, 16 insertions(+)
 
---- a/fs/hfs/btree.c
-+++ b/fs/hfs/btree.c
-@@ -46,11 +46,26 @@ struct hfs_btree *hfs_btree_open(struct
- 	case HFS_EXT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
- 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
-+		if (HFS_I(tree->inode)->alloc_blocks >
-+					HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
-+
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	case HFS_CAT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
- 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
-+
-+		if (!HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records "
-+								"(0 size).\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
-+
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	default:
-@@ -59,11 +74,6 @@ struct hfs_btree *hfs_btree_open(struct
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -1131,6 +1131,14 @@ static int journal_get_superblock(journa
+ 		goto out;
  	}
- 	unlock_new_inode(tree->inode);
  
--	if (!HFS_I(tree->inode)->first_blocks) {
--		printk(KERN_ERR "hfs: invalid btree extent records (0 size).\n");
--		goto free_inode;
--	}
--
- 	mapping = tree->inode->i_mapping;
- 	page = read_mapping_page(mapping, 0, NULL);
- 	if (IS_ERR(page))
++	if (be32_to_cpu(sb->s_first) == 0 ||
++	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
++		printk(KERN_WARNING
++			"JBD: Invalid start block of journal: %u\n",
++			be32_to_cpu(sb->s_first));
++		goto out;
++	}
++
+ 	return 0;
+ 
+ out:
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1251,6 +1251,14 @@ static int journal_get_superblock(journa
+ 		goto out;
+ 	}
+ 
++	if (be32_to_cpu(sb->s_first) == 0 ||
++	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
++		printk(KERN_WARNING
++			"JBD2: Invalid start block of journal: %u\n",
++			be32_to_cpu(sb->s_first));
++		goto out;
++	}
++
+ 	return 0;
+ 
+ out:
 
 
