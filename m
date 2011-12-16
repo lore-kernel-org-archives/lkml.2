@@ -1,40 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995Ab1LPPj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 10:39:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49104 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756324Ab1LPPjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 10:39:49 -0500
-Message-ID: <4EEB662A.9070308@zytor.com>
-Date: Fri, 16 Dec 2011 07:39:22 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1760032Ab1LPPlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:41:42 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51937 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759804Ab1LPPlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 10:41:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc fixes for 3.2, part 4
+Date: Fri, 16 Dec 2011 15:41:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: fix and improve percpu_cmpxchg{8,16}b_double()
-References: <4EE86D6502000078000679FE@nat28.tlf.novell.com>
-In-Reply-To: <4EE86D6502000078000679FE@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112161541.18525.arnd@arndb.de>
+X-Provags-ID: V02:K0:epNa/QxoBn9iXZ6+TRbfKWUzXGt/PfFum8wgCTaDYMH
+ gLN7SBIMFR3bKybhbVGfVkX7AlBQ/11Wj8dADsAe+xNaS2M5vY
+ wy7NafQcjotRIteDOREVZ6DbmWguCBo+BSs54sO07l00TigHy4
+ g3CrUb3Ip00QJR3PgEqu5vAifdak1UHTNPnB3FXlJoab2tkHW8
+ GIsk883xTBGZGyffKimXevR1aU9DdU+VxBvte1fvw8ZJoZQ/8v
+ l6SpCbYf1etPXfapK6bAcaLgHZND9WDZexcmVbGZ/e/TkgR9bu
+ QRb7oXPRrEKiNTwWccUF3dUz6KZRR7QXaI7BAEIliD5oEZH3gh
+ 4m1KSbZ7yl8TDkVE6Rus=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 12:33 AM, Jan Beulich wrote:
-> 
-> At once also change the return value type to what it really is -
-> 'bool'.
-> 
+Hi Linus,
 
-I have a hazy memory of "bool" not working correctly in inline assembly,
-but it might be ancient history by now.
+Here is the current set of fixes for v3.2. The majority of these are
+i.mx platform fixes that came slightly too late for the previous round.
 
-	-hpa
+	Arnd
+---
+The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+  Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+
+Amit Daniel Kachhap (1):
+      ARM: EXYNOS: Fix for stall in case of cpu hotplug or sleep
+
+Arnd Bergmann (1):
+      Merge branch 'imx-fixes-for-arnd' of git://git.pengutronix.de/git/imx/linux-2.6 into fixes
+
+Dong Aisheng (1):
+      ARM: mx5: add __initconst for fec pdata
+
+Felipe Contreras (1):
+      ARM: OMAP: rx51: fix USB
+
+Jarkko Nikula (1):
+      ARM: OMAP: mcbsp: Fix possible memory corruption
+
+Jason Chen (1):
+      MXC PWM: should active during DOZE/WAIT/DBG mode
+
+Jingoo Han (2):
+      ARM: SAMSUNG: remove duplicated header include
+      ARM: S5PV210: Set 1000ns as PWM backlight period on SMDKV210
+
+Kukjin Kim (1):
+      ARM: EXYNOS: Fix build error without CONFIG_LOCAL_TIMERS
+
+Olof Johansson (2):
+      Merge branch 'fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge branch 'samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+
+Richard Zhao (1):
+      ARM: imx: fix cpufreq build errors
+
+Shawn Guo (1):
+      arm/imx: fix power button on imx51 babbage board
+
+ arch/arm/mach-exynos/mct.c                   |   13 ++++++++++---
+ arch/arm/mach-mx5/board-mx51_babbage.c       |    2 +-
+ arch/arm/mach-mx5/board-mx53_evk.c           |    2 +-
+ arch/arm/mach-mx5/board-mx53_loco.c          |    2 +-
+ arch/arm/mach-mx5/board-mx53_smd.c           |    2 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
+ arch/arm/mach-omap2/mcbsp.c                  |    6 +++---
+ arch/arm/mach-s5pv210/mach-smdkv210.c        |    1 +
+ arch/arm/plat-mxc/cpufreq.c                  |    1 +
+ arch/arm/plat-mxc/pwm.c                      |    7 ++++++-
+ arch/arm/plat-samsung/dev-backlight.c        |    1 -
+ 11 files changed, 26 insertions(+), 13 deletions(-)
