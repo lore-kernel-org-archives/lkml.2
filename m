@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760261Ab1LPQif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 11:38:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34627 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760202Ab1LPQiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 11:38:25 -0500
-Date: Fri, 16 Dec 2011 17:38:13 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Aurelien Jacobs <aurel@gnuage.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] asix: new device id
-In-Reply-To: <1324050921-9007-1-git-send-email-aurel@gnuage.org>
-Message-ID: <alpine.LRH.2.00.1112161737040.15661@twin.jikos.cz>
-References: <1324050921-9007-1-git-send-email-aurel@gnuage.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1760272Ab1LPQit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 11:38:49 -0500
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:51252 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760202Ab1LPQik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 11:38:40 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: [PATCH] cgroup: remove redundate get/put of old css_set from migrate
+Date: Fri, 16 Dec 2011 08:38:31 -0800
+Message-Id: <1324053511-24591-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Dec 2011, Aurelien Jacobs wrote:
+We can now assume that the css_set reference held by the task
+will not go away for an exiting task. PF_EXITING state can be
+trusted throughout migration by checking it after locking
+threadgroup.
 
-> Adds the device id needed for the USB Ethernet Adapter delivered by
-> ASUS with their Zenbook.
-> 
-> Signed-off-by: Aurelien Jacobs <aurel@gnuage.org>
-> ---
->  drivers/net/usb/asix.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-> index e6fed4d..e95f0e6 100644
-> --- a/drivers/net/usb/asix.c
-> +++ b/drivers/net/usb/asix.c
-> @@ -1655,6 +1655,10 @@ static const struct usb_device_id	products [] = {
->  	// ASIX 88772a
->  	USB_DEVICE(0x0db0, 0xa877),
->  	.driver_info = (unsigned long) &ax88772_info,
-> +}, {
-> +	// Asus USB Ethernet Adapter
-> +	USB_DEVICE (0x0b95, 0x7e2b),
-> +	.driver_info = (unsigned long) &ax88772_info,
->  },
->  	{ },		// END
->  };
+This patch depends on:
 
-Adding netdev to CC so that it doesn't get lost.
+commit cd3d095275374220921fcf0d4e0c16584b26ddbc
+Author: Tejun Heo <tj@kernel.org>
+Date:   Mon Dec 12 18:12:21 2011 -0800
 
+    cgroup: always lock threadgroup during migration
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+---
+ kernel/cgroup.c |   25 ++++++-------------------
+ 1 files changed, 6 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1b3b841..eb95e32 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1856,7 +1856,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 	 */
+ 	task_lock(tsk);
+ 	oldcg = tsk->cgroups;
+-	get_css_set(oldcg);
+ 	task_unlock(tsk);
+ 
+ 	/* locate or allocate a new css_set for this task. */
+@@ -1872,12 +1871,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 		might_sleep();
+ 		/* find_css_set will give us newcg already referenced. */
+ 		newcg = find_css_set(oldcg, cgrp);
+-		if (!newcg) {
+-			put_css_set(oldcg);
++		if (!newcg)
+ 			return -ENOMEM;
+-		}
+ 	}
+-	put_css_set(oldcg);
+ 
+ 	/* @tsk can't exit as its threadgroup is locked */
+ 	task_lock(tsk);
+@@ -2015,9 +2011,8 @@ struct cg_list_entry {
+ 	struct list_head links;
+ };
+ 
+-static bool css_set_check_fetched(struct cgroup *cgrp,
+-				  struct task_struct *tsk, struct css_set *cg,
+-				  struct list_head *newcg_list)
++static bool css_set_fetched(struct cgroup *cgrp, struct task_struct *tsk,
++			    struct css_set *cg, struct list_head *newcg_list)
+ {
+ 	struct css_set *newcg;
+ 	struct cg_list_entry *cg_entry;
+@@ -2191,19 +2186,11 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		/* get old css_set pointer */
+ 		task_lock(tc->task);
+ 		oldcg = tc->task->cgroups;
+-		get_css_set(oldcg);
+ 		task_unlock(tc->task);
+-		/* see if the new one for us is already in the list? */
+-		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
+-			/* was already there, nothing to do. */
+-			put_css_set(oldcg);
+-		} else {
+-			/* we don't already have it. get new one. */
+-			retval = css_set_prefetch(cgrp, oldcg, &newcg_list);
+-			put_css_set(oldcg);
+-			if (retval)
++		/* if we don't already have it in the list get a new one */
++		if (!css_set_fetched(cgrp, tc->task, oldcg, &newcg_list))
++			if (css_set_prefetch(cgrp, oldcg, &newcg_list))
+ 				goto out_list_teardown;
+-		}
+ 	}
+ 
+ 	/*
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.3.1
 
