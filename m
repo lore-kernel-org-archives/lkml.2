@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964867Ab1LPT7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:59:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45363 "EHLO mx2.suse.de"
+	id S964899Ab1LPUAC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:00:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45356 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964791Ab1LPTwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:52:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:07 2011
-Message-Id: <20111216194207.357947659@clark.kroah.org>
+	id S964859Ab1LPTwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:52:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:11 2011
+Message-Id: <20111216194211.843986725@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:11 -0800
+Date: Fri, 16 Dec 2011 11:40:38 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, xfs@oss.sgi.com
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: [04/45] ARM: davinci: da850 evm: change audio edma event queue to EVENTQ_0
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
+        Ben Myers <bpm@sgi.com>
+Subject: [31/45] xfs: fix nfs export of 64-bit inodes numbers on 32-bit kernels
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit f1b21c525693b0159aed83b5871f2d0f077f208e upstream.
+commit c29f7d457ac63311feb11928a866efd2fe153d74 upstream.
 
-On OMAP-L138 platform, EDMA event queue 0 should be used for audio
-transfers so that they are not starved by video data moving on event queue 1.
+The i_ino field in the VFS inode is of type unsigned long and thus can't
+hold the full 64-bit inode number on 32-bit kernels.  We have the full
+inode number in the XFS inode, so use that one for nfs exports.  Note
+that I've also switched the 32-bit file handles types to it, just to make
+the code more consistent and copy & paste errors less likely to happen.
 
-Commit 48519f0ae03bc7e86b3dc93e56f1334d53803770 (ASoC: davinci: let platform
-data define edma queue numbers) had a side-effect of changing this behavior
-by making the driver actually honor the platform data passed.
-
-Fix this now by passing event queue 0 as the queue to be used for audio
-transfers.
-
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Reported-by: Guoquan Yang <ygq51@hotmail.com>
+Reported-by: Hank Peng <pengxihan@gmail.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-davinci/board-da850-evm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/linux-2.6/xfs_export.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -748,7 +748,7 @@ static struct snd_platform_data da850_ev
- 	.num_serializer	= ARRAY_SIZE(da850_iis_serializer_direction),
- 	.tdm_slots	= 2,
- 	.serial_dir	= da850_iis_serializer_direction,
--	.asp_chan_q	= EVENTQ_1,
-+	.asp_chan_q	= EVENTQ_0,
- 	.version	= MCASP_VERSION_2,
- 	.txnumevt	= 1,
- 	.rxnumevt	= 1,
+--- a/fs/xfs/linux-2.6/xfs_export.c
++++ b/fs/xfs/linux-2.6/xfs_export.c
+@@ -98,22 +98,22 @@ xfs_fs_encode_fh(
+ 	switch (fileid_type) {
+ 	case FILEID_INO32_GEN_PARENT:
+ 		spin_lock(&dentry->d_lock);
+-		fid->i32.parent_ino = dentry->d_parent->d_inode->i_ino;
++		fid->i32.parent_ino = XFS_I(dentry->d_parent->d_inode)->i_ino;
+ 		fid->i32.parent_gen = dentry->d_parent->d_inode->i_generation;
+ 		spin_unlock(&dentry->d_lock);
+ 		/*FALLTHRU*/
+ 	case FILEID_INO32_GEN:
+-		fid->i32.ino = inode->i_ino;
++		fid->i32.ino = XFS_I(inode)->i_ino;
+ 		fid->i32.gen = inode->i_generation;
+ 		break;
+ 	case FILEID_INO32_GEN_PARENT | XFS_FILEID_TYPE_64FLAG:
+ 		spin_lock(&dentry->d_lock);
+-		fid64->parent_ino = dentry->d_parent->d_inode->i_ino;
++		fid64->parent_ino = XFS_I(dentry->d_parent->d_inode)->i_ino;
+ 		fid64->parent_gen = dentry->d_parent->d_inode->i_generation;
+ 		spin_unlock(&dentry->d_lock);
+ 		/*FALLTHRU*/
+ 	case FILEID_INO32_GEN | XFS_FILEID_TYPE_64FLAG:
+-		fid64->ino = inode->i_ino;
++		fid64->ino = XFS_I(inode)->i_ino;
+ 		fid64->gen = inode->i_generation;
+ 		break;
+ 	}
 
 
