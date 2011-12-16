@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760055Ab1LPCaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 21:30:00 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25336 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756452Ab1LPC36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 21:29:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="86292714"
-Date: Fri, 16 Dec 2011 10:19:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Sergei Trofimovich <slyich@gmail.com>,
-        Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
-Subject: Re: [PATCH 3.2-rc5] block: don't kick empty queue in
- blk_drain_queue()
-Message-ID: <20111216021955.GA20801@localhost>
-References: <20111215185842.GB32002@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111215185842.GB32002@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760063Ab1LPCak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 21:30:40 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:36517 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452Ab1LPCai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 21:30:38 -0500
+Date: Fri, 16 Dec 2011 13:30:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: linux-next: manual merge of the iommu tree with the pci-current
+ tree
+Message-Id: <20111216133026.8bac235bb8495cfd8669b761@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks! It fixed the problem for me.
+--Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Dec 16, 2011 at 02:58:42AM +0800, Tejun Heo wrote:
-> While probing, fd sets up queue, probes hardware and tears down the
-> queue if probing fails.  In the process, blk_drain_queue() kicks the
-> queue which failed to finish initialization and fd is unhappy about
-> that.
-> 
->   floppy0: no floppy controllers found
->   ------------[ cut here ]------------
->   WARNING: at drivers/block/floppy.c:2929 do_fd_request+0xbf/0xd0()
->   Hardware name: To Be Filled By O.E.M.
->   VFS: do_fd_request called on non-open device
->   Modules linked in:
->   Pid: 1, comm: swapper Not tainted 3.2.0-rc4-00077-g5983fe2 #2
->   Call Trace:
->    [<ffffffff81039a6a>] warn_slowpath_common+0x7a/0xb0
->    [<ffffffff81039b41>] warn_slowpath_fmt+0x41/0x50
->    [<ffffffff813d657f>] do_fd_request+0xbf/0xd0
->    [<ffffffff81322b95>] blk_drain_queue+0x65/0x80
->    [<ffffffff81322c93>] blk_cleanup_queue+0xe3/0x1a0
->    [<ffffffff818a809d>] floppy_init+0xdeb/0xe28
->    [<ffffffff818a72b2>] ? daring+0x6b/0x6b
->    [<ffffffff810002af>] do_one_initcall+0x3f/0x170
->    [<ffffffff81884b34>] kernel_init+0x9d/0x11e
->    [<ffffffff810317c2>] ? schedule_tail+0x22/0xa0
->    [<ffffffff815dbb14>] kernel_thread_helper+0x4/0x10
->    [<ffffffff81884a97>] ? start_kernel+0x2be/0x2be
->    [<ffffffff815dbb10>] ? gs_change+0xb/0xb
-> 
-> Avoid it by making blk_drain_queue() kick queue iff dispatch queue has
-> something on it.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
-> Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-> Tested-by: Sergei Trofimovich <slyich@gmail.com>
-> ---
->  block/blk-core.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index ea70e6c..e9aa3d5 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -366,7 +366,14 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
->  		if (drain_all)
->  			blk_throtl_drain(q);
->  
-> -		__blk_run_queue(q);
-> +		/*
-> +		 * This function might be called on a queue which failed
-> +		 * driver init after queue creation.  Some drivers
-> +		 * (e.g. fd) get unhappy in such cases.  Kick queue iff
-> +		 * dispatch queue has something on it.
-> +		 */
-> +		if (!list_empty(&q->queue_head))
-> +			__blk_run_queue(q);
->  
->  		if (drain_all)
->  			nr_rqs = q->rq.count[0] + q->rq.count[1];
+Hi Joerg,
+
+Today's linux-next merge of the iommu tree got a conflict in
+drivers/pci/hotplug/acpiphp_glue.c between commit 619a5182d1f3 ("PCI
+hotplug: Always allow acpiphp to handle non-PCIe bridges") from the
+pci-current tree and commit d90116ea38f7 ("PCI/ACPI: Make acpiphp ignore
+root bridges using SHPC native hotplug") from the iommu tree.
+
+I fixed it up (I think - see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/pci/hotplug/acpiphp_glue.c
+index 9ddf69e,ba43c03..0000000
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@@ -132,18 -132,6 +132,18 @@@ register_slot(acpi_handle handle, u32 l
+  	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
+  		return AE_OK;
+ =20
+ +	pdev =3D pbus->self;
+ +	if (pdev && pci_is_pcie(pdev)) {
+ +		tmp =3D acpi_find_root_bridge_handle(pdev);
+ +		if (tmp) {
+ +			struct acpi_pci_root *root =3D acpi_pci_find_root(tmp);
+ +
+ +			if (root && (root->osc_control_set &
+- 					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
+++					OSC_PCI_NATIVE_HOTPLUG))
+ +				return AE_OK;
+ +		}
+ +	}
+ +
+  	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+  	device =3D (adr >> 16) & 0xffff;
+  	function =3D adr & 0xffff;
+
+--Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO6q1CAAoJEECxmPOUX5FESHEP/RX6tAwNmtF510znQXrHpgm0
+QiE3B5Zuvh9BBPNFIlYyhZo++PAFf9Ttd92OGWJ3tt0bR+ZZPey6M1CzssBl33Mx
+4h+MYbk+EiFhn+aN6/dUiFN07SngqekCjf7BEPjXiMTbQbkGjfMSQZAfdkfhkNkZ
+fBtyUgMax2SshpDBulFpELblZT3WQV9xrxP2PFZuSUfegXALc/OsTYfG03d1XF6w
+vPYUQOf3amgdqwXXvGx5b6pbWC/VZOGsMdvn/MsVfOeWB75xr6TTlsrVHWRNMW5d
+qy8UHKcX7WtsDZEQcXBW/DBe0E7JnpabVx11h34h5o5kVre0awBegIueitzxmzDH
+49Dp1ehqGce6ulztaeDYPSXk9d5AXGGky0gEU6WEJacHHKQav7kSgUC43I9mc7yq
+q20VLtpj1RTzNRT6HASDPvo74wS+vkmFjSy/ydsYYq/Ay+lOejRe5ZvBj2u/hfqM
+reijT7PY00r4H1bApuAj7ewds2DO3zmwjvahMKfiTPMYcKjvDUQOv3mwoESzD+Jt
+LuNCfNuUyxvr+w42az/e/ONf6v0gcflR21Ds2W0+2SdswyZmXnEW/NZdKc+ZtcQQ
+9EmLDKBlop9BFbJp1AEvoW8+JFg2ys2ZbDvjP3DAdxcyLFGScyaoZxS4xPn3YS5o
+p9we7/NlV0Ya3e5m2BST
+=6bWc
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL--
