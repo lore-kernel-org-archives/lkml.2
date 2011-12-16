@@ -1,40 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759775Ab1LPOPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 09:15:32 -0500
-Received: from 8bytes.org ([88.198.83.132]:36868 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759509Ab1LPOPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 09:15:10 -0500
-Date: Fri, 16 Dec 2011 15:15:07 +0100
-From: "'Joerg Roedel'" <joro@8bytes.org>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>
-Subject: Re: [PATCH] iommu: Initialize domain->handler in
-	iommu_domain_alloc()
-Message-ID: <20111216141507.GB28302@8bytes.org>
-References: <1323760466-30333-1-git-send-email-pullip.cho@samsung.com> <20111215081056.GC4475@8bytes.org> <000401ccbbef$9b0389e0$d10a9da0$%cho@samsung.com>
+	id S1759731Ab1LPOQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 09:16:29 -0500
+Received: from bishop.asidev.net ([95.141.38.214]:43945 "EHLO
+	bishop.asidev.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab1LPOQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 09:16:23 -0500
+Message-ID: <4EEB50F1.3040106@evidence.eu.com>
+Date: Fri, 16 Dec 2011 15:08:49 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000401ccbbef$9b0389e0$d10a9da0$%cho@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Alan Cox <alan@linux.intel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Dave Bender <codehero@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] atmel_serial: fix spinlock lockup in RS485 code
+References: <4EE9B42F.50004@evidence.eu.com> <4EE9C532.5050607@atmel.com> <4EE9D44A.6010300@evidence.eu.com> <20111215185814.GD18791@kroah.com>
+In-Reply-To: <20111215185814.GD18791@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 09:38:25PM +0900, KyongHo Cho wrote:
-> Subject: [PATCH] iommu: Initialize domain->handler in iommu_domain_alloc()
-> 
-> Since it is not guaranteed that an iommu driver initializes in its
-> domain_init() function, it must be initialized with NULL to prevent
-> calling a function in an arbitrary location when iommu fault occurred.
-> 
-> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+Il 15/12/2011 19:58, Greg KH ha scritto:
+> On Thu, Dec 15, 2011 at 12:04:42PM +0100, Claudio Scordino wrote:
+>> Il 15/12/2011 11:00, Nicolas Ferre ha scritto:
+>>> On 12/15/2011 09:47 AM, Claudio Scordino :
+>>>> Hi all.
+>>>>
+>>>> We have encountered a spinlock lockup in the RS485 part of the
+>>>> atmel_serial driver.
+>>>>
+>>>> Here is the trace:
+>>>>
+>>>> [   68.030000] BUG: spinlock lockup on CPU#0, dnp_master/244, c07e82c0
+>>>> [   68.040000] [<c002a790>] (unwind_backtrace+0x0/0xf0) from
+>>>> [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148)
+>>>> [   68.050000] [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148) from
+>>>> [<c015152c>] (atmel_tasklet_func+0x10/0x708)
+>>>> [   68.060000] [<c015152c>] (atmel_tasklet_func+0x10/0x708) from
+>>>> [<c003bfd4>] (tasklet_action+0x8c/0xf4)
+>>>> [   68.070000] [<c003bfd4>] (tasklet_action+0x8c/0xf4) from [<c003c630>]
+>>>> (__do_softirq+0xa4/0x180)
+>>>> [   68.080000] [<c003c630>] (__do_softirq+0xa4/0x180) from [<c003c764>]
+>>>> (irq_exit+0x58/0xb0)
+>>>> [   68.090000] [<c003c764>] (irq_exit+0x58/0xb0) from [<c0021084>]
+>>>> (asm_do_IRQ+0x84/0xa4)
+>>>> [   68.100000] [<c0021084>] (asm_do_IRQ+0x84/0xa4) from [<c002622c>]
+>>>> (__irq_svc+0x4c/0x98)
+>>>> [   68.110000] Exception stack(0xc341fdc8 to 0xc341fe10)
+>>>> [   68.110000] fdc0:                   c07e82c0 00000000 00000200
+>>>> c4818000 c341fe10 c07e82c0
+>>>> [   68.120000] fde0: 00000000 c07e82c0 c38d3318 c341e000 bebcee00
+>>>> 010a0b60 c07e83fc c341fe10
+>>>> [   68.130000] fe00: c0151d54 c023d9c0 60000013 ffffffff
+>>>> [   68.140000] [<c002622c>] (__irq_svc+0x4c/0x98) from [<c023d9c0>]
+>>>> (_raw_spin_unlock+0x0/0x48)
+>>>> [   68.140000] [<c023d9c0>] (_raw_spin_unlock+0x0/0x48) from
+>>>> [<00000000>] (  (null))
+>>>>
+>>>> The soft lockup occurs later
+>>>>
+>>>> [  126.750000] BUG: soft lockup - CPU#0 stuck for 61s! [dnp_master:244]
+>>>> [  126.750000] irq event stamp: 0
+>>>> [  126.750000] hardirqs last  enabled at (0): [<    (null)>]   (null)
+>>>> [  126.750000] hardirqs last disabled at (0): [<c0035e30>]
+>>>> copy_process+0x308/0xe78
+>>>> [  126.750000] softirqs last  enabled at (0): [<c0035e30>]
+>>>> copy_process+0x308/0xe78
+>>>> [  126.750000] softirqs last disabled at (0): [<    (null)>]   (null)
+>>>>
+>>>>
+>>>> The following patch (already tested by Dave, who also reported the bug)
+>>>> fixes the problem.
+>>>>
+>>>> Regards,
+>>>>
+>>>>      Claudio
+>>>>
+>>>>
+>>>>
+>>>>
+>>>> Subject: atmel_serial: fix spinlock lockup in RS485 code
+>>>>
+>>>> Patch to fix a spinlock lockup in the driver that sometimes happens when
+>>>> the
+>>>> tasklet starts.
+>>>>
+>>>> Signed-off-by: Claudio Scordino<claudio@evidence.eu.com>
+>>>> Signed-off-by: Dave Bender<codehero@gmail.com>
+>>>> Tested-by: Dave Bender<codehero@gmail.com>
+>>>
+>>> Acked-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+>>>
+>>> Claudio, can you please send the patch to Alan with my "Acked-by" and an
+>>> addition to Linux stable just after the signature lines:
+>>>
+>>> Cc: stable<stable@kernel.org>
+>
+> That address has been invalid since August, please use
+> stable@vger.kernel.org now.
 
-Applied to iommu/fixes, thanks a lot.
+Hi Greg,
+
+	here is the patch with the right address.
+
+Many thanks for taking care of it.
+
+Best regards,
+
+	Claudio
+
+
+Subject: atmel_serial: fix spinlock lockup in RS485 code
+
+Patch to fix a spinlock lockup in the driver that sometimes happens when the
+tasklet starts.
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Signed-off-by: Dave Bender <codehero@gmail.com>
+Tested-by: Dave Bender <codehero@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Cc: stable <stable@vger.kernel.org>
+---
+  drivers/tty/serial/atmel_serial.c |    5 +++--
+  1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 4c823f3..90c8e3a 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -212,8 +212,9 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+  {
+  	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+  	unsigned int mode;
++	unsigned long flags;
+  
+-	spin_lock(&port->lock);
++	spin_lock_irqsave(&port->lock, flags);
+  
+  	/* Disable interrupts */
+  	UART_PUT_IDR(port, atmel_port->tx_done_mask);
+@@ -244,7 +245,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+  	/* Enable interrupts */
+  	UART_PUT_IER(port, atmel_port->tx_done_mask);
+  
+-	spin_unlock(&port->lock);
++	spin_unlock_irqrestore(&port->lock, flags);
+  
+  }
+  
+-- 
+1.7.1
 
