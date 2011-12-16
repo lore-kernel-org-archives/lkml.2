@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964808Ab1LPUGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:06:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45010 "EHLO mx2.suse.de"
+	id S932749Ab1LPUGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:06:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44980 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932694Ab1LPTt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:00 2011
-Message-Id: <20111216194600.542598387@clark.kroah.org>
+	id S932690Ab1LPTtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:55 2011
+Message-Id: <20111216194555.443506374@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:37 -0800
+Date: Fri, 16 Dec 2011 11:45:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [40/53] xen: only limit memory map to maximum reservation for domain 0.
+        alan@lxorguk.ukuu.org.uk, Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: [09/53] ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_channel_mode
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit d3db728125c4470a2d061ac10fa7395e18237263 upstream.
+commit 83713fc9373be2e943f82e9d36213708c6b0050e upstream.
 
-d312ae878b6a "xen: use maximum reservation to limit amount of usable RAM"
-clamped the total amount of RAM to the current maximum reservation. This is
-correct for dom0 but is not correct for guest domains. In order to boot a guest
-"pre-ballooned" (e.g. with memory=1G but maxmem=2G) in order to allow for
-future memory expansion the guest must derive max_pfn from the e820 provided by
-the toolstack and not the current maximum reservation (which can reflect only
-the current maximum, not the guest lifetime max). The existing algorithm
-already behaves this correctly if we do not artificially limit the maximum
-number of pages for the guest case.
+The function setup_vpif_input_channel_mode() used the VSCLKDIS register
+instead of VIDCLKCTL. This meant that when in HD mode videoport channel 0
+used a different clock from channel 1.
 
-For a guest booted with maxmem=512, memory=128 this results in:
- [    0.000000] BIOS-provided physical RAM map:
- [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
- [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
--[    0.000000]  Xen: 0000000000100000 - 0000000008100000 (usable)
--[    0.000000]  Xen: 0000000008100000 - 0000000020800000 (unusable)
-+[    0.000000]  Xen: 0000000000100000 - 0000000020800000 (usable)
-...
- [    0.000000] NX (Execute Disable) protection: active
- [    0.000000] DMI not present or invalid.
- [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
- [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
--[    0.000000] last_pfn = 0x8100 max_arch_pfn = 0x1000000
-+[    0.000000] last_pfn = 0x20800 max_arch_pfn = 0x1000000
- [    0.000000] initial memory mapped : 0 - 027ff000
- [    0.000000] Base memory trampoline at [c009f000] 9f000 size 4096
--[    0.000000] init_memory_mapping: 0000000000000000-0000000008100000
--[    0.000000]  0000000000 - 0008100000 page 4k
--[    0.000000] kernel direct mapping tables up to 8100000 @ 27bb000-27ff000
-+[    0.000000] init_memory_mapping: 0000000000000000-0000000020800000
-+[    0.000000]  0000000000 - 0020800000 page 4k
-+[    0.000000] kernel direct mapping tables up to 20800000 @ 26f8000-27ff000
- [    0.000000] xen: setting RW the range 27e8000 - 27ff000
- [    0.000000] 0MB HIGHMEM available.
--[    0.000000] 129MB LOWMEM available.
--[    0.000000]   mapped low ram: 0 - 08100000
--[    0.000000]   low ram: 0 - 08100000
-+[    0.000000] 520MB LOWMEM available.
-+[    0.000000]   mapped low ram: 0 - 20800000
-+[    0.000000]   low ram: 0 - 20800000
+Clearly a copy-and-paste error.
 
-With this change "xl mem-set <domain> 512M" will successfully increase the
-guest RAM (by reducing the balloon).
-
-There is no change for dom0.
-
-Reported-and-Tested-by:  George Shuklin <george.shuklin@gmail.com>
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/setup.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ arch/arm/mach-davinci/board-dm646x-evm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -191,9 +191,21 @@ static unsigned long __init xen_get_max_
- 	domid_t domid = DOMID_SELF;
- 	int ret;
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -563,7 +563,7 @@ static int setup_vpif_input_channel_mode
+ 	int val;
+ 	u32 value;
  
--	ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
--	if (ret > 0)
--		max_pages = ret;
-+	/*
-+	 * For the initial domain we use the maximum reservation as
-+	 * the maximum page.
-+	 *
-+	 * For guest domains the current maximum reservation reflects
-+	 * the current maximum rather than the static maximum. In this
-+	 * case the e820 map provided to us will cover the static
-+	 * maximum region.
-+	 */
-+	if (xen_initial_domain()) {
-+		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
-+		if (ret > 0)
-+			max_pages = ret;
-+	}
-+
- 	return min(max_pages, MAX_DOMAIN_PAGES);
- }
+-	if (!vpif_vsclkdis_reg || !cpld_client)
++	if (!vpif_vidclkctl_reg || !cpld_client)
+ 		return -ENXIO;
  
+ 	val = i2c_smbus_read_byte(cpld_client);
+@@ -571,7 +571,7 @@ static int setup_vpif_input_channel_mode
+ 		return val;
+ 
+ 	spin_lock_irqsave(&vpif_reg_lock, flags);
+-	value = __raw_readl(vpif_vsclkdis_reg);
++	value = __raw_readl(vpif_vidclkctl_reg);
+ 	if (mux_mode) {
+ 		val &= VPIF_INPUT_TWO_CHANNEL;
+ 		value |= VIDCH1CLK;
+@@ -579,7 +579,7 @@ static int setup_vpif_input_channel_mode
+ 		val |= VPIF_INPUT_ONE_CHANNEL;
+ 		value &= ~VIDCH1CLK;
+ 	}
+-	__raw_writel(value, vpif_vsclkdis_reg);
++	__raw_writel(value, vpif_vidclkctl_reg);
+ 	spin_unlock_irqrestore(&vpif_reg_lock, flags);
+ 
+ 	err = i2c_smbus_write_byte(cpld_client, val);
 
 
