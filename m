@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760332Ab1LPSUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 13:20:17 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:58734 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760155Ab1LPSUL (ORCPT
+	id S1760375Ab1LPSUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 13:20:53 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:52796 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759863Ab1LPSUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 13:20:11 -0500
-From: David Decotigny <decot@googlers.com>
-To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Robin Getz <rgetz@blackfin.uclinux.org>,
-        Matt Mackall <mpm@selenic.com>, David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 0/6] tg3: adaptive interrupt coalescing, non-napi mode
-Date: Fri, 16 Dec 2011 10:19:43 -0800
-Message-Id: <cover.1324059527.git.decot@googlers.com>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 16 Dec 2011 13:20:45 -0500
+Date: Fri, 16 Dec 2011 13:20:40 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] Btrfs fixes
+Message-ID: <20111216182040.GA25457@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20111216175344.GW18252@shiny>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Organization: Google, Inc.
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111216175344.GW18252@shiny>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EEB8BFB.0085,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series implements adaptive interrupt coalescing for tg3 NIC,
-improving performance substancially. It also implements non-NAPI mode
-for specific system loads.
+On Fri, Dec 16, 2011 at 12:53:44PM -0500, Chris Mason wrote:
+> Hi everyone,
+> 
+> This pull request is bigger than I wanted it to be, but Josef has
+> commits in here for some long running ENOSPC bugs in btrfs.  This is
+> a few weeks of tracing our delalloc reservations from Josef, and then
+> fixing up the related bugs.
+> 
+> Outside of Josef's patches we have some assorted fixes.  Arne figured
+> out we were orphaning whole snapshots if you unmounted enough times
+> while the snapshot was being deleted.
 
-############################################
-# Patch Set Summary:
+Sorry, this part is missing:
 
-David Decotigny (2):
-  tg3: fix possible infinite loop
-  tg3: move functions related to reset_task together
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-Maciej Żenczykowski (1):
-  tg3: Remove IRQF_SAMPLE_RANDOM flag from internal tests
-
-Tom Herbert (1):
-  tg3: implementation of a non-NAPI mode
-
-Ying Cai (2):
-  tg3: Implement adaptive interrupt coalescing
-  tg3: use netif_tx_start_queue instead of wake_queue when no
-    reschedule needed
-
- drivers/net/ethernet/broadcom/Kconfig |    8 +
- drivers/net/ethernet/broadcom/tg3.c   |  379 ++++++++++++++++++++++++++++++---
- drivers/net/ethernet/broadcom/tg3.h   |   42 ++++
- 3 files changed, 397 insertions(+), 32 deletions(-)
-
--- 
-1.7.3.1
-
+> 
+> Josef Bacik (6) commits (+212/-117):
+>     Btrfs: fix how we do delalloc reservations and how we free reservations on error (+44/-13)
+>     Btrfs: fix num_workers_starting bug and other bugs in async thread (+83/-78)
+>     Btrfs: only set cache_generation if we setup the block group (+1/-1)
+>     Btrfs: deal with enospc from dirtying inodes properly (+80/-22)
+>     Btrfs: don't panic if orphan item already exists (+1/-1)
+>     Btrfs: fix leaked space in truncate (+3/-2)
+> 
+> Chris Mason (4) commits (+10/-4):
+>     Btrfs: fix btrfs_end_bio to deal with write errors to a single mirror (+1/-1)
+>     Btrfs: deal with NULL srv_rsv in the delalloc inode reservation code (+2/-2)
+>     Btrfs: add a cond_resched() into the worker loop (+1/-1)
+>     Btrfs: unplug every once and a while (+6/-0)
+> 
+> Miao Xie (3) commits (+29/-13):
+>     Btrfs: fix wrong i_size when truncating a file to a larger size (+12/-6)
+>     Btrfs: fix inaccurate available space on raid0 profile (+13/-6)
+>     Btrfs: fix wrong disk space information of the files (+4/-1)
+> 
+> Casey Schaufler (1) commits (+26/-5):
+>     BTRFS: Establish i_ops before calling d_instantiate
+> 
+> Arne Jansen (1) commits (+32/-0):
+>     btrfs: keep orphans for subvolume deletion
+> 
+> Li Zefan (1) commits (+2/-2):
+>     Btrfs: fix ctime update of on-disk inode
+> 
+> Total: (16) commits (+309/-140)
+> 
+>  fs/btrfs/async-thread.c  |  117 ++++++++++++++----------------
+>  fs/btrfs/async-thread.h  |    4 +-
+>  fs/btrfs/ctree.h         |    3 +-
+>  fs/btrfs/delayed-inode.c |    4 +-
+>  fs/btrfs/disk-io.c       |   34 ++++++----
+>  fs/btrfs/extent-tree.c   |   45 ++++++++----
+>  fs/btrfs/file.c          |    6 ++-
+>  fs/btrfs/inode.c         |  180 +++++++++++++++++++++++++++++++++++++---------
+>  fs/btrfs/ioctl.c         |    6 +-
+>  fs/btrfs/relocation.c    |    2 +
+>  fs/btrfs/scrub.c         |    8 ++-
+>  fs/btrfs/super.c         |   32 +++++++--
+>  fs/btrfs/volumes.c       |    8 ++-
+>  13 files changed, 309 insertions(+), 140 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
