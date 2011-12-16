@@ -1,95 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab1LPUCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:02:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45253 "EHLO mx2.suse.de"
+	id S1760690Ab1LPTvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:51:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45080 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932852Ab1LPTvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:51:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:10 2011
-Message-Id: <20111216194209.864233769@clark.kroah.org>
+	id S932597Ab1LPTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:50:35 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:02 2011
+Message-Id: <20111216194602.240951074@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:26 -0800
+Date: Fri, 16 Dec 2011 11:45:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Allen Kay <allen.m.kay@intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [19/45] intel-iommu: fix superpage support in pfn_to_dma_pte()
-In-Reply-To: <20111216194603.GA15028@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [50/53] ibft: Fix finding IBFT ACPI table on UEFI
+In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Allen Kay <allen.m.kay@intel.com>
+From: Yinghai Lu <yinghai.lu@oracle.com>
 
-commit 4399c8bf2b9093696fa8160d79712e7346989c46 upstream.
+commit 935a9fee51c945b8942be2d7b4bae069167b4886 upstream.
 
-If target_level == 0, current code breaks out of the while-loop if
-SUPERPAGE bit is set. We should also break out if PTE is not present.
-If we don't do this, KVM calls to iommu_iova_to_phys() will cause
-pfn_to_dma_pte() to create mapping for 4KiB pages.
+Found one system with UEFI/iBFT, kernel does not detect the iBFT during
+iscsi_ibft module loading.
 
-Signed-off-by: Allen Kay <allen.m.kay@intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
+Root cause: on x86 (UEFI), we are calling of find_ibft_region() much earlier
+- specifically in setup_arch() before ACPI is enabled.
+
+Try to split acpi checking code out and call that later
+
+At that time ACPI iBFT already get permanent mapped with ioremap.
+So isa_virt_to_bus() will get wrong phys from right virt address.
+We could just skip that phys address printing.
+
+For legacy one, print the found address early.
+
+-v2: update comments and description according to Konrad.
+-v3: fix problem about module use case that is found by Konrad.
+-v4: use acpi_get_table() instead of acpi_table_parse() to handle module use case that is found by Konrad again..
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/firmware/iscsi_ibft.c      |   42 +++++++++++++++++++++++++++++++++++--
+ drivers/firmware/iscsi_ibft_find.c |   26 +---------------------
+ 2 files changed, 42 insertions(+), 26 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -307,6 +307,11 @@ static inline bool dma_pte_present(struc
- 	return (pte->val & 3) != 0;
+--- a/drivers/firmware/iscsi_ibft.c
++++ b/drivers/firmware/iscsi_ibft.c
+@@ -746,6 +746,37 @@ static void __exit ibft_exit(void)
+ 	ibft_cleanup();
  }
  
-+static inline bool dma_pte_superpage(struct dma_pte *pte)
-+{
-+	return (pte->val & (1 << 7));
-+}
++#ifdef CONFIG_ACPI
++static const struct {
++	char *sign;
++} ibft_signs[] = {
++	/*
++	 * One spec says "IBFT", the other says "iBFT". We have to check
++	 * for both.
++	 */
++	{ ACPI_SIG_IBFT },
++	{ "iBFT" },
++};
 +
- static inline int first_pte_in_page(struct dma_pte *pte)
++static void __init acpi_find_ibft_region(void)
++{
++	int i;
++	struct acpi_table_header *table = NULL;
++
++	if (acpi_disabled)
++		return;
++
++	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++) {
++		acpi_get_table(ibft_signs[i].sign, 0, &table);
++		ibft_addr = (struct acpi_table_ibft *)table;
++	}
++}
++#else
++static void __init acpi_find_ibft_region(void)
++{
++}
++#endif
++
+ /*
+  * ibft_init() - creates sysfs tree entries for the iBFT data.
+  */
+@@ -753,9 +784,16 @@ static int __init ibft_init(void)
  {
- 	return !((unsigned long)pte & ~VTD_PAGE_MASK);
-@@ -732,29 +737,23 @@ out:
- }
+ 	int rc = 0;
  
- static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
--				      unsigned long pfn, int large_level)
-+				      unsigned long pfn, int target_level)
- {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
- 	struct dma_pte *parent, *pte = NULL;
- 	int level = agaw_to_level(domain->agaw);
--	int offset, target_level;
-+	int offset;
++	/*
++	   As on UEFI systems the setup_arch()/find_ibft_region()
++	   is called before ACPI tables are parsed and it only does
++	   legacy finding.
++	*/
++	if (!ibft_addr)
++		acpi_find_ibft_region();
++
+ 	if (ibft_addr) {
+-		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
+-		       (u64)isa_virt_to_bus(ibft_addr));
++		pr_info("iBFT detected.\n");
  
- 	BUG_ON(!domain->pgd);
- 	BUG_ON(addr_width < BITS_PER_LONG && pfn >> addr_width);
- 	parent = domain->pgd;
+ 		rc = ibft_check_device();
+ 		if (rc)
+--- a/drivers/firmware/iscsi_ibft_find.c
++++ b/drivers/firmware/iscsi_ibft_find.c
+@@ -45,13 +45,6 @@ EXPORT_SYMBOL_GPL(ibft_addr);
+ static const struct {
+ 	char *sign;
+ } ibft_signs[] = {
+-#ifdef CONFIG_ACPI
+-	/*
+-	 * One spec says "IBFT", the other says "iBFT". We have to check
+-	 * for both.
+-	 */
+-	{ ACPI_SIG_IBFT },
+-#endif
+ 	{ "iBFT" },
+ 	{ "BIFT" },	/* Broadcom iSCSI Offload */
+ };
+@@ -62,14 +55,6 @@ static const struct {
+ #define VGA_MEM 0xA0000 /* VGA buffer */
+ #define VGA_SIZE 0x20000 /* 128kB */
  
--	/* Search pte */
--	if (!large_level)
--		target_level = 1;
--	else
--		target_level = large_level;
+-#ifdef CONFIG_ACPI
+-static int __init acpi_find_ibft(struct acpi_table_header *header)
+-{
+-	ibft_addr = (struct acpi_table_ibft *)header;
+-	return 0;
+-}
+-#endif /* CONFIG_ACPI */
 -
- 	while (level > 0) {
- 		void *tmp_page;
+ static int __init find_ibft_in_mem(void)
+ {
+ 	unsigned long pos;
+@@ -94,6 +79,7 @@ static int __init find_ibft_in_mem(void)
+ 				 * the table cannot be valid. */
+ 				if (pos + len <= (IBFT_END-1)) {
+ 					ibft_addr = (struct acpi_table_ibft *)virt;
++					pr_info("iBFT found at 0x%lx.\n", pos);
+ 					goto done;
+ 				}
+ 			}
+@@ -108,20 +94,12 @@ done:
+  */
+ unsigned long __init find_ibft_region(unsigned long *sizep)
+ {
+-#ifdef CONFIG_ACPI
+-	int i;
+-#endif
+ 	ibft_addr = NULL;
  
- 		offset = pfn_level_offset(pfn, level);
- 		pte = &parent[offset];
--		if (!large_level && (pte->val & DMA_PTE_LARGE_PAGE))
-+		if (!target_level && (dma_pte_superpage(pte) || !dma_pte_present(pte)))
- 			break;
- 		if (level == target_level)
- 			break;
+-#ifdef CONFIG_ACPI
+-	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
+-		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
+-#endif /* CONFIG_ACPI */
+-
+ 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
+ 	 * only use ACPI for this */
+ 
+-	if (!ibft_addr && !efi_enabled)
++	if (!efi_enabled)
+ 		find_ibft_in_mem();
+ 
+ 	if (ibft_addr) {
 
 
