@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917Ab1LPO7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 09:59:31 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:35232 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759804Ab1LPO7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 09:59:25 -0500
-Subject: Re: [PATCH] lockdep: do not disable on OOT taint
-From: Johannes Berg <johannes@sipsolutions.net>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <1324047469.3429.7.camel@jlt3.sipsolutions.net>
-References: <1324047469.3429.7.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Dec 2011 15:59:22 +0100
-Message-ID: <1324047562.3429.9.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1759894Ab1LPPSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:18:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755763Ab1LPPSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 10:18:03 -0500
+Date: Fri, 16 Dec 2011 16:17:31 +0100
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
+ own LRU
+Message-ID: <20111216151703.GA12817@redhat.com>
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
+ <1323877293-15401-12-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323877293-15401-12-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 15:57 +0100, Johannes Berg wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
+On Wed, Dec 14, 2011 at 03:41:33PM +0000, Mel Gorman wrote:
+> It was observed that scan rates from direct reclaim during tests
+> writing to both fast and slow storage were extraordinarily high. The
+> problem was that while pages were being marked for immediate reclaim
+> when writeback completed, the same pages were being encountered over
+> and over again during LRU scanning.
 > 
-> There's no reason to disable lockdep due to
-> out-of-tree taint since you can just ignore
-> lockdep reports with OOT taint if you like
-> but for people who develop out of tree it's
-> still useful to have lockdep available.
+> This patch isolates file-backed pages that are to be reclaimed when
+> clean on their own LRU list.
 
-Never mind. It was just pointed out to me that this was already done:
+Excuse me if I sound like a broken record, but have those observations
+of high scan rates persisted with the per-zone dirty limits patchset?
 
-https://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=9ec84acee1e221d99dc33237bff5e82839d10cc0;hp=81140acc66322dcde8346dabdf1ab4c229fce8d4
+In my tests with pzd, the scan rates went down considerably together
+with the immediate reclaim / vmscan writes.
 
-Sorry!
+Our dirty limits are pretty low - if reclaim keeps shuffling through
+dirty pages, where are the 80% reclaimable pages?!  To me, this sounds
+like the unfair distribution of dirty pages among zones again.  Is
+there are a different explanation that I missed?
 
-johannes
-
+PS: It also seems a bit out of place in this series...?
