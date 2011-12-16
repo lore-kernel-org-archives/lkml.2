@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab1LPKod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:44:33 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:51805 "EHLO d1.icnet.pl"
+	id S1758935Ab1LPKrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:47:20 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:15490 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1LPKoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:44:25 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: [PATCH] ARM: Fix cross compilation broken by failing size command
-Date: Fri, 16 Dec 2011 11:42:26 +0100
-Message-Id: <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <Message-ID: <20111214215815.GP32251@atomide.com>
-References: <Message-ID: <20111214215815.GP32251@atomide.com>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1751719Ab1LPKrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 05:47:05 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/2] fs: add ability to attach and to allocate fd for non current tasks
+Date: Fri, 16 Dec 2011 13:46:22 +0300
+Message-Id: <1324032383-791758-2-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1324032383-791758-1-git-send-email-avagin@openvz.org>
+References: <1324032383-791758-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 5ffb04f6690d71fab241b3562ebf52b893ac4ff1, "ARM: zImage:
-make sure appended DTB doesn't get overwritten by kernel .bss", the
-native 'size' command, which is now always used for calculation of the
-kernel bss size, may break in selected cross compilation environments
-with error messages like:
 
-size: arch/arm/boot/compressed/../../../../vmlinux: File format is ambiguous
-size: Matching formats: elf32-littlearm elf32-littlearm-symbian elf32-littlearm-vxworks
-
-As a consequence, the KBSS_SZ variable extracted from the size output is
-empty, and the the final linker command, provided with incorrectly
-formatted arguments, also fails:
-
-  LD      arch/arm/boot/compressed/vmlinux
-  arm-angstrom-linux-uclibcgnueabi-ld:--defsym _kernel_bss_size=: syntax error
-
-Don't append the '_kernel_bss_size=$(KBSS_SZ)' argument to the linker
-command line if that variable is empty because of the failing size
-command. Moreover, use $(CROSS_COMPILE)size if available instead of
-native size.
-
-Created and tested against linux-3.2-rc5.
-
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
-This patch supersedes my previously submitted "ARM: fix $(CROSS_COMPILE) 
-prefix missing from size invocation". Thanks to Tony Lindgren for his
-comments on $(CROSS_COMPILE)size limited availability.
+ fs/file.c            |    9 +++++++--
+ fs/open.c            |    9 +++++++--
+ include/linux/file.h |    4 ++++
+ 3 files changed, 18 insertions(+), 4 deletions(-)
 
-Unfortunately, I've already pushed that old version to the patch system
-at http://www.arm.linux.org.uk/developer/patches/, which I know is not
-a review system. Apparently, I was not patient enough, not waiting more
-than a week with that regression fix for a single reply to my initial
-submission to Russell King, the ARM PORT maintainer, Cc: Nicolas Pitre,
-the regression introducing commit author, and the linux-arm-kernel list.
-Sorry for that, please drop the old version from the Incoming queue, and
-I'll not be pushing anything to that patch system without prior positive
-review response any more.
-
-Thanks,
-Janusz
-
- arch/arm/boot/compressed/Makefile |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 21f56ff..17972e9 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -126,8 +126,11 @@ ccflags-y := -fpic -fno-builtin -I$(obj)
- asflags-y := -Wa,-march=all
+diff --git a/fs/file.c b/fs/file.c
+index 4c6992d..fbf2879 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -428,9 +428,9 @@ struct files_struct init_files = {
+ /*
+  * allocate a file descriptor, mark it busy.
+  */
+-int alloc_fd(unsigned start, unsigned flags)
++int alloc_task_fd(struct task_struct *tsk, unsigned start, unsigned flags)
+ {
+-	struct files_struct *files = current->files;
++	struct files_struct *files = tsk->files;
+ 	unsigned int fd;
+ 	int error;
+ 	struct fdtable *fdt;
+@@ -479,6 +479,11 @@ out:
+ 	return error;
+ }
  
- # Supply kernel BSS size to the decompressor via a linker symbol.
--KBSS_SZ = $(shell size $(obj)/../../../../vmlinux | awk 'END{print $$3}')
-+KBSS_SZ = $(shell if $(CROSS_COMPILE)size $(obj)/../../../../vmlinux; then :; \
-+		else size $(obj)/../../../../vmlinux; fi | awk 'END{print $$3}')
-+ifneq ($(KBSS_SZ),)
- LDFLAGS_vmlinux = --defsym _kernel_bss_size=$(KBSS_SZ)
-+endif
- # Supply ZRELADDR to the decompressor via a linker symbol.
- ifneq ($(CONFIG_AUTO_ZRELADDR),y)
- LDFLAGS_vmlinux += --defsym zreladdr=$(ZRELADDR)
++int alloc_fd(unsigned start, unsigned flags)
++{
++	return alloc_task_fd(current, start, flags);
++}
++
+ int get_unused_fd(void)
+ {
+ 	return alloc_fd(0, 0);
+diff --git a/fs/open.c b/fs/open.c
+index 22c41b5..9d340cc 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -864,9 +864,9 @@ EXPORT_SYMBOL(put_unused_fd);
+  * will follow.
+  */
+ 
+-void fd_install(unsigned int fd, struct file *file)
++void fd_task_install(struct task_struct *tsk, unsigned int fd, struct file *file)
+ {
+-	struct files_struct *files = current->files;
++	struct files_struct *files = tsk->files;
+ 	struct fdtable *fdt;
+ 	spin_lock(&files->file_lock);
+ 	fdt = files_fdtable(files);
+@@ -875,6 +875,11 @@ void fd_install(unsigned int fd, struct file *file)
+ 	spin_unlock(&files->file_lock);
+ }
+ 
++void fd_install(unsigned int fd, struct file *file)
++{
++	return fd_task_install(current, fd, file);
++}
++
+ EXPORT_SYMBOL(fd_install);
+ 
+ static inline int build_open_flags(int flags, int mode, struct open_flags *op)
+diff --git a/include/linux/file.h b/include/linux/file.h
+index 21a7995..0250cf4 100644
+--- a/include/linux/file.h
++++ b/include/linux/file.h
+@@ -34,10 +34,14 @@ extern struct file *fget_raw_light(unsigned int fd, int *fput_needed);
+ extern void set_close_on_exec(unsigned int fd, int flag);
+ extern void put_filp(struct file *);
+ extern int alloc_fd(unsigned start, unsigned flags);
++struct task_struct;
++extern int alloc_task_fd(struct task_struct *tsk, unsigned start, unsigned flags);
+ extern int get_unused_fd(void);
+ #define get_unused_fd_flags(flags) alloc_fd(0, (flags))
+ extern void put_unused_fd(unsigned int fd);
+ 
++extern void fd_task_install(struct task_struct *tsk,
++				unsigned int fd, struct file *file);
+ extern void fd_install(unsigned int fd, struct file *file);
+ 
+ #endif /* __LINUX_FILE_H */
 -- 
-1.7.3.4
+1.7.1
 
