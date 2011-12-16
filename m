@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760337Ab1LPRz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 12:55:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49883 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760268Ab1LPRzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 12:55:20 -0500
-Message-ID: <4EEB85F1.7050903@zytor.com>
-Date: Fri, 16 Dec 2011 09:54:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1760348Ab1LPR5Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 12:57:16 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:56744 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760310Ab1LPR5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 12:57:09 -0500
+Message-ID: <4EEB948F.9080605@xenotime.net>
+Date: Fri, 16 Dec 2011 10:57:19 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai.lu@oracle.com>
-CC: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
- above 4 GB from direct mapping.
-References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com> <4EA09EA2.3030203@zytor.com> <1319149574.13035.6.camel@jshin-Toonie> <4EE9266A.90200@zytor.com> <20111214231425.GA18068@jshin-Toonie> <20111216162004.GC18068@jshin-Toonie> <4EEB8320.4010809@oracle.com>
-In-Reply-To: <4EEB8320.4010809@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sean MacLennan <seanm@seanm.ca>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] linux-next: Tree for Dec 12 (staging/rtl8192e)
+References: <20111212161444.22a11535656c6bfbd884d9ec@canb.auug.org.au>	<4EE63A9C.1090503@xenotime.net>	<20111213233939.572235ff@opus.seanm.ca> <20111214201844.60cf5fe5@opus.seanm.ca>
+In-Reply-To: <20111214201844.60cf5fe5@opus.seanm.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 09:42 AM, Yinghai Lu wrote:
->
-> no, you change the meaning max_low_pfn_mapped and max_pfn_mapped for x86_64 at least.
->
-> before your patch:
-> max_low_pfn_mapped is the mapped pfn beblow 4g.
-> max_pfn_mapped: is mapped pfn.
->
-> after your patch, those two variables does not mean the memory [0, max_low_pfn_mapped) and [4g<<12, max_pfn_mapped)
-> are really mapped.
->
+On 12/14/2011 05:18 PM, Sean MacLennan wrote:
+> The rtllib and rtllib_crypt drivers are both required for a fully
+> functional rtllib. Make sure both are always available by having
+> rtllib select rtllib_crypt.
+> 
+> Signed-off-by: Sean MacLennan <seanm@seanm.ca>
 
-And that's exactly the problem.  It is BROKEN -- as in fundamentally 
-dangerous -- for these mappings to exist.  It is because the model is 
-too inflexible.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-> so in arch/x86/platform/efi/efi.c
->
->                  if (end_pfn<= max_low_pfn_mapped
->                      || (end_pfn>  (1UL<<  (32 - PAGE_SHIFT))
->                          &&  end_pfn<= max_pfn_mapped))
->                          va = __va(md->phys_addr);
->                  else
->                          va = efi_ioremap(md->phys_addr, size, md->type);
->
->
-> and others will have problem.
->
-> to solve your problem:
-> 1. unmap the HT range ?
-> 2. or introduce mapped_pfn_range array?
+Thanks.
 
-1 is fundamentally a braindead hack that solves one case without solving 
-the overall problem.
 
-For 2 - why can't we simply make the invariant that E820_RAM is mapped 
-and nothing else, with the sole exceptions being the 1 MiB (fixed MTRR)?
+> ---
+> This patch is against linux-next.
+> 
+>  drivers/staging/rtl8192e/Kconfig |   13 +++++--------
+>  1 files changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8192e/Kconfig b/drivers/staging/rtl8192e/Kconfig
+> index a24305d..878f384 100644
+> --- a/drivers/staging/rtl8192e/Kconfig
+> +++ b/drivers/staging/rtl8192e/Kconfig
+> @@ -2,6 +2,7 @@ config RTLLIB
+>  	tristate "Support for rtllib wireless devices"
+>  	depends on WLAN && m
+>  	default n
+> +	select RTLLIB_CRYPTO
+>  	---help---
+>  	  If you have a wireless card that uses rtllib, say
+>  	  Y. Currently the only card is the rtl8192e.
+> @@ -12,16 +13,12 @@ if RTLLIB
+>  
+>  config RTLLIB_CRYPTO
+>  	tristate "Support for rtllib crypto support"
+> -	depends on RTLLIB
+> -	default y
+>  	---help---
+> -	  CCMP crypto driver for rtllib.
+> -
+> -	  If you enabled RTLLIB, you want this.
+> +	  Base crypto driver for rtllib.
+>  
+>  config RTLLIB_CRYPTO_CCMP
+>  	tristate "Support for rtllib CCMP crypto"
+> -	depends on RTLLIB && RTLLIB_CRYPTO
+> +	depends on RTLLIB_CRYPTO
+>  	default y
+>  	---help---
+>  	  CCMP crypto driver for rtllib.
+> @@ -30,7 +27,7 @@ config RTLLIB_CRYPTO_CCMP
+>  
+>  config RTLLIB_CRYPTO_TKIP
+>  	tristate "Support for rtllib TKIP crypto"
+> -	depends on RTLLIB && RTLLIB_CRYPTO
+> +	depends on RTLLIB_CRYPTO
+>  	default y
+>  	---help---
+>  	  TKIP crypto driver for rtllib.
+> @@ -39,7 +36,7 @@ config RTLLIB_CRYPTO_TKIP
+>  
+>  config RTLLIB_CRYPTO_WEP
+>  	tristate "Support for rtllib WEP crypto"
+> -	depends on RTLLIB && RTLLIB_CRYPTO
+> +	depends on RTLLIB_CRYPTO
+>  	default y
+>  	---help---
+>  	  TKIP crypto driver for rtllib.
 
-For things like efi.c we should make sure to have interfaces instead of 
-open-code this kind of stuff.
 
-	-hpa
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
