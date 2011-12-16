@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760354Ab1LPR7o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 12:59:44 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:23802
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756517Ab1LPR7j (ORCPT
+	id S1760354Ab1LPSDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 13:03:52 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35706 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab1LPSDq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 12:59:39 -0500
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI9371I98dKzz1202hzzz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EEB8704.8030201@freescale.com>
-Date: Fri, 16 Dec 2011 11:59:32 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Fri, 16 Dec 2011 13:03:46 -0500
 MIME-Version: 1.0
-To: LiuShuo <b35362@freescale.com>
-CC: <dedekind1@gmail.com>, <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
-        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>   <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>   <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>  <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com> <4EE6BC9B.4000602@freescale.com> <4EE8612C.9050104@freescale.com> <4EE903CE.1010903@freescale.com> <4EEAB076.30000@freescale.com>
-In-Reply-To: <4EEAB076.30000@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20111216084029.GB4170@elte.hu>
+References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
+	<alpine.LFD.2.02.1112141423380.3020@ionos>
+	<alpine.LFD.2.02.1112142116540.3020@ionos>
+	<CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
+	<87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
+	<CAE9FiQXL3N6UZ6REfdUT_o1b-ed_KnYqKm_wSEhsaRPeaE9-9Q@mail.gmail.com>
+	<20111215071901.GF14237@elte.hu>
+	<CAE9FiQXh8tiJ0Aa80uGJBiVv_3-rirMt1roQwZ3dBws-p0=j9A@mail.gmail.com>
+	<20111216084029.GB4170@elte.hu>
+Date: Fri, 16 Dec 2011 10:03:46 -0800
+X-Google-Sender-Auth: Hnnf6iwvcSEkWbvKwv_RaNQoWOo
+Message-ID: <CAE9FiQWzqTGLq2-8Zn4bydCxqA6JL0JVQyDzCtadUCt8nwNWnQ@mail.gmail.com>
+Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5 machine
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 08:44 PM, LiuShuo wrote:
-> hi Artem,
-> Could this patch be applied now and we make a independent patch for  bad
-> block information
-> migration later?
+On Fri, Dec 16, 2011 at 12:40 AM, Ingo Molnar <mingo@elte.hu> wrote:
 
-This patch is not safe to use without migration.
+> IRQ_REMAP is a 'complex' option:
+>
+> config IRQ_REMAP
+>        bool "Support for Interrupt Remapping (EXPERIMENTAL)"
+>        depends on X86_64 && X86_IO_APIC && PCI_MSI && ACPI && EXPERIMENTAL
+>        select DMAR_TABLE
+>
+> and selecting such complex options is generally dangerous, as
+> the sub-dependencies are not explicitly selected. So if say
+> PCI_MSI or ACPI are disabled, the select will still be performed
+> by X86_X2APIC.
+>
+> Can we make the IRQ_REMAP default depend on X86_X2APIC or so, to
+> solve this problem?
 
--Scott
+but user could use IRQ_REMAP without x2apic.
 
+We could have
+
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -286,7 +286,8 @@ config SMP
+
+ config X86_X2APIC
+        bool "Support x2apic"
+-       depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
++       depends on X86_LOCAL_APIC && X86_64 && X86_IO_APIC && PCI_MSI && ACPI
++       select IRQ_REMAP
+        ---help---
+          This enables x2apic support on CPUs that have this feature.
+
+BTW:
+Suresh, can we remove EXPERIMENTAL for IRQ_REMAP now?
+
+Thanks
+
+Yinghai
