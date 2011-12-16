@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab1LPEt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 23:49:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab1LPEtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 23:49:25 -0500
-Message-ID: <1324010945.8225.36.camel@bling.home>
-Subject: Re: [RFC] Device isolation infrastructure v2
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: aik@ozlabs.ru, benh@kernel.crashing.org, joerg.roedel@amd.com,
-        dwmw2@infradead.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com, rusty@rustcorp.com.au,
-        iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 Dec 2011 21:49:05 -0700
-In-Reply-To: <20111216014026.GA4921@truffala.fritz.box>
-References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
-	 <1323972307.2437.19.camel@x201.home>
-	 <20111216014026.GA4921@truffala.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1760137Ab1LPE5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 23:57:17 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:36677 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab1LPE5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 23:57:16 -0500
+Date: Fri, 16 Dec 2011 15:56:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Subject: linux-next: manual merge of the akpm tree with the driver-core tree
+Message-Id: <20111216155654.238e65a67263d1ca5884e74a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Dec_2011_15_56_54_+1100_XD.OR=_5WWSA2eVd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 12:40 +1100, David Gibson wrote:
-> On Thu, Dec 15, 2011 at 11:05:07AM -0700, Alex Williamson wrote:
-> > On Thu, 2011-12-15 at 17:25 +1100, David Gibson wrote:
-> > > Here's the second spin of my preferred approach to handling grouping
-> > > of devices for safe assignment to guests.
-> > > 
-> > > Changes since v1:
-> > >  * Many name changes and file moves for improved consistency
-> > >  * Bugfixes and cleanups
-> > >  * The interface to the next layer up is considerably fleshed out,
-> > >    although it still needs work.
-> > >  * Example initialization of groups for p5ioc2 and p7ioc.
-> > > 
-> > > TODO:
-> > >  * Need sample initialization of groups for intel and/or amd iommus
-> > 
-> > I think this very well might imposed significant bloat for those
-> > implementations.  On POWER you typically don't have singleton groups,
-> > while it's the norm on x86.  I don't know that either intel or amd iommu
-> > code have existing structures that they can simply tack the group
-> > pointer to.
-> 
-> Actually, I think they can probably just use the group pointer in the
-> struct device.  Each PCI function will typically allocate a new group
-> and put the pointer in the struct device and no-where else.  Devices
-> hidden under bridges copy the pointer from the bridge parent instead.
-> I will have to check the unplug path to ensure we can manage the group
-> lifetime properly, of course.
-> 
-> >  Again, this is one of the reasons that I think the current
-> > vfio implementation is the right starting point.  We keep groups within
-> > vfio, imposing zero overhead for systems not making use of it and only
-> > require iommu drivers to implement a trivial function to opt-in.  As we
-> > start to make groups more pervasive in the dma layer, independent of
-> > userspace driver exposure, we can offload pieces to the core.  Starting
-> > with it in the core and hand waving some future use that we don't plan
-> > to implement right now seems like the wrong direction.
-> 
-> Well, I think we must agree to disagree here; I think treating groups
-> as identifiable objects is worthwhile.  That said, I am looking for
-> ways to whittle down the overhead when they're not in use.
-> 
-> > >  * Use of sysfs attributes to control group permission is probably a
-> > >    mistake.  Although it seems a bit odd, registering a chardev for
-> > >    each group is probably better, because perms can be set from udev
-> > >    rules, just like everything else.
-> > 
-> > I agree, this is a horrible mistake.  Reinventing file permissions via
-> > sysfs is bound to be broken and doesn't account for selinux permissions.
-> > Again, I know you don't like aspects of the vfio group management, but
-> > it gets this right imho.
-> 
-> Yeah.  I came up with this because I was trying to avoid registering a
-> device whose only purpose was to act as a permissioned "handle" on the
-> group.  But it is a better approach, despite that.  I just wanted to
-> send out the new patches for comment without waiting to do that
-> rework.
+--Signature=_Fri__16_Dec_2011_15_56_54_+1100_XD.OR=_5WWSA2eVd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So we end up with a chardev created by the core, whose only purpose is
-setting the group access permissions for userspace usage, which only
-becomes useful with something like vfio?  It's an odd conflict that
-isolation groups would get involved with userspace permissions to access
-the group, but leave enforcement of isolation via iommu groups to the
-"binder" driver (where it seems like vfio is still going to need some
-kind of merge interface to share a domain between isolation groups).
+Hi Andrew,
 
-Is this same chardev going to be a generic conduit for
-read/write/mmap/ioctl to the "binder" driver or does vfio need to create
-it's own chardev for that?  In the former case, are we ok with a chardev
-that has an entirely modular API behind it, or maybe you're planning to
-define some basic API infrastructure, in which case this starts smelling
-like implementing vfio in the core.  In the latter case (isolation
-chardev + vfio chardev) coordinating permissions sounds like a mess.
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/base/sys.c between commit ca22e56debc5 ("driver-core: implement
+'sysdev' functionality for regular devices and buses") from the
+driver-core tree and commit "tick-sched: add specific do_timer_cpu value
+for nohz off mode" from the scsi-post-merge tree.
 
-Alex
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/base/sys.c
+index 409f5ce,67d81a2..0000000
+--- a/drivers/base/sys.c
++++ b/drivers/base/sys.c
+@@@ -331,8 -331,14 +331,6 @@@ void sysdev_unregister(struct sys_devic
+  EXPORT_SYMBOL_GPL(sysdev_register);
+  EXPORT_SYMBOL_GPL(sysdev_unregister);
+ =20
+- #define to_ext_attr(x) container_of(x, struct sysdev_ext_attribute, attr)
+-=20
+ -int __init system_bus_init(void)
+ -{
+ -	system_kset =3D kset_create_and_add("system", NULL, &devices_kset->kobj);
+ -	if (!system_kset)
+ -		return -ENOMEM;
+ -	return 0;
+ -}
+ -
+  ssize_t sysdev_store_ulong(struct sys_device *sysdev,
+  			   struct sysdev_attribute *attr,
+  			   const char *buf, size_t size)
+
+--Signature=_Fri__16_Dec_2011_15_56_54_+1100_XD.OR=_5WWSA2eVd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO6s+WAAoJEECxmPOUX5FEJqYP/1whTK9cxsueG4dt15ijENIK
+0PfOf0xzDXw6XXO4tAHr26R54X3Rxe1WFt3qTvnPcXqJi4HBHoUOf3eZuIUBtd/4
+iET24PuaUABT8HSGEzgUbAsIkoxFFJmPhe2Hb84yzTaI18km70C0/x9aQVK7WVzB
+nErI6XJkg58D+nR6yZ1HbTjFvpNYSYoeOVmjdl6cVyL/g19poJGBmvv5gNK3/kbP
+WkerfYBbxwjmmccnccmAP4pjXlW13LHIuzTBohgVKFY8QSQ9TsWBIIYdSJyTbvJo
+IOiuRlmhLyZcq+RW4GMQlzkyWQa/+lNI82/eOthIbeyjQSACwoxhZ46xbUuQwdzs
+KuHCqlpb77fiSJjpwZeI+kw5svsLnQJYu0CuqiptXE6kgF2Nlz8+YfWluZPZ5jk2
+Tm3mDErGpihgPfjk2K+Osf7Ud/Lx5+bi9haqQkKo+r3reHCNnxOGfge/XNGOiS2R
+OVnBsIJ6VrWn0//2Q+lB9HtKtpW/fx71E/w9SX0mtXZy4xJnKrJwMwHALvtybnQp
+NBz0AL4kLHMETRwt7nt/4ysKzDH94zAfYB+ikWDdwJZvtkglnkL9Raagk/6LOczh
+iOn39PCoSbe5o1NIynkf1ReCpVlPLE/TPtzdulch/XUsKFwjnWqBUvElgkQC+z/U
+aaBS6JpH1r8YqWcy4uNT
+=RsvE
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Dec_2011_15_56_54_+1100_XD.OR=_5WWSA2eVd--
