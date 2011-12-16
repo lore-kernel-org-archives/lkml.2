@@ -1,129 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab1LPPZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 10:25:45 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56235 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab1LPPZj (ORCPT
+	id S1760043Ab1LPP2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:28:43 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34349 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759597Ab1LPP2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 10:25:39 -0500
-Message-ID: <1324049134.25554.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: [PATCH] slub: prefetch next freelist pointer in slab_alloc()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, "Alex,Shi" <alex.shi@intel.com>,
-        Shaohua Li <shaohua.li@intel.com>, Matt Mackall <mpm@selenic.com>
-Date: Fri, 16 Dec 2011 16:25:34 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Fri, 16 Dec 2011 10:28:36 -0500
+X-Authority-Analysis: v=2.0 cv=HeWWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=-YAZRknjPdYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=tUhen_kifzGD3Co7RzUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324049314.23971.128.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/1] Fix Compilation Warning in kernel/trace/trace.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 16 Dec 2011 10:28:34 -0500
+In-Reply-To: <CAHdPZaN3KQRqSOMXV7HdJkw_T_J5D3s3pxDXY72V4iT_tR9NBQ@mail.gmail.com>
+References: <1324019724-3422-1-git-send-email-devendra.aaru@gmail.com>
+	 <1324039259.23971.127.camel@gandalf.stny.rr.com>
+	 <CAHdPZaN3KQRqSOMXV7HdJkw_T_J5D3s3pxDXY72V4iT_tR9NBQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recycling a page is a problem, since freelist link chain is hot on
-cpu(s) which freed objects, and possibly very cold on cpu currently
-owning slab.
+On Fri, 2011-12-16 at 08:13 -0500, devendra.aaru wrote:
 
-Adding a prefetch of cache line containing the pointer to next object in
-slab_alloc() helps a lot in many workloads, in particular on assymetric
-ones (allocations done on one cpu, frees on another cpus). Added cost is
-three machine instructions only.
+>         
+>         
+> I m very sorry sir ....
 
-Examples on my dual socket quad core ht machine (Intel CPU E5540
-@2.53GHz) (16 logical cpus, 2 memory nodes), 64bit kernel.
+No need to be sorry ;)
 
-Before patch :
+Just spend a bit more time looking at what you fix next time :)
 
-# perf stat -r 32 hackbench 50 process 4000 >/dev/null
-
- Performance counter stats for 'hackbench 50 process 4000' (32 runs):
-
-     327577,471718 task-clock                #   15,821 CPUs utilized            ( +-  0,64% )
-        28 866 491 context-switches          #    0,088 M/sec                    ( +-  1,80% )
-         1 506 929 CPU-migrations            #    0,005 M/sec                    ( +-  3,24% )
-           127 151 page-faults               #    0,000 M/sec                    ( +-  0,16% )
-   829 399 813 448 cycles                    #    2,532 GHz                      ( +-  0,64% )
-   580 664 691 740 stalled-cycles-frontend   #   70,01% frontend cycles idle     ( +-  0,71% )
-   197 431 700 448 stalled-cycles-backend    #   23,80% backend  cycles idle     ( +-  1,03% )
-   503 548 648 975 instructions              #    0,61  insns per cycle        
-                                             #    1,15  stalled cycles per insn  ( +-  0,46% )
-    95 780 068 471 branches                  #  292,389 M/sec                    ( +-  0,48% )
-     1 426 407 916 branch-misses             #    1,49% of all branches          ( +-  1,35% )
-
-      20,705679994 seconds time elapsed                                          ( +-  0,64% )
-
-After patch :
-
-# perf stat -r 32 hackbench 50 process 4000 >/dev/null
-
- Performance counter stats for 'hackbench 50 process 4000' (32 runs):
-
-     286236,542804 task-clock                #   15,786 CPUs utilized            ( +-  1,32% )
-        19 703 372 context-switches          #    0,069 M/sec                    ( +-  4,99% )
-         1 658 249 CPU-migrations            #    0,006 M/sec                    ( +-  6,62% )
-           126 776 page-faults               #    0,000 M/sec                    ( +-  0,12% )
-   724 636 593 213 cycles                    #    2,532 GHz                      ( +-  1,32% )
-   499 320 714 837 stalled-cycles-frontend   #   68,91% frontend cycles idle     ( +-  1,47% )
-   156 555 126 809 stalled-cycles-backend    #   21,60% backend  cycles idle     ( +-  2,22% )
-   463 897 792 661 instructions              #    0,64  insns per cycle        
-                                             #    1,08  stalled cycles per insn  ( +-  0,94% )
-    87 717 352 563 branches                  #  306,451 M/sec                    ( +-  0,99% )
-       941 738 280 branch-misses             #    1,07% of all branches          ( +-  3,35% )
-
-      18,132070670 seconds time elapsed                                          ( +-  1,30% )
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Matt Mackall <mpm@selenic.com> 
-CC: David Rientjes <rientjes@google.com>
-CC: "Alex,Shi" <alex.shi@intel.com>
-CC: Shaohua Li <shaohua.li@intel.com>
----
- mm/slub.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ed3334d..16b850d 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -269,6 +269,11 @@ static inline void *get_freepointer(struct kmem_cache *s, void *object)
- 	return *(void **)(object + s->offset);
- }
- 
-+static void prefetch_freepointer(const struct kmem_cache *s, void *object)
-+{
-+	prefetch(object + s->offset);
-+}
-+
- static inline void *get_freepointer_safe(struct kmem_cache *s, void *object)
- {
- 	void *p;
-@@ -2292,6 +2297,8 @@ redo:
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
-+		void *next_object = get_freepointer_safe(s, object);
-+
- 		/*
- 		 * The cmpxchg will only match if there was no additional
- 		 * operation and if we are on the right processor.
-@@ -2307,11 +2314,12 @@ redo:
- 		if (unlikely(!irqsafe_cpu_cmpxchg_double(
- 				s->cpu_slab->freelist, s->cpu_slab->tid,
- 				object, tid,
--				get_freepointer_safe(s, object), next_tid(tid)))) {
-+				next_object, next_tid(tid)))) {
- 
- 			note_cmpxchg_failure("slab_alloc", s, tid);
- 			goto redo;
- 		}
-+		prefetch_freepointer(s, next_object);
- 		stat(s, ALLOC_FASTPATH);
- 	}
- 
+-- Steve
 
 
