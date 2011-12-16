@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760563Ab1LPTCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:02:12 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:62358 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760537Ab1LPTCI (ORCPT
+	id S1760391Ab1LPTJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:09:16 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:21404 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760301Ab1LPTJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:02:08 -0500
-Subject: Re: [PATCH 4/15] vub300: fix module parameter.
-From: Tony Olech <tony.olech@elandigitalsystems.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: tony@olech.com, lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org
-In-Reply-To: <871us6tu0d.fsf@rustcorp.com.au>
-References: <871us6tu0d.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Dec 2011 19:02:02 +0000
-Message-ID: <1324062122.2302.5.camel@study-2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 16 Dec 2011 14:09:07 -0500
+X-Authority-Analysis: v=2.0 cv=APbyNIPv c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=zQGhUK9Iw4MA:10 a=WZqaRsArvagA:10 a=8nJEP1OIZ-IA:10 a=Qa1yocA8eKZ1jg2egzgA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.78.168.186
+Message-ID: <4EEB9751.7030000@cfl.rr.com>
+Date: Fri, 16 Dec 2011 14:09:05 -0500
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: tty idle time and hooking inode_ops from a chardev
+References: <4EEB774D.1070407@cfl.rr.com> <20111216175735.GA5404@suse.de> <4EEB8C4A.5080809@cfl.rr.com> <20111216183613.GA3612@suse.de>
+In-Reply-To: <20111216183613.GA3612@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:lbCloN9S3rEtl83UzLTKw0Ij6mVGgjqh7AqZG1LjGnc
- n4iGcf3zc3UGSQvHrAoYpUu9ao2GvVNpMlWHPgiKtgIJ/UZtrh
- nOxZoRrh64KsoQHT1gy4ca4nBgrEBREJHGfMEiUC4OSq5WR0s6
- CJwLxrOHPVpys3n0Noe306k1ht+dlT64MqLs7dF2efoddwmjgi
- 8IYic44QBVYWh5XunagW/giVBcnDjcCP0JJ02Aw8VPN8eXFXb/
- wga6/10hO2YVbKdsd+gXyT0dT89n9q6K52KqVkAcsYU1Zlvtxp
- Cpdo35w2dcicBAN0n6U5ELNL8siZ6e563Cbf5J0C87bH3JCuUE
- Xh6pLbJ11/gBCltJfry7wZ5ONggOvUsXLyuPRz5iE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are right.
-I don't know how that slipped through
-Tony Olech
+On 12/16/2011 1:36 PM, Greg KH wrote:
+> But you said that your userspace programs are opening the wrong tty
+> device for what you are trying to look at, right?
 
-On Thu, 2011-12-15 at 13:34 +1030, Rusty Russell wrote:
-> You didn't mean this to be a bool.
-> 
-> Cc: Tony Olech <tony.olech@elandigitalsystems.com>
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: linux-usb@vger.kernel.org
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  drivers/mmc/host/vub300.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-> --- a/drivers/mmc/host/vub300.c
-> +++ b/drivers/mmc/host/vub300.c
-> @@ -259,7 +259,7 @@ static int firmware_rom_wait_states = 0x
->  static int firmware_rom_wait_states = 0x1C;
->  #endif
->  
-> -module_param(firmware_rom_wait_states, bool, 0644);
-> +module_param(firmware_rom_wait_states, int, 0644);
->  MODULE_PARM_DESC(firmware_rom_wait_states,
->  		 "ROM wait states byte=RRRIIEEE (Reserved Internal External)");
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+They are opening /dev/tty, which is supposed to be an alias for the 
+process's controlling tty, but it isn't quite so.  It routes read/write 
+calls to the correct tty, but is a separate inode, so has its own 
+timestamps.
 
+> That's not "fixing" it at all, adding an ioctl is the same as adding a
+> new system call, do you really think that is ok here?
+
+I would prefer not to, which is why I'm trying to figure out how to make 
+the atime correct no matter how you opened the tty.
+
+> As you are opening the tty node once, that's when atime is set, right?
+> The fact that you keep it open still keeps the atime to the original
+> open time, you aren't supposed to check for every single read/write of
+> the node once it was opened.
+
+tty_io.c updates the atime of the inode on every successful read(), and 
+the mtime on every successful write().  The problem is that several 
+different inodes can all point to the same tty, so which inode gets 
+updated depends on which process is doing the IO.
+
+> But to be sure, what does POSIX say about this?
+
+No clue.
 
