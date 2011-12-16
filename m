@@ -1,108 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1LPQAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 11:00:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42850 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759429Ab1LPQAI (ORCPT
+	id S1760110Ab1LPQBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 11:01:33 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44769 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759429Ab1LPQB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 11:00:08 -0500
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: dan.j.williams@intel.com, s.hauer@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH] dmaengine: Add support for MEMCPY for imx-dma.
-Date: Fri, 16 Dec 2011 16:59:51 +0100
-Message-Id: <1324051191-19507-1-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 16 Dec 2011 11:01:29 -0500
+Message-ID: <1324051285.25554.37.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] module: struct module_ref should contains long fields
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Robin Holt <holt@sgi.com>
+Date: Fri, 16 Dec 2011 17:01:25 +0100
+In-Reply-To: <20111216155408.GA31770@google.com>
+References: <1324012057.2562.23.camel@edumazet-laptop>
+	 <20111216155408.GA31770@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MEMCPY transfers allow DMA copies from memory to
-memory. This patch has been tested with dmatest
-device driver.
+Le vendredi 16 décembre 2011 à 07:54 -0800, Tejun Heo a écrit :
+> Hello, Eric.
+> 
+> On Fri, Dec 16, 2011 at 06:07:37AM +0100, Eric Dumazet wrote:
+> > +struct module_ref {
+> > +	unsigned long incs;
+> > +	unsigned long decs;
+> > +} __attribute((aligned(2 * sizeof(unsigned long))));
+> 
+> Why not ____cacheline_aligned?  Another thing is that for percpu
+> memory, packing could be better or at least shouldn't be worse.
+> Percpu area usages are likely to be local so one major benefit of
+> cacheline alignment - avoiding cacheline pingpong - goes away.  The
+> constant is called SMP_CACHE_BYTES after all.
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
- drivers/dma/imx-dma.c |   37 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 36 insertions(+), 1 deletions(-)
+Its percpu data, there is no need to waste a full cache line per cpu for
+this.
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index d99f71c..222cd7b 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
- 	struct imx_dma_data *data = chan->private;
- 
--	imxdmac->dma_request = data->dma_request;
-+	if (data != NULL)
-+		imxdmac->dma_request = data->dma_request;
- 
- 	dma_async_tx_descriptor_init(&imxdmac->desc, chan);
- 	imxdmac->desc.tx_submit = imxdma_tx_submit;
-@@ -328,6 +329,37 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
- 	return &imxdmac->desc;
- }
- 
-+static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
-+	struct dma_chan *chan, dma_addr_t dest,
-+	dma_addr_t src, size_t len, unsigned long flags)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	int ret;
-+
-+	dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
-+			__func__, imxdmac->channel, src, dest, len);
-+
-+	if (imxdmac->status == DMA_IN_PROGRESS)
-+		return NULL;
-+
-+	imxdmac->status = DMA_IN_PROGRESS;
-+
-+	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-+			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-+			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
-+			       0, 0);
-+	if (ret)
-+		return NULL;
-+
-+	ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
-+				   dest, DMA_MODE_WRITE);
-+	if (ret)
-+		return NULL;
-+
-+	return &imxdmac->desc;
-+}
-+
- static void imxdma_issue_pending(struct dma_chan *chan)
- {
- 	/*
-@@ -348,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 
- 	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
-+	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
- 
- 	/* Initialize channel parameters */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-@@ -381,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_tx_status = imxdma_tx_status;
- 	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
-+	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
- 	imxdma->dma_device.device_control = imxdma_control;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
- 
- 	platform_set_drvdata(pdev, imxdma);
- 
-+	imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
- 	imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
- 	dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
- 
--- 
-1.7.0.4
+This is only a hint to make sure one single cache line is touched if a
+thread increments/decrements a module refcount, with no memory extra
+cost : We play with the alignement of this 8 or 16 bytes block.
+
+
 
