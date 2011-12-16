@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab1LPKr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:47:27 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:11675 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758751Ab1LPKrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:47:14 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 0/2] ptrace: add ability to attach a file descriptor to another process
-Date: Fri, 16 Dec 2011 13:46:21 +0300
-Message-Id: <1324032383-791758-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1759003Ab1LPKri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:47:38 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42916 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756249Ab1LPKrb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 05:47:31 -0500
+Message-ID: <4EEB2182.6040508@mvista.com>
+Date: Fri, 16 Dec 2011 14:46:26 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
+References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+In-Reply-To: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need this functionality for checkpointing processes.  Now some parts
-are dumped with help PTRACE_SEIZE.  Parasite code is injected to process
-and it collects information.  This code should save data to somewhere.
-I want to suggest a scheme, when a dumper creates file descriptor and
-attaches it to a target process, then execute parasite code, which closes
-this descriptor at the end.
+Hello.
 
-We can't create unix sockets or open files, because a process may
-be in another namespaces.
+On 16-12-2011 2:42, Felipe Contreras wrote:
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> In musb_init_controller() there's a pm_runtime_put(), but there's no
+> pm_runtime_get(), which creates a mismatch that causes the driver to
+> sleep when it shouldn't.
 
-Andrew Vagin (2):
-  fs: add ability attaching and allocating fd for non current tasks
-  ptrace: add ability to attach a file descriptor to another process
+> This was introduced in 7acc619, but it wasn't triggered until 18a2689
+> was merged to Linus' branch at point 6899608.
 
- fs/file.c              |    9 +++++++--
- fs/open.c              |    9 +++++++--
- include/linux/file.h   |    4 ++++
- include/linux/ptrace.h |    1 +
- kernel/ptrace.c        |   27 +++++++++++++++++++++++++++
- 5 files changed, 46 insertions(+), 4 deletions(-)
+    Please also specify the summaries for the commits you're mentioning.
 
+> However, it seems most of the time this is used in a way that keeps the
+> counter above 0, so nobody noticed. Also, it seems to depend on the
+> configuration used.
+
+> I found the problem by loading isp1704_charger before any usb gadgets:
+> http://article.gmane.org/gmane.linux.kernel/1226122
+
+> All versions after 2.6.39 are affected.
+
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Felipe Contreras<felipe.contreras@gmail.com>
+
+WBR, Sergei
