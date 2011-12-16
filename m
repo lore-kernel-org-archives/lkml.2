@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab1LPKrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:47:16 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:48164 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1LPKrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:47:05 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/2] ptrace: add ability to attach a file descriptor to another task
-Date: Fri, 16 Dec 2011 13:46:23 +0300
-Message-Id: <1324032383-791758-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1324032383-791758-1-git-send-email-avagin@openvz.org>
-References: <1324032383-791758-1-git-send-email-avagin@openvz.org>
+	id S1758858Ab1LPKsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:48:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57036 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab1LPKsg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 05:48:36 -0500
+Date: Fri, 16 Dec 2011 12:48:28 +0200
+From: Ido Yariv <ido@wizery.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
+Message-ID: <20111216104828.GB18877@WorkStation>
+References: <1322843052-7166-1-git-send-email-ido@wizery.com>
+ <alpine.LFD.2.02.1112022345300.2735@ionos>
+ <20111204190932.GO32400@WorkStation>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111204190932.GO32400@WorkStation>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/linux/ptrace.h |    1 +
- kernel/ptrace.c        |   27 +++++++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+On Sun, Dec 04, 2011 at 09:09:32PM +0200, Ido Yariv wrote:
+> Hi Thomas,
+> 
+> On Sat, Dec 03, 2011 at 12:21:46AM +0100, Thomas Gleixner wrote:
+> > I can see your problem, but this might lead to threads_active leaks
+> > under certain conditions. desc->threads_active was only meant to deal
+> > with shared interrupts.
+> > 
+> > We explicitely allow a design where the primary handler can leave the
+> > device interrupt enabled and allow further interrupts to occur while
+> > the handler is running. We only have a single bit to note that the
+> > thread should run, but your wakeup would up the threads_active count
+> > in that scenario several times w/o a counterpart which decrements it.
+> > 
+> > The solution for this is to keep the current threads_active semantics
+> > and make the wait function different. Instead of waiting for
+> > threads_active to become 0 it should wait for threads_active == 0 and
+> > the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
+> > over the actions, we can take a similar approach as we take with the
+> > desc->threads_oneshot bitfield.
+> 
+> Thanks for reviewing this.
+> 
+> I might be missing something, but I don't see any potential
+> threads_active leaks in this approach. We wont increase threads_active
+> if IRQTF_RUNTHREAD was already set beforehand (as test_and_set_bit()
+> will return 1).
+> 
+> If irq_wake_thread is called multiple times before irq_thread has had a
+> chance to run, threads_active will only be increased once and decreased
+> back when IRQTF_RUNTHREAD is cleared.
+> 
+> Am I missing something? If not, do you see any other issues with this
+> implementation?
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 800f113..8439ce9 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -50,6 +50,7 @@
- #define PTRACE_SEIZE		0x4206
- #define PTRACE_INTERRUPT	0x4207
- #define PTRACE_LISTEN		0x4208
-+#define PTRACE_DUPFD		0x4209
- 
- /* flags in @data for PTRACE_SEIZE */
- #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 24d0447..a646d01 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -24,6 +24,7 @@
- #include <linux/regset.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/cn_proc.h>
-+#include <linux/file.h>
- 
- 
- static int ptrace_trapping_sleep_fn(void *flags)
-@@ -826,6 +827,32 @@ int ptrace_request(struct task_struct *child, long request,
- 		break;
- 	}
- #endif
-+	case PTRACE_DUPFD:
-+	{
-+		struct file *file = fget_raw(data);
-+		ret = -EBADF;
-+
-+		if (!file)
-+			break;
-+
-+		task_lock(child);
-+		if (!child->files)
-+			goto out_getfd;
-+
-+		ret = alloc_task_fd(child, 0, 0);
-+		if (ret < 0) {
-+			fput(file);
-+			goto out_getfd;
-+		}
-+
-+		fd_task_install(child, ret, file);
-+
-+out_getfd:
-+		task_unlock(child);
-+
-+		break;
-+	}
-+
- 	default:
- 		break;
- 	}
--- 
-1.7.1
+Any thoughts on this?
 
+Thanks,
+Ido.
