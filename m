@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030275Ab1LPUxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:53:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49034 "EHLO mx2.suse.de"
+	id S1030277Ab1LPUyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:54:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49028 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964974Ab1LPUwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:21 -0500
+	id S964984Ab1LPUwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:42 2011
-Message-Id: <20111216205042.882774104@clark.kroah.org>
+Message-Id: <20111216205042.791953117@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:39 -0800
+Date: Fri, 16 Dec 2011 12:49:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>
-Subject: [06/16] percpu: fix chunk range calculation
+        alan@lxorguk.ukuu.org.uk,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Carl Love <carll@us.ibm.com>, Robert Richter <robert.richter@amd.com>
+Subject: [05/16] oprofile: Fix locking dependency in sync_start()
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,119 +26,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Robert Richter <robert.richter@amd.com>
 
-commit a855b84c3d8c73220d4d3cd392a7bee7c83de70e upstream.
+commit 130c5ce716c9bfd1c2a2ec840a746eb7ff9ce1e6 upstream.
 
-Percpu allocator recorded the cpus which map to the first and last
-units in pcpu_first/last_unit_cpu respectively and used them to
-determine the address range of a chunk - e.g. it assumed that the
-first unit has the lowest address in a chunk while the last unit has
-the highest address.
+This fixes the A->B/B->A locking dependency, see the warning below.
 
-This simply isn't true.  Groups in a chunk can have arbitrary positive
-or negative offsets from the previous one and there is no guarantee
-that the first unit occupies the lowest offset while the last one the
-highest.
+The function task_exit_notify() is called with (task_exit_notifier)
+.rwsem set and then calls sync_buffer() which locks buffer_mutex. In
+sync_start() the buffer_mutex was set to prevent notifier functions to
+be started before sync_start() is finished. But when registering the
+notifier, (task_exit_notifier).rwsem is locked too, but now in
+different order than in sync_buffer(). In theory this causes a locking
+dependency, what does not occur in practice since task_exit_notify()
+is always called after the notifier is registered which means the lock
+is already released.
 
-Fix it by actually comparing unit offsets to determine cpus occupying
-the lowest and highest offsets.  Also, rename pcu_first/last_unit_cpu
-to pcpu_low/high_unit_cpu to avoid confusion.
+However, after checking the notifier functions it turned out the
+buffer_mutex in sync_start() is unnecessary. This is because
+sync_buffer() may be called from the notifiers even if sync_start()
+did not finish yet, the buffers are already allocated but empty. No
+need to protect this with the mutex.
 
-The chunk address range is used to flush cache on vmalloc area
-map/unmap and decide whether a given address is in the first chunk by
-per_cpu_ptr_to_phys() and the bug was discovered by invalid
-per_cpu_ptr_to_phys() translation for crash_note.
+So we fix this theoretical locking dependency by removing buffer_mutex
+in sync_start(). This is similar to the implementation before commit:
 
-Kudos to Dave Young for tracking down the problem.
+ 750d857 oprofile: fix crash when accessing freed task structs
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: WANG Cong <xiyou.wangcong@gmail.com>
-Reported-by: Dave Young <dyoung@redhat.com>
-Tested-by: Dave Young <dyoung@redhat.com>
-LKML-Reference: <4EC21F67.10905@redhat.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
+which introduced the locking dependency.
+
+Lockdep warning:
+
+oprofiled/4447 is trying to acquire lock:
+ (buffer_mutex){+.+...}, at: [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+
+but task is already holding lock:
+ ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #1 ((task_exit_notifier).rwsem){++++..}:
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff81463a2b>] down_write+0x44/0x67
+       [<ffffffff810581c0>] blocking_notifier_chain_register+0x52/0x8b
+       [<ffffffff8105a6ac>] profile_event_register+0x2d/0x2f
+       [<ffffffffa00013c1>] sync_start+0x47/0xc6 [oprofile]
+       [<ffffffffa00001bb>] oprofile_setup+0x60/0xa5 [oprofile]
+       [<ffffffffa00014e3>] event_buffer_open+0x59/0x8c [oprofile]
+       [<ffffffff810cd3b9>] __dentry_open+0x1eb/0x308
+       [<ffffffff810cd59d>] nameidata_to_filp+0x60/0x67
+       [<ffffffff810daad6>] do_last+0x5be/0x6b2
+       [<ffffffff810dbc33>] path_openat+0xc7/0x360
+       [<ffffffff810dbfc5>] do_filp_open+0x3d/0x8c
+       [<ffffffff810ccfd2>] do_sys_open+0x110/0x1a9
+       [<ffffffff810cd09e>] sys_open+0x20/0x22
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+-> #0 (buffer_mutex){+.+...}:
+       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+       [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+other info that might help us debug this:
+
+1 lock held by oprofiled/4447:
+ #0:  ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
+
+stack backtrace:
+Pid: 4447, comm: oprofiled Not tainted 2.6.39-00007-gcf4d8d4 #10
+Call Trace:
+ [<ffffffff81063193>] print_circular_bug+0xae/0xbc
+ [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff81062627>] ? mark_lock+0x42f/0x552
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+ [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
+ [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
+ [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
+ [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+ [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+ [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+ [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+ [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+ [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+ [<ffffffff81465031>] ? retint_swapgs+0xe/0x13
+ [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+ [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+ [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Carl Love <carll@us.ibm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/percpu.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+ drivers/oprofile/buffer_sync.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -110,9 +110,9 @@ static int pcpu_atom_size __read_mostly;
- static int pcpu_nr_slots __read_mostly;
- static size_t pcpu_chunk_struct_size __read_mostly;
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -154,8 +154,6 @@ int sync_start(void)
+ 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
+ 		return -ENOMEM;
  
--/* cpus with the lowest and highest unit numbers */
--static unsigned int pcpu_first_unit_cpu __read_mostly;
--static unsigned int pcpu_last_unit_cpu __read_mostly;
-+/* cpus with the lowest and highest unit addresses */
-+static unsigned int pcpu_low_unit_cpu __read_mostly;
-+static unsigned int pcpu_high_unit_cpu __read_mostly;
+-	mutex_lock(&buffer_mutex);
+-
+ 	err = task_handoff_register(&task_free_nb);
+ 	if (err)
+ 		goto out1;
+@@ -172,7 +170,6 @@ int sync_start(void)
+ 	start_cpu_work();
  
- /* the address of the first chunk which starts with the kernel static area */
- void *pcpu_base_addr __read_mostly;
-@@ -746,8 +746,8 @@ static void pcpu_pre_unmap_flush(struct
- 				 int page_start, int page_end)
+ out:
+-	mutex_unlock(&buffer_mutex);
+ 	return err;
+ out4:
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+@@ -189,14 +186,13 @@ out1:
+ 
+ void sync_stop(void)
  {
- 	flush_cache_vunmap(
--		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
--		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
-+		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-+		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
- }
- 
- static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
-@@ -809,8 +809,8 @@ static void pcpu_post_unmap_tlb_flush(st
- 				      int page_start, int page_end)
- {
- 	flush_tlb_kernel_range(
--		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
--		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
-+		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-+		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
- }
- 
- static int __pcpu_map_pages(unsigned long addr, struct page **pages,
-@@ -887,8 +887,8 @@ static void pcpu_post_map_flush(struct p
- 				int page_start, int page_end)
- {
- 	flush_cache_vmap(
--		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
--		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
-+		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-+		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
- }
- 
- /**
-@@ -1680,7 +1680,9 @@ int __init pcpu_setup_first_chunk(const
- 
- 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
- 		unit_map[cpu] = UINT_MAX;
--	pcpu_first_unit_cpu = NR_CPUS;
+-	/* flush buffers */
+-	mutex_lock(&buffer_mutex);
+ 	end_cpu_work();
+ 	unregister_module_notifier(&module_load_nb);
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ 	task_handoff_unregister(&task_free_nb);
+-	mutex_unlock(&buffer_mutex);
++	barrier();			/* do all of the above first */
 +
-+	pcpu_low_unit_cpu = NR_CPUS;
-+	pcpu_high_unit_cpu = NR_CPUS;
+ 	flush_scheduled_work();
  
- 	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
- 		const struct pcpu_group_info *gi = &ai->groups[group];
-@@ -1700,9 +1702,13 @@ int __init pcpu_setup_first_chunk(const
- 			unit_map[cpu] = unit + i;
- 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
- 
--			if (pcpu_first_unit_cpu == NR_CPUS)
--				pcpu_first_unit_cpu = cpu;
--			pcpu_last_unit_cpu = cpu;
-+			/* determine low/high unit_cpu */
-+			if (pcpu_low_unit_cpu == NR_CPUS ||
-+			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
-+				pcpu_low_unit_cpu = cpu;
-+			if (pcpu_high_unit_cpu == NR_CPUS ||
-+			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
-+				pcpu_high_unit_cpu = cpu;
- 		}
- 	}
- 	pcpu_nr_units = unit;
+ 	free_all_tasks();
 
 
