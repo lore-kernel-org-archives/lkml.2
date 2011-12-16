@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab1LPUFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:05:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45024 "EHLO mx2.suse.de"
+	id S964808Ab1LPUGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:06:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45010 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932763Ab1LPTuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:50:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:01 2011
-Message-Id: <20111216194600.923232533@clark.kroah.org>
+	id S932694Ab1LPTt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:58 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:00 2011
+Message-Id: <20111216194600.542598387@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:39 -0800
+Date: Fri, 16 Dec 2011 11:45:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
-Subject: [42/53] ext4: display the correct mount option in /proc/mounts for [no]init_itable
+        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [40/53] xen: only limit memory map to maximum reservation for domain 0.
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,75 +25,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit fc6cb1cda5db7b2d24bf32890826214b857c728e upstream.
+commit d3db728125c4470a2d061ac10fa7395e18237263 upstream.
 
-/proc/mounts was showing the mount option [no]init_inode_table when
-the correct mount option that will be accepted by parse_options() is
-[no]init_itable.
+d312ae878b6a "xen: use maximum reservation to limit amount of usable RAM"
+clamped the total amount of RAM to the current maximum reservation. This is
+correct for dom0 but is not correct for guest domains. In order to boot a guest
+"pre-ballooned" (e.g. with memory=1G but maxmem=2G) in order to allow for
+future memory expansion the guest must derive max_pfn from the e820 provided by
+the toolstack and not the current maximum reservation (which can reflect only
+the current maximum, not the guest lifetime max). The existing algorithm
+already behaves this correctly if we do not artificially limit the maximum
+number of pages for the guest case.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+For a guest booted with maxmem=512, memory=128 this results in:
+ [    0.000000] BIOS-provided physical RAM map:
+ [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
+ [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
+-[    0.000000]  Xen: 0000000000100000 - 0000000008100000 (usable)
+-[    0.000000]  Xen: 0000000008100000 - 0000000020800000 (unusable)
++[    0.000000]  Xen: 0000000000100000 - 0000000020800000 (usable)
+...
+ [    0.000000] NX (Execute Disable) protection: active
+ [    0.000000] DMI not present or invalid.
+ [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
+ [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
+-[    0.000000] last_pfn = 0x8100 max_arch_pfn = 0x1000000
++[    0.000000] last_pfn = 0x20800 max_arch_pfn = 0x1000000
+ [    0.000000] initial memory mapped : 0 - 027ff000
+ [    0.000000] Base memory trampoline at [c009f000] 9f000 size 4096
+-[    0.000000] init_memory_mapping: 0000000000000000-0000000008100000
+-[    0.000000]  0000000000 - 0008100000 page 4k
+-[    0.000000] kernel direct mapping tables up to 8100000 @ 27bb000-27ff000
++[    0.000000] init_memory_mapping: 0000000000000000-0000000020800000
++[    0.000000]  0000000000 - 0020800000 page 4k
++[    0.000000] kernel direct mapping tables up to 20800000 @ 26f8000-27ff000
+ [    0.000000] xen: setting RW the range 27e8000 - 27ff000
+ [    0.000000] 0MB HIGHMEM available.
+-[    0.000000] 129MB LOWMEM available.
+-[    0.000000]   mapped low ram: 0 - 08100000
+-[    0.000000]   low ram: 0 - 08100000
++[    0.000000] 520MB LOWMEM available.
++[    0.000000]   mapped low ram: 0 - 20800000
++[    0.000000]   low ram: 0 - 20800000
+
+With this change "xl mem-set <domain> 512M" will successfully increase the
+guest RAM (by reducing the balloon).
+
+There is no change for dom0.
+
+Reported-and-Tested-by:  George Shuklin <george.shuklin@gmail.com>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ arch/x86/xen/setup.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1140,9 +1140,9 @@ static int ext4_show_options(struct seq_
- 		seq_puts(seq, ",block_validity");
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -191,9 +191,21 @@ static unsigned long __init xen_get_max_
+ 	domid_t domid = DOMID_SELF;
+ 	int ret;
  
- 	if (!test_opt(sb, INIT_INODE_TABLE))
--		seq_puts(seq, ",noinit_inode_table");
-+		seq_puts(seq, ",noinit_itable");
- 	else if (sbi->s_li_wait_mult != EXT4_DEF_LI_WAIT_MULT)
--		seq_printf(seq, ",init_inode_table=%u",
-+		seq_printf(seq, ",init_itable=%u",
- 			   (unsigned) sbi->s_li_wait_mult);
+-	ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+-	if (ret > 0)
+-		max_pages = ret;
++	/*
++	 * For the initial domain we use the maximum reservation as
++	 * the maximum page.
++	 *
++	 * For guest domains the current maximum reservation reflects
++	 * the current maximum rather than the static maximum. In this
++	 * case the e820 map provided to us will cover the static
++	 * maximum region.
++	 */
++	if (xen_initial_domain()) {
++		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
++		if (ret > 0)
++			max_pages = ret;
++	}
++
+ 	return min(max_pages, MAX_DOMAIN_PAGES);
+ }
  
- 	ext4_show_quota_options(seq, sb);
-@@ -1318,8 +1318,7 @@ enum {
- 	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
- 	Opt_inode_readahead_blks, Opt_journal_ioprio,
- 	Opt_dioread_nolock, Opt_dioread_lock,
--	Opt_discard, Opt_nodiscard,
--	Opt_init_inode_table, Opt_noinit_inode_table,
-+	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
- };
- 
- static const match_table_t tokens = {
-@@ -1392,9 +1391,9 @@ static const match_table_t tokens = {
- 	{Opt_dioread_lock, "dioread_lock"},
- 	{Opt_discard, "discard"},
- 	{Opt_nodiscard, "nodiscard"},
--	{Opt_init_inode_table, "init_itable=%u"},
--	{Opt_init_inode_table, "init_itable"},
--	{Opt_noinit_inode_table, "noinit_itable"},
-+	{Opt_init_itable, "init_itable=%u"},
-+	{Opt_init_itable, "init_itable"},
-+	{Opt_noinit_itable, "noinit_itable"},
- 	{Opt_err, NULL},
- };
- 
-@@ -1871,7 +1870,7 @@ set_qf_format:
- 		case Opt_dioread_lock:
- 			clear_opt(sb, DIOREAD_NOLOCK);
- 			break;
--		case Opt_init_inode_table:
-+		case Opt_init_itable:
- 			set_opt(sb, INIT_INODE_TABLE);
- 			if (args[0].from) {
- 				if (match_int(&args[0], &option))
-@@ -1882,7 +1881,7 @@ set_qf_format:
- 				return 0;
- 			sbi->s_li_wait_mult = option;
- 			break;
--		case Opt_noinit_inode_table:
-+		case Opt_noinit_itable:
- 			clear_opt(sb, INIT_INODE_TABLE);
- 			break;
- 		default:
 
 
