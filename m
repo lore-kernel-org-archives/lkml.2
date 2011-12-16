@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab1LPTz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:55:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45419 "EHLO mx2.suse.de"
+	id S1760711Ab1LPTzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:55:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45442 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760696Ab1LPTxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:53:10 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:14 2011
-Message-Id: <20111216194214.076340873@clark.kroah.org>
+	id S964814Ab1LPTxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:53:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:12 2011
+Message-Id: <20111216194212.483902721@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:51 -0800
+Date: Fri, 16 Dec 2011 11:40:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Hermann <alex@wenlex.nl>
-Subject: [44/45] usb: option: Add Huawei E398 controlling interfaces
+        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
+Subject: [35/45] ext4: display the correct mount option in /proc/mounts for [no]init_itable
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +24,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Hermann <alex@wenlex.nl>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 414b591fd16655871e9f5592a55368b10a3ccc30 upstream.
+commit fc6cb1cda5db7b2d24bf32890826214b857c728e upstream.
 
-This patch adds the controlling interfaces for the Huawei E398.
+/proc/mounts was showing the mount option [no]init_inode_table when
+the correct mount option that will be accepted by parse_options() is
+[no]init_itable.
 
-Thanks to Bjørn Mork <bjorn@mork.no> for extracting the interface
-numbers from the windows driver.
-
-Signed-off-by: Alex Hermann <alex@wenlex.nl>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/ext4/super.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -660,6 +660,9 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x02) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x03) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x08) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x02, 0x01) },  /* E398 3G Modem */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x02, 0x02) },  /* E398 3G PC UI Interface */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x02, 0x03) },  /* E398 3G Application Interface */
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V740) },
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1113,9 +1113,9 @@ static int ext4_show_options(struct seq_
+ 		seq_puts(seq, ",block_validity");
+ 
+ 	if (!test_opt(sb, INIT_INODE_TABLE))
+-		seq_puts(seq, ",noinit_inode_table");
++		seq_puts(seq, ",noinit_itable");
+ 	else if (sbi->s_li_wait_mult != EXT4_DEF_LI_WAIT_MULT)
+-		seq_printf(seq, ",init_inode_table=%u",
++		seq_printf(seq, ",init_itable=%u",
+ 			   (unsigned) sbi->s_li_wait_mult);
+ 
+ 	ext4_show_quota_options(seq, sb);
+@@ -1291,8 +1291,7 @@ enum {
+ 	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
+ 	Opt_inode_readahead_blks, Opt_journal_ioprio,
+ 	Opt_dioread_nolock, Opt_dioread_lock,
+-	Opt_discard, Opt_nodiscard,
+-	Opt_init_inode_table, Opt_noinit_inode_table,
++	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
+ };
+ 
+ static const match_table_t tokens = {
+@@ -1365,9 +1364,9 @@ static const match_table_t tokens = {
+ 	{Opt_dioread_lock, "dioread_lock"},
+ 	{Opt_discard, "discard"},
+ 	{Opt_nodiscard, "nodiscard"},
+-	{Opt_init_inode_table, "init_itable=%u"},
+-	{Opt_init_inode_table, "init_itable"},
+-	{Opt_noinit_inode_table, "noinit_itable"},
++	{Opt_init_itable, "init_itable=%u"},
++	{Opt_init_itable, "init_itable"},
++	{Opt_noinit_itable, "noinit_itable"},
+ 	{Opt_err, NULL},
+ };
+ 
+@@ -1844,7 +1843,7 @@ set_qf_format:
+ 		case Opt_dioread_lock:
+ 			clear_opt(sb, DIOREAD_NOLOCK);
+ 			break;
+-		case Opt_init_inode_table:
++		case Opt_init_itable:
+ 			set_opt(sb, INIT_INODE_TABLE);
+ 			if (args[0].from) {
+ 				if (match_int(&args[0], &option))
+@@ -1855,7 +1854,7 @@ set_qf_format:
+ 				return 0;
+ 			sbi->s_li_wait_mult = option;
+ 			break;
+-		case Opt_noinit_inode_table:
++		case Opt_noinit_itable:
+ 			clear_opt(sb, INIT_INODE_TABLE);
+ 			break;
+ 		default:
 
 
