@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab1LPTud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:50:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44997 "EHLO mx2.suse.de"
+	id S964790Ab1LPTvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:51:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45030 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932597Ab1LPTtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:54 2011
-Message-Id: <20111216194554.112799656@clark.kroah.org>
+	id S932775Ab1LPTuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:50:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:01 2011
+Message-Id: <20111216194601.087234355@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:44:58 -0800
+Date: Fri, 16 Dec 2011 11:45:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Dillow <dave@thedillows.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [01/53] ALSA: sis7019 - give slow codecs more time to reset
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [43/53] ext4: avoid hangs in ext4_da_should_update_i_disksize()
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,140 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dillow <dave@thedillows.org>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit fc084e0b930d546872ab23667052499f7daf0fed upstream.
+commit ea51d132dbf9b00063169c1159bee253d9649224 upstream.
 
-There are some AC97 codec and board combinations that have been observed
-to take a very long time to respond after the cold reset has completed.
-In one case, more than 350 ms was required. To allow users to have sound
-on those platforms, we'll wait up to 500ms for the codec to become
-ready.
+If the pte mapping in generic_perform_write() is unmapped between
+iov_iter_fault_in_readable() and iov_iter_copy_from_user_atomic(), the
+"copied" parameter to ->end_write can be zero. ext4 couldn't cope with
+it with delayed allocations enabled. This skips the i_disksize
+enlargement logic if copied is zero and no new data was appeneded to
+the inode.
 
-As a board may have multiple codecs, with some faster than others to
-reset, we add a module parameter to inform the driver which codecs
-should be present.
+ gdb> bt
+ #0  0xffffffff811afe80 in ext4_da_should_update_i_disksize (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x1\
+ 08000, len=0x1000, copied=0x0, page=0xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2467
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ #2  0xffffffff810d97f1 in generic_perform_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value o\
+ ptimized out>, pos=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2440
+ #3  generic_file_buffered_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value optimized out>, p\
+ os=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2482
+ #4  0xffffffff810db5d1 in __generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, ppos=0\
+ xffff88001e26be40) at mm/filemap.c:2600
+ #5  0xffffffff810db853 in generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=<value optimi\
+ zed out>, pos=<value optimized out>) at mm/filemap.c:2632
+ #6  0xffffffff811a71aa in ext4_file_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, pos=0x108000) a\
+ t fs/ext4/file.c:136
+ #7  0xffffffff811375aa in do_sync_write (filp=0xffff88003f606a80, buf=<value optimized out>, len=<value optimized out>, \
+ ppos=0xffff88001e26bf48) at fs/read_write.c:406
+ #8  0xffffffff81137e56 in vfs_write (file=0xffff88003f606a80, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x4\
+ 000, pos=0xffff88001e26bf48) at fs/read_write.c:435
+ #9  0xffffffff8113816c in sys_write (fd=<value optimized out>, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x\
+ 4000) at fs/read_write.c:487
+ #10 <signal handler called>
+ #11 0x00007f120077a390 in __brk_reservation_fn_dmi_alloc__ ()
+ #12 0x0000000000000000 in ?? ()
+ gdb> print offset
+ $22 = 0xffffffffffffffff
+ gdb> print idx
+ $23 = 0xffffffff
+ gdb> print inode->i_blkbits
+ $24 = 0xc
+ gdb> up
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ 2512                    if (ext4_da_should_update_i_disksize(page, end)) {
+ gdb> print start
+ $25 = 0x0
+ gdb> print end
+ $26 = 0xffffffffffffffff
+ gdb> print pos
+ $27 = 0x108000
+ gdb> print new_i_size
+ $28 = 0x108000
+ gdb> print ((struct ext4_inode_info *)((char *)inode-((int)(&((struct ext4_inode_info *)0)->vfs_inode))))->i_disksize
+ $29 = 0xd9000
+ gdb> down
+ 2467            for (i = 0; i < idx; i++)
+ gdb> print i
+ $30 = 0xd44acbee
 
-Reported-by: KotCzarny <tjosko@yahoo.com>
-Signed-off-by: David Dillow <dave@thedillows.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This is 100% reproducible with some autonuma development code tuned in
+a very aggressive manner (not normal way even for knumad) which does
+"exotic" changes to the ptes. It wouldn't normally trigger but I don't
+see why it can't happen normally if the page is added to swap cache in
+between the two faults leading to "copied" being zero (which then
+hangs in ext4). So it should be fixed. Especially possible with lumpy
+reclaim (albeit disabled if compaction is enabled) as that would
+ignore the young bits in the ptes.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/sis7019.c |   64 +++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 53 insertions(+), 11 deletions(-)
+ fs/ext4/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/sis7019.c
-+++ b/sound/pci/sis7019.c
-@@ -41,6 +41,7 @@ MODULE_SUPPORTED_DEVICE("{{SiS,SiS7019 A
- static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
- static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
- static int enable = 1;
-+static int codecs = 1;
- 
- module_param(index, int, 0444);
- MODULE_PARM_DESC(index, "Index value for SiS7019 Audio Accelerator.");
-@@ -48,6 +49,8 @@ module_param(id, charp, 0444);
- MODULE_PARM_DESC(id, "ID string for SiS7019 Audio Accelerator.");
- module_param(enable, bool, 0444);
- MODULE_PARM_DESC(enable, "Enable SiS7019 Audio Accelerator.");
-+module_param(codecs, int, 0444);
-+MODULE_PARM_DESC(codecs, "Set bit to indicate that codec number is expected to be present (default 1)");
- 
- static DEFINE_PCI_DEVICE_TABLE(snd_sis7019_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SI, 0x7019) },
-@@ -140,6 +143,9 @@ struct sis7019 {
- 	dma_addr_t silence_dma_addr;
- };
- 
-+/* These values are also used by the module param 'codecs' to indicate
-+ * which codecs should be present.
-+ */
- #define SIS_PRIMARY_CODEC_PRESENT	0x0001
- #define SIS_SECONDARY_CODEC_PRESENT	0x0002
- #define SIS_TERTIARY_CODEC_PRESENT	0x0004
-@@ -1078,6 +1084,7 @@ static int sis_chip_init(struct sis7019
- {
- 	unsigned long io = sis->ioport;
- 	void __iomem *ioaddr = sis->ioaddr;
-+	unsigned long timeout;
- 	u16 status;
- 	int count;
- 	int i;
-@@ -1104,21 +1111,45 @@ static int sis_chip_init(struct sis7019
- 	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
- 		udelay(1);
- 
--	/* Now that we've finished the reset, find out what's attached.
-+	/* Command complete, we can let go of the semaphore now.
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2367,7 +2367,7 @@ static int ext4_da_write_end(struct file
  	 */
--	status = inl(io + SIS_AC97_STATUS);
--	if (status & SIS_AC97_STATUS_CODEC_READY)
--		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
--	if (status & SIS_AC97_STATUS_CODEC2_READY)
--		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
--	if (status & SIS_AC97_STATUS_CODEC3_READY)
--		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
-+	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
-+	if (!count)
-+		return -EIO;
-+
-+	/* Now that we've finished the reset, find out what's attached.
-+	 * There are some codec/board combinations that take an extremely
-+	 * long time to come up. 350+ ms has been observed in the field,
-+	 * so we'll give them up to 500ms.
-+	 */
-+	sis->codecs_present = 0;
-+	timeout = msecs_to_jiffies(500) + jiffies;
-+	while (time_before_eq(jiffies, timeout)) {
-+		status = inl(io + SIS_AC97_STATUS);
-+		if (status & SIS_AC97_STATUS_CODEC_READY)
-+			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
-+		if (status & SIS_AC97_STATUS_CODEC2_READY)
-+			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
-+		if (status & SIS_AC97_STATUS_CODEC3_READY)
-+			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
-+
-+		if (sis->codecs_present == codecs)
-+			break;
  
--	/* All done, let go of the semaphore, and check for errors
-+		msleep(1);
-+	}
-+
-+	/* All done, check for errors.
- 	 */
--	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
--	if (!sis->codecs_present || !count)
-+	if (!sis->codecs_present) {
-+		printk(KERN_ERR "sis7019: could not find any codecs\n");
- 		return -EIO;
-+	}
-+
-+	if (sis->codecs_present != codecs) {
-+		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
-+		       sis->codecs_present, codecs);
-+	}
- 
- 	/* Let the hardware know that the audio driver is alive,
- 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
-@@ -1390,6 +1421,17 @@ static int __devinit snd_sis7019_probe(s
- 	if (!enable)
- 		goto error_out;
- 
-+	/* The user can specify which codecs should be present so that we
-+	 * can wait for them to show up if they are slow to recover from
-+	 * the AC97 cold reset. We default to a single codec, the primary.
-+	 *
-+	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
-+	 */
-+	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
-+		  SIS_TERTIARY_CODEC_PRESENT;
-+	if (!codecs)
-+		codecs = SIS_PRIMARY_CODEC_PRESENT;
-+
- 	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
- 	if (rc < 0)
- 		goto error_out;
+ 	new_i_size = pos + copied;
+-	if (new_i_size > EXT4_I(inode)->i_disksize) {
++	if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+ 		if (ext4_da_should_update_i_disksize(page, end)) {
+ 			down_write(&EXT4_I(inode)->i_data_sem);
+ 			if (new_i_size > EXT4_I(inode)->i_disksize) {
 
 
