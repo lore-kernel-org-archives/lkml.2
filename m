@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760029Ab1LPUJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:09:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44833 "EHLO mx2.suse.de"
+	id S1760651Ab1LPUJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:09:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44823 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760504Ab1LPTsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:48:30 -0500
+	id S1760245Ab1LPTsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:48:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:56 2011
-Message-Id: <20111216194556.461886931@clark.kroah.org>
+Message-Id: <20111216194556.124725446@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:12 -0800
+Date: Fri, 16 Dec 2011 11:45:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yong Zhang <yong.zhang0@gmail.com>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [15/53] lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
+        alan@lxorguk.ukuu.org.uk, Youquan Song <youquan.song@intel.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [13/53] thp: add compound tail page _mapcount when mapped
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yong Zhang <yong.zhang0@gmail.com>
+From: Youquan Song <youquan.song@intel.com>
 
-commit a33caeb118198286309859f014c0662f3ed54ed4 upstream.
+commit b6999b19120931ede364fa3b685e698a61fed31d upstream.
 
-Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
-lockdep_init_map() will clear all the struct. But it will break
-lock_set_class()/lock_set_subclass(). A typical race condition
-is like below:
+With the 3.2-rc kernel, IOMMU 2M pages in KVM works.  But when I tried
+to use IOMMU 1GB pages in KVM, I encountered an oops and the 1GB page
+failed to be used.
 
-     CPU A                                   CPU B
-lock_set_subclass(lockA);
- lock_set_class(lockA);
-   lockdep_init_map(lockA);
-     /* lockA->name is cleared */
-     memset(lockA);
-                                     __lock_acquire(lockA);
-                                       /* lockA->class_cache[] is cleared */
-                                       register_lock_class(lockA);
-                                         look_up_lock_class(lockA);
-                                           WARN_ON_ONCE(class->name !=
-                                                     lock->name);
+The root cause is that 1GB page allocation calls gup_huge_pud() while 2M
+page calls gup_huge_pmd.  If compound pages are used and the page is a
+tail page, gup_huge_pmd() increases _mapcount to record tail page are
+mapped while gup_huge_pud does not do that.
 
-     lock->name = name;
+So when the mapped page is relesed, it will result in kernel oops
+because the page is not marked mapped.
 
-So restore to what we have done before commit f59de89 but annotate
-->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
-warning reported in commit f59de89.
+This patch add tail process for compound page in 1GB huge page which
+keeps the same process as 2M page.
 
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reproduce like:
+1. Add grub boot option: hugepagesz=1G hugepages=8
+2. mount -t hugetlbfs -o pagesize=1G hugetlbfs /dev/hugepages
+3. qemu-kvm -m 2048 -hda os-kvm.img -cpu kvm64 -smp 4 -mem-path /dev/hugepages
+	-net none -device pci-assign,host=07:00.1
+
+  kernel BUG at mm/swap.c:114!
+  invalid opcode: 0000 [#1] SMP
+  Call Trace:
+    put_page+0x15/0x37
+    kvm_release_pfn_clean+0x31/0x36
+    kvm_iommu_put_pages+0x94/0xb1
+    kvm_iommu_unmap_memslots+0x80/0xb6
+    kvm_assign_device+0xba/0x117
+    kvm_vm_ioctl_assigned_device+0x301/0xa47
+    kvm_vm_ioctl+0x36c/0x3a2
+    do_vfs_ioctl+0x49e/0x4e4
+    sys_ioctl+0x5a/0x7c
+    system_call_fastpath+0x16/0x1b
+  RIP  put_compound_page+0xd4/0x168
+
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/lockdep.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/mm/gup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -44,6 +44,7 @@
- #include <linux/stringify.h>
- #include <linux/bitops.h>
- #include <linux/gfp.h>
-+#include <linux/kmemcheck.h>
- 
- #include <asm/sections.h>
- 
-@@ -2874,7 +2875,12 @@ static int mark_lock(struct task_struct
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 		      struct lock_class_key *key, int subclass)
- {
--	memset(lock, 0, sizeof(*lock));
-+	int i;
-+
-+	kmemcheck_mark_initialized(lock, sizeof(*lock));
-+
-+	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-+		lock->class_cache[i] = NULL;
- 
- #ifdef CONFIG_LOCK_STAT
- 	lock->cpu = raw_smp_processor_id();
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -201,6 +201,8 @@ static noinline int gup_huge_pud(pud_t p
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
++		if (PageTail(page))
++			get_huge_page_tail(page);
+ 		(*nr)++;
+ 		page++;
+ 		refs++;
 
 
