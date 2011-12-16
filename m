@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759949Ab1LPATC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:19:02 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60514 "EHLO ogre.sisk.pl"
+	id S1759925Ab1LPAWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:22:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43002 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759904Ab1LPARy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:17:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [Update][PATCH 4/5] PM / input / touchscreen: Make st1232 use device PM QoS constraints
-Date: Fri, 16 Dec 2011 01:13:35 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201112100042.45168.rjw@sisk.pl> <201112160110.09124.rjw@sisk.pl>
-In-Reply-To: <201112160110.09124.rjw@sisk.pl>
+	id S1753971Ab1LPAWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 19:22:39 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
+Date: Fri, 16 Dec 2011 01:22:35 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com> <1323972371-13189-2-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1323972371-13189-2-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-6"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112160113.36166.rjw@sisk.pl>
+Message-Id: <201112160122.36100.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thursday 15 December 2011 19:06:08 Seth Forshee wrote:
+> toshiba_acpi needs to execute an AML method within the EC namespace
+> to make hotkeys work on some platforms. Provide an interface to
+> allow it to easily get a handle to the EC namespace for this purpose.
+I first liked the idea of making the ec device more global for others
+to access.
+But thinkpad_acpi is doing the same already in another way.
 
-Make the st1232 driver use dev_pm_qos_add_ancestor_request() to
-add a device PM QoS latency constraint for the controller it
-depends on, so that the controller won't go into an overly deep
-low-power state when the touchscreen has to be particularly
-responsive (e.g. when the user moves his or her finger on it).
+I think best is to move the thinkpad implementation of getting
+ACPI handles based on HIDs to osl.c and make it global.
+I'll send patches.
+Please review them carefully, they are only compile tested.
 
-This change is based on a prototype patch from Guennadi Liakhovetski.
+      Thomas
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/input/touchscreen/st1232.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
-Index: linux/drivers/input/touchscreen/st1232.c
-===================================================================
---- linux.orig/drivers/input/touchscreen/st1232.c
-+++ linux/drivers/input/touchscreen/st1232.c
-@@ -23,6 +23,7 @@
- #include <linux/input.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
-+#include <linux/pm_qos.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- 
-@@ -46,6 +47,7 @@ struct st1232_ts_data {
- 	struct i2c_client *client;
- 	struct input_dev *input_dev;
- 	struct st1232_ts_finger finger[MAX_FINGERS];
-+	struct dev_pm_qos_request low_latency_req;
- };
- 
- static int st1232_ts_read_data(struct st1232_ts_data *ts)
-@@ -118,8 +120,17 @@ static irqreturn_t st1232_ts_irq_handler
- 	}
- 
- 	/* SYN_MT_REPORT only if no contact */
--	if (!count)
-+	if (!count) {
- 		input_mt_sync(input_dev);
-+		if (ts->low_latency_req.dev) {
-+			dev_pm_qos_remove_request(&ts->low_latency_req);
-+			ts->low_latency_req.dev = NULL;
-+		}
-+	} else if (!ts->low_latency_req.dev) {
-+		/* First contact, request 100 us latency. */
-+		dev_pm_qos_add_ancestor_request(&ts->client->dev,
-+						&ts->low_latency_req, 100);
-+	}
- 
- 	/* SYN_REPORT */
- 	input_sync(input_dev);
+> 
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/acpi/ec.c    |   10 ++++++++++
+>  include/linux/acpi.h |    1 +
+>  2 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+> index b19a18d..e37615f 100644
+> --- a/drivers/acpi/ec.c
+> +++ b/drivers/acpi/ec.c
+> @@ -445,6 +445,16 @@ int ec_transaction(u8 command,
+>  
+>  EXPORT_SYMBOL(ec_transaction);
+>  
+> +/* Get the handle to the EC device */
+> +acpi_handle ec_get_handle(void)
+> +{
+> +	if (!first_ec)
+> +		return NULL;
+> +	return first_ec->handle;
+> +}
+> +
+> +EXPORT_SYMBOL(ec_get_handle);
+> +
+>  void acpi_ec_block_transactions(void)
+>  {
+>  	struct acpi_ec *ec = first_ec;
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 6001b4da..ecccbb7 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -151,6 +151,7 @@ extern int ec_write(u8 addr, u8 val);
+>  extern int ec_transaction(u8 command,
+>                            const u8 *wdata, unsigned wdata_len,
+>                            u8 *rdata, unsigned rdata_len);
+> +extern acpi_handle ec_get_handle(void);
+>  
+>  #if defined(CONFIG_ACPI_WMI) || defined(CONFIG_ACPI_WMI_MODULE)
+>  
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
