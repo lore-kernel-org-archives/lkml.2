@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964850Ab1LPUA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:00:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45302 "EHLO mx2.suse.de"
+	id S932920Ab1LPUBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:01:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45287 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab1LPTwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:52:09 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:11 2011
-Message-Id: <20111216194210.870950422@clark.kroah.org>
+	id S932882Ab1LPTwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:52:02 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:10 2011
+Message-Id: <20111216194210.545006829@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:32 -0800
+Date: Fri, 16 Dec 2011 11:40:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [25/45] mmc: mxcmmc: fix falling back to PIO
+        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@vmware.com>
+Subject: [23/45] linux/log2.h: Fix rounddown_pow_of_two(1)
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit e58f516ff4730c4047c3f104b061f7a03e9a263c upstream.
+commit 13c07b0286d340275f2d97adf085cecda37ede37 upstream.
 
-When we can't configure the dma channel we want to fall
-back to PIO. We do this by setting host->do_dma to zero.
-This does not work as do_dma is used to see whether dma
-can be used for the current transfer. Instead, we have
-to set host->dma to NULL.
+Exactly like roundup_pow_of_two(1), the rounddown version was buggy for
+the case of a compile-time constant '1' argument.  Probably because it
+originated from the same code, sharing history with the roundup version
+from before the bugfix (for that one, see commit 1a06a52ee1b0: "Fix
+roundup_pow_of_two(1)").
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+However, unlike the roundup version, the fix for rounddown is to just
+remove the broken special case entirely.  It's simply not needed - the
+generic code
+
+    1UL << ilog2(n)
+
+does the right thing for the constant '1' argment too.  The only reason
+roundup needed that special case was because rounding up does so by
+subtracting one from the argument (and then adding one to the result)
+causing the obvious problems with "ilog2(0)".
+
+But rounddown doesn't do any of that, since ilog2() naturally truncates
+(ie "rounds down") to the right rounded down value.  And without the
+ilog2(0) case, there's no reason for the special case that had the wrong
+value.
+
+tl;dr: rounddown_pow_of_two(1) should be 1, not 0.
+
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/mxcmmc.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/log2.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/mmc/host/mxcmmc.c
-+++ b/drivers/mmc/host/mxcmmc.c
-@@ -731,6 +731,7 @@ static void mxcmci_set_ios(struct mmc_ho
- 				"failed to config DMA channel. Falling back to PIO\n");
- 			dma_release_channel(host->dma);
- 			host->do_dma = 0;
-+			host->dma = NULL;
- 		}
- 	}
- 
+--- a/include/linux/log2.h
++++ b/include/linux/log2.h
+@@ -185,7 +185,6 @@ unsigned long __rounddown_pow_of_two(uns
+ #define rounddown_pow_of_two(n)			\
+ (						\
+ 	__builtin_constant_p(n) ? (		\
+-		(n == 1) ? 0 :			\
+ 		(1UL << ilog2(n))) :		\
+ 	__rounddown_pow_of_two(n)		\
+  )
 
 
