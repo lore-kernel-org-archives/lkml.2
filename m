@@ -1,129 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760122Ab1LPEkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 23:40:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56346 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab1LPEkP (ORCPT
+	id S1760127Ab1LPEm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 23:42:28 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:50024 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760065Ab1LPEm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 23:40:15 -0500
-Message-ID: <1324010389.2825.265.camel@deadeye>
-Subject: Re: [RFC] modpost: add option to allow external modules to avoid
- taint
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        linux-wireless@vger.kernel.org
-Date: Fri, 16 Dec 2011 04:39:49 +0000
-In-Reply-To: <87mxatp3ty.fsf@rustcorp.com.au>
-References: <1323752547.2825.101.camel@deadeye>
-	 <1323879603-2961-1-git-send-email-linville@tuxdriver.com>
-	 <87mxatp3ty.fsf@rustcorp.com.au>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-TiCjNho8ypdGs17NN30e"
-X-Mailer: Evolution 3.2.1-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 15 Dec 2011 23:42:27 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: NeilBrown <neilb@suse.de>, Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Daniel Drake <dsd@laptop.org>,
+        Joe Woodward <jw@terrafix.co.uk>, Chris Ball <cjb@laptop.org>
+Date: Thu, 15 Dec 2011 20:39:28 -0800
+Subject: RE: [PATCH] mmc/sdio: don't allow interface to runtime-suspend
+ until probe is finished.
+Thread-Topic: [PATCH] mmc/sdio: don't allow interface to runtime-suspend
+ until probe is finished.
+Thread-Index: Acy7qGdRDNaFOoLkTQylajZ5Eyj3LwAAld1g
+Message-ID: <477F20668A386D41ADCC57781B1F704308185E3505@SC-VEXCH1.marvell.com>
+References: <20111205125416.6093ecd8@notabene.brown>
+	<CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
+	<20111206060654.0e8bebe0@notabene.brown>
+	<CAK=WgbbqgAYZ8uurf+xVyCxfZxoHcLdytxzdUNtoP9VNYPd57A@mail.gmail.com>
+	<20111210181546.6da7099a@notabene.brown>
+	<CAK=WgbbZU=NJupPCeXfy5WcFCvzoCgmcf5HPWUEFaHMwLLCWJg@mail.gmail.com>
+ <20111216150812.1ab91f03@notabene.brown>
+In-Reply-To: <20111216150812.1ab91f03@notabene.brown>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBG4gbg6013269
 
+Hi Neil,
 
---=-TiCjNho8ypdGs17NN30e
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> In the other case where I do let it suspend early (And it never recovers
+> without the reset line being toggled) I see:
+> 
+> [ 2170.100982] mmc_wait_for_cmd 52 -> -110
+> [ 2170.105407] mmc_wait_for_cmd 52 -> -110
+> [ 2170.110260] mmc_wait_for_cmd 0 -> 0
+> [ 2170.115509] mmc_wait_for_cmd 8 -> -110
+> [ 2170.119842] mmc_wait_for_cmd 5 -> 0
+> [ 2170.123901] mmc_wait_for_cmd 5 -> 0
+> [ 2170.127929] mmc_wait_for_cmd 3 -> 0
+> [ 2170.131958] mmc_wait_for_cmd 7 -> 0
 
-On Fri, 2011-12-16 at 14:26 +1030, Rusty Russell wrote:
-> On Wed, 14 Dec 2011 11:20:03 -0500, "John W. Linville" <linville@tuxdrive=
-r.com> wrote:
-> > In some cases, it might be desirable to package a module from an
-> > external source tree alongside the base kernel.  In those cases, it
-> > might also be desirable to not have those modules tainting the kernel.
-> >=20
-> > This patch provides a mechanism for an external module build to declare
-> > itself as an "integrated build".  Such a module is then treated the sam=
-e
-> > as an intree module.
-> >=20
-> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> > ---
-> > Any thoughts on this?  I'm thinking of adding this to Fedora kernels,
-> > where I have been working to integrate the compat-wireless package as
-> > part of the base kernel RPM.
->=20
-> I don't think the feature is useful it it's too easy to disable.
-> Experience has shown this with license tags.
->=20
-> We really want to indicate "out-of-support" which is only a 1:1
-> mapping to out-of-tree for upstream kernels.
+This works when reset line toggling was applied.
 
-Who are 'we' in this instance?
+> [ 2170.135986] mmc_wait_for_cmd 52 -> 0
+> [ 2170.140136] mmc_wait_for_cmd 52 -> 0
+> [ 2170.144226] mmc_wait_for_cmd 52 -> 0
+> [ 2170.148376] mmc_wait_for_cmd 52 -> 0
+> [ 2170.152465] mmc_wait_for_cmd 52 -> 0
+> 
+> 
+> which is much the same but then one second later:
+> 
+> [ 2171.166656] mmc_wait_for_cmd 52 -> 0
+> [ 2171.170806] mmc_wait_for_cmd 52 -> 0
+> [ 2171.175384] mmc_wait_for_cmd 0 -> 0
+> [ 2171.180603] mmc_wait_for_cmd 8 -> -110
+> [ 2171.185943] mmc_wait_for_cmd 5 -> -110
 
-> How does Debian handle this?
+Here the CMD5 timeout is expected because SD8686 has already been initialized with CMD5,5,3,7.
+If you are able to skip re-initialization at this point, like what "powered_resume" does, you will probably get SD8686 continue to run.
 
-All the modules in Debian's kernel binary packages are built in-tree.
-Backported modules are patched in as necessary.
+Regards,
+Bing
 
-Debian includes many packages of OOT modules, but those are supported by
-their respective maintainers and not the kernel team.  So for the kernel
-team, the 'O' flag does not mean 'unsupported' but may indicate that
-another maintainer should handle the bug (or it may also be irrelevant
-to the bug).
+> [ 2171.190093] libertas_sdio: probe of mmc1:0001:1 failed with error -16
+> 
+> 
+> So this answers Bing Zhao's question - it was CMD5 that timed out and caused
+> the failure.
+> 
+> If I just get mmc_wait_for_cmd to hide error -110 for cmd 5 it complains
+> 
+> [   26.420440] mmc1: host doesn't support card's voltages
+> 
+> so that isn't a simple solution :-)
 
-> Perhaps it makes more sense to use the proposed module signing stuff in
-> a simplified mode to mark built-with-kernel modules (eg. just put the
-> sha of known modules inside the kernel).
-
-Unlike commercial distributions, no-one is paying Debian for support
-contracts and no-one can game the system by hiding OOT modules.  So it's
-probably not worthwhile for us to use module signing at all.
-
-However, supposing we did go down this route, I would guess that
-checksums for ~3000 modules take up more space than the signature
-checking code.  Instead, we could perhaps generate a key pair during
-build, include the public key in the kernel and then discard the private
-key.  (But getting entropy would likely be a problem for the key
-generation.)
-
-Ben.
-
-> I think we should revert this change, meanwhile, and figure out what to
-> do.
->=20
-> Cheers,
-> Rusty.
->=20
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-TiCjNho8ypdGs17NN30e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATurLlue/yOyVhhEJAQoyPw/8CYn6pSDro6kGmkyEOo9pwrJEqg/fGk1d
-42iq0N+fO1Ki6Nkul0VtvQiuRvU4+NyXlQQOEGlZ+hXaFFG8Ikxeh4X0bGyQPOUe
-V+lq2SKajULwglbkeGn92nlxiSzlHP9e7JlYvW8a2gXT5L4kav7uSfN88oUsKCNc
-I465RjM3ZteOqHJ3/PdcaQhs/inZAflCJuXz6HSP+VYHrfvZLnTwgc9t23OggECK
-S9VedTOT+ZAElMYJNWxauZHv+ydujW9nt/7X9C/HUt5AV+kqbqMIoZuAM3vc7qbb
-xP3isVqFsIhunI1tXeCT9wLg2qM0pQRqPUmlD0DDQoPqQb4TzFAK4czqKtiK/mNX
-Y42M2vui2oJANyUi6/LPHNv1h5Nl5rIIkaDjshTHK68sG0SYfV5wdnMxPchuc9Xm
-I5MGt39Unx7pnCLWqhkpPtaJqsz3c3HMj6bxHmn7L+OICBi1pUlRBIcF0F6YZ/lB
-imRoRUxKGWGRTfqZJ8xrrgVPNGnATS/7FYkNJXUCcYjT9wXUaNXv/vFtEWzTyryc
-QuKsPnA31WfelvEWiDWG9Zud6A+Dw0Bn3QTkKG6/DX2YnPN90wbyrhYF+ahAoai9
-3XGoTMM/JSbFvyCR7U+g77RlBOnsr9Wt8VilvUElZE+vE43qZtKfKl4HkhIu3XaN
-N9r4m4vgUF0=
-=nH8A
------END PGP SIGNATURE-----
-
---=-TiCjNho8ypdGs17NN30e--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
