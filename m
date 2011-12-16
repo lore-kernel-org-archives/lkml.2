@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab1LPUGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:06:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44957 "EHLO mx2.suse.de"
+	id S964786Ab1LPUHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:07:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44925 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932656Ab1LPTtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:55 2011
-Message-Id: <20111216194554.929957289@clark.kroah.org>
+	id S932095Ab1LPTtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:58 2011
+Message-Id: <20111216194558.410207481@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:03 -0800
+Date: Fri, 16 Dec 2011 11:45:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [06/53] arm: mx23: recognise stmp378x as mx23
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [27/53] percpu: fix chunk range calculation
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +25,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 11357be9246c7d1acf9b37ad54a18b29bbb734be upstream.
+commit a855b84c3d8c73220d4d3cd392a7bee7c83de70e upstream.
 
-Adding the machine_is_* line was forgotten when converting mach-stmp378x to
-mach-mxs.
+Percpu allocator recorded the cpus which map to the first and last
+units in pcpu_first/last_unit_cpu respectively and used them to
+determine the address range of a chunk - e.g. it assumed that the
+first unit has the lowest address in a chunk while the last unit has
+the highest address.
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+This simply isn't true.  Groups in a chunk can have arbitrary positive
+or negative offsets from the previous one and there is no guarantee
+that the first unit occupies the lowest offset while the last one the
+highest.
+
+Fix it by actually comparing unit offsets to determine cpus occupying
+the lowest and highest offsets.  Also, rename pcu_first/last_unit_cpu
+to pcpu_low/high_unit_cpu to avoid confusion.
+
+The chunk address range is used to flush cache on vmalloc area
+map/unmap and decide whether a given address is in the first chunk by
+per_cpu_ptr_to_phys() and the bug was discovered by invalid
+per_cpu_ptr_to_phys() translation for crash_note.
+
+Kudos to Dave Young for tracking down the problem.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: WANG Cong <xiyou.wangcong@gmail.com>
+Reported-by: Dave Young <dyoung@redhat.com>
+Tested-by: Dave Young <dyoung@redhat.com>
+LKML-Reference: <4EC21F67.10905@redhat.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-mxs/include/mach/mxs.h |    1 +
- 1 file changed, 1 insertion(+)
+ mm/percpu-vm.c |   12 ++++++------
+ mm/percpu.c    |   34 ++++++++++++++++++++--------------
+ 2 files changed, 26 insertions(+), 20 deletions(-)
 
---- a/arch/arm/mach-mxs/include/mach/mxs.h
-+++ b/arch/arm/mach-mxs/include/mach/mxs.h
-@@ -30,6 +30,7 @@
-  */
- #define cpu_is_mx23()		(					\
- 		machine_is_mx23evk() ||					\
-+		machine_is_stmp378x() ||				\
- 		0)
- #define cpu_is_mx28()		(					\
- 		machine_is_mx28evk() ||					\
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -143,8 +143,8 @@ static void pcpu_pre_unmap_flush(struct
+ 				 int page_start, int page_end)
+ {
+ 	flush_cache_vunmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
+@@ -206,8 +206,8 @@ static void pcpu_post_unmap_tlb_flush(st
+ 				      int page_start, int page_end)
+ {
+ 	flush_tlb_kernel_range(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static int __pcpu_map_pages(unsigned long addr, struct page **pages,
+@@ -284,8 +284,8 @@ static void pcpu_post_map_flush(struct p
+ 				int page_start, int page_end)
+ {
+ 	flush_cache_vmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ /**
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -116,9 +116,9 @@ static int pcpu_atom_size __read_mostly;
+ static int pcpu_nr_slots __read_mostly;
+ static size_t pcpu_chunk_struct_size __read_mostly;
+ 
+-/* cpus with the lowest and highest unit numbers */
+-static unsigned int pcpu_first_unit_cpu __read_mostly;
+-static unsigned int pcpu_last_unit_cpu __read_mostly;
++/* cpus with the lowest and highest unit addresses */
++static unsigned int pcpu_low_unit_cpu __read_mostly;
++static unsigned int pcpu_high_unit_cpu __read_mostly;
+ 
+ /* the address of the first chunk which starts with the kernel static area */
+ void *pcpu_base_addr __read_mostly;
+@@ -984,19 +984,19 @@ phys_addr_t per_cpu_ptr_to_phys(void *ad
+ {
+ 	void __percpu *base = __addr_to_pcpu_ptr(pcpu_base_addr);
+ 	bool in_first_chunk = false;
+-	unsigned long first_start, first_end;
++	unsigned long first_low, first_high;
+ 	unsigned int cpu;
+ 
+ 	/*
+-	 * The following test on first_start/end isn't strictly
++	 * The following test on unit_low/high isn't strictly
+ 	 * necessary but will speed up lookups of addresses which
+ 	 * aren't in the first chunk.
+ 	 */
+-	first_start = pcpu_chunk_addr(pcpu_first_chunk, pcpu_first_unit_cpu, 0);
+-	first_end = pcpu_chunk_addr(pcpu_first_chunk, pcpu_last_unit_cpu,
+-				    pcpu_unit_pages);
+-	if ((unsigned long)addr >= first_start &&
+-	    (unsigned long)addr < first_end) {
++	first_low = pcpu_chunk_addr(pcpu_first_chunk, pcpu_low_unit_cpu, 0);
++	first_high = pcpu_chunk_addr(pcpu_first_chunk, pcpu_high_unit_cpu,
++				     pcpu_unit_pages);
++	if ((unsigned long)addr >= first_low &&
++	    (unsigned long)addr < first_high) {
+ 		for_each_possible_cpu(cpu) {
+ 			void *start = per_cpu_ptr(base, cpu);
+ 
+@@ -1233,7 +1233,9 @@ int __init pcpu_setup_first_chunk(const
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+-	pcpu_first_unit_cpu = NR_CPUS;
++
++	pcpu_low_unit_cpu = NR_CPUS;
++	pcpu_high_unit_cpu = NR_CPUS;
+ 
+ 	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
+ 		const struct pcpu_group_info *gi = &ai->groups[group];
+@@ -1253,9 +1255,13 @@ int __init pcpu_setup_first_chunk(const
+ 			unit_map[cpu] = unit + i;
+ 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
+ 
+-			if (pcpu_first_unit_cpu == NR_CPUS)
+-				pcpu_first_unit_cpu = cpu;
+-			pcpu_last_unit_cpu = cpu;
++			/* determine low/high unit_cpu */
++			if (pcpu_low_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
++				pcpu_low_unit_cpu = cpu;
++			if (pcpu_high_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
++				pcpu_high_unit_cpu = cpu;
+ 		}
+ 	}
+ 	pcpu_nr_units = unit;
 
 
