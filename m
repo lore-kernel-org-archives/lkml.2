@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964943Ab1LPTxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:53:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45295 "EHLO mx2.suse.de"
+	id S1030191Ab1LPTx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:53:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45324 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932890Ab1LPTwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:52:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:10 2011
-Message-Id: <20111216194210.709085809@clark.kroah.org>
+	id S964833Ab1LPTwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:52:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:11 2011
+Message-Id: <20111216194211.342204710@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:31 -0800
+Date: Fri, 16 Dec 2011 11:40:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [24/45] hwmon: (jz4740) fix signedness bug
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <jmm@inutil.org>
+Subject: [28/45] Make TASKSTATS require root access
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 0b57d7602b68f7b2786b2f0e22da39cbd4139a95 upstream.
+commit 1a51410abe7d0ee4b1d112780f46df87d3621043 upstream.
 
-wait_for_completion_interruptible_timeout() may return negative value.
-In this case, checking if (t > 0)  will return true if t is unsigned.
+Ok, this isn't optimal, since it means that 'iotop' needs admin
+capabilities, and we may have to work on this some more.  But at the
+same time it is very much not acceptable to let anybody just read
+anybody elses IO statistics quite at this level.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Use of the GENL_ADMIN_PERM suggested by Johannes Berg as an alternative
+to checking the capabilities by hand.
+
+Reported-by: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Balbir Singh <bsingharora@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Moritz Mühlenhoff <jmm@inutil.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/jz4740-hwmon.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/taskstats.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/jz4740-hwmon.c
-+++ b/drivers/hwmon/jz4740-hwmon.c
-@@ -59,7 +59,7 @@ static ssize_t jz4740_hwmon_read_adcin(s
- {
- 	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
- 	struct completion *completion = &hwmon->read_completion;
--	unsigned long t;
-+	long t;
- 	unsigned long val;
- 	int ret;
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -657,6 +657,7 @@ static struct genl_ops taskstats_ops = {
+ 	.cmd		= TASKSTATS_CMD_GET,
+ 	.doit		= taskstats_user_cmd,
+ 	.policy		= taskstats_cmd_get_policy,
++	.flags		= GENL_ADMIN_PERM,
+ };
  
+ static struct genl_ops cgroupstats_ops = {
 
 
