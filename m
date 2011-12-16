@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760391Ab1LPTJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:09:16 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:21404 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760301Ab1LPTJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:09:07 -0500
-X-Authority-Analysis: v=2.0 cv=APbyNIPv c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=zQGhUK9Iw4MA:10 a=WZqaRsArvagA:10 a=8nJEP1OIZ-IA:10 a=Qa1yocA8eKZ1jg2egzgA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.78.168.186
-Message-ID: <4EEB9751.7030000@cfl.rr.com>
-Date: Fri, 16 Dec 2011 14:09:05 -0500
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1760550Ab1LPTM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:12:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217Ab1LPTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:12:24 -0500
+Date: Fri, 16 Dec 2011 19:12:10 +0000
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: alsa-devel@alsa-project.org, Tom Walder <tom.walder@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] Jabra SPEAK 410 USB - no audio playback
+Message-ID: <20111216191210.GI2520@amd.home.annexia.org>
+References: <20111210142419.GC16692@amd.home.annexia.org>
+ <20111210194539.GF16692@amd.home.annexia.org>
+ <4EEB4C51.4010205@ladisch.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: tty idle time and hooking inode_ops from a chardev
-References: <4EEB774D.1070407@cfl.rr.com> <20111216175735.GA5404@suse.de> <4EEB8C4A.5080809@cfl.rr.com> <20111216183613.GA3612@suse.de>
-In-Reply-To: <20111216183613.GA3612@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEB4C51.4010205@ladisch.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 1:36 PM, Greg KH wrote:
-> But you said that your userspace programs are opening the wrong tty
-> device for what you are trying to look at, right?
+On Fri, Dec 16, 2011 at 02:49:05PM +0100, Clemens Ladisch wrote:
+> Richard W.M. Jones wrote:
+> > The attached patch fixes USB audio support for the Jabra SPEAK 410 USB.
+> >
+> > The problem, as I understand it, is that the device contains a
+> > Class-Specific Endpoint (CS_ENDPOINT) descriptor before the Endpoint
+> > (ENDPOINT) descriptor.  The USB code all assumes that CS_ENDPOINT can
+> > only appear after ENDPOINT.  Therefore the USB code divides up the
+> > interface descriptor into "stuff before ENDPOINT" (in
+> > interface->extra) and "stuff after ENDPOINT" (in
+> > interface->endpoint[0]->extra).  For this device, this division does
+> > not work.
+> >
+> > The solution (which is a hack ...) is to also search interface->extra
+> > looking for the missing descriptor.
+> 
+> The patch looks good.  Please run it through checkpatch.pl and provice
+> a Signed-off-by tag (see Documentation/SubmittingPatches).
 
-They are opening /dev/tty, which is supposed to be an alias for the 
-process's controlling tty, but it isn't quite so.  It routes read/write 
-calls to the correct tty, but is a separate inode, so has its own 
-timestamps.
+Sorry, I should have followed up on this list ...
 
-> That's not "fixing" it at all, adding an ioctl is the same as adding a
-> new system call, do you really think that is ok here?
+Tom (in the CC line) opened a bug with Jabra, and they have issued a
+firmware update.  Unfortunately this update requires some Windows
+software to run.  I applied this, and it does appear to fix the audio
+playback problem, though curiously it doesn't completely fix the
+ENDPOINT/CS_ENDPOINT problem, so who knows what's really going on
+there.
 
-I would prefer not to, which is why I'm trying to figure out how to make 
-the atime correct no matter how you opened the tty.
+Anyway, should you want the update it is here:
 
-> As you are opening the tty node once, that's when atime is set, right?
-> The fact that you keep it open still keeps the atime to the original
-> open time, you aren't supposed to check for every single read/write of
-> the node once it was opened.
+https://bugzilla.redhat.com/show_bug.cgi?id=766714#c1
 
-tty_io.c updates the atime of the inode on every successful read(), and 
-the mtime on every successful write().  The problem is that several 
-different inodes can all point to the same tty, so which inode gets 
-updated depends on which process is doing the IO.
+Thanks Tom!
 
-> But to be sure, what does POSIX say about this?
+Rich.
 
-No clue.
-
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+virt-df lists disk usage of guests without needing to install any
+software inside the virtual machine.  Supports Linux and Windows.
+http://et.redhat.com/~rjones/virt-df/
