@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab1LPA3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:29:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64332 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab1LPA3W (ORCPT
+	id S1759937Ab1LPAcD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:32:03 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:17480 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756413Ab1LPAcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:29:22 -0500
+	Thu, 15 Dec 2011 19:32:01 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAB6O6k55LOCn/2dsb2JhbABDq0CBBoFyAQEFOhwPFBAIAxguFCUDIRPBBBOLDmMElHWSQA
+Date: Fri, 16 Dec 2011 11:31:57 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: XFS/btrfs performance after IO-less dirty throttling
+Message-ID: <20111216003157.GA23662@dastard>
+References: <20111214143156.GA22511@localhost>
+ <20111215133137.GA14562@localhost>
 MIME-Version: 1.0
-In-Reply-To: <4EEA8D7D.2030409@jp.fujitsu.com>
-References: <cover.1323979146.git.tony.luck@intel.com>
-	<f2d05667872c463ead35141ce0ad97818113e69d.1323979146.git.tony.luck@intel.com>
-	<4EEA8D7D.2030409@jp.fujitsu.com>
-Date: Thu, 15 Dec 2011 16:29:22 -0800
-X-Google-Sender-Auth: az_3OkaixNhlCJcq7VPDcWzcm2M
-Message-ID: <CA+8MBb+T_y7CHkxjRHr8VK0gk1zo1m-ib71A5k5N4NDn0PtEzw@mail.gmail.com>
-Subject: Re: [PATCH 5/6] x86, mce: handle "action required" errors
-From: Tony Luck <tony.luck@intel.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111215133137.GA14562@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/15 Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>:
-> (snip)
->
-> ... 2 patches in a mail?
+On Thu, Dec 15, 2011 at 09:31:37PM +0800, Wu Fengguang wrote:
+> > The other big regressions happen in the XFS UKEY-thresh=100M cases.
+> 
+> >                   3.1.0+                 3.2.0-rc3
+> > ------------------------  ------------------------
+> >                     4.17       -37.8%         2.59  fat/UKEY-thresh=100M/xfs-100dd-1-3.1.0+
+> >                     4.14       -53.3%         1.94  fat/UKEY-thresh=100M/xfs-10dd-1-3.1.0+
+> >                     6.30        +0.4%         6.33  fat/UKEY-thresh=100M/xfs-1dd-1-3.1.0+
+> 
+> Here are more details for the 10dd case. The attached
+> balance_dirty_pages-pause.png shows small pause time (mostly in range
+> 10-50ms) and nr_dirtied_pause (mostly < 5), which may be the root cause.
+> 
+> The iostat graphs show very unstable throughput and IO size often
+> drops low.
 
-Sort of ... I pulled the old version of the patch into the commit editor - to
-just grab the description part, but I forgot to delete from "Signed-off-by"
-to end of file ... so the "extra" patch is now part of my commit comment,
-and the real patch starts further down.
+And it's doing shitloads more allocation work. IOWs, the delayed
+allocation algorithms are being strangled by writeback, causing
+fragmentation and hence not allowing enough data per thread to be
+written at a time to maximise throughput.
 
-Oops
+However, I'd argue that the performance of 10 concurrent writers to
+a slow USB key formatted with XFS is so *completely irrelevant* that
+I'd ignore it. Spend your time optimising writeback on XFS for high
+throughputs (e.g > 500MB/s), not for shitty $5 USB keys that are 2-3
+orders of magnitude slower than the target market for XFS...
 
--Tony
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
