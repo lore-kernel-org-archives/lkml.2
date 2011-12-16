@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760125Ab1LPEsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 23:48:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54227 "EHLO mx1.redhat.com"
+	id S1760130Ab1LPEt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 23:49:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab1LPEsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 23:48:09 -0500
-Message-ID: <4EEACD69.6010509@redhat.com>
-Date: Thu, 15 Dec 2011 23:47:37 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Nai Xia <nai.xia@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
- own LRU
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de> <1323877293-15401-12-git-send-email-mgorman@suse.de>
-In-Reply-To: <1323877293-15401-12-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754042Ab1LPEtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 23:49:25 -0500
+Message-ID: <1324010945.8225.36.camel@bling.home>
+Subject: Re: [RFC] Device isolation infrastructure v2
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: aik@ozlabs.ru, benh@kernel.crashing.org, joerg.roedel@amd.com,
+        dwmw2@infradead.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com, rusty@rustcorp.com.au,
+        iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 Dec 2011 21:49:05 -0700
+In-Reply-To: <20111216014026.GA4921@truffala.fritz.box>
+References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
+	 <1323972307.2437.19.camel@x201.home>
+	 <20111216014026.GA4921@truffala.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 10:41 AM, Mel Gorman wrote:
-> It was observed that scan rates from direct reclaim during tests
-> writing to both fast and slow storage were extraordinarily high. The
-> problem was that while pages were being marked for immediate reclaim
-> when writeback completed, the same pages were being encountered over
-> and over again during LRU scanning.
->
-> This patch isolates file-backed pages that are to be reclaimed when
-> clean on their own LRU list.
+On Fri, 2011-12-16 at 12:40 +1100, David Gibson wrote:
+> On Thu, Dec 15, 2011 at 11:05:07AM -0700, Alex Williamson wrote:
+> > On Thu, 2011-12-15 at 17:25 +1100, David Gibson wrote:
+> > > Here's the second spin of my preferred approach to handling grouping
+> > > of devices for safe assignment to guests.
+> > > 
+> > > Changes since v1:
+> > >  * Many name changes and file moves for improved consistency
+> > >  * Bugfixes and cleanups
+> > >  * The interface to the next layer up is considerably fleshed out,
+> > >    although it still needs work.
+> > >  * Example initialization of groups for p5ioc2 and p7ioc.
+> > > 
+> > > TODO:
+> > >  * Need sample initialization of groups for intel and/or amd iommus
+> > 
+> > I think this very well might imposed significant bloat for those
+> > implementations.  On POWER you typically don't have singleton groups,
+> > while it's the norm on x86.  I don't know that either intel or amd iommu
+> > code have existing structures that they can simply tack the group
+> > pointer to.
+> 
+> Actually, I think they can probably just use the group pointer in the
+> struct device.  Each PCI function will typically allocate a new group
+> and put the pointer in the struct device and no-where else.  Devices
+> hidden under bridges copy the pointer from the bridge parent instead.
+> I will have to check the unplug path to ensure we can manage the group
+> lifetime properly, of course.
+> 
+> >  Again, this is one of the reasons that I think the current
+> > vfio implementation is the right starting point.  We keep groups within
+> > vfio, imposing zero overhead for systems not making use of it and only
+> > require iommu drivers to implement a trivial function to opt-in.  As we
+> > start to make groups more pervasive in the dma layer, independent of
+> > userspace driver exposure, we can offload pieces to the core.  Starting
+> > with it in the core and hand waving some future use that we don't plan
+> > to implement right now seems like the wrong direction.
+> 
+> Well, I think we must agree to disagree here; I think treating groups
+> as identifiable objects is worthwhile.  That said, I am looking for
+> ways to whittle down the overhead when they're not in use.
+> 
+> > >  * Use of sysfs attributes to control group permission is probably a
+> > >    mistake.  Although it seems a bit odd, registering a chardev for
+> > >    each group is probably better, because perms can be set from udev
+> > >    rules, just like everything else.
+> > 
+> > I agree, this is a horrible mistake.  Reinventing file permissions via
+> > sysfs is bound to be broken and doesn't account for selinux permissions.
+> > Again, I know you don't like aspects of the vfio group management, but
+> > it gets this right imho.
+> 
+> Yeah.  I came up with this because I was trying to avoid registering a
+> device whose only purpose was to act as a permissioned "handle" on the
+> group.  But it is a better approach, despite that.  I just wanted to
+> send out the new patches for comment without waiting to do that
+> rework.
 
-The idea makes total sense to me.  This is very similar
-to the inactive_laundry list in the early 2.4 kernel.
+So we end up with a chardev created by the core, whose only purpose is
+setting the group access permissions for userspace usage, which only
+becomes useful with something like vfio?  It's an odd conflict that
+isolation groups would get involved with userspace permissions to access
+the group, but leave enforcement of isolation via iommu groups to the
+"binder" driver (where it seems like vfio is still going to need some
+kind of merge interface to share a domain between isolation groups).
 
-One potential issue is that the page cannot be moved
-back to the active list by mark_page_accessed(), which
-would have to be taught about the immediate LRU.
+Is this same chardev going to be a generic conduit for
+read/write/mmap/ioctl to the "binder" driver or does vfio need to create
+it's own chardev for that?  In the former case, are we ok with a chardev
+that has an entirely modular API behind it, or maybe you're planning to
+define some basic API infrastructure, in which case this starts smelling
+like implementing vfio in the core.  In the latter case (isolation
+chardev + vfio chardev) coordinating permissions sounds like a mess.
 
-> @@ -255,24 +256,80 @@ static void pagevec_move_tail(struct pagevec *pvec)
->   }
->
->   /*
-> + * Similar pair of functions to pagevec_move_tail except it is called when
-> + * moving a page from the LRU_IMMEDIATE to one of the [in]active_[file|anon]
-> + * lists
-> + */
-> +static void pagevec_putback_immediate_fn(struct page *page, void *arg)
-> +{
-> +	struct zone *zone = page_zone(page);
-> +
-> +	if (PageLRU(page)) {
-> +		enum lru_list lru = page_lru(page);
-> +		list_move(&page->lru,&zone->lru[lru].list);
-> +	}
-> +}
+Alex
 
-Should this not put the page at the reclaim end of the
-inactive list, since we want to try evicting it?
-
-> +	/*
-> +	 * There is a potential race that if a page is set PageReclaim
-> +	 * and moved to the LRU_IMMEDIATE list after writeback completed,
-> +	 * it can be left on the LRU_IMMEDATE list with no way for
-> +	 * reclaim to find it.
-> +	 *
-> +	 * This race should be very rare but count how often it happens.
-> +	 * If it is a continual race, then it's very unsatisfactory as there
-> +	 * is no guarantee that rotate_reclaimable_page() will be called
-> +	 * to rescue these pages but finding them in page reclaim is also
-> +	 * problematic due to the problem of deciding when the right time
-> +	 * to scan this list is.
-> +	 */
-
-Would it be an idea for the pageout code to check whether the
-page at the head of the LRU_IMMEDIATE list is freeable, and
-then take that page?
-
-Of course, that does mean adding a check to rotate_reclaimable_page
-to make sure the page is still on the LRU_IMMEDIATE list, and did
-not get moved by somebody else...
-
-Also, it looks like your debugging check can trigger even when the
-bug does not happen (on the last LRU_IMMEDIATE page), because you
-decrement NR_IMMEDIATE before you get to this check.
-
--- 
-All rights reversed
