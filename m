@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab1LPKuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:50:20 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33784 "EHLO
+	id S1759078Ab1LPKu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:50:28 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46633 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756365Ab1LPKt1 (ORCPT
+	by vger.kernel.org with ESMTP id S1758943Ab1LPKtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:49:27 -0500
+	Fri, 16 Dec 2011 05:49:33 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv4 02/11] xshm: Channel config definitions for ST-E M7400 driver.
-Date: Fri, 16 Dec 2011 11:49:05 +0100
-Message-Id: <1324032554-30398-3-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv4 06/11] xshm: Add XSHM device bus.
+Date: Fri, 16 Dec 2011 11:49:09 +0100
+Message-Id: <1324032554-30398-7-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1324032554-30398-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1324032554-30398-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -25,137 +25,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Netlink parameters used for configuring channels from user space.
+Add a simple xshm device bus, providing device and driver registration
+and a simple iterator. Device mode (packet or stream) is used
+for matching device and driver.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- include/linux/Kbuild              |    1 +
- include/linux/xshm/Kbuild         |    1 +
- include/linux/xshm/xshm_netlink.h |   95 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 97 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/xshm/Kbuild
- create mode 100644 include/linux/xshm/xshm_netlink.h
+ drivers/xshm/xshm_bus.c |  113 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 113 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/xshm/xshm_bus.c
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 619b565..bd2db5c 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -17,6 +17,7 @@ header-y += netfilter_bridge/
- header-y += netfilter_ipv4/
- header-y += netfilter_ipv6/
- header-y += usb/
-+header-y += xshm/
- header-y += wimax/
- 
- objhdr-y += version.h
-diff --git a/include/linux/xshm/Kbuild b/include/linux/xshm/Kbuild
+diff --git a/drivers/xshm/xshm_bus.c b/drivers/xshm/xshm_bus.c
 new file mode 100644
-index 0000000..4315a21
+index 0000000..d6410a6
 --- /dev/null
-+++ b/include/linux/xshm/Kbuild
-@@ -0,0 +1 @@
-+header-y += xshm_netlink.h
-diff --git a/include/linux/xshm/xshm_netlink.h b/include/linux/xshm/xshm_netlink.h
-new file mode 100644
-index 0000000..e785ad2
---- /dev/null
-+++ b/include/linux/xshm/xshm_netlink.h
-@@ -0,0 +1,95 @@
++++ b/drivers/xshm/xshm_bus.c
+@@ -0,0 +1,113 @@
 +/*
 + * Copyright (C) ST-Ericsson AB 2011
 + * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+#ifndef XSHM_NL_H_
-+#define XSHM_NL_H_
++#include <linux/spinlock.h>
++#include <linux/module.h>
++#include <linux/xshm/xshm_dev.h>
 +
-+#define XSHM_PROTO_VERSION 1
-+#define XSHM_PROTO_SUB_VERSION 0
-+#define XSHM_NETLINK_VERSION 1
-+/**
-+ * enum XSHM_COMMANDS - Attributes used for configuring XSHM device.
-+ *
-+ * @XSHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
-+ * This will cause an instance of XSHM-CHR to be created.
-+ * @XSHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
-+ * This will cause an instance of CAIF-SHM to be created.
-+ * @XSHM_C_COMMIT: formats and write Channel configuration data to
-+ *	Shared Memory.
-+ * @XSHM_C_SET_ADDR: Writes the TOC address to GENO register.
-+ * @XSHM_C_REGISTER:  Initiates registration of the channel devices.
-+ *	This will cause xshm - character devices or
-+ *	CAIF network instances to be created.
-+ * @XSHM_C_RESET:  Reset the configuration data and removes the
-+ *	platform devices and their associated channel configuration.
-+ *	ipc_ready and caif_ready is set to false.
-+ *
-+ * A normal sequence of events is: [XSHM_C_RESET], [XSHM_C_ADD_X_CHANNEL],
-+ *	XSHM_C_COMMIT, XSHM_C_REGISTER, XSHM_C_SET_ADDR.
-+ */
-+enum XSHM_COMMANDS {
-+	XSHM_C_ADD_STREAM_CHANNEL = 1,
-+	XSHM_C_ADD_PACKET_CHANNEL,
-+	XSHM_C_RESET,
-+	XSHM_C_SET_ADDR,
-+	XSHM_C_COMMIT,
-+	XSHM_C_REGISTER,
-+	__XSHM_C_VERIFY,
-+	__XSHM_C_MAX
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Sjur Brændland <sjur.brandeland@stericsson.com>");
++
++static int xshm_dev_match(struct device *_dv, struct device_driver *_dr)
++{
++	struct xshm_dev *dev = container_of(_dv, struct xshm_dev, dev);
++	struct xshm_driver *drv = container_of(_dr, struct xshm_driver, driver);
++
++	return drv->mode ==  (drv->mode & dev->cfg.mode);
++}
++
++static int xshm_dev_probe(struct device *_d)
++{
++	struct xshm_dev *dev = container_of(_d, struct xshm_dev, dev);
++	struct xshm_driver *drv = container_of(dev->dev.driver,
++						 struct xshm_driver, driver);
++	return drv->probe(dev);
++}
++
++static int xshm_dev_remove(struct device *_d)
++{
++	struct xshm_dev *dev = container_of(_d, struct xshm_dev, dev);
++	struct xshm_driver *drv = container_of(dev->dev.driver,
++						 struct xshm_driver, driver);
++	drv->remove(dev);
++	return 0;
++}
++
++static struct bus_type xshm_bus = {
++	.name  = "xshm",
++	.match = xshm_dev_match,
++	.probe = xshm_dev_probe,
++	.remove = xshm_dev_remove,
 +};
 +
-+/**
-+ * enum XSHM_ATTRIBUTES - Attributes used for configuring XSHM device.
-+ * @XSHM_A_VERSION: Version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_SUB_VERSION: Sub-version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
-+ * @XSHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
-+ *	same group are allowed to be open simultaneously,
-+ *	but devices from different groups cannot be opened
-+ *	at the same time. Type NLA_U8.
-+ * @XSHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
-+ *	Each channel may contain the attributes - XSHM_A_CHANNEL_SIZE,
-+ *	XSHM_A_CHANNEL_BUFFERS, XSHM_A_ALIGNMENT, XSHM_A_MTU.
-+ *
-+ * @XSHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
-+ *
-+ * @XSHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
-+ *	for RX, TX. Type NLA_U32,
-+ * @XSHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
-+ *	This attribute is only used for packet channels.  Specified for RX, TX.
-+ *	Type NLA_U32,
-+ * @XSHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
-+ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
-+ * @XSHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
-+ *	This is only appplicable for packet channels.
-+ *	Specified for RX, TX.Type NLA_U16,
-+ * @XSHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
-+ * @XSHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
-+ *	0 is lowest priority. Type NLA_U8.
-+ * @XSHM_A_LATENCY: Latency for channel, value:0 means low latency
-+ *	 and low bandwidth,
-+ *	 value 1 means high latency and high bandwidth. Type NLA_U8.
-+ */
-+enum XSHM_ATTRIBUTES {
-+	__XSHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
-+	XSHM_A_VERSION,
-+	XSHM_A_SUB_VERSION,
-+	XSHM_A_NAME,
-+	XSHM_A_EXCL_GROUP,
-+	XSHM_A_RX_CHANNEL,
-+	XSHM_A_TX_CHANNEL,
-+	XSHM_A_CHANNEL_SIZE,
-+	XSHM_A_CHANNEL_BUFFERS,
-+	XSHM_A_ALIGNMENT,
-+	XSHM_A_MTU,
-+	XSHM_A_PACKETS,
-+	XSHM_A_PRIORITY,
-+	XSHM_A_LATENCY,
-+	__XSHM_A_MAX,
++struct xshm_iter_data {
++	void *data;
++	void (*fn)(struct xshm_dev *, void *);
 +};
-+#define XSHM_A_MAX (__XSHM_A_MAX - 1)
 +
-+#endif /* XSHM_NL_H_ */
++int xshm_iter(struct device *_dev, void *data)
++{
++	struct xshm_dev *dev = container_of(_dev, struct xshm_dev, dev);
++	struct xshm_iter_data *iter_data = data;
++
++	iter_data->fn(dev, iter_data->data);
++	return 0;
++}
++
++void xshm_foreach_dev(void fn(struct xshm_dev *, void *), void *data)
++{
++	struct xshm_iter_data iter = {
++		.data = data,
++		.fn = fn
++	};
++
++	bus_for_each_dev(&xshm_bus, NULL, &iter, xshm_iter);
++}
++EXPORT_SYMBOL_GPL(xshm_foreach_dev);
++
++int xshm_register_driver(struct xshm_driver *driver)
++{
++	driver->driver.bus = &xshm_bus;
++	return driver_register(&driver->driver);
++}
++EXPORT_SYMBOL_GPL(xshm_register_driver);
++
++void xshm_unregister_driver(struct xshm_driver *driver)
++{
++	driver_unregister(&driver->driver);
++}
++EXPORT_SYMBOL_GPL(xshm_unregister_driver);
++
++int xshm_register_device(struct xshm_dev *dev)
++{
++	int err;
++
++	dev->dev.bus = &xshm_bus;
++	err = device_register(&dev->dev);
++	return err;
++}
++EXPORT_SYMBOL_GPL(xshm_register_device);
++
++void xshm_unregister_device(struct xshm_dev *dev)
++{
++	device_unregister(&dev->dev);
++}
++EXPORT_SYMBOL_GPL(xshm_unregister_device);
++
++static int xshm_bus_init(void)
++{
++	if (bus_register(&xshm_bus) != 0)
++		panic("xshm bus registration failed");
++	return 0;
++}
++
++static void __exit xshm_bus_exit(void)
++{
++	bus_unregister(&xshm_bus);
++}
++
++core_initcall(xshm_bus_init);
++module_exit(xshm_bus_exit);
 -- 
 1.7.1
 
