@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760175Ab1LPQwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 11:52:42 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:5204 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab1LPQwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 11:52:36 -0500
-X-Authority-Analysis: v=2.0 cv=ePqRfQV1 c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=zQGhUK9Iw4MA:10 a=Ux3sHj7e4BMA:10 a=8nJEP1OIZ-IA:10 a=h_3PsyRdw9qmgTIqnuUA:9 a=wPNLvfGTeEIA:10 a=t-P-qlZwZyPXCTfk:21 a=yJP9xedK0fPandN4:21 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.78.168.186
-Message-ID: <4EEB774D.1070407@cfl.rr.com>
-Date: Fri, 16 Dec 2011 11:52:29 -0500
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1760196Ab1LPRFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 12:05:44 -0500
+Received: from home.keithp.com ([63.227.221.253]:34647 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab1LPRFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 12:05:38 -0500
+From: Keith Packard <keithp@keithp.com>
+To: tino.keitel+xorg@tikei.de, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rocko Requin <rockorequin@hotmail.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] kernel BUG at drivers/gpu/drm/i915/i915_gem
+In-Reply-To: <20111216163839.GA7884@x61.home>
+References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl> <CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com> <BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl> <CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com> <BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl> <CAKMK7uGpn6AJGtbMCYWW1ziR=Zs+E9LB=aiB5aUu0unfVW=2oA@mail.gmail.com> <20111214195751.GA31690@mac.home> <20111215185415.GA3445@mac.home> <20111216163839.GA7884@x61.home>
+User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 16 Dec 2011 09:06:33 -0800
+Message-ID: <864nx08mzq.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org
-Subject: tty idle time and hooking inode_ops from a chardev
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally have spent some time figuring out an ancient bug that has 
-bothered me on and off over the years: why the terminal idle time that 
-who reports is sometimes very wrong.  It seems that this feature relies 
-on the atime of the tty dev node being updated by the kernel whenever 
-input is entered ( or more specifically, when it is read ).  Some 
-programs, notably emacs and less, open /dev/tty rather than use stdin, 
-and as a result, the atime of that inode is updated instead of the 
-specific tty emacs is attached to.  This also means that if you mknod 
-another inode to reach that tty ( say, for a chroot ), the times won't 
-be updated correctly either.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-To solve this, I think that a timestamp needs to be added to the struct 
-tty_struct, and this should be updated whenever there is input, rather 
-than updating the inode when the input is actually read.  In order to 
-maintain compatibility with user space however, I would like to hook the 
-stat calls and update the inode's atime from tty_struct whenever user 
-space checks it.
+On Fri, 16 Dec 2011 17:38:39 +0100, tino.keitel+xorg@tikei.de wrote:
 
-To do this, I think that tty_open would need to replace the 
-inode_operations pointer to point to its own version that has a set of 
-functions that forward to the original inode_operations, but the 
-iop->getattr would update the inode's atime from the tty_struct.  This 
-means it needs to be able to locate both the tty_struct and the original 
-inode_operations given the inode.  Is the i_private member of struct 
-inode available for the tty code to use for this?
+> Hum, could this be related to the RC6 vs. IOMMU issue? I have
+> CONFIG_INTEL_IOMMU enabled in 3.2, and disabled in 3.1, and boot with
+> i915.i915_enable_rc6=3D1.
 
-Alternatively, does anyone have a better idea to accomplish this?
+Very likely -- RC6 and semaphores are not compatible with IOMMU. You
+should be able to just disable VTd in your BIOS and use the kernel with
+IOMMU enabled.
 
-Perhaps instead, struct cdev could gain a function pointer to allow it 
-to hook vfs_stat?  I'm pretty sure there is a way to find the tty_struct 
-given the cdev ( through dev_t? ), but I'm not sure what it is.
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTut6mTYtFsjWk68qAQjt6hAAtvF6peXrhxwnowVSZO5OS016zfX3ciqf
+8rf3Sw/1J/+PMxf7Cxw3AY+CuBybQg7HDmZnWvrvfdhHdJ9HEvjALxUBYXD6bh3L
+RA6ZrIK1AHLHQa1utG5XYym26Ayy6bAfJC0ExU0EhElbpZiveaZolRbsUQRWKRCv
+fAmDWjiSXRaxXWWakqTNUrJtlON/+b/xnAs/wC3hMK7qp6XzAvFWXqzOg1Q4K6gI
+lE5KynAHjTtfwbh+6x6h0/Ps71rPF+ODdUjo/Hp51jWlUguqVeJIFDvpphZOyYbM
+v0eBEYNRcSjYTHXou32PEbTYY2G1M82Y1k29AmXQKrkrA/9fWBAuInlaLu4px8Nn
+GZqZS8nIUmPseLObWfVMBkw0ja9tszatnh4GkunwFIiRCp3CUscIZiD6NPK2aOji
+m2xdVRXGovck6iUWqU9w+gxqkjSu0WSWCKooyy9ejKbHS2dGsTOIms0z8ig+LAD8
+NUkKKqr5cxg9um81GnVrwg/ld3Bfil8QijINDqiIr1TctbvsHCAMca49TuzwNNa9
+yCCkoIU0GWCofxgBGig5qTNMEz5MgJoZSNorDdLQnsgAwG2dj+jGIfxsHOWL+apG
+FPpqFACQGEtXj5Vd1ZHh36krHBwPsqG6BPxFd0pK9mn1EwvZN3NGQZiKMreWK60/
+nDeW1syVWmM=
+=RRHE
+-----END PGP SIGNATURE-----
+--=-=-=--
