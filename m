@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab1LPN6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:58:38 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62038 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab1LPN6b (ORCPT
+	id S1759502Ab1LPN7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 08:59:10 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:34910 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab1LPN7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:58:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: myungjoo.ham@samsung.com
-Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
-Date: Fri, 16 Dec 2011 13:58:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        =?euc-kr?q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-References: <1396089.632011324012436902.JavaMail.weblogic@epml15>
-In-Reply-To: <1396089.632011324012436902.JavaMail.weblogic@epml15>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="euc-kr"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201112161358.21197.arnd@arndb.de>
-X-Provags-ID: V02:K0:D8aaT0bIVDuo2EyVX2xekfvmIcPgxthcjjzLh/9izNW
- Q809yyCLwmt0QieyTk0WXOQUeTwUXN8fftk4DnD0maDp/h6jAA
- rU20Up1sIYwN9Tf8vqNZxnv7/XwaCleD25RGQQ71XOZroPCIi/
- JDn5CY+8hg+vlQp7hphm5FvF4Pyx0wpssWJy+AmDZL5uHn6urr
- QEyro/AyX27+5sE9g6uXNtuchi0qgaYib9KoPl50WyFmE3IZ1/
- ngGp22LIlvYIOKq6LHRxxKPYAPBOSJ/bpn250dTfPJEOf+CFF0
- iJVIyKbw8RM+mAiHnl3y9N+KBpHsx2ohdKhK2wDPbnI/Ai+qjs
- znvNhLknqro7FLNl5NbI=
+	Fri, 16 Dec 2011 08:59:02 -0500
+Subject: Re: unexpected taint message
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4EEB4D61.80602@lwfinger.net> (sfid-20111216_145414_221850_EED1E4DE)
+References: <4EEB0EFC.5000302@broadcom.com>
+	 (sfid-20111216_102800_182196_AFD2D6CF) <1324038636.3429.1.camel@jlt3.sipsolutions.net>
+	 <4EEB4D61.80602@lwfinger.net> (sfid-20111216_145414_221850_EED1E4DE)
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Dec 2011 14:58:59 +0100
+Message-ID: <1324043939.3429.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 December 2011, ÇÔ¸íÁÖ wrote:
-> We can send the patch (with extcon support) later anyway if it's going to be dropped for now.
+On Fri, 2011-12-16 at 07:53 -0600, Larry Finger wrote:
+> On 12/16/2011 06:30 AM, Johannes Berg wrote:
+> > On Fri, 2011-12-16 at 10:27 +0100, Arend van Spriel wrote:
+> >> To whoever may know,
+> >>
+> >> Upon loading our driver module I get the following message:
+> >>
+> >> kernel: [  344.805106] Disabling lock debugging due to kernel taint
+> >>
+> >> What exactly are the criteria for tainting? Our driver locking strategy
+> >> is something we want to refactor and having lock debugging during that
+> >> transition may be a life safer.
+> >
+> > cat /proc/sys/kernel/tainted
 > 
-> And, this MAX8997-MUIC will be the example driver for extcon located at /drivers/extcon/.
+> Please note that Documentation/sysctl/kernel.txt is missing the explanation for 
+> two bits in the value printed:
 > 
+> 2048 - The system is working around a severe firmware bug.
+> 4096 - An out-of-tree module has been loaded.
+> 
+> On my system, bit 4096 is set due to loading the VirtualBox module, which 
+> disables lock debugging lock debugging. I suspect that loading VMware would 
+> cause the same condition.
 
-Ok, sounds good.
+Hmm. I wish OOT didn't disable lockdep, we do a lot of development with
+modules OOT because the turnaround is faster/easier (for not so
+experienced developers). Worst case we can patch it out of the base
+kernel I guess...
 
-	Arnd
+johannes
+
