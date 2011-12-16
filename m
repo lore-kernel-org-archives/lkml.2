@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab1LPHGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 02:06:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40980 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab1LPHF6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 02:05:58 -0500
-Message-ID: <1324019151.4496.9.camel@lappy>
-Subject: Re: [PATCH 0/2] vhot-net: Use kvm_memslots instead of vhost_memory
- to translate GPA to HVA
-From: Sasha Levin <levinsasha928@gmail.com>
-To: zanghongyong@huawei.com
-Cc: linux-kernel@vger.kernel.org, mst@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        xiaowei.yang@huawei.com, hanweidong@huawei.com, wusongwei@huawei.com
-Date: Fri, 16 Dec 2011 09:05:51 +0200
-In-Reply-To: <1324013528-3663-1-git-send-email-zanghongyong@huawei.com>
-References: <1324013528-3663-1-git-send-email-zanghongyong@huawei.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
+	id S1756504Ab1LPHNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 02:13:43 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:31680 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293Ab1LPHNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 02:13:42 -0500
+Message-ID: <4EEAEF83.3080100@gmail.com>
+Date: Fri, 16 Dec 2011 11:13:07 +0400
+From: Andrew Vagin <avagin@gmail.com>
+Reply-To: avagin@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: acme@ghostprotocols.net
+CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 3/6] perf: add ability to record event period
+References: <1323266161-394927-1-git-send-email-avagin@openvz.org> <1323266161-394927-4-git-send-email-avagin@openvz.org>
+In-Reply-To: <1323266161-394927-4-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 13:32 +0800, zanghongyong@huawei.com wrote:
-> From: Hongyong Zang <zanghongyong@huawei.com>
-> 
-> Vhost-net uses its own vhost_memory, which results from user space (qemu) info,
-> to translate GPA to HVA. Since kernel's kvm structure already maintains the 
-> address relationship in its member *kvm_memslots*, these patches use kernel's 
-> kvm_memslots directly without the need of initialization and maintenance of 
-> vhost_memory.
+Hi Arnaldo,
 
-Conceptually, vhost isn't aware of KVM - it's just a driver which moves
-data from vq to a tap device and back. You can't simply add KVM specific
-code into vhost.
+Could you review and commit this patch. It's quite common functionality, 
+which allow to get events more effectively and to avoid losing events.
 
-Whats the performance benefit?
+All other patches may be postponed, because Arun Sharma wants to suggest 
+your version of "Profiling sleep times".
 
--- 
+Thanks.
 
-Sasha.
+On 12/07/2011 05:55 PM, Andrew Vagin wrote:
+> Signed-off-by: Andrew Vagin<avagin@openvz.org>
+> ---
+>   tools/perf/builtin-record.c |    1 +
+>   tools/perf/perf.h           |    1 +
+>   tools/perf/util/evsel.c     |    3 +++
+>   3 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 766fa0a..f8fd14f 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -700,6 +700,7 @@ const struct option record_options[] = {
+>   	OPT_BOOLEAN('d', "data",&record.opts.sample_address,
+>   		    "Sample addresses"),
+>   	OPT_BOOLEAN('T', "timestamp",&record.opts.sample_time, "Sample timestamps"),
+> +	OPT_BOOLEAN('P', "period",&record.opts.period, "Sample period"),
+>   	OPT_BOOLEAN('n', "no-samples",&record.opts.no_samples,
+>   		    "don't sample"),
+>   	OPT_BOOLEAN('N', "no-buildid-cache",&record.no_buildid_cache,
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index ea804f5..64f8bee 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -200,6 +200,7 @@ struct perf_record_opts {
+>   	bool	     sample_time;
+>   	bool	     sample_id_all_avail;
+>   	bool	     system_wide;
+> +	bool	     period;
+>   	unsigned int freq;
+>   	unsigned int mmap_pages;
+>   	unsigned int user_freq;
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index e2d1b22..8550018 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -108,6 +108,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>   	if (opts->system_wide)
+>   		attr->sample_type	|= PERF_SAMPLE_CPU;
+>
+> +	if (opts->period)
+> +		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+> +
+>   	if (opts->sample_id_all_avail&&
+>   	(opts->sample_time || opts->system_wide ||
+>   	     !opts->no_inherit || opts->cpu_list))
 
