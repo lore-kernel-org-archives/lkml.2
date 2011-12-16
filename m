@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab1LPTti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:49:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44930 "EHLO mx2.suse.de"
+	id S932590Ab1LPTtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:49:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44915 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932585Ab1LPTtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:20 -0500
+	id S1760669Ab1LPTtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:58 2011
-Message-Id: <20111216194558.582634540@clark.kroah.org>
+Message-Id: <20111216194558.091555085@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:25 -0800
+Date: Fri, 16 Dec 2011 11:45:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@infradead.org>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [28/53] cifs: check for NULL last_entry before calling cifs_save_resume_key
+        alan@lxorguk.ukuu.org.uk, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [25/53] iscsi-target: Add missing F_BIT for iscsi_tm_rsp
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 7023676f9ee851d94f0942e879243fc1f9081c47 upstream.
+commit 7ae0b1038f9f7d4c91e9afd4dbbc98210bf1a241 upstream.
 
-Prior to commit eaf35b1, cifs_save_resume_key had some NULL pointer
-checks at the top. It turns out that at least one of those NULL
-pointer checks is needed after all.
+This patch sets the missing ISCSI_FLAG_CMD_FINAL bit in
+iscsit_send_task_mgt_rsp() for a struct iscsi_tm_rsp PDU.
 
-When the LastNameOffset in a FIND reply appears to be beyond the end of
-the buffer, CIFSFindFirst and CIFSFindNext will set srch_inf.last_entry
-to NULL. Since eaf35b1, the code will now oops in this situation.
+This usage is hardcoded for all TM response PDUs in RFC-3720
+section 10.6.
 
-Fix this by having the callers check for a NULL last entry pointer
-before calling cifs_save_resume_key. No change is needed for the
-call site in cifs_readdir as it's not reachable with a NULL
-current_entry pointer.
-
-This should fix:
-
-    https://bugzilla.redhat.com/show_bug.cgi?id=750247
-
-Cc: Christoph Hellwig <hch@infradead.org>
-Reported-by: Adam G. Metzler <adamgmetzler@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Reported-by: whucecil <whucecil1999@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/readdir.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -554,7 +554,10 @@ static int find_cifs_entry(const int xid
- 				 rc);
- 			return rc;
- 		}
--		cifs_save_resume_key(cifsFile->srch_inf.last_entry, cifsFile);
-+		/* FindFirst/Next set last_entry to NULL on malformed reply */
-+		if (cifsFile->srch_inf.last_entry)
-+			cifs_save_resume_key(cifsFile->srch_inf.last_entry,
-+						cifsFile);
- 	}
- 
- 	while ((index_to_find >= cifsFile->srch_inf.index_of_last_entry) &&
-@@ -562,7 +565,10 @@ static int find_cifs_entry(const int xid
- 		cFYI(1, "calling findnext2");
- 		rc = CIFSFindNext(xid, pTcon, cifsFile->netfid,
- 				  &cifsFile->srch_inf);
--		cifs_save_resume_key(cifsFile->srch_inf.last_entry, cifsFile);
-+		/* FindFirst/Next set last_entry to NULL on malformed reply */
-+		if (cifsFile->srch_inf.last_entry)
-+			cifs_save_resume_key(cifsFile->srch_inf.last_entry,
-+						cifsFile);
- 		if (rc)
- 			return -ENOENT;
- 	}
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3134,6 +3134,7 @@ static int iscsit_send_task_mgt_rsp(
+ 	hdr			= (struct iscsi_tm_rsp *) cmd->pdu;
+ 	memset(hdr, 0, ISCSI_HDR_LEN);
+ 	hdr->opcode		= ISCSI_OP_SCSI_TMFUNC_RSP;
++	hdr->flags		= ISCSI_FLAG_CMD_FINAL;
+ 	hdr->response		= iscsit_convert_tcm_tmr_rsp(se_tmr);
+ 	hdr->itt		= cpu_to_be32(cmd->init_task_tag);
+ 	cmd->stat_sn		= conn->stat_sn++;
 
 
