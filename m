@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab1LPBuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 20:50:14 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:46751 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757710Ab1LPBuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 20:50:11 -0500
-Date: Fri, 16 Dec 2011 12:50:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, majianpeng <majianpeng@gmail.com>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20111216125001.33635d34b5397292e6190b9a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Dec_2011_12_50_01_+1100_Z=O9cjr_4MhogIjr"
+	id S1759995Ab1LPBwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 20:52:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47514 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757723Ab1LPBwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 20:52:31 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
+Date: Fri, 16 Dec 2011 02:52:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com> <201112160122.36100.trenn@suse.de> <20111216003333.GA18489@srcf.ucam.org>
+In-Reply-To: <20111216003333.GA18489@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112160252.26681.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Dec_2011_12_50_01_+1100_Z=O9cjr_4MhogIjr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Friday 16 December 2011 01:33:33 Matthew Garrett wrote:
+> On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
+> 
+> > I think best is to move the thinkpad implementation of getting
+> > ACPI handles based on HIDs to osl.c and make it global.
+> > I'll send patches.
+> > Please review them carefully, they are only compile tested.
+> 
+> The ec driver is already finding the hardware on the basis of the HID - 
+> is there any reason to do this twice rather than just exporting the 
+> information the ec driver already has?
+Exporting the EC handle is static, you do not want to export all
+kind of ACPI devices as soon as other drivers need them.
 
-Hi Jens,
+The question is how long it takes to do:
+acpi_ns_walk_namespace(ACPI_TYPE_DEVICE, ...
+in worst case (not found).
 
-After merging the block tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Ok, the EC may be somewhat special because it's the most likely
+candidate to get shared (or say needed by other drivers)
+and its driver has to be compiled in.
+.
+thinkpad_acpi should at least also make use of Seth's approach and get the
+ec_handle quickly/directly.
 
-block/cfq-iosched.c: In function 'cfq_init_queue':
-block/cfq-iosched.c:3690:14: error: 'cic_index_lock' undeclared (first use =
-in this function)
-block/cfq-iosched.c:3691:15: error: 'cic_index_ida' undeclared (first use i=
-n this function)
-block/cfq-iosched.c:3691:34: error: 'struct cfq_data' has no member named '=
-cic_index'
+And my patches should still be added, because others could use
+them as well. Beside thinkpad_acpi grabbing the video handle, there
+is another re-implementation of my acpi_handle_locate (eeepc_wmi.c):
+static acpi_status eeepc_wmi_parse_device(acpi_handle handle, u32 level,
+                                                 void *context, void **retval)
+{
+        pr_warn("Found legacy ATKD device (%s)\n", EEEPC_ACPI_HID);
+        *(bool *)context = true;
+        return AE_CTRL_TERMINATE;
+}
 
-Presumably this was not build tested with CONFIG_CFQ_GROUP_IOSCHED set.
+static int eeepc_wmi_check_atkd(void)
+{
+        acpi_status status;
+        bool found = false;
 
-Caused by commit a73f730d013f ("block, cfq: move cfqd->cic_index to
-q->id") interacting with commit 2984ff38ccf6 ("cfq-iosched: free
-cic_index if blkio_alloc_blkg_stats fails").
+        status = acpi_get_devices(EEEPC_ACPI_HID, eeepc_wmi_parse_device,
+                                  &found, NULL);
 
-I have used the block tree from next-20111215 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+        if (ACPI_FAILURE(status) || !found)
+                return 0;
+        return -1;                                                                                                                                                    
+}
 
---Signature=_Fri__16_Dec_2011_12_50_01_+1100_Z=O9cjr_4MhogIjr
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+If you agree I can send something tomorrow.
 
-iQIcBAEBCAAGBQJO6qPJAAoJEECxmPOUX5FEBH8P/R4JTVvL3iOSxXeeYdUS6R5N
-wVIajTEWivRJHk2OjJ8+MEgDdQfZ386vuuoCKzAKPmDWgERL6RQCCAkVfhGdeFyn
-2ww+zQ8Ji4sCiv9VbsBrl31Fe5OQyORct54coo6JgcsfLVBHapqnCTcczGEIVq1t
-qCtOJAhINEb+73hHEn5qP33qWhbhZitLX/kzpmEQ/LN9OZtIhTZmfBEd8gV3dGN9
-vH58qVObefhDYKSziHVEVz4dkKeC2aT393bxU7xcC4zf04ptaES/MTkLFOzAig9K
-128Y3f7wrB0W+mt1BcjU4V+VMV9scP3isHgavZAuXnicQQhoNafxx6gVkU/mUmBe
-uaoImo/7PbUpq5hblVrrLbPBalcMr3w+5GYE/MIE9Yila4hpyfFZyP0WlCJuNGTJ
-qUZIFSwvEq1AGhXeT/g1cRwHucUMsLqPmmofpRICHA2YJJsVjyM9PZ4y02ys7tKH
-XDqLCuRcpEHyGGeO5k3m+c2lXnddRWg+qeYbnJgR7qsLpFcWvfKGeLHSIpcTUQPo
-UuM6PrXmQ0sDfq2tKSU8iIFVl1/SALRL8N70CBgq7jygRU4sDgPkiUH3pbbRGz4h
-KILwFOCS/3TxQftOV9Aw4ipoUOy7kvXLzZ43Mph73iO0OP6UngTf5vMYpcMEDUPk
-lb9jzJ54lyzM4wc0Pzlg
-=zQTV
------END PGP SIGNATURE-----
 
---Signature=_Fri__16_Dec_2011_12_50_01_+1100_Z=O9cjr_4MhogIjr--
+    Thomas
