@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995Ab1LPBwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 20:52:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47514 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757723Ab1LPBwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 20:52:31 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
-Date: Fri, 16 Dec 2011 02:52:25 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com> <201112160122.36100.trenn@suse.de> <20111216003333.GA18489@srcf.ucam.org>
-In-Reply-To: <20111216003333.GA18489@srcf.ucam.org>
+	id S1760006Ab1LPBw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 20:52:56 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:34093 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab1LPBwz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 20:52:55 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112160252.26681.trenn@suse.de>
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] atmel ac97c: using software reset instead hardware reset if not available
+Date: Fri, 16 Dec 2011 09:52:50 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532803B527CA@penmb01.corp.atmel.com>
+In-Reply-To: <4EE9F04C.6080906@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] atmel ac97c: using software reset instead hardware reset if not available
+Thread-Index: Acy7Kg2Gkk2TbgcuTlmQR0hmq3dXBwAaz6VA
+References: <1322042701-32100-1-git-send-email-voice.shen@atmel.com> <4EE9F04C.6080906@atmel.com>
+From: "Shen, Voice" <Voice.Shen@atmel.com>
+To: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
+        "Lin, JM" <JM.Lin@atmel.com>, "Xu, Hong" <Hong.Xu@atmel.com>
+X-OriginalArrivalTime: 16 Dec 2011 01:52:52.0972 (UTC) FILETIME=[6C6102C0:01CCBB95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 December 2011 01:33:33 Matthew Garrett wrote:
-> On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
+Hi Nicolas,
+  No one response for this.
+  Would you please merge it?
+  Thanks
+
+Best Regards,
+Voice Shen
+
+-----Original Message-----
+From: Nicolas Ferre [mailto:nicolas.ferre@atmel.com] 
+Sent: Thursday, December 15, 2011 21:04 voice
+To: Shen, Voice
+Cc: linux-kernel@vger.kernel.org; linux-sound@vger.kernel.org; Lin, JM;
+Xu, Hong
+Subject: Re: [PATCH] atmel ac97c: using software reset instead hardware
+reset if not available
+
+On 11/23/2011 11:05 AM, voice :
+> Using software reset instead hardware reset if not available
+
+Ping?
+Can you please tell me what is the status of this fix? Will it go
+upstream for 3.3?
+
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> ---
+>  sound/atmel/ac97c.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> > I think best is to move the thinkpad implementation of getting
-> > ACPI handles based on HIDs to osl.c and make it global.
-> > I'll send patches.
-> > Please review them carefully, they are only compile tested.
-> 
-> The ec driver is already finding the hardware on the basis of the HID - 
-> is there any reason to do this twice rather than just exporting the 
-> information the ec driver already has?
-Exporting the EC handle is static, you do not want to export all
-kind of ACPI devices as soon as other drivers need them.
-
-The question is how long it takes to do:
-acpi_ns_walk_namespace(ACPI_TYPE_DEVICE, ...
-in worst case (not found).
-
-Ok, the EC may be somewhat special because it's the most likely
-candidate to get shared (or say needed by other drivers)
-and its driver has to be compiled in.
-.
-thinkpad_acpi should at least also make use of Seth's approach and get the
-ec_handle quickly/directly.
-
-And my patches should still be added, because others could use
-them as well. Beside thinkpad_acpi grabbing the video handle, there
-is another re-implementation of my acpi_handle_locate (eeepc_wmi.c):
-static acpi_status eeepc_wmi_parse_device(acpi_handle handle, u32 level,
-                                                 void *context, void **retval)
-{
-        pr_warn("Found legacy ATKD device (%s)\n", EEEPC_ACPI_HID);
-        *(bool *)context = true;
-        return AE_CTRL_TERMINATE;
-}
-
-static int eeepc_wmi_check_atkd(void)
-{
-        acpi_status status;
-        bool found = false;
-
-        status = acpi_get_devices(EEEPC_ACPI_HID, eeepc_wmi_parse_device,
-                                  &found, NULL);
-
-        if (ACPI_FAILURE(status) || !found)
-                return 0;
-        return -1;                                                                                                                                                    
-}
+> diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+> index 6e5adde..73516f6 100644
+> --- a/sound/atmel/ac97c.c
+> +++ b/sound/atmel/ac97c.c
+> @@ -899,6 +899,10 @@ static void atmel_ac97c_reset(struct atmel_ac97c
+*chip)
+>  		/* AC97 v2.2 specifications says minimum 1 us. */
+>  		udelay(2);
+>  		gpio_set_value(chip->reset_pin, 1);
+> +	} else {
+> +		ac97c_writel(chip, MR, AC97C_MR_WRST | AC97C_MR_ENA);
+> +		udelay(2);
+> +		ac97c_writel(chip, MR, AC97C_MR_ENA);
+>  	}
+>  }
+>  
 
 
-If you agree I can send something tomorrow.
-
-
-    Thomas
+-- 
+Nicolas Ferre
