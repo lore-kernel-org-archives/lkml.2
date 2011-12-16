@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442Ab1LPSce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 13:32:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50122 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760218Ab1LPSc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 13:32:27 -0500
-Message-ID: <4EEB8EAE.6010306@zytor.com>
-Date: Fri, 16 Dec 2011 10:32:14 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
- above 4 GB from direct mapping.
-References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com> <4EA09EA2.3030203@zytor.com> <1319149574.13035.6.camel@jshin-Toonie> <4EE9266A.90200@zytor.com> <20111214231425.GA18068@jshin-Toonie> <20111216162004.GC18068@jshin-Toonie> <4EEB8320.4010809@oracle.com> <4EEB85F1.7050903@zytor.com> <CAE9FiQXTeJ2XZy-Pjwvdb4Fp5wb_XLq88tC-2M_3RbjSLk5d4A@mail.gmail.com>
-In-Reply-To: <CAE9FiQXTeJ2XZy-Pjwvdb4Fp5wb_XLq88tC-2M_3RbjSLk5d4A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760477Ab1LPSel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 13:34:41 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56903 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759034Ab1LPSed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 13:34:33 -0500
+Date: Fri, 16 Dec 2011 13:32:27 -0500 (EST)
+Message-Id: <20111216.133227.782560339712731597.davem@davemloft.net>
+To: jkosina@suse.cz
+Cc: aurel@gnuage.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] asix: new device id
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1112161737040.15661@twin.jikos.cz>
+References: <1324050921-9007-1-git-send-email-aurel@gnuage.org>
+	<alpine.LRH.2.00.1112161737040.15661@twin.jikos.cz>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 16 Dec 2011 10:32:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 10:29 AM, Yinghai Lu wrote:
-> On Fri, Dec 16, 2011 at 9:54 AM, H. Peter Anvin<hpa@zytor.com>  wrote:
->
->>
->> For 2 - why can't we simply make the invariant that E820_RAM is mapped and
->> nothing else, with the sole exceptions being the 1 MiB (fixed MTRR)?
->
-> Yes, we could do that. but need to track mapped area in simple way.
-> like later memory hotadd or remove to update those tracking.
->
+From: Jiri Kosina <jkosina@suse.cz>
+Date: Fri, 16 Dec 2011 17:38:13 +0100 (CET)
 
-Well, there are two options for memory hotplug: either we always leave 
-address space that can be used for memory hotplug mapped at all times, 
-or we need to track it anyway.  Either way we need to know where there 
-regions are.  Am I correct that right now we always map memory 
-hotpluggable regions, being below the top pfn?
+> On Fri, 16 Dec 2011, Aurelien Jacobs wrote:
+> 
+>> Adds the device id needed for the USB Ethernet Adapter delivered by
+>> ASUS with their Zenbook.
+>> 
+>> Signed-off-by: Aurelien Jacobs <aurel@gnuage.org>
+>> ---
+>>  drivers/net/usb/asix.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+>> index e6fed4d..e95f0e6 100644
+>> --- a/drivers/net/usb/asix.c
+>> +++ b/drivers/net/usb/asix.c
+>> @@ -1655,6 +1655,10 @@ static const struct usb_device_id	products [] = {
+>>  	// ASIX 88772a
+>>  	USB_DEVICE(0x0db0, 0xa877),
+>>  	.driver_info = (unsigned long) &ax88772_info,
+>> +}, {
+>> +	// Asus USB Ethernet Adapter
+>> +	USB_DEVICE (0x0b95, 0x7e2b),
+>> +	.driver_info = (unsigned long) &ax88772_info,
+>>  },
+>>  	{ },		// END
+>>  };
+> 
+> Adding netdev to CC so that it doesn't get lost.
 
-	-hpa
-
+Only submitting the actual patch, unquoted, to netdev makes sure it gets
+queued up in patchwork, and therefore not lost.
