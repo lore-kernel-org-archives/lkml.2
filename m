@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202Ab1LPXHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:07:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53603 "EHLO
+	id S1761002Ab1LPXHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:07:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46965 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760972Ab1LPXGS (ORCPT
+	with ESMTP id S1760967Ab1LPXGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:06:18 -0500
-X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=LVG8-y8ILH4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=7d_E57ReAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=QyXUC8HyAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=bjtyyEyAhk0x-LzI2ooA:9 a=YePrbjL4OOkhEfs5NS8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jbrJJM5MRmoA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Nk7NuooMRfPFSJTBXc8A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 16 Dec 2011 18:06:17 -0500
+X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=bM37YEM8B4YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=nVI_mnzzUJ0xBcMVdE8A:9 a=2R4oPsScBZbIOtX69w8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=QfYkzsUzQcflfgbi5xEA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111216230617.544240425@goodmis.org>
+Message-Id: <20111216230615.988116473@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Dec 2011 17:59:12 -0500
+Date: Fri, 16 Dec 2011 17:59:10 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,11 +22,10 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: [PATCH 6/6] x86: Add counter when debug stack is used with interrupts enabled
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 4/6] x86: Keep current stack in NMI breakpoints
 References: <20111216225906.481643317@goodmis.org>
-Content-Disposition: inline; filename=0006-x86-Add-counter-when-debug-stack-is-used-with-interr.patch
+Content-Disposition: inline; filename=0004-x86-Keep-current-stack-in-NMI-breakpoints.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,152 +37,202 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Mathieu Desnoyers pointed out a case that can cause issues with
-NMIs running on the debug stack:
+We want to allow NMI handlers to have breakpoints to be able to
+remove stop_machine from ftrace, kprobes and jump_labels. But if
+an NMI interrupts a current breakpoint, and then it triggers a
+breakpoint itself, it will switch to the breakpoint stack and
+corrupt the data on it for the breakpoint processing that it
+interrupted.
 
-  int3 -> interrupt -> NMI -> int3
+Instead, have the NMI check if it interrupted breakpoint processing
+by checking if the stack that is currently used is a breakpoint
+stack. If it is, then load a special IDT that changes the IST
+for the debug exception to keep the same stack in kernel context.
+When the NMI is done, it puts it back.
 
-Because the interrupt changes the stack, the NMI will not see that
-it preempted the debug stack. Looking deeper at this case,
-interrupts only happen when the int3 is from userspace or in
-an a location in the exception table (fixup).
+This way, if the NMI does trigger a breakpoint, it will keep
+using the same stack and not stomp on the breakpoint data for
+the breakpoint it interrupted.
 
-  userspace -> int3 -> interurpt -> NMI -> int3
-
-All other int3s that happen in the kernel should be processed
-without ever enabling interrupts, as the do_trap() call will
-panic the kernel if it is called to process any other location
-within the kernel.
-
-Adding a counter around the sections that enable interrupts while
-using the debug stack allows the NMI to also check that case.
-If the NMI sees that it either interrupted a task using the debug
-stack or the debug counter is non-zero, then it will have to
-change the IDT table to make the int3 not change stacks (which will
-corrupt the stack if it does).
-
-Link: http://lkml.kernel.org/r/1323976535.23971.112.camel@gandalf.stny.rr.c=
-om
-
-Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Turner <pjt@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/processor.h |    4 ++++
- arch/x86/kernel/cpu/common.c     |   16 ++++++++++++++--
- arch/x86/kernel/traps.c          |   14 ++++++++++++++
- 3 files changed, 32 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/desc.h      |   12 ++++++++++++
+ arch/x86/include/asm/processor.h |    6 ++++++
+ arch/x86/kernel/cpu/common.c     |   22 ++++++++++++++++++++++
+ arch/x86/kernel/head_64.S        |    4 ++++
+ arch/x86/kernel/nmi.c            |   15 +++++++++++++++
+ arch/x86/kernel/traps.c          |    6 ++++++
+ 6 files changed, 65 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+index 41935fa..e95822d 100644
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -35,6 +35,8 @@ static inline void fill_ldt(struct desc_struct *desc, con=
+st struct user_desc *in
+=20
+ extern struct desc_ptr idt_descr;
+ extern gate_desc idt_table[];
++extern struct desc_ptr nmi_idt_descr;
++extern gate_desc nmi_idt_table[];
+=20
+ struct gdt_page {
+ 	struct desc_struct gdt[GDT_ENTRIES];
+@@ -307,6 +309,16 @@ static inline void set_desc_limit(struct desc_struct *=
+desc, unsigned long limit)
+ 	desc->limit =3D (limit >> 16) & 0xf;
+ }
+=20
++#ifdef CONFIG_X86_64
++static inline void set_nmi_gate(int gate, void *addr)
++{
++	gate_desc s;
++
++	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
++	write_idt_entry(nmi_idt_table, gate, &s);
++}
++#endif
++
+ static inline void _set_gate(int gate, unsigned type, void *addr,
+ 			     unsigned dpl, unsigned ist, unsigned seg)
+ {
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/proces=
 sor.h
-index d748d1f..2fef5ba 100644
+index b650435..d748d1f 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -402,6 +402,8 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
+@@ -402,6 +402,9 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
  DECLARE_PER_CPU(unsigned int, irq_count);
  extern unsigned long kernel_eflags;
  extern asmlinkage void ignore_sysret(void);
-+void inc_debug_stack_usage(void);
-+void dec_debug_stack_usage(void);
- int is_debug_stack(unsigned long addr);
- void zero_debug_stack(void);
- void reset_debug_stack(void);
-@@ -420,6 +422,8 @@ struct stack_canary {
++int is_debug_stack(unsigned long addr);
++void zero_debug_stack(void);
++void reset_debug_stack(void);
+ #else	/* X86_64 */
+ #ifdef CONFIG_CC_STACKPROTECTOR
+ /*
+@@ -416,6 +419,9 @@ struct stack_canary {
+ };
  DECLARE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
  #endif
- static inline int is_debug_stack(unsigned long addr) { return 0; }
-+static inline void inc_debug_stack_usage(void) { }
-+static inline void dec_debug_stack_usage(void) { }
- static inline void zero_debug_stack(void) { }
- static inline void reset_debug_stack(void) { }
++static inline int is_debug_stack(unsigned long addr) { return 0; }
++static inline void zero_debug_stack(void) { }
++static inline void reset_debug_stack(void) { }
  #endif	/* X86_64 */
+=20
+ extern unsigned int xstate_size;
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 98faeff..f1ec612 100644
+index aa003b1..98faeff 100644
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -1093,11 +1093,23 @@ unsigned long kernel_eflags;
- DEFINE_PER_CPU(struct orig_ist, orig_ist);
-=20
- static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
-+static DEFINE_PER_CPU(int, debug_stack_usage);
-+
-+void inc_debug_stack_usage(void)
-+{
-+	__get_cpu_var(debug_stack_usage)++;
-+}
-+
-+void dec_debug_stack_usage(void)
-+{
-+	__get_cpu_var(debug_stack_usage)--;
-+}
-=20
- int is_debug_stack(unsigned long addr)
- {
--	return addr <=3D __get_cpu_var(debug_stack_addr) &&
--		addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ);
-+	return __get_cpu_var(debug_stack_usage) ||
-+		(addr <=3D __get_cpu_var(debug_stack_addr) &&
-+		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
- }
-=20
- void zero_debug_stack(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a93c5ca..d2510e7 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -316,9 +316,15 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *r=
-egs, long error_code)
- 		return;
- #endif
-=20
-+	/*
-+	 * Let others (NMI) know that the debug stack is in use
-+	 * as we may switch to the interrupt stack.
-+	 */
-+	inc_debug_stack_usage();
- 	preempt_conditional_sti(regs);
- 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
-+	dec_debug_stack_usage();
- }
+@@ -1026,6 +1026,8 @@ __setup("clearcpuid=3D", setup_disablecpuid);
 =20
  #ifdef CONFIG_X86_64
-@@ -411,6 +417,12 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *=
-regs, long error_code)
- 							SIGTRAP) =3D=3D NOTIFY_STOP)
- 		return;
+ struct desc_ptr idt_descr =3D { NR_VECTORS * 16 - 1, (unsigned long) idt_t=
+able };
++struct desc_ptr nmi_idt_descr =3D { NR_VECTORS * 16 - 1,
++				    (unsigned long) nmi_idt_table };
 =20
-+	/*
-+	 * Let others (NMI) know that the debug stack is in use
-+	 * as we may switch to the interrupt stack.
-+	 */
-+	inc_debug_stack_usage();
+ DEFINE_PER_CPU_FIRST(union irq_stack_union,
+ 		     irq_stack_union) __aligned(PAGE_SIZE);
+@@ -1090,6 +1092,24 @@ unsigned long kernel_eflags;
+  */
+ DEFINE_PER_CPU(struct orig_ist, orig_ist);
+=20
++static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
 +
- 	/* It's safe to allow irq's after DR6 has been saved */
- 	preempt_conditional_sti(regs);
++int is_debug_stack(unsigned long addr)
++{
++	return addr <=3D __get_cpu_var(debug_stack_addr) &&
++		addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ);
++}
++
++void zero_debug_stack(void)
++{
++	load_idt((const struct desc_ptr *)&nmi_idt_descr);
++}
++
++void reset_debug_stack(void)
++{
++	load_idt((const struct desc_ptr *)&idt_descr);
++}
++
+ #else	/* CONFIG_X86_64 */
 =20
-@@ -418,6 +430,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *r=
-egs, long error_code)
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, 1);
- 		preempt_conditional_cli(regs);
-+		dec_debug_stack_usage();
- 		return;
+ DEFINE_PER_CPU(struct task_struct *, current_task) =3D &init_task;
+@@ -1208,6 +1228,8 @@ void __cpuinit cpu_init(void)
+ 			estacks +=3D exception_stack_sizes[v];
+ 			oist->ist[v] =3D t->x86_tss.ist[v] =3D
+ 					(unsigned long)estacks;
++			if (v =3D=3D DEBUG_STACK - 1)
++				per_cpu(debug_stack_addr, cpu) =3D (unsigned long)estacks;
+ 		}
  	}
 =20
-@@ -437,6 +450,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *r=
-egs, long error_code)
- 	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
- 		send_sigtrap(tsk, regs, error_code, si_code);
- 	preempt_conditional_cli(regs);
-+	dec_debug_stack_usage();
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index e11e394..40f4eb3 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -417,6 +417,10 @@ ENTRY(phys_base)
+ ENTRY(idt_table)
+ 	.skip IDT_ENTRIES * 16
 =20
- 	return;
++	.align L1_CACHE_BYTES
++ENTRY(nmi_idt_table)
++	.skip IDT_ENTRIES * 16
++
+ 	__PAGE_ALIGNED_BSS
+ 	.align PAGE_SIZE
+ ENTRY(empty_zero_page)
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index b9c8628..fb86773 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -407,6 +407,18 @@ static notrace __kprobes void default_do_nmi(struct pt=
+_regs *regs)
+ dotraplinkage notrace __kprobes void
+ do_nmi(struct pt_regs *regs, long error_code)
+ {
++	int update_debug_stack =3D 0;
++
++	/*
++	 * If we interrupted a breakpoint, it is possible that
++	 * the nmi handler will have breakpoints too. We need to
++	 * change the IDT such that breakpoints that happen here
++	 * continue to use the NMI stack.
++	 */
++	if (unlikely(is_debug_stack(regs->sp))) {
++		zero_debug_stack();
++		update_debug_stack =3D 1;
++	}
+ 	nmi_enter();
+=20
+ 	inc_irq_stat(__nmi_count);
+@@ -415,6 +427,9 @@ do_nmi(struct pt_regs *regs, long error_code)
+ 		default_do_nmi(regs);
+=20
+ 	nmi_exit();
++
++	if (unlikely(update_debug_stack))
++		reset_debug_stack();
+ }
+=20
+ void stop_nmi(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index a8e3eb8..a93c5ca 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -723,4 +723,10 @@ void __init trap_init(void)
+ 	cpu_init();
+=20
+ 	x86_init.irqs.trap_init();
++
++#ifdef CONFIG_X86_64
++	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
++	set_nmi_gate(1, &debug);
++	set_nmi_gate(3, &int3);
++#endif
  }
 --=20
 1.7.7.3
@@ -197,19 +246,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO687pAAoJEIy3vGnGbaoA3ysQAKcYdQJanWXP3+zAgea5xf4L
-Oa/EXeeCVz6T5mqaZE46Dnk4BL++EK8eMWPLgQvVt74Rusj2R5aN2Atqg/uaQ3UR
-Z1TvXBRokSQWXH6ek19iM5hIomQfs/T/U2CArBIkRTGrNBhcVy8/nNs/eRraGnQG
-OkuKpKsrb7XLrT0GuujiEa0sULkbUumjn606xfRWejxTO9Fzd34h/WzvIv5kuY07
-2dqryVnHEBzkk363s2WPDtfKuWQiIp3GRHSTDSBQWb56XDXSeAkC/i4KAu8NttOy
-b6XGhxPYSEqT9ZNESC/xM13EvPUGE78AcdHygJE7Fcm5jIPhnfKssYktdMM+gC7G
-epYp/rDI5WYXK8f1j7FK/b2I46HY/d9gEnCIzveiTgq9MLF+OIGQExC/40ZWcYNe
-v9LDqsUxWJNEK1AgLLRiq0fy0i6VReV9DB+3qdYFKtorvpK0yAVPcf1qmn0L5vpF
-ni1dYlGZJvvb9gcDSqEXFpE2OJ+NR/98tVdXagf1q6dk341DacNsuF3UplUAPa6H
-p+LyiTE+cqHKcTl3VAT3o6G7OLDDtKYUBLpSaP6/5zuSpti6CLS5UHBUSmoIYRHc
-+/wz43fSDNQKCtjzun2R+ISPzTKkwa0vE9qipHWKwc+c/swOnNuLMYai5fLmlWF/
-NBM0r472b8XNFQB413Nl
-=+iGX
+iQIcBAABAgAGBQJO687oAAoJEIy3vGnGbaoA37kP/3Cj65+9hjeBSN/zUSVKvTmW
+uoYVC5xrA2D4ZxtnAPN/9KSuOfRiugKvD70tG2v2SeRHSteNhA4wRJ4n7a8UZxzr
+gPOx9r3D63WZKf0AWTrwcfHnP23Rod8VPGD1gVbK4QTMufxn/NaAoioTNpYl9SXN
+y1fU5gDHC9hmQdn22336OsAXFqlPeofmiJ3atcbdG8Ex93PE5LhwsXmpXoEwurah
+daQVcaNOpfR0f55ILjKSK+9yj34rVwarizhzxTJzr52lmLS0I2HHjAEAK3Ktp2V2
+uxMN788rUdRFKq7N3VUhNnIsV9Urbjr5d9HRLPvUT/GYV1HSQBR6KHgGvpO3Nveq
+wuL9CXPFB1ELX1XEL73N+7pDGTIuCK7PONpJAkbLtOEvnz790Wkz25vHsfIH/rF9
+6/6Zx8BLJ+Bpul/A7WMwUM7zlN6L5/tIB9GbRi0CxA5n6Wzt7sIjXqoQSD13Bzep
+T+6sSwr7t6bklognHB9euDaa7WlZNk47TYUdxFaWyNLWj07gw/UtbwIl+iOY9Yd/
+vyCsoF1UtIQJyywvbD0FnJIjg6VDBGVUsKvJp9jcmPkvwh0fy5/O3Jq6jlT1qbT7
+PNgwIKn2tN3QtpkMNXLuQyrcUeku6QXxcx24q0+1Ltey5v3hgQPhwz/RFf1HW88V
+ddLD/m8Mdi6+G8c63aRv
+=KFlO
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
