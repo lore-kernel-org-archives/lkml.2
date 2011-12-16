@@ -1,152 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759414Ab1LPHui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 02:50:38 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52112 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1LPHug (ORCPT
+	id S1759271Ab1LPH71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 02:59:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45214 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab1LPH7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 02:50:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111215091037.GB21664@redhat.com>
-References: <CAFgQCTtkaTpjDyyzEaNwNv_+FdjTQ+ZbYAAbAUKZ6NmWXJfheA@mail.gmail.com>
-	<1323923328-917-1-git-send-email-kernelfans@gmail.com>
-	<20111215091037.GB21664@redhat.com>
-Date: Fri, 16 Dec 2011 15:50:35 +0800
-Message-ID: <CAFgQCTvH3tguhHD1ThmVmgP88uwDa5Dow_eCed7Nk=N5ooJyjA@mail.gmail.com>
-Subject: Re: [PATCH v4] kvm: make vcpu life cycle separated from kvm instance
-From: Liu ping fan <kernelfans@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com, jan.kiszka@web.de
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 Dec 2011 02:59:25 -0500
+Message-ID: <1324022358.4496.25.camel@lappy>
+Subject: Re: [PATCH 0/2] vhot-net: Use kvm_memslots instead of vhost_memory
+ to translate GPA to HVA
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Zang Hongyong <zanghongyong@huawei.com>
+Cc: linux-kernel@vger.kernel.org, mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        xiaowei.yang@huawei.com, hanweidong@huawei.com, wusongwei@huawei.com
+Date: Fri, 16 Dec 2011 09:59:18 +0200
+In-Reply-To: <4EEAF5D1.2080805@huawei.com>
+References: <1324013528-3663-1-git-send-email-zanghongyong@huawei.com>
+	 <1324019151.4496.9.camel@lappy> <4EEAF5D1.2080805@huawei.com>
+Content-Type: text/plain; charset="iso-2022-jp"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBG7olxl014095
 
-On Thu, Dec 15, 2011 at 5:10 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> On Thu, Dec 15, 2011 at 12:28:48PM +0800, Liu Ping Fan wrote:
->> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
->>
->> Currently, vcpu can be destructed only when kvm instance destroyed.
->> Change this to vcpu's destruction before kvm instance, so vcpu MUST
->> and CAN be destroyed before kvm's destroy.
->>
-> I see reference counting is back.
->
-Resort to SRCU in next version, I will remove refcnt.
+On Fri, 2011-12-16 at 15:40 +0800, Zang Hongyong wrote:
+> $BP2(B 2011/12/16,$B@14|8^(B 15:05, Sasha Levin $B<LF;(B:
+> > On Fri, 2011-12-16 at 13:32 +0800, zanghongyong@huawei.com wrote:
+> >> From: Hongyong Zang<zanghongyong@huawei.com>
+> >>
+> >> Vhost-net uses its own vhost_memory, which results from user space (qemu) info,
+> >> to translate GPA to HVA. Since kernel's kvm structure already maintains the
+> >> address relationship in its member *kvm_memslots*, these patches use kernel's
+> >> kvm_memslots directly without the need of initialization and maintenance of
+> >> vhost_memory.
+> > Conceptually, vhost isn't aware of KVM - it's just a driver which moves
+> > data from vq to a tap device and back. You can't simply add KVM specific
+> > code into vhost.
+> >
+> > Whats the performance benefit?
+> >
+> But vhost-net is only used in virtualization situation. vhost_memory is 
+> maintained
+> by user space qemu.
+> In this way, the memory relationship can be accquired from kernel 
+> without the
+> need of maintainence of vhost_memory from qemu.
 
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index d9cfb78..71dda47 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -141,6 +141,7 @@ void vcpu_load(struct kvm_vcpu *vcpu)
->>  {
->>       int cpu;
->>
->> +     kvm_vcpu_get(vcpu);
->>       mutex_lock(&vcpu->mutex);
->>       if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
->>               /* The thread running this VCPU changed. */
->> @@ -163,6 +164,7 @@ void vcpu_put(struct kvm_vcpu *vcpu)
->>       preempt_notifier_unregister(&vcpu->preempt_notifier);
->>       preempt_enable();
->>       mutex_unlock(&vcpu->mutex);
->> +     kvm_vcpu_put(vcpu);
->>  }
->>
-> Why is kvm_vcpu_get/kvm_vcpu_put is needed in vcpu_load/vcpu_put?
-> As far as I see load/put are only called in vcpu ioctl,
-> kvm_arch_vcpu_setup(), kvm_arch_vcpu_destroy() and kvm_arch_destroy_vm().
->
-> kvm_arch_vcpu_setup() and kvm_arch_vcpu_destroy() are called before vcpu is
-> added to vcpus list, so it can't be accessed by other thread at this
-> point. kvm_arch_destroy_vm() is  called on KVM destruction path when all
-> vcpus should be destroyed already. So the only interesting place is vcpu
-> ioctl and I think we are protected by fd refcount there. vcpu fd can't
-> be closed while ioctl is executing for that vcpu. Otherwise we would
-> have problem now too.
->
-Yeah, ioctl is protected by fd refcount. That is what I had aimed to,
-but as you pointed out, it is unnecessary at all.
+You can't assume that vhost-* is used only along with qemu/kvm. Just as
+virtio has more uses than just virtualization (heres one:
+https://lkml.org/lkml/2011/10/25/139 ), there are more uses for vhost as
+well.
 
->> @@ -1539,12 +1547,10 @@ EXPORT_SYMBOL_GPL(kvm_resched);
->>  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>  {
->>       struct kvm *kvm = me->kvm;
->> -     struct kvm_vcpu *vcpu;
->> -     int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
->> -     int yielded = 0;
->> -     int pass;
->> -     int i;
->> -
->> +     struct kvm_vcpu *vcpu, *v;
->> +     struct task_struct *task = NULL;
->> +     struct pid *pid;
->> +     int pass, firststart, lastone, yielded;
->>       /*
->>        * We boost the priority of a VCPU that is runnable but not
->>        * currently running, because it got preempted by something
->> @@ -1552,15 +1558,22 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>        * VCPU is holding the lock that we need and will release it.
->>        * We approximate round-robin by starting at the last boosted VCPU.
->>        */
->> -     for (pass = 0; pass < 2 && !yielded; pass++) {
->> -             kvm_for_each_vcpu(i, vcpu, kvm) {
->> -                     struct task_struct *task = NULL;
->> -                     struct pid *pid;
->> -                     if (!pass && i < last_boosted_vcpu) {
->> -                             i = last_boosted_vcpu;
->> +     for (pass = 0, firststart = 0; pass < 2 && !yielded; pass++) {
->> +
->> +             rcu_read_lock();
->> +             kvm_for_each_vcpu(vcpu, kvm) {
->> +                     if (!pass && !firststart &&
->> +                         vcpu != kvm->last_boosted_vcpu &&
->> +                         kvm->last_boosted_vcpu != NULL) {
->> +                             vcpu = kvm->last_boosted_vcpu;
->> +                             firststart = 1;
->>                               continue;
->> -                     } else if (pass && i > last_boosted_vcpu)
->> +                     } else if (pass && !lastone) {
->> +                             if (vcpu == kvm->last_boosted_vcpu)
->> +                                     lastone = 1;
->> +                     } else if (pass && lastone)
->>                               break;
->> +
->>                       if (vcpu == me)
->>                               continue;
->>                       if (waitqueue_active(&vcpu->wq))
->> @@ -1576,15 +1589,29 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>                               put_task_struct(task);
->>                               continue;
->>                       }
->> +                     v = kvm_vcpu_get(vcpu);
->> +                     if (v == NULL)
->> +                             continue;
->> +
->> +                     rcu_read_unlock();
->>                       if (yield_to(task, 1)) {
->>                               put_task_struct(task);
->> -                             kvm->last_boosted_vcpu = i;
->> +                             mutex_lock(&kvm->lock);
->> +                             /*Remeber to release it.*/
->> +                             if (kvm->last_boosted_vcpu != NULL)
->> +                                     kvm_vcpu_put(kvm->last_boosted_vcpu);
->> +                             kvm->last_boosted_vcpu = vcpu;
->> +                             mutex_unlock(&kvm->lock);
->>                               yielded = 1;
-> I think we can be smart and protect kvm->last_boosted_vcpu with the same
-> rcu as vcpus, but yeild_to() can sleep anyway. Hmm may be we should use
-> srcu in the first place :( Or rewrite the logic of the functions
-> somehow to call yield_to() outside of the loop. This is heuristics anyway.
->
-And I think changing to srcu will be easier :-), and have started to do it.
+There has been a great deal of effort to keep vhost and kvm untangled.
+One example is the memory translation it has to do, another one is the
+eventfd/irqfd thing it does just so it could signal an IRQ in the guest
+instead of accessing the guest directly.
 
-Thanks and regards
-ping fan
-> --
->                        Gleb.
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+If you do see a great performance increase when tying vhost and KVM
+together, it may be worth it to create some sort of an in-kernel
+vhost-kvm bridging thing, but if the performance isn't noticeable we're
+better off just leaving it as is and keeping the vhost code general.
+
+-- 
+
+Sasha.
+
