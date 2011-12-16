@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab1LPRmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 12:42:16 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38076 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752011Ab1LPRmF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 12:42:05 -0500
-Message-ID: <4EEB9105.3030100@xenotime.net>
-Date: Fri, 16 Dec 2011 10:42:13 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1760292Ab1LPRma (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 12:42:30 -0500
+Received: from zeus.madism.org ([88.190.14.41]:47077 "EHLO zeus.madism.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011Ab1LPRmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 12:42:21 -0500
+Date: Fri, 16 Dec 2011 18:42:16 +0100
+From: Pierre Habouzit <pierre.habouzit@intersec.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@qumranet.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] sched: allow preempt notifiers to self-unregister.
+Message-ID: <20111216174216.GC4569@madism.org>
+References: <1324052151-3714-1-git-send-email-pierre.habouzit@intersec.com>
+ <1324055385.18942.109.camel@twins>
+ <20111216172523.GB4569@madism.org>
+ <1324056787.18942.118.camel@twins>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 9 (ibmphp)
-References: <20111209163247.1de15dcb5b735ca5e1ad030b@canb.auug.org.au> <d4bdd33396b823c5241c4939b981e8a6.squirrel@xenotime.net> <4EE637F3.7070606@xenotime.net> <CAErSpo5dbAJiJ4FhR4bso+4MnJ9mk45T2Z+spmdzRr95w8jAZg@mail.gmail.com>
-In-Reply-To: <CAErSpo5dbAJiJ4FhR4bso+4MnJ9mk45T2Z+spmdzRr95w8jAZg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1324056787.18942.118.camel@twins>
+X-Face: $(^e[V4D-[`f2EmMGz@fgWK!e.B~2g.{08lKPU(nc1J~z\4B>*JEVq:E]7G-\6$Ycr4<;Z!|VY6Grt]+RsS$IMV)f>2)M="tY:ZPcU;&%it2D81X^kNya0=L]"vZmLP+UmKhgq+u*\.dJ8G!N&=EvlD
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2011 04:41 PM, Bjorn Helgaas wrote:
-> On Mon, Dec 12, 2011 at 10:20 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On 12/09/2011 10:51 AM, Randy Dunlap wrote:
->>>
->>> On Thu, December 8, 2011 9:32 pm, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20111208:
->>>
->>> (This build error  was first seen in 20111208.)
->>>
->>>
->>> ERROR: "pci_scan_bus" [drivers/pci/hotplug/ibmphp.ko] undefined!
->>>
->>> Full randconfig file is attached.
->>
->>
->> Same for 20111212.
+On Fri, Dec 16, 2011 at 06:33:07PM +0100, Peter Zijlstra wrote:
+> On Fri, 2011-12-16 at 18:25 +0100, Pierre Habouzit wrote:
+> > On Fri, Dec 16, 2011 at 06:09:45PM +0100, Peter Zijlstra wrote:
+> > > On Fri, 2011-12-16 at 17:15 +0100, Pierre Habouzit wrote:
+> > > >   Hence I install those callbacks for the thread registering themselves
+> > > >   and want to keep them until the thread dies. Sadly I have no way to
+> > > >   unregister those callbacks right now, but for horrible hacks (involving
+> > > >   private delayed queues processed regularly walked to kfree() the
+> > > >   structures referencing pids that are dead, urgh).
+> > > 
+> > > kfree_rcu() is the 'normal' way to cheat your way out of this.
+> > 
+> > Hmm, if when I'm scheduled "out" with the TASK_DEAD bit set, am I sure
+> > the _in/_out callback will never ever be called again?
 > 
-> I changed pci_scan_bus() from an inline function (visible to modules)
-> to a normal function (by default, not visible to modules), which broke
-> the ibmphp.ko build.
+> Yep.
+
+Good then kfree_rcu (or call_rcu if I need more at some point) is good
+enough, which is nice because it will allow me to run on "any" kernel
+whether my patch is ever applied or not.
+
+> > It experimentally seems that the answer is yes, but I'm not familiar
+> > enough with the scheduler to be a 100% sure. If yes then kfree_rcu is
+> > just fine indeed and I don't need the patch, at all.
+> > 
+> > If it's not "sure" then I assume I can probably use call_rcu() but that
 > 
-> The updated patch is attached, as well as the incremental change (just
-> adding "EXPORT_SYMBOL(pci_scan_bus);".
+> kfree_rcu() is a convenient macro wrapped around call_rcu().
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Yes I've seen, what I meant was a shortcut for "if kfree_rcu isn't
+allowed because I may kfree() callbacks still registered and that _in or
+_out events could be still fired then I'll write something that safely
+unregisters callbacks from a longer call_rcu" :)
 
-Thanks.
+I reckon this "shortcut" wasn't obvious for the reader. But I won't need
+that since you answered "yes" to my previous question.
 
-(although those git sha hashes in the filenames did confuse 'patch';
-maybe I need a newer version of patch)
-
-> (Also available at git://github.com/bjorn-helgaas/linux.git on the "pci-scan-v6"
-> branch as bef4a9eefaa69dd9bc998e29d619127d1653683d)
+> > looks like a total overkill for something that can be fully avoided with
+> > my patch, which incidentally, doesn't slow the typical sched path (there
+> > should be no callbacks and the _safe iterator exits as fast as the non
+> > safe iterator).
 > 
-> Bjorn
+> Ah, you're right, I thought it frobbed the extra variable too, but
+> looking at it it only does that when there's anything on the list.
 
+Yeah that's the reason why I submitted the patch in the first place
+since it doesn't change the performance for the usual case. But well,
+given your answers, I don't really care whether it's applied or not
+anymore, I still find it cumbersome that people couldn't unregister from
+a callback, that's really something that I expected to work :) It may be
+worth a comment in preempt.h to save some experimenters a kernel panic
+or two :P
 
+Thank you for your answers.
+
+(for the story but well, I understand you couldn't care less, it sadly
+caused me a kernel panic and 2 subsequent ones because btrfs kind of
+didn't like the panics. Okay, I've got the message, I've been a lazy boy
+to develop kernel code for almost the first time directly in my running
+linux instead of a qemu :P)
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Intersec <http://www.intersec.com>
+Pierre Habouzit <pierre.habouzit@intersec.com> | Chief Software Architect
+Tél : +33 (0)1 5570 3346
+Mob : +33 (0)6 1636 8131
+Fax : +33 (0)1 5570 3332
+37 Rue Pierre Lhomme
+92400 Courbevoie
