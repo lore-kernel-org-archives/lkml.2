@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030219Ab1LPT4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:56:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45472 "EHLO mx2.suse.de"
+	id S1030239Ab1LPT4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:56:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45492 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964923Ab1LPTxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:53:36 -0500
+	id S964931Ab1LPTxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:53:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:13 2011
-Message-Id: <20111216194213.144852349@clark.kroah.org>
+Message-Id: <20111216194213.504601218@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:46 -0800
+Date: Fri, 16 Dec 2011 11:40:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [39/45] fuse: fix fuse_retrieve
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [41/45] drm/radeon/kms: add some new pci ids
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,46 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 48706d0a91583d08c56e7ef2a7602d99c8d4133f upstream.
+commit cd5cfce856684e13b9b57d46b78bb827e9c4da3c upstream.
 
-Fix two bugs in fuse_retrieve():
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=43739
 
- - retrieving more than one page would yield repeated instances of the
-   first page
-
- - if more than FUSE_MAX_PAGES_PER_REQ pages were requested than the
-   request page array would overflow
-
-fuse_retrieve() was added in 2.6.36 and these bugs had been there since the
-beginning.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fuse/dev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/drm/drm_pciids.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1512,7 +1512,7 @@ static int fuse_retrieve(struct fuse_con
- 	else if (outarg->offset + num > file_size)
- 		num = file_size - outarg->offset;
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -182,8 +182,11 @@
+ 	{0x1002, 0x6748, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6749, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6750, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6751, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6758, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6759, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x675B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x675D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x675F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6760, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6761, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -195,8 +198,10 @@
+ 	{0x1002, 0x6767, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6768, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6770, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6772, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6778, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6779, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x677B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6840, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6841, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6842, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -246,6 +251,7 @@
+ 	{0x1002, 0x68f2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68f8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68f9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x68fa, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68fe, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x7100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R520|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x7101, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R520|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -488,6 +494,8 @@
+ 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x964e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x964f, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x9710, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS880|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+@@ -502,6 +510,8 @@
+ 	{0x1002, 0x9805, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9806, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9807, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9808, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9809, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0, 0, 0}
  
--	while (num) {
-+	while (num && req->num_pages < FUSE_MAX_PAGES_PER_REQ) {
- 		struct page *page;
- 		unsigned int this_num;
- 
-@@ -1526,6 +1526,7 @@ static int fuse_retrieve(struct fuse_con
- 
- 		num -= this_num;
- 		total_len += this_num;
-+		index++;
- 	}
- 	req->misc.retrieve_in.offset = outarg->offset;
- 	req->misc.retrieve_in.size = total_len;
+ #define r128_PCI_IDS \
 
 
