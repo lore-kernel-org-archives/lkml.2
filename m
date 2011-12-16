@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760196Ab1LPRFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 12:05:44 -0500
-Received: from home.keithp.com ([63.227.221.253]:34647 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab1LPRFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 12:05:38 -0500
-From: Keith Packard <keithp@keithp.com>
-To: tino.keitel+xorg@tikei.de, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rocko Requin <rockorequin@hotmail.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] kernel BUG at drivers/gpu/drm/i915/i915_gem
-In-Reply-To: <20111216163839.GA7884@x61.home>
-References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl> <CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com> <BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl> <CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com> <BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl> <CAKMK7uGpn6AJGtbMCYWW1ziR=Zs+E9LB=aiB5aUu0unfVW=2oA@mail.gmail.com> <20111214195751.GA31690@mac.home> <20111215185415.GA3445@mac.home> <20111216163839.GA7884@x61.home>
-User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 16 Dec 2011 09:06:33 -0800
-Message-ID: <864nx08mzq.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1760211Ab1LPRKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 12:10:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50136 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab1LPRKq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 12:10:46 -0500
+Message-ID: <1324055385.18942.109.camel@twins>
+Subject: Re: [PATCH] sched: allow preempt notifiers to self-unregister.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pierre Habouzit <pierre.habouzit@intersec.com>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@qumranet.com>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Fri, 16 Dec 2011 18:09:45 +0100
+In-Reply-To: <1324052151-3714-1-git-send-email-pierre.habouzit@intersec.com>
+References: <1324052151-3714-1-git-send-email-pierre.habouzit@intersec.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-12-16 at 17:15 +0100, Pierre Habouzit wrote:
 
-On Fri, 16 Dec 2011 17:38:39 +0100, tino.keitel+xorg@tikei.de wrote:
+>   As a background, this need is because I have some kind of module code
+>   that uses this facility to evaluate how many of a group of threads are
+>   concurrently running (to regulate a pool of threads).
 
-> Hum, could this be related to the RC6 vs. IOMMU issue? I have
-> CONFIG_INTEL_IOMMU enabled in 3.2, and disabled in 3.1, and boot with
-> i915.i915_enable_rc6=3D1.
+Typically such stuff is only merged along with whomever uses it.
 
-Very likely -- RC6 and semaphores are not compatible with IOMMU. You
-should be able to just disable VTd in your BIOS and use the kernel with
-IOMMU enabled.
+>   Hence I install those callbacks for the thread registering themselves
+>   and want to keep them until the thread dies. Sadly I have no way to
+>   unregister those callbacks right now, but for horrible hacks (involving
+>   private delayed queues processed regularly walked to kfree() the
+>   structures referencing pids that are dead, urgh).
 
-=2D-=20
-keith.packard@intel.com
+kfree_rcu() is the 'normal' way to cheat your way out of this.
 
---=-=-=
-Content-Type: application/pgp-signature
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index d6b149c..2653169 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -3106,7 +3106,7 @@ static void fire_sched_in_preempt_notifiers(struct task_struct *curr)
+>  	struct preempt_notifier *notifier;
+>  	struct hlist_node *node;
+>  
+> -	hlist_for_each_entry(notifier, node, &curr->preempt_notifiers, link)
+> +	hlist_for_each_entry_safe(notifier, node, &curr->preempt_notifiers, link)
+>  		notifier->ops->sched_in(notifier, raw_smp_processor_id());
+>  }
+>  
+> @@ -3117,7 +3117,7 @@ fire_sched_out_preempt_notifiers(struct task_struct *curr,
+>  	struct preempt_notifier *notifier;
+>  	struct hlist_node *node;
+>  
+> -	hlist_for_each_entry(notifier, node, &curr->preempt_notifiers, link)
+> +	hlist_for_each_entry_safe(notifier, node, &curr->preempt_notifiers, link)
+>  		notifier->ops->sched_out(notifier, next);
+>  }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This adds to scheduler hot paths, it needs very good justification.
 
-iQIVAwUBTut6mTYtFsjWk68qAQjt6hAAtvF6peXrhxwnowVSZO5OS016zfX3ciqf
-8rf3Sw/1J/+PMxf7Cxw3AY+CuBybQg7HDmZnWvrvfdhHdJ9HEvjALxUBYXD6bh3L
-RA6ZrIK1AHLHQa1utG5XYym26Ayy6bAfJC0ExU0EhElbpZiveaZolRbsUQRWKRCv
-fAmDWjiSXRaxXWWakqTNUrJtlON/+b/xnAs/wC3hMK7qp6XzAvFWXqzOg1Q4K6gI
-lE5KynAHjTtfwbh+6x6h0/Ps71rPF+ODdUjo/Hp51jWlUguqVeJIFDvpphZOyYbM
-v0eBEYNRcSjYTHXou32PEbTYY2G1M82Y1k29AmXQKrkrA/9fWBAuInlaLu4px8Nn
-GZqZS8nIUmPseLObWfVMBkw0ja9tszatnh4GkunwFIiRCp3CUscIZiD6NPK2aOji
-m2xdVRXGovck6iUWqU9w+gxqkjSu0WSWCKooyy9ejKbHS2dGsTOIms0z8ig+LAD8
-NUkKKqr5cxg9um81GnVrwg/ld3Bfil8QijINDqiIr1TctbvsHCAMca49TuzwNNa9
-yCCkoIU0GWCofxgBGig5qTNMEz5MgJoZSNorDdLQnsgAwG2dj+jGIfxsHOWL+apG
-FPpqFACQGEtXj5Vd1ZHh36krHBwPsqG6BPxFd0pK9mn1EwvZN3NGQZiKMreWK60/
-nDeW1syVWmM=
-=RRHE
------END PGP SIGNATURE-----
---=-=-=--
