@@ -1,131 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab1LPLk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 06:40:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58033 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756594Ab1LPLkP (ORCPT
+	id S1756375Ab1LPLnn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 06:43:43 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53201 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751408Ab1LPLnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 06:40:15 -0500
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: zhzhl555@gmail.com, peppe.cavallaro@st.com, wuzhangjin@gmail.com,
-        r0bertz@gentoo.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V5 4/4] MIPS: Add defconfig for Loongson1B
-Date: Fri, 16 Dec 2011 19:39:04 +0800
-Message-Id: <1324035544-2373-5-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1324035544-2373-1-git-send-email-keguang.zhang@gmail.com>
-References: <1324035544-2373-1-git-send-email-keguang.zhang@gmail.com>
+	Fri, 16 Dec 2011 06:43:37 -0500
+Date: Fri, 16 Dec 2011 11:43:20 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "frank.rowand@am.sony.com" <frank.rowand@am.sony.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+Message-ID: <20111216114320.GC6342@arm.com>
+References: <4EEAB90D.3050504@am.sony.com>
+ <1324029272.18942.73.camel@twins>
+ <20111216111319.GB6342@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111216111319.GB6342@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds defconfig for Loongson1B.
+On Fri, Dec 16, 2011 at 11:13:19AM +0000, Catalin Marinas wrote:
+> On Fri, Dec 16, 2011 at 09:54:32AM +0000, Peter Zijlstra wrote:
+> > On Thu, 2011-12-15 at 19:20 -0800, Frank Rowand wrote:
+> > > ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
+> > > (application specific ID). The number of ASIDs is limited to 256 and
+> > > the allocation algorithm requires IPIs when all the ASIDs have been
+> > > used.  The IPIs require interrupts enabled during context switch for
+> > > deadlock avoidance.
+> > > 
+> > > The RT patch mm-protect-activate-switch-mm.patch disables irqs around
+> > > activate_mm() and switch_mm(), which are the portion of the ARMv6
+> > > context switch that require interrupts enabled.
+> > > 
+> > > The solution for the ARMv6 processors could be to _not_ disable irqs.
+> > > A more conservative solution is to provide the same environment that
+> > > the scheduler provides, that is preempt_disable().  This is more
+> > > resilient for possible future changes to the ARM context switch code
+> > > that is not aware of the RT patches.
+> > > 
+> > > This patch will conflict slightly with Catalin's patch set to remove
+> > > __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
+> > > 
+> > >    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
+> > > 
+> > > When Catalin's patch set is accepted, this RT patch will need to reverse
+> > > the change in patch 6 to arch/arm/include/asm/system.h:
+> > 
+> > 
+> > We could just merge Catalin's stuff in -rt to give it a test ride and
+> > see if anything horrible happens.. :-)
+> 
+> Russell agreed for me to push this to -next (in case -rt uses that, not
+> sure) to get a bit more exposure. Otherwise testing the patches in -rt
+> would really help spotting bugs.
+> 
+> But we need to sort out the dangling switch_mm() calls (without a
+> corresponding post-switch hook call) that I mentioned in my reply to
+> Frank.
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+And that's what I meant (running some tests on a Versatile Express SMP
+system, they seem alright so far):
+
+
+>From 26d87e955f089fd246bee29bb388f22da1297e0c Mon Sep 17 00:00:00 2001
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 16 Dec 2011 11:32:26 +0000
+Subject: [PATCH] sched, mm: Use activate_mm() instead of switch_mm()
+
+The ARM port tries to remove __ARCH_WANT_INTERRUPTS_ON_CTXSW. Since the
+actual pgd switching requires interrupts to be enabled on ARM (for
+latency on ARMv5 and earlier and IPIs on ARMv6+), the solution is to
+defer the pgd switching to a post context switch hook that is run with
+interrupts enabled. There are however two additional direct calls to
+switch_mm() without the additional post-switch hook and ARM would fail
+to set the new pgd.
+
+This patch changes the switch_mm() call with activate_mm() which ensures
+that the required pgd has been set. The activate_mm() function must be
+called with interrupts enabled.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/mips/configs/ls1b_defconfig |   90 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 90 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/configs/ls1b_defconfig
+ kernel/sched.c   |    2 +-
+ mm/mmu_context.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
-new file mode 100644
-index 0000000..42954bc
---- /dev/null
-+++ b/arch/mips/configs/ls1b_defconfig
-@@ -0,0 +1,90 @@
-+CONFIG_MACH_LOONGSON1=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_PREEMPT=y
-+# CONFIG_SECCOMP is not set
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_TINY_RCU=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=16
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_RD_BZIP2=y
-+CONFIG_RD_LZMA=y
-+CONFIG_EXPERT=y
-+CONFIG_KALLSYMS_ALL=y
-+CONFIG_PERF_EVENTS=y
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODVERSIONS=y
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+# CONFIG_SUSPEND is not set
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_SYN_COOKIES=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_DIAG is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_STANDALONE is not set
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_NETDEVICES=y
-+CONFIG_STMMAC_ETH=y
-+CONFIG_STMMAC_DA=y
-+# CONFIG_NETDEV_10000 is not set
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT_MOUSEDEV is not set
-+# CONFIG_INPUT_KEYBOARD is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_SERIO is not set
-+CONFIG_VT_HW_CONSOLE_BINDING=y
-+CONFIG_LEGACY_PTY_COUNT=8
-+# CONFIG_DEVKMEM is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_MFD_SUPPORT is not set
-+# CONFIG_VGA_CONSOLE is not set
-+# CONFIG_HID_SUPPORT is not set
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_LOONGSON1=y
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT2_FS_XATTR=y
-+CONFIG_EXT2_FS_POSIX_ACL=y
-+CONFIG_EXT2_FS_SECURITY=y
-+CONFIG_EXT3_FS=y
-+CONFIG_EXT3_FS_POSIX_ACL=y
-+CONFIG_EXT3_FS_SECURITY=y
-+# CONFIG_DNOTIFY is not set
-+CONFIG_PROC_KCORE=y
-+CONFIG_TMPFS=y
-+CONFIG_TMPFS_POSIX_ACL=y
-+# CONFIG_MISC_FILESYSTEMS is not set
-+# CONFIG_NETWORK_FILESYSTEMS is not set
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+CONFIG_MAGIC_SYSRQ=y
-+# CONFIG_SCHED_DEBUG is not set
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_MEMORY_INIT=y
-+CONFIG_SYSCTL_SYSCALL_CHECK=y
-+# CONFIG_FTRACE is not set
-+# CONFIG_EARLY_PRINTK is not set
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 7b46a39..3976157 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6310,7 +6310,7 @@ void idle_task_exit(void)
+ 	BUG_ON(cpu_online(smp_processor_id()));
+ 
+ 	if (mm != &init_mm)
+-		switch_mm(mm, &init_mm, current);
++		activate_mm(mm, &init_mm);
+ 	mmdrop(mm);
+ }
+ 
+diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+index cf332bc..4e44ac4 100644
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -32,7 +32,7 @@ void use_mm(struct mm_struct *mm)
+ 		tsk->active_mm = mm;
+ 	}
+ 	tsk->mm = mm;
+-	switch_mm(active_mm, mm, tsk);
++	activate_mm(active_mm, mm);
+ 	task_unlock(tsk);
+ 
+ 	if (active_mm != mm)
+
 -- 
-1.7.1
-
+Catalin
