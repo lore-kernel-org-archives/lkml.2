@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab1LPNDo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:03:44 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:39827 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab1LPNDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:03:37 -0500
-Message-ID: <4EEB417B.8000508@parallels.com>
-Date: Fri, 16 Dec 2011 17:02:51 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1759318Ab1LPNHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 08:07:31 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49998 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1LPNHY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 08:07:24 -0500
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <ebiederm@xmission.com>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH v9 1/9] Basic kernel memory functionality for the Memory
- Controller
-References: <1323676029-5890-1-git-send-email-glommer@parallels.com> <1323676029-5890-2-git-send-email-glommer@parallels.com> <20111214170447.GB4856@tiehlicka.suse.cz> <4EE9E81E.2090700@parallels.com> <20111216123233.GF3122@tiehlicka.suse.cz>
-In-Reply-To: <20111216123233.GF3122@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [85.26.155.19]
+In-Reply-To: <201112152053.10535.rjw@sisk.pl>
+References: <1323954769-3918-1-git-send-email-ming.m.lin@intel.com>
+	<1323954769-3918-2-git-send-email-ming.m.lin@intel.com>
+	<201112152053.10535.rjw@sisk.pl>
+Date: Fri, 16 Dec 2011 21:07:23 +0800
+X-Google-Sender-Auth: Vwa_5g2y2AHzaehM4NRGOZMMSTg
+Message-ID: <CAF1ivSYcvw0jpERewg=5+hW2aMrf-QzgASX-_1+GGK66o1Giww@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/4] ahci: port legacy pm interface to struct dev_pm_ops
+From: Lin Ming <ming.m.lin@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 04:32 PM, Michal Hocko wrote:
-> On Thu 15-12-11 16:29:18, Glauber Costa wrote:
->> On 12/14/2011 09:04 PM, Michal Hocko wrote:
->>> [Now with the current patch version, I hope]
->>> On Mon 12-12-11 11:47:01, Glauber Costa wrote:
-> [...]
->>>> @@ -3848,10 +3862,17 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
->>>>   	u64 val;
->>>>
->>>>   	if (!mem_cgroup_is_root(memcg)) {
->>>> +		val = 0;
->>>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>>> +		if (!memcg->kmem_independent_accounting)
->>>> +			val = res_counter_read_u64(&memcg->kmem, RES_USAGE);
->>>> +#endif
->>>>   		if (!swap)
->>>> -			return res_counter_read_u64(&memcg->res, RES_USAGE);
->>>> +			val += res_counter_read_u64(&memcg->res, RES_USAGE);
->>>>   		else
->>>> -			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
->>>> +			val += res_counter_read_u64(&memcg->memsw, RES_USAGE);
->>>> +
->>>> +		return val;
->>>>   	}
->>>
->>> So you report kmem+user but we do not consider kmem during charge so one
->>> can easily end up with usage_in_bytes over limit but no reclaim is going
->>> on. Not good, I would say.
->
-> I find this a problem and one of the reason I do not like !independent
-> accounting.
->
->>>
->>> OK, so to sum it up. The biggest problem I see is the (non)independent
->>> accounting. We simply cannot mix user+kernel limits otherwise we would
->>> see issues (like kernel resource hog would force memcg-oom and innocent
->>> members would die because their rss is much bigger).
->>> It is also not clear to me what should happen when we hit the kmem
->>> limit. I guess it will be kmem cache dependent.
+2011/12/16 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Thursday, December 15, 2011, Lin Ming wrote:
+>> So we can add runtime pm callbacks later.
 >>
->> So right now, tcp is completely independent, since it is not
->> accounted to kmem.
+>> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+>> ---
+>>  drivers/ata/ahci.c |   61 +++++++++++++++++++++++++++++++++++-----------------
+>>  1 files changed, 41 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+>> index cf26222..c745603 100644
+>> --- a/drivers/ata/ahci.c
+>> +++ b/drivers/ata/ahci.c
+>> @@ -84,8 +84,9 @@ static int ahci_vt8251_hardreset(struct ata_link *link, unsigned int *class,
+>>  static int ahci_p5wdh_hardreset(struct ata_link *link, unsigned int *class,
+>>                               unsigned long deadline);
+>>  #ifdef CONFIG_PM
+>> -static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
+>> -static int ahci_pci_device_resume(struct pci_dev *pdev);
+>> +static int ahci_pci_device_suspend(struct device *dev);
+>> +static int ahci_pci_device_hibernate(struct device *dev);
+>> +static int ahci_pci_device_resume(struct device *dev);
+>>  #endif
+>>
+>>  static struct scsi_host_template ahci_sht = {
+>> @@ -400,6 +401,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+>>       { }     /* terminate list */
+>>  };
+>>
+>> +static struct dev_pm_ops ahci_pci_pm_ops = {
+>> +     .suspend                = ahci_pci_device_suspend,
+>> +     .resume                 = ahci_pci_device_resume,
+>> +     .poweroff               = ahci_pci_device_hibernate,
+>> +};
 >
-> So why do we need kmem accounting when tcp (the only user at the moment)
-> doesn't use it?
+> So seem to have forgotten about .restore().  Please define it at least or
+> resume from hibernation will be broken.
 
-Well, a bit historical. I needed a basic placeholder for it, since it 
-tcp is officially kmem. As the time passed, I took most of the stuff out 
-of this patch to leave just the basics I would need for tcp.
-Turns out I ended up focusing on the rest, and some of the stuff was 
-left here.
+Will add it.
 
-At one point I merged tcp data into kmem, but then reverted this 
-behavior. the kmem counter stayed.
-
-I agree deferring the whole behavior would be better.
-
->> In summary, we still never do non-independent accounting. When we
->> start doing it for the other caches, We will have to add a test at
->> charge time as well.
 >
-> So we shouldn't do it as a part of this patchset because the further
-> usage is not clear and I think there will be some real issues with
-> user+kmem accounting (e.g. a proper memcg-oom implementation).
-> Can you just drop this patch?
+> Also, are .freeze() and .thaw() callbacks really unnecessary?
 
-Yes, but the whole set is in the net tree already. (All other patches 
-are tcp-related but this) Would you mind if I'd send a follow up patch 
-removing the kmem files, and leaving just the registration functions and 
-basic documentation? (And sorry for that as well in advance)
+I'm not sure for now.
+Will test hibernation.
 
->> We still need to keep it separate though, in case the independent
->> flag is turned on/off
+Thanks for the comments.
+
+Lin Ming
+
 >
-> I don't mind to have kmem.tcp.* knobs.
->
-
+> Rafael
