@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760323Ab1LPRxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 12:53:55 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:60603 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab1LPRxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 12:53:50 -0500
-Date: Fri, 16 Dec 2011 12:53:44 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20111216175344.GW18252@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S1760337Ab1LPRz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 12:55:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49883 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760268Ab1LPRzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 12:55:20 -0500
+Message-ID: <4EEB85F1.7050903@zytor.com>
+Date: Fri, 16 Dec 2011 09:54:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4EEB85AB.00AE,ss=1,re=0.000,fgs=0
+To: Yinghai Lu <yinghai.lu@oracle.com>
+CC: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com> <4EA09EA2.3030203@zytor.com> <1319149574.13035.6.camel@jshin-Toonie> <4EE9266A.90200@zytor.com> <20111214231425.GA18068@jshin-Toonie> <20111216162004.GC18068@jshin-Toonie> <4EEB8320.4010809@oracle.com>
+In-Reply-To: <4EEB8320.4010809@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On 12/16/2011 09:42 AM, Yinghai Lu wrote:
+>
+> no, you change the meaning max_low_pfn_mapped and max_pfn_mapped for x86_64 at least.
+>
+> before your patch:
+> max_low_pfn_mapped is the mapped pfn beblow 4g.
+> max_pfn_mapped: is mapped pfn.
+>
+> after your patch, those two variables does not mean the memory [0, max_low_pfn_mapped) and [4g<<12, max_pfn_mapped)
+> are really mapped.
+>
 
-This pull request is bigger than I wanted it to be, but Josef has
-commits in here for some long running ENOSPC bugs in btrfs.  This is
-a few weeks of tracing our delalloc reservations from Josef, and then
-fixing up the related bugs.
+And that's exactly the problem.  It is BROKEN -- as in fundamentally 
+dangerous -- for these mappings to exist.  It is because the model is 
+too inflexible.
 
-Outside of Josef's patches we have some assorted fixes.  Arne figured
-out we were orphaning whole snapshots if you unmounted enough times
-while the snapshot was being deleted.
+> so in arch/x86/platform/efi/efi.c
+>
+>                  if (end_pfn<= max_low_pfn_mapped
+>                      || (end_pfn>  (1UL<<  (32 - PAGE_SHIFT))
+>                          &&  end_pfn<= max_pfn_mapped))
+>                          va = __va(md->phys_addr);
+>                  else
+>                          va = efi_ioremap(md->phys_addr, size, md->type);
+>
+>
+> and others will have problem.
+>
+> to solve your problem:
+> 1. unmap the HT range ?
+> 2. or introduce mapped_pfn_range array?
 
-Josef Bacik (6) commits (+212/-117):
-    Btrfs: fix how we do delalloc reservations and how we free reservations on error (+44/-13)
-    Btrfs: fix num_workers_starting bug and other bugs in async thread (+83/-78)
-    Btrfs: only set cache_generation if we setup the block group (+1/-1)
-    Btrfs: deal with enospc from dirtying inodes properly (+80/-22)
-    Btrfs: don't panic if orphan item already exists (+1/-1)
-    Btrfs: fix leaked space in truncate (+3/-2)
+1 is fundamentally a braindead hack that solves one case without solving 
+the overall problem.
 
-Chris Mason (4) commits (+10/-4):
-    Btrfs: fix btrfs_end_bio to deal with write errors to a single mirror (+1/-1)
-    Btrfs: deal with NULL srv_rsv in the delalloc inode reservation code (+2/-2)
-    Btrfs: add a cond_resched() into the worker loop (+1/-1)
-    Btrfs: unplug every once and a while (+6/-0)
+For 2 - why can't we simply make the invariant that E820_RAM is mapped 
+and nothing else, with the sole exceptions being the 1 MiB (fixed MTRR)?
 
-Miao Xie (3) commits (+29/-13):
-    Btrfs: fix wrong i_size when truncating a file to a larger size (+12/-6)
-    Btrfs: fix inaccurate available space on raid0 profile (+13/-6)
-    Btrfs: fix wrong disk space information of the files (+4/-1)
+For things like efi.c we should make sure to have interfaces instead of 
+open-code this kind of stuff.
 
-Casey Schaufler (1) commits (+26/-5):
-    BTRFS: Establish i_ops before calling d_instantiate
+	-hpa
 
-Arne Jansen (1) commits (+32/-0):
-    btrfs: keep orphans for subvolume deletion
-
-Li Zefan (1) commits (+2/-2):
-    Btrfs: fix ctime update of on-disk inode
-
-Total: (16) commits (+309/-140)
-
- fs/btrfs/async-thread.c  |  117 ++++++++++++++----------------
- fs/btrfs/async-thread.h  |    4 +-
- fs/btrfs/ctree.h         |    3 +-
- fs/btrfs/delayed-inode.c |    4 +-
- fs/btrfs/disk-io.c       |   34 ++++++----
- fs/btrfs/extent-tree.c   |   45 ++++++++----
- fs/btrfs/file.c          |    6 ++-
- fs/btrfs/inode.c         |  180 +++++++++++++++++++++++++++++++++++++---------
- fs/btrfs/ioctl.c         |    6 +-
- fs/btrfs/relocation.c    |    2 +
- fs/btrfs/scrub.c         |    8 ++-
- fs/btrfs/super.c         |   32 +++++++--
- fs/btrfs/volumes.c       |    8 ++-
- 13 files changed, 309 insertions(+), 140 deletions(-)
