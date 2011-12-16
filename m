@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760028Ab1LPDVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 22:21:22 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:49546
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751672Ab1LPDVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 22:21:21 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4EEAB90D.3050504@am.sony.com>
-Date: Thu, 15 Dec 2011 19:20:45 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1759997Ab1LPDaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 22:30:13 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33896 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab1LPDaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 22:30:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="86304838"
+Date: Fri, 16 Dec 2011 11:20:07 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Curt Wohlgemuth <curtw@google.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] writeback: show writeback reason with __print_symbolic
+Message-ID: <20111216032007.GA29463@localhost>
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <peterz@infradead.org>, <catalin.marinas@arm.com>
-CC: <rostedt@goodmis.org>
-Subject: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This makes the binary trace understandable by trace-cmd.
 
-ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
-(application specific ID). The number of ASIDs is limited to 256 and
-the allocation algorithm requires IPIs when all the ASIDs have been
-used.  The IPIs require interrupts enabled during context switch for
-deadlock avoidance.
-
-The RT patch mm-protect-activate-switch-mm.patch disables irqs around
-activate_mm() and switch_mm(), which are the portion of the ARMv6
-context switch that require interrupts enabled.
-
-The solution for the ARMv6 processors could be to _not_ disable irqs.
-A more conservative solution is to provide the same environment that
-the scheduler provides, that is preempt_disable().  This is more
-resilient for possible future changes to the ARM context switch code
-that is not aware of the RT patches.
-
-This patch will conflict slightly with Catalin's patch set to remove
-__ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
-
-   http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
-
-When Catalin's patch set is accepted, this RT patch will need to reverse
-the change in patch 6 to arch/arm/include/asm/system.h:
-
-   -#ifndef CONFIG_CPU_HAS_ASID
-   -#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
-   -#endif
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-
+CC: Dave Chinner <david@fromorbit.com>
+CC: Curt Wohlgemuth <curtw@google.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/exec.c        |    8 	8 +	0 -	0 !
- mm/mmu_context.c |    8 	8 +	0 -	0 !
- 2 files changed, 16 insertions(+)
+ fs/fs-writeback.c                |   11 -----------
+ include/trace/events/writeback.h |   15 +++++++++++++--
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-Index: b/fs/exec.c
-===================================================================
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -837,12 +837,20 @@ static int exec_mmap(struct mm_struct *m
- 		}
- 	}
- 	task_lock(tsk);
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+	preempt_disable();
-+#else
- 	local_irq_disable_rt();
-+#endif
- 	active_mm = tsk->active_mm;
- 	tsk->mm = mm;
- 	tsk->active_mm = mm;
- 	activate_mm(active_mm, mm);
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+	preempt_enable();
-+#else
- 	local_irq_enable_rt();
-+#endif
- 	task_unlock(tsk);
- 	arch_pick_mmap_layout(mm);
- 	if (old_mm) {
-Index: b/mm/mmu_context.c
-===================================================================
---- a/mm/mmu_context.c
-+++ b/mm/mmu_context.c
-@@ -26,7 +26,11 @@ void use_mm(struct mm_struct *mm)
- 	struct task_struct *tsk = current;
+--- linux-next.orig/include/trace/events/writeback.h	2011-12-16 10:22:03.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-12-16 10:24:43.000000000 +0800
+@@ -21,6 +21,16 @@
+ 		{I_REFERENCED,		"I_REFERENCED"}		\
+ 	)
  
- 	task_lock(tsk);
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+	preempt_disable();
-+#else
- 	local_irq_disable_rt();
-+#endif
- 	active_mm = tsk->active_mm;
- 	if (active_mm != mm) {
- 		atomic_inc(&mm->mm_count);
-@@ -34,7 +38,11 @@ void use_mm(struct mm_struct *mm)
- 	}
- 	tsk->mm = mm;
- 	switch_mm(active_mm, mm, tsk);
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+	preempt_enable();
-+#else
- 	local_irq_enable_rt();
-+#endif
- 	task_unlock(tsk);
++#define WB_WORK_REASON							\
++		{WB_REASON_BACKGROUND,		"background"},		\
++		{WB_REASON_TRY_TO_FREE_PAGES,	"try_to_free_pages"},	\
++		{WB_REASON_SYNC,		"sync"},		\
++		{WB_REASON_PERIODIC,		"periodic"},		\
++		{WB_REASON_LAPTOP_TIMER,	"laptop_timer"},	\
++		{WB_REASON_FREE_MORE_MEM,	"free_more_memory"},	\
++		{WB_REASON_FS_FREE_SPACE,	"fs_free_space"},	\
++		{WB_REASON_FORKER_THREAD,	"forker_thread"}
++
+ struct wb_writeback_work;
  
- 	if (active_mm != mm)
-
+ DECLARE_EVENT_CLASS(writeback_work_class,
+@@ -55,7 +65,7 @@ DECLARE_EVENT_CLASS(writeback_work_class
+ 		  __entry->for_kupdate,
+ 		  __entry->range_cyclic,
+ 		  __entry->for_background,
+-		  wb_reason_name[__entry->reason]
++		  __print_symbolic(__entry->reason, WB_WORK_REASON)
+ 	)
+ );
+ #define DEFINE_WRITEBACK_WORK_EVENT(name) \
+@@ -184,7 +194,8 @@ TRACE_EVENT(writeback_queue_io,
+ 		__entry->older,	/* older_than_this in jiffies */
+ 		__entry->age,	/* older_than_this in relative milliseconds */
+ 		__entry->moved,
+-		wb_reason_name[__entry->reason])
++		__print_symbolic(__entry->reason, WB_WORK_REASON)
++	)
+ );
+ 
+ TRACE_EVENT(global_dirty_state,
+--- linux-next.orig/fs/fs-writeback.c	2011-12-16 10:24:57.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-12-16 10:25:10.000000000 +0800
+@@ -47,17 +47,6 @@ struct wb_writeback_work {
+ 	struct completion *done;	/* set if the caller waits */
+ };
+ 
+-const char *wb_reason_name[] = {
+-	[WB_REASON_BACKGROUND]		= "background",
+-	[WB_REASON_TRY_TO_FREE_PAGES]	= "try_to_free_pages",
+-	[WB_REASON_SYNC]		= "sync",
+-	[WB_REASON_PERIODIC]		= "periodic",
+-	[WB_REASON_LAPTOP_TIMER]	= "laptop_timer",
+-	[WB_REASON_FREE_MORE_MEM]	= "free_more_memory",
+-	[WB_REASON_FS_FREE_SPACE]	= "fs_free_space",
+-	[WB_REASON_FORKER_THREAD]	= "forker_thread"
+-};
+-
+ /*
+  * Include the creation of the trace points after defining the
+  * wb_writeback_work structure so that the definition remains local to this
