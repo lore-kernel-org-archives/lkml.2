@@ -1,66 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab1LPKE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:04:58 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37772 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295Ab1LPKEv (ORCPT
+	id S1753548Ab1LPKFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:05:10 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35253 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab1LPKFF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:04:51 -0500
-Message-ID: <1324029886.2273.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH v2] net: fix sleeping while atomic problem in sock
- mem_cgroup.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+	Fri, 16 Dec 2011 05:05:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANFwon1YoSLc8BSdf0CKbUY5_jVGcDWeGMMY8AJtRQOhFRUNnQ@mail.gmail.com>
+References: <CANFwon04fJe9z+5wKXp55Kp-SX+FZyAhnNcAH9zi6zBd++GSFg@mail.gmail.com>
+	<CABiHV1ShpvmA0r0wJtepnWyQ2ZT3hXtYFdKMUaZ=axTgC7uR0Q@mail.gmail.com>
+	<CANFwon0eEfaRn_Tbw_+sGeTk+HXVhBMLX0wt7bZ2=az2RFzydA@mail.gmail.com>
+	<CABiHV1QBxvWD_VZa2554+c6u-JL5mzas6RxZtEBz5YiaqUP_Cw@mail.gmail.com>
+	<CANFwon1YoSLc8BSdf0CKbUY5_jVGcDWeGMMY8AJtRQOhFRUNnQ@mail.gmail.com>
+Date: Fri, 16 Dec 2011 19:05:01 +0900
+Message-ID: <CABiHV1T7hFAZNRCdKz8RoXh-2pJjk4nnGX1ZriQncJEXqftmjA@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111111 release (Android
+ support OK)
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Randy Dunlap <rdunlap@xenotime.net>
-Date: Fri, 16 Dec 2011 11:04:46 +0100
-In-Reply-To: <4EEB1508.3080405@parallels.com>
-References: <1324026582-5214-1-git-send-email-glommer@parallels.com>
-	 <1324027869.2273.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <4EEB1508.3080405@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 16 décembre 2011 à 13:53 +0400, Glauber Costa a écrit :
-> On 12/16/2011 01:31 PM, Eric Dumazet wrote:
-> > Le vendredi 16 décembre 2011 à 13:09 +0400, Glauber Costa a écrit :
-> >> Since we can't scan the proto_list to initialize sock cgroups, as it
-> >> holds a rwlock, and we also want to keep the code generic enough to
-> >> avoid calling the initialization functions of protocols directly,
-> >> I propose we keep the interested parties in a separate list. This list
-> >> is protected by a mutex so we can sleep and do the necessary allocations.
-> >>
-> >> Also fixes a reference problem found by Randy Dunlap's randconfig.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: David S. Miller<davem@davemloft.net>
-> >> CC: Eric Dumazet<eric.dumazet@gmail.com>
-> >> CC: Stephen Rothwell<sfr@canb.auug.org.au>
-> >> CC: Randy Dunlap<rdunlap@xenotime.net>
-> >> ---
-> >
-> > Sorry to come late, but why dont we convert proto_list_lock to a mutex ?
-> 
-> I didn't suggest this, as I imagined there could be some performance 
-> implications to be drawn from it that may not be obvious to me.
-> 
-> But if it is okay with you net guys, it is certainly okay with me as well.
+On Wed, Dec 14, 2011 at 10:08 PM, Hui Zhu <teawater@gmail.com> wrote:
+> Hi Geunsik,
+>
+> I just add a new patch gtp_3.0_to_upstream.patch that can patch Linux
+> Kernel from 3.0 to upstream in kgtp trunk.
+I checked changed patch files after syncing svn 853. It's good.
+> I think maybe it can handle your issue.
+Yepp. But, I can help you by spending my valuable time as a hobby when
+I am free.
+>
+> Could you help me try it?
+>
+> Thanks,
+> Hui
+>
+> On Tue, Dec 13, 2011 at 09:36, Geunsik Lim <leemgs1@gmail.com> wrote:
+>> On Mon, Dec 12, 2011 at 11:05 PM, Hui Zhu <teawater@gmail.com> wrote:
+>>> Hi Geunsik,
+>>>
+>>> Thanks for your patch.
+>>> But  Kernel upstream:
+>>> struct perf_event *
+>>> perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+>>>                                 struct task_struct *task,
+>>>                                 perf_overflow_handler_t overflow_handler,
+>>>                                 void *context)
+>>>
+>>> I am sorry that gtp.patch is just for the Kernel upstream (Actually,
+>>> it just for review).
+>>>
+>>> I suggest you use LKM if it is OK for you.
+>> As you mentioned, LKM is normal in my experience.
+>> But, In embedded environment, built-in kernel including KGTP is important
+>> to debugging instantly without any manipulation and  to review according to
+>> volunteers easily.
+>>
+>>>
+>>> If you want include KGTP into your kernel tree or something, maybe I
+>>> can supply a special patch for you.
+>> I think that you can just append exception handling to solve this
+>> issue like belows.
+>> Or, I will suggest for you will keep kgtp-3.1.1.patch  without
+>> kgtp.patch like linux-kernel-rt patch for each kernel version
+>>
+>> ====
+>> diff --git a/lib/gtp.c b/lib/gtp.c
+>> index 9bdf82c..6253811 100644
+>> --- a/lib/gtp.c
+>> +++ b/lib/gtp.c
+>> @@ -4477,10 +4477,17 @@ restart:
+>>                        continue;
+>>
+>>                /* Get event.  */
+>> +#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 1, 0)
+>>                tve->pts->event =
+>>                        perf_event_create_kernel_counter(&(tve->pts->attr),
+>>                                                         tve->pts->cpu,
+>>                                                         NULL, NULL, NULL);
+>> +#else
+>> +               tve->pts->event =
+>> +                       perf_event_create_kernel_counter(&(tve->pts->attr),
+>> +                                                        tve->pts->cpu,
+>> +                                                        NULL, NULL);
+>> +#endif
+>>                if (IS_ERR(tve->pts->event)) {
+>>                        int     ret = PTR_ERR(tve->pts->event);
+>>
+>> ====
+>>
+>>>
+>>> BTW looks I need release an gtp_auto.patch that can patch to most of
+>>> Linux kernel.
+>>>
+>>> Thanks,
+>>> Hui
+>>>
+>>> On Mon, Dec 12, 2011 at 19:13, Geunsik Lim <leemgs1@gmail.com> wrote:
+>>>> On Mon, Nov 14, 2011 at 2:15 PM, Hui Zhu <teawater@gmail.com> wrote:
+>>>>> KGTP is a realtime and lightweight Linux Kernel GDB debugger and tracer.
+>>>>>
+>>>>> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+>>>>> current machine or remote machine can debug and trace Linux through
+>>>>> GDB tracepoint without stopping the Linux Kernel.
+>>>>> And even if the board doesn't have GDB on it and doesn't have
+>>>>> interface for remote debug. It can debug the Linux Kernel using
+>>>>> offline debug.
+>>>>> Now, it supports X86-32, X86-64, MIPS and ARM.
+>>>>>
+>>>>> Now, KGTP 20111111 release.
+>>>>>
+>>>>> The change of this release is:
+>>>>> Add a doc for use KGTP with Android in
+>>>>> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid
+>>>>> post_handler will make kprobes-optimization cannot be used. So make
+>>>>> gtp_kp_post_handler be call only when tpe->step is true.
+>>>>> Make rdtsc_current to x86 special.
+>>>>> Register easy Kprobe handler to speed up it when no tracepoint access
+>>>>> $cooked_clock, $cooked_rdtsc or "pc_pe" tvariable.
+>>>>> Fix a bug of ARM build.
+>>>>> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
+>>>>>
+>>>>> According to the comments of Christoph.  I make a patch for Linux
+>>>>> Kernel and make it looks OK with checkpatch.pl.  The file gtp.patch is
+>>>>> include in the source of KGTP code.
+>>>> Dear Hui Zhu,
+>>>>
+>>>> Recently, I synchronized KGTP kernel source with svn 838 to test
+>>>> built-in kernel
+>>>> after adjusting recent bug-fix. I still had a compilation error.
+>>>> Please, adjust the below patch content to support  X86/ARM
+>>>> architecture normally.
+>>>>
+>>>> ==========
+>>>> From 39d58cc7dab8df5e57fa106e8e7f00e562b45212 Mon Sep 17 00:00:00 2001
+>>>> From: Geunsik Lim <geunsik.lim@samsung.com>
+>>>> Date: Mon, 10 Dec 2011 18:08:03 +0900
+>>>> Subject: [PATCH] Modify perf related func interface.
+>>>>
+>>>> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>> ---
+>>>>  lib/gtp.c |    2 +-
+>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/lib/gtp.c b/lib/gtp.c
+>>>> index 9bdf82c..9a2670e 100644
+>>>> --- a/lib/gtp.c
+>>>> +++ b/lib/gtp.c
+>>>> @@ -4480,7 +4480,7 @@ restart:
+>>>>                tve->pts->event =
+>>>>                        perf_event_create_kernel_counter(&(tve->pts->attr),
+>>>>                                                         tve->pts->cpu,
+>>>> -                                                        NULL, NULL, NULL);
+>>>> +                                                        NULL, NULL);
+>>>>                if (IS_ERR(tve->pts->event)) {
+>>>>                        int     ret = PTR_ERR(tve->pts->event);
+>>>>
+>>>> --
+>>>> 1.7.3.4
+>>>> ==========
+>>>>
+>>>> Thank you for your contribution for embedded kernel debugging
+>>>>
+>>>>>
+>>>>> Thanks,
+>>>>> Hui
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Best regards,
+>>>> Geunsik Lim ( Samsung Electronics )
+>>>> Blog : http://blog.naver.com/invain/
+>>>> Homepage: http://leemgs.fedorapeople.org
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> Best regards,
+>> Geunsik Lim ( Samsung Electronics )
+>> Blog : http://blog.naver.com/invain/
+>> Homepage: http://leemgs.fedorapeople.org
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-This 'lock' is not performance sensitive, its very seldom taken.
-
-If we really wanted to be fast, it would not be a rwlock anymore ;)
-
-"cat /proc/net/protocols" could eventually use RCU locking if we want
-parallelism. (I dont think its needed)
 
 
-
+-- 
+Best regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+Homepage: http://leemgs.fedorapeople.org
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
