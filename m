@@ -1,67 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab1LPJCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 04:02:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35845 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760216Ab1LPJCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 04:02:30 -0500
-Message-ID: <4EEB0923.3000707@gmail.com>
-Date: Fri, 16 Dec 2011 10:02:27 +0100
-From: Julian Sikorski <belegdol@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: bug report: irq 19: nobody cared (try booting with the "irqpoll"
- option)
-References: <4EEA0485.4050105@gmail.com> <4EEA0521.2030502@gmail.com> <4EEA18A8.5030603@ladisch.de> <4EEA1A81.6030807@gmail.com> <4EEA331F.1060201@ladisch.de> <4EEA34D7.9030109@gmail.com> <4EEB0364.1060101@ladisch.de>
-In-Reply-To: <4EEB0364.1060101@ladisch.de>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760376Ab1LPJK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 04:10:58 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:8481 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760285Ab1LPJKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 04:10:48 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v2] net: fix sleeping while atomic problem in sock mem_cgroup.
+Date: Fri, 16 Dec 2011 13:09:42 +0400
+Message-Id: <1324026582-5214-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 16.12.2011 09:37, Clemens Ladisch pisze:
-> Julian Sikorski wrote:
->> W dniu 15.12.2011 18:49, Clemens Ladisch pisze:
->>> Was it the JMB38x that used a wrong interface number in its PCIe
->>> transactions, which would make the I/O-MMU map it to the wrong device?
->>> [...]
->>> add the kernel parameter intel_iommu=off to the boot loader.
->>
->> This did not work
-> 
->> 00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2
->>         Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
->> 00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 4
->>         Bus: primary=00, secondary=05, subordinate=05, sec-latency=0
->> ...
->> 03:00.0 Ethernet controller: JMicron Technology Corp. JMC250 PCI Express Gigabit Ethernet Controller (rev 05)
->> 03:00.1 System peripheral: JMicron Technology Corp. SD/MMC Host Controller (rev 90)
->> 03:00.2 SD Host controller: JMicron Technology Corp. Standard SD Host Controller (rev 90) (prog-if 01)
->> 03:00.3 System peripheral: JMicron Technology Corp. MS Host Controller (rev 90)
->> 05:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host Controller (prog-if 10 [OHCI])
-> 
-> Sorry, I didn't notice before that your FireWire controller is
-> a physically separate chip on another PCIe port, so whatever is
-> happening is unlikely to be related with another device.
-> 
-> It appears that the JMB381 is not correctly reinitialized when doing
-> a suspend/resume.  However, the driver already does a reset of the chip,
-> so it isn't clear what else could be done.  This might be a problem
-> with the PCI initialization as done by the BIOS; try a BIOS update, if
-> possible.
-> 
-> 
-> Regards,
-> Clemens
+Since we can't scan the proto_list to initialize sock cgroups, as it
+holds a rwlock, and we also want to keep the code generic enough to
+avoid calling the initialization functions of protocols directly,
+I propose we keep the interested parties in a separate list. This list
+is protected by a mutex so we can sleep and do the necessary allocations.
 
-I am already running the latest BIOS.
-Is there a quirk list somewhere which would force irqpoll for certain
-machines/drivers?
+Also fixes a reference problem found by Randy Dunlap's randconfig.
 
-Julian
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Randy Dunlap <rdunlap@xenotime.net>
+---
+ include/linux/memcontrol.h   |   11 ++++++-
+ include/net/sock.h           |    5 +---
+ include/net/tcp_memcontrol.h |    2 +
+ mm/memcontrol.c              |   58 ++++++++++++++++++++++++++++++++++++++++++
+ net/core/sock.c              |   42 +++--------------------------
+ 5 files changed, 75 insertions(+), 43 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 9b296ea..e61fabb 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -390,11 +390,13 @@ enum {
+ 	OVER_LIMIT,
+ };
+ 
+-#ifdef CONFIG_INET
++struct proto;
+ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ void sock_update_memcg(struct sock *sk);
+ void sock_release_memcg(struct sock *sk);
++void register_sock_cgroup(struct proto *prot);
++void unregister_sock_cgroup(struct proto *prot);
+ #else
+ static inline void sock_update_memcg(struct sock *sk)
+ {
+@@ -402,7 +404,12 @@ static inline void sock_update_memcg(struct sock *sk)
+ static inline void sock_release_memcg(struct sock *sk)
+ {
+ }
++static inline void register_sock_cgroup(struct proto *prot)
++{
++}
++static inline void unregister_sock_cgroup(struct proto *prot)
++{
++}
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+-#endif /* CONFIG_INET */
+ #endif /* _LINUX_MEMCONTROL_H */
+ 
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 6fe0dae..f8237a3 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -64,10 +64,6 @@
+ #include <net/dst.h>
+ #include <net/checksum.h>
+ 
+-struct cgroup;
+-struct cgroup_subsys;
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ /*
+  * This structure really needs to be cleaned up.
+  * Most of it is for TCP, and not used by any of
+@@ -858,6 +854,7 @@ struct proto {
+ 	void			(*destroy_cgroup)(struct cgroup *cgrp,
+ 						  struct cgroup_subsys *ss);
+ 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
++	struct list_head	cgroup_node;
+ #endif
+ };
+ 
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+index 3512082..5aa7c4b 100644
+--- a/include/net/tcp_memcontrol.h
++++ b/include/net/tcp_memcontrol.h
+@@ -11,6 +11,8 @@ struct tcp_memcontrol {
+ 	int tcp_memory_pressure;
+ };
+ 
++struct cgroup;
++struct cgroup_subsys;
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7266202..1098afe 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4742,6 +4742,64 @@ static struct cftype kmem_cgroup_files[] = {
+ 	},
+ };
+ 
++static DEFINE_MUTEX(cgroup_proto_list_lock);
++static LIST_HEAD(cgroup_proto_list);
++
++static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++	int ret = 0;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
++		if (proto->init_cgroup) {
++			ret = proto->init_cgroup(cgrp, ss);
++			if (ret)
++				goto out;
++		}
++	}
++
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++out:
++	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++}
++
++static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void register_sock_cgroup(struct proto *prot)
++{
++	if (!prot->proto_cgroup)
++		return;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_add(&prot->cgroup_node, &cgroup_proto_list);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void unregister_sock_cgroup(struct proto *prot)
++{
++	if (!prot->proto_cgroup)
++		return;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_del(&prot->cgroup_node);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ {
+ 	int ret = 0;
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 5a6a906..5a56a55 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -139,43 +139,6 @@
+ static DEFINE_RWLOCK(proto_list_lock);
+ static LIST_HEAD(proto_list);
+ 
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-	int ret = 0;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry(proto, &proto_list, node) {
+-		if (proto->init_cgroup) {
+-			ret = proto->init_cgroup(cgrp, ss);
+-			if (ret)
+-				goto out;
+-		}
+-	}
+-
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-out:
+-	list_for_each_entry_continue_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-}
+-
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-}
+-#endif
+-
+ /*
+  * Each address family might have different locking rules, so we have
+  * one slock key per address family:
+@@ -2483,6 +2446,9 @@ int proto_register(struct proto *prot, int alloc_slab)
+ 	list_add(&prot->node, &proto_list);
+ 	assign_proto_idx(prot);
+ 	write_unlock(&proto_list_lock);
++
++	register_sock_cgroup(prot);
++
+ 	return 0;
+ 
+ out_free_timewait_sock_slab_name:
+@@ -2510,6 +2476,8 @@ void proto_unregister(struct proto *prot)
+ 	list_del(&prot->node);
+ 	write_unlock(&proto_list_lock);
+ 
++	unregister_sock_cgroup(prot);
++
+ 	if (prot->slab != NULL) {
+ 		kmem_cache_destroy(prot->slab);
+ 		prot->slab = NULL;
+-- 
+1.7.6.4
+
