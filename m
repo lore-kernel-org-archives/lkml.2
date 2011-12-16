@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964868Ab1LPUv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:51:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48968 "EHLO mx2.suse.de"
+	id S964969Ab1LPUwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:52:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48984 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964879Ab1LPUvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:51:46 -0500
+	id S964939Ab1LPUvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:51:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:43 2011
-Message-Id: <20111216205043.297170982@clark.kroah.org>
+Message-Id: <20111216205043.465306786@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:44 -0800
+Date: Fri, 16 Dec 2011 12:49:46 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg KH <greg@kroah.com>
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Phillip Lougher <plougher@redhat.com>,
-        Jeff Mahoney <jeffm@suse.com>, Christoph Hellwig <hch@lst.de>,
-        =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <jmm@inutil.org>
-Subject: [11/16] hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
+        alan@lxorguk.ukuu.org.uk,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        John Lumby <johnlumby@hotmail.com>,
+        Maynard Johnson <maynardj@us.ibm.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [13/16] [PATCH 2/3] oprofile, x86: Fix nmi-unsafe callgraph support
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +29,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phillip Lougher <plougher@redhat.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit 434a964daa14b9db083ce20404a4a2add54d037a upstream.
+commit a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e upstream.
 
-Clement Lecigne reports a filesystem which causes a kernel oops in
-hfs_find_init() trying to dereference sb->ext_tree which is NULL.
+Backport for stable kernel v2.6.32.y to v2.6.36.y.
 
-This proves to be because the filesystem has a corrupted MDB extent
-record, where the extents file does not fit into the first three extents
-in the file record (the first blocks).
+Current oprofile's x86 callgraph support may trigger page faults
+throwing the BUG_ON(in_nmi()) message below. This patch fixes this by
+using the same nmi-safe copy-from-user code as in perf.
 
-In hfs_get_block() when looking up the blocks for the extent file
-(HFS_EXT_CNID), it fails the first blocks special case, and falls
-through to the extent code (which ultimately calls hfs_find_init())
-which is in the process of being initialised.
+------------[ cut here ]------------
+kernel BUG at .../arch/x86/kernel/traps.c:436!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:0a.0/0000:07:00.0/0000:08:04.0/net/eth0/broadcast
+CPU 5
+Modules linked in:
 
-Hfs avoids this scenario by always having the extents b-tree fitting
-into the first blocks (the extents B-tree can't have overflow extents).
+Pid: 8611, comm: opcontrol Not tainted 2.6.39-00007-gfe47ae7 #1 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff813e8e35>]  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+RSP: 0000:ffff88042fd47f28  EFLAGS: 00010002
+RAX: ffff88042c0a7fd8 RBX: 0000000000000001 RCX: 00000000c0000101
+RDX: 00000000ffff8804 RSI: ffffffffffffffff RDI: ffff88042fd47f58
+RBP: ffff88042fd47f48 R08: 0000000000000004 R09: 0000000000001484
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff88042fd47f58
+R13: 0000000000000000 R14: ffff88042fd47d98 R15: 0000000000000020
+FS:  00007fca25e56700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000074 CR3: 000000042d28b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process opcontrol (pid: 8611, threadinfo ffff88042c0a6000, task ffff88042c532310)
+Stack:
+ 0000000000000000 0000000000000001 ffff88042c0a7fd8 0000000000000000
+ ffff88042fd47de8 ffffffff813e897a 0000000000000020 ffff88042fd47d98
+ 0000000000000000 ffff88042c0a7fd8 ffff88042fd47de8 0000000000000074
+Call Trace:
+ <NMI>
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
+Code: ff 59 5b 41 5c 41 5d c9 c3 55 65 48 8b 04 25 88 b5 00 00 48 89 e5 41 55 41 54 49 89 fc 53 48 83 ec 08 f6 80 47 e0 ff ff 04 74 04 <0f> 0b eb fe 81 80 44 e0 ff ff 00 00 01 04 65 ff 04 25 c4 0f 01
+RIP  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+ RSP <ffff88042fd47f28>
+---[ end trace ed6752185092104b ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 8611, comm: opcontrol Tainted: G      D     2.6.39-00007-gfe47ae7 #1
+Call Trace:
+ <NMI>  [<ffffffff813e5e0a>] panic+0x8c/0x188
+ [<ffffffff813e915c>] oops_end+0x81/0x8e
+ [<ffffffff8100403d>] die+0x55/0x5e
+ [<ffffffff813e8c45>] do_trap+0x11c/0x12b
+ [<ffffffff810023c8>] do_invalid_op+0x91/0x9a
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff8131e6fa>] ? oprofile_add_sample+0x83/0x95
+ [<ffffffff81321670>] ? op_amd_check_ctrs+0x4f/0x2cf
+ [<ffffffff813ee4d5>] invalid_op+0x15/0x20
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff813e8e7a>] ? do_nmi+0x67/0x1ee
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
 
-The fix is to check at mount time that the B-tree fits into first
-blocks, i.e.  fail if HFS_I(inode)->alloc_blocks >=
-HFS_I(inode)->first_blocks
-
-Note, the existing commit 47f365eb57573 ("hfs: fix oops on mount with
-corrupted btree extent records") becomes subsumed into this as a special
-case, but only for the extents B-tree (HFS_EXT_CNID), it is perfectly
-acceptable for the catalog B-Tree file to grow beyond three extents,
-with the remaining extent descriptors in the extents overfow.
-
-This fixes CVE-2011-2203
-
-Reported-by: Clement LECIGNE <clement.lecigne@netasq.com>
-Signed-off-by: Phillip Lougher <plougher@redhat.com>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Moritz Mühlenhoff <jmm@inutil.org>
+Cc: John Lumby <johnlumby@hotmail.com>
+Cc: Maynard Johnson <maynardj@us.ibm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/hfs/btree.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ arch/x86/oprofile/backtrace.c |   46 ++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 42 insertions(+), 4 deletions(-)
 
---- a/fs/hfs/btree.c
-+++ b/fs/hfs/btree.c
-@@ -45,11 +45,26 @@ struct hfs_btree *hfs_btree_open(struct
- 	case HFS_EXT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
- 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
-+		if (HFS_I(tree->inode)->alloc_blocks >
-+					HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -11,6 +11,8 @@
+ #include <linux/oprofile.h>
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/highmem.h>
 +
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	case HFS_CAT_CNID:
- 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
- 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
-+
-+		if (!HFS_I(tree->inode)->first_blocks) {
-+			printk(KERN_ERR "hfs: invalid btree extent records "
-+								"(0 size).\n");
-+			unlock_new_inode(tree->inode);
-+			goto free_inode;
-+		}
-+
- 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
- 		break;
- 	default:
-@@ -58,11 +73,6 @@ struct hfs_btree *hfs_btree_open(struct
- 	}
- 	unlock_new_inode(tree->inode);
+ #include <asm/ptrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/stacktrace.h>
+@@ -47,6 +49,42 @@ static struct stacktrace_ops backtrace_o
+ 	.address = backtrace_address,
+ };
  
--	if (!HFS_I(tree->inode)->first_blocks) {
--		printk(KERN_ERR "hfs: invalid btree extent records (0 size).\n");
--		goto free_inode;
--	}
--
- 	mapping = tree->inode->i_mapping;
- 	page = read_mapping_page(mapping, 0, NULL);
- 	if (IS_ERR(page))
++/* from arch/x86/kernel/cpu/perf_event.c: */
++
++/*
++ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
++ */
++static unsigned long
++copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++{
++	unsigned long offset, addr = (unsigned long)from;
++	unsigned long size, len = 0;
++	struct page *page;
++	void *map;
++	int ret;
++
++	do {
++		ret = __get_user_pages_fast(addr, 1, 0, &page);
++		if (!ret)
++			break;
++
++		offset = addr & (PAGE_SIZE - 1);
++		size = min(PAGE_SIZE - offset, n - len);
++
++		map = kmap_atomic(page, KM_USER0);
++		memcpy(to, map+offset, size);
++		kunmap_atomic(map, KM_USER0);
++		put_page(page);
++
++		len  += size;
++		to   += size;
++		addr += size;
++
++	} while (len < n);
++
++	return len;
++}
++
+ struct frame_head {
+ 	struct frame_head *bp;
+ 	unsigned long ret;
+@@ -54,12 +92,12 @@ struct frame_head {
+ 
+ static struct frame_head *dump_user_backtrace(struct frame_head *head)
+ {
++	/* Also check accessibility of one struct frame_head beyond: */
+ 	struct frame_head bufhead[2];
++	unsigned long bytes;
+ 
+-	/* Also check accessibility of one struct frame_head beyond */
+-	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
+-		return NULL;
+-	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
++	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	if (bytes != sizeof(bufhead))
+ 		return NULL;
+ 
+ 	oprofile_add_trace(bufhead[0].ret);
 
 
