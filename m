@@ -1,179 +1,483 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760690Ab1LPTvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:51:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45080 "EHLO mx2.suse.de"
+	id S1030209Ab1LPUCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:02:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45207 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932597Ab1LPTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:50:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:02 2011
-Message-Id: <20111216194602.240951074@clark.kroah.org>
+	id S1760645Ab1LPTvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:51:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:09 2011
+Message-Id: <20111216194209.195978695@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:47 -0800
+Date: Fri, 16 Dec 2011 11:40:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [50/53] ibft: Fix finding IBFT ACPI table on UEFI
-In-Reply-To: <20111216194613.GA18395@kroah.com>
+        alan@lxorguk.ukuu.org.uk, John Johansen <john.johansen@canonical.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [15/45] fix apparmor dereferencing potentially freed dentry, sanitize __d_path() API
+In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yinghai Lu <yinghai.lu@oracle.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 935a9fee51c945b8942be2d7b4bae069167b4886 upstream.
+commit 02125a826459a6ad142f8d91c5b6357562f96615 upstream.
 
-Found one system with UEFI/iBFT, kernel does not detect the iBFT during
-iscsi_ibft module loading.
+__d_path() API is asking for trouble and in case of apparmor d_namespace_path()
+getting just that.  The root cause is that when __d_path() misses the root
+it had been told to look for, it stores the location of the most remote ancestor
+in *root.  Without grabbing references.  Sure, at the moment of call it had
+been pinned down by what we have in *path.  And if we raced with umount -l, we
+could have very well stopped at vfsmount/dentry that got freed as soon as
+prepend_path() dropped vfsmount_lock.
 
-Root cause: on x86 (UEFI), we are calling of find_ibft_region() much earlier
-- specifically in setup_arch() before ACPI is enabled.
+It is safe to compare these pointers with pre-existing (and known to be still
+alive) vfsmount and dentry, as long as all we are asking is "is it the same
+address?".  Dereferencing is not safe and apparmor ended up stepping into
+that.  d_namespace_path() really wants to examine the place where we stopped,
+even if it's not connected to our namespace.  As the result, it looked
+at ->d_sb->s_magic of a dentry that might've been already freed by that point.
+All other callers had been careful enough to avoid that, but it's really
+a bad interface - it invites that kind of trouble.
 
-Try to split acpi checking code out and call that later
+The fix is fairly straightforward, even though it's bigger than I'd like:
+	* prepend_path() root argument becomes const.
+	* __d_path() is never called with NULL/NULL root.  It was a kludge
+to start with.  Instead, we have an explicit function - d_absolute_root().
+Same as __d_path(), except that it doesn't get root passed and stops where
+it stops.  apparmor and tomoyo are using it.
+	* __d_path() returns NULL on path outside of root.  The main
+caller is show_mountinfo() and that's precisely what we pass root for - to
+skip those outside chroot jail.  Those who don't want that can (and do)
+use d_path().
+	* __d_path() root argument becomes const.  Everyone agrees, I hope.
+	* apparmor does *NOT* try to use __d_path() or any of its variants
+when it sees that path->mnt is an internal vfsmount.  In that case it's
+definitely not mounted anywhere and dentry_path() is exactly what we want
+there.  Handling of sysctl()-triggered weirdness is moved to that place.
+	* if apparmor is asked to do pathname relative to chroot jail
+and __d_path() tells it we it's not in that jail, the sucker just calls
+d_absolute_path() instead.  That's the other remaining caller of __d_path(),
+BTW.
+        * seq_path_root() does _NOT_ return -ENAMETOOLONG (it's stupid anyway -
+the normal seq_file logics will take care of growing the buffer and redoing
+the call of ->show() just fine).  However, if it gets path not reachable
+from root, it returns SEQ_SKIP.  The only caller adjusted (i.e. stopped
+ignoring the return value as it used to do).
 
-At that time ACPI iBFT already get permanent mapped with ioremap.
-So isa_virt_to_bus() will get wrong phys from right virt address.
-We could just skip that phys address printing.
-
-For legacy one, print the found address early.
-
--v2: update comments and description according to Konrad.
--v3: fix problem about module use case that is found by Konrad.
--v4: use acpi_get_table() instead of acpi_table_parse() to handle module use case that is found by Konrad again..
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Reviewed-by: John Johansen <john.johansen@canonical.com>
+ACKed-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firmware/iscsi_ibft.c      |   42 +++++++++++++++++++++++++++++++++++--
- drivers/firmware/iscsi_ibft_find.c |   26 +---------------------
- 2 files changed, 42 insertions(+), 26 deletions(-)
+ fs/dcache.c                |   71 +++++++++++++++++++++++++++------------------
+ fs/namespace.c             |   20 ++++++------
+ fs/seq_file.c              |    6 +--
+ include/linux/dcache.h     |    3 +
+ include/linux/fs.h         |    1 
+ security/apparmor/path.c   |   65 ++++++++++++++++++++++++-----------------
+ security/tomoyo/realpath.c |    9 +++--
+ 7 files changed, 105 insertions(+), 70 deletions(-)
 
---- a/drivers/firmware/iscsi_ibft.c
-+++ b/drivers/firmware/iscsi_ibft.c
-@@ -746,6 +746,37 @@ static void __exit ibft_exit(void)
- 	ibft_cleanup();
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2487,16 +2487,14 @@ static int prepend_name(char **buffer, i
+ /**
+  * prepend_path - Prepend path string to a buffer
+  * @path: the dentry/vfsmount to report
+- * @root: root vfsmnt/dentry (may be modified by this function)
++ * @root: root vfsmnt/dentry
+  * @buffer: pointer to the end of the buffer
+  * @buflen: pointer to buffer length
+  *
+  * Caller holds the rename_lock.
+- *
+- * If path is not reachable from the supplied root, then the value of
+- * root is changed (without modifying refcounts).
+  */
+-static int prepend_path(const struct path *path, struct path *root,
++static int prepend_path(const struct path *path,
++			const struct path *root,
+ 			char **buffer, int *buflen)
+ {
+ 	struct dentry *dentry = path->dentry;
+@@ -2531,10 +2529,10 @@ static int prepend_path(const struct pat
+ 		dentry = parent;
+ 	}
+ 
+-out:
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
++out:
+ 	br_read_unlock(vfsmount_lock);
+ 	return error;
+ 
+@@ -2548,15 +2546,17 @@ global_root:
+ 		WARN(1, "Root dentry has weird name <%.*s>\n",
+ 		     (int) dentry->d_name.len, dentry->d_name.name);
+ 	}
+-	root->mnt = vfsmnt;
+-	root->dentry = dentry;
++	if (!slash)
++		error = prepend(buffer, buflen, "/", 1);
++	if (!error)
++		error = vfsmnt->mnt_ns ? 1 : 2;
+ 	goto out;
  }
  
-+#ifdef CONFIG_ACPI
-+static const struct {
-+	char *sign;
-+} ibft_signs[] = {
-+	/*
-+	 * One spec says "IBFT", the other says "iBFT". We have to check
-+	 * for both.
-+	 */
-+	{ ACPI_SIG_IBFT },
-+	{ "iBFT" },
-+};
-+
-+static void __init acpi_find_ibft_region(void)
-+{
-+	int i;
-+	struct acpi_table_header *table = NULL;
-+
-+	if (acpi_disabled)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++) {
-+		acpi_get_table(ibft_signs[i].sign, 0, &table);
-+		ibft_addr = (struct acpi_table_ibft *)table;
-+	}
+ /**
+  * __d_path - return the path of a dentry
+  * @path: the dentry/vfsmount to report
+- * @root: root vfsmnt/dentry (may be modified by this function)
++ * @root: root vfsmnt/dentry
+  * @buf: buffer to return value in
+  * @buflen: buffer length
+  *
+@@ -2567,10 +2567,10 @@ global_root:
+  *
+  * "buflen" should be positive.
+  *
+- * If path is not reachable from the supplied root, then the value of
+- * root is changed (without modifying refcounts).
++ * If the path is not reachable from the supplied root, return %NULL.
+  */
+-char *__d_path(const struct path *path, struct path *root,
++char *__d_path(const struct path *path,
++	       const struct path *root,
+ 	       char *buf, int buflen)
+ {
+ 	char *res = buf + buflen;
+@@ -2581,7 +2581,28 @@ char *__d_path(const struct path *path,
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
+ 
+-	if (error)
++	if (error < 0)
++		return ERR_PTR(error);
++	if (error > 0)
++		return NULL;
++	return res;
 +}
-+#else
-+static void __init acpi_find_ibft_region(void)
-+{
-+}
-+#endif
 +
++char *d_absolute_path(const struct path *path,
++	       char *buf, int buflen)
++{
++	struct path root = {};
++	char *res = buf + buflen;
++	int error;
++
++	prepend(&res, &buflen, "\0", 1);
++	write_seqlock(&rename_lock);
++	error = prepend_path(path, &root, &res, &buflen);
++	write_sequnlock(&rename_lock);
++
++	if (error > 1)
++		error = -EINVAL;
++	if (error < 0)
+ 		return ERR_PTR(error);
+ 	return res;
+ }
+@@ -2589,8 +2610,9 @@ char *__d_path(const struct path *path,
  /*
-  * ibft_init() - creates sysfs tree entries for the iBFT data.
+  * same as __d_path but appends "(deleted)" for unlinked files.
   */
-@@ -753,9 +784,16 @@ static int __init ibft_init(void)
+-static int path_with_deleted(const struct path *path, struct path *root,
+-				 char **buf, int *buflen)
++static int path_with_deleted(const struct path *path,
++			     const struct path *root,
++			     char **buf, int *buflen)
  {
- 	int rc = 0;
+ 	prepend(buf, buflen, "\0", 1);
+ 	if (d_unlinked(path->dentry)) {
+@@ -2627,7 +2649,6 @@ char *d_path(const struct path *path, ch
+ {
+ 	char *res = buf + buflen;
+ 	struct path root;
+-	struct path tmp;
+ 	int error;
  
-+	/*
-+	   As on UEFI systems the setup_arch()/find_ibft_region()
-+	   is called before ACPI tables are parsed and it only does
-+	   legacy finding.
-+	*/
-+	if (!ibft_addr)
-+		acpi_find_ibft_region();
+ 	/*
+@@ -2642,9 +2663,8 @@ char *d_path(const struct path *path, ch
+ 
+ 	get_fs_root(current->fs, &root);
+ 	write_seqlock(&rename_lock);
+-	tmp = root;
+-	error = path_with_deleted(path, &tmp, &res, &buflen);
+-	if (error)
++	error = path_with_deleted(path, &root, &res, &buflen);
++	if (error < 0)
+ 		res = ERR_PTR(error);
+ 	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+@@ -2665,7 +2685,6 @@ char *d_path_with_unreachable(const stru
+ {
+ 	char *res = buf + buflen;
+ 	struct path root;
+-	struct path tmp;
+ 	int error;
+ 
+ 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+@@ -2673,9 +2692,8 @@ char *d_path_with_unreachable(const stru
+ 
+ 	get_fs_root(current->fs, &root);
+ 	write_seqlock(&rename_lock);
+-	tmp = root;
+-	error = path_with_deleted(path, &tmp, &res, &buflen);
+-	if (!error && !path_equal(&tmp, &root))
++	error = path_with_deleted(path, &root, &res, &buflen);
++	if (error > 0)
+ 		error = prepend_unreachable(&res, &buflen);
+ 	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+@@ -2806,19 +2824,18 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+-		struct path tmp = root;
+ 		char *cwd = page + PAGE_SIZE;
+ 		int buflen = PAGE_SIZE;
+ 
+ 		prepend(&cwd, &buflen, "\0", 1);
+-		error = prepend_path(&pwd, &tmp, &cwd, &buflen);
++		error = prepend_path(&pwd, &root, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
+ 
+-		if (error)
++		if (error < 0)
+ 			goto out;
+ 
+ 		/* Unreachable from current root */
+-		if (!path_equal(&tmp, &root)) {
++		if (error > 0) {
+ 			error = prepend_unreachable(&cwd, &buflen);
+ 			if (error)
+ 				goto out;
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1048,15 +1048,12 @@ static int show_mountinfo(struct seq_fil
+ 	if (err)
+ 		goto out;
+ 	seq_putc(m, ' ');
+-	seq_path_root(m, &mnt_path, &root, " \t\n\\");
+-	if (root.mnt != p->root.mnt || root.dentry != p->root.dentry) {
+-		/*
+-		 * Mountpoint is outside root, discard that one.  Ugly,
+-		 * but less so than trying to do that in iterator in a
+-		 * race-free way (due to renames).
+-		 */
+-		return SEQ_SKIP;
+-	}
 +
- 	if (ibft_addr) {
--		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
--		       (u64)isa_virt_to_bus(ibft_addr));
-+		pr_info("iBFT detected.\n");
++	/* mountpoints outside of chroot jail will give SEQ_SKIP on this */
++	err = seq_path_root(m, &mnt_path, &root, " \t\n\\");
++	if (err)
++		goto out;
++
+ 	seq_puts(m, mnt->mnt_flags & MNT_READONLY ? " ro" : " rw");
+ 	show_mnt_opts(m, mnt);
  
- 		rc = ibft_check_device();
- 		if (rc)
---- a/drivers/firmware/iscsi_ibft_find.c
-+++ b/drivers/firmware/iscsi_ibft_find.c
-@@ -45,13 +45,6 @@ EXPORT_SYMBOL_GPL(ibft_addr);
- static const struct {
- 	char *sign;
- } ibft_signs[] = {
--#ifdef CONFIG_ACPI
--	/*
--	 * One spec says "IBFT", the other says "iBFT". We have to check
--	 * for both.
--	 */
--	{ ACPI_SIG_IBFT },
--#endif
- 	{ "iBFT" },
- 	{ "BIFT" },	/* Broadcom iSCSI Offload */
- };
-@@ -62,14 +55,6 @@ static const struct {
- #define VGA_MEM 0xA0000 /* VGA buffer */
- #define VGA_SIZE 0x20000 /* 128kB */
+@@ -2725,3 +2722,8 @@ struct vfsmount *kern_mount_data(struct
+ 	return vfs_kern_mount(type, MS_KERNMOUNT, type->name, data);
+ }
+ EXPORT_SYMBOL_GPL(kern_mount_data);
++
++bool our_mnt(struct vfsmount *mnt)
++{
++	return check_mnt(mnt);
++}
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -449,8 +449,6 @@ EXPORT_SYMBOL(seq_path);
  
--#ifdef CONFIG_ACPI
--static int __init acpi_find_ibft(struct acpi_table_header *header)
--{
--	ibft_addr = (struct acpi_table_ibft *)header;
--	return 0;
--}
--#endif /* CONFIG_ACPI */
--
- static int __init find_ibft_in_mem(void)
- {
- 	unsigned long pos;
-@@ -94,6 +79,7 @@ static int __init find_ibft_in_mem(void)
- 				 * the table cannot be valid. */
- 				if (pos + len <= (IBFT_END-1)) {
- 					ibft_addr = (struct acpi_table_ibft *)virt;
-+					pr_info("iBFT found at 0x%lx.\n", pos);
- 					goto done;
- 				}
- 			}
-@@ -108,20 +94,12 @@ done:
+ /*
+  * Same as seq_path, but relative to supplied root.
+- *
+- * root may be changed, see __d_path().
   */
- unsigned long __init find_ibft_region(unsigned long *sizep)
+ int seq_path_root(struct seq_file *m, struct path *path, struct path *root,
+ 		  char *esc)
+@@ -463,6 +461,8 @@ int seq_path_root(struct seq_file *m, st
+ 		char *p;
+ 
+ 		p = __d_path(path, root, buf, size);
++		if (!p)
++			return SEQ_SKIP;
+ 		res = PTR_ERR(p);
+ 		if (!IS_ERR(p)) {
+ 			char *end = mangle_path(buf, p, esc);
+@@ -474,7 +474,7 @@ int seq_path_root(struct seq_file *m, st
+ 	}
+ 	seq_commit(m, res);
+ 
+-	return res < 0 ? res : 0;
++	return res < 0 && res != -ENAMETOOLONG ? res : 0;
+ }
+ 
+ /*
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -340,7 +340,8 @@ extern int d_validate(struct dentry *, s
+  */
+ extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
+ 
+-extern char *__d_path(const struct path *path, struct path *root, char *, int);
++extern char *__d_path(const struct path *, const struct path *, char *, int);
++extern char *d_absolute_path(const struct path *, char *, int);
+ extern char *d_path(const struct path *, char *, int);
+ extern char *d_path_with_unreachable(const struct path *, char *, int);
+ extern char *dentry_path_raw(struct dentry *, char *, int);
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1882,6 +1882,7 @@ extern int fd_statfs(int, struct kstatfs
+ extern int statfs_by_dentry(struct dentry *, struct kstatfs *);
+ extern int freeze_super(struct super_block *super);
+ extern int thaw_super(struct super_block *super);
++extern bool our_mnt(struct vfsmount *mnt);
+ 
+ extern int current_umask(void);
+ 
+--- a/security/apparmor/path.c
++++ b/security/apparmor/path.c
+@@ -57,23 +57,44 @@ static int prepend(char **buffer, int bu
+ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 			    char **name, int flags)
  {
--#ifdef CONFIG_ACPI
--	int i;
--#endif
- 	ibft_addr = NULL;
+-	struct path root, tmp;
+ 	char *res;
+-	int connected, error = 0;
++	int error = 0;
++	int connected = 1;
  
--#ifdef CONFIG_ACPI
--	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
--		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
--#endif /* CONFIG_ACPI */
+-	/* Get the root we want to resolve too, released below */
++	if (path->mnt->mnt_flags & MNT_INTERNAL) {
++		/* it's not mounted anywhere */
++		res = dentry_path(path->dentry, buf, buflen);
++		*name = res;
++		if (IS_ERR(res)) {
++			*name = buf;
++			return PTR_ERR(res);
++		}
++		if (path->dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
++		    strncmp(*name, "/sys/", 5) == 0) {
++			/* TODO: convert over to using a per namespace
++			 * control instead of hard coded /proc
++			 */
++			return prepend(name, *name - buf, "/proc", 5);
++		}
++		return 0;
++	}
++
++	/* resolve paths relative to chroot?*/
+ 	if (flags & PATH_CHROOT_REL) {
+-		/* resolve paths relative to chroot */
++		struct path root;
+ 		get_fs_root(current->fs, &root);
+-	} else {
+-		/* resolve paths relative to namespace */
+-		root.mnt = current->nsproxy->mnt_ns->root;
+-		root.dentry = root.mnt->mnt_root;
+-		path_get(&root);
++		res = __d_path(path, &root, buf, buflen);
++		if (res && !IS_ERR(res)) {
++			/* everything's fine */
++			*name = res;
++			path_put(&root);
++			goto ok;
++		}
++		path_put(&root);
++		connected = 0;
+ 	}
+ 
+-	tmp = root;
+-	res = __d_path(path, &tmp, buf, buflen);
++	res = d_absolute_path(path, buf, buflen);
+ 
+ 	*name = res;
+ 	/* handle error conditions - and still allow a partial path to
+@@ -84,7 +105,10 @@ static int d_namespace_path(struct path
+ 		*name = buf;
+ 		goto out;
+ 	}
++	if (!our_mnt(path->mnt))
++		connected = 0;
+ 
++ok:
+ 	/* Handle two cases:
+ 	 * 1. A deleted dentry && profile is not allowing mediation of deleted
+ 	 * 2. On some filesystems, newly allocated dentries appear to the
+@@ -97,10 +121,7 @@ static int d_namespace_path(struct path
+ 			goto out;
+ 	}
+ 
+-	/* Determine if the path is connected to the expected root */
+-	connected = tmp.dentry == root.dentry && tmp.mnt == root.mnt;
 -
- 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
- 	 * only use ACPI for this */
+-	/* If the path is not connected,
++	/* If the path is not connected to the expected root,
+ 	 * check if it is a sysctl and handle specially else remove any
+ 	 * leading / that __d_path may have returned.
+ 	 * Unless
+@@ -112,17 +133,9 @@ static int d_namespace_path(struct path
+ 	 *     namespace root.
+ 	 */
+ 	if (!connected) {
+-		/* is the disconnect path a sysctl? */
+-		if (tmp.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
+-		    strncmp(*name, "/sys/", 5) == 0) {
+-			/* TODO: convert over to using a per namespace
+-			 * control instead of hard coded /proc
+-			 */
+-			error = prepend(name, *name - buf, "/proc", 5);
+-		} else if (!(flags & PATH_CONNECT_PATH) &&
++		if (!(flags & PATH_CONNECT_PATH) &&
+ 			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
+-			     (tmp.mnt == current->nsproxy->mnt_ns->root &&
+-			      tmp.dentry == tmp.mnt->mnt_root))) {
++			     our_mnt(path->mnt))) {
+ 			/* disconnected path, don't return pathname starting
+ 			 * with '/'
+ 			 */
+@@ -133,8 +146,6 @@ static int d_namespace_path(struct path
+ 	}
  
--	if (!ibft_addr && !efi_enabled)
-+	if (!efi_enabled)
- 		find_ibft_in_mem();
+ out:
+-	path_put(&root);
+-
+ 	return error;
+ }
  
- 	if (ibft_addr) {
+--- a/security/tomoyo/realpath.c
++++ b/security/tomoyo/realpath.c
+@@ -95,7 +95,6 @@ char *tomoyo_realpath_from_path(struct p
+ 		return NULL;
+ 	is_dir = dentry->d_inode && S_ISDIR(dentry->d_inode->i_mode);
+ 	while (1) {
+-		struct path ns_root = { .mnt = NULL, .dentry = NULL };
+ 		char *pos;
+ 		buf_len <<= 1;
+ 		kfree(buf);
+@@ -128,8 +127,12 @@ char *tomoyo_realpath_from_path(struct p
+ 		/* If we don't have a vfsmount, we can't calculate. */
+ 		if (!path->mnt)
+ 			break;
+-		/* go to whatever namespace root we are under */
+-		pos = __d_path(path, &ns_root, buf, buf_len);
++		pos = d_absolute_path(path, buf, buf_len - 1);
++		/* If path is disconnected, use "[unknown]" instead. */
++		if (pos == ERR_PTR(-EINVAL)) {
++			name = tomoyo_encode("[unknown]");
++			break;
++		}
+ 		/* Prepend "/proc" prefix if using internal proc vfs mount. */
+ 		if (!IS_ERR(pos) && (path->mnt->mnt_flags & MNT_INTERNAL) &&
+ 		    (path->mnt->mnt_sb->s_magic == PROC_SUPER_MAGIC)) {
 
 
