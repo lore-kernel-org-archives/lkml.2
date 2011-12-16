@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760522Ab1LPShx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 13:37:53 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50317 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759730Ab1LPShr (ORCPT
+	id S1760423Ab1LPSkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 13:40:32 -0500
+Received: from mga12.intel.com ([143.182.124.36]:56601 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752172Ab1LPSkZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 13:37:47 -0500
-Date: Fri, 16 Dec 2011 10:37:04 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] radix_tree: remove radix_tree_indirect_to_ptr
-In-Reply-To: <4EEB270C.4010903@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1112161034370.2909@eggly.anvils>
-References: <4EEB2690.1050401@linux.vnet.ibm.com> <4EEB270C.4010903@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 16 Dec 2011 13:40:25 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111215135550.748e9aee.akpm@linux-foundation.org>
+References: <09b6266e3209433bac9b57baf39e073945533d5a.1323880769.git.dmitry.kasatkin@intel.com>
+	<20111215135550.748e9aee.akpm@linux-foundation.org>
+Date: Fri, 16 Dec 2011 20:40:20 +0200
+Message-ID: <CALLzPKa3d+4R3H7KgB1GPmb4hkAavqEXMh-B3kSnG1fnKFkK3Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] do_truncate needs to increment iversion
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Dec 2011, Xiao Guangrong wrote:
+On Thu, Dec 15, 2011 at 11:55 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 14 Dec 2011 18:44:57 +0200
+> Dmitry Kasatkin <dmitry.kasatkin@intel.com> wrote:
+>
+>> IMA/EVM uses iversion to identify if file content has been changed.
+>> It has been found that when file is opened, truncated with ftruncate()
+>> and then closed, iversion is not updated.
+>>
+>> This patch adds iversion incrementation to do_truncate().
+>
+> I confess that I've never really fully understood what i_version is
+> supposed to do, so I'm not in any position to comment on where, when
+> and why the thing should be updated.
+>
+> At present it gets updated in file_update_time() so I suppose that
+> we're not calling file_update_time() in the ftruncate case, which
+> sounds wrong?
 
-> It is not used anymore, remove it
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+What I see from notify_change(), it updates the time...
+So what is really missing is incrimination of i_version...
 
-Good, yes, thank you: I'm doing a little there at the moment, so let me add
-Acked-by: Hugh Dickins <hughd@google.com>
+>
+> It's notable that file_update_time() will not update i_version if the
+> inode has NOCMTIME.  This might be wrong, but one would need to know
+> the intent of i_version to be able to say.  Do your files have
+> S_NOCMTIME set?
 
-> ---
->  include/linux/radix-tree.h |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-> index 9d4539c..07e360b 100644
-> --- a/include/linux/radix-tree.h
-> +++ b/include/linux/radix-tree.h
-> @@ -49,9 +49,6 @@
->  #define RADIX_TREE_EXCEPTIONAL_ENTRY	2
->  #define RADIX_TREE_EXCEPTIONAL_SHIFT	2
-> 
-> -#define radix_tree_indirect_to_ptr(ptr) \
-> -	radix_tree_indirect_to_ptr((void __force *)(ptr))
-> -
->  static inline int radix_tree_is_indirect_ptr(void *ptr)
->  {
->  	return (int)((unsigned long)ptr & RADIX_TREE_INDIRECT_PTR);
-> -- 
-> 1.7.7.4
+Yes. I saw it and even made a test to verify if is the reason for
+i_version not to be updated...
+But it was not set.
+I have the same feeling that i_version should be updated despite NOCMTIME,
+because i_version supposed to work if mounted with "iversion" option....
+I think it should not have dependency to other mount options...
+
+>
+>> --- a/fs/open.c
+>> +++ b/fs/open.c
+>> @@ -56,6 +56,8 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+>>               newattrs.ia_valid |= ret | ATTR_FORCE;
+>>
+>>       mutex_lock(&dentry->d_inode->i_mutex);
+>> +     if (IS_I_VERSION(dentry->d_inode))
+>> +             inode_inc_iversion(dentry->d_inode);
+>>       ret = notify_change(dentry, &newattrs);
+>>       mutex_unlock(&dentry->d_inode->i_mutex);
+>>       return ret;
+>
+> With four evaluations, it is time to cache dentry->d_inode in a local.
+
+True...
+
+Thanks..
