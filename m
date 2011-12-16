@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866Ab1LPTxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:53:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45201 "EHLO mx2.suse.de"
+	id S1760700Ab1LPTxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:53:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45214 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760640Ab1LPTv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:51:28 -0500
+	id S1760688Ab1LPTvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:51:35 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:09 2011
-Message-Id: <20111216194209.042369367@clark.kroah.org>
+Message-Id: <20111216194209.368858354@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:21 -0800
+Date: Fri, 16 Dec 2011 11:40:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>
-Subject: [14/45] mm: vmalloc: check for page allocation failure before vmlist insertion
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [16/45] target: Handle 0 correctly in transport_get_sectors_6()
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 1368edf0647ac112d8cfa6ce47257dc950c50f5c upstream.
+commit 9b5cd7f37e1e018432111333e2a67f78ba41edfe upstream.
 
-Commit f5252e00 ("mm: avoid null pointer access in vm_struct via
-/proc/vmallocinfo") adds newly allocated vm_structs to the vmlist after
-it is fully initialised.  Unfortunately, it did not check that
-__vmalloc_area_node() successfully populated the area.  In the event of
-allocation failure, the vmalloc area is freed but the pointer to freed
-memory is inserted into the vmlist leading to a a crash later in
-get_vmalloc_info().
+SBC-3 says:
 
-This patch adds a check for ____vmalloc_area_node() failure within
-__vmalloc_node_range.  It does not use "goto fail" as in the previous
-error path as a warning was already displayed by __vmalloc_area_node()
-before it called vfree in its failure path.
+    A TRANSFER LENGTH field set to zero specifies that 256 logical
+    blocks shall be written.  Any other value specifies the number
+    of logical blocks that shall be written.
 
-Credit goes to Luciano Chavez for doing all the real work of identifying
-exactly where the problem was.
+The old code was always just returning the value in the TRANSFER LENGTH
+byte.  Fix this to return 256 if the byte is 0.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reported-by: Luciano Chavez <lnx1138@linux.vnet.ibm.com>
-Tested-by: Luciano Chavez <lnx1138@linux.vnet.ibm.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/vmalloc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/target/target_core_transport.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1648,6 +1648,8 @@ void *__vmalloc_node_range(unsigned long
- 		return NULL;
- 
- 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
-+	if (!addr)
-+		return NULL;
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2777,10 +2777,15 @@ static inline u32 transport_get_sectors_
  
  	/*
- 	 * In this function, newly allocated vm_struct is not added
+ 	 * Everything else assume TYPE_DISK Sector CDB location.
+-	 * Use 8-bit sector value.
++	 * Use 8-bit sector value.  SBC-3 says:
++	 *
++	 *   A TRANSFER LENGTH field set to zero specifies that 256
++	 *   logical blocks shall be written.  Any other value
++	 *   specifies the number of logical blocks that shall be
++	 *   written.
+ 	 */
+ type_disk:
+-	return (u32)cdb[4];
++	return cdb[4] ? : 256;
+ }
+ 
+ static inline u32 transport_get_sectors_10(
 
 
