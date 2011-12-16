@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab1LPOvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 09:51:37 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:34003 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759212Ab1LPOva (ORCPT
+	id S1759514Ab1LPOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 09:54:09 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:35051
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754119Ab1LPOyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 09:51:30 -0500
-Subject: Re: unexpected taint message
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Linville <linville@tuxdriver.com>
-In-Reply-To: <4EEB5A60.3090101@lwfinger.net> (sfid-20111216_154940_152892_953155B5)
-References: <4EEB0EFC.5000302@broadcom.com>
-	 (sfid-20111216_102800_182196_AFD2D6CF) <1324038636.3429.1.camel@jlt3.sipsolutions.net>
-	 <4EEB4D61.80602@lwfinger.net>
-	 (sfid-20111216_145414_221850_EED1E4DE) <1324043939.3429.2.camel@jlt3.sipsolutions.net>
-	 <4EEB521A.70602@lwfinger.net>
-	 (sfid-20111216_151411_303937_12579E4F) <1324045233.3429.3.camel@jlt3.sipsolutions.net>
-	 <4EEB5A60.3090101@lwfinger.net> (sfid-20111216_154940_152892_953155B5)
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Dec 2011 15:51:25 +0100
-Message-ID: <1324047085.3429.5.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Dec 2011 09:54:04 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zz98dK4015Lzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LWAXDU-02-0B0-02
+X-M-MSG: 
+Date: Fri, 16 Dec 2011 15:53:53 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, <aik@ozlabs.ru>,
+        <benh@kernel.crashing.org>, <dwmw2@infradead.org>, <chrisw@redhat.com>,
+        <agraf@suse.de>, <scottwood@freescale.com>, <B08248@freescale.com>,
+        <rusty@rustcorp.com.au>, <iommu@lists.linux-foundation.org>,
+        <qemu-devel@nongnu.org>, <linux-kernel@vger.kernel.org>,
+        <joro@8bytes.org>
+Subject: Re: [RFC] Device isolation infrastructure v2
+Message-ID: <20111216145353.GA29877@amd.com>
+References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
+ <1323972307.2437.19.camel@x201.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1323972307.2437.19.camel@x201.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 08:49 -0600, Larry Finger wrote:
+On Thu, Dec 15, 2011 at 11:05:07AM -0700, Alex Williamson wrote:
+> Starting with it in the core and hand waving some future use that we
+> don't plan to implement right now seems like the wrong direction.
 
-> > +	switch (flag) {
-> > +	case TAINT_CRAP:
-> > +	case TAINT_WARN:
-> > +	case TAINT_OOT_MODULE:
-> > +		break;
-> > +	default:
-> > +		if (__debug_locks_off())
-> > +			printk(KERN_WARNING
-> > +			       "Disabling lock debugging due to kernel taint\n");
-> > +	}
-> >
-> >   	set_bit(flag,&tainted_mask);
-> >   }
-> 
-> Yes. I like this patch a lot. Unfortunately, VirtualBox was a part of the 
-> decision to add the OOT taint. At least for that reason, this patch would not be 
-> accepted upstream. It is too bad that the Oracle people fought so hard to keep 
-> their module from setting TAINT_CRAP the way that GregKH wanted. That would have 
-> had fewer side effects for me.
+I agree with Alex. First of all, I havn't seen any real vfio problem
+that can't be solved with the current approach, and it has the great
+advantage of simplicity. It doesn't require a re-implementation of the
+driver-core based on groups. I agree that we need some improvements to
+Alex' code for the dma-api layer to solve the problem with broken devices
+using the wrong requestor-id. But that can be done incrementally with
+the current (current == in the iommu-tree) approach implemented by Alex.
 
-I'm not sure -- I mean, it's one thing to identify OOT modules and
-refuse to support them (and ignore lockdep reports with OOT set), but
-it's another to just disable lockdep? I think?
+I also think that all this does not belong into the driver core for two
+reasons:
 
-johannes
+	1) The information for building the device groups is provided
+	   by the iommu-layer
+	2) The group information is provided to vfio by the iommu-api
+
+This makes the iommu-layer the logical point to place the grouping code.
+There are some sources outside of the iommu-layer that may influence
+grouping (like pci-quirks), but most of the job is done by the
+iommu-drivers.
+
+Thanks,
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
