@@ -1,154 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760934Ab1LPWjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 17:39:40 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:52672 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab1LPWjc (ORCPT
+	id S1760941Ab1LPWjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 17:39:54 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27377 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab1LPWjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 17:39:32 -0500
+	Fri, 16 Dec 2011 17:39:44 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, rjw@sisk.pl, x86@kernel.org,
         len.brown@intel.com, joseph.cihula@intel.com,
         linux-pm@lists.linux-foundation.org, tboot-devel@lists.sourceforge.net,
         linux-acpi@vger.kernel.org, liang.tang@oracle.com
-Cc: hpa@zytor.com
-Subject: [PATCH] ACPI cleanup's and enablement for Xen ACPI S3 [v4].
-Date: Fri, 16 Dec 2011 17:38:12 -0500
-Message-Id: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+Cc: hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        Shane Wang <shane.wang@intel.com>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling tboot_sleep.
+Date: Fri, 16 Dec 2011 17:38:13 -0500
+Message-Id: <1324075099-11397-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.4
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4EEBC895.0070,ss=1,re=0.000,fgs=0
+In-Reply-To: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4EEBC897.00A9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attached is an [v4] set of patches to enable S3 to work with the Xen hypervisor
-and also do some cleanups. Posting just before holidays so that when folks are
-tired of unwrapping presents, drinking eggnog, etc, they can read some
-exciting patches!
+From: Tang Liang <liang.tang@oracle.com>
 
-Changes since v3: [http://lkml.org/lkml/2011/11/15/340]:
- - Redid the acpi_os_prepare_sleep fnc per Rafael's suggestions.
- - Fixed compile issues on other platforms, various config options.
-Changes since v2: [https://lkml.org/lkml/2011/9/29/408]
- - Moved tboot_sleep out to the osl.c code.
- - Dropped some patches.
-since the RFC posting [http://comments.gmane.org/gmane.linux.acpi.devel/50701]:
- - Per review comments added: __unused__ attribute, support for PM1A/B if more than 16-bit,
-   copyright/license.
- - Added support for PHYSDEVOP_restore_msi_ext call.
+The ACPI suspend path makes a call to tboot_sleep right before
+it writes the PM1A, PM1B values. We replace the direct call to
+tboot via an registration callback similar to __acpi_register_gsi.
 
-The first two patches can be considered independently as cleanup - they move
-the tboot_sleep out of the ACPI code and move it in the OS part. That is
-the only OSPM code changes done.
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Len Brown <len.brown@intel.com>
+CC: Joseph Cihula <joseph.cihula@intel.com>
+CC: Shane Wang <shane.wang@intel.com>
+CC: xen-devel@lists.xensource.com
+CC: linux-pm@lists.linux-foundation.org
+CC: tboot-devel@lists.sourceforge.net
+CC: linux-acpi@vger.kernel.org
+[v1: Added __attribute__ ((unused))]
+[v2: Introduced a wrapper instead of changing tboot_sleep return values]
+[v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+Signed-off-by: Tang Liang <liang.tang@oracle.com>
+[v1: Fix compile issues on IA64 and PPC64]
+[v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep properly]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/tboot.c       |    8 ++++++++
+ drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+ drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+ include/acpi/acexcep.h        |    1 +
+ include/linux/acpi.h          |   10 ++++++++++
+ include/linux/tboot.h         |    1 -
+ 6 files changed, 50 insertions(+), 4 deletions(-)
 
-The more complex ones are in the ACPI x86 code. I was not sure how to
-post the patches so I grouped them in "functionality" parts.
-
-1). Use the acpi_os_prepare_sleep to register a variant of it. The reason
-    for the need for this is explained in more details below. The patches are:
-
- [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep instead
- [PATCH 2/7] tboot: Add return values for tboot_sleep
- [PATCH 3/7] xen/acpi/sleep: Enable ACPI sleep via the
-
-2). Expand x86_msi_ops. Every time we resume, we end up calling write_msi_irq
-    to resume the MSI vectors. But when using Xen, we would write the MSI
-    vectors using the other x86_msi_ops - hence we expand the x86_msi_ops
-    indirection mechanism to take resume in account. The paches are:
-
- [PATCH 4/7] x86: Expand the x86_msi_ops to have a restore MSIs.
- [PATCH 5/7] xen/pci: Utilize the restore_msi_irqs hook.
-
-3). Make acpi_suspend_lowlevel be a function pointer instead of a function.
-    Details of why we want to omit the lowlevel values is explained below.
-    Originally I was thinking that perhaps doing it via a registration
-    function would be better? But not sure what folks leanings are
-    in this case. The patches are:
-
- [PATCH 6/7] x86/acpi/sleep: Provide registration for
- [PATCH 7/7] xen/acpi/sleep: Register to the acpi_suspend_lowlevel a
-
-Details of what I said in the first postings:
-
-The Xen ACPI S3 functionality requires help from the Linux kernel. The Linux
-kernel does the ACPI "stuff" and tells the hypervisor to do the low-level
-stuff (such as program the IOAPIC, setup vectors, etc). Naturally do it correctly
-the Xen hypervisor must be programmed with correct values that are extracted
-as part of parsing the ACPI.
-
-The ACPI code used during suspend is mostly all in hwsleep.c and there is one
-particular case where 'hwsleep.c' is calling in the tboot.c code. This is replaced
-by making the call go through the OS part of the ACPI code. The reason for
-doing this is two fold: 1) cleanup, 2) for Xen case, it needs to make a hypercall
-so that the hypervisor can write the PM1A/PM1B bits.
-
-The major difficulties we hit was with 'acpi_suspend_lowlevel' - which tweaks
-a lot of lowlevel values and some of them are not properly handled by Xen.
-Liang Tang has figured which ones of them we trip over (read below) - and he
-suggested that perhaps we can provide a registration mechanism to abstract
-this away. The reason for all of this is that Linux does not talk to the
-BIOS directly - instead it simply walks through the necessary ACPI methods
-and then issues hypercall to Xen which then further completes the remaining
-suspend steps.
-
-So the attached patches do exactly that - there are two entry points
-in the ACPI.
-
- 1). For S3: acpi_suspend_lowlevel -> .. lots of code -> acpi_enter_sleep_state
- 2). For S1/S4/S5: acpi_enter_sleep_state
-
-The first naive idea was of abstracting away in the 'acpi_enter_sleep_state'
-function the tboot_sleep code so that we can use it too. And low-behold - it
-worked splendidly for powering off (S5 I believe)
-
-For S3 that did not work - during suspend the hypervisor tripped over when
-saving cr8. During resume it tripped over at restoring the cr3, cr8, idt,
-and gdt values.
-
-When I posted the RFC, the feedback I got was to use a higher upper
-interface to make the call to the hypervisor. Instead of doing it at the
-lower pv-ops case for cr3, cr8, idt, gdt, etc. The code is much nicer
-this way, I've to say.
-
-Anyhow, please take a look!
-
-The patches are also located at
-
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/acpi-s3.v7
-
- arch/x86/include/asm/acpi.h     |    2 +-
- arch/x86/include/asm/pci.h      |    9 +++++
- arch/x86/include/asm/x86_init.h |    1 +
- arch/x86/kernel/acpi/boot.c     |    7 ++++
- arch/x86/kernel/acpi/sleep.c    |    4 +-
- arch/x86/kernel/acpi/sleep.h    |    2 +
- arch/x86/kernel/tboot.c         |    9 +++--
- arch/x86/kernel/x86_init.c      |    1 +
- arch/x86/pci/xen.c              |   27 ++++++++++++++
- arch/x86/xen/enlighten.c        |    3 ++
- drivers/acpi/acpica/hwsleep.c   |   10 ++++--
- drivers/acpi/osl.c              |   24 +++++++++++++
- drivers/acpi/sleep.c            |    2 +
- drivers/pci/msi.c               |   29 ++++++++++++++-
- drivers/xen/Makefile            |    2 +-
- drivers/xen/acpi.c              |   62 +++++++++++++++++++++++++++++++++
- include/acpi/acexcep.h          |    1 +
- include/linux/acpi.h            |   10 +++++
- include/linux/tboot.h           |    1 -
- include/xen/acpi.h              |   72 +++++++++++++++++++++++++++++++++++++++
- include/xen/interface/physdev.h |    7 ++++
- 21 files changed, 272 insertions(+), 13 deletions(-)
-
-Konrad Rzeszutek Wilk (5):
-      tboot: Add return values for tboot_sleep
-      x86/acpi/sleep: Provide registration for acpi_suspend_lowlevel.
-      xen/acpi/sleep: Enable ACPI sleep via the __acpi_os_prepare_sleep
-      xen/acpi/sleep: Register to the acpi_suspend_lowlevel a callback.
-      x86: Expand the x86_msi_ops to have a restore MSIs.
-
-Tang Liang (2):
-      x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling tboot_sleep.
-      xen: Utilize the restore_msi_irqs hook.
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index e2410e2..1a4ab7d 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ 
+ 	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+ }
++static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
++			       u32 pm1b_control)
++{
++	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
++	return 0;
++}
+ 
+ static atomic_t ap_wfs_count;
+ 
+@@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
+ 
+ 	atomic_set(&ap_wfs_count, 0);
+ 	register_hotcpu_notifier(&tboot_cpu_notifier);
++
++	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index d52da30..992359a 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -43,9 +43,9 @@
+  */
+ 
+ #include <acpi/acpi.h>
++#include <linux/acpi.h>
+ #include "accommon.h"
+ #include "actables.h"
+-#include <linux/tboot.h>
+ #include <linux/module.h>
+ 
+ #define _COMPONENT          ACPI_HARDWARE
+@@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
+ 
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+-	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+-
++	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
++				       pm1b_control);
++	if (ACPI_SKIP(status))
++		return_ACPI_STATUS(AE_OK);
++	if (ACPI_FAILURE(status))
++		return_ACPI_STATUS(status);
+ 	/* Write #2: Write both SLP_TYP + SLP_EN */
+ 
+ 	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index f31c5c5..f3aae4b 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);
+ extern char line_buf[80];
+ #endif				/*ENABLE_DEBUGGER */
+ 
++static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
++				      u32 pm1b_ctrl);
++
+ static acpi_osd_handler acpi_irq_handler;
+ static void *acpi_irq_context;
+ static struct workqueue_struct *kacpid_wq;
+@@ -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
+ 
+ 	return AE_OK;
+ }
++
++acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
++				  u32 pm1b_control)
++{
++	int rc = 0;
++	if (__acpi_os_prepare_sleep)
++		rc = __acpi_os_prepare_sleep(sleep_state,
++					     pm1a_control, pm1b_control);
++	if (rc < 0)
++		return AE_ERROR;
++	else if (rc > 0)
++		return AE_CTRL_SKIP;
++
++	return AE_OK;
++}
++
++void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
++			       u32 pm1a_ctrl, u32 pm1b_ctrl))
++{
++	__acpi_os_prepare_sleep = func;
++}
+diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h
+index 5b6c391..fa0d22c 100644
+--- a/include/acpi/acexcep.h
++++ b/include/acpi/acexcep.h
+@@ -57,6 +57,7 @@
+ #define ACPI_SUCCESS(a)                 (!(a))
+ #define ACPI_FAILURE(a)                 (a)
+ 
++#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
+ #define AE_OK                           (acpi_status) 0x0000
+ 
+ /*
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 6001b4da..fccd017 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)
+ }
+ #endif
+ 
++#ifdef CONFIG_ACPI
++void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
++			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
++
++acpi_status acpi_os_prepare_sleep(u8 sleep_state,
++				  u32 pm1a_control, u32 pm1b_control);
++#else
++#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
++#endif
++
+ #endif	/*_LINUX_ACPI_H*/
+diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+index 1dba6ee..c75128b 100644
+--- a/include/linux/tboot.h
++++ b/include/linux/tboot.h
+@@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
+ 
+ extern void tboot_probe(void);
+ extern void tboot_shutdown(u32 shutdown_type);
+-extern void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control);
+ extern struct acpi_table_header *tboot_get_dmar_table(
+ 				      struct acpi_table_header *dmar_tbl);
+ extern int tboot_force_iommu(void);
+-- 
+1.7.7.4
 
