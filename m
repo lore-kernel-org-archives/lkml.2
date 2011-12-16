@@ -1,61 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab1LPN7K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:59:10 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:34910 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab1LPN7C (ORCPT
+	id S1759539Ab1LPN7R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 08:59:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52776 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759426Ab1LPN7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:59:02 -0500
-Subject: Re: unexpected taint message
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EEB4D61.80602@lwfinger.net> (sfid-20111216_145414_221850_EED1E4DE)
-References: <4EEB0EFC.5000302@broadcom.com>
-	 (sfid-20111216_102800_182196_AFD2D6CF) <1324038636.3429.1.camel@jlt3.sipsolutions.net>
-	 <4EEB4D61.80602@lwfinger.net> (sfid-20111216_145414_221850_EED1E4DE)
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Dec 2011 14:58:59 +0100
-Message-ID: <1324043939.3429.2.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 16 Dec 2011 08:59:09 -0500
+Message-ID: <4EEB4EA5.2040607@gmail.com>
+Date: Fri, 16 Dec 2011 06:59:01 -0700
+From: "Berck E. Nash" <flyboy@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: x2apic boot failure on recent sandy bridge system
+References: <4EE2BC33.80902@gmail.com>	<CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>	<20111211075713.GA20790@elte.hu>	<CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>	<4EE5291C.1030302@gmail.com>	<CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>	<4EE68C80.7000408@gmail.com>	<1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>	<CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>	<1323740475.1984.171.camel@sbsiddha-desk.sc.intel.com>	<CAE9FiQWxYgCd2AVzXWfuqFA6NkgzgD0+XuAkUfEG1GN2EFBpTg@mail.gmail.com> <CAE9FiQVhLKhRT=XivpG6KHYhpA+HN695CZ3cQ82-teaRPEBxNg@mail.gmail.com>
+In-Reply-To: <CAE9FiQVhLKhRT=XivpG6KHYhpA+HN695CZ3cQ82-teaRPEBxNg@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 07:53 -0600, Larry Finger wrote:
-> On 12/16/2011 06:30 AM, Johannes Berg wrote:
-> > On Fri, 2011-12-16 at 10:27 +0100, Arend van Spriel wrote:
-> >> To whoever may know,
-> >>
-> >> Upon loading our driver module I get the following message:
-> >>
-> >> kernel: [  344.805106] Disabling lock debugging due to kernel taint
-> >>
-> >> What exactly are the criteria for tainting? Our driver locking strategy
-> >> is something we want to refactor and having lock debugging during that
-> >> transition may be a life safer.
-> >
-> > cat /proc/sys/kernel/tainted
-> 
-> Please note that Documentation/sysctl/kernel.txt is missing the explanation for 
-> two bits in the value printed:
-> 
-> 2048 - The system is working around a severe firmware bug.
-> 4096 - An out-of-tree module has been loaded.
-> 
-> On my system, bit 4096 is set due to loading the VirtualBox module, which 
-> disables lock debugging lock debugging. I suspect that loading VMware would 
-> cause the same condition.
+On 12/12/2011 10:13 PM, Yinghai Lu wrote:
+> please check -v7.
 
-Hmm. I wish OOT didn't disable lockdep, we do a lot of development with
-modules OOT because the turnaround is faster/easier (for not so
-experienced developers). Worst case we can patch it out of the base
-kernel I guess...
-
-johannes
-
+Works just fine for me.
