@@ -1,192 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759334Ab1LPNOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:14:04 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36366 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758886Ab1LPNN6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:13:58 -0500
+	id S1759349Ab1LPNTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 08:19:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab1LPNTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 08:19:35 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
+Date: Fri, 16 Dec 2011 14:19:32 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com> <201112160122.36100.trenn@suse.de> <20111216003333.GA18489@srcf.ucam.org>
+In-Reply-To: <20111216003333.GA18489@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com>
-References: <CAH9NwWetBZvU6-16rV_s5n=vrAu1kyfsbsjKh+6O2ejf9mM_ww@mail.gmail.com>
- <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Fri, 16 Dec 2011 14:13:37 +0100
-Message-ID: <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
-Subject: Re: PCI(e) enumeration
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112161419.32775.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Friday, December 16, 2011 01:33:33 AM Matthew Garrett wrote:
+> On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
+> 
+> > I think best is to move the thinkpad implementation of getting
+> > ACPI handles based on HIDs to osl.c and make it global.
+> > I'll send patches.
+> > Please review them carefully, they are only compile tested.
+> 
+> The ec driver is already finding the hardware on the basis of the HID - 
+> is there any reason to do this twice rather than just exporting the 
+> information the ec driver already has?
 
-2011/12/15 Bjorn Helgaas <bhelgaas@google.com>:
-> On Thu, Dec 15, 2011 at 2:41 AM, Christian Gmeiner
-> <christian.gmeiner@gmail.com> wrote:
->> Hi all,
->>
->> I maintain a debian based linux RFS in my company and my college does the
->> same for windows. Now we run into a problem that windows and linux use a
->> different network interface as eth0. In our target system there
->> are two identical NICs installed.
->>
->> So I am now looking to find out, how linux does the PCI enumeration
->> and in which order
->> the PCI driver gets called to do the initialization. Can somebody tell
->> me if a depth-first search
->> or a breadth-first search is done on the PCI bus.
->>
->>
->> For instance look at this lspci output:
->>
->> 00:01.0 Host bridge: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] Host Bridge (rev 33)
->> 00:01.1 VGA compatible controller: Advanced Micro Devices [AMD] Geode LX Video
->> 00:01.2 Entertainment encryption device: Advanced Micro Devices [AMD]
->> Geode LX AES Security Block
->> 00:04.0 Ethernet controller: Intel Corporation 8255xER/82551IT Fast
->> Ethernet Controller (rev 10)
->> 00:0f.0 ISA bridge: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] ISA (rev 03)
->> 00:0f.2 IDE interface: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] IDE (rev 01)
->> 00:0f.3 Multimedia audio controller: Advanced Micro Devices [AMD]
->> CS5536 [Geode companion] Audio (rev 01)
->> 00:0f.4 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] OHC (rev 02)
->> 00:0f.5 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] EHC (rev 02)
->> 00:0f.7 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->> companion] UOC (rev 02)
->>
->> How will linux does the enumeration?
->
-> The kernel enumerates PCI devices with a depth-first traversal, but
-> that isn't what determines the ethX device name.  That name is
-> determined by the order in which network drivers are loaded and claim
-> devices, which gets into distro details like udev.
->
-> Here's a nice paper with more details:
-> http://www.dell.com/downloads/global/power/ps1q07-20060392-Domsch.pdf
+I don't object to export ec_handle, but thinkpad_acpi.c should get
+adjusted as well.
 
-Thanks
+I had a closer look and can come up with a replacement for acpi_get_devices
+using bus.c matching function bus_find_device() avoiding the namespace
+walk.
 
->
-> If that's not enough to solve your problem, a debian-related forum
-> will probably be more useful than LKML.
-
-I don't think that this is a debian related issue, as I use no special
-udev rule. Here is the lscpi
-output of the target machine, where I have this issue.
+What do you think about this one?
+I found these occurences of acpi_get_devices, which I would
+adjust in follow up patches if it's worth it:
+drivers/char/agp/hp-agp.c:      acpi_get_devices("HWP0003", zx1_gart_probe, "HWP0003", NULL);
+drivers/char/agp/hp-agp.c:      acpi_get_devices("HWP0007", zx1_gart_probe, "HWP0007", NULL);
+drivers/acpi/processor_core.c:  acpi_get_devices("ACPI0007", early_init_pdc, NULL, NULL);
+drivers/platform/x86/eeepc-wmi.c:       status = acpi_get_devices(EEEPC_ACPI_HID, eeepc_wmi_parse_device,
+drivers/platform/x86/thinkpad_acpi.c:   status = acpi_get_devices(hid, tpacpi_acpi_handle_locate_callback,
 
 
-root@OT1300:~# lspci
-00:00.0 Host bridge: Intel Corporation Atom Processor E6xx PCI Host
-Bridge #1 (rev 05)
-00:01.0 Host bridge: Intel Corporation Atom Processor E6xx
-Configuration Unit (rev 02)
-00:02.0 VGA compatible controller: Intel Corporation Atom Processor
-E6xx Integrated Graphics Controller (rev 05)
-00:03.0 Multimedia video controller: Intel Corporation Atom Processor
-E6xx Integrated Graphics Controller (rev 02)
-00:17.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-Port 1 (rev 02)
-00:18.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-Port 2 (rev 02)
-00:19.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-Port 3 (rev 02)
-00:1a.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-Port 4 (rev 02)
-00:1f.0 ISA bridge: Intel Corporation Atom Processor E6xx LPC Bridge (rev 02)
-01:00.0 PCI bridge: Intel Corporation Platform Controller Hub EG20T
-PCI Express Port (rev 01)
-02:00.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-Hub EG20T Packet Hub (rev 01)
-02:00.1 Ethernet controller: Intel Corporation Platform Controller Hub
-EG20T Gigabit Ethernet Controller (rev 02)
-02:00.2 Unassigned class [ff00]: Intel Corporation Platform Controller
-Hub EG20T General Purpose IO Controller (rev 01)
-02:02.0 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #4 (rev 02)
-02:02.1 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #5 (rev 02)
-02:02.2 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #6 (rev 02)
-02:02.3 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB2 EHCI Controller #2 (rev 02)
-02:02.4 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB Client Controller (rev 02)
-02:04.0 SD Host controller: Intel Corporation Platform Controller Hub
-EG20T SDIO Controller #1 (rev 01)
-02:04.1 SD Host controller: Intel Corporation Platform Controller Hub
-EG20T SDIO Controller #2 (rev 01)
-02:06.0 SATA controller: Intel Corporation Platform Controller Hub
-EG20T SATA AHCI Controller (rev 02)
-02:08.0 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #1 (rev 02)
-02:08.1 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #2 (rev 02)
-02:08.2 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB OHCI Controller #3 (rev 02)
-02:08.3 USB Controller: Intel Corporation Platform Controller Hub
-EG20T USB2 EHCI Controller #1 (rev 02)
-02:0a.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-Hub EG20T DMA Controller #1
-02:0a.1 Serial controller: Intel Corporation Platform Controller Hub
-EG20T UART Controller 0 (rev 01)
-02:0a.2 Serial controller: Intel Corporation Platform Controller Hub
-EG20T UART Controller 1
-02:0a.3 Serial controller: Intel Corporation Platform Controller Hub
-EG20T UART Controller 2
-02:0a.4 Serial controller: Intel Corporation Platform Controller Hub
-EG20T UART Controller 3
-02:0c.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-Hub EG20T DMA Controller #2
-02:0c.1 Serial bus controller [0c80]: Intel Corporation Platform
-Controller Hub EG20T Serial Peripheral Interface Bus
-02:0c.2 Serial bus controller [0c80]: Intel Corporation Platform
-Controller Hub EG20T I2C Controller
-02:0c.3 CANBUS: Intel Corporation Platform Controller Hub EG20T
-Controller Area Network (CAN) Controller
-02:0c.4 Unassigned class [ff00]: Intel Corporation Platform Controller
-Hub EG20T IEEE 1588 Hardware Assist (rev 01)
-03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+Argh, these are called before ACPI objects are initialized
+(or parsed at all) and won't work:
+drivers/acpi/ec.c:      status = acpi_get_devices(ec_device_ids[0].id, ec_parse_device,
+arch/ia64/kernel/acpi.c:        acpi_get_devices(NULL, acpi_map_iosapic, NULL, NULL);
+drivers/pnp/pnpacpi/core.c:     acpi_get_devices(NULL, pnpacpi_add_device_handler, NULL, NULL);
+arch/x86/pci/mmconfig-shared.c: acpi_get_devices("PNP0C01", find_mboard_resource, &mcfg_res, NULL);
+arch/x86/pci/mmconfig-shared.c:         acpi_get_devices("PNP0C02", find_mboard_resource, &mcfg_res,
+arch/ia64/sn/kernel/io_acpi_init.c:     acpi_get_devices("SGIHUB", sn_acpi_hubdev_init, NULL, NULL);
+arch/ia64/sn/kernel/io_acpi_init.c:     acpi_get_devices("SGITIO", sn_acpi_hubdev_init, NULL, NULL);
 
+Looks like it's not worth it.
+I paste my patch anyway, if there is any use-case,
+it's already tested and works...:
 
-The two important lines are these ones:
+---
+ACPI: Provide an acpi device search on acpi bus registered devices
 
-03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+These should replace unnecessary acpi_get_devices invokations
+which ends in a namespace walk.
 
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: Matthew Garrett <mjg@redhat.com>
+CC: Len Brown <lenb@kernel.org>
+CC: linux-acpi@vger.kernel.org
+CC: seth.forshee@canonical.com
+CC: Azael Avalos <coproscefalo@gmail.com>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-As you can see we have two equal network controllers, which both are using the
-e1000e driver. In this case I think that the driver gets first control
-over 03:00.0
-and then over 05:00.0.
+---
+ drivers/acpi/scan.c  |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h |    4 +++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
-So it is the case that
-- 03:00.0 is eth0
-- 05:00.0 is eth1
-
-To sum it up, if there are two devices handled by the same driver the
-device, which is
-higher in the pci bus, will become eth0. Or?
-
-I could use udev to change the device numbers, but as its is MAC based
-it is no solution
-for me. We are selling devices, which run linux on it and we have lots
-of MAC addresses :)
-
-In the end I think linux did the assignment correctly, whereas for
-windows I did not find
-any documentation :(
-
-Greets,
---
-Christian Gmeiner, MSc
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 8ab80ba..efd97ea 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1606,3 +1606,69 @@ int __init acpi_scan_init(void)
+ 
+ 	return result;
+ }
++
++static int acpi_bus_find_cb(struct device *dev, void *data)
++{
++	struct acpi_device_id *ids = data;
++
++	if (acpi_match_device_ids(to_acpi_device(dev), ids) == 0)
++		return 1;
++	return 0;
++}
++
++/**
++ * acpi_find_devices - find acpi devices of a given HID and execute callback
++ * @ids: The Hardware IDs for matching devices
++ * @match: A callback function which is executed for matching HIDs
++ *
++ * This is the counterpart of acpi_get_devices from ACPICA sources which
++ * should not get executed because it performs a namespace walk.
++ * This function instead iterates only over all ACPI devices found by initially
++ * parsing the ACPI namespace (and thus got added to the ACPI bus).
++ * One difference to acpi_get_devices is that it only finds active devices
++ * which were successfully added to the acpi bus and show up in
++ * /sys/devices/LNXSYSTM:00 and for which an ACPI driver's .add function would
++ * get called.
++ *
++ * ACPI devices with a matching HID or CID are recognized.
++ *
++ * If match returns zero, no further, possibly matching devices are processed.
++ */
++int acpi_find_devices(struct acpi_device_id *ids, void *data,
++		      int (*match) (struct acpi_device *dev, void *data))
++{
++	struct device *hit_dev = NULL;
++
++	while(1) {
++		hit_dev = bus_find_device(&acpi_bus_type, hit_dev, ids,
++					  acpi_bus_find_cb);
++		if (!hit_dev)
++			break;
++		if (!match(to_acpi_device(hit_dev), data))
++			break;
++	}
++	return 0;		
++}
++EXPORT_SYMBOL_GPL(acpi_find_devices);
++
++/**
++ * acpi_find_device - find an acpi device of a given HID
++ * @ids: The Hardware IDs for matching devices
++ *
++ * Same as acpi_find_devices, but the search will stop on the first found
++ * device and its structure is returned.
++ *
++ * Use this one if you are sure that only 1 ACPI device of a given HID can
++ * exist in ACPI namespace.
++ *
++ * Returns NULL if no device is found.
++ */
++struct acpi_device *acpi_find_device(struct acpi_device_id *ids)
++{
++	struct device *dev = bus_find_device(&acpi_bus_type, NULL, ids,
++					     acpi_bus_find_cb);
++	if (dev)
++		return to_acpi_device(dev);
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(acpi_find_device);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 6001b4da..2f9e09e 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -146,6 +146,10 @@ struct acpi_pci_driver {
+ int acpi_pci_register_driver(struct acpi_pci_driver *driver);
+ void acpi_pci_unregister_driver(struct acpi_pci_driver *driver);
+ 
++extern int acpi_find_devices(struct acpi_device_id *ids, void *data,
++			     int (*match) (struct acpi_device *dev, void *data));
++extern struct acpi_device *acpi_find_device(struct acpi_device_id *ids);
++
+ extern int ec_read(u8 addr, u8 *val);
+ extern int ec_write(u8 addr, u8 val);
+ extern int ec_transaction(u8 command,
