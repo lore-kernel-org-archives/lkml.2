@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758973Ab1LPMlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 07:41:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57382 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1LPMlC (ORCPT
+	id S1759124Ab1LPMu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 07:50:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34119 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1LPMuw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 07:41:02 -0500
-X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=-YAZRknjPdYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=D19gQVrFAAAA:8 a=pGLkceISAAAA:8 a=bDutdN0_0ZJS8IUayg0A:9 a=kcW0Hj0i8duS9fZ5pbcA:7 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324039259.23971.127.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/1] Fix Compilation Warning in kernel/trace/trace.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 16 Dec 2011 07:40:59 -0500
-In-Reply-To: <1324019724-3422-1-git-send-email-devendra.aaru@gmail.com>
-References: <1324019724-3422-1-git-send-email-devendra.aaru@gmail.com>
+	Fri, 16 Dec 2011 07:50:52 -0500
+Message-ID: <1324039793.18942.80.camel@twins>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+From: Peter Zijlstra <peterz@infradead.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "frank.rowand@am.sony.com" <frank.rowand@am.sony.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 16 Dec 2011 13:49:53 +0100
+In-Reply-To: <20111216114320.GC6342@arm.com>
+References: <4EEAB90D.3050504@am.sony.com> <1324029272.18942.73.camel@twins>
+	 <20111216111319.GB6342@arm.com> <20111216114320.GC6342@arm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 02:15 -0500, Devendra Naga wrote:
-> there was a compilation warning saying
-> kernel/trace/trace.c:3644:8: warning: ‘page2’ may be used uninitialized in this function
-
-Nacked-by: Steven Rostedt <rostedt@goodmis.org>
-
-And I also nacked this same fix here:
-
-https://lkml.org/lkml/2011/11/28/287
-
-
+On Fri, 2011-12-16 at 11:43 +0000, Catalin Marinas wrote:
+> From 26d87e955f089fd246bee29bb388f22da1297e0c Mon Sep 17 00:00:00 2001
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> Date: Fri, 16 Dec 2011 11:32:26 +0000
+> Subject: [PATCH] sched, mm: Use activate_mm() instead of switch_mm()
 > 
-> The page2 pointer is used only when nr_pages = 2.
+> The ARM port tries to remove __ARCH_WANT_INTERRUPTS_ON_CTXSW. Since the
+> actual pgd switching requires interrupts to be enabled on ARM (for
+> latency on ARMv5 and earlier and IPIs on ARMv6+), the solution is to
+> defer the pgd switching to a post context switch hook that is run with
+> interrupts enabled. There are however two additional direct calls to
+> switch_mm() without the additional post-switch hook and ARM would fail
+> to set the new pgd.
 > 
-> Assigned a null value to the page2 to get rid of warning.
-
-
-Please please please, do not just fix warnings without actually looking
-at the code.
-
-1) this is a bug in the compiler, which happens to be fixed in newer
-compilers (which does not produce this warning). It just happens that
-gcc couldn't tell the simple usage of:
-
-	if (nr_pages == 2)
-		page2 = kmap_atomic(pages[1]);
-
-and later:
-
-	if (nr_pages == 2) {
-		len = PAGE_SIZE - offset;
-		memcpy(&entry->buf, page1 + offset, len);
-		memcpy(&entry->buf[len], page2, cnt - len);
-
-and finally:
-
-	if (nr_pages == 2)
-		kunmap_atomic(page2);
-
-nr_pages never changes during this code. Gcc probably got confused
-because on error exit, it does change (to unmap everything).
-
-2) But your fix is still wrong!
-
-Initializing it to NULL is wrong! Because it would hide a kernel bug if
-page2 was really used uninitialized. As passing NULL as the source of
-memcpy will panic the kernel.
-
-Again, do not just randomly post fixes to gcc warnings without
-understanding the real fix.
-
-Thanks,
-
--- Steve
-
-
-
+> This patch changes the switch_mm() call with activate_mm() which ensures
+> that the required pgd has been set. The activate_mm() function must be
+> called with interrupts enabled.
 > 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 > ---
->  kernel/trace/trace.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  kernel/sched.c   |    2 +-
+>  mm/mmu_context.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index f2bd275..80dfd92 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3641,7 +3641,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
->  	int nr_pages = 1;
->  	ssize_t written;
->  	void *page1;
-> -	void *page2;
-> +	void *page2 = NULL;
->  	int offset;
->  	int size;
->  	int len;
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 7b46a39..3976157 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -6310,7 +6310,7 @@ void idle_task_exit(void)
+>         BUG_ON(cpu_online(smp_processor_id()));
+>  
+>         if (mm != &init_mm)
+> -               switch_mm(mm, &init_mm, current);
+> +               activate_mm(mm, &init_mm);
+>         mmdrop(mm);
+>  }
+>  
+> diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+> index cf332bc..4e44ac4 100644
+> --- a/mm/mmu_context.c
+> +++ b/mm/mmu_context.c
+> @@ -32,7 +32,7 @@ void use_mm(struct mm_struct *mm)
+>                 tsk->active_mm = mm;
+>         }
+>         tsk->mm = mm;
+> -       switch_mm(active_mm, mm, tsk);
+> +       activate_mm(active_mm, mm);
+>         task_unlock(tsk);
+>  
+>         if (active_mm != mm)
+> 
 
-
+alpha, cris, microblaze, powerpc appear to actually use that task
+argument of switch_mm(), so I'm not convinced this is actually correct.
