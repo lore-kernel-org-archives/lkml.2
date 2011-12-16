@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab1LPMeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 07:34:22 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36367 "EHLO
+	id S1759382Ab1LPMee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 07:34:34 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36724 "EHLO
 	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759337Ab1LPMdb (ORCPT
+	with ESMTP id S1759074Ab1LPMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 07:33:31 -0500
+	Fri, 16 Dec 2011 07:34:09 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,314 +24,991 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 16 Dec 2011 17:58:39 +0530
-Message-Id: <20111216122839.2085.28433.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 16 Dec 2011 17:59:51 +0530
+Message-Id: <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
 References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v8 3.2.0-rc5 4/9] uprobes: counter to optimize probe hits.
-x-cbid: 11121612-3864-0000-0000-000000892EC6
+Subject: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
+x-cbid: 11121612-3864-0000-0000-00000089306B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Maintain a per-mm counter (number of uprobes that are inserted on
-this process address space). This counter can be used at probe hit
-time to determine if we need to do a uprobe lookup in the uprobes
-rbtree. Everytime a probe gets inserted successfully, the probe
-count is incremented and everytime a probe gets removed successfully
-the probe count is removed.
+- Enhances perf probe to user space executables and libraries.
+- Enhances -F/--funcs option of "perf probe" to list possible probe points in
+  an executable file or library.
+- Documents userspace probing support in perf.
 
-A new hook munmap_uprobe is added to keep the counter to be correct
-even when a region is unmapped or remapped. This patch expects that
-once a munmap_uprobe() is called, the vma either go away or a
-subsequent mmap_uprobe gets called before a removal of a probe from
-unregister_uprobe in the same address space.
+[ Probing a function in the executable using function name  ]
+perf probe -x /bin/zsh zfree
 
-On every executable vma thats cowed at fork, mmap_uprobe is called
-so that the mm_uprobes_count is in sync.
+[ Probing a library function using function name ]
+perf probe -x /lib64/libc.so.6 malloc
 
-When a vma of interest is mapped, insert the breakpoint at the right
-address. Upon munmap, just make sure the data structures are
-adjusted/cleaned up.
+[ list probe-able functions in an executable ]
+perf probe -F -x /bin/zsh
 
-On process creation, make sure the probes count in the child is set
-correctly.
-
-Special cases that are taken care include:
-a. mremap()
-b. VM_DONTCOPY vmas on fork()
-c. insertion/removal races in the parent during fork().
+[ list probe-able functions in an library]
+perf probe -F -x /lib/libc.so.6
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
-Changelog (since v5)
-- While forking, handle vma's that have VM_DONTCOPY.
-- While forking, handle race of new breakpoints being inserted / removed
-  in the parent process.
 
-Changelog (since v7)
-- Separate this patch from the patch that implements mmap_uprobe.
-- Increment counter only after verifying that the probe lies underneath.
+(Changelog (since v5)
+- Removed the separate documentation change patch and added the
+  documentation changes as part of this patch.
 
- include/linux/mm_types.h |    1 
- include/linux/uprobes.h  |    4 ++
- kernel/fork.c            |    4 ++
- kernel/uprobes.c         |  104 ++++++++++++++++++++++++++++++++++++++++++++--
- mm/mmap.c                |   10 ++++
- 5 files changed, 118 insertions(+), 5 deletions(-)
+[root@localhost ~]# perf probe -x /bin/zsh zfree
+Add new event:
+  probe_zsh:zfree      (on /bin/zsh:0x45400)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index e9eac38..2595c9c 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -391,6 +391,7 @@ struct mm_struct {
- 	struct cpumask cpumask_allocation;
- #endif
- #ifdef CONFIG_UPROBES
-+	atomic_t mm_uprobes_count;
- 	struct uprobes_xol_area *uprobes_xol_area;
- #endif
- };
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 9e25c41..adaa8d3 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -126,6 +126,7 @@ extern void unregister_uprobe(struct inode *inode, loff_t offset,
- extern void free_uprobe_utask(struct task_struct *tsk);
- extern void free_uprobes_xol_area(struct mm_struct *mm);
- extern int mmap_uprobe(struct vm_area_struct *vma);
-+extern void munmap_uprobe(struct vm_area_struct *vma);
- extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
- extern int uprobe_post_notifier(struct pt_regs *regs);
- extern int uprobe_bkpt_notifier(struct pt_regs *regs);
-@@ -146,6 +147,9 @@ static inline int mmap_uprobe(struct vm_area_struct *vma)
- {
+You can now use it on all perf tools, such as:
+
+	perf record -e probe_zsh:zfree -aR sleep 1
+
+[root@localhost ~]# perf record -e probe_zsh:zfree -aR sleep 15
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.314 MB perf.data (~13715 samples) ]
+[root@localhost ~]# perf report --stdio
+# Events: 3K probe_zsh:zfree
+#
+# Overhead  Command  Shared Object  Symbol
+# ........  .......  .............  ......
+#
+   100.00%              zsh  zsh            [.] zfree
+
+
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+[root@localhost ~]
+
+[ Probing a library function using function name ]
+--------------------------------------------------
+[root@localhost]#
+[root@localhost]# perf probe -x /lib64/libc.so.6 malloc
+Add new event:
+  probe_libc:malloc    (on /lib64/libc-2.5.so:0x74dc0)
+
+You can now use it on all perf tools, such as:
+
+	perf record -e probe_libc:malloc -aR sleep 1
+
+[root@localhost]#
+[root@localhost]# perf probe --list
+  probe_libc:malloc    (on /lib64/libc-2.5.so:0x0000000000074dc0)
+
+
+Show last 10 functions in /bin/zsh.
+
+# perf probe -F -x /bin/zsh | tail
+zstrtol
+ztrcmp
+ztrdup
+ztrduppfx
+ztrftime
+ztrlen
+ztrncpy
+ztrsub
+zwarn
+zwarnnam
+
+Show first 10 functions in /lib/libc.so.6
+
+# perf probe -F -x /lib/libc.so.6 | head
+_IO_adjust_column
+_IO_adjust_wcolumn
+_IO_default_doallocate
+_IO_default_finish
+_IO_default_pbackfail
+_IO_default_uflow
+_IO_default_xsgetn
+_IO_default_xsputn
+_IO_do_write@@GLIBC_2.2.5
+_IO_doallocbuf
+
+ tools/perf/Documentation/perf-probe.txt |   14 +
+ tools/perf/builtin-probe.c              |   41 +++
+ tools/perf/util/probe-event.c           |  395 +++++++++++++++++++++++++------
+ tools/perf/util/probe-event.h           |   12 +
+ tools/perf/util/symbol.c                |    8 +
+ tools/perf/util/symbol.h                |    1 
+ 6 files changed, 380 insertions(+), 91 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 2780d9c..be88378 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -78,6 +78,8 @@ OPTIONS
+ -F::
+ --funcs::
+ 	Show available functions in given module or kernel.
++	With -x/--exec, can also list functions in a user space executable
++	/ shared library.
+ 
+ --filter=FILTER::
+ 	(Only for --vars and --funcs) Set filter. FILTER is a combination of glob
+@@ -98,6 +100,11 @@ OPTIONS
+ --max-probes::
+ 	Set the maximum number of probe points for an event. Default is 128.
+ 
++-x::
++--exec=PATH::
++	Specify path to the executable or shared library file for user
++	space tracing. Can also be used with --funcs option.
++
+ PROBE SYNTAX
+ ------------
+ Probe points are defined by following syntax.
+@@ -182,6 +189,13 @@ Delete all probes on schedule().
+ 
+  ./perf probe --del='schedule*'
+ 
++Add probes at zfree() function on /bin/zsh
++
++ ./perf probe -x /bin/zsh zfree
++
++Add probes at malloc() function on libc
++
++ ./perf probe -x /lib/libc.so.6 malloc
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 93d5171..5e7622c 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -57,6 +57,7 @@ static struct {
+ 	bool show_ext_vars;
+ 	bool show_funcs;
+ 	bool mod_events;
++	bool uprobes;
+ 	int nevents;
+ 	struct perf_probe_event events[MAX_PROBES];
+ 	struct strlist *dellist;
+@@ -78,6 +79,7 @@ static int parse_probe_event(const char *str)
+ 		return -1;
+ 	}
+ 
++	pev->uprobes = params.uprobes;
+ 	/* Parse a perf-probe command into event */
+ 	ret = parse_perf_probe_command(str, pev);
+ 	pr_debug("%d arguments\n", pev->nargs);
+@@ -128,6 +130,27 @@ static int opt_del_probe_event(const struct option *opt __used,
  	return 0;
  }
-+static inline void munmap_uprobe(struct vm_area_struct *vma)
+ 
++static int opt_set_target(const struct option *opt, const char *str,
++			int unset __used)
 +{
-+}
- static inline void uprobe_notify_resume(struct pt_regs *regs)
- {
- }
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 2da316e..2b3a5e0 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -417,6 +417,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 
- 		if (retval)
- 			goto out;
++	int ret = -ENOENT;
 +
-+		if (file && mmap_uprobe(tmp))
-+			goto out;
- 	}
- 	/* a new mm has just been created */
- 	arch_dup_mmap(oldmm, mm);
-@@ -738,6 +741,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- 	mm->pmd_huge_pte = NULL;
- #endif
- #ifdef CONFIG_UPROBES
-+	atomic_set(&mm->mm_uprobes_count, 0);
- 	mm->uprobes_xol_area = NULL;
- #endif
- 
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index d242afc..961c232 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -615,6 +615,30 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma,
- 	return __copy_insn(mapping, vma, uprobe->insn, bytes, uprobe->offset);
- }
- 
-+/*
-+ * How mm_uprobes_count gets updated
-+ * mmap_uprobe() increments the count if
-+ * 	- it successfully adds a breakpoint.
-+ * 	- it not add a breakpoint, but sees that there is a underlying
-+ * 	  breakpoint (via a is_bkpt_at_addr()).
-+ *
-+ * munmap_uprobe() decrements the count if
-+ * 	- it sees a underlying breakpoint, (via is_bkpt_at_addr)
-+ * 	- Subsequent unregister_uprobe wouldnt find the breakpoint
-+ * 	  unless a mmap_uprobe kicks in, since the old vma would be
-+ * 	  dropped just after munmap_uprobe.
-+ *
-+ * register_uprobe increments the count if:
-+ * 	- it successfully adds a breakpoint.
-+ *
-+ * unregister_uprobe decrements the count if:
-+ * 	- it sees a underlying breakpoint and removes successfully.
-+ * 			(via is_bkpt_at_addr)
-+ * 	- Subsequent munmap_uprobe wouldnt find the breakpoint
-+ * 	  since there is no underlying breakpoint after the
-+ * 	  breakpoint removal.
-+ */
++	if  (str && !params.target) {
++		if (!strcmp(opt->long_name, "exec"))
++			params.uprobes = true;
++#ifdef DWARF_SUPPORT
++		else if (!strcmp(opt->long_name, "module"))
++			params.uprobes = false;
++#endif
++		else
++			return ret;
 +
- static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 				struct vm_area_struct *vma, loff_t vaddr)
- {
-@@ -646,7 +670,19 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 
- 		uprobe->flags |= UPROBES_COPY_INSN;
- 	}
-+
-+	/*
-+	 * Ideally, should be updating the probe count after the breakpoint
-+	 * has been successfully inserted. However a thread could hit the
-+	 * breakpoint we just inserted even before the probe count is
-+	 * incremented. If this is the first breakpoint placed, breakpoint
-+	 * notifier might ignore uprobes and pass the trap to the thread.
-+	 * Hence increment before and decrement on failure.
-+	 */
-+	atomic_inc(&mm->mm_uprobes_count);
- 	ret = set_bkpt(mm, uprobe, addr);
-+	if (ret)
-+		atomic_dec(&mm->mm_uprobes_count);
- 
- 	return ret;
- }
-@@ -654,7 +690,8 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 							loff_t vaddr)
- {
--	set_orig_insn(mm, uprobe, (unsigned long)vaddr, true);
-+	if (!set_orig_insn(mm, uprobe, (unsigned long)vaddr, true))
-+		atomic_dec(&mm->mm_uprobes_count);
- }
- 
- /*
-@@ -960,7 +997,7 @@ int mmap_uprobe(struct vm_area_struct *vma)
- 	struct list_head tmp_list;
- 	struct uprobe *uprobe, *u;
- 	struct inode *inode;
--	int ret = 0;
-+	int ret = 0, count = 0;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
- 		return ret;	/* Bail-out */
-@@ -984,17 +1021,75 @@ int mmap_uprobe(struct vm_area_struct *vma)
- 			}
- 			ret = install_breakpoint(vma->vm_mm, uprobe, vma,
- 								vaddr);
--			if (ret == -EEXIST)
-+			if (ret == -EEXIST) {
- 				ret = 0;
-+				if (!is_bkpt_at_addr(vma->vm_mm, vaddr))
-+					continue;
-+
-+				/*
-+				 * Unable to insert a breakpoint, but
-+				 * breakpoint lies underneath. Increment the
-+				 * probe count.
-+				 */
-+				atomic_inc(&vma->vm_mm->mm_uprobes_count);
-+			}
-+			if (!ret)
-+				count++;
-+
- 		}
- 		put_uprobe(uprobe);
- 	}
- 
- 	mutex_unlock(uprobes_mmap_hash(inode));
-+	if (ret)
-+		atomic_sub(count, &vma->vm_mm->mm_uprobes_count);
- 
- 	return ret;
- }
- 
-+/*
-+ * Called in context of a munmap of a vma.
-+ */
-+void munmap_uprobe(struct vm_area_struct *vma)
-+{
-+	struct list_head tmp_list;
-+	struct uprobe *uprobe, *u;
-+	struct inode *inode;
-+
-+	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-+		return;		/* Bail-out */
-+
-+	if (!atomic_read(&vma->vm_mm->mm_uprobes_count))
-+		return;
-+
-+	inode = vma->vm_file->f_mapping->host;
-+	if (!inode)
-+		return;
-+
-+	INIT_LIST_HEAD(&tmp_list);
-+	mutex_lock(uprobes_mmap_hash(inode));
-+	build_probe_list(inode, &tmp_list);
-+	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+		loff_t vaddr;
-+
-+		list_del(&uprobe->pending_list);
-+		vaddr = vma->vm_start + uprobe->offset;
-+		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-+		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
-+
-+			/*
-+			 * An unregister could have removed the probe before
-+			 * unmap. So check before we decrement the count.
-+			 */
-+			if (is_bkpt_at_addr(vma->vm_mm, vaddr) == 1)
-+				atomic_dec(&vma->vm_mm->mm_uprobes_count);
-+		}
-+		put_uprobe(uprobe);
++		params.target = str;
++		ret = 0;
 +	}
-+	mutex_unlock(uprobes_mmap_hash(inode));
-+	return;
++	return ret;
 +}
 +
- /* Slot allocation for XOL */
- static int xol_add_vma(struct uprobes_xol_area *area)
- {
-@@ -1397,7 +1492,8 @@ int uprobe_bkpt_notifier(struct pt_regs *regs)
- {
- 	struct uprobe_task *utask;
+ #ifdef DWARF_SUPPORT
+ static int opt_show_lines(const struct option *opt __used,
+ 			  const char *str, int unset __used)
+@@ -249,9 +272,9 @@ static const struct option options[] = {
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+ 		   "directory", "path to kernel source"),
+-	OPT_STRING('m', "module", &params.target,
+-		   "modname|path",
+-		   "target module name (for online) or path (for offline)"),
++	OPT_CALLBACK('m', "module", NULL, "modname|path",
++		"target module name (for online) or path (for offline)",
++		opt_set_target),
+ #endif
+ 	OPT__DRY_RUN(&probe_event_dry_run),
+ 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+@@ -263,6 +286,8 @@ static const struct option options[] = {
+ 		     "\t\t\t(default: \"" DEFAULT_VAR_FILTER "\" for --vars,\n"
+ 		     "\t\t\t \"" DEFAULT_FUNC_FILTER "\" for --funcs)",
+ 		     opt_set_filter),
++	OPT_CALLBACK('x', "exec", NULL, "executable|path",
++			"target executable name or path", opt_set_target),
+ 	OPT_END()
+ };
  
--	if (!current->mm)
-+	if (!current->mm || !atomic_read(&current->mm->mm_uprobes_count))
-+		/* task is currently not uprobed */
- 		return 0;
- 
- 	utask = current->utask;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 0966418..83813fa 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		__remove_shared_vm_struct(vma, file, mapping);
- 		mutex_unlock(&mapping->i_mmap_mutex);
-+		munmap_uprobe(vma);
+@@ -313,6 +338,10 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			pr_err("  Error: Don't use --list with --funcs.\n");
+ 			usage_with_options(probe_usage, options);
+ 		}
++		if (params.uprobes) {
++			pr_warning("  Error: Don't use --list with --exec.\n");
++			usage_with_options(probe_usage, options);
++		}
+ 		ret = show_perf_probe_events();
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show event list. (%d)\n",
+@@ -336,8 +365,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+-		ret = show_available_funcs(params.target,
+-					   params.filter);
++		ret = show_available_funcs(params.target, params.filter,
++					params.uprobes);
+ 		strfilter__delete(params.filter);
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show functions."
+@@ -346,7 +375,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
  	}
+ 
+ #ifdef DWARF_SUPPORT
+-	if (params.show_lines) {
++	if (params.show_lines && !params.uprobes) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --line with"
+ 			       " --add/--del.\n");
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index d54eefb..2c4ec61 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -47,6 +47,7 @@
+ #include "trace-event.h"	/* For __unused */
+ #include "probe-event.h"
+ #include "probe-finder.h"
++#include "session.h"
+ 
+ #define MAX_CMDLEN 256
+ #define MAX_PROBE_ARGS 128
+@@ -73,6 +74,8 @@ static int e_snprintf(char *str, size_t size, const char *format, ...)
  }
  
-@@ -546,8 +547,14 @@ again:			remove_next = 1 + (end > next->vm_end);
+ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
++static int convert_name_to_addr(struct perf_probe_event *pev,
++				const char *exec);
+ static struct machine machine;
  
- 	if (file) {
- 		mapping = file->f_mapping;
--		if (!(vma->vm_flags & VM_NONLINEAR))
-+		if (!(vma->vm_flags & VM_NONLINEAR)) {
- 			root = &mapping->i_mmap;
-+			munmap_uprobe(vma);
+ /* Initialize symbol maps and path of vmlinux/modules */
+@@ -173,6 +176,31 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
+ 
++static int init_perf_uprobes(void)
++{
++	int ret = 0;
 +
-+			if (adjust_next)
-+				munmap_uprobe(next);
++	symbol_conf.try_vmlinux_path = false;
++	symbol_conf.sort_by_name = true;
++	ret = symbol__init();
++	if (ret < 0)
++		pr_debug("Failed to init symbol map.\n");
++
++	return ret;
++}
++
++static int convert_to_perf_probe_point(struct probe_trace_point *tp,
++					struct perf_probe_point *pp)
++{
++	pp->function = strdup(tp->symbol);
++	if (pp->function == NULL)
++		return -ENOMEM;
++	pp->offset = tp->offset;
++	pp->retprobe = tp->retprobe;
++
++	return 0;
++}
++
+ #ifdef DWARF_SUPPORT
+ /* Open new debuginfo of given module */
+ static struct debuginfo *open_debuginfo(const char *module)
+@@ -281,6 +309,15 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 	struct debuginfo *dinfo = open_debuginfo(target);
+ 	int ntevs, ret = 0;
+ 
++	if (pev->uprobes) {
++		if (need_dwarf) {
++			pr_warning("Debuginfo-analysis is not yet supported"
++					" with -x/--exec option.\n");
++			return -ENOSYS;
++		}
++		return convert_name_to_addr(pev, target);
++	}
++
+ 	if (!dinfo) {
+ 		if (need_dwarf) {
+ 			pr_warning("Failed to open debuginfo file.\n");
+@@ -606,23 +643,20 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 		pr_err("Failed to find symbol %s in kernel.\n", tp->symbol);
+ 		return -ENOENT;
+ 	}
+-	pp->function = strdup(tp->symbol);
+-	if (pp->function == NULL)
+-		return -ENOMEM;
+-	pp->offset = tp->offset;
+-	pp->retprobe = tp->retprobe;
+-
+-	return 0;
++	return convert_to_perf_probe_point(tp, pp);
+ }
+ 
+ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 				struct probe_trace_event **tevs __unused,
+-				int max_tevs __unused, const char *mod __unused)
++				int max_tevs __unused, const char *target)
+ {
+ 	if (perf_probe_event_need_dwarf(pev)) {
+ 		pr_warning("Debuginfo-analysis is not supported.\n");
+ 		return -ENOSYS;
+ 	}
++	if (pev->uprobes)
++		return convert_name_to_addr(pev, target);
++
+ 	return 0;
+ }
+ 
+@@ -887,6 +921,11 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
+ 		return -EINVAL;
+ 	}
+ 
++	if (pev->uprobes && !pp->function) {
++		semantic_error("No function specified for uprobes");
++		return -EINVAL;
++	}
++
+ 	if ((pp->offset || pp->line || pp->lazy_line) && pp->retprobe) {
+ 		semantic_error("Offset/Line/Lazy pattern can't be used with "
+ 			       "return probe.\n");
+@@ -896,6 +935,11 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
+ 	pr_debug("symbol:%s file:%s line:%d offset:%lu return:%d lazy:%s\n",
+ 		 pp->function, pp->file, pp->line, pp->offset, pp->retprobe,
+ 		 pp->lazy_line);
++
++	if (pev->uprobes && perf_probe_event_need_dwarf(pev)) {
++		semantic_error("no dwarf based probes for uprobes.");
++		return -EINVAL;
++	}
+ 	return 0;
+ }
+ 
+@@ -1047,7 +1091,8 @@ bool perf_probe_event_need_dwarf(struct perf_probe_event *pev)
+ {
+ 	int i;
+ 
+-	if (pev->point.file || pev->point.line || pev->point.lazy_line)
++	if ((pev->point.file && !pev->uprobes) || pev->point.line ||
++					pev->point.lazy_line)
+ 		return true;
+ 
+ 	for (i = 0; i < pev->nargs; i++)
+@@ -1344,11 +1389,17 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+ 	if (buf == NULL)
+ 		return NULL;
+ 
+-	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
+-			 tp->retprobe ? 'r' : 'p',
+-			 tev->group, tev->event,
+-			 tp->module ?: "", tp->module ? ":" : "",
+-			 tp->symbol, tp->offset);
++	if (tev->uprobes)
++		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s",
++				 tp->retprobe ? 'r' : 'p',
++				 tev->group, tev->event, tp->symbol);
++	else
++		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
++				 tp->retprobe ? 'r' : 'p',
++				 tev->group, tev->event,
++				 tp->module ?: "", tp->module ? ":" : "",
++				 tp->symbol, tp->offset);
++
+ 	if (len <= 0)
+ 		goto error;
+ 
+@@ -1367,7 +1418,7 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+ }
+ 
+ static int convert_to_perf_probe_event(struct probe_trace_event *tev,
+-				       struct perf_probe_event *pev)
++			       struct perf_probe_event *pev, bool is_kprobe)
+ {
+ 	char buf[64] = "";
+ 	int i, ret;
+@@ -1379,7 +1430,11 @@ static int convert_to_perf_probe_event(struct probe_trace_event *tev,
+ 		return -ENOMEM;
+ 
+ 	/* Convert trace_point to probe_point */
+-	ret = kprobe_convert_to_perf_probe(&tev->point, &pev->point);
++	if (is_kprobe)
++		ret = kprobe_convert_to_perf_probe(&tev->point, &pev->point);
++	else
++		ret = convert_to_perf_probe_point(&tev->point, &pev->point);
++
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -1475,7 +1530,7 @@ static void clear_probe_trace_event(struct probe_trace_event *tev)
+ 	memset(tev, 0, sizeof(*tev));
+ }
+ 
+-static int open_kprobe_events(bool readwrite)
++static int open_probe_events(bool readwrite, bool is_kprobe)
+ {
+ 	char buf[PATH_MAX];
+ 	const char *__debugfs;
+@@ -1486,8 +1541,13 @@ static int open_kprobe_events(bool readwrite)
+ 		pr_warning("Debugfs is not mounted.\n");
+ 		return -ENOENT;
+ 	}
++	if (is_kprobe)
++		ret = e_snprintf(buf, PATH_MAX, "%stracing/kprobe_events",
++							__debugfs);
++	else
++		ret = e_snprintf(buf, PATH_MAX, "%stracing/uprobe_events",
++							__debugfs);
+ 
+-	ret = e_snprintf(buf, PATH_MAX, "%stracing/kprobe_events", __debugfs);
+ 	if (ret >= 0) {
+ 		pr_debug("Opening %s write=%d\n", buf, readwrite);
+ 		if (readwrite && !probe_event_dry_run)
+@@ -1498,16 +1558,29 @@ static int open_kprobe_events(bool readwrite)
+ 
+ 	if (ret < 0) {
+ 		if (errno == ENOENT)
+-			pr_warning("kprobe_events file does not exist - please"
+-				 " rebuild kernel with CONFIG_KPROBE_EVENT.\n");
++			pr_warning("%s file does not exist - please"
++				" rebuild kernel with CONFIG_%s_EVENT.\n",
++				is_kprobe ? "kprobe_events" : "uprobe_events",
++				is_kprobe ? "KPROBE" : "UPROBE");
+ 		else
+-			pr_warning("Failed to open kprobe_events file: %s\n",
+-				   strerror(errno));
++			pr_warning("Failed to open %s file: %s\n",
++				is_kprobe ? "kprobe_events" : "uprobe_events",
++				strerror(errno));
+ 	}
+ 	return ret;
+ }
+ 
+-/* Get raw string list of current kprobe_events */
++static int open_kprobe_events(bool readwrite)
++{
++	return open_probe_events(readwrite, 1);
++}
++
++static int open_uprobe_events(bool readwrite)
++{
++	return open_probe_events(readwrite, 0);
++}
++
++/* Get raw string list of current kprobe_events  or uprobe_events */
+ static struct strlist *get_probe_trace_command_rawlist(int fd)
+ {
+ 	int ret, idx;
+@@ -1572,36 +1645,26 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
+ 	return ret;
+ }
+ 
+-/* List up current perf-probe events */
+-int show_perf_probe_events(void)
++static int __show_perf_probe_events(int fd, bool is_kprobe)
+ {
+-	int fd, ret;
++	int ret = 0;
+ 	struct probe_trace_event tev;
+ 	struct perf_probe_event pev;
+ 	struct strlist *rawlist;
+ 	struct str_node *ent;
+ 
+-	setup_pager();
+-	ret = init_vmlinux();
+-	if (ret < 0)
+-		return ret;
+-
+ 	memset(&tev, 0, sizeof(tev));
+ 	memset(&pev, 0, sizeof(pev));
+ 
+-	fd = open_kprobe_events(false);
+-	if (fd < 0)
+-		return fd;
+-
+ 	rawlist = get_probe_trace_command_rawlist(fd);
+-	close(fd);
+ 	if (!rawlist)
+ 		return -ENOENT;
+ 
+ 	strlist__for_each(ent, rawlist) {
+ 		ret = parse_probe_trace_command(ent->s, &tev);
+ 		if (ret >= 0) {
+-			ret = convert_to_perf_probe_event(&tev, &pev);
++			ret = convert_to_perf_probe_event(&tev, &pev,
++								is_kprobe);
+ 			if (ret >= 0)
+ 				ret = show_perf_probe_event(&pev);
+ 		}
+@@ -1611,6 +1674,31 @@ int show_perf_probe_events(void)
+ 			break;
+ 	}
+ 	strlist__delete(rawlist);
++	return ret;
++}
++
++/* List up current perf-probe events */
++int show_perf_probe_events(void)
++{
++	int fd, ret;
++
++	setup_pager();
++	fd = open_kprobe_events(false);
++	if (fd < 0)
++		return fd;
++
++	ret = init_vmlinux();
++	if (ret < 0)
++		return ret;
++
++	ret = __show_perf_probe_events(fd, true);
++	close(fd);
++
++	fd = open_uprobe_events(false);
++	if (fd >= 0) {
++		ret = __show_perf_probe_events(fd, false);
++		close(fd);
++	}
+ 
+ 	return ret;
+ }
+@@ -1720,7 +1808,10 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	const char *event, *group;
+ 	struct strlist *namelist;
+ 
+-	fd = open_kprobe_events(true);
++	if (pev->uprobes)
++		fd = open_uprobe_events(true);
++	else
++		fd = open_kprobe_events(true);
+ 	if (fd < 0)
+ 		return fd;
+ 	/* Get current event names */
+@@ -1832,6 +1923,7 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 	tev->point.offset = pev->point.offset;
+ 	tev->point.retprobe = pev->point.retprobe;
+ 	tev->nargs = pev->nargs;
++	tev->uprobes = pev->uprobes;
+ 	if (tev->nargs) {
+ 		tev->args = zalloc(sizeof(struct probe_trace_arg)
+ 				   * tev->nargs);
+@@ -1862,6 +1954,9 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 		}
+ 	}
+ 
++	if (pev->uprobes)
++		return 1;
++
+ 	/* Currently just checking function name from symbol map */
+ 	sym = __find_kernel_function_by_name(tev->point.symbol, NULL);
+ 	if (!sym) {
+@@ -1888,15 +1983,19 @@ struct __event_package {
+ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 			  int max_tevs, const char *target, bool force_add)
+ {
+-	int i, j, ret;
++	int i, j, ret = 0;
+ 	struct __event_package *pkgs;
+ 
+ 	pkgs = zalloc(sizeof(struct __event_package) * npevs);
+ 	if (pkgs == NULL)
+ 		return -ENOMEM;
+ 
+-	/* Init vmlinux path */
+-	ret = init_vmlinux();
++	if (!pevs->uprobes)
++		/* Init vmlinux path */
++		ret = init_vmlinux();
++	else
++		ret = init_perf_uprobes();
++
+ 	if (ret < 0) {
+ 		free(pkgs);
+ 		return ret;
+@@ -1968,23 +2067,15 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
+ 	return ret;
+ }
+ 
+-static int del_trace_probe_event(int fd, const char *group,
+-				  const char *event, struct strlist *namelist)
++static int del_trace_probe_event(int fd, const char *buf,
++						  struct strlist *namelist)
+ {
+-	char buf[128];
+ 	struct str_node *ent, *n;
+-	int found = 0, ret = 0;
+-
+-	ret = e_snprintf(buf, 128, "%s:%s", group, event);
+-	if (ret < 0) {
+-		pr_err("Failed to copy event.\n");
+-		return ret;
+-	}
++	int ret = -1;
+ 
+ 	if (strpbrk(buf, "*?")) { /* Glob-exp */
+ 		strlist__for_each_safe(ent, n, namelist)
+ 			if (strglobmatch(ent->s, buf)) {
+-				found++;
+ 				ret = __del_trace_probe_event(fd, ent);
+ 				if (ret < 0)
+ 					break;
+@@ -1993,40 +2084,41 @@ static int del_trace_probe_event(int fd, const char *group,
+ 	} else {
+ 		ent = strlist__find(namelist, buf);
+ 		if (ent) {
+-			found++;
+ 			ret = __del_trace_probe_event(fd, ent);
+ 			if (ret >= 0)
+ 				strlist__remove(namelist, ent);
+ 		}
+ 	}
+-	if (found == 0 && ret >= 0)
+-		pr_info("Info: Event \"%s\" does not exist.\n", buf);
+-
+ 	return ret;
+ }
+ 
+ int del_perf_probe_events(struct strlist *dellist)
+ {
+-	int fd, ret = 0;
++	int ret = -1, ufd = -1, kfd = -1;
++	char buf[128];
+ 	const char *group, *event;
+ 	char *p, *str;
+ 	struct str_node *ent;
+-	struct strlist *namelist;
+-
+-	fd = open_kprobe_events(true);
+-	if (fd < 0)
+-		return fd;
++	struct strlist *namelist = NULL, *unamelist = NULL;
+ 
+ 	/* Get current event names */
+-	namelist = get_probe_trace_event_names(fd, true);
+-	if (namelist == NULL)
+-		return -EINVAL;
++	kfd = open_kprobe_events(true);
++	if (kfd < 0)
++		return kfd;
++	namelist = get_probe_trace_event_names(kfd, true);
++
++	ufd = open_uprobe_events(true);
++	if (ufd >= 0)
++		unamelist = get_probe_trace_event_names(ufd, true);
++
++	if (namelist == NULL && unamelist == NULL)
++		goto error;
+ 
+ 	strlist__for_each(ent, dellist) {
+ 		str = strdup(ent->s);
+ 		if (str == NULL) {
+ 			ret = -ENOMEM;
+-			break;
++			goto error;
+ 		}
+ 		pr_debug("Parsing: %s\n", str);
+ 		p = strchr(str, ':');
+@@ -2038,17 +2130,40 @@ int del_perf_probe_events(struct strlist *dellist)
+ 			group = "*";
+ 			event = str;
+ 		}
++
++		ret = e_snprintf(buf, 128, "%s:%s", group, event);
++		if (ret < 0) {
++			pr_err("Failed to copy event.");
++			free(str);
++			goto error;
 +		}
 +
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		if (insert) {
- 			/*
-@@ -626,6 +633,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		pr_debug("Group: %s, Event: %s\n", group, event);
+-		ret = del_trace_probe_event(fd, group, event, namelist);
++		if (namelist)
++			ret = del_trace_probe_event(kfd, buf, namelist);
++		if (unamelist && ret != 0)
++			ret = del_trace_probe_event(ufd, buf, unamelist);
++
+ 		free(str);
+-		if (ret < 0)
+-			break;
++		if (ret != 0)
++			pr_info("Info: Event \"%s\" does not exist.\n", buf);
+ 	}
+-	strlist__delete(namelist);
+-	close(fd);
  
- 	if (remove_next) {
- 		if (file) {
-+			munmap_uprobe(next);
- 			fput(file);
- 			if (next->vm_flags & VM_EXECUTABLE)
- 				removed_exe_file_vma(mm);
++error:
++	if (kfd >= 0) {
++		if (namelist)
++			strlist__delete(namelist);
++		close(kfd);
++	}
++
++	if (ufd >= 0) {
++		if (unamelist)
++			strlist__delete(unamelist);
++		close(ufd);
++	}
+ 	return ret;
+ }
++
+ /* TODO: don't use a global variable for filter ... */
+ static struct strfilter *available_func_filter;
+ 
+@@ -2065,30 +2180,150 @@ static int filter_available_functions(struct map *map __unused,
+ 	return 1;
+ }
+ 
+-int show_available_funcs(const char *target, struct strfilter *_filter)
++static int __show_available_funcs(struct map *map)
++{
++	if (map__load(map, filter_available_functions)) {
++		pr_err("Failed to load map.\n");
++		return -EINVAL;
++	}
++	if (!dso__sorted_by_name(map->dso, map->type))
++		dso__sort_by_name(map->dso, map->type);
++
++	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
++	return 0;
++}
++
++static int available_kernel_funcs(const char *module)
+ {
+ 	struct map *map;
+ 	int ret;
+ 
+-	setup_pager();
+-
+ 	ret = init_vmlinux();
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	map = kernel_get_module_map(target);
++	map = kernel_get_module_map(module);
+ 	if (!map) {
+-		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
++		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
+ 		return -EINVAL;
+ 	}
++	return __show_available_funcs(map);
++}
++
++int show_available_funcs(const char *target, struct strfilter *_filter,
++					bool user)
++{
++	struct map *map;
++	int ret;
++
++	setup_pager();
+ 	available_func_filter = _filter;
++
++	if (!user)
++		return available_kernel_funcs(target);
++
++	symbol_conf.try_vmlinux_path = false;
++	symbol_conf.sort_by_name = true;
++	ret = symbol__init();
++	if (ret < 0) {
++		pr_err("Failed to init symbol map.\n");
++		return ret;
++	}
++	map = dso__new_map(target);
++	ret = __show_available_funcs(map);
++	dso__delete(map->dso);
++	map__delete(map);
++	return ret;
++}
++
++#define DEFAULT_FUNC_FILTER "!_*"
++
++/*
++ * uprobe_events only accepts address:
++ * Convert function and any offset to address
++ */
++static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
++{
++	struct perf_probe_point *pp = &pev->point;
++	struct symbol *sym;
++	struct map *map = NULL;
++	char *function = NULL, *name = NULL;
++	int ret = -EINVAL;
++	unsigned long long vaddr = 0;
++
++	if (!pp->function)
++		goto out;
++
++	function = strdup(pp->function);
++	if (!function) {
++		pr_warning("Failed to allocate memory by strdup.\n");
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	name = realpath(exec, NULL);
++	if (!name) {
++		pr_warning("Cannot find realpath for %s.\n", exec);
++		goto out;
++	}
++	map = dso__new_map(name);
++	if (!map) {
++		pr_warning("Cannot find appropriate DSO for %s.\n", name);
++		goto out;
++	}
++	available_func_filter = strfilter__new(DEFAULT_FUNC_FILTER, NULL);
+ 	if (map__load(map, filter_available_functions)) {
+ 		pr_err("Failed to load map.\n");
+ 		return -EINVAL;
+ 	}
+-	if (!dso__sorted_by_name(map->dso, map->type))
+-		dso__sort_by_name(map->dso, map->type);
+ 
+-	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
+-	return 0;
++	sym = map__find_symbol_by_name(map, function, NULL);
++	if (!sym) {
++		pr_warning("Cannot find %s in DSO %s\n", function, name);
++		goto out;
++	}
++
++	if (map->start > sym->start)
++		vaddr = map->start;
++	vaddr += sym->start + pp->offset + map->pgoff;
++	pp->offset = 0;
++
++	if (!pev->event) {
++		pev->event = function;
++		function = NULL;
++	}
++	if (!pev->group) {
++		char *ptr1, *ptr2;
++
++		pev->group = zalloc(sizeof(char *) * 64);
++		ptr1 = strdup(basename(exec));
++		if (ptr1) {
++			ptr2 = strpbrk(ptr1, "-._");
++			if (ptr2)
++				*ptr2 = '\0';
++			e_snprintf(pev->group, 64, "%s_%s", PERFPROBE_GROUP,
++					ptr1);
++			free(ptr1);
++		}
++	}
++	free(pp->function);
++	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
++	if (!pp->function) {
++		ret = -ENOMEM;
++		pr_warning("Failed to allocate memory by zalloc.\n");
++		goto out;
++	}
++	e_snprintf(pp->function, MAX_PROBE_ARGS, "%s:0x%llx", name, vaddr);
++	ret = 0;
++
++out:
++	if (map) {
++		dso__delete(map->dso);
++		map__delete(map);
++	}
++	if (function)
++		free(function);
++	if (name)
++		free(name);
++	return ret;
+ }
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index a7dee83..f9f3de8 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -7,7 +7,7 @@
+ 
+ extern bool probe_event_dry_run;
+ 
+-/* kprobe-tracer tracing point */
++/* kprobe-tracer and uprobe-tracer tracing point */
+ struct probe_trace_point {
+ 	char		*symbol;	/* Base symbol */
+ 	char		*module;	/* Module name */
+@@ -21,7 +21,7 @@ struct probe_trace_arg_ref {
+ 	long				offset;	/* Offset value */
+ };
+ 
+-/* kprobe-tracer tracing argument */
++/* kprobe-tracer and uprobe-tracer tracing argument */
+ struct probe_trace_arg {
+ 	char				*name;	/* Argument name */
+ 	char				*value;	/* Base value */
+@@ -29,12 +29,13 @@ struct probe_trace_arg {
+ 	struct probe_trace_arg_ref	*ref;	/* Referencing offset */
+ };
+ 
+-/* kprobe-tracer tracing event (point + arg) */
++/* kprobe-tracer and uprobe-tracer tracing event (point + arg) */
+ struct probe_trace_event {
+ 	char				*event;	/* Event name */
+ 	char				*group;	/* Group name */
+ 	struct probe_trace_point	point;	/* Trace point */
+ 	int				nargs;	/* Number of args */
++	bool				uprobes;	/* uprobes only */
+ 	struct probe_trace_arg		*args;	/* Arguments */
+ };
+ 
+@@ -70,6 +71,7 @@ struct perf_probe_event {
+ 	char			*group;	/* Group name */
+ 	struct perf_probe_point	point;	/* Probe point */
+ 	int			nargs;	/* Number of arguments */
++	bool			uprobes;
+ 	struct perf_probe_arg	*args;	/* Arguments */
+ };
+ 
+@@ -129,8 +131,8 @@ extern int show_line_range(struct line_range *lr, const char *module);
+ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			       int max_probe_points, const char *module,
+ 			       struct strfilter *filter, bool externs);
+-extern int show_available_funcs(const char *module, struct strfilter *filter);
+-
++extern int show_available_funcs(const char *module, struct strfilter *filter,
++				bool user);
+ 
+ /* Maximum index number of event-name postfix */
+ #define MAX_EVENT_INDEX	1024
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 632b50c..e81c4fd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -2767,3 +2767,11 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
+ 
+ 	return ret;
+ }
++
++struct map *dso__new_map(const char *name)
++{
++	struct dso *dso = dso__new(name);
++	struct map *map = map__new2(0, dso, MAP__FUNCTION);
++
++	return map;
++}
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 29f8d74..6d28bbd 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -217,6 +217,7 @@ void dso__set_long_name(struct dso *dso, char *name);
+ void dso__set_build_id(struct dso *dso, void *build_id);
+ void dso__read_running_kernel_build_id(struct dso *dso,
+ 				       struct machine *machine);
++struct map *dso__new_map(const char *name);
+ struct symbol *dso__find_symbol(struct dso *dso, enum map_type type,
+ 				u64 addr);
+ struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
 
