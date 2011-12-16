@@ -1,102 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab1LPPX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 10:23:59 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50253 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755763Ab1LPPXz (ORCPT
+	id S1759970Ab1LPP0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:26:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56235 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab1LPPZ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 10:23:55 -0500
-Date: Fri, 16 Dec 2011 15:23:34 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "frank.rowand@am.sony.com" <frank.rowand@am.sony.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-Message-ID: <20111216152334.GD6342@arm.com>
-References: <4EEAB90D.3050504@am.sony.com>
- <1324029272.18942.73.camel@twins>
- <20111216111319.GB6342@arm.com>
- <20111216114320.GC6342@arm.com>
- <1324039793.18942.80.camel@twins>
+	Fri, 16 Dec 2011 10:25:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324039793.18942.80.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
+References: <CAH9NwWetBZvU6-16rV_s5n=vrAu1kyfsbsjKh+6O2ejf9mM_ww@mail.gmail.com>
+ <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com> <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 16 Dec 2011 08:25:34 -0700
+Message-ID: <CAErSpo627xrofs=w2nTzp-6EJzcqxbdz-agHtYY4JLLns3hmvw@mail.gmail.com>
+Subject: Re: PCI(e) enumeration
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 12:49:53PM +0000, Peter Zijlstra wrote:
-> On Fri, 2011-12-16 at 11:43 +0000, Catalin Marinas wrote:
-> > From 26d87e955f089fd246bee29bb388f22da1297e0c Mon Sep 17 00:00:00 2001
-> > From: Catalin Marinas <catalin.marinas@arm.com>
-> > Date: Fri, 16 Dec 2011 11:32:26 +0000
-> > Subject: [PATCH] sched, mm: Use activate_mm() instead of switch_mm()
-> > 
-> > The ARM port tries to remove __ARCH_WANT_INTERRUPTS_ON_CTXSW. Since the
-> > actual pgd switching requires interrupts to be enabled on ARM (for
-> > latency on ARMv5 and earlier and IPIs on ARMv6+), the solution is to
-> > defer the pgd switching to a post context switch hook that is run with
-> > interrupts enabled. There are however two additional direct calls to
-> > switch_mm() without the additional post-switch hook and ARM would fail
-> > to set the new pgd.
-> > 
-> > This patch changes the switch_mm() call with activate_mm() which ensures
-> > that the required pgd has been set. The activate_mm() function must be
-> > called with interrupts enabled.
-> > 
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > ---
-> >  kernel/sched.c   |    2 +-
-> >  mm/mmu_context.c |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 7b46a39..3976157 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -6310,7 +6310,7 @@ void idle_task_exit(void)
-> >         BUG_ON(cpu_online(smp_processor_id()));
-> >  
-> >         if (mm != &init_mm)
-> > -               switch_mm(mm, &init_mm, current);
-> > +               activate_mm(mm, &init_mm);
-> >         mmdrop(mm);
-> >  }
-> >  
-> > diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-> > index cf332bc..4e44ac4 100644
-> > --- a/mm/mmu_context.c
-> > +++ b/mm/mmu_context.c
-> > @@ -32,7 +32,7 @@ void use_mm(struct mm_struct *mm)
-> >                 tsk->active_mm = mm;
-> >         }
-> >         tsk->mm = mm;
-> > -       switch_mm(active_mm, mm, tsk);
-> > +       activate_mm(active_mm, mm);
-> >         task_unlock(tsk);
-> >  
-> >         if (active_mm != mm)
-> > 
-> 
-> alpha, cris, microblaze, powerpc appear to actually use that task
-> argument of switch_mm(), so I'm not convinced this is actually correct.
+On Fri, Dec 16, 2011 at 6:13 AM, Christian Gmeiner
+<christian.gmeiner@gmail.com> wrote:
+> Hi Bjorn,
+>
+> 2011/12/15 Bjorn Helgaas <bhelgaas@google.com>:
+>> On Thu, Dec 15, 2011 at 2:41 AM, Christian Gmeiner
+>> <christian.gmeiner@gmail.com> wrote:
+>>> Hi all,
+>>>
+>>> I maintain a debian based linux RFS in my company and my college does the
+>>> same for windows. Now we run into a problem that windows and linux use a
+>>> different network interface as eth0. In our target system there
+>>> are two identical NICs installed.
+>>>
+>>> So I am now looking to find out, how linux does the PCI enumeration
+>>> and in which order
+>>> the PCI driver gets called to do the initialization. Can somebody tell
+>>> me if a depth-first search
+>>> or a breadth-first search is done on the PCI bus.
+>>>
+>>>
+>>> For instance look at this lspci output:
+>>>
+>>> 00:01.0 Host bridge: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] Host Bridge (rev 33)
+>>> 00:01.1 VGA compatible controller: Advanced Micro Devices [AMD] Geode LX Video
+>>> 00:01.2 Entertainment encryption device: Advanced Micro Devices [AMD]
+>>> Geode LX AES Security Block
+>>> 00:04.0 Ethernet controller: Intel Corporation 8255xER/82551IT Fast
+>>> Ethernet Controller (rev 10)
+>>> 00:0f.0 ISA bridge: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] ISA (rev 03)
+>>> 00:0f.2 IDE interface: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] IDE (rev 01)
+>>> 00:0f.3 Multimedia audio controller: Advanced Micro Devices [AMD]
+>>> CS5536 [Geode companion] Audio (rev 01)
+>>> 00:0f.4 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] OHC (rev 02)
+>>> 00:0f.5 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] EHC (rev 02)
+>>> 00:0f.7 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>>> companion] UOC (rev 02)
+>>>
+>>> How will linux does the enumeration?
+>>
+>> The kernel enumerates PCI devices with a depth-first traversal, but
+>> that isn't what determines the ethX device name.  That name is
+>> determined by the order in which network drivers are loaded and claim
+>> devices, which gets into distro details like udev.
+>>
+>> Here's a nice paper with more details:
+>> http://www.dell.com/downloads/global/power/ps1q07-20060392-Domsch.pdf
+>
+> Thanks
+>
+>>
+>> If that's not enough to solve your problem, a debian-related forum
+>> will probably be more useful than LKML.
+>
+> I don't think that this is a debian related issue, as I use no special
+> udev rule. Here is the lscpi
+> output of the target machine, where I have this issue.
+>
+>
+> root@OT1300:~# lspci
+> 00:00.0 Host bridge: Intel Corporation Atom Processor E6xx PCI Host
+> Bridge #1 (rev 05)
+> 00:01.0 Host bridge: Intel Corporation Atom Processor E6xx
+> Configuration Unit (rev 02)
+> 00:02.0 VGA compatible controller: Intel Corporation Atom Processor
+> E6xx Integrated Graphics Controller (rev 05)
+> 00:03.0 Multimedia video controller: Intel Corporation Atom Processor
+> E6xx Integrated Graphics Controller (rev 02)
+> 00:17.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+> Port 1 (rev 02)
+> 00:18.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+> Port 2 (rev 02)
+> 00:19.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+> Port 3 (rev 02)
+> 00:1a.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+> Port 4 (rev 02)
+> 00:1f.0 ISA bridge: Intel Corporation Atom Processor E6xx LPC Bridge (rev 02)
+> 01:00.0 PCI bridge: Intel Corporation Platform Controller Hub EG20T
+> PCI Express Port (rev 01)
+> 02:00.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+> Hub EG20T Packet Hub (rev 01)
+> 02:00.1 Ethernet controller: Intel Corporation Platform Controller Hub
+> EG20T Gigabit Ethernet Controller (rev 02)
+> 02:00.2 Unassigned class [ff00]: Intel Corporation Platform Controller
+> Hub EG20T General Purpose IO Controller (rev 01)
+> 02:02.0 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #4 (rev 02)
+> 02:02.1 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #5 (rev 02)
+> 02:02.2 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #6 (rev 02)
+> 02:02.3 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB2 EHCI Controller #2 (rev 02)
+> 02:02.4 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB Client Controller (rev 02)
+> 02:04.0 SD Host controller: Intel Corporation Platform Controller Hub
+> EG20T SDIO Controller #1 (rev 01)
+> 02:04.1 SD Host controller: Intel Corporation Platform Controller Hub
+> EG20T SDIO Controller #2 (rev 01)
+> 02:06.0 SATA controller: Intel Corporation Platform Controller Hub
+> EG20T SATA AHCI Controller (rev 02)
+> 02:08.0 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #1 (rev 02)
+> 02:08.1 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #2 (rev 02)
+> 02:08.2 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB OHCI Controller #3 (rev 02)
+> 02:08.3 USB Controller: Intel Corporation Platform Controller Hub
+> EG20T USB2 EHCI Controller #1 (rev 02)
+> 02:0a.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+> Hub EG20T DMA Controller #1
+> 02:0a.1 Serial controller: Intel Corporation Platform Controller Hub
+> EG20T UART Controller 0 (rev 01)
+> 02:0a.2 Serial controller: Intel Corporation Platform Controller Hub
+> EG20T UART Controller 1
+> 02:0a.3 Serial controller: Intel Corporation Platform Controller Hub
+> EG20T UART Controller 2
+> 02:0a.4 Serial controller: Intel Corporation Platform Controller Hub
+> EG20T UART Controller 3
+> 02:0c.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+> Hub EG20T DMA Controller #2
+> 02:0c.1 Serial bus controller [0c80]: Intel Corporation Platform
+> Controller Hub EG20T Serial Peripheral Interface Bus
+> 02:0c.2 Serial bus controller [0c80]: Intel Corporation Platform
+> Controller Hub EG20T I2C Controller
+> 02:0c.3 CANBUS: Intel Corporation Platform Controller Hub EG20T
+> Controller Area Network (CAN) Controller
+> 02:0c.4 Unassigned class [ff00]: Intel Corporation Platform Controller
+> Hub EG20T IEEE 1588 Hardware Assist (rev 01)
+> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+> 05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+>
+>
+> The two important lines are these ones:
+>
+> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+> 05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+>
+>
+> As you can see we have two equal network controllers, which both are using the
+> e1000e driver. In this case I think that the driver gets first control
+> over 03:00.0
+> and then over 05:00.0.
+>
+> So it is the case that
+> - 03:00.0 is eth0
+> - 05:00.0 is eth1
+>
+> To sum it up, if there are two devices handled by the same driver the
+> device, which is
+> higher in the pci bus, will become eth0. Or?
 
-We use it on ARM as well but in both cases above the task was current.
-However, I can see that the activate_mm() implementation on other
-architectures doesn't just call switch_mm(current), so the two may not
-be functionally equivalent.
+For devices handled by the same driver, they are claimed in the order
+the devices are enumerated by the kernel, which does a depth-first
+search.  Your lspci doesn't show the actual hierarchy, but it sounds
+like we enumerate 03:00.0 first.
 
-An alternative would be to only defer the pgd switching on ARM if
-irqs_disabled() and leave the generic code untouched (well, apart from
-the post-switch hook).
+The "pci=bfsort" kernel option might be useful.
 
--- 
-Catalin
+Bjorn
