@@ -1,253 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760376Ab1LPJK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 04:10:58 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:8481 "EHLO relay.sw.ru"
+	id S1760218Ab1LPJXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 04:23:41 -0500
+Received: from claw.goop.org ([74.207.240.146]:50725 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760285Ab1LPJKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 04:10:48 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH v2] net: fix sleeping while atomic problem in sock mem_cgroup.
-Date: Fri, 16 Dec 2011 13:09:42 +0400
-Message-Id: <1324026582-5214-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
+	id S1756434Ab1LPJXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 04:23:35 -0500
+Message-ID: <4EEB0E14.9050505@goop.org>
+Date: Fri, 16 Dec 2011 01:23:32 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_W?= =?ISO-8859-1?Q?eisbecker?= 
+	<fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] x86: Use -m-omit-leaf-frame-pointer to shrink text size
+References: <20111216081915.GA28288@elte.hu> <20111216085259.GA2338@elte.hu>
+In-Reply-To: <20111216085259.GA2338@elte.hu>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we can't scan the proto_list to initialize sock cgroups, as it
-holds a rwlock, and we also want to keep the code generic enough to
-avoid calling the initialization functions of protocols directly,
-I propose we keep the interested parties in a separate list. This list
-is protected by a mutex so we can sleep and do the necessary allocations.
+On 12/16/2011 12:53 AM, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@elte.hu> wrote:
+>
+>> [...]
+>>
+>> The call-chains are still intact for quality backtraces and 
+>> for call-chain profiling (perf record -g), as the backtrace 
+>> walker can deduct the full backtrace from the RIP of a leaf 
+>> function and the parent chain.
+> Hm, noticed one complication while looking at annotated assembly 
+> code in perf top. Code doing function calls from within asm() is 
+> incorrectly marked 'leaf' by GCC:
+>
+> ffffffff812b82d8 <arch_local_save_flags>:
+> ffffffff812b82d8:       ff 14 25 00 d9 c1 81    callq  *0xffffffff81c1d900
+> ffffffff812b82df:       c3                      retq   
+>
+> So all the paravirt details will have to be fixed, so that GCC 
+> is able to see that there's a real function call done inside. 
+> Jeremy, Konrad?
 
-Also fixes a reference problem found by Randy Dunlap's randconfig.
+Um.  So the issue is that a function that contains only pvops looks like
+it's a leaf to gcc and it does some leaf-function optimisation?
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Randy Dunlap <rdunlap@xenotime.net>
----
- include/linux/memcontrol.h   |   11 ++++++-
- include/net/sock.h           |    5 +---
- include/net/tcp_memcontrol.h |    2 +
- mm/memcontrol.c              |   58 ++++++++++++++++++++++++++++++++++++++++++
- net/core/sock.c              |   42 +++--------------------------
- 5 files changed, 75 insertions(+), 43 deletions(-)
+How can we tell gcc the asm contains a call, or otherwise suppress the
+"leaf function" classification?
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 9b296ea..e61fabb 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -390,11 +390,13 @@ enum {
- 	OVER_LIMIT,
- };
- 
--#ifdef CONFIG_INET
-+struct proto;
- struct sock;
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
- void sock_update_memcg(struct sock *sk);
- void sock_release_memcg(struct sock *sk);
-+void register_sock_cgroup(struct proto *prot);
-+void unregister_sock_cgroup(struct proto *prot);
- #else
- static inline void sock_update_memcg(struct sock *sk)
- {
-@@ -402,7 +404,12 @@ static inline void sock_update_memcg(struct sock *sk)
- static inline void sock_release_memcg(struct sock *sk)
- {
- }
-+static inline void register_sock_cgroup(struct proto *prot)
-+{
-+}
-+static inline void unregister_sock_cgroup(struct proto *prot)
-+{
-+}
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
--#endif /* CONFIG_INET */
- #endif /* _LINUX_MEMCONTROL_H */
- 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 6fe0dae..f8237a3 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -64,10 +64,6 @@
- #include <net/dst.h>
- #include <net/checksum.h>
- 
--struct cgroup;
--struct cgroup_subsys;
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
- /*
-  * This structure really needs to be cleaned up.
-  * Most of it is for TCP, and not used by any of
-@@ -858,6 +854,7 @@ struct proto {
- 	void			(*destroy_cgroup)(struct cgroup *cgrp,
- 						  struct cgroup_subsys *ss);
- 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
-+	struct list_head	cgroup_node;
- #endif
- };
- 
-diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
-index 3512082..5aa7c4b 100644
---- a/include/net/tcp_memcontrol.h
-+++ b/include/net/tcp_memcontrol.h
-@@ -11,6 +11,8 @@ struct tcp_memcontrol {
- 	int tcp_memory_pressure;
- };
- 
-+struct cgroup;
-+struct cgroup_subsys;
- struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
- int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
- void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7266202..1098afe 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4742,6 +4742,64 @@ static struct cftype kmem_cgroup_files[] = {
- 	},
- };
- 
-+static DEFINE_MUTEX(cgroup_proto_list_lock);
-+static LIST_HEAD(cgroup_proto_list);
-+
-+static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+	int ret = 0;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
-+		if (proto->init_cgroup) {
-+			ret = proto->init_cgroup(cgrp, ss);
-+			if (ret)
-+				goto out;
-+		}
-+	}
-+
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+out:
-+	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+}
-+
-+static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void register_sock_cgroup(struct proto *prot)
-+{
-+	if (!prot->proto_cgroup)
-+		return;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_add(&prot->cgroup_node, &cgroup_proto_list);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void unregister_sock_cgroup(struct proto *prot)
-+{
-+	if (!prot->proto_cgroup)
-+		return;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_del(&prot->cgroup_node);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
- static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
- {
- 	int ret = 0;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5a6a906..5a56a55 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -139,43 +139,6 @@
- static DEFINE_RWLOCK(proto_list_lock);
- static LIST_HEAD(proto_list);
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--	int ret = 0;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry(proto, &proto_list, node) {
--		if (proto->init_cgroup) {
--			ret = proto->init_cgroup(cgrp, ss);
--			if (ret)
--				goto out;
--		}
--	}
--
--	read_unlock(&proto_list_lock);
--	return ret;
--out:
--	list_for_each_entry_continue_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--	return ret;
--}
--
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--}
--#endif
--
- /*
-  * Each address family might have different locking rules, so we have
-  * one slock key per address family:
-@@ -2483,6 +2446,9 @@ int proto_register(struct proto *prot, int alloc_slab)
- 	list_add(&prot->node, &proto_list);
- 	assign_proto_idx(prot);
- 	write_unlock(&proto_list_lock);
-+
-+	register_sock_cgroup(prot);
-+
- 	return 0;
- 
- out_free_timewait_sock_slab_name:
-@@ -2510,6 +2476,8 @@ void proto_unregister(struct proto *prot)
- 	list_del(&prot->node);
- 	write_unlock(&proto_list_lock);
- 
-+	unregister_sock_cgroup(prot);
-+
- 	if (prot->slab != NULL) {
- 		kmem_cache_destroy(prot->slab);
- 		prot->slab = NULL;
--- 
-1.7.6.4
+The alternative is to just make it a plain C-level indirect call, but
+then we'd lose all the patching and callee-save optimisations.
+
+Any suggestions?
+
+Thanks,
+    J
 
