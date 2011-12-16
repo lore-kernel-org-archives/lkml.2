@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760471Ab1LPXOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:14:45 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53815 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab1LPXOi (ORCPT
+	id S1760593Ab1LPXQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:16:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48432 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab1LPXQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:14:38 -0500
-Date: Fri, 16 Dec 2011 17:14:30 -0600
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Urban Loesch <bind@enas.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: divide by zero error: find busiest group on kernel 2.6.38.4
-Message-ID: <20111216231414.GA7941@BohrerMBP.rgmadvisors.com>
-References: <4EDB7CE0.9010105@enas.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EDB7CE0.9010105@enas.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 16 Dec 2011 18:16:41 -0500
+X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=p7iaMJ_j78IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=6ukdl8CIM0QAT-HVtlUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324077399.23971.134.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/6] [GIT PULL] x86: Workaround for NMI iret woes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>
+Date: Fri, 16 Dec 2011 18:16:39 -0500
+In-Reply-To: <20111216225906.481643317@goodmis.org>
+References: <20111216225906.481643317@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 04, 2011 at 03:00:00PM +0100, Urban Loesch wrote:
-> I'm running a DELL PE R610 with kernel
-> 2.6.38.4 patched with linux vserver version vs2.3.0.37-rc15 from
-> http://linux-vserver.org.
-> 
-> The server runs fine about 220 days without any problems.
-> But last night there was a kernel panic and the server totally hangs.
-> 
-> Thanks to netconsole I got the following error in my syslogserver:
-> 
-> 
-> 2011-12-04 00:32:16 divide error: 0000 [#1]
-> 2011-12-04 00:32:16 SMP
-<snip>
-> 2011-12-04 00:32:16 Pid: 0, comm: kworker/0:1 Not tainted
-> 2.6.38.4-vs2.3.0.37-rc15-rol-em64t #1
-> 2011-12-04 00:32:16
-> 2011-12-04 00:32:16 Dell Inc. PowerEdge R610
-> 2011-12-04 00:32:16 /
-> 2011-12-04 00:32:16 0F0XJ6
-> 2011-12-04 00:32:16
-> 2011-12-04 00:32:16 RIP: 0010:[<ffffffff8103abb8>]
-> 2011-12-04 00:32:16 [<ffffffff8103abb8>]
-> find_busiest_group+0x428/0xdd0
+On Fri, 2011-12-16 at 17:59 -0500, Steven Rostedt wrote:
 
-This looks like the same issue as:
+> I have the ftrace patches pretty much ready, but I would like to get
+> these in under the x86 branch.
 
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=636797
-and
-https://bugs.launchpad.net/linux/+bug/614853
+Bah, I just realized that I based it on the perf branch. Let me rebase
+it on one of the tip x86 branches or even plain 3.2-rc5, and retest.
 
-In theory there is also a bugzilla.kernel.org ticket on this issue as
-well though bugzilla.kernel.org is still down.
+Thanks,
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16991
+-- Steve
 
-Debian and Ubuntu have papered over this bug by skipping the divide if
-cpu_power is 0.
 
-> I searched the archives but I didn't find any related information.
-> Have you any idea what this error could be and is it fixed in kernel 3.1?
-
-To my knowledge the cause of this bug is still unknown.  It is
-possible it is fixed in newer kernels, but it is hard to tell since it
-doesn't seem to occur until you have reached 200+ days of uptime.
-
---
-Shawn
