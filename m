@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660Ab1LPOTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 09:19:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34358 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759524Ab1LPOS7 (ORCPT
+	id S1759783Ab1LPOUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 09:20:46 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:37854 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759464Ab1LPOUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 09:18:59 -0500
-Date: Fri, 16 Dec 2011 08:18:54 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
-Message-ID: <20111216141854.GA11653@thinkpad-t410>
-Mail-Followup-To: Thomas Renninger <trenn@suse.de>,
-	Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-	Azael Avalos <coproscefalo@gmail.com>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
- <201112160122.36100.trenn@suse.de>
- <20111216003333.GA18489@srcf.ucam.org>
- <201112161419.32775.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112161419.32775.trenn@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 16 Dec 2011 09:20:39 -0500
+Subject: Re: unexpected taint message
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Linville <linville@tuxdriver.com>
+In-Reply-To: <4EEB521A.70602@lwfinger.net> (sfid-20111216_151411_303937_12579E4F)
+References: <4EEB0EFC.5000302@broadcom.com>
+	 (sfid-20111216_102800_182196_AFD2D6CF) <1324038636.3429.1.camel@jlt3.sipsolutions.net>
+	 <4EEB4D61.80602@lwfinger.net>
+	 (sfid-20111216_145414_221850_EED1E4DE) <1324043939.3429.2.camel@jlt3.sipsolutions.net>
+	 <4EEB521A.70602@lwfinger.net> (sfid-20111216_151411_303937_12579E4F)
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Dec 2011 15:20:33 +0100
+Message-ID: <1324045233.3429.3.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 02:19:32PM +0100, Thomas Renninger wrote:
-> On Friday, December 16, 2011 01:33:33 AM Matthew Garrett wrote:
-> > On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
-> > 
-> > > I think best is to move the thinkpad implementation of getting
-> > > ACPI handles based on HIDs to osl.c and make it global.
-> > > I'll send patches.
-> > > Please review them carefully, they are only compile tested.
-> > 
-> > The ec driver is already finding the hardware on the basis of the HID - 
-> > is there any reason to do this twice rather than just exporting the 
-> > information the ec driver already has?
-> 
-> I don't object to export ec_handle, but thinkpad_acpi.c should get
-> adjusted as well.
-> 
-> I had a closer look and can come up with a replacement for acpi_get_devices
-> using bus.c matching function bus_find_device() avoiding the namespace
-> walk.
+On Fri, 2011-12-16 at 08:13 -0600, Larry Finger wrote:
 
-My thought was the same as Matthew's, why bother redoing the work that
-the EC driver has already done. I'm open to doing it either way though.
-What your proposing does look useful independant of whether or not we
-use it for finding the EC.
+> > Hmm. I wish OOT didn't disable lockdep, we do a lot of development with
+> > modules OOT because the turnaround is faster/easier (for not so
+> > experienced developers). Worst case we can patch it out of the base
+> > kernel I guess...
+> 
+> Me too. Now I understand John's patch entitled "[RFC] modpost: add option to 
+> allow external modules to avoid taint". I doubt that it will be allowed 
+> upstream, but I think that I will add it as a local commit.
+
+I was thinking more along the lines of this:
+
+--- wireless-testing.orig/kernel/panic.c	2011-12-10 17:32:26.000000000 +0100
++++ wireless-testing/kernel/panic.c	2011-12-16 15:19:49.000000000 +0100
+@@ -240,8 +240,16 @@ void add_taint(unsigned flag)
+ 	 * Also we want to keep up lockdep for staging development and
+ 	 * post-warning case.
+ 	 */
+-	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+-		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++	switch (flag) {
++	case TAINT_CRAP:
++	case TAINT_WARN:
++	case TAINT_OOT_MODULE:
++		break;
++	default:
++		if (__debug_locks_off())
++			printk(KERN_WARNING
++			       "Disabling lock debugging due to kernel taint\n");
++	}
+ 
+ 	set_bit(flag, &tainted_mask);
+ }
+
 
