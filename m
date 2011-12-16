@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760404Ab1LPXHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:07:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46965 "EHLO
+	id S1761000Ab1LPXHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:07:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44058 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760981Ab1LPXGY (ORCPT
+	with ESMTP id S1760966Ab1LPXGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:06:24 -0500
-X-Authority-Analysis: v=2.0 cv=FIuZNpUs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=scKMFu31ESQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=QyXUC8HyAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=r6tlpdmizkw4SpTRxM4A:9 a=pmeH6dRcdzFXV19EwPMA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=00VAB27iOpDD2gO3:21 a=xXETSA8P2YTXNwkd:21 a=64jVXc2MIfLKrbZ5BGsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 16 Dec 2011 18:06:17 -0500
+X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=mBqPSQGDqh4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=D19gQVrFAAAA:8 a=Z4Rwk6OoAAAA:8 a=JfrnYn6hAAAA:8 a=QyXUC8HyAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=rKNloImTAUGTuCgaye0A:9 a=R8PAaejab6hA5a3nsgQA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=WQl-lW324fG4sk1WfN0A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111216230616.771089182@goodmis.org>
+Message-Id: <20111216230615.258097665@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 16 Dec 2011 17:59:11 -0500
+Date: Fri, 16 Dec 2011 17:59:09 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -24,9 +24,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Andi Kleen <andi@firstfloor.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
-Subject: [PATCH 5/6] x86: Allow NMIs to hit breakpoints in i386
+Subject: [PATCH 3/6] x86: Add workaround to NMI iret woes
 References: <20111216225906.481643317@goodmis.org>
-Content-Disposition: inline; filename=0005-x86-Allow-NMIs-to-hit-breakpoints-in-i386.patch
+Content-Disposition: inline; filename=0003-x86-Add-workaround-to-NMI-iret-woes.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,30 +38,180 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-With i386, NMIs and breakpoints use the current stack and they
-do not reset the stack pointer to a fix point that might corrupt
-a previous NMI or breakpoint (as it does in x86_64). But NMIs are
-still not made to be re-entrant, and need to prevent the case that
-an NMI hitting a breakpoint (which does an iret), doesn't allow
-another NMI to run.
+In x86, when an NMI goes off, the CPU goes into an NMI context that
+prevents other NMIs to trigger on that CPU. If an NMI is suppose to
+trigger, it has to wait till the previous NMI leaves NMI context.
+At that time, the next NMI can trigger (note, only one more NMI will
+trigger, as only one can be latched at a time).
 
-The fix is to let the NMI be in 3 different states:
+The way x86 gets out of NMI context is by calling iret. The problem
+with this is that this causes problems if the NMI handle either
+triggers an exception, or a breakpoint. Both the exception and the
+breakpoint handlers will finish with an iret. If this happens while
+in NMI context, the CPU will leave NMI context and a new NMI may come
+in. As NMI handlers are not made to be re-entrant, this can cause
+havoc with the system, not to mention, the nested NMI will write
+all over the previous NMI's stack.
 
-1) not running
-2) executing
-3) latched
+Linus Torvalds proposed the following workaround to this problem:
 
-When no NMI is executing on a given CPU, the state is "not running".
-When the first NMI comes in, the state is switched to "executing".
-On exit of that NMI, a cmpxchg is performed to switch the state
-back to "not running" and if that fails, the NMI is restarted.
+https://lkml.org/lkml/2010/7/14/264
 
-If a breakpoint is hit and does an iret, which re-enables NMIs,
-and another NMI comes in before the first NMI finished, it will
-detect that the state is not in the "not running" state and the
-current NMI is nested. In this case, the state is switched to "latched"
-to let the interrupted NMI know to restart the NMI handler, and
-the nested NMI exits without doing anything.
+"In fact, I wonder if we couldn't just do a software NMI disable
+instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
+allocated statically) that points to the NMI stack frame, and just
+make the NMI code itself do something like
+
+ NMI entry:
+ - load percpu NMI stack frame pointer
+ - if non-zero we know we're nested, and should ignore this NMI:
+    - we're returning to kernel mode, so return immediately by using
+"popf/ret", which also keeps NMI's disabled in the hardware until the
+"real" NMI iret happens.
+    - before the popf/iret, use the NMI stack pointer to make the NMI
+return stack be invalid and cause a fault
+  - set the NMI stack pointer to the current stack pointer
+
+ NMI exit (not the above "immediate exit because we nested"):
+   clear the percpu NMI stack pointer
+   Just do the iret.
+
+Now, the thing is, now the "iret" is atomic. If we had a nested NMI,
+we'll take a fault, and that re-does our "delayed" NMI - and NMI's
+will stay masked.
+
+And if we didn't have a nested NMI, that iret will now unmask NMI's,
+and everything is happy."
+
+I first tried to follow this advice but as I started implementing this
+code, a few gotchas showed up.
+
+One, is accessing per-cpu variables in the NMI handler.
+
+The problem is that per-cpu variables use the %gs register to get the
+variable for the given CPU. But as the NMI may happen in userspace,
+we must first perform a SWAPGS to get to it. The NMI handler already
+does this later in the code, but its too late as we have saved off
+all the registers and we don't want to do that for a disabled NMI.
+
+Peter Zijlstra suggested to keep all variables on the stack. This
+simplifies things greatly and it has the added benefit of cache locality.
+
+Two, faulting on the iret.
+
+I really wanted to make this work, but it was becoming very hacky, and
+I never got it to be stable. The iret already had a fault handler for
+userspace faulting with bad segment registers, and getting NMI to trigger
+a fault and detect it was very tricky. But for strange reasons, the system
+would usually take a double fault and crash. I never figured out why
+and decided to go with a simple "jmp" approach. The new approach I took
+also simplified things.
+
+Finally, the last problem with Linus's approach was to have the nested
+NMI handler do a ret instead of an iret to give the first NMI NMI-context
+again.
+
+The problem is that ret is much more limited than an iret. I couldn't figure
+out how to get the stack back where it belonged. I could have copied the
+current stack, pushed the return onto it, but my fear here is that there
+may be some place that writes data below the stack pointer. I know that
+is not something code should depend on, but I don't want to chance it.
+I may add this feature later, but for now, an NMI handler that loses NMI
+context will not get it back.
+
+Here's what is done:
+
+When an NMI comes in, the HW pushes the interrupt stack frame onto the
+per cpu NMI stack that is selected by the IST.
+
+A special location on the NMI stack holds a variable that is set when
+the first NMI handler runs. If this variable is set then we know that
+this is a nested NMI and we process the nested NMI code.
+
+There is still a race when this variable is cleared and an NMI comes
+in just before the first NMI does the return. For this case, if the
+variable is cleared, we also check if the interrupted stack is the
+NMI stack. If it is, then we process the nested NMI code.
+
+Why the two tests and not just test the interrupted stack?
+
+If the first NMI hits a breakpoint and loses NMI context, and then it
+hits another breakpoint and while processing that breakpoint we get a
+nested NMI. When processing a breakpoint, the stack changes to the
+breakpoint stack. If another NMI comes in here we can't rely on the
+interrupted stack to be the NMI stack.
+
+If the variable is not set and the interrupted task's stack is not the
+NMI stack, then we know this is the first NMI and we can process things
+normally. But in order to do so, we need to do a few things first.
+
+1) Set the stack variable that tells us that we are in an NMI handler
+
+2) Make two copies of the interrupt stack frame.
+   One copy is used to return on iret
+   The other is used to restore the first one if we have a nested NMI.
+
+This is what the stack will look like:
+
+	  +-------------------------+
+	  | original SS             |
+	  | original Return RSP     |
+	  | original RFLAGS         |
+	  | original CS             |
+	  | original RIP            |
+	  +-------------------------+
+	  | temp storage for rdx    |
+	  +-------------------------+
+	  | NMI executing variable  |
+	  +-------------------------+
+	  | Saved SS                |
+	  | Saved Return RSP        |
+	  | Saved RFLAGS            |
+	  | Saved CS                |
+	  | Saved RIP               |
+	  +-------------------------+
+	  | copied SS               |
+	  | copied Return RSP       |
+	  | copied RFLAGS           |
+	  | copied CS               |
+	  | copied RIP              |
+	  +-------------------------+
+	  | pt_regs                 |
+	  +-------------------------+
+
+The original stack frame contains what the HW put in when we entered
+the NMI.
+
+We store %rdx as a temp variable to use. Both the original HW stack
+frame and this %rdx storage will be clobbered by nested NMIs so we
+can not rely on them later in the first NMI handler.
+
+The next item is the special stack variable that is set when we execute
+the rest of the NMI handler.
+
+Then we have two copies of the interrupt stack. The second copy is
+modified by any nested NMIs to let the first NMI know that we triggered
+a second NMI (latched) and that we should repeat the NMI handler.
+
+If the first NMI hits an exception or breakpoint that takes it out of
+NMI context, if a second NMI comes in before the first one finishes,
+it will update the copied interrupt stack to point to a fix up location
+to trigger another NMI.
+
+When the first NMI calls iret, it will instead jump to the fix up
+location. This fix up location will copy the saved interrupt stack back
+to the copy and execute the nmi handler again.
+
+Note, the nested NMI knows enough to check if it preempted a previous
+NMI handler while it is in the fixup location. If it has, it will not
+modify the copied interrupt stack and will just leave as if nothing
+happened. As the NMI handle is about to execute again, there's no reason
+to latch now.
+
+To test all this, I forced the NMI handler to call iret and take itself
+out of NMI context. I also added assemble code to write to the serial to
+make sure that it hits the nested path as well as the fix up path.
+Everything seems to be working fine.
 
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -72,138 +222,204 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/nmi.c |  100 +++++++++++++++++++++++++++++++++++++++++++++=
----
- 1 files changed, 93 insertions(+), 7 deletions(-)
+ arch/x86/kernel/entry_64.S |  167 ++++++++++++++++++++++++++++++++++++++++=
+++++
+ 1 files changed, 167 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index fb86773..f670295 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -404,11 +404,84 @@ static notrace __kprobes void default_do_nmi(struct p=
-t_regs *regs)
- 		unknown_nmi_error(reason, regs);
- }
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index d1d5434..b2dea00 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1475,11 +1475,164 @@ ENTRY(error_exit)
+ 	CFI_ENDPROC
+ END(error_exit)
 =20
--dotraplinkage notrace __kprobes void
--do_nmi(struct pt_regs *regs, long error_code)
--{
--	int update_debug_stack =3D 0;
 +/*
-+ * NMIs can hit breakpoints which will cause it to lose its
-+ * NMI context with the CPU when the breakpoint does an iret.
++ * Test if a given stack is an NMI stack or not.
 + */
-+#ifdef CONFIG_X86_32
-+/*
-+ * For i386, NMIs use the same stack as the kernel, and we can
-+ * add a workaround to the iret problem in C. Simply have 3 states
-+ * the NMI can be in.
-+ *
-+ *  1) not running
-+ *  2) executing
-+ *  3) latched
-+ *
-+ * When no NMI is in progress, it is in the "not running" state.
-+ * When an NMI comes in, it goes into the "executing" state.
-+ * Normally, if another NMI is triggered, it does not interrupt
-+ * the running NMI and the HW will simply latch it so that when
-+ * the first NMI finishes, it will restart the second NMI.
-+ * (Note, the latch is binary, thus multiple NMIs triggering,
-+ *  when one is running, are ignored. Only one NMI is restarted.)
-+ *
-+ * If an NMI hits a breakpoint that executes an iret, another
-+ * NMI can preempt it. We do not want to allow this new NMI
-+ * to run, but we want to execute it when the first one finishes.
-+ * We set the state to "latched", and the first NMI will perform
-+ * an cmpxchg on the state, and if it doesn't successfully
-+ * reset the state to "not running" it will restart the next
-+ * NMI.
-+ */
-+enum nmi_states {
-+	NMI_NOT_RUNNING,
-+	NMI_EXECUTING,
-+	NMI_LATCHED,
-+};
-+static DEFINE_PER_CPU(enum nmi_states, nmi_state);
-+
-+#define nmi_preprocess(regs)						\
-+	do {								\
-+		if (__get_cpu_var(nmi_state) !=3D NMI_NOT_RUNNING) {	\
-+			__get_cpu_var(nmi_state) =3D NMI_LATCHED;		\
-+			return;						\
-+		}							\
-+	nmi_restart:							\
-+		__get_cpu_var(nmi_state) =3D NMI_EXECUTING;		\
-+	} while (0)
-+
-+#define nmi_postprocess()						\
-+	do {								\
-+		if (cmpxchg(&__get_cpu_var(nmi_state),			\
-+		    NMI_EXECUTING, NMI_NOT_RUNNING) !=3D NMI_EXECUTING)	\
-+			goto nmi_restart;				\
-+	} while (0)
-+#else /* x86_64 */
-+/*
-+ * In x86_64 things are a bit more difficult. This has the same problem
-+ * where an NMI hitting a breakpoint that calls iret will remove the
-+ * NMI context, allowing a nested NMI to enter. What makes this more
-+ * difficult is that both NMIs and breakpoints have their own stack.
-+ * When a new NMI or breakpoint is executed, the stack is set to a fixed
-+ * point. If an NMI is nested, it will have its stack set at that same
-+ * fixed address that the first NMI had, and will start corrupting the
-+ * stack. This is handled in entry_64.S, but the same problem exists with
-+ * the breakpoint stack.
-+ *
-+ * If a breakpoint is being processed, and the debug stack is being used,
-+ * if an NMI comes in and also hits a breakpoint, the stack pointer
-+ * will be set to the same fixed address as the breakpoint that was
-+ * interrupted, causing that stack to be corrupted. To handle this case,
-+ * check if the stack that was interrupted is the debug stack, and if
-+ * so, change the IDT so that new breakpoints will use the current stack
-+ * and not switch to the fixed address. On return of the NMI, switch back
-+ * to the original IDT.
-+ */
-+static DEFINE_PER_CPU(int, update_debug_stack);
++	.macro test_in_nmi reg stack nmi_ret normal_ret
++	cmpq %\reg, \stack
++	ja \normal_ret
++	subq $EXCEPTION_STKSZ, %\reg
++	cmpq %\reg, \stack
++	jb \normal_ret
++	jmp \nmi_ret
++	.endm
 =20
-+static inline void nmi_preprocess(struct pt_regs *regs)
-+{
- 	/*
- 	 * If we interrupted a breakpoint, it is possible that
- 	 * the nmi handler will have breakpoints too. We need to
-@@ -417,8 +490,22 @@ do_nmi(struct pt_regs *regs, long error_code)
- 	 */
- 	if (unlikely(is_debug_stack(regs->sp))) {
- 		zero_debug_stack();
--		update_debug_stack =3D 1;
-+		__get_cpu_var(update_debug_stack) =3D 1;
- 	}
-+}
+ 	/* runs on exception stack */
+ ENTRY(nmi)
+ 	INTR_FRAME
+ 	PARAVIRT_ADJUST_EXCEPTION_FRAME
++	/*
++	 * We allow breakpoints in NMIs. If a breakpoint occurs, then
++	 * the iretq it performs will take us out of NMI context.
++	 * This means that we can have nested NMIs where the next
++	 * NMI is using the top of the stack of the previous NMI. We
++	 * can't let it execute because the nested NMI will corrupt the
++	 * stack of the previous NMI. NMI handlers are not re-entrant
++	 * anyway.
++	 *
++	 * To handle this case we do the following:
++	 *  Check the a special location on the stack that contains
++	 *  a variable that is set when NMIs are executing.
++	 *  The interrupted task's stack is also checked to see if it
++	 *  is an NMI stack.
++	 *  If the variable is not set and the stack is not the NMI
++	 *  stack then:
++	 *    o Set the special variable on the stack
++	 *    o Copy the interrupt frame into a "saved" location on the stack
++	 *    o Copy the interrupt frame into a "copy" location on the stack
++	 *    o Continue processing the NMI
++	 *  If the variable is set or the previous stack is the NMI stack:
++	 *    o Modify the "copy" location to jump to the repeate_nmi
++	 *    o return back to the first NMI
++	 *
++	 * Now on exit of the first NMI, we first clear the stack variable
++	 * The NMI stack will tell any nested NMIs at that point that it is
++	 * nested. Then we pop the stack normally with iret, and if there was
++	 * a nested NMI that updated the copy interrupt stack frame, a
++	 * jump will be made to the repeat_nmi code that will handle the second
++	 * NMI.
++	 */
 +
-+static inline void nmi_postprocess(void)
-+{
-+	if (unlikely(__get_cpu_var(update_debug_stack)))
-+		reset_debug_stack();
-+}
-+#endif
++	/* Use %rdx as out temp variable throughout */
++	pushq_cfi %rdx
 +
-+dotraplinkage notrace __kprobes void
-+do_nmi(struct pt_regs *regs, long error_code)
-+{
-+	nmi_preprocess(regs);
++	/*
++	 * Check the special variable on the stack to see if NMIs are
++	 * executing.
++	 */
++	cmp $1, -8(%rsp)
++	je nested_nmi
 +
- 	nmi_enter();
++	/*
++	 * Now test if the previous stack was an NMI stack.
++	 * We need the double check. We check the NMI stack to satisfy the
++	 * race when the first NMI clears the variable before returning.
++	 * We check the variable because the first NMI could be in a
++	 * breakpoint routine using a breakpoint stack.
++	 */
++	lea 6*8(%rsp), %rdx
++	test_in_nmi rdx, 4*8(%rsp), nested_nmi, first_nmi
++
++nested_nmi:
++	/*
++	 * Do nothing if we interrupted the fixup in repeat_nmi.
++	 * It's about to repeat the NMI handler, so we are fine
++	 * with ignoring this one.
++	 */
++	movq $repeat_nmi, %rdx
++	cmpq 8(%rsp), %rdx
++	ja 1f
++	movq $end_repeat_nmi, %rdx
++	cmpq 8(%rsp), %rdx
++	ja nested_nmi_out
++
++1:
++	/* Set up the interrupted NMIs stack to jump to repeat_nmi */
++	leaq -6*8(%rsp), %rdx
++	movq %rdx, %rsp
++	pushq $__KERNEL_DS
++	pushq %rdx
++	pushfq
++	pushq $__KERNEL_CS
++	pushq_cfi $repeat_nmi
++
++	/* Put stack back */
++	addq $(11*8), %rsp
++
++nested_nmi_out:
++	popq_cfi %rdx
++
++	/* No need to check faults here */
++	INTERRUPT_RETURN
++
++first_nmi:
++	/*
++	 * Because nested NMIs will use the pushed location that we
++	 * stored rdx, we must keep that space available.
++	 * Here's what our stack frame will look like:
++	 * +-------------------------+
++	 * | original SS             |
++	 * | original Return RSP     |
++	 * | original RFLAGS         |
++	 * | original CS             |
++	 * | original RIP            |
++	 * +-------------------------+
++	 * | temp storage for rdx    |
++	 * +-------------------------+
++	 * | NMI executing variable  |
++	 * +-------------------------+
++	 * | Saved SS                |
++	 * | Saved Return RSP        |
++	 * | Saved RFLAGS            |
++	 * | Saved CS                |
++	 * | Saved RIP               |
++	 * +-------------------------+
++	 * | copied SS               |
++	 * | copied Return RSP       |
++	 * | copied RFLAGS           |
++	 * | copied CS               |
++	 * | copied RIP              |
++	 * +-------------------------+
++	 * | pt_regs                 |
++	 * +-------------------------+
++	 *
++	 * The saved RIP is used to fix up the copied RIP that a nested
++	 * NMI may zero out. The original stack frame and the temp storage
++	 * is also used by nested NMIs and can not be trusted on exit.
++	 */
++	/* Set the NMI executing variable on the stack. */
++	pushq_cfi $1
++
++	/* Copy the stack frame to the Saved frame */
++	.rept 5
++	pushq_cfi 6*8(%rsp)
++	.endr
++
++	/* Make another copy, this one may be modified by nested NMIs */
++	.rept 5
++	pushq_cfi 4*8(%rsp)
++	.endr
++
++	/* Do not pop rdx, nested NMIs will corrupt it */
++	movq 11*8(%rsp), %rdx
++
++	/*
++	 * Everything below this point can be preempted by a nested
++	 * NMI if the first NMI took an exception. Repeated NMIs
++	 * caused by an exception and nested NMI will start here, and
++	 * can still be preempted by another NMI.
++	 */
++restart_nmi:
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+ 	subq $ORIG_RAX-R15, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+@@ -1502,10 +1655,24 @@ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
+ 	RESTORE_ALL 8
++	/* Clear the NMI executing stack variable */
++	movq $0, 10*8(%rsp)
+ 	jmp irq_return
+ 	CFI_ENDPROC
+ END(nmi)
 =20
- 	inc_irq_stat(__nmi_count);
-@@ -428,8 +515,7 @@ do_nmi(struct pt_regs *regs, long error_code)
-=20
- 	nmi_exit();
-=20
--	if (unlikely(update_debug_stack))
--		reset_debug_stack();
-+	nmi_postprocess();
- }
-=20
- void stop_nmi(void)
++repeat_nmi:
++	/* Update the stack variable to say we are still in NMI */
++	movq $1, 5*8(%rsp)
++
++	/* copy the saved stack back to copy stack */
++	.rept 5
++	pushq 4*8(%rsp)
++	.endr
++
++	jmp restart_nmi
++end_repeat_nmi:
++
+ ENTRY(ignore_sysret)
+ 	CFI_STARTPROC
+ 	mov $-ENOSYS,%eax
 --=20
 1.7.7.3
 
@@ -216,19 +432,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO687pAAoJEIy3vGnGbaoAQ8AQAK3StucHsYJ5TIOR+nvq5OYb
-/Gay1Da5moo7aPvC2+RGe7WjRmx6RlSjChEiXjasKN7FdVV44x5E/lxFRLhgs9qd
-j1iLVGfWzJHJdQK2IdEr3fr/h2MaoL9mAWrhnqSN8YUEhug2AgNu9sdO7sMizznS
-I4ehQBnBDsH7K68yzuao/bvBVnIICSMp6FzgJRCKyP4GjA4veXPuYZYlmfgjY5em
-Ci0tJHfDxT40+8hd4PXpsCv9IMSsfJ+p9Z4CF2NJ7I80qYrnfUWBYYGO0F+9sXVG
-87ENV/kOeVnCt9Qbs2TkbaKMYXEvZkIFg24Tch/lU+PuJBO74/Gx0dL6ljWV3YPJ
-0EG9ChPbIMCPYvvOulyQFmT04hTm/7TH08nZCqv/h947o+13rC30Ei2iiRJ1QKHx
-dksB7ivabQwVwTycWBaj7aAi9ztiCmH8tW/HoEZf4UOzsCiiOWxoSFhESFCdHnu9
-jnEDaNL7CE0oJc4R+Vxd/A3Bc5s1uZy86m8QnwR2XqALfLPD36DO4K1zGB4VVm3Z
-WUDSv8pWH5+yeQwMvbP4g0K/kpNk/bFocma1u+Mc6cwAo55C2kLpUH0jicPbQQPT
-wjpTwP06mEVbEypCsMOd3Lw+UWSVAf97/ld9a4xnHFVG8K3GSPTv+8nOODOmKgAt
-JdDTJooyBWvWQuUtU+VX
-=q2hf
+iQIcBAABAgAGBQJO687nAAoJEIy3vGnGbaoAunkQALw4fRStlocmERPTSMx5q9eN
+Src7EYE9ENpDsfmuF3T43Ew+9dwLqczjWT4UOqeqrA4ArJDtQusS+QzjXSb2ud13
+hK1EyRBBvAuJAAyoifvkj9jGO/apRW52IJYHdEgdHKGyXWyM9MfB3qya6+ox4ejK
+KGIiOPf+GWwOe5CM0wBM+Dm6E/5R3oDZcEsJ3PXeTULvc/n+cn8fvicduRJgJc/w
+ZsHgx69d/AXko0mCbSQBPUGEMGRvUDJSdBVXxuIZ6E1DGxE16UAm03E1zYb1zu09
+/FGuls7XxP61DDvUCaG0xUEATgKQiIE6s55DP9+G5yOimqc57C7/LfPbiV73+1OM
+QA46Q7+shPP8ig0uea6up2tkw6E+dUByIBteuLmphvpHBmwKI50wb1XILWLgSne9
+zQs/99UHNPHfG6/FTYi5vtYuYmCplI6ZTT/Ci7JepNfRlkjRhhDX/Ft1BhNyo6Hd
+588wgahonbJaADu+qsF0xT6q139hwSMYwF6YPByXnkup7JpMrU15Yx16uPNHvFC5
+w/BZ8maZ9s85VaFy/Y6MgPhaGebBtTq8aA89OFNhhlXA2LO8Tsj0OPWiiPmehKJj
+MT2esvBzYIgtxwv0eIHk4qGpfEu5q8I7Ny4hANd4c/EugLbuLQ0jc5kSvUy3TByl
+5ShavNDfa/La/4g+Vp8f
+=6b7X
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
