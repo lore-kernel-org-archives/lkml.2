@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab1LPAR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:17:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60510 "EHLO ogre.sisk.pl"
+	id S1759977Ab1LPASG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:18:06 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60519 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759900Ab1LPARx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:17:53 -0500
+	id S1759900Ab1LPASC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 19:18:02 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [Update][PATCH 5/5] PM / shmobile: Allow the A4R domain to be turned off at run time
-Date: Fri, 16 Dec 2011 01:16:58 +0100
+Subject: [Update][PATCH 2/5] PM / shmobile: Remove the stay_on flag from SH7372's PM domains
+Date: Fri, 16 Dec 2011 01:12:06 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
@@ -21,78 +21,142 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112160116.58694.rjw@sisk.pl>
+Message-Id: <201112160112.06951.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-After adding PM QoS constraints for the I2C controller in the A4R
-domain, that domain can be allowed to be turned off and on by runtime
-PM, so remove the "always on" governor from it.
+SH7372 uses two independent mechanisms for ensuring that power
+domains will never be turned off: the stay_on flag and the "always
+on" domain governor.  Moreover, the "always on" governor is only taken
+into accout by runtime PM code paths, while the stay_on flag affects
+all attempts to turn the given domain off.  Thus setting the stay_on
+flag causes the "always on" governor to be unnecessary, which is
+quite confusing.
 
-However, the A4R domain has to be "on" when suspend_device_irqs() and
-resume_device_irqs() are executed during system suspend and resume,
-respectively, so that those functions don't crash while accessing the
-INTCS.  For this reason, add a PM notifier to the SH7372 PM code and
-make it restore power to A4R before system suspend and remove power
-from all unused PM domains after system resume.
+However, the stay_on flag is currently only set for the A3SP PM
+domain and only if console_suspend_enabled, so it may be replaced
+by checking console_suspend_enabled directly in the A3SP's
+.suspend() routine.  [This requires domain .suspend() to return
+a result, but that is a minor modification.]
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Acked-by: Magnus Damm <damm@opensource.se>
 ---
- arch/arm/mach-shmobile/pm-sh7372.c |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+ arch/arm/mach-shmobile/include/mach/sh7372.h |    3 --
+ arch/arm/mach-shmobile/pm-sh7372.c           |   36 ++++++++++++---------------
+ 2 files changed, 18 insertions(+), 21 deletions(-)
 
+Index: linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
++++ linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+@@ -480,11 +480,10 @@ struct platform_device;
+ struct sh7372_pm_domain {
+ 	struct generic_pm_domain genpd;
+ 	struct dev_power_governor *gov;
+-	void (*suspend)(void);
++	int (*suspend)(void);
+ 	void (*resume)(void);
+ 	unsigned int bit_shift;
+ 	bool no_debug;
+-	bool stay_on;
+ };
+ 
+ static inline struct sh7372_pm_domain *to_sh7372_pd(struct generic_pm_domain *d)
 Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
 +++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -239,7 +239,6 @@ struct sh7372_pm_domain sh7372_d4 = {
- struct sh7372_pm_domain sh7372_a4r = {
- 	.genpd.name = "A4R",
- 	.bit_shift = 5,
--	.gov = &pm_domain_always_on_gov,
- 	.suspend = sh7372_a4r_suspend,
- 	.resume = sh7372_intcs_resume,
- };
-@@ -496,9 +495,37 @@ static int sh7372_enter_suspend(suspend_
- 	return 0;
+@@ -82,11 +82,12 @@ static int pd_power_down(struct generic_
+ 	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+ 	unsigned int mask = 1 << sh7372_pd->bit_shift;
+ 
+-	if (sh7372_pd->suspend)
+-		sh7372_pd->suspend();
++	if (sh7372_pd->suspend) {
++		int ret = sh7372_pd->suspend();
+ 
+-	if (sh7372_pd->stay_on)
+-		return 0;
++		if (ret)
++			return ret;
++	}
+ 
+ 	if (__raw_readl(PSTR) & mask) {
+ 		unsigned int retry_count;
+@@ -113,9 +114,6 @@ static int __pd_power_up(struct sh7372_p
+ 	unsigned int retry_count;
+ 	int ret = 0;
+ 
+-	if (sh7372_pd->stay_on)
+-		goto out;
+-
+ 	if (__raw_readl(PSTR) & mask)
+ 		goto out;
+ 
+@@ -148,10 +146,11 @@ static int pd_power_up(struct generic_pm
+ 	 return __pd_power_up(to_sh7372_pd(genpd), true);
  }
  
-+/**
-+ * sh7372_pm_notifier_fn - SH7372 PM notifier routine.
-+ * @notifier: Unused.
-+ * @pm_event: Event being handled.
-+ * @unused: Unused.
-+ */
-+static int sh7372_pm_notifier_fn(struct notifier_block *notifier,
-+				 unsigned long pm_event, void *unused)
+-static void sh7372_a4r_suspend(void)
++static int sh7372_a4r_suspend(void)
+ {
+ 	sh7372_intcs_suspend();
+ 	__raw_writel(0x300fffff, WUPRMSK); /* avoid wakeup */
++	return 0;
+ }
+ 
+ static bool pd_active_wakeup(struct device *dev)
+@@ -243,7 +242,6 @@ struct sh7372_pm_domain sh7372_a4r = {
+ 	.gov = &pm_domain_always_on_gov,
+ 	.suspend = sh7372_a4r_suspend,
+ 	.resume = sh7372_intcs_resume,
+-	.stay_on = true,
+ };
+ 
+ struct sh7372_pm_domain sh7372_a3rv = {
+@@ -256,21 +254,23 @@ struct sh7372_pm_domain sh7372_a3ri = {
+ 	.bit_shift = 8,
+ };
+ 
++static int sh7372_a3sp_suspend(void)
 +{
-+	switch (pm_event) {
-+	case PM_SUSPEND_PREPARE:
-+		/*
-+		 * This is necessary, because the A4R domain has to be "on"
-+		 * when suspend_device_irqs() and resume_device_irqs() are
-+		 * executed during system suspend and resume, respectively, so
-+		 * that those functions don't crash while accessing the INTCS.
-+		 */
-+		pm_genpd_poweron(&sh7372_a4r.genpd);
-+		break;
-+	case PM_POST_SUSPEND:
-+		pm_genpd_poweroff_unused();
-+		break;
-+	}
-+
-+	return NOTIFY_DONE;
++	/*
++	 * Serial consoles make use of SCIF hardware located in A3SP,
++	 * keep such power domain on if "no_console_suspend" is set.
++	 */
++	return console_suspend_enabled ? -EBUSY : 0;
 +}
 +
- static void sh7372_suspend_init(void)
- {
- 	shmobile_suspend_ops.enter = sh7372_enter_suspend;
-+	pm_notifier(sh7372_pm_notifier_fn, 0);
+ struct sh7372_pm_domain sh7372_a3sp = {
+ 	.genpd.name = "A3SP",
+ 	.bit_shift = 11,
+ 	.gov = &pm_domain_always_on_gov,
+ 	.no_debug = true,
++	.suspend = sh7372_a3sp_suspend,
+ };
+ 
+-static void sh7372_a3sp_init(void)
+-{
+-	/* serial consoles make use of SCIF hardware located in A3SP,
+-	 * keep such power domain on if "no_console_suspend" is set.
+-	 */
+-	sh7372_a3sp.stay_on = !console_suspend_enabled;
+-}
+-
+ struct sh7372_pm_domain sh7372_a3sg = {
+ 	.genpd.name = "A3SG",
+ 	.bit_shift = 13,
+@@ -514,8 +514,6 @@ void __init sh7372_pm_init(void)
+ 	/* do not convert A3SM, A3SP, A3SG, A4R power down into A4S */
+ 	__raw_writel(0, PDNSEL);
+ 
+-	sh7372_a3sp_init();
+-
+ 	sh7372_suspend_init();
+ 	sh7372_cpuidle_init();
  }
- #else
- static void sh7372_suspend_init(void) {}
 
