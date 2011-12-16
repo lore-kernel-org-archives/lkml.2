@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759539Ab1LPN7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:59:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52776 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426Ab1LPN7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:59:09 -0500
-Message-ID: <4EEB4EA5.2040607@gmail.com>
-Date: Fri, 16 Dec 2011 06:59:01 -0700
-From: "Berck E. Nash" <flyboy@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1759534Ab1LPOBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 09:01:09 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:4710 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756517Ab1LPOBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 09:01:00 -0500
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4EEB4F09.6080806@broadcom.com>
+Date: Fri, 16 Dec 2011 15:00:41 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124
+ Thunderbird/8.0
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x2apic boot failure on recent sandy bridge system
-References: <4EE2BC33.80902@gmail.com>	<CAE9FiQXH6d0eAjbQ0Dz3Q8NR6ktP_x6UKtzDtuq8253Qv4KS7w@mail.gmail.com>	<20111211075713.GA20790@elte.hu>	<CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>	<4EE5291C.1030302@gmail.com>	<CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>	<4EE68C80.7000408@gmail.com>	<1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>	<CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>	<1323740475.1984.171.camel@sbsiddha-desk.sc.intel.com>	<CAE9FiQWxYgCd2AVzXWfuqFA6NkgzgD0+XuAkUfEG1GN2EFBpTg@mail.gmail.com> <CAE9FiQVhLKhRT=XivpG6KHYhpA+HN695CZ3cQ82-teaRPEBxNg@mail.gmail.com>
-In-Reply-To: <CAE9FiQVhLKhRT=XivpG6KHYhpA+HN695CZ3cQ82-teaRPEBxNg@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Larry Finger" <Larry.Finger@lwfinger.net>
+cc: "Johannes Berg" <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: unexpected taint message
+References: <4EEB0EFC.5000302@broadcom.com> (
+ sfid-20111216_102800_182196_AFD2D6CF)
+ <1324038636.3429.1.camel@jlt3.sipsolutions.net>
+ <4EEB4D61.80602@lwfinger.net>
+In-Reply-To: <4EEB4D61.80602@lwfinger.net>
+X-Enigmail-Version: 1.4a1pre
+OpenPGP: id=B5E1A116
+X-WSS-ID: 62F58F603GG10253773-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 10:13 PM, Yinghai Lu wrote:
-> please check -v7.
+On 12/16/2011 02:53 PM, Larry Finger wrote:
+> 
+> I also found that loading brcmsmac did not trigger the license taint. I think 
+> you are OK with the dual license.
 
-Works just fine for me.
+Ok. I get it upon loading the brcmutil module. Actually, my usage
+scenario is:
+
+1) build the driver modules in kernel tree on my development machine.
+2) rsync the brcm80211 folder to my test machine.
+3) insert the driver modules on my test machine.
+
+> Larry
+> 
+
+Gr. AvS
+
