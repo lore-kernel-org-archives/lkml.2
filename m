@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760649Ab1LPUJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:09:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44858 "EHLO mx2.suse.de"
+	id S1760029Ab1LPUJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:09:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44833 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760202Ab1LPTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:48:37 -0500
+	id S1760504Ab1LPTsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:48:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:56 2011
-Message-Id: <20111216194556.771968920@clark.kroah.org>
+Message-Id: <20111216194556.461886931@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:14 -0800
+Date: Fri, 16 Dec 2011 11:45:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, Arve Hjnnevg <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [17/53] mm: Ensure that pfn_valid() is called once per pageblock when reserving pageblocks
+        alan@lxorguk.ukuu.org.uk, Yong Zhang <yong.zhang0@gmail.com>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [15/53] lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,83 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Yong Zhang <yong.zhang0@gmail.com>
 
-commit d021563888312018ca65681096f62e36c20e63cc upstream.
+commit a33caeb118198286309859f014c0662f3ed54ed4 upstream.
 
-setup_zone_migrate_reserve() expects that zone->start_pfn starts at
-pageblock_nr_pages aligned pfn otherwise we could access beyond an
-existing memblock resulting in the following panic if
-CONFIG_HOLES_IN_ZONE is not configured and we do not check pfn_valid:
+Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
+lockdep_init_map() will clear all the struct. But it will break
+lock_set_class()/lock_set_subclass(). A typical race condition
+is like below:
 
-  IP: [<c02d331d>] setup_zone_migrate_reserve+0xcd/0x180
-  *pdpt = 0000000000000000 *pde = f000ff53f000ff53
-  Oops: 0000 [#1] SMP
-  Pid: 1, comm: swapper Not tainted 3.0.7-0.7-pae #1 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-  EIP: 0060:[<c02d331d>] EFLAGS: 00010006 CPU: 0
-  EIP is at setup_zone_migrate_reserve+0xcd/0x180
-  EAX: 000c0000 EBX: f5801fc0 ECX: 000c0000 EDX: 00000000
-  ESI: 000c01fe EDI: 000c01fe EBP: 00140000 ESP: f2475f58
-  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-  Process swapper (pid: 1, ti=f2474000 task=f2472cd0 task.ti=f2474000)
-  Call Trace:
-  [<c02d389c>] __setup_per_zone_wmarks+0xec/0x160
-  [<c02d3a1f>] setup_per_zone_wmarks+0xf/0x20
-  [<c08a771c>] init_per_zone_wmark_min+0x27/0x86
-  [<c020111b>] do_one_initcall+0x2b/0x160
-  [<c086639d>] kernel_init+0xbe/0x157
-  [<c05cae26>] kernel_thread_helper+0x6/0xd
-  Code: a5 39 f5 89 f7 0f 46 fd 39 cf 76 40 8b 03 f6 c4 08 74 32 eb 91 90 89 c8 c1 e8 0e 0f be 80 80 2f 86 c0 8b 14 85 60 2f 86 c0 89 c8 <2b> 82 b4 12 00 00 c1 e0 05 03 82 ac 12 00 00 8b 00 f6 c4 08 0f
-  EIP: [<c02d331d>] setup_zone_migrate_reserve+0xcd/0x180 SS:ESP 0068:f2475f58
-  CR2: 00000000000012b4
+     CPU A                                   CPU B
+lock_set_subclass(lockA);
+ lock_set_class(lockA);
+   lockdep_init_map(lockA);
+     /* lockA->name is cleared */
+     memset(lockA);
+                                     __lock_acquire(lockA);
+                                       /* lockA->class_cache[] is cleared */
+                                       register_lock_class(lockA);
+                                         look_up_lock_class(lockA);
+                                           WARN_ON_ONCE(class->name !=
+                                                     lock->name);
 
-We crashed in pageblock_is_reserved() when accessing pfn 0xc0000 because
-highstart_pfn = 0x36ffe.
+     lock->name = name;
 
-The issue was introduced in 3.0-rc1 by 6d3163ce ("mm: check if any page
-in a pageblock is reserved before marking it MIGRATE_RESERVE").
+So restore to what we have done before commit f59de89 but annotate
+->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
+warning reported in commit f59de89.
 
-Make sure that start_pfn is always aligned to pageblock_nr_pages to
-ensure that pfn_valid s always called at the start of each pageblock.
-Architectures with holes in pageblocks will be correctly handled by
-pfn_valid_within in pageblock_is_reserved.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Tested-by: Dang Bo <bdang@vmware.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
 Cc: David Rientjes <rientjes@google.com>
-Cc: Arve Hjnnevg <arve@android.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/page_alloc.c |    8 +++++++-
+ kernel/lockdep.c |    8 +++++++-
  1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3370,9 +3370,15 @@ static void setup_zone_migrate_reserve(s
- 	unsigned long block_migratetype;
- 	int reserve;
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -44,6 +44,7 @@
+ #include <linux/stringify.h>
+ #include <linux/bitops.h>
+ #include <linux/gfp.h>
++#include <linux/kmemcheck.h>
  
--	/* Get the start pfn, end pfn and the number of blocks to reserve */
-+	/*
-+	 * Get the start pfn, end pfn and the number of blocks to reserve
-+	 * We have to be careful to be aligned to pageblock_nr_pages to
-+	 * make sure that we always check pfn_valid for the first page in
-+	 * the block.
-+	 */
- 	start_pfn = zone->zone_start_pfn;
- 	end_pfn = start_pfn + zone->spanned_pages;
-+	start_pfn = roundup(start_pfn, pageblock_nr_pages);
- 	reserve = roundup(min_wmark_pages(zone), pageblock_nr_pages) >>
- 							pageblock_order;
+ #include <asm/sections.h>
  
+@@ -2874,7 +2875,12 @@ static int mark_lock(struct task_struct
+ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 		      struct lock_class_key *key, int subclass)
+ {
+-	memset(lock, 0, sizeof(*lock));
++	int i;
++
++	kmemcheck_mark_initialized(lock, sizeof(*lock));
++
++	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
++		lock->class_cache[i] = NULL;
+ 
+ #ifdef CONFIG_LOCK_STAT
+ 	lock->cpu = raw_smp_processor_id();
 
 
