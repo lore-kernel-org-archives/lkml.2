@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030268Ab1LPUxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:53:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49049 "EHLO mx2.suse.de"
+	id S1030275Ab1LPUxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:53:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49034 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964866Ab1LPUw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:43 2011
-Message-Id: <20111216205043.042482736@clark.kroah.org>
+	id S964974Ab1LPUwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:21 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:42 2011
+Message-Id: <20111216205042.882774104@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:41 -0800
+Date: Fri, 16 Dec 2011 12:49:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@vmware.com>
-Subject: [08/16] linux/log2.h: Fix rounddown_pow_of_two(1)
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [06/16] percpu: fix chunk range calculation
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 13c07b0286d340275f2d97adf085cecda37ede37 upstream.
+commit a855b84c3d8c73220d4d3cd392a7bee7c83de70e upstream.
 
-Exactly like roundup_pow_of_two(1), the rounddown version was buggy for
-the case of a compile-time constant '1' argument.  Probably because it
-originated from the same code, sharing history with the roundup version
-from before the bugfix (for that one, see commit 1a06a52ee1b0: "Fix
-roundup_pow_of_two(1)").
+Percpu allocator recorded the cpus which map to the first and last
+units in pcpu_first/last_unit_cpu respectively and used them to
+determine the address range of a chunk - e.g. it assumed that the
+first unit has the lowest address in a chunk while the last unit has
+the highest address.
 
-However, unlike the roundup version, the fix for rounddown is to just
-remove the broken special case entirely.  It's simply not needed - the
-generic code
+This simply isn't true.  Groups in a chunk can have arbitrary positive
+or negative offsets from the previous one and there is no guarantee
+that the first unit occupies the lowest offset while the last one the
+highest.
 
-    1UL << ilog2(n)
+Fix it by actually comparing unit offsets to determine cpus occupying
+the lowest and highest offsets.  Also, rename pcu_first/last_unit_cpu
+to pcpu_low/high_unit_cpu to avoid confusion.
 
-does the right thing for the constant '1' argment too.  The only reason
-roundup needed that special case was because rounding up does so by
-subtracting one from the argument (and then adding one to the result)
-causing the obvious problems with "ilog2(0)".
+The chunk address range is used to flush cache on vmalloc area
+map/unmap and decide whether a given address is in the first chunk by
+per_cpu_ptr_to_phys() and the bug was discovered by invalid
+per_cpu_ptr_to_phys() translation for crash_note.
 
-But rounddown doesn't do any of that, since ilog2() naturally truncates
-(ie "rounds down") to the right rounded down value.  And without the
-ilog2(0) case, there's no reason for the special case that had the wrong
-value.
+Kudos to Dave Young for tracking down the problem.
 
-tl;dr: rounddown_pow_of_two(1) should be 1, not 0.
-
-Acked-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: WANG Cong <xiyou.wangcong@gmail.com>
+Reported-by: Dave Young <dyoung@redhat.com>
+Tested-by: Dave Young <dyoung@redhat.com>
+LKML-Reference: <4EC21F67.10905@redhat.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/log2.h |    1 -
- 1 file changed, 1 deletion(-)
+ mm/percpu.c |   32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
---- a/include/linux/log2.h
-+++ b/include/linux/log2.h
-@@ -185,7 +185,6 @@ unsigned long __rounddown_pow_of_two(uns
- #define rounddown_pow_of_two(n)			\
- (						\
- 	__builtin_constant_p(n) ? (		\
--		(n == 1) ? 0 :			\
- 		(1UL << ilog2(n))) :		\
- 	__rounddown_pow_of_two(n)		\
-  )
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -110,9 +110,9 @@ static int pcpu_atom_size __read_mostly;
+ static int pcpu_nr_slots __read_mostly;
+ static size_t pcpu_chunk_struct_size __read_mostly;
+ 
+-/* cpus with the lowest and highest unit numbers */
+-static unsigned int pcpu_first_unit_cpu __read_mostly;
+-static unsigned int pcpu_last_unit_cpu __read_mostly;
++/* cpus with the lowest and highest unit addresses */
++static unsigned int pcpu_low_unit_cpu __read_mostly;
++static unsigned int pcpu_high_unit_cpu __read_mostly;
+ 
+ /* the address of the first chunk which starts with the kernel static area */
+ void *pcpu_base_addr __read_mostly;
+@@ -746,8 +746,8 @@ static void pcpu_pre_unmap_flush(struct
+ 				 int page_start, int page_end)
+ {
+ 	flush_cache_vunmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
+@@ -809,8 +809,8 @@ static void pcpu_post_unmap_tlb_flush(st
+ 				      int page_start, int page_end)
+ {
+ 	flush_tlb_kernel_range(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static int __pcpu_map_pages(unsigned long addr, struct page **pages,
+@@ -887,8 +887,8 @@ static void pcpu_post_map_flush(struct p
+ 				int page_start, int page_end)
+ {
+ 	flush_cache_vmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ /**
+@@ -1680,7 +1680,9 @@ int __init pcpu_setup_first_chunk(const
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+-	pcpu_first_unit_cpu = NR_CPUS;
++
++	pcpu_low_unit_cpu = NR_CPUS;
++	pcpu_high_unit_cpu = NR_CPUS;
+ 
+ 	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
+ 		const struct pcpu_group_info *gi = &ai->groups[group];
+@@ -1700,9 +1702,13 @@ int __init pcpu_setup_first_chunk(const
+ 			unit_map[cpu] = unit + i;
+ 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
+ 
+-			if (pcpu_first_unit_cpu == NR_CPUS)
+-				pcpu_first_unit_cpu = cpu;
+-			pcpu_last_unit_cpu = cpu;
++			/* determine low/high unit_cpu */
++			if (pcpu_low_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
++				pcpu_low_unit_cpu = cpu;
++			if (pcpu_high_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
++				pcpu_high_unit_cpu = cpu;
+ 		}
+ 	}
+ 	pcpu_nr_units = unit;
 
 
