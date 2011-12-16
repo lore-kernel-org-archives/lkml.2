@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760412Ab1LPTs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:48:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44828 "EHLO mx2.suse.de"
+	id S1760657Ab1LPTtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:49:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44845 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760175Ab1LPTs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:48:27 -0500
+	id S1760623Ab1LPTsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:48:33 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:56 2011
-Message-Id: <20111216194556.292933403@clark.kroah.org>
+Message-Id: <20111216194556.616948785@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:11 -0800
+Date: Fri, 16 Dec 2011 11:45:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Youquan Song <youquan.song@intel.com>
-Subject: [14/53] thp: set compound tail page _count to zero
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richard.cochran@omicron.at>
+Subject: [16/53] ptp: Fix clock_getres() implementation
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,66 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Youquan Song <youquan.song@intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 58a84aa92723d1ac3e1cc4e3b0ff49291663f7e1 upstream.
+commit d68fb11c3dae75c8331538dcf083a65e697cc034 upstream.
 
-Commit 70b50f94f1644 ("mm: thp: tail page refcounting fix") keeps all
-page_tail->_count zero at all times.  But the current kernel does not
-set page_tail->_count to zero if a 1GB page is utilized.  So when an
-IOMMU 1GB page is used by KVM, it wil result in a kernel oops because a
-tail page's _count does not equal zero.
+The clock_getres() function must return the resolution in the timespec
+argument and return 0 for success.
 
-  kernel BUG at include/linux/mm.h:386!
-  invalid opcode: 0000 [#1] SMP
-  Call Trace:
-    gup_pud_range+0xb8/0x19d
-    get_user_pages_fast+0xcb/0x192
-    ? trace_hardirqs_off+0xd/0xf
-    hva_to_pfn+0x119/0x2f2
-    gfn_to_pfn_memslot+0x2c/0x2e
-    kvm_iommu_map_pages+0xfd/0x1c1
-    kvm_iommu_map_memslots+0x7c/0xbd
-    kvm_iommu_map_guest+0xaa/0xbf
-    kvm_vm_ioctl_assigned_device+0x2ef/0xa47
-    kvm_vm_ioctl+0x36c/0x3a2
-    do_vfs_ioctl+0x49e/0x4e4
-    sys_ioctl+0x5a/0x7c
-    system_call_fastpath+0x16/0x1b
-  RIP  gup_huge_pud+0xf2/0x159
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Stultz <john.stultz@linaro.org>
+Cc: Richard Cochran <richard.cochran@omicron.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/hugetlb.c    |    1 +
- mm/page_alloc.c |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/ptp/ptp_clock.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -576,6 +576,7 @@ static void prep_compound_gigantic_page(
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
- 		__SetPageTail(p);
-+		set_page_count(p, 0);
- 		p->first_page = page;
- 	}
+--- a/drivers/ptp/ptp_clock.c
++++ b/drivers/ptp/ptp_clock.c
+@@ -101,7 +101,9 @@ static s32 scaled_ppm_to_ppb(long ppm)
+ 
+ static int ptp_clock_getres(struct posix_clock *pc, struct timespec *tp)
+ {
+-	return 1; /* always round timer functions to one nanosecond */
++	tp->tv_sec = 0;
++	tp->tv_nsec = 1;
++	return 0;
  }
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -355,8 +355,8 @@ void prep_compound_page(struct page *pag
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++) {
- 		struct page *p = page + i;
--
- 		__SetPageTail(p);
-+		set_page_count(p, 0);
- 		p->first_page = page;
- 	}
- }
+ 
+ static int ptp_clock_settime(struct posix_clock *pc, const struct timespec *tp)
 
 
