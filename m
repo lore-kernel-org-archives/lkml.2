@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760488Ab1LPS1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 13:27:42 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:21801 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab1LPS1e (ORCPT
+	id S1760450Ab1LPS3i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 13:29:38 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53336 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756554Ab1LPS3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 13:27:34 -0500
-Date: Fri, 16 Dec 2011 13:27:28 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Btrfs fixes (part two, against 3.2-rc)
-Message-ID: <20111216182728.GB25457@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	Fri, 16 Dec 2011 13:29:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4EEB8D94.00A7,ss=1,re=0.000,fgs=0
+In-Reply-To: <4EEB85F1.7050903@zytor.com>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+	<4EA09EA2.3030203@zytor.com>
+	<1319149574.13035.6.camel@jshin-Toonie>
+	<4EE9266A.90200@zytor.com>
+	<20111214231425.GA18068@jshin-Toonie>
+	<20111216162004.GC18068@jshin-Toonie>
+	<4EEB8320.4010809@oracle.com>
+	<4EEB85F1.7050903@zytor.com>
+Date: Fri, 16 Dec 2011 10:29:31 -0800
+X-Google-Sender-Auth: jbBpKewe_0iqRxyWKcpjUlIHe4E
+Message-ID: <CAE9FiQXTeJ2XZy-Pjwvdb4Fp5wb_XLq88tC-2M_3RbjSLk5d4A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Fri, Dec 16, 2011 at 9:54 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 
-I try to keep most of the btrfs commits against the last release.  This
-way, people can update their old and crusty kernels from 3 months ago,
-and still have the latest btrfs code.
+>
+> For 2 - why can't we simply make the invariant that E820_RAM is mapped and
+> nothing else, with the sole exceptions being the 1 MiB (fixed MTRR)?
 
-We do have one commit that is 3.2 specific though, so I put it into a
-for-linus-3.2 branch:
+Yes, we could do that. but need to track mapped area in simple way.
+like later memory hotadd or remove to update those tracking.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus-3.2
+Thanks
 
-Wu Fengguang noticed that btrfs' file write needs to consider the balance
-dirty thresholds when it allows big multi-page writes.
-
-Wu Fengguang (1) commits (+2/-0):
-    btrfs: lower the dirty balance poll interval
-
-Total: (1) commits (+2/-0)
-
- fs/btrfs/file.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
+Yinghai
