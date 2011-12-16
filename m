@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1LPJyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 04:54:08 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:38580 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab1LPJx7 convert rfc822-to-8bit (ORCPT
+	id S1751481Ab1LPJzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 04:55:40 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60310 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab1LPJzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 04:53:59 -0500
-Message-ID: <4EEB1508.3080405@parallels.com>
-Date: Fri, 16 Dec 2011 13:53:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <netdev@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH v2] net: fix sleeping while atomic problem in sock mem_cgroup.
-References: <1324026582-5214-1-git-send-email-glommer@parallels.com> <1324027869.2273.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1324027869.2273.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Fri, 16 Dec 2011 04:55:35 -0500
+Message-ID: <1324029272.18942.73.camel@twins>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+From: Peter Zijlstra <peterz@infradead.org>
+To: frank.rowand@am.sony.com
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
+        rostedt@goodmis.org
+Date: Fri, 16 Dec 2011 10:54:32 +0100
+In-Reply-To: <4EEAB90D.3050504@am.sony.com>
+References: <4EEAB90D.3050504@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [85.26.155.19]
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 01:31 PM, Eric Dumazet wrote:
-> Le vendredi 16 décembre 2011 à 13:09 +0400, Glauber Costa a écrit :
->> Since we can't scan the proto_list to initialize sock cgroups, as it
->> holds a rwlock, and we also want to keep the code generic enough to
->> avoid calling the initialization functions of protocols directly,
->> I propose we keep the interested parties in a separate list. This list
->> is protected by a mutex so we can sleep and do the necessary allocations.
->>
->> Also fixes a reference problem found by Randy Dunlap's randconfig.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> CC: David S. Miller<davem@davemloft.net>
->> CC: Eric Dumazet<eric.dumazet@gmail.com>
->> CC: Stephen Rothwell<sfr@canb.auug.org.au>
->> CC: Randy Dunlap<rdunlap@xenotime.net>
->> ---
->
-> Sorry to come late, but why dont we convert proto_list_lock to a mutex ?
+[ now without loosing CC's ]
 
-I didn't suggest this, as I imagined there could be some performance 
-implications to be drawn from it that may not be obvious to me.
+On Thu, 2011-12-15 at 19:20 -0800, Frank Rowand wrote:
+> ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
+> (application specific ID). The number of ASIDs is limited to 256 and
+> the allocation algorithm requires IPIs when all the ASIDs have been
+> used.  The IPIs require interrupts enabled during context switch for
+> deadlock avoidance.
+> 
+> The RT patch mm-protect-activate-switch-mm.patch disables irqs around
+> activate_mm() and switch_mm(), which are the portion of the ARMv6
+> context switch that require interrupts enabled.
+> 
+> The solution for the ARMv6 processors could be to _not_ disable irqs.
+> A more conservative solution is to provide the same environment that
+> the scheduler provides, that is preempt_disable().  This is more
+> resilient for possible future changes to the ARM context switch code
+> that is not aware of the RT patches.
+> 
+> This patch will conflict slightly with Catalin's patch set to remove
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
+> 
+>    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
+> 
+> When Catalin's patch set is accepted, this RT patch will need to reverse
+> the change in patch 6 to arch/arm/include/asm/system.h:
 
-But if it is okay with you net guys, it is certainly okay with me as well.
+
+We could just merge Catalin's stuff in -rt to give it a test ride and
+see if anything horrible happens.. :-)
