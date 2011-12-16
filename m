@@ -1,160 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759731Ab1LPOQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 09:16:29 -0500
-Received: from bishop.asidev.net ([95.141.38.214]:43945 "EHLO
-	bishop.asidev.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab1LPOQX (ORCPT
+	id S1759660Ab1LPOTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 09:19:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34358 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759524Ab1LPOS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 09:16:23 -0500
-Message-ID: <4EEB50F1.3040106@evidence.eu.com>
-Date: Fri, 16 Dec 2011 15:08:49 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Fri, 16 Dec 2011 09:18:59 -0500
+Date: Fri, 16 Dec 2011 08:18:54 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
+Message-ID: <20111216141854.GA11653@thinkpad-t410>
+Mail-Followup-To: Thomas Renninger <trenn@suse.de>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+	Azael Avalos <coproscefalo@gmail.com>,
+	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
+ <201112160122.36100.trenn@suse.de>
+ <20111216003333.GA18489@srcf.ucam.org>
+ <201112161419.32775.trenn@suse.de>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Alan Cox <alan@linux.intel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Dave Bender <codehero@gmail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] atmel_serial: fix spinlock lockup in RS485 code
-References: <4EE9B42F.50004@evidence.eu.com> <4EE9C532.5050607@atmel.com> <4EE9D44A.6010300@evidence.eu.com> <20111215185814.GD18791@kroah.com>
-In-Reply-To: <20111215185814.GD18791@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112161419.32775.trenn@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/12/2011 19:58, Greg KH ha scritto:
-> On Thu, Dec 15, 2011 at 12:04:42PM +0100, Claudio Scordino wrote:
->> Il 15/12/2011 11:00, Nicolas Ferre ha scritto:
->>> On 12/15/2011 09:47 AM, Claudio Scordino :
->>>> Hi all.
->>>>
->>>> We have encountered a spinlock lockup in the RS485 part of the
->>>> atmel_serial driver.
->>>>
->>>> Here is the trace:
->>>>
->>>> [   68.030000] BUG: spinlock lockup on CPU#0, dnp_master/244, c07e82c0
->>>> [   68.040000] [<c002a790>] (unwind_backtrace+0x0/0xf0) from
->>>> [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148)
->>>> [   68.050000] [<c012f8f0>] (do_raw_spin_lock+0x10c/0x148) from
->>>> [<c015152c>] (atmel_tasklet_func+0x10/0x708)
->>>> [   68.060000] [<c015152c>] (atmel_tasklet_func+0x10/0x708) from
->>>> [<c003bfd4>] (tasklet_action+0x8c/0xf4)
->>>> [   68.070000] [<c003bfd4>] (tasklet_action+0x8c/0xf4) from [<c003c630>]
->>>> (__do_softirq+0xa4/0x180)
->>>> [   68.080000] [<c003c630>] (__do_softirq+0xa4/0x180) from [<c003c764>]
->>>> (irq_exit+0x58/0xb0)
->>>> [   68.090000] [<c003c764>] (irq_exit+0x58/0xb0) from [<c0021084>]
->>>> (asm_do_IRQ+0x84/0xa4)
->>>> [   68.100000] [<c0021084>] (asm_do_IRQ+0x84/0xa4) from [<c002622c>]
->>>> (__irq_svc+0x4c/0x98)
->>>> [   68.110000] Exception stack(0xc341fdc8 to 0xc341fe10)
->>>> [   68.110000] fdc0:                   c07e82c0 00000000 00000200
->>>> c4818000 c341fe10 c07e82c0
->>>> [   68.120000] fde0: 00000000 c07e82c0 c38d3318 c341e000 bebcee00
->>>> 010a0b60 c07e83fc c341fe10
->>>> [   68.130000] fe00: c0151d54 c023d9c0 60000013 ffffffff
->>>> [   68.140000] [<c002622c>] (__irq_svc+0x4c/0x98) from [<c023d9c0>]
->>>> (_raw_spin_unlock+0x0/0x48)
->>>> [   68.140000] [<c023d9c0>] (_raw_spin_unlock+0x0/0x48) from
->>>> [<00000000>] (  (null))
->>>>
->>>> The soft lockup occurs later
->>>>
->>>> [  126.750000] BUG: soft lockup - CPU#0 stuck for 61s! [dnp_master:244]
->>>> [  126.750000] irq event stamp: 0
->>>> [  126.750000] hardirqs last  enabled at (0): [<    (null)>]   (null)
->>>> [  126.750000] hardirqs last disabled at (0): [<c0035e30>]
->>>> copy_process+0x308/0xe78
->>>> [  126.750000] softirqs last  enabled at (0): [<c0035e30>]
->>>> copy_process+0x308/0xe78
->>>> [  126.750000] softirqs last disabled at (0): [<    (null)>]   (null)
->>>>
->>>>
->>>> The following patch (already tested by Dave, who also reported the bug)
->>>> fixes the problem.
->>>>
->>>> Regards,
->>>>
->>>>      Claudio
->>>>
->>>>
->>>>
->>>>
->>>> Subject: atmel_serial: fix spinlock lockup in RS485 code
->>>>
->>>> Patch to fix a spinlock lockup in the driver that sometimes happens when
->>>> the
->>>> tasklet starts.
->>>>
->>>> Signed-off-by: Claudio Scordino<claudio@evidence.eu.com>
->>>> Signed-off-by: Dave Bender<codehero@gmail.com>
->>>> Tested-by: Dave Bender<codehero@gmail.com>
->>>
->>> Acked-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->>>
->>> Claudio, can you please send the patch to Alan with my "Acked-by" and an
->>> addition to Linux stable just after the signature lines:
->>>
->>> Cc: stable<stable@kernel.org>
->
-> That address has been invalid since August, please use
-> stable@vger.kernel.org now.
+On Fri, Dec 16, 2011 at 02:19:32PM +0100, Thomas Renninger wrote:
+> On Friday, December 16, 2011 01:33:33 AM Matthew Garrett wrote:
+> > On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
+> > 
+> > > I think best is to move the thinkpad implementation of getting
+> > > ACPI handles based on HIDs to osl.c and make it global.
+> > > I'll send patches.
+> > > Please review them carefully, they are only compile tested.
+> > 
+> > The ec driver is already finding the hardware on the basis of the HID - 
+> > is there any reason to do this twice rather than just exporting the 
+> > information the ec driver already has?
+> 
+> I don't object to export ec_handle, but thinkpad_acpi.c should get
+> adjusted as well.
+> 
+> I had a closer look and can come up with a replacement for acpi_get_devices
+> using bus.c matching function bus_find_device() avoiding the namespace
+> walk.
 
-Hi Greg,
-
-	here is the patch with the right address.
-
-Many thanks for taking care of it.
-
-Best regards,
-
-	Claudio
-
-
-Subject: atmel_serial: fix spinlock lockup in RS485 code
-
-Patch to fix a spinlock lockup in the driver that sometimes happens when the
-tasklet starts.
-
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Signed-off-by: Dave Bender <codehero@gmail.com>
-Tested-by: Dave Bender <codehero@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Cc: stable <stable@vger.kernel.org>
----
-  drivers/tty/serial/atmel_serial.c |    5 +++--
-  1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 4c823f3..90c8e3a 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -212,8 +212,9 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
-  {
-  	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
-  	unsigned int mode;
-+	unsigned long flags;
-  
--	spin_lock(&port->lock);
-+	spin_lock_irqsave(&port->lock, flags);
-  
-  	/* Disable interrupts */
-  	UART_PUT_IDR(port, atmel_port->tx_done_mask);
-@@ -244,7 +245,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
-  	/* Enable interrupts */
-  	UART_PUT_IER(port, atmel_port->tx_done_mask);
-  
--	spin_unlock(&port->lock);
-+	spin_unlock_irqrestore(&port->lock, flags);
-  
-  }
-  
--- 
-1.7.1
+My thought was the same as Matthew's, why bother redoing the work that
+the EC driver has already done. I'm open to doing it either way though.
+What your proposing does look useful independant of whether or not we
+use it for finding the EC.
 
