@@ -1,191 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab1LPP0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 10:26:00 -0500
+	id S1759941Ab1LPPZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:25:45 -0500
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:56235 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab1LPPZ4 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755826Ab1LPPZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 10:25:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
-References: <CAH9NwWetBZvU6-16rV_s5n=vrAu1kyfsbsjKh+6O2ejf9mM_ww@mail.gmail.com>
- <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com> <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 16 Dec 2011 08:25:34 -0700
-Message-ID: <CAErSpo627xrofs=w2nTzp-6EJzcqxbdz-agHtYY4JLLns3hmvw@mail.gmail.com>
-Subject: Re: PCI(e) enumeration
-To: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Dec 2011 10:25:39 -0500
+Message-ID: <1324049134.25554.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: [PATCH] slub: prefetch next freelist pointer in slab_alloc()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, "Alex,Shi" <alex.shi@intel.com>,
+        Shaohua Li <shaohua.li@intel.com>, Matt Mackall <mpm@selenic.com>
+Date: Fri, 16 Dec 2011 16:25:34 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 6:13 AM, Christian Gmeiner
-<christian.gmeiner@gmail.com> wrote:
-> Hi Bjorn,
->
-> 2011/12/15 Bjorn Helgaas <bhelgaas@google.com>:
->> On Thu, Dec 15, 2011 at 2:41 AM, Christian Gmeiner
->> <christian.gmeiner@gmail.com> wrote:
->>> Hi all,
->>>
->>> I maintain a debian based linux RFS in my company and my college does the
->>> same for windows. Now we run into a problem that windows and linux use a
->>> different network interface as eth0. In our target system there
->>> are two identical NICs installed.
->>>
->>> So I am now looking to find out, how linux does the PCI enumeration
->>> and in which order
->>> the PCI driver gets called to do the initialization. Can somebody tell
->>> me if a depth-first search
->>> or a breadth-first search is done on the PCI bus.
->>>
->>>
->>> For instance look at this lspci output:
->>>
->>> 00:01.0 Host bridge: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] Host Bridge (rev 33)
->>> 00:01.1 VGA compatible controller: Advanced Micro Devices [AMD] Geode LX Video
->>> 00:01.2 Entertainment encryption device: Advanced Micro Devices [AMD]
->>> Geode LX AES Security Block
->>> 00:04.0 Ethernet controller: Intel Corporation 8255xER/82551IT Fast
->>> Ethernet Controller (rev 10)
->>> 00:0f.0 ISA bridge: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] ISA (rev 03)
->>> 00:0f.2 IDE interface: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] IDE (rev 01)
->>> 00:0f.3 Multimedia audio controller: Advanced Micro Devices [AMD]
->>> CS5536 [Geode companion] Audio (rev 01)
->>> 00:0f.4 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] OHC (rev 02)
->>> 00:0f.5 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] EHC (rev 02)
->>> 00:0f.7 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
->>> companion] UOC (rev 02)
->>>
->>> How will linux does the enumeration?
->>
->> The kernel enumerates PCI devices with a depth-first traversal, but
->> that isn't what determines the ethX device name.  That name is
->> determined by the order in which network drivers are loaded and claim
->> devices, which gets into distro details like udev.
->>
->> Here's a nice paper with more details:
->> http://www.dell.com/downloads/global/power/ps1q07-20060392-Domsch.pdf
->
-> Thanks
->
->>
->> If that's not enough to solve your problem, a debian-related forum
->> will probably be more useful than LKML.
->
-> I don't think that this is a debian related issue, as I use no special
-> udev rule. Here is the lscpi
-> output of the target machine, where I have this issue.
->
->
-> root@OT1300:~# lspci
-> 00:00.0 Host bridge: Intel Corporation Atom Processor E6xx PCI Host
-> Bridge #1 (rev 05)
-> 00:01.0 Host bridge: Intel Corporation Atom Processor E6xx
-> Configuration Unit (rev 02)
-> 00:02.0 VGA compatible controller: Intel Corporation Atom Processor
-> E6xx Integrated Graphics Controller (rev 05)
-> 00:03.0 Multimedia video controller: Intel Corporation Atom Processor
-> E6xx Integrated Graphics Controller (rev 02)
-> 00:17.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-> Port 1 (rev 02)
-> 00:18.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-> Port 2 (rev 02)
-> 00:19.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-> Port 3 (rev 02)
-> 00:1a.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
-> Port 4 (rev 02)
-> 00:1f.0 ISA bridge: Intel Corporation Atom Processor E6xx LPC Bridge (rev 02)
-> 01:00.0 PCI bridge: Intel Corporation Platform Controller Hub EG20T
-> PCI Express Port (rev 01)
-> 02:00.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-> Hub EG20T Packet Hub (rev 01)
-> 02:00.1 Ethernet controller: Intel Corporation Platform Controller Hub
-> EG20T Gigabit Ethernet Controller (rev 02)
-> 02:00.2 Unassigned class [ff00]: Intel Corporation Platform Controller
-> Hub EG20T General Purpose IO Controller (rev 01)
-> 02:02.0 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #4 (rev 02)
-> 02:02.1 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #5 (rev 02)
-> 02:02.2 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #6 (rev 02)
-> 02:02.3 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB2 EHCI Controller #2 (rev 02)
-> 02:02.4 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB Client Controller (rev 02)
-> 02:04.0 SD Host controller: Intel Corporation Platform Controller Hub
-> EG20T SDIO Controller #1 (rev 01)
-> 02:04.1 SD Host controller: Intel Corporation Platform Controller Hub
-> EG20T SDIO Controller #2 (rev 01)
-> 02:06.0 SATA controller: Intel Corporation Platform Controller Hub
-> EG20T SATA AHCI Controller (rev 02)
-> 02:08.0 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #1 (rev 02)
-> 02:08.1 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #2 (rev 02)
-> 02:08.2 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB OHCI Controller #3 (rev 02)
-> 02:08.3 USB Controller: Intel Corporation Platform Controller Hub
-> EG20T USB2 EHCI Controller #1 (rev 02)
-> 02:0a.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-> Hub EG20T DMA Controller #1
-> 02:0a.1 Serial controller: Intel Corporation Platform Controller Hub
-> EG20T UART Controller 0 (rev 01)
-> 02:0a.2 Serial controller: Intel Corporation Platform Controller Hub
-> EG20T UART Controller 1
-> 02:0a.3 Serial controller: Intel Corporation Platform Controller Hub
-> EG20T UART Controller 2
-> 02:0a.4 Serial controller: Intel Corporation Platform Controller Hub
-> EG20T UART Controller 3
-> 02:0c.0 Unassigned class [ff00]: Intel Corporation Platform Controller
-> Hub EG20T DMA Controller #2
-> 02:0c.1 Serial bus controller [0c80]: Intel Corporation Platform
-> Controller Hub EG20T Serial Peripheral Interface Bus
-> 02:0c.2 Serial bus controller [0c80]: Intel Corporation Platform
-> Controller Hub EG20T I2C Controller
-> 02:0c.3 CANBUS: Intel Corporation Platform Controller Hub EG20T
-> Controller Area Network (CAN) Controller
-> 02:0c.4 Unassigned class [ff00]: Intel Corporation Platform Controller
-> Hub EG20T IEEE 1588 Hardware Assist (rev 01)
-> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-> 05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
->
->
-> The two important lines are these ones:
->
-> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-> 05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
->
->
-> As you can see we have two equal network controllers, which both are using the
-> e1000e driver. In this case I think that the driver gets first control
-> over 03:00.0
-> and then over 05:00.0.
->
-> So it is the case that
-> - 03:00.0 is eth0
-> - 05:00.0 is eth1
->
-> To sum it up, if there are two devices handled by the same driver the
-> device, which is
-> higher in the pci bus, will become eth0. Or?
+Recycling a page is a problem, since freelist link chain is hot on
+cpu(s) which freed objects, and possibly very cold on cpu currently
+owning slab.
 
-For devices handled by the same driver, they are claimed in the order
-the devices are enumerated by the kernel, which does a depth-first
-search.  Your lspci doesn't show the actual hierarchy, but it sounds
-like we enumerate 03:00.0 first.
+Adding a prefetch of cache line containing the pointer to next object in
+slab_alloc() helps a lot in many workloads, in particular on assymetric
+ones (allocations done on one cpu, frees on another cpus). Added cost is
+three machine instructions only.
 
-The "pci=bfsort" kernel option might be useful.
+Examples on my dual socket quad core ht machine (Intel CPU E5540
+@2.53GHz) (16 logical cpus, 2 memory nodes), 64bit kernel.
 
-Bjorn
+Before patch :
+
+# perf stat -r 32 hackbench 50 process 4000 >/dev/null
+
+ Performance counter stats for 'hackbench 50 process 4000' (32 runs):
+
+     327577,471718 task-clock                #   15,821 CPUs utilized            ( +-  0,64% )
+        28 866 491 context-switches          #    0,088 M/sec                    ( +-  1,80% )
+         1 506 929 CPU-migrations            #    0,005 M/sec                    ( +-  3,24% )
+           127 151 page-faults               #    0,000 M/sec                    ( +-  0,16% )
+   829 399 813 448 cycles                    #    2,532 GHz                      ( +-  0,64% )
+   580 664 691 740 stalled-cycles-frontend   #   70,01% frontend cycles idle     ( +-  0,71% )
+   197 431 700 448 stalled-cycles-backend    #   23,80% backend  cycles idle     ( +-  1,03% )
+   503 548 648 975 instructions              #    0,61  insns per cycle        
+                                             #    1,15  stalled cycles per insn  ( +-  0,46% )
+    95 780 068 471 branches                  #  292,389 M/sec                    ( +-  0,48% )
+     1 426 407 916 branch-misses             #    1,49% of all branches          ( +-  1,35% )
+
+      20,705679994 seconds time elapsed                                          ( +-  0,64% )
+
+After patch :
+
+# perf stat -r 32 hackbench 50 process 4000 >/dev/null
+
+ Performance counter stats for 'hackbench 50 process 4000' (32 runs):
+
+     286236,542804 task-clock                #   15,786 CPUs utilized            ( +-  1,32% )
+        19 703 372 context-switches          #    0,069 M/sec                    ( +-  4,99% )
+         1 658 249 CPU-migrations            #    0,006 M/sec                    ( +-  6,62% )
+           126 776 page-faults               #    0,000 M/sec                    ( +-  0,12% )
+   724 636 593 213 cycles                    #    2,532 GHz                      ( +-  1,32% )
+   499 320 714 837 stalled-cycles-frontend   #   68,91% frontend cycles idle     ( +-  1,47% )
+   156 555 126 809 stalled-cycles-backend    #   21,60% backend  cycles idle     ( +-  2,22% )
+   463 897 792 661 instructions              #    0,64  insns per cycle        
+                                             #    1,08  stalled cycles per insn  ( +-  0,94% )
+    87 717 352 563 branches                  #  306,451 M/sec                    ( +-  0,99% )
+       941 738 280 branch-misses             #    1,07% of all branches          ( +-  3,35% )
+
+      18,132070670 seconds time elapsed                                          ( +-  1,30% )
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Matt Mackall <mpm@selenic.com> 
+CC: David Rientjes <rientjes@google.com>
+CC: "Alex,Shi" <alex.shi@intel.com>
+CC: Shaohua Li <shaohua.li@intel.com>
+---
+ mm/slub.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ed3334d..16b850d 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -269,6 +269,11 @@ static inline void *get_freepointer(struct kmem_cache *s, void *object)
+ 	return *(void **)(object + s->offset);
+ }
+ 
++static void prefetch_freepointer(const struct kmem_cache *s, void *object)
++{
++	prefetch(object + s->offset);
++}
++
+ static inline void *get_freepointer_safe(struct kmem_cache *s, void *object)
+ {
+ 	void *p;
+@@ -2292,6 +2297,8 @@ redo:
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
++		void *next_object = get_freepointer_safe(s, object);
++
+ 		/*
+ 		 * The cmpxchg will only match if there was no additional
+ 		 * operation and if we are on the right processor.
+@@ -2307,11 +2314,12 @@ redo:
+ 		if (unlikely(!irqsafe_cpu_cmpxchg_double(
+ 				s->cpu_slab->freelist, s->cpu_slab->tid,
+ 				object, tid,
+-				get_freepointer_safe(s, object), next_tid(tid)))) {
++				next_object, next_tid(tid)))) {
+ 
+ 			note_cmpxchg_failure("slab_alloc", s, tid);
+ 			goto redo;
+ 		}
++		prefetch_freepointer(s, next_object);
+ 		stat(s, ALLOC_FASTPATH);
+ 	}
+ 
+
+
