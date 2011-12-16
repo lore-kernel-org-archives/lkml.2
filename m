@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760099Ab1LPEPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 23:15:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:47038 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab1LPEPg (ORCPT
+	id S1760105Ab1LPEVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 23:21:32 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54397 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab1LPEV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 23:15:36 -0500
-Date: Thu, 15 Dec 2011 23:15:17 -0500 (EST)
-Message-Id: <20111215.231517.185391590658983405.davem@davemloft.net>
-To: rusty@rustcorp.com.au
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, pawel.moll@arm.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 14/15] module_param: make bool parameters really bool
- (net & drivers/net)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87k45xqvfs.fsf@rustcorp.com.au>
-References: <877h1ysenl.fsf@rustcorp.com.au>
-	<1323920752.29500.11.camel@joe2Laptop>
-	<87k45xqvfs.fsf@rustcorp.com.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 15 Dec 2011 20:15:22 -0800 (PST)
+	Thu, 15 Dec 2011 23:21:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <201112151747.28366.trenn@suse.de>
+References: <1323879532-10490-1-git-send-email-standby24x7@gmail.com>
+	<201112151747.28366.trenn@suse.de>
+Date: Fri, 16 Dec 2011 13:21:28 +0900
+Message-ID: <CALLJCT3hwYhCzrqbfeXG-C4t+PTG8fu_uJP=+S3H=tt4yX+D9w@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: kernel-parameters.txt : Add intel_idle.max_cstate
+From: Masanari Iida <standby24x7@gmail.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        rdunlap@xenotime.net, lenb@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Fri, 16 Dec 2011 09:44:31 +1030
+2011/12/16 Thomas Renninger <trenn@suse.de>:
+> On Wednesday, December 14, 2011 05:18:52 PM Masanari Iida wrote:
+>> Add missing intel_idle.max_cstate in kernel-parameters.txt
+> I wonder whether this one should get documented at all.
+>
+My opinion is, as long as the kernel parameter is available,
+we should document it.  And if developer want to guide the user to use
+cpuidle.max_cstate, we should document so.
 
-> Dave, did you want a true/false cleanup too?
+> Better would be to work towards a general cpuidle.max_state=
+> param which deprecates processor.max_cstate= (acpi_idle driver) and
+> intel_idle.max_cstate= and enables this functionality for all
+> other cpuidle drivers out there as well.
+>
+cpuidle.max_state is also not in the kernel-parameters.txt,
+Separate patch need to be created.
 
-Please, this kind of stuff rots forever and not using bool properly
-drives me crazy.
+> Something to turn off intel_idle driver and favor the acpi_idle
+> driver for debugging would still be needed then.
+>
+This patch explains how to disable intel_idle.
+Although processor.max_cstate=0 sets cstate to 0,
+but similar option intel_idle.max_cstate=0 didn't set cstate to 0.
+This is confusing for the users.
+This is the reason why I wanted to document it.
+
+Masanari Iida
