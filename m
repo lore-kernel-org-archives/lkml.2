@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965000Ab1LPUwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:52:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49016 "EHLO mx2.suse.de"
+	id S965012Ab1LPUwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:52:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49012 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964974Ab1LPUwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:09 -0500
+	id S964866Ab1LPUwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:42 2011
-Message-Id: <20111216205042.629076412@clark.kroah.org>
+Message-Id: <20111216205042.544618165@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:36 -0800
+Date: Fri, 16 Dec 2011 12:49:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: [03/16] ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_channel_mode
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [02/16] ALSA: hda/realtek - Fix Oops in alc_mux_select()
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 83713fc9373be2e943f82e9d36213708c6b0050e upstream.
+commit cce4aa378a049f4275416ee6302dd24f37b289df upstream.
 
-The function setup_vpif_input_channel_mode() used the VSCLKDIS register
-instead of VIDCLKCTL. This meant that when in HD mode videoport channel 0
-used a different clock from channel 1.
+When no imux is available (e.g. a single capture source),
+alc_auto_init_input_src() may trigger an Oops due to the access to -1.
+Add a proper zero-check to avoid it.
 
-Clearly a copy-and-paste error.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-davinci/board-dm646x-evm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -502,7 +502,7 @@ static int setup_vpif_input_channel_mode
- 	int val;
- 	u32 value;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -432,6 +432,8 @@ static int alc_mux_enum_put(struct snd_k
+ 	imux = &spec->input_mux[mux_idx];
+ 	if (!imux->num_items && mux_idx > 0)
+ 		imux = &spec->input_mux[0];
++	if (!imux->num_items)
++		return 0;
  
--	if (!vpif_vsclkdis_reg || !cpld_client)
-+	if (!vpif_vidclkctl_reg || !cpld_client)
- 		return -ENXIO;
- 
- 	val = i2c_smbus_read_byte(cpld_client);
-@@ -510,7 +510,7 @@ static int setup_vpif_input_channel_mode
- 		return val;
- 
- 	spin_lock_irqsave(&vpif_reg_lock, flags);
--	value = __raw_readl(vpif_vsclkdis_reg);
-+	value = __raw_readl(vpif_vidclkctl_reg);
- 	if (mux_mode) {
- 		val &= VPIF_INPUT_TWO_CHANNEL;
- 		value |= VIDCH1CLK;
-@@ -518,7 +518,7 @@ static int setup_vpif_input_channel_mode
- 		val |= VPIF_INPUT_ONE_CHANNEL;
- 		value &= ~VIDCH1CLK;
- 	}
--	__raw_writel(value, vpif_vsclkdis_reg);
-+	__raw_writel(value, vpif_vidclkctl_reg);
- 	spin_unlock_irqrestore(&vpif_reg_lock, flags);
- 
- 	err = i2c_smbus_write_byte(cpld_client, val);
+ 	type = get_wcaps_type(get_wcaps(codec, nid));
+ 	if (type == AC_WID_AUD_MIX) {
 
 
