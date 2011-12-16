@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab1LPK5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:57:36 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:55208 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1LPK5b (ORCPT
+	id S1756443Ab1LPLBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 06:01:42 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48914 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750921Ab1LPLBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:57:31 -0500
-Message-ID: <4EEB23FD.9090904@snapgear.com>
-Date: Fri, 16 Dec 2011 20:57:01 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Fri, 16 Dec 2011 06:01:36 -0500
+Date: Fri, 16 Dec 2011 11:01:00 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+Message-ID: <20111216110100.GA6342@arm.com>
+References: <4EEAB90D.3050504@am.sony.com>
 MIME-Version: 1.0
-To: Daniel Palmer <me@danielpalmer.co.uk>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        uClinux development list <uclinux-dev@uclinux.org>
-Subject: Re: Porting m68k/nommu to a new board.
-References: <201112152137.29195.me@danielpalmer.co.uk> <CAMuHMdU+VCVxnawb8DHmZp1EfBGW6T5D0WyXRXpo8bj1bJZ+pg@mail.gmail.com>
-In-Reply-To: <CAMuHMdU+VCVxnawb8DHmZp1EfBGW6T5D0WyXRXpo8bj1bJZ+pg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEAB90D.3050504@am.sony.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Frank,
 
-> On Fri, Dec 16, 2011 at 06:37, Daniel Palmer<me@danielpalmer.co.uk>  wrote:
->> I'm building a custom machine based around a 68sec000 (Fully static 68ec000).
->> The "board" is a bunch of parts at the moment but I have written a workable
->> simulator for the machine which I am using as a testbed for testing things
->> like my custom video, DMA controller etc before creating the hardware versions
->> in VHDL.
->>
->> I'm interested in getting mmu-less m68k linux (what used to be known as
->> uclinux I guess, seems to be known as m68k/nommu now) running on the simulator
->> and later on the real hardware.
+On Fri, Dec 16, 2011 at 03:20:45AM +0000, Frank Rowand wrote:
+> ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
+> (application specific ID). The number of ASIDs is limited to 256 and
+> the allocation algorithm requires IPIs when all the ASIDs have been
+> used.  The IPIs require interrupts enabled during context switch for
+> deadlock avoidance.
+> 
+> The RT patch mm-protect-activate-switch-mm.patch disables irqs around
+> activate_mm() and switch_mm(), which are the portion of the ARMv6
+> context switch that require interrupts enabled.
+> 
+> The solution for the ARMv6 processors could be to _not_ disable irqs.
+> A more conservative solution is to provide the same environment that
+> the scheduler provides, that is preempt_disable().  This is more
+> resilient for possible future changes to the ARM context switch code
+> that is not aware of the RT patches.
+> 
+> This patch will conflict slightly with Catalin's patch set to remove
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
+> 
+>    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
+> 
+> When Catalin's patch set is accepted, this RT patch will need to reverse
+> the change in patch 6 to arch/arm/include/asm/system.h:
+> 
+>    -#ifndef CONFIG_CPU_HAS_ASID
+>    -#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+>    -#endif
+> 
+> Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
 
-uclinux is/was mmuless support. m68knommu used to be the arch name for
-m68k without mmu support. I just use Linux now, it has all been in
-mainline for so long now.
+The whole point of my patches was to no longer define
+__ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM, so bringing it back in is not
+feasible.
 
+But by reading your patch I realised that there are two more switch_mm()
+calls outside the scheduler switch and the post-switch hook would not be
+called:
 
->>  From what I can tell the nommu m68k port is still active. But does it actually
->> work? All the details on similar hardware (like the older Palm pilots, Atari
->> machines) is pretty ancient, around 2.0. Does anyone have a machine running a
->> recent kernel? Were there issues getting it running?
+1. idle_task_exit() - this function switches to the init_mm. With my new
+patches, even if the switch does not explicitly happen because it
+requires a new ASID, the ARMv6+ code sets the init_mm.pgd anyway. On
+ARMv5 such hook would not happen but we don't have CONFIG_HOTPLUG_CPU
+either. But even if it happens to work, it's not correct behaviour in
+either case.
 
-I run on ColdFire parts all the time. Right up to 3.2-rc5 :-)
-It works great. But I don't have or regularly use any original m68k
-core hardware. I occasionally compile for the 68328 target, so it
-will compile, can't be sure if it still runs though.
+2. use_mm() - this also assumes an immediate switch_mm() which may not
+happen.
 
+My question - can we not use activate_mm() directly in both cases? This
+function would ensure that the new mm is actually active on ARM and it
+does not disable the interrupts for the critical code. You may still
+need some RT patch if the RT series disables the interrupts for the
+switch_mm() calls.
 
->> I did a bit of digging in the source and doesn't look like it should be too
->> difficult to add the specifics for my machine.. I have a 16550 style UART
->> emulated for I/O so I don't need to write a framebuffer driver at the moment.
->> I'm open to any suggestions people have on how to approach this though.
+If that sounds reasonable, I'll repost my series with activate_mm() fix.
 
-With the m68k and m68knommu arch code now merged it shouldn't
-be too hard to enable/configure all the pieces you have. Might take
-a little hacking to make it work, but it should be close.
+Thanks.
 
-Regards
-Greg
-
-
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close,                            FAX:         +61 7 3891 3630
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+-- 
+Catalin
