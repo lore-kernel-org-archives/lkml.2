@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906Ab1LPTxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:53:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45220 "EHLO mx2.suse.de"
+	id S964924Ab1LPTxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:53:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45248 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964814Ab1LPTvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:51:38 -0500
+	id S932820Ab1LPTvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:51:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:09 2011
-Message-Id: <20111216194209.531841867@clark.kroah.org>
+Message-Id: <20111216194209.714921888@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:24 -0800
+Date: Fri, 16 Dec 2011 11:40:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Allen Kay <allen.m.kay@intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>,
         Youquan Song <youquan.song@intel.com>
-Subject: [17/45] intel-iommu: fix return value of iommu_unmap() API
+Subject: [18/45] intel-iommu: set iommu_superpage on VM domains to lowest common denominator
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,11 +28,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Allen Kay <allen.m.kay@intel.com>
 
-commit 292827cb164ad00cc7689a21283b1261c0b6daed upstream.
+commit 8140a95d228efbcd64d84150e794761a32463947 upstream.
 
-iommu_unmap() API expects IOMMU drivers to return the actual page order
-of the address being unmapped.  Previous code was just returning page
-order passed in from the caller.  This patch fixes this problem.
+set dmar->iommu_superpage field to the smallest common denominator
+of super page sizes supported by all active VT-d engines.  Initialize
+this field in intel_iommu_domain_init() API so intel_iommu_map() API
+will be able to use iommu_superpage field to determine the appropriate
+super page size to use.
 
 Signed-off-by: Allen Kay <allen.m.kay@intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
@@ -40,54 +42,42 @@ Signed-off-by: Youquan Song <youquan.song@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/pci/intel-iommu.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
 --- a/drivers/pci/intel-iommu.c
 +++ b/drivers/pci/intel-iommu.c
-@@ -817,13 +817,14 @@ static struct dma_pte *dma_pfn_level_pte
- }
+@@ -578,17 +578,18 @@ static void domain_update_iommu_snooping
  
- /* clear last level pte, a tlb flush should be followed */
--static void dma_pte_clear_range(struct dmar_domain *domain,
-+static int dma_pte_clear_range(struct dmar_domain *domain,
- 				unsigned long start_pfn,
- 				unsigned long last_pfn)
+ static void domain_update_iommu_superpage(struct dmar_domain *domain)
  {
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
- 	unsigned int large_page = 1;
- 	struct dma_pte *first_pte, *pte;
-+	int order;
+-	int i, mask = 0xf;
++	struct dmar_drhd_unit *drhd;
++	struct intel_iommu *iommu = NULL;
++	int mask = 0xf;
  
- 	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
- 	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
-@@ -847,6 +848,9 @@ static void dma_pte_clear_range(struct d
- 				   (void *)pte - (void *)first_pte);
+ 	if (!intel_iommu_superpage) {
+ 		domain->iommu_superpage = 0;
+ 		return;
+ 	}
  
- 	} while (start_pfn && start_pfn <= last_pfn);
-+
-+	order = (large_page - 1) * 9;
-+	return order;
- }
+-	domain->iommu_superpage = 4; /* 1TiB */
+-
+-	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
+-		mask |= cap_super_page_val(g_iommus[i]->cap);
++	/* set iommu_superpage to the smallest common denominator */
++	for_each_active_iommu(iommu, drhd) {
++		mask &= cap_super_page_val(iommu->cap);
+ 		if (!mask) {
+ 			break;
+ 		}
+@@ -3744,6 +3745,7 @@ static int intel_iommu_domain_init(struc
+ 		vm_domain_exit(dmar_domain);
+ 		return -ENOMEM;
+ 	}
++	domain_update_iommu_cap(dmar_domain);
+ 	domain->priv = dmar_domain;
  
- /* free page table pages. last level pte should already be cleared */
-@@ -3865,14 +3869,15 @@ static int intel_iommu_unmap(struct iomm
- {
- 	struct dmar_domain *dmar_domain = domain->priv;
- 	size_t size = PAGE_SIZE << gfp_order;
-+	int order;
- 
--	dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
-+	order = dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
- 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
- 
- 	if (dmar_domain->max_addr == iova + size)
- 		dmar_domain->max_addr = iova;
- 
--	return gfp_order;
-+	return order;
- }
- 
- static phys_addr_t intel_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return 0;
 
 
