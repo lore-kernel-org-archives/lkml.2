@@ -1,149 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151Ab1LPQHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 11:07:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33014 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756561Ab1LPQHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 11:07:33 -0500
-Date: Fri, 16 Dec 2011 16:07:28 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
- own LRU
-Message-ID: <20111216160728.GI3487@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <1323877293-15401-12-git-send-email-mgorman@suse.de>
- <20111216151703.GA12817@redhat.com>
+	id S1760160Ab1LPQIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 11:08:17 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22087
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756561Ab1LPQIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 11:08:09 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz1dbaL1432N98dKzz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LWB0TD-01-62I-02
+X-M-MSG: 
+Date: Fri, 16 Dec 2011 17:07:58 +0100
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: <hpa@zytor.com>, <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
+        <eranian@google.com>, <brgerst@gmail.com>, <robert.richter@amd.com>,
+        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <bebl@mageta.org>
+Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
+Message-ID: <20111216160757.GL665@escobedo.osrc.amd.com>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+ <20111205102223.GA3143@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111216151703.GA12817@redhat.com>
+In-Reply-To: <20111205102223.GA3143@elte.hu>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 04:17:31PM +0100, Johannes Weiner wrote:
-> On Wed, Dec 14, 2011 at 03:41:33PM +0000, Mel Gorman wrote:
-> > It was observed that scan rates from direct reclaim during tests
-> > writing to both fast and slow storage were extraordinarily high. The
-> > problem was that while pages were being marked for immediate reclaim
-> > when writeback completed, the same pages were being encountered over
-> > and over again during LRU scanning.
-> > 
-> > This patch isolates file-backed pages that are to be reclaimed when
-> > clean on their own LRU list.
+On Mon, Dec 05, 2011 at 11:22:23AM +0100, Ingo Molnar wrote:
 > 
-> Excuse me if I sound like a broken record, but have those observations
-> of high scan rates persisted with the per-zone dirty limits patchset?
+> * Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
 > 
-
-Unfortunately I wasn't testing that series. The focus of this series
-was primarily on THP-related stalls incurred by compaction which
-did not have a dependency on that series. Even with dirty balancing,
-similar stalls would be observed once dirty pages were in the zone
-at all.
-
-> In my tests with pzd, the scan rates went down considerably together
-> with the immediate reclaim / vmscan writes.
+> > These patches were built and tested against 3.1. The older RFC 
+> > patches that have been lingering in tip/x86/xsave for the last 
+> > few months should be removed.
 > 
-
-I probably should know but what is pzd?
-
-> Our dirty limits are pretty low - if reclaim keeps shuffling through
-> dirty pages, where are the 80% reclaimable pages?!  To me, this sounds
-> like the unfair distribution of dirty pages among zones again.  Is
-> there are a different explanation that I missed?
+> They have been lingering because of negative review feedback i 
+> have given to you about LWP. I'm not convinced about the current 
+> form of abstraction that this patch-set offers.
+>
+> See this past discussion from half a year ago:
 > 
+>   Subject: Re: [RFC v3 0/8] x86, xsave: rework of extended state handling, LWP support
+> 
+> We can and should do better than that.
 
-The alternative explanation is that the 20% dirty pages are all
-long-lived, at the end of the highest zone which is always scanned first
-so we continually have to scan over these dirty pages for prolonged
-periods of time. 
+We had an intern, Benjamin Block, working on perf support for LWP until
+a few weeks ago. Because of the fundamental problem that it is not
+reasonably possible to allocate virtual memory for a process from a
+different process' context, the code only supports self-monitoring.
 
-> PS: It also seems a bit out of place in this series...?
-
-Without the last path, the System CPU time was stupidly high. In part,
-this is because we are no longer calling ->writepage from direct
-reclaim. If we were, the CPU usage would be far lower but it would
-be a lot slower too. It seemed remiss to leave system CPU usage that
-high without some explanation or patch dealing with it.
-
-The following replaces this patch with your series. dirtybalance-v7r1 is
-yours.
-
-                   3.1.0-vanilla         rc5-vanilla       freemore-v6r1        isolate-v6r1   dirtybalance-v7r1
-System Time         1.22 (    0.00%)   13.89 (-1040.72%)   46.40 (-3709.20%)    4.44 ( -264.37%)   43.05 (-3434.81%)
-+/-                 0.06 (    0.00%)   22.82 (-37635.56%)    3.84 (-6249.44%)    6.48 (-10618.92%)    4.04 (-6581.33%)
-User Time           0.06 (    0.00%)    0.06 (   -6.90%)    0.05 (   17.24%)    0.05 (   13.79%)    0.05 (   20.69%)
-+/-                 0.01 (    0.00%)    0.01 (   33.33%)    0.01 (   33.33%)    0.01 (   39.14%)    0.01 (   -1.84%)
-Elapsed Time     10445.54 (    0.00%) 2249.92 (   78.46%)   70.06 (   99.33%)   16.59 (   99.84%)   73.71 (   99.29%)
-+/-               643.98 (    0.00%)  811.62 (  -26.03%)   10.02 (   98.44%)    7.03 (   98.91%)   17.90 (   97.22%)
-THP Active         15.60 (    0.00%)   35.20 (  225.64%)   65.00 (  416.67%)   70.80 (  453.85%)  102.60 (  657.69%)
-+/-                18.48 (    0.00%)   51.29 (  277.59%)   15.99 (   86.52%)   37.91 (  205.18%)   26.06 (  141.02%)
-Fault Alloc       121.80 (    0.00%)   76.60 (   62.89%)  155.40 (  127.59%)  181.20 (  148.77%)  214.80 (  176.35%)
-+/-                73.51 (    0.00%)   61.11 (   83.12%)   34.89 (   47.46%)   31.88 (   43.36%)   53.21 (   72.39%)
-Fault Fallback    881.20 (    0.00%)  926.60 (   -5.15%)  847.60 (    3.81%)  822.00 (    6.72%)  788.40 (   10.53%)
-+/-                73.51 (    0.00%)   61.26 (   16.67%)   34.89 (   52.54%)   31.65 (   56.94%)   53.41 (   27.35%)
-MMTests Statistics: duration
-User/Sys Time Running Test (seconds)       3540.88   1945.37    716.04     64.97    715.04
-Total Elapsed Time (seconds)              52417.33  11425.90    501.02    230.95    549.64
-
-Your series does help the System CPU time begining it from 46.4 seconds
-to 43.05 seconds. That is within the noise but towards the edge of
-one standard deviation. With such a small reduction, elapsed time was
-not helped. However, it did help THP allocation success rates - still
-within the noise but again at the edge of the noise which indicates
-a solid improvement.
-
-MMTests Statistics: vmstat
-Page Ins                                  3257266139  1111844061    17263623    10901575    20870385
-Page Outs                                   81054922    30364312     3626530     3657687     3665499
-Swap Ins                                        3294        2851        6560        4964        6598
-Swap Outs                                     390073      528094      620197      790912      604228
-Direct pages scanned                      1077581700  3024951463  1764930052   115140570  1796314840
-Kswapd pages scanned                        34826043     7112868     2131265     1686942     2093637
-Kswapd pages reclaimed                      28950067     4911036     1246044      966475     1319662
-Direct pages reclaimed                     805148398   280167837     3623473     2215044     4182274
-Kswapd efficiency                                83%         69%         58%         57%         63%
-Kswapd velocity                              664.399     622.521    4253.852    7304.360    3809.106
-Direct efficiency                                74%          9%          0%          1%          0%
-Direct velocity                            20557.737  264745.137 3522673.849  498551.938 3268166.145
-Percentage direct scans                          96%         99%         99%         98%         99%
-Page writes by reclaim                        722646      529174      620319      791018      604368
-Page writes file                              332573        1080         122         106         140
-Page writes anon                              390073      528094      620197      790912      604228
-Page reclaim immediate                             0  2552514720  1635858848   111281140  1661416934
-Page rescued immediate                             0           0           0       87848           0
-Slabs scanned                                  23552       23552        9216        8192        8192
-Direct inode steals                              231           0           0           0           0
-Kswapd inode steals                                0           0           0           0           0
-Kswapd skipped wait                            28076         786           0          61           1
-THP fault alloc                                  609         383         753         906        1074
-THP collapse alloc                                12           6           0           0           0
-THP splits                                       536         211         456         593         561
-THP fault fallback                              4406        4633        4263        4110        3942
-THP collapse fail                                120         127           0           0           0
-Compaction stalls                               1810         728         623         779         869
-Compaction success                               196          53          60          80          99
-Compaction failures                             1614         675         563         699         770
-Compaction pages moved                        193158       53545      243185      333457      409585
-Compaction move failure                         9952        9396       16424       23676       30668
-
-The direct page scanned figure with your patch is still very high
-unfortunately.
-
-Overall, I would say that your series is not a replacement for the last
-patch in this series. 
+This allows a process to control LWP through the perf syscalls. Instead
+of using malloc() and the LLWPCB instruction itself, it can use the perf
+syscall to have the perf kernel code do it. It can also use perf to get
+at the raw LWP samples instead of just reading them from the LWP buffer.
 
 
--- 
-Mel Gorman
-SUSE Labs
+I'll send you Benjamins code as an RFC patch set, so please take a look
+at it and tell me what you think about it. I admit I don't understand
+every detail of it yet as I've only recently started to work my way
+through it, and I have no prior knowledge about perf. 
+
+
+Hans
+
+
