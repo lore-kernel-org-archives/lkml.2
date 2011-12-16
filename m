@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759900Ab1LPA77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:59:59 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39282 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab1LPA76 convert rfc822-to-8bit (ORCPT
+	id S1759905Ab1LPBIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 20:08:04 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:52266 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab1LPBIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:59:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1112151821360.1644-100000@iolanthe.rowland.org>
-References: <1323990310-11905-2-git-send-email-felipe.contreras@gmail.com>
-	<Pine.LNX.4.44L0.1112151821360.1644-100000@iolanthe.rowland.org>
-Date: Fri, 16 Dec 2011 02:59:57 +0200
-Message-ID: <CAMP44s3eeTOBRiFwEL3FypDY_+-MReqYJJVO1URNrnFVFXzvDg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] usb: musb: fix pm_runtime mismatches
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Dec 2011 20:08:01 -0500
+Date: Fri, 16 Dec 2011 12:07:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20111216120758.60f967a88c934890e77fa7bd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 1:22 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 16 Dec 2011, Felipe Contreras wrote:
->
->> Properly call pm_runtime_put() afer pm_runttime_get() on errors.
->>
->> Untested.
->>
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> ---
->>  drivers/usb/musb/musb_gadget.c |    1 +
->>  drivers/usb/musb/omap2430.c    |    1 +
->>  2 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
->> index 922148f..95bfd2d 100644
->> --- a/drivers/usb/musb/musb_gadget.c
->> +++ b/drivers/usb/musb/musb_gadget.c
->> @@ -1960,6 +1960,7 @@ static int musb_gadget_start(struct usb_gadget *g,
->>  err2:
->>       if (!is_otg_enabled(musb))
->>               musb_stop(musb);
->> +     pm_runtime_put(musb->controller);
->>  err0:
->>       return retval;
->>  }
->> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
->> index ba85f27..4edfb91 100644
->> --- a/drivers/usb/musb/omap2430.c
->> +++ b/drivers/usb/musb/omap2430.c
->> @@ -385,6 +385,7 @@ static void omap2430_musb_disable(struct musb *musb)
->>
->>  static int omap2430_musb_exit(struct musb *musb)
->>  {
->> +     pm_runtime_put(musb->controller);
->>       del_timer_sync(&musb_idle_timer);
->>
->>       omap2430_low_level_exit(musb);
->
-> Should these calls be pm_runtime_put_sync() instead of
-> pm_runtime_put()?
+--Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't see why... The thing failed, it's not going to be used any
-more so better let PM deactivate the device. But now that you point
-this out, pm_runtime_put() on omap2430_musb_exit() should probably go
-at the end of the function, after all the actions have been done.
+Hi all,
 
-I'll send an updated patch tomorrow, if there are no further comments.
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv6/route.c between commit bb3c36863e80 ("ipv6: Check dest prefix
+length on original route not copied one in rt6_alloc_cow()") from the net
+tree and commit 3830847396fa ("ipv6: Various cleanups in route.c") from
+the net-next tree.
 
-Cheers.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Felipe Contreras
+diff --cc net/ipv6/route.c
+index b582a0a,4bf362b..0000000
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@@ -727,11 -727,11 +727,11 @@@ static struct rt6_info *rt6_alloc_cow(c
+  		struct neighbour *neigh;
+  		int attempts =3D !in_softirq();
+ =20
+- 		if (!(rt->rt6i_flags&RTF_GATEWAY)) {
++ 		if (!(rt->rt6i_flags & RTF_GATEWAY)) {
+ -			if (rt->rt6i_dst.plen !=3D 128 &&
+ +			if (ort->rt6i_dst.plen !=3D 128 &&
+  			    ipv6_addr_equal(&ort->rt6i_dst.addr, daddr))
+  				rt->rt6i_flags |=3D RTF_ANYCAST;
+- 			ipv6_addr_copy(&rt->rt6i_gateway, daddr);
++ 			rt->rt6i_gateway =3D *daddr;
+  		}
+ =20
+  		rt->rt6i_flags |=3D RTF_CACHE;
+
+--Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO6pnuAAoJEECxmPOUX5FEzRUQAI9QGCRHfZJxIgDwF+xCtj5+
+zrUnCOKfv9FV5pZVJHsKbJ8T8DjbBz4IG1XXb6iVN7EynkRqm7xgTDc5gHG7iT6z
+NZSGZKKSWoZxWPGRzIidIXxzIg+l31AIGFZNQPDjyjj8V3JcjKOhp0Zuto/kHxYt
+t7kzrBpkWukwL7miMWCTER/hbO5u4gf8+eaVZRjVzGBwDVkkdBsRABoSDAaUJxBp
+lOxtYNGo/vDT1Kc4sHaowo+LowBqmT0b6N2MG90uzpnFVF1UAoHZrNZvD1QUBJLw
+t8+XzGM1mLuMDKzehbpXmQJzwDXRqxuCoOzhO6TMt4hAkz+AzLjOdEpbvzm1jHn4
+yonQUYepB1Wr4qDJsWjth3Gs8hegAH/RUSXo1L6ecwIN8vG+Ut0sBDQLfy07DE2Z
+yfR+q9i0dHEQrbAyoWYFptwWn45NfofqVcWDe7hd86Km/D3KooWlXVqg4TN+Yo4J
+WSs6dHOCWr0Vg6VocVOHrNKdVHYRLDZk/kNCRn2I1QqpoW6AZwj4LjwvvTbcL1yQ
+vXAasUdeDBmsJ8kW31fEc+wkamczgohCvF7cAtsN7aIdtKYiylpKH1vy8omGYNrn
+DtjWTQAd9pMmcW2kDNfGF9SJxb1YduK4up1BKYwolYleT3s2ekSYFVm1qTasfjqL
+n5Upm5WB9aVh9HL68FFG
+=2UKO
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb--
