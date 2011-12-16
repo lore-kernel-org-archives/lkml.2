@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898Ab1LPUJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:09:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44865 "EHLO mx2.suse.de"
+	id S932765Ab1LPUIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:08:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760627Ab1LPTsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:48:40 -0500
+	id S1760388Ab1LPTsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:48:47 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:57 2011
-Message-Id: <20111216194556.911888675@clark.kroah.org>
+Message-Id: <20111216194557.272123967@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:15 -0800
+Date: Fri, 16 Dec 2011 11:45:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>
-Subject: [18/53] mm: vmalloc: check for page allocation failure before vmlist insertion
+        alan@lxorguk.ukuu.org.uk,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [20/53] TOMOYO: Fix pathname handling of disconnected paths.
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 1368edf0647ac112d8cfa6ce47257dc950c50f5c upstream.
+commit 1418a3e5ad4d01b1d4abf2c479c50b0cedd59e3f upstream.
 
-Commit f5252e00 ("mm: avoid null pointer access in vm_struct via
-/proc/vmallocinfo") adds newly allocated vm_structs to the vmlist after
-it is fully initialised.  Unfortunately, it did not check that
-__vmalloc_area_node() successfully populated the area.  In the event of
-allocation failure, the vmalloc area is freed but the pointer to freed
-memory is inserted into the vmlist leading to a a crash later in
-get_vmalloc_info().
+Current tomoyo_realpath_from_path() implementation returns strange pathname
+when calculating pathname of a file which belongs to lazy unmounted tree.
+Use local pathname rather than strange absolute pathname in that case.
 
-This patch adds a check for ____vmalloc_area_node() failure within
-__vmalloc_node_range.  It does not use "goto fail" as in the previous
-error path as a warning was already displayed by __vmalloc_area_node()
-before it called vfree in its failure path.
+Also, this patch fixes a regression by commit 02125a82 "fix apparmor
+dereferencing potentially freed dentry, sanitize __d_path() API".
 
-Credit goes to Luciano Chavez for doing all the real work of identifying
-exactly where the problem was.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reported-by: Luciano Chavez <lnx1138@linux.vnet.ibm.com>
-Tested-by: Luciano Chavez <lnx1138@linux.vnet.ibm.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/vmalloc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ security/tomoyo/realpath.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1634,6 +1634,8 @@ void *__vmalloc_node_range(unsigned long
- 		return NULL;
- 
- 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
-+	if (!addr)
-+		return NULL;
- 
- 	/*
- 	 * In this function, newly allocated vm_struct is not added
+--- a/security/tomoyo/realpath.c
++++ b/security/tomoyo/realpath.c
+@@ -275,8 +275,16 @@ char *tomoyo_realpath_from_path(struct p
+ 			pos = tomoyo_get_local_path(path->dentry, buf,
+ 						    buf_len - 1);
+ 		/* Get absolute name for the rest. */
+-		else
++		else {
+ 			pos = tomoyo_get_absolute_path(path, buf, buf_len - 1);
++			/*
++			 * Fall back to local name if absolute name is not
++			 * available.
++			 */
++			if (pos == ERR_PTR(-EINVAL))
++				pos = tomoyo_get_local_path(path->dentry, buf,
++							    buf_len - 1);
++		}
+ encode:
+ 		if (IS_ERR(pos))
+ 			continue;
 
 
