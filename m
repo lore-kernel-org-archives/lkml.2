@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030249Ab1LPUwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:52:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49067 "EHLO mx2.suse.de"
+	id S1030242Ab1LPUww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:52:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49072 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030230Ab1LPUwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:43 2011
-Message-Id: <20111216205043.223526336@clark.kroah.org>
+	id S1030236Ab1LPUwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:42 2011
+Message-Id: <20111216205042.453775284@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:43 -0800
+Date: Fri, 16 Dec 2011 12:49:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <jmm@inutil.org>
-Subject: [10/16] Make TASKSTATS require root access
+        alan@lxorguk.ukuu.org.uk, David Dillow <dave@thedillows.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [01/16] ALSA: sis7019 - give slow codecs more time to reset
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: David Dillow <dave@thedillows.org>
 
-commit 1a51410abe7d0ee4b1d112780f46df87d3621043 upstream.
+commit fc084e0b930d546872ab23667052499f7daf0fed upstream.
 
-Ok, this isn't optimal, since it means that 'iotop' needs admin
-capabilities, and we may have to work on this some more.  But at the
-same time it is very much not acceptable to let anybody just read
-anybody elses IO statistics quite at this level.
+There are some AC97 codec and board combinations that have been observed
+to take a very long time to respond after the cold reset has completed.
+In one case, more than 350 ms was required. To allow users to have sound
+on those platforms, we'll wait up to 500ms for the codec to become
+ready.
 
-Use of the GENL_ADMIN_PERM suggested by Johannes Berg as an alternative
-to checking the capabilities by hand.
+As a board may have multiple codecs, with some faster than others to
+reset, we add a module parameter to inform the driver which codecs
+should be present.
 
-Reported-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Johannes Berg <johannes.berg@intel.com>
-Acked-by: Balbir Singh <bsingharora@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Moritz Mühlenhoff <jmm@inutil.org>
+Reported-by: KotCzarny <tjosko@yahoo.com>
+Signed-off-by: David Dillow <dave@thedillows.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/taskstats.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/sis7019.c |   64 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 53 insertions(+), 11 deletions(-)
 
---- a/kernel/taskstats.c
-+++ b/kernel/taskstats.c
-@@ -592,6 +592,7 @@ static struct genl_ops taskstats_ops = {
- 	.cmd		= TASKSTATS_CMD_GET,
- 	.doit		= taskstats_user_cmd,
- 	.policy		= taskstats_cmd_get_policy,
-+	.flags		= GENL_ADMIN_PERM,
+--- a/sound/pci/sis7019.c
++++ b/sound/pci/sis7019.c
+@@ -40,6 +40,7 @@ MODULE_SUPPORTED_DEVICE("{{SiS,SiS7019 A
+ static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
+ static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
+ static int enable = 1;
++static int codecs = 1;
+ 
+ module_param(index, int, 0444);
+ MODULE_PARM_DESC(index, "Index value for SiS7019 Audio Accelerator.");
+@@ -47,6 +48,8 @@ module_param(id, charp, 0444);
+ MODULE_PARM_DESC(id, "ID string for SiS7019 Audio Accelerator.");
+ module_param(enable, bool, 0444);
+ MODULE_PARM_DESC(enable, "Enable SiS7019 Audio Accelerator.");
++module_param(codecs, int, 0444);
++MODULE_PARM_DESC(codecs, "Set bit to indicate that codec number is expected to be present (default 1)");
+ 
+ static struct pci_device_id snd_sis7019_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SI, 0x7019) },
+@@ -139,6 +142,9 @@ struct sis7019 {
+ 	dma_addr_t silence_dma_addr;
  };
  
- static struct genl_ops cgroupstats_ops = {
++/* These values are also used by the module param 'codecs' to indicate
++ * which codecs should be present.
++ */
+ #define SIS_PRIMARY_CODEC_PRESENT	0x0001
+ #define SIS_SECONDARY_CODEC_PRESENT	0x0002
+ #define SIS_TERTIARY_CODEC_PRESENT	0x0004
+@@ -1075,6 +1081,7 @@ static int sis_chip_init(struct sis7019
+ {
+ 	unsigned long io = sis->ioport;
+ 	void __iomem *ioaddr = sis->ioaddr;
++	unsigned long timeout;
+ 	u16 status;
+ 	int count;
+ 	int i;
+@@ -1101,21 +1108,45 @@ static int sis_chip_init(struct sis7019
+ 	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
+ 		udelay(1);
+ 
+-	/* Now that we've finished the reset, find out what's attached.
++	/* Command complete, we can let go of the semaphore now.
+ 	 */
+-	status = inl(io + SIS_AC97_STATUS);
+-	if (status & SIS_AC97_STATUS_CODEC_READY)
+-		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC2_READY)
+-		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC3_READY)
+-		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
++	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
++	if (!count)
++		return -EIO;
++
++	/* Now that we've finished the reset, find out what's attached.
++	 * There are some codec/board combinations that take an extremely
++	 * long time to come up. 350+ ms has been observed in the field,
++	 * so we'll give them up to 500ms.
++	 */
++	sis->codecs_present = 0;
++	timeout = msecs_to_jiffies(500) + jiffies;
++	while (time_before_eq(jiffies, timeout)) {
++		status = inl(io + SIS_AC97_STATUS);
++		if (status & SIS_AC97_STATUS_CODEC_READY)
++			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC2_READY)
++			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC3_READY)
++			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
++
++		if (sis->codecs_present == codecs)
++			break;
+ 
+-	/* All done, let go of the semaphore, and check for errors
++		msleep(1);
++	}
++
++	/* All done, check for errors.
+ 	 */
+-	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
+-	if (!sis->codecs_present || !count)
++	if (!sis->codecs_present) {
++		printk(KERN_ERR "sis7019: could not find any codecs\n");
+ 		return -EIO;
++	}
++
++	if (sis->codecs_present != codecs) {
++		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
++		       sis->codecs_present, codecs);
++	}
+ 
+ 	/* Let the hardware know that the audio driver is alive,
+ 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
+@@ -1387,6 +1418,17 @@ static int __devinit snd_sis7019_probe(s
+ 	if (!enable)
+ 		goto error_out;
+ 
++	/* The user can specify which codecs should be present so that we
++	 * can wait for them to show up if they are slow to recover from
++	 * the AC97 cold reset. We default to a single codec, the primary.
++	 *
++	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
++	 */
++	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
++		  SIS_TERTIARY_CODEC_PRESENT;
++	if (!codecs)
++		codecs = SIS_PRIMARY_CODEC_PRESENT;
++
+ 	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
+ 	if (rc < 0)
+ 		goto error_out;
 
 
