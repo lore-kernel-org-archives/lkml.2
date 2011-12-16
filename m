@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab1LPQit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 11:38:49 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:51252 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760202Ab1LPQik (ORCPT
+	id S1760279Ab1LPQjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 11:39:07 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:52251 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759894Ab1LPQis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 11:38:40 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: [PATCH] cgroup: remove redundate get/put of old css_set from migrate
-Date: Fri, 16 Dec 2011 08:38:31 -0800
-Message-Id: <1324053511-24591-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 16 Dec 2011 11:38:48 -0500
+Date: Fri, 16 Dec 2011 17:38:39 +0100
+From: tino.keitel+xorg@tikei.de
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rocko Requin <rockorequin@hotmail.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at drivers/gpu/drm/i915/i915_gem
+Message-ID: <20111216163839.GA7884@x61.home>
+Mail-Followup-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Rocko Requin <rockorequin@hotmail.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <BAY151-W65C39B54A590BCA4E3AEBDA1B80@phx.gbl>
+ <CAKMK7uEm8=bGWxDSbLtOEM3CBmbMSH+gWrUy0Od327ozvjOd5g@mail.gmail.com>
+ <BAY151-W537E90462ED274C21FDA4CA1BE0@phx.gbl>
+ <CAKMK7uH-_VzaeTsNJYL_wMfUHqMkvG-BSCxicfQ--RQ-_O5jsg@mail.gmail.com>
+ <BAY151-W53C3AD24F2938042D0F733A1BC0@phx.gbl>
+ <CAKMK7uGpn6AJGtbMCYWW1ziR=Zs+E9LB=aiB5aUu0unfVW=2oA@mail.gmail.com>
+ <20111214195751.GA31690@mac.home>
+ <20111215185415.GA3445@mac.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111215185415.GA3445@mac.home>
+X-TUID: 63908040282d363f
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can now assume that the css_set reference held by the task
-will not go away for an exiting task. PF_EXITING state can be
-trusted throughout migration by checking it after locking
-threadgroup.
+On Thu, Dec 15, 2011 at 19:54:15 +0100, tino.keitel+xorg@tikei.de wrote:
+> On Wed, Dec 14, 2011 at 20:57:51 +0100, tino.keitel+xorg@tikei.de wrote:
+> 
+> [...]
+> 
+> > it looks I stumbled over the same:
+> > 
+> > [88399.844150] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:1952!
+> > 2011-12-14_19:28:56.93083 <0>[88399.844182] invalid opcode: 0000 [#1]
+> > SMP 
+> > 
+> > While doing this I was running a 32 bit photo software (Bibble 5 pro)
+> > in fullscreen on an otherwise 64 bit system.
+> > 
+> > The full log including the trace is attached.
+> > 
+> > I'll try with the patch applied.
+> 
+> I just got the same hang again with the patch applied.
 
-This patch depends on:
+Hum, could this be related to the RC6 vs. IOMMU issue? I have
+CONFIG_INTEL_IOMMU enabled in 3.2, and disabled in 3.1, and boot with
+i915.i915_enable_rc6=1.
 
-commit cd3d095275374220921fcf0d4e0c16584b26ddbc
-Author: Tejun Heo <tj@kernel.org>
-Date:   Mon Dec 12 18:12:21 2011 -0800
-
-    cgroup: always lock threadgroup during migration
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Menage <paul@paulmenage.org>
----
- kernel/cgroup.c |   25 ++++++-------------------
- 1 files changed, 6 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1b3b841..eb95e32 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1856,7 +1856,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 	 */
- 	task_lock(tsk);
- 	oldcg = tsk->cgroups;
--	get_css_set(oldcg);
- 	task_unlock(tsk);
- 
- 	/* locate or allocate a new css_set for this task. */
-@@ -1872,12 +1871,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 		might_sleep();
- 		/* find_css_set will give us newcg already referenced. */
- 		newcg = find_css_set(oldcg, cgrp);
--		if (!newcg) {
--			put_css_set(oldcg);
-+		if (!newcg)
- 			return -ENOMEM;
--		}
- 	}
--	put_css_set(oldcg);
- 
- 	/* @tsk can't exit as its threadgroup is locked */
- 	task_lock(tsk);
-@@ -2015,9 +2011,8 @@ struct cg_list_entry {
- 	struct list_head links;
- };
- 
--static bool css_set_check_fetched(struct cgroup *cgrp,
--				  struct task_struct *tsk, struct css_set *cg,
--				  struct list_head *newcg_list)
-+static bool css_set_fetched(struct cgroup *cgrp, struct task_struct *tsk,
-+			    struct css_set *cg, struct list_head *newcg_list)
- {
- 	struct css_set *newcg;
- 	struct cg_list_entry *cg_entry;
-@@ -2191,19 +2186,11 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		/* get old css_set pointer */
- 		task_lock(tc->task);
- 		oldcg = tc->task->cgroups;
--		get_css_set(oldcg);
- 		task_unlock(tc->task);
--		/* see if the new one for us is already in the list? */
--		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
--			/* was already there, nothing to do. */
--			put_css_set(oldcg);
--		} else {
--			/* we don't already have it. get new one. */
--			retval = css_set_prefetch(cgrp, oldcg, &newcg_list);
--			put_css_set(oldcg);
--			if (retval)
-+		/* if we don't already have it in the list get a new one */
-+		if (!css_set_fetched(cgrp, tc->task, oldcg, &newcg_list))
-+			if (css_set_prefetch(cgrp, oldcg, &newcg_list))
- 				goto out_list_teardown;
--		}
- 	}
- 
- 	/*
--- 
-1.7.3.1
-
+Regards,
+Tino
