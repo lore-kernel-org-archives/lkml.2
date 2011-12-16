@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271Ab1LPKvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:51:07 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33784 "EHLO
+	id S1759090Ab1LPKvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:51:18 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59373 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758949Ab1LPKth (ORCPT
+	by vger.kernel.org with ESMTP id S1753241Ab1LPKtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:49:37 -0500
+	Fri, 16 Dec 2011 05:49:35 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv4 08/11] xshm: XSHM Configuration data handling
-Date: Fri, 16 Dec 2011 11:49:11 +0100
-Message-Id: <1324032554-30398-9-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv4 07/11] xshm: Add xshm device implementation
+Date: Fri, 16 Dec 2011 11:49:10 +0100
+Message-Id: <1324032554-30398-8-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1324032554-30398-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1324032554-30398-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -25,1178 +25,570 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the configuration handling:
-- reception of gen-netlink requests from user-space.
-- calculating address of where to put information in shared memory, i.e
-  the offset of: IPC-TOC, channel-descriptors, read/write indexes for each
-  directional channel, and data area of each channel.
-- formatting of the shared memory area, so modem can read out configuration
-  data.
-- Creation of configuration data given to the XSHM drivers: xshm_chr and
-  caif_xshm.
+This patch implements the XSHM device.
+- Channel management such as open/close.
+- Modem start-up synchronization events.
+- C2C power request indications, requesting power-on when transmit is ongoing,
+  and power-off upon inactivity timeout.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/xshm/xshm_boot.c | 1150 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 1150 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xshm/xshm_boot.c
+ drivers/xshm/xshm_dev.c |  546 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 546 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/xshm/xshm_dev.c
 
-diff --git a/drivers/xshm/xshm_boot.c b/drivers/xshm/xshm_boot.c
+diff --git a/drivers/xshm/xshm_dev.c b/drivers/xshm/xshm_dev.c
 new file mode 100644
-index 0000000..5e61d53
+index 0000000..bfd771c
 --- /dev/null
-+++ b/drivers/xshm/xshm_boot.c
-@@ -0,0 +1,1150 @@
++++ b/drivers/xshm/xshm_dev.c
+@@ -0,0 +1,546 @@
 +/*
 + * Copyright (C) ST-Ericsson AB 2011
-+ * Author:	Sjur Brændeland / sjur.brandeland@stericsson.com
++ * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": %s :" fmt, __func__
++#define pr_fmt(fmt) KBUILD_MODNAME ":%s:" fmt, __func__
 +#include <linux/version.h>
 +#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/kobject.h>
-+#include <linux/string.h>
-+#include <linux/sysfs.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
 +#include <linux/slab.h>
-+#include <linux/ctype.h>
-+#include <linux/crc-ccitt.h>
-+#include <linux/kdev_t.h>
-+#include <net/netlink.h>
-+#include <net/genetlink.h>
-+#include "xshm_ipctoc.h"
-+#include <linux/xshm/xshm_dev.h>
-+#include <linux/xshm/xshm_netlink.h>
++#include <linux/netdevice.h>
++#include <linux/firmware.h>
 +#include <linux/c2c_genio.h>
++#include <linux/xshm/xshm_dev.h>
 +
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Sjur Brændland <sjur.brandeland@stericsson.com>");
 +
-+#define XSHM_VERSION	0x1
-+#define XSHM_SUBVER	0x0
-+#define TOC_SZ		512
-+#define IMG_MAX_SZ	65536
-+#define XSHM_ALIGNMT	sizeof(u32)
-+#define XSHM_MIN_CHSZ 3
-+#define XSHM_PAYL_ALIGN max(32, L1_CACHE_BYTES)
-+#define STE_BOOTIMG_NAME "ste-bootimg.bin"
++static int xshm_inactivity_timeout = 1000;
++module_param(xshm_inactivity_timeout, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(xshm_inactivity_timeout, "Inactivity timeout, ms.");
 +
-+#define GET_OFFSET(base, ptr) (((u8 *)(ptr)) - ((u8 *)(base)))
-+#define OFFS2PTR(base, offs) ((void *) ((u8 *)base + offs))
-+#define LEOFFS2PTR(base, offs) ((void *) ((u8 *)base + le32_to_cpu(offs)))
-+
-+/* Structure use in debug mode for integrity checking */
-+struct ipctoc_hash {
-+	u16 img_hash;
-+	u16 ch_hash;
-+	u16 ch_size;
++struct xshm_parent {
++	struct device dev;
++	bool ready_for_ipc;
++	bool ready_for_caif;
++	spinlock_t timer_lock;
++	int inactivity_timeout;
++	struct timer_list inactivity_timer;
++	bool power_on;
 +};
 +
-+struct xshm_modem {
-+	bool config_error;
-+	bool commited;
-+	bool registered;
-+	bool addr_set;
-+	u32 modem_bootimg_size;
-+	void *shm_start;
-+	u32 channels;
-+	struct xshm_channel *channel[XSHM_MAX_CHANNELS + 1];
-+	struct xshm_ipctoc *ipctoc;
-+	bool gennetl_reg;
-+};
++struct xshm_parent *parent_dev;
 +
-+static unsigned long xshm_start;
-+module_param(xshm_start, ulong, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(xshm_start, "Address for memory shared by host/modem.");
++#define xdev_dbg(dev, fmt, arg...) dev_dbg(&dev->dev, pr_fmt(fmt), ##arg)
++#define xdev_vdbg(dev, fmt, arg...) dev_vdbg(&dev->dev, pr_fmt(fmt), ##arg)
++#define pr_xshmstate(dev, str, arg...)					\
++	xdev_vdbg(dev, str "STATE: %s txch:%s(%p) rxch:%s(%p)\n", ##arg,\
++			dev->state == XSHM_DEV_OPEN ? "open" : "close", \
++			*dev->cfg.tx.state == cpu_to_le32(XSHM_OPEN) ?	\
++			"open" : "close",				\
++			dev->cfg.tx.state,				\
++			*dev->cfg.rx.state == cpu_to_le32(XSHM_OPEN) ?	\
++			"open" : "close",				\
++			dev->cfg.rx.state)
 +
-+static unsigned long xshm_c2c_bootaddr;
-+module_param(xshm_c2c_bootaddr, ulong, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(xshm_c2c_bootaddr,
-+			"Address given to modem (through GENI register)");
-+
-+static long xshm_size;
-+module_param(xshm_size, long, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(xshm_size, "Size of SHM area");
-+
-+#ifdef DEBUG
-+
-+/* In debug mode we pad around all payload area in order to detect overwrite */
-+#define MAGIC_PAD_LEN 32
-+#define MAGIC_PAD 0xbc
-+
-+/* Verify a magic-pad area */
-+static inline bool padok(void *mag)
++static void inactivity_tout(unsigned long arg)
 +{
-+	u32 *p = mag, v = 0xbcbcbcbc;
-+	int i;
-+
-+	for (i = 0; i < 8; i++)
-+		if (*p++ != v)
-+			return false;
-+	return true;
-+}
-+
-+/* Insert a magic-pad area */
-+static inline void add_magic_pad(u32 *offset, void *base)
-+{
-+	if (*offset < xshm_size)
-+		memset(base + *offset, MAGIC_PAD, MAGIC_PAD_LEN);
-+	*offset += MAGIC_PAD_LEN;
-+}
-+
-+/* Abuse the pad area to create a checksum of the ipc-toc and descriptors */
-+static inline void store_checksum(struct xshm_modem *modem, u32 size)
-+{
-+	struct ipctoc_hash *hash = (void *)modem->ipctoc;
-+	--hash;
-+	hash->img_hash =
-+		crc_ccitt(0xffff, (u8 *) modem->shm_start,
-+				modem->modem_bootimg_size);
-+	hash->ch_hash = crc_ccitt(0xffff, (u8 *) modem->ipctoc, size);
-+	hash->ch_size = size;
-+}
-+
-+/* Verify that shm config has not been accidently tampered. */
-+static inline bool ok_checksum(struct xshm_modem *modem,
-+				struct xshm_ipctoc *ipctoc)
-+{
-+	struct ipctoc_hash *hash = (void *) ipctoc;
-+	u16 new_hash, new_imghash;
-+	int i;
-+	u8 *p;
-+
-+	if (!modem->commited)
-+		return false;
-+
-+	for (i = 0; i < modem->channels; i++) {
-+		struct xshm_ipctoc_channel *ch;
-+
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				ipctoc->channel_offsets[i].rx);
-+		p = LEOFFS2PTR(modem->shm_start, ch->ipc);
-+		if (!padok(p - MAGIC_PAD_LEN))
-+			return false;
-+		p = LEOFFS2PTR(modem->shm_start, ch->offset);
-+		if (!padok(p - MAGIC_PAD_LEN))
-+			return false;
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				ipctoc->channel_offsets[i].tx);
-+		p = LEOFFS2PTR(modem->shm_start, ch->ipc);
-+		if (!padok(p - MAGIC_PAD_LEN))
-+			return false;
-+		p = LEOFFS2PTR(modem->shm_start, ch->offset);
-+		if (!padok(p - MAGIC_PAD_LEN))
-+			return false;
-+	}
-+
-+	--hash;
-+	new_hash = crc_ccitt(0xffff, (u8 *) ipctoc, hash->ch_size);
-+	new_imghash =
-+		crc_ccitt(0xffff, (u8 *) modem->shm_start,
-+				modem->modem_bootimg_size);
-+	pr_debug("Hash result:size:%d chksm:%u/%u img:%u/%u\n",
-+			hash->ch_size, hash->ch_hash, new_hash,
-+			hash->img_hash, new_imghash);
-+	return hash->ch_hash == new_hash && hash->img_hash == new_imghash;
-+}
-+
-+static inline void init_data(void *shm_start, u32 offset,
-+				int ch, u32 size)
-+{
-+	memset((u8 *)shm_start + offset, ch + 1, size);
-+}
-+#else
-+#define MAGIC_PAD_LEN 0
-+static inline void add_magic_pad(u32 *offset, void *base)
-+{
-+}
-+static inline void store_checksum(struct xshm_modem *modem, u32 size)
-+{
-+}
-+static inline bool ok_checksum(struct xshm_modem *modem, void *ipctoc)
-+{
-+	return true;
-+}
-+static inline void init_data(struct xshm_modem *modem, u32 offs, int ch,
-+				u32 size)
-+{
-+}
-+#endif
-+
-+/* write_to_shm - Write SHM Channel descriptors to SHM.
-+ *
-+ * Based on the configuration data channel configuration
-+ * is written to the shared memory area.
-+ * This is the data layout:
-+ *
-+ * +------------+  <---- xshm_start
-+ * |	TOC	|
-+ * +------------+
-+ * | Boot IMG	|
-+ * +------------+ <---- rw_start
-+ * | RW Data	|
-+ * +------------+
-+ * | RW Buf idx |
-+ * +------------+ <---- ipctoc
-+ * | IPC TOC	|
-+ * +------------+
-+ * | RW Ch Decr |
-+ * +------------+ <---- ro_start
-+ * | RO Ch Decr |
-+ * +------------+
-+ * | RO Buf idx |
-+ * +------------+
-+ * | RO Data	|
-+ * +------------+
-+ */
-+
-+static int write_to_shm(struct xshm_modem *modem)
-+{
-+	int i, pri, bitno;
-+	u32 offset, ro_start, rw_start, ipctoc_offs, ipcro_offs;
-+	bool found;
-+	struct xshm_ipctoc_channel *ch;
-+	struct toc_entry *toc_entry;
-+	struct xshm_bufidx *bix;
-+
++	unsigned long flags;
++	pr_devel("enter\n");
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
 +	/*
-+	 * Find where to put IPC-TOC by adding up
-+	 * the size of Payload buffers pluss buf-indices
++	 * This is paranoia, but if timer is reactivated
++	 * before this tout function is scheduled,
++	 * we just ignore this timeout.
 +	 */
-+	ipctoc_offs = ALIGN(modem->modem_bootimg_size, XSHM_PAYL_ALIGN);
-+	rw_start = ipctoc_offs;
-+	for (i = 0; i < modem->channels; i++) {
-+		int n = modem->channel[i]->tx.buffers;
-+		ipctoc_offs += MAGIC_PAD_LEN;
-+		ipctoc_offs += offsetof(struct xshm_bufidx, size[n + 2]);
-+		ipctoc_offs = ALIGN(ipctoc_offs, XSHM_PAYL_ALIGN);
-+		ipctoc_offs += MAGIC_PAD_LEN;
-+		ipctoc_offs += modem->channel[i]->tx.ch_size;
-+		ipctoc_offs = ALIGN(ipctoc_offs, XSHM_PAYL_ALIGN);
++	if (timer_pending(&parent_dev->inactivity_timer))
++		goto out;
++
++	if (parent_dev->power_on) {
++		pr_devel("genio power req(off)\n");
++		genio_power_req(false);
++		parent_dev->power_on = false;
 +	}
-+	add_magic_pad(&ipctoc_offs, modem->shm_start);
-+	pr_debug("IPC toc @ %08x\n", ipctoc_offs);
-+
-+	/*
-+	 * Allocate the IPC-TOC and, initiatlize it.
-+	 * The IPC toc will be located after the RW Data and
-+	 * buffer indices.
-+	 */
-+	offset = ipctoc_offs;
-+	modem->ipctoc = OFFS2PTR(modem->shm_start, ipctoc_offs);
-+	modem->ipctoc->magic[0] = XSHM_IPCTOC_MAGIC1;
-+	modem->ipctoc->magic[1] = XSHM_IPCTOC_MAGIC2;
-+	modem->ipctoc->version = XSHM_VERSION;
-+	modem->ipctoc->subver = XSHM_SUBVER;
-+	memset(modem->ipctoc->channel_offsets, 0,
-+		sizeof(modem->ipctoc->channel_offsets));
-+
-+	/* Find start of first channel descriptor */
-+	offset += sizeof(struct xshm_ipctoc);
-+
-+	/*
-+	 * Allocate the location for the RW Channel descriptors.
-+	 * It will be located after the IPC-TOC.
-+	 */
-+	offset = ALIGN(offset, XSHM_ALIGNMT);
-+	for (i = 0; i < modem->channels; i++) {
-+		pr_debug("Channel descriptor %d RW @ 0x%08x\n", i, offset);
-+		modem->ipctoc->channel_offsets[i].tx = cpu_to_le32(offset);
-+		offset += sizeof(struct xshm_ipctoc_channel);
-+		offset = ALIGN(offset, XSHM_ALIGNMT);
-+		if (offset > xshm_size)
-+			goto badsize;
-+	}
-+	ro_start = offset;
-+
-+	/*
-+	 * Allocate the location for the RO Channel descriptors.
-+	 * It will be located after the RW Channels.
-+	 */
-+	for (i = 0; i < modem->channels; i++) {
-+		pr_debug("Channel descriptor %d RO @ 0x%08x\n", i, offset);
-+		modem->ipctoc->channel_offsets[i].rx = cpu_to_le32(offset);
-+		offset += sizeof(struct xshm_ipctoc_channel);
-+		offset = ALIGN(offset, XSHM_ALIGNMT);
-+		if (offset > xshm_size)
-+			goto badsize;
-+	}
-+
-+	/*
-+	 * Allocate the location for the RO Buffer Indices.
-+	 * It will be located after the RO Channels.
-+	 */
-+	offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+	ipcro_offs = offset;
-+	for (i = 0; i < modem->channels; i++) {
-+		int n = modem->channel[i]->rx.buffers;
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].rx);
-+		add_magic_pad(&offset, modem->shm_start);
-+		ch->ipc = cpu_to_le32(offset);
-+
-+		bix = OFFS2PTR(modem->shm_start, offset);
-+		bix->read_index = cpu_to_le32(0);
-+		bix->write_index = cpu_to_le32(0);
-+		bix->state = cpu_to_le32(XSHM_CLOSED);
-+		bix->size[0] = cpu_to_le32(0);
-+
-+		pr_debug("IPC RO[%d] @: 0x%08x\n",  i, offset);
-+		offset += offsetof(struct xshm_bufidx, size[n + 2]);
-+		offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+		if (offset > xshm_size)
-+			goto badsize;
-+	}
-+
-+	/*
-+	 * Allocate RO Data Area. This will located after
-+	 * the RO Buffer Indices at the end of the Share Memory
-+	 * area.
-+	 */
-+	offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+	for (i = 0; i < modem->channels; i++) {
-+		u8 align;
-+		u32 size;
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].rx);
-+		add_magic_pad(&offset, modem->shm_start);
-+		ch->offset = cpu_to_le32(offset);
-+
-+		BUILD_BUG_ON(sizeof(ch->mode) != 1);
-+		ch->mode = modem->channel[i]->mode & XSHM_MODE_MASK;
-+		ch->buffers = cpu_to_le32(modem->channel[i]->rx.buffers);
-+		align = rounddown_pow_of_two(modem->channel[i]->rx.alignment);
-+		ch->alignment = align;
-+		ch->packets = modem->channel[i]->rx.packets;
-+		ch->mtu = modem->channel[i]->rx.mtu;
-+		size = modem->channel[i]->tx.ch_size;
-+		if (modem->channel[i]->mode & XSHM_PACKET_MODE) {
-+			u32 buf_size;
-+			buf_size = size / modem->channel[i]->tx.buffers;
-+			buf_size = rounddown(buf_size, align);
-+			size = buf_size * modem->channel[i]->tx.buffers;
-+		}
-+		pr_debug("Buffer area RO for Channel[%d] at: 0x%08x size:%d\n",
-+				i, offset, size);
-+		ch->size = cpu_to_le32(size);
-+
-+		init_data(modem->shm_start, offset, i,
-+				modem->channel[i]->rx.ch_size);
-+		offset += modem->channel[i]->rx.ch_size;
-+		offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+		if (offset > xshm_size)
-+			goto badsize;
-+	}
-+
-+	/*
-+	 * Allocate RW Data Area. This will located in the beginning
-+	 * just after the Modem Boot Image.
-+	 */
-+	offset = rw_start;
-+	for (i = 0; i < modem->channels; i++) {
-+		u8 align;
-+		u32 size;
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].tx);
-+		add_magic_pad(&offset, modem->shm_start);
-+		ch->offset = cpu_to_le32(offset);
-+		init_data(modem->shm_start, offset, i,
-+				modem->channel[i]->tx.ch_size);
-+		ch->mode = modem->channel[i]->mode &
-+				XSHM_MODE_MASK;
-+		ch->buffers = cpu_to_le32(modem->channel[i]->tx.buffers);
-+		align = rounddown_pow_of_two(modem->channel[i]->rx.alignment);
-+		ch->alignment = align;
-+		ch->packets = modem->channel[i]->rx.packets;
-+		ch->mtu = modem->channel[i]->rx.mtu;
-+		size = modem->channel[i]->tx.ch_size;
-+		if (modem->channel[i]->mode & XSHM_PACKET_MODE) {
-+			u32 buf_size;
-+			buf_size = size / modem->channel[i]->tx.buffers;
-+			buf_size = rounddown(buf_size, align);
-+			size = buf_size * modem->channel[i]->tx.buffers;
-+		}
-+		ch->size = cpu_to_le32(size);
-+		pr_debug("Buffer area RW for Channel[%d] at: 0x%08x size:%d\n",
-+				i, offset, size);
-+		offset += modem->channel[i]->tx.ch_size;
-+		offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+		if (offset > ro_start)
-+			goto badsize;
-+	}
-+
-+	/*
-+	 * Allocate RW IPC Area. This will located after RW data area,
-+	 * just before the IPC-TOC.
-+	 */
-+	offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+	for (i = 0; i < modem->channels; i++) {
-+		int n = modem->channel[i]->tx.buffers;
-+		ch = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].tx);
-+		add_magic_pad(&offset, modem->shm_start);
-+		ch->ipc = cpu_to_le32(offset);
-+		bix = OFFS2PTR(modem->shm_start, offset);
-+		bix->read_index = cpu_to_le32(0);
-+		bix->write_index = cpu_to_le32(0);
-+		bix->state = cpu_to_le32(XSHM_CLOSED);
-+		bix->size[0] = cpu_to_le32(0);
-+
-+		pr_debug("IPC RW[%d] @: 0x%08x\n",  i, offset);
-+		offset += offsetof(struct xshm_bufidx, size[n + 2]);
-+		offset = ALIGN(offset, XSHM_PAYL_ALIGN);
-+		if (offset > xshm_size)
-+			goto badsize;
-+	}
-+
-+	/* Allocate genio bits for each channel according to priority*/
-+	bitno = 0;
-+	for (pri = 0; pri < 8; pri++) {
-+		for (i = 0; i < modem->channels; i++) {
-+			if (modem->channel[i]->priority == pri) {
-+				ch = LEOFFS2PTR(modem->shm_start,
-+					modem->ipctoc->channel_offsets[i].tx);
-+				ch->write_bit = cpu_to_le16(bitno * 4);
-+				ch->read_bit = cpu_to_le16(bitno * 4 + 2);
-+				ch = LEOFFS2PTR(modem->shm_start,
-+					modem->ipctoc->channel_offsets[i].rx);
-+				ch->write_bit = cpu_to_le16(bitno * 4 + 1);
-+				ch->read_bit = cpu_to_le16(bitno * 4 + 3);
-+				bitno++;
-+			}
-+		}
-+	}
-+
-+	/*
-+	 * The Master TOC points out the boot images for the modem,
-+	 * Use the first avilable entry in the toc to write the pointer,
-+	 * to the IPC-TOC defined above.
-+	 */
-+	found = false;
-+	for (toc_entry = modem->shm_start, i = 0; i < 16; i++, toc_entry++)
-+		if (toc_entry->start == cpu_to_le32(0xffffffff)) {
-+			pr_debug("IPCTOC address written into Master TOC"
-+					" @ 0x%08x\n", i * 32);
-+			toc_entry->start =
-+				cpu_to_le32(GET_OFFSET(modem->shm_start,
-+							modem->ipctoc));
-+			toc_entry->size = cpu_to_le32(0);
-+			toc_entry->flags = cpu_to_le32(0);
-+			toc_entry->entry_point = cpu_to_le32(0);
-+			toc_entry->load_addr = cpu_to_le32(0xffffffff);
-+			memset(toc_entry->name, 0, sizeof(toc_entry->name));
-+			sprintf(toc_entry->name, "ipc-toc");
-+			found = true;
-+			break;
-+		}
-+	if (!found) {
-+		pr_debug("Cannot insert IPC-TOC in toc\n");
-+		goto bad_config;
-+	}
-+
-+	store_checksum(modem, ipcro_offs - ipctoc_offs);
-+
-+	return 0;
-+
-+badsize:
-+	pr_debug("IPCTOC not enough space offset (size:0x%lx offset:0x%x\n",
-+			xshm_size, offset);
-+	return -ENOSPC;
-+
-+bad_config:
-+	pr_debug("IPCTOC bad configuration data\n");
-+	return -EINVAL;
++out:
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
 +}
 +
-+static int xshm_verify_config(struct xshm_modem *modem,
-+				struct xshm_channel *xcfg)
++static void activity(void)
 +{
-+	int j;
-+
-+	if ((xcfg->mode & XSHM_MODE_MASK) != XSHM_PACKET_MODE &&
-+			(xcfg->mode & XSHM_MODE_MASK) != XSHM_STREAM_MODE) {
-+		pr_debug("Bad config:"
-+				"channel mode must be set\n");
-+		return -EINVAL;
++	unsigned long flags;
++	pr_devel("enter\n");
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
++	if (!parent_dev->power_on) {
++		pr_devel("genio power req(on)\n");
++		genio_power_req(true);
++		parent_dev->power_on = true;
 +	}
-+	if (xcfg->mode & XSHM_PACKET_MODE && xcfg->rx.buffers < 2) {
-+		pr_debug("Bad config:minimum 2 buffers "
-+				"must be set for packet mode\n");
-+		return -EINVAL;
-+	}
-+
-+	if (xcfg->rx.ch_size < XSHM_MIN_CHSZ) {
-+		pr_debug("Bad config:"
-+				"Channel size must be larger than %d\n",
-+				XSHM_MIN_CHSZ);
-+		return -EINVAL;
-+	}
-+
-+	if (xcfg->mode & XSHM_PACKET_MODE) {
-+		if (xcfg->tx.buffers < 2) {
-+			pr_debug("Bad config:"
-+				"buffers must be minimum 2 packet mode\n");
-+			return -EINVAL;
-+		}
-+		if (xcfg->tx.packets < 1) {
-+			pr_debug("Bad config:"
-+				"packets must be set for packet mode\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (xcfg->tx.ch_size < XSHM_MIN_CHSZ) {
-+		pr_debug("Bad config:"
-+				"Channel size must be larger than %d\n",
-+				XSHM_MIN_CHSZ);
-+		return -EINVAL;
-+	}
-+
-+	if (xcfg->name[0] == '\0') {
-+		pr_debug("Channel must be named\n");
-+		return -EINVAL;
-+	}
-+	for (j = 0; j < modem->channels; j++) {
-+		struct xshm_channel *xcfg2 = modem->channel[j];
-+		if (xcfg != xcfg2 && strcmp(xcfg->name, xcfg2->name) == 0) {
-+			pr_debug("Channels has same name:%s\n",
-+					 xcfg->name);
-+			return -EINVAL;
-+		}
-+	}
-+	return 0;
++	mod_timer(&parent_dev->inactivity_timer,
++			jiffies + parent_dev->inactivity_timeout);
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
 +}
 +
-+static int verify_config(struct xshm_modem *modem)
++static void reset_activity_tout(void)
 +{
-+	int i;
-+
-+	if (modem->channels == 0) {
-+		pr_debug("Bad config: minimum one channel must be defined\n");
-+		return -EINVAL;
++	unsigned long flags;
++	pr_devel("enter\n");
++	spin_lock_irqsave(&parent_dev->timer_lock, flags);
++	if (parent_dev->power_on) {
++		genio_power_req(false);
++		parent_dev->power_on = false;
 +	}
-+	for (i = 0; i < modem->channels; i++) {
-+		int err = xshm_verify_config(modem, modem->channel[i]);
-+		if (err)
-+			return err;
-+	}
-+	return 0;
++	del_timer_sync(&parent_dev->inactivity_timer);
++	spin_unlock_irqrestore(&parent_dev->timer_lock, flags);
 +}
 +
-+/*
-+ * Create Configuration data for the xshm devices.
-+ */
-+static void create_devs(struct xshm_modem *modem)
++static int xshmdev_ipc_tx(struct xshm_dev *dev)
 +{
-+	int i;
-+
-+	for (i = 0; i < modem->channels; i++) {
-+		struct xshm_bufidx *buf_rx, *buf_tx;
-+		struct xshm_ipctoc_channel *ch_rx, *ch_tx;
-+		struct xshm_channel *xcfg = modem->channel[i];
-+		ch_rx = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].rx);
-+		buf_rx = LEOFFS2PTR(modem->shm_start, ch_rx->ipc);
-+		ch_tx = LEOFFS2PTR(modem->shm_start,
-+				modem->ipctoc->channel_offsets[i].tx);
-+		buf_tx = LEOFFS2PTR(modem->shm_start, ch_tx->ipc);
-+
-+		/*
-+		 * Due to restricted read-only access
-+		 * we swap positions for read/write
-+		 * pointers.
-+		 */
-+		xcfg->tx.write = &buf_tx->write_index;
-+		xcfg->tx.read = &buf_rx->read_index;
-+
-+		xcfg->rx.write = &buf_rx->write_index;
-+		xcfg->rx.read = &buf_tx->read_index;
-+
-+		xcfg->rx.addr = LEOFFS2PTR(modem->shm_start, ch_rx->offset);
-+		xcfg->tx.addr = LEOFFS2PTR(modem->shm_start, ch_tx->offset);
-+		xcfg->rx.state = &buf_rx->state;
-+		xcfg->tx.state = &buf_tx->state;
-+		xcfg->tx.buf_size = buf_tx->size;
-+		xcfg->rx.buf_size = buf_rx->size;
-+
-+		xcfg->rx.xfer_bit = le16_to_cpu(ch_rx->write_bit);
-+		xcfg->tx.xfer_bit = le16_to_cpu(ch_tx->write_bit);
-+		xcfg->rx.xfer_done_bit = le16_to_cpu(ch_rx->read_bit);
-+		xcfg->tx.xfer_done_bit = le16_to_cpu(ch_tx->read_bit);
-+
-+		if (xcfg->mode & XSHM_PAIR_MODE) {
-+			struct xshm_channel *pair;
-+			pr_debug("Channel[%d] is in PAIR mode\n", i);
-+			if (i < 1) {
-+				pr_debug("No channel to pair with\n");
-+				continue;
-+			}
-+			/* Cross couple rx/tx on the pair */
-+			pair = modem->channel[i - 1];
-+
-+			/* Copy everything but the kobj which is at the end */
-+			memcpy(&xcfg->tx, &pair->rx,
-+					offsetof(struct xshm_udchannel, kobj));
-+			memcpy(&xcfg->rx, &pair->tx,
-+					offsetof(struct xshm_udchannel, kobj));
-+		} else if (xcfg->mode & XSHM_LOOP_MODE) {
-+			pr_debug("Channel[%d] is in LOOP mode\n", i);
-+			/*
-+			 * Connect rx/tx in a pair. Copy everything,
-+			 * but the kobj which is at the end
-+			 */
-+			memcpy(&xcfg->tx, &xcfg->rx,
-+					offsetof(struct xshm_udchannel, kobj));
-+		}
-+
-+		pr_devel("RX[%d] wi:%p ri:%p\n", i, xcfg->rx.read,
-+				xcfg->rx.write);
-+		pr_devel("TX[%d] wi:%p ri:%p\n", i, xcfg->tx.read,
-+				xcfg->tx.write);
-+	}
++	xdev_vdbg(dev, "call genio_set_bit(%d)\n", dev->cfg.tx.xfer_bit);
++	activity();
++	return genio_set_bit(dev->cfg.tx.xfer_bit);
 +}
 +
-+struct xshm_modem *modem;
-+
-+struct xshm_modem *get_modem(struct sk_buff *skb, struct genl_info *info)
++static int xshmdev_ipc_rx_release(struct xshm_dev *dev, bool more)
 +{
-+	return modem;
++	xdev_vdbg(dev, "call genio_set_bit(%d)\n", dev->cfg.tx.xfer_bit);
++	activity();
++	return genio_set_bit(dev->cfg.rx.xfer_done_bit);
 +}
 +
-+static int do_commit(struct xshm_modem *modem)
++static int do_open(struct xshm_dev *dev)
 +{
 +	int err;
 +
-+	if (modem->config_error) {
-+		pr_devel("config error detected\n");
-+		return -EINVAL;
-+	}
++	pr_xshmstate(dev, "enter");
++	err = dev->open_cb(dev->driver_data);
++	if (err < 0) {
++		xdev_dbg(dev, "Error - open_cb failed\n");
 +
-+	if (modem->commited) {
-+		pr_devel("already commited\n");
-+		modem->config_error = true;
-+		return -EINVAL;
-+	}
-+	err = verify_config(modem);
-+	if (err) {
-+		pr_devel("bad config\n");
-+		modem->config_error = true;
++		/* Make sure ring-buffer is empty i RX and TX direction */
++		*dev->cfg.rx.read = *dev->cfg.rx.write;
++		*dev->cfg.tx.write = *dev->cfg.tx.read;
++		*dev->cfg.tx.state = cpu_to_le32(XSHM_CLOSED);
++		xdev_vdbg(dev, "set state = XSHM_DEV_CLOSED\n");
++		dev->state = XSHM_DEV_CLOSED;
 +		return err;
 +	}
-+	err = write_to_shm(modem);
-+	if (err) {
-+		pr_devel("writei to SHM failed\n");
-+		modem->config_error = true;
-+		return err;
-+	}
-+	modem->commited = true;
-+	create_devs(modem);
-+	return 0;
-+}
 +
-+static int do_register(struct xshm_modem *modem)
-+{
-+	int err;
-+
-+	if (!modem->commited || modem->registered || modem->config_error) {
-+		pr_devel("bad sequence of requests\n");
-+		modem->config_error = true;
-+		return -EINVAL;
++	/* Check is we already have any data in the pipe */
++	if (*dev->cfg.rx.write != *dev->cfg.rx.read) {
++		xdev_vdbg(dev, "Received data during opening\n");
++		dev->ipc_rx_cb(dev->driver_data);
 +	}
 +
-+	err = verify_config(modem);
-+	if (err) {
-+		modem->config_error = true;
-+		pr_devel("bad config\n");
-+		return err;
-+	}
-+	modem->registered = true;
-+
-+	xshm_register_devices(modem->channel, modem->channels);
-+
-+	return 0;
-+}
-+
-+static void do_reset(struct xshm_modem *modem)
-+{
-+	int i;
-+
-+	xshm_reset();
-+	modem->config_error = false;
-+	modem->registered = false;
-+	modem->commited = false;
-+	modem->addr_set = false;
-+	modem->modem_bootimg_size = TOC_SZ;
-+	for (i = 0; i < modem->channels; i++) {
-+		kfree(modem->channel[i]);
-+		modem->channel[i] = NULL;
-+	}
-+	modem->channels = 0;
-+}
-+
-+static int do_set_addr(struct xshm_modem *modem)
-+{
-+	int err;
-+	if (!modem->commited || modem->addr_set || modem->config_error) {
-+		pr_devel("bad sequence of requests\n");
-+		modem->config_error = true;
-+		return -EINVAL;
-+	}
-+	err = verify_config(modem);
-+	if (err) {
-+		modem->config_error = true;
-+		pr_devel("bad config\n");
-+		return err;
-+	}
-+	modem->addr_set = true;
-+	return genio_set_shm_addr(xshm_c2c_bootaddr, genio_ipc_ready_cb);
-+}
-+
-+static int copy_name(const char *src, char *d, size_t count)
-+{
-+	const char *s, *end = src + count;
-+	for (s = src; *s && s < end; s++, d++)
-+		if (*s == '\0' || *s == '\n')
-+			break;
-+		else if (!isalnum(*s)) {
-+			pr_debug("Illegal chr:'%c' in name:'%s'\n", *s, src);
-+			return -EINVAL;
-+		} else if (s - src >= XSHM_NAMESZ - 1) {
-+			pr_debug("Name '%s'too long\n", src);
-+			return -EINVAL;
-+		} else
-+			*d = *s;
-+	*d = '\0';
-+
-+	return count;
-+}
-+
-+/* XSHM Generic NETLINK family */
-+static struct genl_family xshm_gnl_family = {
-+	.id = GENL_ID_GENERATE,
-+	.hdrsize = 0,
-+	.name = "XSHM",
-+	.version = XSHM_PROTO_VERSION,
-+	.maxattr = XSHM_A_MAX,
-+};
-+
-+/* XSHM Netlink attribute policy */
-+static const struct nla_policy xshm_genl_policy[XSHM_A_MAX + 1] = {
-+	[XSHM_A_VERSION] = { .type = NLA_U8 },
-+	[XSHM_A_SUB_VERSION] = { .type = NLA_U8 },
-+	[__XSHM_A_FLAGS] = { .type = NLA_U32 },
-+	[XSHM_A_NAME] = { .type = NLA_NUL_STRING, .len = XSHM_NAMESZ},
-+	[XSHM_A_RX_CHANNEL] = { .type = NLA_NESTED },
-+	[XSHM_A_TX_CHANNEL] = { .type = NLA_NESTED },
-+	[XSHM_A_PRIORITY] = { .type = NLA_U8 },
-+	[XSHM_A_LATENCY] = { .type = NLA_U8 },
-+};
-+
-+/* Policy for uni-directional attributes for stream */
-+static const struct nla_policy stream_policy[XSHM_A_MAX + 1] = {
-+	[XSHM_A_CHANNEL_SIZE] = { .type = NLA_U32 },
-+};
-+
-+/* Policy for uni-directional attributes for packet */
-+static const struct nla_policy packet_policy[XSHM_A_MAX + 1] = {
-+	[XSHM_A_CHANNEL_SIZE] = { .type = NLA_U32 },
-+	[XSHM_A_CHANNEL_BUFFERS] = { .type = NLA_U32 },
-+	[XSHM_A_MTU] = { .type = NLA_U16 },
-+	[XSHM_A_ALIGNMENT] = { .type = NLA_U8 },
-+	[XSHM_A_PACKETS] = { .type = NLA_U8 },
-+};
-+
-+static int xshm_add_udchannel(struct xshm_udchannel *chn, int attr,
-+			struct genl_info *info, struct nla_policy const *policy)
-+{
-+	struct nlattr *nla;
-+	int nla_rem;
-+
-+	if (!info->attrs[attr])
-+		return -EINVAL;
-+
-+	if (nla_validate_nested(info->attrs[attr],
-+					XSHM_A_MAX,
-+					policy) != 0) {
-+		pr_info("Invalid RX channel attributes\n");
-+		return -EINVAL;
-+	}
-+
-+	nla_for_each_nested(nla, info->attrs[attr], nla_rem) {
-+
-+		if (nla_type(nla) == XSHM_A_CHANNEL_SIZE)
-+			chn->ch_size = nla_get_u32(nla);
-+
-+		if (nla_type(nla) == XSHM_A_CHANNEL_BUFFERS)
-+			chn->buffers = nla_get_u32(nla);
-+
-+		if (nla_type(nla) == XSHM_A_MTU)
-+			chn->mtu = nla_get_u16(nla);
-+
-+		if (nla_type(nla) == XSHM_A_PACKETS)
-+			chn->packets = nla_get_u8(nla);
-+
-+		if (nla_type(nla) == XSHM_A_ALIGNMENT) {
-+			chn->alignment = nla_get_u8(nla);
-+			chn->alignment = rounddown_pow_of_two(chn->alignment);
-+		}
-+
-+	}
-+	return 0;
-+}
-+
-+static int xshm_add_channel(struct xshm_channel *cfg, struct genl_info *info,
-+			int mode)
-+{
-+	int len, err;
-+	struct nla_policy const *policy;
-+	char name[XSHM_NAMESZ];
-+
-+	policy = (mode == XSHM_PACKET_MODE) ? packet_policy : stream_policy;
-+
-+	if (info->attrs[XSHM_A_VERSION]) {
-+		u8 version;
-+		u8 sub_version;
-+
-+		version = nla_get_u8(info->attrs[XSHM_A_VERSION]);
-+		if (!info->attrs[XSHM_A_SUB_VERSION])
-+			return -EINVAL;
-+		sub_version = nla_get_u8(info->attrs[XSHM_A_SUB_VERSION]);
-+		if (version != 1 || sub_version != 0) {
-+			pr_info("Bad version or sub_version\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (!info->attrs[XSHM_A_NAME]) {
-+		pr_debug("Name not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	len = nla_strlcpy(name, info->attrs[XSHM_A_NAME],
-+			XSHM_NAMESZ);
-+
-+	if (len > XSHM_NAMESZ)
-+		return -EINVAL;
-+
-+	err = copy_name(name, cfg->name, sizeof(name));
-+	if (err < 0)
-+		return err;
-+
-+	cfg->excl_group = 1;
-+	if (info->attrs[XSHM_A_EXCL_GROUP])
-+		cfg->excl_group = nla_get_u8(info->attrs[XSHM_A_EXCL_GROUP]);
-+
-+	err = xshm_add_udchannel(&cfg->rx, XSHM_A_RX_CHANNEL, info, policy);
-+
-+	if (err)
-+		return err;
-+	err = xshm_add_udchannel(&cfg->tx, XSHM_A_TX_CHANNEL, info, policy);
-+
-+	if (err)
-+		return err;
-+
-+	if (info->attrs[XSHM_A_PRIORITY]) {
-+		cfg->priority = nla_get_u8(info->attrs[XSHM_A_PRIORITY]);
-+		/* silently fixup bad value */
-+		if (cfg->priority > 7)
-+			cfg->priority = 0;
-+	}
-+
-+	if (info->attrs[XSHM_A_LATENCY])
-+		cfg->latency = nla_get_u8(info->attrs[XSHM_A_LATENCY]);
-+
-+	if (info->attrs[__XSHM_A_FLAGS])
-+		cfg->mode |= nla_get_u32(info->attrs[__XSHM_A_FLAGS]);
-+
-+
-+	return 0;
-+}
-+
-+static int do_reply(struct genl_info *info, int result)
-+{
-+	struct sk_buff *msg;
-+	int err;
-+	void *reply;
-+
-+	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
-+	if (msg == NULL)
-+		return -ENOMEM;
-+
-+	reply = genlmsg_put_reply(msg, info, &xshm_gnl_family, 0, result);
-+	if (reply == NULL) {
-+		kfree_skb(msg);
-+		return -EMSGSIZE;
-+	}
-+
-+	genlmsg_end(msg, reply);
-+	err = genlmsg_reply(msg, info);
 +	return err;
 +}
 +
-+static int xshm_add_ch(struct sk_buff *skb, struct genl_info *info, int mode)
++static void genio_rx_cb(void *data)
 +{
-+	int err;
-+	struct xshm_channel *cfg;
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	if (!modem)
-+		return -EINVAL;
++	struct xshm_dev *dev = data;
 +
-+	if (modem->channels + 1 > XSHM_MAX_CHANNELS) {
-+		pr_debug("Too many channels added\n");
-+		return -EINVAL;
++	pr_xshmstate(dev, "Enter");
++
++	if (likely(dev->state == XSHM_DEV_OPEN)) {
++		if (unlikely(!parent_dev->ready_for_ipc)) {
++			xdev_vdbg(dev, "ready_for_ipc is not yet set\n");
++			return;
++		}
++
++		if (dev->ipc_rx_cb) {
++			int err = dev->ipc_rx_cb(dev->driver_data);
++			if (unlikely(err < 0))
++				goto remote_close;
++		}
++
++	} else if (*dev->cfg.rx.state == cpu_to_le32(XSHM_OPEN)) {
++		pr_xshmstate(dev, "");
++		dev->state = XSHM_DEV_OPEN;
++		if (!parent_dev->ready_for_ipc) {
++			xdev_vdbg(dev, "ready_for_ipc is not yet set\n");
++			return;
++		}
++		if (do_open(dev) < 0)
++			goto open_fail;
 +	}
-+
-+
-+	cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
-+	if (cfg == NULL)
-+		return -ENOMEM;
-+
-+	cfg->mode = mode;
-+	err = xshm_add_channel(cfg, info, mode);
-+	if (err)
-+		goto error;
-+
-+	modem->channel[modem->channels] = cfg;
-+	++modem->channels;
-+
-+	err = xshm_verify_config(modem, cfg);
-+	if (err)
-+		goto error;
-+
-+	err = do_reply(info, 0);
-+	if (err)
-+		goto error;
-+	return err;
-+
-+error:
-+	--modem->channels;
-+	kfree(cfg);
-+	return err;
++	return;
++open_fail:
++	pr_xshmstate(dev, "exit open failed");
++	/* Make sure ring-buffer is empty i RX and TX direction */
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++remote_close:
++	*dev->cfg.tx.state = cpu_to_le32(XSHM_CLOSED);
++	dev->state = XSHM_DEV_CLOSED;
++	dev->close_cb(dev->driver_data);
 +}
 +
-+static int xshm_add_packet_ch(struct sk_buff *skb, struct genl_info *info)
++static void genio_tx_release_cb(void *data)
 +{
-+	return xshm_add_ch(skb, info, XSHM_PACKET_MODE);
-+}
++	struct xshm_dev *dev = data;
 +
-+static int xshm_add_stream_ch(struct sk_buff *skb, struct genl_info *info)
-+{
-+	return xshm_add_ch(skb, info, XSHM_STREAM_MODE);
-+}
-+
-+
-+static int xshm_c_commit(struct sk_buff *skb, struct genl_info *info)
-+{
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	int err;
-+	if (!modem)
-+		return -EINVAL;
-+
-+	err = do_commit(modem);
-+	if (!err)
-+		do_reply(info, 0);
-+	return err;
-+}
-+
-+static int xshm_c_register(struct sk_buff *skb, struct genl_info *info)
-+{
-+	int err;
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	if (!modem)
-+		return -EINVAL;
-+
-+	err = do_register(modem);
-+	if (!err)
-+		do_reply(info, 0);
-+	return err;
-+}
-+
-+static int xshm_c_set_addr(struct sk_buff *skb, struct genl_info *info)
-+{
-+	int err;
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	if (!modem)
-+		return -EINVAL;
-+
-+	err = do_set_addr(modem);
-+	if (!err)
-+		do_reply(info, 0);
-+	return err;
-+}
-+
-+static int xshm_c_reset(struct sk_buff *skb, struct genl_info *info)
-+{
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	if (!modem)
-+		return -EINVAL;
-+
-+	do_reset(modem);
-+	do_reply(info, 0);
-+	return 0;
-+}
-+
-+static int xshm_c_verify(struct sk_buff *skb, struct genl_info *info)
-+{
-+	int err;
-+	struct xshm_modem *modem = get_modem(skb, info);
-+	if (!modem)
-+		return -EINVAL;
-+
-+	err = verify_config(modem);
-+	if (!err)
-+		do_reply(info, 0);
-+	return err;
-+}
-+
-+static struct genl_ops xshm_genl_ops[] = {
-+	{
-+	.cmd = XSHM_C_ADD_STREAM_CHANNEL,
-+	.flags = GENL_ADMIN_PERM,
-+	.policy = xshm_genl_policy,
-+	.doit = xshm_add_stream_ch,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = XSHM_C_ADD_PACKET_CHANNEL,
-+	.flags = GENL_ADMIN_PERM,
-+	.policy = xshm_genl_policy,
-+	.doit = xshm_add_packet_ch,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = XSHM_C_COMMIT,
-+	.flags = GENL_ADMIN_PERM,
-+	.doit = xshm_c_commit,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = XSHM_C_REGISTER,
-+	.flags = GENL_ADMIN_PERM,
-+	.doit = xshm_c_register,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = XSHM_C_SET_ADDR,
-+	.flags = GENL_ADMIN_PERM,
-+	.doit = xshm_c_set_addr,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = XSHM_C_RESET,
-+	.flags = GENL_ADMIN_PERM,
-+	.doit = xshm_c_reset,
-+	.dumpit = NULL,
-+	},
-+	{
-+	.cmd = __XSHM_C_VERIFY,
-+	.flags = GENL_ADMIN_PERM,
-+	.doit = xshm_c_verify,
-+	.dumpit = NULL,
-+	},
-+
-+};
-+
-+
-+static void xshm_firmware(const struct firmware *fw, void *context)
-+{
-+	struct xshm_modem *modem = context;
-+
-+	if (fw == NULL) {
-+		pr_warn("No boot-img provided\n");
++	pr_xshmstate(dev, "Enter");
++	if (!parent_dev->ready_for_ipc) {
++		xdev_vdbg(dev, "not ready_for_ipc\n");
 +		return;
 +	}
-+
-+	if (modem->commited) {
-+		pr_warn("Received firmware too late in modem boot\n");
-+		return;
-+	}
-+
-+	pr_debug("recevied firmware\n");
-+	memcpy(modem->shm_start, fw->data, fw->size);
++	if (dev->ipc_tx_release_cb)
++		dev->ipc_tx_release_cb(dev->driver_data);
 +}
 +
-+/* Initialize boot handling and create sysfs entries*/
-+int __init xshm_boot_init(void)
++struct xshm_xgroup {
++	bool prohibit;
++	u32 group;
++};
++
++static void check_exclgroup(struct xshm_dev *dev, void *data)
++{
++	struct xshm_xgroup *x = data;
++	if (dev->state == XSHM_DEV_OPEN &&
++		dev->cfg.excl_group != x->group) {
++		x->prohibit = true;
++		xdev_dbg(dev, "Exclusive group "
++				"prohibits device open\n");
++	}
++}
++
++static int xshmdev_open(struct xshm_dev *dev)
 +{
 +	int err = -EINVAL;
-+	bool xshm_fake = false;
++	struct xshm_xgroup x = {
++		.prohibit = false,
++		.group = dev->cfg.excl_group
++	};
 +
-+	modem = kzalloc(sizeof(struct xshm_modem), GFP_KERNEL);
-+	if (modem == NULL)
-+		return -ENOMEM;
 +
-+	/* Negative xshm_size indicates module test without real SHM */
-+	if (xshm_size < 0) {
-+		xshm_fake = true;
-+		xshm_size = abs(xshm_size);
++	pr_xshmstate(dev, "Enter");
++	if (WARN_ON(dev->ipc_rx_cb == NULL) ||
++			WARN_ON(dev->ipc_tx_release_cb == NULL) ||
++			WARN_ON(dev->open_cb == NULL) ||
++			WARN_ON(dev->close_cb == NULL))
++		goto err;
++
++	xshm_foreach_dev(check_exclgroup, &x);
++	if (x.prohibit) {
++		xdev_dbg(dev, "Exclusive group prohibits device open\n");
++		err = -EPERM;
++		goto err;
 +	}
 +
-+	if (xshm_size < TOC_SZ)
-+		goto bad_config;
++	xdev_vdbg(dev, "call genio_subscribe(%d)\n", dev->cfg.rx.xfer_bit);
++	err = genio_subscribe(dev->cfg.rx.xfer_bit, genio_rx_cb, dev);
++	if (err)
++		goto err;
 +
-+	if (xshm_fake) {
-+		modem->shm_start = kzalloc(xshm_size, GFP_KERNEL);
-+		err = -ENOMEM;
-+		if (!modem->shm_start)
-+			goto error;
-+		xshm_start = (unsigned long) modem->shm_start;
-+		memset(modem->shm_start, 0xaa, xshm_size);
-+	} else {
-+		if (xshm_start == 0)
-+			goto bad_config;
-+		modem->shm_start = ioremap(xshm_start, xshm_size);
++	xdev_vdbg(dev, "call genio_subscribe(%d)\n", dev->cfg.tx.xfer_done_bit);
++	err = genio_subscribe(dev->cfg.tx.xfer_done_bit,
++			genio_tx_release_cb, dev);
++	if (err)
++		goto err;
++
++	/* Indicate that our side is open and ready for action */
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++	*dev->cfg.tx.state = cpu_to_le32(XSHM_OPEN);
++
++	if (parent_dev->ready_for_ipc)
++		err = xshmdev_ipc_tx(dev);
++
++	if (err < 0) {
++		xdev_dbg(dev, "can't update geno\n");
++		goto err;
++	}
++	/* If other side is ready as well we're ready to role */
++	if (*dev->cfg.rx.state == cpu_to_le32(XSHM_OPEN) &&
++			parent_dev->ready_for_ipc) {
++
++		if (do_open(dev) < 0)
++			goto err;
++		dev->state = XSHM_DEV_OPEN;
 +	}
 +
-+	/* Initiate the Master TOC to 0xff for the first 512 bytes */
-+	if (xshm_size > TOC_SZ)
-+		memset(modem->shm_start, 0xff, TOC_SZ);
-+
-+	modem->modem_bootimg_size = TOC_SZ;
-+
-+	pr_debug("Boot image addr: %p size:%d\n", modem->shm_start,
-+			modem->modem_bootimg_size);
-+
-+	err = genl_register_family_with_ops(&xshm_gnl_family,
-+		xshm_genl_ops, ARRAY_SIZE(xshm_genl_ops));
-+	if (err)
-+		goto error;
-+
-+	modem->gennetl_reg = 1;
-+
-+	err = xshm_request_firmware(modem, THIS_MODULE,
-+			STE_BOOTIMG_NAME, xshm_firmware);
-+	if (err)
-+		goto error;
-+
++	return 0;
++err:
++	pr_xshmstate(dev, "exit error");
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.write = *dev->cfg.tx.read;
++	*dev->cfg.tx.state = cpu_to_le32(XSHM_CLOSED);
 +	return err;
-+error:
-+	pr_debug("initialization failed\n");
-+
-+	if (xshm_fake)
-+		kfree(modem->shm_start);
-+	return err;
-+bad_config:
-+	pr_err("Bad module configuration:"
-+			" xshm_base_address:%lu xshm_size:%lu err:%d\n",
-+			xshm_start, xshm_size, err);
-+	/* Buildin module should not return error */
-+	return -EINVAL;
 +}
 +
-+void __exit xshm_boot_exit(void)
++static void xshmdev_close(struct xshm_dev *dev)
++{
++	pr_xshmstate(dev, "enter");
++
++	dev->state = XSHM_DEV_CLOSED;
++	*dev->cfg.rx.read = *dev->cfg.rx.write;
++	*dev->cfg.tx.state = cpu_to_le32(XSHM_CLOSED);
++	xshmdev_ipc_tx(dev);
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++
++	xdev_vdbg(dev, "call genio_unsubscribe(%d)\n", dev->cfg.rx.xfer_bit);
++	genio_unsubscribe(dev->cfg.rx.xfer_bit);
++	xdev_vdbg(dev, "call genio_unsubscribe(%d)\n",
++			dev->cfg.tx.xfer_done_bit);
++	genio_unsubscribe(dev->cfg.tx.xfer_done_bit);
++}
++
++static void xshmdev_release(struct device *dev)
++{
++	struct xshm_dev *xshm = container_of(dev, struct xshm_dev, dev);
++	kfree(xshm);
++}
++
++int xshm_register_devices(struct xshm_channel *channel[], int channels)
 +{
 +
-+	if (modem->gennetl_reg)
-+		genl_unregister_family(&xshm_gnl_family);
-+	modem->gennetl_reg = 0;
++	int i, err;
++	struct xshm_dev *dev;
++
++	for (i = 0; i < channels; i++) {
++		dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++		if (dev == NULL)
++			return -ENOMEM;
++		dev_set_name(&dev->dev, "xshm%u", i);
++		dev->dev.release = xshmdev_release;
++
++		dev->state = XSHM_DEV_CLOSED;
++		dev->open = xshmdev_open;
++		dev->close = xshmdev_close;
++		dev->ipc_rx_release = xshmdev_ipc_rx_release;
++		dev->ipc_tx = xshmdev_ipc_tx;
++		xdev_vdbg(dev, "register XSHM device %s\n",
++				dev_name(&dev->dev));
++		dev->dev.parent = &parent_dev->dev;
++		dev->cfg = *channel[i];
++
++		err = xshm_register_device(dev);
++		if (err) {
++			xdev_dbg(dev, "registration failed (%d)\n", err);
++			return err;
++		}
++	}
++	return 0;
 +}
-+module_init(xshm_boot_init);
-+module_exit(xshm_boot_exit);
++EXPORT_SYMBOL(xshm_register_devices);
++
++/* sysfs: ipc_ready file */
++static ssize_t caif_ready_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", parent_dev->ready_for_caif);
++}
++
++static DEVICE_ATTR(caif_ready, S_IRUSR | S_IRUGO, caif_ready_show, NULL);
++
++/* sysfs: notification on change of caif_ready to user space */
++void xshm_caif_ready(void)
++{
++	sysfs_notify(&parent_dev->dev.kobj, NULL,
++			dev_attr_caif_ready.attr.name);
++}
++
++/* sysfs: ipc_ready file */
++static ssize_t ipc_ready_show(struct device *dev, struct device_attribute *attr,
++				char *buf)
++{
++	return sprintf(buf, "%d\n", parent_dev->ready_for_ipc);
++}
++
++static DEVICE_ATTR(ipc_ready, S_IRUSR | S_IRUGO, ipc_ready_show, NULL);
++
++/* sysfs: notification on change of ipc_ready to user space */
++void xshm_ipc_ready(void)
++{
++	sysfs_notify(&parent_dev->dev.kobj, NULL, dev_attr_ipc_ready.attr.name);
++}
++
++static void genio_caif_ready_cb(bool ready)
++{
++	pr_devel("enter\n");
++	/* Set global variable ready_for_caif true */
++	if (parent_dev->ready_for_caif != ready) {
++		parent_dev->ready_for_caif = ready;
++		xshm_caif_ready();
++	}
++}
++
++static void genio_errhandler(int errno)
++{
++	/* Fake CAIF_READY low to trigger modem restart */
++	pr_warn("Driver reported error:%d\n", errno);
++	parent_dev->ready_for_caif = 0;
++	xshm_caif_ready();
++}
++
++struct xshm_bits {
++	u32 setter;
++	u32 getter;
++};
++
++static void collect_bits(struct xshm_dev *dev, void *data)
++{
++	struct xshm_bits *bits = data;
++	bits->setter |= 1 << dev->cfg.tx.xfer_bit;
++	bits->setter |= 1 << dev->cfg.rx.xfer_done_bit;
++	bits->getter |= 1 << dev->cfg.rx.xfer_bit;
++	bits->getter |= 1 << dev->cfg.tx.xfer_done_bit;
++}
++
++static void handle_open(struct xshm_dev *dev, void *data)
++{
++		if (dev->cfg.rx.state != NULL && dev->cfg.tx.state != NULL &&
++				*dev->cfg.rx.state == cpu_to_le32(XSHM_OPEN) &&
++				*dev->cfg.tx.state == cpu_to_le32(XSHM_OPEN)) {
++			dev->state = XSHM_DEV_OPEN;
++			do_open(dev);
++		}
++}
++
++void genio_ipc_ready_cb(void)
++{
++	int err;
++	struct xshm_bits bits = {0, 0};
++
++	pr_devel("enter\n");
++	/* Set global variable ready_for_ipc true */
++#ifdef DEBUG
++	/*
++	 * In real life ready_for_ipc doesn't change, but it's
++	 * convenient for testing.
++	 */
++	parent_dev->ready_for_ipc = !parent_dev->ready_for_ipc;
++#else
++	parent_dev->ready_for_ipc = true;
++#endif
++
++	xshm_ipc_ready();
++
++	genio_register_errhandler(genio_errhandler);
++
++	pr_devel("call genio_subscribe_caif_ready()\n");
++	err = genio_subscribe_caif_ready(genio_caif_ready_cb);
++	if (err < 0)
++		pr_debug("genio_subscribe_caif_ready failed:%d\n", err);
++
++	/* Collect the bit-mask for GENIO bits */
++	xshm_foreach_dev(collect_bits, &bits);
++	pr_devel("call genio_bit_alloc(%x,%x)\n", bits.setter, bits.getter);
++	err = genio_bit_alloc(bits.setter, bits.getter);
++	if (err < 0)
++		pr_debug("genio_bit_alloc failed:%d\n", err);
++	xshm_foreach_dev(handle_open, NULL);
++}
++EXPORT_SYMBOL(genio_ipc_ready_cb);
++
++int xshm_request_firmware(void *context, struct module *mod,
++		const char *img_name,
++		void (*cb)(const struct firmware *, void *))
++{
++	pr_debug("firmware request\n");
++	return request_firmware_nowait(mod,
++			FW_ACTION_NOHOTPLUG,
++			img_name,
++			&parent_dev->dev,
++			GFP_KERNEL,
++			context,
++			cb);
++}
++EXPORT_SYMBOL(xshm_request_firmware);
++
++static void parent_release(struct device *dev)
++{
++	struct xshm_parent *parent = container_of(dev, struct xshm_parent, dev);
++	WARN_ON(parent_dev != parent);
++	kfree(parent);
++	parent_dev = NULL;
++}
++
++static int __init xshm_init(void)
++{
++	int err;
++
++	pr_devel("Initializing\n");
++
++	parent_dev = kzalloc(sizeof(*parent_dev), GFP_KERNEL);
++	if (parent_dev  == NULL)
++		return -ENOMEM;
++
++	dev_set_name(&parent_dev->dev, "xshm");
++	parent_dev->dev.release = parent_release;
++
++	/* Pre-calculate inactivity timeout. */
++	if (xshm_inactivity_timeout != -1) {
++		parent_dev->inactivity_timeout =
++				xshm_inactivity_timeout * HZ / 1000;
++		if (parent_dev->inactivity_timeout == 0)
++			parent_dev->inactivity_timeout = 1;
++		else if (parent_dev->inactivity_timeout > NEXT_TIMER_MAX_DELTA)
++			parent_dev->inactivity_timeout = NEXT_TIMER_MAX_DELTA;
++	} else
++		parent_dev->inactivity_timeout = NEXT_TIMER_MAX_DELTA;
++
++	spin_lock_init(&parent_dev->timer_lock);
++	init_timer(&parent_dev->inactivity_timer);
++	parent_dev->inactivity_timer.data = 0L;
++	parent_dev->inactivity_timer.function = inactivity_tout;
++
++	err = device_register(&parent_dev->dev);
++	if (err)
++		goto err;
++
++	err = device_create_file(&parent_dev->dev, &dev_attr_ipc_ready);
++	if (err)
++		goto err_unreg;
++	err = device_create_file(&parent_dev->dev, &dev_attr_caif_ready);
++	if (err)
++		goto err_unreg;
++
++	return err;
++err_unreg:
++	pr_debug("initialization failed\n");
++	device_unregister(&parent_dev->dev);
++err:
++	return err;
++}
++
++static void handle_close(struct xshm_dev *dev, void *data)
++{
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++}
++
++void close_devices(void)
++{
++	xshm_foreach_dev(handle_close, NULL);
++}
++
++static void handle_reset(struct xshm_dev *dev, void *data)
++{
++	if (dev->close_cb)
++		dev->close_cb(dev->driver_data);
++	xshm_unregister_device(dev);
++}
++
++void xshm_reset(void)
++{
++	parent_dev->ready_for_ipc = false;
++	parent_dev->ready_for_caif = false;
++	xshm_foreach_dev(handle_reset, NULL);
++	reset_activity_tout();
++	genio_reset();
++}
++EXPORT_SYMBOL(xshm_reset);
++
++static void __exit xshm_exit(void)
++{
++	xshm_reset();
++	device_unregister(&parent_dev->dev);
++	genio_unsubscribe(READY_FOR_IPC_BIT);
++	genio_unsubscribe(READY_FOR_CAIF_BIT);
++}
++
++module_init(xshm_init);
++module_exit(xshm_exit);
 -- 
 1.7.1
 
