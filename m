@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab1LPCKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 21:10:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62715 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756420Ab1LPCKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 21:10:52 -0500
-Message-ID: <4EEAA923.5060104@cn.fujitsu.com>
-Date: Fri, 16 Dec 2011 10:12:51 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@kernel.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>, Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] cgroups: fix a css_set not found bug in cgroup_attach_proc
-References: <1323977803-5385-1-git-send-email-msb@chromium.org> <20111215212329.GH32002@google.com>
-In-Reply-To: <20111215212329.GH32002@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-16 10:10:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-16 10:10:13,
-	Serialize complete at 2011-12-16 10:10:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760019Ab1LPCM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 21:12:57 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:37187 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab1LPCM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 21:12:56 -0500
+Date: Fri, 16 Dec 2011 03:12:54 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, trenn@suse.de,
+        Andi Kleen <ak@linux.intel.com>, davej@redhat.com
+Subject: Re: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
+Message-ID: <20111216021254.GG14839@one.firstfloor.org>
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org> <1323304882-27953-8-git-send-email-andi@firstfloor.org> <20111208084958.GA23245@gere.osrc.amd.com> <20111208143725.GD24062@one.firstfloor.org> <4EEA9CB2.9020709@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEA9CB2.9020709@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> On Thu, Dec 15, 2011 at 11:36:43AM -0800, Mandeep Singh Baines wrote:
->> There is a BUG when migrating a PF_EXITING proc. Since css_set_prefetch()
->> is not called for the PF_EXITING case, find_existing_css_set() will return
->> NULL inside cgroup_task_migrate() causing a BUG.
->>
->> This bug is easy to reproduce. Create a zombie and echo its pid to
->> cgroup.procs.
->>
->> $ cat zombie.c
->> \#include <unistd.h>
->>
->> int main()
->> {
->>   if (fork())
->>       pause();
->>   return 0;
->> }
->> $
->>
->> We are hitting this bug pretty regularly on ChromeOS.
->>
->> This bug is already fixed by Tejun Heo's cgroup patchset which is
->> targetted for the next merge window:
->>
->> https://lkml.org/lkml/2011/11/1/356
->>
->> I've create a smaller patch here which just fixes this bug so that a
->> fix can be merged into the current release and stable.
+On Thu, Dec 15, 2011 at 05:19:46PM -0800, H. Peter Anvin wrote:
+> On 12/08/2011 06:37 AM, Andi Kleen wrote:
+> >> Well, there is CPUID_8000_0007_EDX[7] which denotes the presence
+> >> of the P-state registers. It probably could be added to
+> >> init_scattered_cpuid_features() but there's still special handling
+> >> needed for K8.
+> > 
+> > Dave is probably right that it's not worth moving the list.
+> > 
+> >> Can you do both a family and a feature bit test with the autoprobing
+> >> code?
+> > 
 > 
-> Looks safe to me.  Li?
-> 
+> Another similar question: is it possible to key a load on more than one
+> CPU feature?  It's fairly common that you need more than one feature for
+> a specific piece of code to function, and it would be good to be able to
+> represent it.
 
-It should be fine.
+Right now it's not possible. The driver just errors out if it can't
+find some additional capability.
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+I considered it originally, but all the cases I looked at were quite 
+obscure (unlikely to happen) so I opted for this simpler setup.
+
+-Andi
