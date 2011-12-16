@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759857Ab1LPAyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:54:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64893 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756247Ab1LPAyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:54:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="87108911"
-Subject: Re: [RFC] sched: Ensure cpu_power periodic update
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>
-Date: Thu, 15 Dec 2011 16:58:58 -0800
-In-Reply-To: <CAKfTPtB7Lib71iGrf=fGC5qtKFwD_qw3yz2OSkNy+CW7fCDtgw@mail.gmail.com>
-References: <1323717668-2143-1-git-send-email-vincent.guittot@linaro.org>
-	 <1323943710.18942.24.camel@twins>
-	 <CAKfTPtB7Lib71iGrf=fGC5qtKFwD_qw3yz2OSkNy+CW7fCDtgw@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323997138.1984.274.camel@sbsiddha-desk.sc.intel.com>
+	id S1759941Ab1LPAzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:55:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:36842 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759805Ab1LPAzR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 19:55:17 -0500
+Date: Fri, 16 Dec 2011 11:55:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: linux-next: build failure after merge of the target-merge tree
+Message-Id: <20111216115508.2ce6cf31f55ddd9a043e8b19@canb.auug.org.au>
+In-Reply-To: <CAO+b5-pyo=kR5JuWbQzMd6X70s4AwSWJV7dq3F9BvwLwTDPm7A@mail.gmail.com>
+References: <20111215132902.d0a90a93696702e09b0c60bf@canb.auug.org.au>
+	<CAO+b5-pyo=kR5JuWbQzMd6X70s4AwSWJV7dq3F9BvwLwTDPm7A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Dec_2011_11_55_08_+1100_e3f9WtBHwFNs9/A6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-15 at 05:36 -0800, Vincent Guittot wrote:
-> I'm using cyclictest to easily reproduce the problem on my dual cortex-A9
+--Signature=_Fri__16_Dec_2011_11_55_08_+1100_e3f9WtBHwFNs9/A6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So does the cyclictest itself exhibit the problem or running cyclictest
-with another workload showed the problem? In other words, what numbers
-of the workload did you see change with this patch?
+Hi Bart,
 
-> 
-> > Then again, its probably easier to keep update_group_power on this_cpu
-> > than to allow a remote update of your cpu_power.
-> >
-> 
-> This additional path for updating the cpu_power will only be used by
-> this_cpu because it is called by idle_balance. But we still have a
-> call to update_group_power by a remote cpu when nohz_idle_balance is
-> called.
+On Thu, 15 Dec 2011 12:26:49 +0100 Bart Van Assche <bvanassche@acm.org> wro=
+te:
+>
+> The (untested) patch below allowed me to make ib_srpt build again. By
 
-As Vincent mentioned, the current mainline kernel already updates the
-remote cpu's group_power in the nohz idle load balancing patch.
+I used that patch as a merge fix up today.
 
-Also with all the recent nohz idle load balancing using kick, on a
-dual-core system there may not be any nohz idle load balancing if
-multiple tasks wakeup, run for short time and go back to idle before the
-next tick. We rely on the wakeup balance to get it right in this case.
+> the way, has the patch "ib_srpt: Make compilation with BUG=3Dn proceed"
+> already been queued in the target-merge tree
+> (http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg10030.html)
+> ?
 
-thanks,
-suresh
+It not in the target-merge tree that I have in linux-next.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__16_Dec_2011_11_55_08_+1100_e3f9WtBHwFNs9/A6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO6pbsAAoJEECxmPOUX5FEE4AP/jdIgA3qIk0AMPlavXLnD1ME
+0fPk2WTOAVtwTEIAmo/zf7AD7SL+T6tL70mxqdTbMPlwFIB+xK368rhVsKbXP3qk
+6bXw1FMjpc1qdwAxXMgRpgbXI7VODlZsjf3RkQuCi2g5QTftxe1VvVcqbosP+CQC
+z+wlG070a2rYvyfkzfxVGpj/KEt/QzJcrjsKYDgrAl6ZOIKhPcdJmHOhQdLsb0si
+RKEtTA3Y+92V4oGqVSToBGZ+Rfz3kdg7QPbeBYgD9b8rOF2yuhx67Px1SS3Tu3fb
+3i3K/kn8ftQWj9UB2M9FYV0oyngfbtynIb+SCQbF5X3f/2lH3iUopE8xMcJbzUFo
+zKO7pZvd71lK75jN4n6glq1Z1bTWrpzz1ftLHvbFBcgZVPc2uny92CDMv2NyoUkA
+1o3ck9LABpBCoCKE3zj4JXxnNbZXplOwcO1bNG4F1aFSgcDdqHHFtYpavgSSXzC0
+czsncrdp0BT0BzkoRTw+LyT6bJk/VO8yWdcAbbc6LmdkQbrsHVpmzZBlsrGv1dUN
+TavNlpxEQxwOzVUhPj4domNgpcfDhEvdSdHRvSpY9Xm4rh5G9MCtcd9rA0H9xjrD
+VZRcOcEtQSUdACNZkTRJj/D0JtRlC83Vk/CI/0JLNLzh6DktJdd2oyGxcuLAyvDt
+lrTOzpDvWvO3u/CQ139S
+=VoI1
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Dec_2011_11_55_08_+1100_e3f9WtBHwFNs9/A6--
