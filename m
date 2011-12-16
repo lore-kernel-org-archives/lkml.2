@@ -1,233 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760045Ab1LPCiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 21:38:51 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:5714 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759764Ab1LPCiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 21:38:50 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] fix sleeping while atomic problem in sock mem_cgroup.
-Date: Fri, 16 Dec 2011 06:37:50 +0400
-Message-Id: <1324003070-6573-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
+	id S1760070Ab1LPCjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 21:39:39 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:9788
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759764Ab1LPCji convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 21:39:38 -0500
+X-SpamScore: -19
+X-BigFish: VS-19(zzbb2dI9371Ic89bh936eKfecM1432N98dKzz1202hzzz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Message-ID: <4EEAB076.30000@freescale.com>
+Date: Fri, 16 Dec 2011 10:44:06 +0800
+From: LiuShuo <b35362@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Scott Wood <scottwood@freescale.com>, <dedekind1@gmail.com>
+CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
+        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>   <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>   <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>  <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com> <4EE6BC9B.4000602@freescale.com> <4EE8612C.9050104@freescale.com> <4EE903CE.1010903@freescale.com>
+In-Reply-To: <4EE903CE.1010903@freescale.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we can't scan the proto_list to initialize sock cgroups, as it
-holds a rwlock, and we also want to keep the code generic enough to
-avoid calling the initialization functions of protocols directly,
-I propose we keep the interested parties in a separate list. This list
-is protected by a mutex so we can sleep and do the necessary allocations.
+于 2011年12月15日 04:15, Scott Wood 写道:
+> On 12/14/2011 02:41 AM, LiuShuo wrote:
+>> 于 2011年12月13日 10:46, LiuShuo 写道:
+>>> 于 2011年12月13日 05:30, Scott Wood 写道:
+>>>> On 12/12/2011 03:19 PM, Artem Bityutskiy wrote:
+>>>>> On Mon, 2011-12-12 at 15:15 -0600, Scott Wood wrote:
+>>>>>> NAND chips come from the factory with bad blocks marked at a certain
+>>>>>> offset into each page.  This offset is normally in the OOB area, but
+>>>>>> since we change the layout from "4k data, 128 byte oob" to "2k
+>>>>>> data, 64
+>>>>>> byte oob, 2k data, 64 byte oob" the marker is no longer in the
+>>>>>> oob.  On
+>>>>>> first use we need to migrate the markers so that they are still in
+>>>>>> the oob.
+>>>>> Ah, I see, thanks. Are you planning to implement in-kernel migration or
+>>>>> use a user-space tool?
+>>>> That's the kind of answer I was hoping to get from Shuo. :-)
+>>> OK, I try to do this. Wait for a couple of days.
+>>>
+>>> -LiuShuo
+>> I found it's too complex to do the migration in Linux driver.
+>>
+>> Maybe we can add a uboot command (e.g. nand bbmigrate) to do it, once is
+>> enough.
+> Any reason not to do it automatically on the first U-Boot bad block
+> scan, if the flash isn't marked as already migrated?
+>
+> Further discussion on the details of how to do it in U-Boot should move
+> to the U-Boot list.
+>
+>> And let user ensure it been completed before linux use the Nand flash chip.
+> I don't want to trust the user here.  It's too easy to skip it, and
+> things will appear to work, but have subtle problems.
+>
+>> Even if we don't do the migration, the bad block also can be marked as bad
+>> by wearing. So, do we really need to take much time to implement it ?
+>> (code looks too complex.)
+> It is not acceptable to ignore factory bad block markers just because
+> some methods of using the flash may eventually detect an error (possibly
+> after data is lost -- no guarantee that the badness is ECC-correctable)
+> and mark the block bad again.
+>
+> If you don't feel up to the task, I can look at it, but won't have time
+> until January.
+hi Scott,
+It's really hard to me and I have much other works to do now. Thanks for 
+your help.
 
-Also fixes a reference problem found by Randy Dunlap's randconfig.
+hi Artem,
+Could this patch be applied now and we make a independent patch for  bad 
+block information
+migration later?
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/memcontrol.h   |    4 +++
- include/net/sock.h           |    5 +---
- include/net/tcp_memcontrol.h |    2 +
- mm/memcontrol.c              |   52 ++++++++++++++++++++++++++++++++++++++++++
- net/core/sock.c              |   48 +++++++++-----------------------------
- 5 files changed, 70 insertions(+), 41 deletions(-)
+-LiuShuo
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 9b296ea..1edd0e3 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -390,6 +390,10 @@ enum {
- 	OVER_LIMIT,
- };
- 
-+struct proto;
-+void register_sock_cgroup(struct proto *prot);
-+void unregister_sock_cgroup(struct proto *prot);
-+
- #ifdef CONFIG_INET
- struct sock;
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 6fe0dae..f8237a3 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -64,10 +64,6 @@
- #include <net/dst.h>
- #include <net/checksum.h>
- 
--struct cgroup;
--struct cgroup_subsys;
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
- /*
-  * This structure really needs to be cleaned up.
-  * Most of it is for TCP, and not used by any of
-@@ -858,6 +854,7 @@ struct proto {
- 	void			(*destroy_cgroup)(struct cgroup *cgrp,
- 						  struct cgroup_subsys *ss);
- 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
-+	struct list_head	cgroup_node;
- #endif
- };
- 
-diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
-index 3512082..5aa7c4b 100644
---- a/include/net/tcp_memcontrol.h
-+++ b/include/net/tcp_memcontrol.h
-@@ -11,6 +11,8 @@ struct tcp_memcontrol {
- 	int tcp_memory_pressure;
- };
- 
-+struct cgroup;
-+struct cgroup_subsys;
- struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
- int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
- void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7266202..6ee250d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4742,6 +4742,58 @@ static struct cftype kmem_cgroup_files[] = {
- 	},
- };
- 
-+static DEFINE_MUTEX(cgroup_proto_list_lock);
-+static LIST_HEAD(cgroup_proto_list);
-+
-+static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+	int ret = 0;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
-+		if (proto->init_cgroup) {
-+			ret = proto->init_cgroup(cgrp, ss);
-+			if (ret)
-+				goto out;
-+		}
-+	}
-+
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+out:
-+	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+	return ret;
-+}
-+
-+static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct proto *proto;
-+
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
-+		if (proto->destroy_cgroup)
-+			proto->destroy_cgroup(cgrp, ss);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void register_sock_cgroup(struct proto *prot)
-+{
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_add(&prot->cgroup_node, &cgroup_proto_list);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
-+void unregister_sock_cgroup(struct proto *prot)
-+{
-+	mutex_lock(&cgroup_proto_list_lock);
-+	list_del(&prot->cgroup_node);
-+	mutex_unlock(&cgroup_proto_list_lock);
-+}
-+
- static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
- {
- 	int ret = 0;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5a6a906..3728b50 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -139,43 +139,6 @@
- static DEFINE_RWLOCK(proto_list_lock);
- static LIST_HEAD(proto_list);
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
--int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--	int ret = 0;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry(proto, &proto_list, node) {
--		if (proto->init_cgroup) {
--			ret = proto->init_cgroup(cgrp, ss);
--			if (ret)
--				goto out;
--		}
--	}
--
--	read_unlock(&proto_list_lock);
--	return ret;
--out:
--	list_for_each_entry_continue_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--	return ret;
--}
--
--void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
--{
--	struct proto *proto;
--
--	read_lock(&proto_list_lock);
--	list_for_each_entry_reverse(proto, &proto_list, node)
--		if (proto->destroy_cgroup)
--			proto->destroy_cgroup(cgrp, ss);
--	read_unlock(&proto_list_lock);
--}
--#endif
--
- /*
-  * Each address family might have different locking rules, so we have
-  * one slock key per address family:
-@@ -2483,6 +2446,12 @@ int proto_register(struct proto *prot, int alloc_slab)
- 	list_add(&prot->node, &proto_list);
- 	assign_proto_idx(prot);
- 	write_unlock(&proto_list_lock);
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (prot->proto_cgroup)
-+		register_sock_cgroup(prot);
-+#endif
-+
- 	return 0;
- 
- out_free_timewait_sock_slab_name:
-@@ -2510,6 +2479,11 @@ void proto_unregister(struct proto *prot)
- 	list_del(&prot->node);
- 	write_unlock(&proto_list_lock);
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (prot->proto_cgroup != NULL)
-+		unregister_sock_cgroup(prot);
-+#endif
-+
- 	if (prot->slab != NULL) {
- 		kmem_cache_destroy(prot->slab);
- 		prot->slab = NULL;
--- 
-1.7.6.4
+> -Scott
+
 
