@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760766Ab1LPU5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:57:32 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:3564 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752411Ab1LPU5Y (ORCPT
+	id S1760771Ab1LPU7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:59:46 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63904 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab1LPU7j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:57:24 -0500
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bhz2fh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-X-FB-SS: 0,
-Message-ID: <4EEBB07D.2070905@am.sony.com>
-Date: Fri, 16 Dec 2011 12:56:29 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Fri, 16 Dec 2011 15:59:39 -0500
 MIME-Version: 1.0
-To: "Rowand, Frank" <Frank_Rowand@sonyusa.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+In-Reply-To: <4EEB8EAE.6010306@zytor.com>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+	<4EA09EA2.3030203@zytor.com>
+	<1319149574.13035.6.camel@jshin-Toonie>
+	<4EE9266A.90200@zytor.com>
+	<20111214231425.GA18068@jshin-Toonie>
+	<20111216162004.GC18068@jshin-Toonie>
+	<4EEB8320.4010809@oracle.com>
+	<4EEB85F1.7050903@zytor.com>
+	<CAE9FiQXTeJ2XZy-Pjwvdb4Fp5wb_XLq88tC-2M_3RbjSLk5d4A@mail.gmail.com>
+	<4EEB8EAE.6010306@zytor.com>
+Date: Fri, 16 Dec 2011 12:59:38 -0800
+X-Google-Sender-Auth: gDbWIowPqpXilZBOBTf_YygvbIw
+Message-ID: <CAE9FiQUNwK5=Nos7Ce_DS1aSXgf0WNUgE=5HXnt4E01JWYbWjQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-References: <4EEAB90D.3050504@am.sony.com>
-In-Reply-To: <4EEAB90D.3050504@am.sony.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/11 19:20, Frank Rowand wrote:
-> 
-> ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
-> (application specific ID). The number of ASIDs is limited to 256 and
-> the allocation algorithm requires IPIs when all the ASIDs have been
-> used.  The IPIs require interrupts enabled during context switch for
-> deadlock avoidance.
-> 
-> The RT patch mm-protect-activate-switch-mm.patch disables irqs around
-> activate_mm() and switch_mm(), which are the portion of the ARMv6
-> context switch that require interrupts enabled.
-> 
-> The solution for the ARMv6 processors could be to _not_ disable irqs.
-> A more conservative solution is to provide the same environment that
-> the scheduler provides, that is preempt_disable().  This is more
-> resilient for possible future changes to the ARM context switch code
-> that is not aware of the RT patches.
-> 
-> This patch will conflict slightly with Catalin's patch set to remove
-> __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
-> 
->    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
-> 
-> When Catalin's patch set is accepted, this RT patch will need to reverse
-> the change in patch 6 to arch/arm/include/asm/system.h:
-> 
->    -#ifndef CONFIG_CPU_HAS_ASID
->    -#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
->    -#endif
-> 
-> Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-> 
-> ---
->  fs/exec.c        |    8 	8 +	0 -	0 !
->  mm/mmu_context.c |    8 	8 +	0 -	0 !
->  2 files changed, 16 insertions(+)
-> 
-> Index: b/fs/exec.c
-> ===================================================================
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -837,12 +837,20 @@ static int exec_mmap(struct mm_struct *m
->  		}
->  	}
->  	task_lock(tsk);
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+On Fri, Dec 16, 2011 at 10:32 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Well, there are two options for memory hotplug: either we always leave
+> address space that can be used for memory hotplug mapped at all times, or we
+> need to track it anyway.  Either way we need to know where there regions
+> are.  Am I correct that right now we always map memory hotpluggable regions,
+> being below the top pfn?
 
-Self critique...  I really, really dislike this ifdef because it will
-fail silently if the includes are changed and as a result the include file that
-defines __ARCH_WANT_INTERRUPTS_ON_CTXSW (arch/arm/include/asm/system.h) is not
-included.
+in arch/x86/mm/init_64.c::arch_add_memory()
+it will call init_memory_mapping to map new added memory.
+and will update max_pfn_mapped, max-pfn, max_low_pfn.
 
-Does anyone have any brilliant ideas for an alternative approach?
+Thanks
 
--Frank
-
+Yinghai Lu
