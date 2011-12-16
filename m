@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760846Ab1LPVik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 16:38:40 -0500
-Received: from mga03.intel.com ([143.182.124.21]:7139 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760837Ab1LPVia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 16:38:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="86597822"
-From: Andi Kleen <andi@firstfloor.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] Add assertion checking macros
-References: <20111216141357.24668.49793.stgit@warthog.procyon.org.uk>
-	<20111216141417.24668.15693.stgit@warthog.procyon.org.uk>
-Date: Fri, 16 Dec 2011 13:36:53 -0800
-In-Reply-To: <20111216141417.24668.15693.stgit@warthog.procyon.org.uk> (David
-	Howells's message of "Fri, 16 Dec 2011 14:14:17 +0000")
-Message-ID: <m21us4qjuy.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760833Ab1LPVnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 16:43:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36991 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab1LPVnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 16:43:43 -0500
+X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ZLzRVHDcXY0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=0CWTxZ2yh9-9CWDRXIcA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324071820.23971.131.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: frank.rowand@am.sony.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        catalin.marinas@arm.com
+Date: Fri, 16 Dec 2011 16:43:40 -0500
+In-Reply-To: <1324029272.18942.73.camel@twins>
+References: <4EEAB90D.3050504@am.sony.com> <1324029272.18942.73.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
->
->      There is no need to display val here in the case the expression fails
->      since it can only be 0.  If this fails, it produces an error like the
->      following:
->
-> 	------------[ cut here ]------------
-> 	kernel BUG at fs/fscache/main.c:109!
-> 	ASSERTION FAILED
+On Fri, 2011-12-16 at 10:54 +0100, Peter Zijlstra wrote:
 
-It would be nice to display the expression here like an user space
-assert. While it can be looked up in the source it would
-make quick eyeballing easier. 
+> 
+> We could just merge Catalin's stuff in -rt to give it a test ride and
+> see if anything horrible happens.. :-)
 
-Probably wouldn't cost too much additional text size?
+I think Frank needs something in the stable-rt too. And that's not a
+place to give experimental stuff a test ride.
 
->
->  (e) ASSERTIFCMP(C, X, OP, Y)
->
->      This is a combination of ASSERTIF and ASSERTCMP.  For example:
->
-> 	ASSERTIFCMP(test_bit(FSCACHE_OP_EXCLUSIVE, &op->flags),
-> 		    object->n_exclusive, >, 0);
+I'll let Thomas give the final say in what goes into stable. I prefer to
+not have things in stable that are not in mainline or in Thomas's tree.
+But if Catalin's stuff is fine for his tree, I'll look for the non risky
+solution for the stable-rt tree.
 
-You probably want a checkpatch rule with those to only allow a few
-selected functions like test_bit. Otherwise people will put real side
-effects in there.
 
--Andi
+-- Steve
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+
