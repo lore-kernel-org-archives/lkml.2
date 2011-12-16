@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965009Ab1LPT4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:56:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45465 "EHLO mx2.suse.de"
+	id S1760732Ab1LPTzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:55:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45454 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964904Ab1LPTxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:53:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:13 2011
-Message-Id: <20111216194213.007006075@clark.kroah.org>
+	id S964909Ab1LPTx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:53:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:12 2011
+Message-Id: <20111216194212.624178254@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:45 -0800
+Date: Fri, 16 Dec 2011 11:40:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [38/45] ext4: handle EOF correctly in ext4_bio_write_page()
+Subject: [36/45] ext4: avoid hangs in ext4_da_should_update_i_disksize()
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 5a0dc7365c240795bf190766eba7a27600be3b3e upstream.
+commit ea51d132dbf9b00063169c1159bee253d9649224 upstream.
 
-We need to zero out part of a page which beyond EOF before setting uptodate,
-otherwise, mapread or write will see non-zero data beyond EOF.
+If the pte mapping in generic_perform_write() is unmapped between
+iov_iter_fault_in_readable() and iov_iter_copy_from_user_atomic(), the
+"copied" parameter to ->end_write can be zero. ext4 couldn't cope with
+it with delayed allocations enabled. This skips the i_disksize
+enlargement logic if copied is zero and no new data was appeneded to
+the inode.
 
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+ gdb> bt
+ #0  0xffffffff811afe80 in ext4_da_should_update_i_disksize (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x1\
+ 08000, len=0x1000, copied=0x0, page=0xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2467
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ #2  0xffffffff810d97f1 in generic_perform_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value o\
+ ptimized out>, pos=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2440
+ #3  generic_file_buffered_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value optimized out>, p\
+ os=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2482
+ #4  0xffffffff810db5d1 in __generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, ppos=0\
+ xffff88001e26be40) at mm/filemap.c:2600
+ #5  0xffffffff810db853 in generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=<value optimi\
+ zed out>, pos=<value optimized out>) at mm/filemap.c:2632
+ #6  0xffffffff811a71aa in ext4_file_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, pos=0x108000) a\
+ t fs/ext4/file.c:136
+ #7  0xffffffff811375aa in do_sync_write (filp=0xffff88003f606a80, buf=<value optimized out>, len=<value optimized out>, \
+ ppos=0xffff88001e26bf48) at fs/read_write.c:406
+ #8  0xffffffff81137e56 in vfs_write (file=0xffff88003f606a80, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x4\
+ 000, pos=0xffff88001e26bf48) at fs/read_write.c:435
+ #9  0xffffffff8113816c in sys_write (fd=<value optimized out>, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x\
+ 4000) at fs/read_write.c:487
+ #10 <signal handler called>
+ #11 0x00007f120077a390 in __brk_reservation_fn_dmi_alloc__ ()
+ #12 0x0000000000000000 in ?? ()
+ gdb> print offset
+ $22 = 0xffffffffffffffff
+ gdb> print idx
+ $23 = 0xffffffff
+ gdb> print inode->i_blkbits
+ $24 = 0xc
+ gdb> up
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ 2512                    if (ext4_da_should_update_i_disksize(page, end)) {
+ gdb> print start
+ $25 = 0x0
+ gdb> print end
+ $26 = 0xffffffffffffffff
+ gdb> print pos
+ $27 = 0x108000
+ gdb> print new_i_size
+ $28 = 0x108000
+ gdb> print ((struct ext4_inode_info *)((char *)inode-((int)(&((struct ext4_inode_info *)0)->vfs_inode))))->i_disksize
+ $29 = 0xd9000
+ gdb> down
+ 2467            for (i = 0; i < idx; i++)
+ gdb> print i
+ $30 = 0xd44acbee
+
+This is 100% reproducible with some autonuma development code tuned in
+a very aggressive manner (not normal way even for knumad) which does
+"exotic" changes to the ptes. It wouldn't normally trigger but I don't
+see why it can't happen normally if the page is added to swap cache in
+between the two faults leading to "copied" being zero (which then
+hangs in ext4). So it should be fixed. Especially possible with lumpy
+reclaim (albeit disabled if compaction is enabled) as that would
+ignore the young bits in the ptes.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/page-io.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ fs/ext4/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -405,6 +405,18 @@ int ext4_bio_write_page(struct ext4_io_s
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3231,7 +3231,7 @@ static int ext4_da_write_end(struct file
+ 	 */
  
- 		block_end = block_start + blocksize;
- 		if (block_start >= len) {
-+			/*
-+			 * Comments copied from block_write_full_page_endio:
-+			 *
-+			 * The page straddles i_size.  It must be zeroed out on
-+			 * each and every writepage invocation because it may
-+			 * be mmapped.  "A file is mapped in multiples of the
-+			 * page size.  For a file that is not a multiple of
-+			 * the  page size, the remaining memory is zeroed when
-+			 * mapped, and writes to that region are not written
-+			 * out to the file."
-+			 */
-+			zero_user_segment(page, block_start, block_end);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+ 	new_i_size = pos + copied;
+-	if (new_i_size > EXT4_I(inode)->i_disksize) {
++	if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+ 		if (ext4_da_should_update_i_disksize(page, end)) {
+ 			down_write(&EXT4_I(inode)->i_data_sem);
+ 			if (new_i_size > EXT4_I(inode)->i_disksize) {
 
 
