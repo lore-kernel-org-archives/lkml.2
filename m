@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759958Ab1LPAdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:33:40 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44082 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab1LPAdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:33:39 -0500
-Date: Fri, 16 Dec 2011 00:33:33 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH 1/4] ACPI: EC: Add ec_get_handle()
-Message-ID: <20111216003333.GA18489@srcf.ucam.org>
-References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
- <1323972371-13189-2-git-send-email-seth.forshee@canonical.com>
- <201112160122.36100.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112160122.36100.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1759979Ab1LPAdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:33:44 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43564 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756418Ab1LPAdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 19:33:42 -0500
+Message-ID: <1323995620.18603.4.camel@joe2Laptop>
+Subject: Re: [PATCH 14/15] module_param: make bool parameters really bool
+ (net & drivers/net)
+From: Joe Perches <joe@perches.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>
+Date: Thu, 15 Dec 2011 16:33:40 -0800
+In-Reply-To: <87k45xqvfs.fsf@rustcorp.com.au>
+References: <877h1ysenl.fsf@rustcorp.com.au>
+	 <1323920752.29500.11.camel@joe2Laptop> <87k45xqvfs.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 01:22:35AM +0100, Thomas Renninger wrote:
+On Fri, 2011-12-16 at 09:44 +1030, Rusty Russell wrote:
+> I could, but as I was touching 457 files, so I was aiming for minimal
+> changes.
 
-> I think best is to move the thinkpad implementation of getting
-> ACPI handles based on HIDs to osl.c and make it global.
-> I'll send patches.
-> Please review them carefully, they are only compile tested.
+> Dave, did you want a true/false cleanup too?
 
-The ec driver is already finding the hardware on the basis of the HID - 
-is there any reason to do this twice rather than just exporting the 
-information the ec driver already has?
+Hi Rusty.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Did you perform these transforms via spatch?
+If not, here's a trivial spatch script for those files.
+
+$ cat bool.cocci
+@@
+bool b
+@@
+-b = 0
++b = false
+@@
+bool b
+@@
+-b = 1
++b = true
+
+
+
