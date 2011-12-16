@@ -1,158 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964900Ab1LPWFE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 17:05:04 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:26131 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932534Ab1LPWE6 (ORCPT
+	id S1760891Ab1LPWTP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 17:19:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12142 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756644Ab1LPWTJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 17:04:58 -0500
-Date: Fri, 16 Dec 2011 17:03:42 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ke.yu@intel.com, kevin.tian@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
-Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad@kernel.org,
-        stefan.bader@canonical.com, Ian.Campbell@citrix.com,
-        mike.mcclurg@citrix.com, liang.tang@oracle.com
-Subject: Re: [PATCH 3/8] ACPI: processor: add
- __acpi_processor_[un]register_driver helpers.
-Message-ID: <20111216220342.GC9832@phenom.dumpdata.com>
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
- <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com>
+	Fri, 16 Dec 2011 17:19:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="87443136"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, Greg KH <greg@kroah.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Date: Fri, 16 Dec 2011 14:19:07 -0800
+Subject: RE: [30/45] hwmon: (coretemp) Fix oops on CPU offlining
+Thread-Topic: [30/45] hwmon: (coretemp) Fix oops on CPU offlining
+Thread-Index: Acy8LDyUqidqEdysS3O7fYiPZWVw8gAFG2AA
+Message-ID: <43F901BD926A4E43B106BF17856F075501A4D686BE@orsmsx508.amr.corp.intel.com>
+References: <20111216194603.GA15028@kroah.com>
+ <20111216194211.684013527@clark.kroah.org>
+In-Reply-To: <20111216194211.684013527@clark.kroah.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4EEBC080.0113,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 12:20:59PM -0500, Konrad Rzeszutek Wilk wrote:
-> From: Tang Liang <liang.tang@oracle.com>
-> 
-> This patch implement __acpi_processor_[un]register_driver helper,
-> so we can registry override processor driver function. Specifically
-> the Xen processor driver.
 
-Liang,
 
-Is the reason we are doing this b/c we need to call acpi_bus_register_driver
-and inhibit the registration of 'acpi_processor_driver' ?
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, December 16, 2011 11:41 AM
+> To: linux-kernel@vger.kernel.org; stable@vger.kernel.org;
+> stable@kernel.org
+> Cc: torvalds@linux-foundation.org; akpm@linux-foundation.org;
+> alan@lxorguk.ukuu.org.uk; Guenter Roeck; Greg KH; Jean Delvare; R,
+> Durgadoss; Yu, Fenghua
+> Subject: [30/45] hwmon: (coretemp) Fix oops on CPU offlining
+> 
+> 3.0-stable review patch.  If anyone has any objections, please let me
+> know.
+> 
+> ------------------
+> 
+> This is for stable kernel branch 3.0 only. Previous and later versions
+> have different code paths and are not affected by this bug.
+> 
+> This is the same fix as "hwmon: (coretemp) Fix oops on driver load"
+> but for the CPU offlining case. Sorry for missing it at first.
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> Cc: Durgadoss R <durgadoss.r@intel.com>
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-And the reason we don't want 'acpi_processor_driver' to run is b/c of what?
-If the cpuidle is disabled what is the harm of running the 'acpi_processor_driver'
-driver?
+Acked-by: Fenghua Yu <fenghua.yu@intel.com>
 
-> 
-> By default the values are set to the native one.
-> 
-> Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/acpi/processor_driver.c |   35 +++++++++++++++++++++++++++++------
->  include/acpi/processor.h        |    6 +++++-
->  2 files changed, 34 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> index 211c078..55f0b89 100644
-> --- a/drivers/acpi/processor_driver.c
-> +++ b/drivers/acpi/processor_driver.c
-> @@ -90,6 +90,11 @@ static const struct acpi_device_id processor_device_ids[] = {
->  };
->  MODULE_DEVICE_TABLE(acpi, processor_device_ids);
->  
-> +int (*__acpi_processor_register_driver)(void) = acpi_processor_register_driver;
-> +void (*__acpi_processor_unregister_driver)(void) \
-> +	= acpi_processor_unregister_driver;
-> +
-> +
->  static struct acpi_driver acpi_processor_driver = {
->  	.name = "processor",
->  	.class = ACPI_PROCESSOR_CLASS,
-> @@ -779,6 +784,22 @@ void acpi_processor_uninstall_hotplug_notify(void)
->  	unregister_hotcpu_notifier(&acpi_cpu_notifier);
->  }
->  
-> +int acpi_processor_register_driver(void)
-> +{
-> +	int result = 0;
-> +
-> +	result = acpi_bus_register_driver(&acpi_processor_driver);
-> +	return result;
-> +}
-> +
-> +void acpi_processor_unregister_driver(void)
-> +{
-> +	acpi_bus_unregister_driver(&acpi_processor_driver);
-> +
-> +	cpuidle_unregister_driver(&acpi_idle_driver);
-> +
-> +	return;
-> +}
->  /*
->   * We keep the driver loaded even when ACPI is not running.
->   * This is needed for the powernow-k8 driver, that works even without
-> @@ -794,9 +815,11 @@ static int __init acpi_processor_init(void)
->  
->  	memset(&errata, 0, sizeof(errata));
->  
-> -	result = acpi_bus_register_driver(&acpi_processor_driver);
-> -	if (result < 0)
-> -		return result;
-> +	if (__acpi_processor_register_driver) {
-> +		result = __acpi_processor_register_driver();
-> +		if (result < 0)
-> +			return result;
-> +	}
->  
->  	acpi_processor_install_hotplug_notify();
->  
-> @@ -809,6 +832,7 @@ static int __init acpi_processor_init(void)
->  	return 0;
->  }
->  
-> +
->  static void __exit acpi_processor_exit(void)
->  {
->  	if (acpi_disabled)
-> @@ -820,9 +844,8 @@ static void __exit acpi_processor_exit(void)
->  
->  	acpi_processor_uninstall_hotplug_notify();
->  
-> -	acpi_bus_unregister_driver(&acpi_processor_driver);
-> -
-> -	cpuidle_unregister_driver(&acpi_idle_driver);
-> +	if (__acpi_processor_unregister_driver)
-> +		__acpi_processor_unregister_driver();
->  
->  	return;
->  }
-> diff --git a/include/acpi/processor.h b/include/acpi/processor.h
-> index bd99fb6..969cbc9 100644
-> --- a/include/acpi/processor.h
-> +++ b/include/acpi/processor.h
-> @@ -225,6 +225,9 @@ struct acpi_processor_errata {
->  	} piix4;
->  };
->  
-> +extern int (*__acpi_processor_register_driver)(void);
-> +extern void (*__acpi_processor_unregister_driver)(void);
-> +
->  extern int acpi_processor_preregister_performance(struct
->  						  acpi_processor_performance
->  						  __percpu *performance);
-> @@ -242,7 +245,8 @@ int acpi_processor_notify_smm(struct module *calling_module);
->  
->  void acpi_processor_install_hotplug_notify(void);
->  void acpi_processor_uninstall_hotplug_notify(void);
-> -
-> +int acpi_processor_register_driver(void);
-> +void acpi_processor_unregister_driver(void);
->  int acpi_processor_add(struct acpi_device *device);
->  int acpi_processor_remove(struct acpi_device *device, int type);
->  void acpi_processor_notify(struct acpi_device *device, u32 event);
-> -- 
-> 1.7.7.3
