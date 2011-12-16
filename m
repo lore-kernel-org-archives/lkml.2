@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964805Ab1LPUEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:04:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45066 "EHLO mx2.suse.de"
+	id S964926Ab1LPUE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:04:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45058 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab1LPTu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:50:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:59 2011
-Message-Id: <20111216194558.912910799@clark.kroah.org>
+	id S932761Ab1LPTuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:50:21 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:01 2011
+Message-Id: <20111216194601.772728446@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:27 -0800
+Date: Fri, 16 Dec 2011 11:45:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [30/53] hwmon: (jz4740) fix signedness bug
+        alan@lxorguk.ukuu.org.uk, Miklos Szeredi <mszeredi@suse.cz>,
+        Josef Bacik <josef@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [47/53] fuse: fix llseek bug
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-commit 0b57d7602b68f7b2786b2f0e22da39cbd4139a95 upstream.
+commit b48c6af2086ab2ba8a9c9b6ce9ecb34592ce500c upstream.
 
-wait_for_completion_interruptible_timeout() may return negative value.
-In this case, checking if (t > 0)  will return true if t is unsigned.
+The test in fuse_file_llseek() "not SEEK_CUR or not SEEK_SET" always evaluates
+to true.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+This was introduced in 3.1 by commit 06222e49 (fs: handle SEEK_HOLE/SEEK_DATA
+properly in all fs's that define their own llseek) and changed the behavior of
+SEEK_CUR and SEEK_SET to always retrieve the file attributes.  This is a
+performance regression.
+
+Fix the test so that it makes sense.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: Josef Bacik <josef@redhat.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/jz4740-hwmon.c |    2 +-
+ fs/fuse/file.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/jz4740-hwmon.c
-+++ b/drivers/hwmon/jz4740-hwmon.c
-@@ -59,7 +59,7 @@ static ssize_t jz4740_hwmon_read_adcin(s
- {
- 	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
- 	struct completion *completion = &hwmon->read_completion;
--	unsigned long t;
-+	long t;
- 	unsigned long val;
- 	int ret;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1556,7 +1556,7 @@ static loff_t fuse_file_llseek(struct fi
+ 	struct inode *inode = file->f_path.dentry->d_inode;
  
+ 	mutex_lock(&inode->i_mutex);
+-	if (origin != SEEK_CUR || origin != SEEK_SET) {
++	if (origin != SEEK_CUR && origin != SEEK_SET) {
+ 		retval = fuse_update_attributes(inode, NULL, file, NULL);
+ 		if (retval)
+ 			goto exit;
 
 
