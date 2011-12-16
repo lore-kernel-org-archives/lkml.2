@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab1LPHT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 02:19:59 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:46029
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756067Ab1LPHT5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 02:19:57 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dajun <dajun.chen@diasemi.com>
-Subject: RE: linux-next: build failure after merge of the regmap tree
-Thread-Topic: linux-next: build failure after merge of the regmap tree
-Thread-Index: AQHMu1bjcS+h6HxWskeAYdU7g1Upj5XeDlvg
-Date: Fri, 16 Dec 2011 07:19:50 +0000
-Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1F9D1AB5@KCHJEXMB01.kpit.com>
-References: <C3AE124F08223B42BC95AEB82F0F6CED1F9D0895@KCHJEXMB01.kpit.com>
- <1323941146.32031.49.camel@dhruva>
- <CACxGe6tfxGToC2ScUdQv7KNu2xdhxA4ZG=Ms=oZZCQ+2A-aiTQ@mail.gmail.com>
-In-Reply-To: <CACxGe6tfxGToC2ScUdQv7KNu2xdhxA4ZG=Ms=oZZCQ+2A-aiTQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.10.38.22]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+	id S1759534Ab1LPHhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 02:37:10 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:48105 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756364Ab1LPHhI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 02:37:08 -0500
+Date: Fri, 16 Dec 2011 02:34:54 -0500 (EST)
+Message-Id: <20111216.023454.1487467569404744896.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111216120758.60f967a88c934890e77fa7bd@canb.auug.org.au>
+References: <20111216120758.60f967a88c934890e77fa7bd@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 15 Dec 2011 23:35:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 16 Dec 2011 12:07:58 +1100
 
+> Hi all,
+> 
+> Today's linux-next merge of the net-next tree got a conflict in
+> net/ipv6/route.c between commit bb3c36863e80 ("ipv6: Check dest prefix
+> length on original route not copied one in rt6_alloc_cow()") from the net
+> tree and commit 3830847396fa ("ipv6: Various cleanups in route.c") from
+> the net-next tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
------Original Message-----
-From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-Sent: Thursday, December 15, 2011 11:55 PM
-To: Ashish Jangam
-Cc: Stephen Rothwell; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Mark Brown; Dajun
-Subject: Re: linux-next: build failure after merge of the regmap tree
-
-On Thu, Dec 15, 2011 at 2:25 AM, Ashish Jangam
-<ashish.jangam@kpitcummins.com> wrote:
-> Fixes DA9052 GPIO errors.
->
-> This patch is functionally tested on Samsung SMDKV6410.
->
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
->  drivers/gpio/gpio-da9052.c      |   37 ++++--------------------------
->  include/linux/mfd/da9052/gpio.h |   48 +++++++++++++++++++++++++++++++++++++++
-
-gpio-da9052.c is the only users of mfd/da9052/gpio.h.  Why is this
-include file needed?  The #defines can simply stay in the .c file.
-I've picked up the patch, but modified it to keep the header defines
-in the .c file.  If there is a reason this won't work, then please let
-me know.
-
-This header file is shared between GPIO and LED module. I have already 
-posted this LED long back got ACK but did not got merged due to its
-dependency on MFD module.  
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
-
-
+Yep, thanks, I just resolved this by merging net into net-next.
