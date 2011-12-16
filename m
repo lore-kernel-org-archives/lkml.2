@@ -1,92 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760063Ab1LPCak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 21:30:40 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:36517 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab1LPCai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 21:30:38 -0500
-Date: Fri, 16 Dec 2011 13:30:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: linux-next: manual merge of the iommu tree with the pci-current
- tree
-Message-Id: <20111216133026.8bac235bb8495cfd8669b761@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL"
+	id S1760045Ab1LPCiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 21:38:51 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:5714 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759764Ab1LPCiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 21:38:50 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] fix sleeping while atomic problem in sock mem_cgroup.
+Date: Fri, 16 Dec 2011 06:37:50 +0400
+Message-Id: <1324003070-6573-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since we can't scan the proto_list to initialize sock cgroups, as it
+holds a rwlock, and we also want to keep the code generic enough to
+avoid calling the initialization functions of protocols directly,
+I propose we keep the interested parties in a separate list. This list
+is protected by a mutex so we can sleep and do the necessary allocations.
 
-Hi Joerg,
+Also fixes a reference problem found by Randy Dunlap's randconfig.
 
-Today's linux-next merge of the iommu tree got a conflict in
-drivers/pci/hotplug/acpiphp_glue.c between commit 619a5182d1f3 ("PCI
-hotplug: Always allow acpiphp to handle non-PCIe bridges") from the
-pci-current tree and commit d90116ea38f7 ("PCI/ACPI: Make acpiphp ignore
-root bridges using SHPC native hotplug") from the iommu tree.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/memcontrol.h   |    4 +++
+ include/net/sock.h           |    5 +---
+ include/net/tcp_memcontrol.h |    2 +
+ mm/memcontrol.c              |   52 ++++++++++++++++++++++++++++++++++++++++++
+ net/core/sock.c              |   48 +++++++++-----------------------------
+ 5 files changed, 70 insertions(+), 41 deletions(-)
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 9b296ea..1edd0e3 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -390,6 +390,10 @@ enum {
+ 	OVER_LIMIT,
+ };
+ 
++struct proto;
++void register_sock_cgroup(struct proto *prot);
++void unregister_sock_cgroup(struct proto *prot);
++
+ #ifdef CONFIG_INET
+ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 6fe0dae..f8237a3 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -64,10 +64,6 @@
+ #include <net/dst.h>
+ #include <net/checksum.h>
+ 
+-struct cgroup;
+-struct cgroup_subsys;
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ /*
+  * This structure really needs to be cleaned up.
+  * Most of it is for TCP, and not used by any of
+@@ -858,6 +854,7 @@ struct proto {
+ 	void			(*destroy_cgroup)(struct cgroup *cgrp,
+ 						  struct cgroup_subsys *ss);
+ 	struct cg_proto		*(*proto_cgroup)(struct mem_cgroup *memcg);
++	struct list_head	cgroup_node;
+ #endif
+ };
+ 
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+index 3512082..5aa7c4b 100644
+--- a/include/net/tcp_memcontrol.h
++++ b/include/net/tcp_memcontrol.h
+@@ -11,6 +11,8 @@ struct tcp_memcontrol {
+ 	int tcp_memory_pressure;
+ };
+ 
++struct cgroup;
++struct cgroup_subsys;
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7266202..6ee250d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4742,6 +4742,58 @@ static struct cftype kmem_cgroup_files[] = {
+ 	},
+ };
+ 
++static DEFINE_MUTEX(cgroup_proto_list_lock);
++static LIST_HEAD(cgroup_proto_list);
++
++static int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++	int ret = 0;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry(proto, &cgroup_proto_list, cgroup_node) {
++		if (proto->init_cgroup) {
++			ret = proto->init_cgroup(cgrp, ss);
++			if (ret)
++				goto out;
++		}
++	}
++
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++out:
++	list_for_each_entry_continue_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++	return ret;
++}
++
++static void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++
++	mutex_lock(&cgroup_proto_list_lock);
++	list_for_each_entry_reverse(proto, &cgroup_proto_list, cgroup_node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void register_sock_cgroup(struct proto *prot)
++{
++	mutex_lock(&cgroup_proto_list_lock);
++	list_add(&prot->cgroup_node, &cgroup_proto_list);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
++void unregister_sock_cgroup(struct proto *prot)
++{
++	mutex_lock(&cgroup_proto_list_lock);
++	list_del(&prot->cgroup_node);
++	mutex_unlock(&cgroup_proto_list_lock);
++}
++
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ {
+ 	int ret = 0;
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 5a6a906..3728b50 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -139,43 +139,6 @@
+ static DEFINE_RWLOCK(proto_list_lock);
+ static LIST_HEAD(proto_list);
+ 
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+-int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-	int ret = 0;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry(proto, &proto_list, node) {
+-		if (proto->init_cgroup) {
+-			ret = proto->init_cgroup(cgrp, ss);
+-			if (ret)
+-				goto out;
+-		}
+-	}
+-
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-out:
+-	list_for_each_entry_continue_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-	return ret;
+-}
+-
+-void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
+-{
+-	struct proto *proto;
+-
+-	read_lock(&proto_list_lock);
+-	list_for_each_entry_reverse(proto, &proto_list, node)
+-		if (proto->destroy_cgroup)
+-			proto->destroy_cgroup(cgrp, ss);
+-	read_unlock(&proto_list_lock);
+-}
+-#endif
+-
+ /*
+  * Each address family might have different locking rules, so we have
+  * one slock key per address family:
+@@ -2483,6 +2446,12 @@ int proto_register(struct proto *prot, int alloc_slab)
+ 	list_add(&prot->node, &proto_list);
+ 	assign_proto_idx(prot);
+ 	write_unlock(&proto_list_lock);
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (prot->proto_cgroup)
++		register_sock_cgroup(prot);
++#endif
++
+ 	return 0;
+ 
+ out_free_timewait_sock_slab_name:
+@@ -2510,6 +2479,11 @@ void proto_unregister(struct proto *prot)
+ 	list_del(&prot->node);
+ 	write_unlock(&proto_list_lock);
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (prot->proto_cgroup != NULL)
++		unregister_sock_cgroup(prot);
++#endif
++
+ 	if (prot->slab != NULL) {
+ 		kmem_cache_destroy(prot->slab);
+ 		prot->slab = NULL;
+-- 
+1.7.6.4
 
-diff --cc drivers/pci/hotplug/acpiphp_glue.c
-index 9ddf69e,ba43c03..0000000
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@@ -132,18 -132,6 +132,18 @@@ register_slot(acpi_handle handle, u32 l
-  	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
-  		return AE_OK;
- =20
- +	pdev =3D pbus->self;
- +	if (pdev && pci_is_pcie(pdev)) {
- +		tmp =3D acpi_find_root_bridge_handle(pdev);
- +		if (tmp) {
- +			struct acpi_pci_root *root =3D acpi_pci_find_root(tmp);
- +
- +			if (root && (root->osc_control_set &
-- 					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-++					OSC_PCI_NATIVE_HOTPLUG))
- +				return AE_OK;
- +		}
- +	}
- +
-  	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-  	device =3D (adr >> 16) & 0xffff;
-  	function =3D adr & 0xffff;
-
---Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO6q1CAAoJEECxmPOUX5FESHEP/RX6tAwNmtF510znQXrHpgm0
-QiE3B5Zuvh9BBPNFIlYyhZo++PAFf9Ttd92OGWJ3tt0bR+ZZPey6M1CzssBl33Mx
-4h+MYbk+EiFhn+aN6/dUiFN07SngqekCjf7BEPjXiMTbQbkGjfMSQZAfdkfhkNkZ
-fBtyUgMax2SshpDBulFpELblZT3WQV9xrxP2PFZuSUfegXALc/OsTYfG03d1XF6w
-vPYUQOf3amgdqwXXvGx5b6pbWC/VZOGsMdvn/MsVfOeWB75xr6TTlsrVHWRNMW5d
-qy8UHKcX7WtsDZEQcXBW/DBe0E7JnpabVx11h34h5o5kVre0awBegIueitzxmzDH
-49Dp1ehqGce6ulztaeDYPSXk9d5AXGGky0gEU6WEJacHHKQav7kSgUC43I9mc7yq
-q20VLtpj1RTzNRT6HASDPvo74wS+vkmFjSy/ydsYYq/Ay+lOejRe5ZvBj2u/hfqM
-reijT7PY00r4H1bApuAj7ewds2DO3zmwjvahMKfiTPMYcKjvDUQOv3mwoESzD+Jt
-LuNCfNuUyxvr+w42az/e/ONf6v0gcflR21Ds2W0+2SdswyZmXnEW/NZdKc+ZtcQQ
-9EmLDKBlop9BFbJp1AEvoW8+JFg2ys2ZbDvjP3DAdxcyLFGScyaoZxS4xPn3YS5o
-p9we7/NlV0Ya3e5m2BST
-=6bWc
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Dec_2011_13_30_26_+1100__CUUaCkCT_BD.QhL--
