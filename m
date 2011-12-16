@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760178Ab1LPIic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 03:38:32 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45647 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab1LPIib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 03:38:31 -0500
-Date: Fri, 16 Dec 2011 09:36:34 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on x3850x5
- machine
-Message-ID: <20111216083634.GA4170@elte.hu>
-References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
- <alpine.LFD.2.02.1112141423380.3020@ionos>
- <alpine.LFD.2.02.1112142116540.3020@ionos>
- <CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
- <87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
- <CAE9FiQXL3N6UZ6REfdUT_o1b-ed_KnYqKm_wSEhsaRPeaE9-9Q@mail.gmail.com>
- <20111215071901.GF14237@elte.hu>
- <CAE9FiQXh8tiJ0Aa80uGJBiVv_3-rirMt1roQwZ3dBws-p0=j9A@mail.gmail.com>
- <1323980706.1984.255.camel@sbsiddha-desk.sc.intel.com>
+	id S1760164Ab1LPIkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 03:40:04 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:31254 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab1LPIkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 03:40:01 -0500
+Message-ID: <4EEB03DB.4070201@atmel.com>
+Date: Fri, 16 Dec 2011 09:39:55 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323980706.1984.255.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: "Shen, Voice" <Voice.Shen@atmel.com>
+CC: linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
+        "Lin, JM" <JM.Lin@atmel.com>, "Xu, Hong" <Hong.Xu@atmel.com>
+Subject: Re: [PATCH] atmel ac97c: using software reset instead hardware reset
+ if not available
+References: <1322042701-32100-1-git-send-email-voice.shen@atmel.com> <4EE9F04C.6080906@atmel.com> <4C79549CB6F772498162A641D92D532803B527CA@penmb01.corp.atmel.com>
+In-Reply-To: <4C79549CB6F772498162A641D92D532803B527CA@penmb01.corp.atmel.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/16/2011 02:52 AM, Shen, Voice :
+> Hi Nicolas,
+>   No one response for this.
+>   Would you please merge it?
 
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+Unfortunately I cannot.
 
-> > yes.
+You will have to make sure that the *sound* maintainer is taking your
+patch into account. It can take several iterations but you must be sure
+that your work is included into maintainer's git tree.
+
+Good luck... Bye,
+
+> -----Original Message-----
+> From: Nicolas Ferre [mailto:nicolas.ferre@atmel.com] 
+> Sent: Thursday, December 15, 2011 21:04 voice
+> To: Shen, Voice
+> Cc: linux-kernel@vger.kernel.org; linux-sound@vger.kernel.org; Lin, JM;
+> Xu, Hong
+> Subject: Re: [PATCH] atmel ac97c: using software reset instead hardware
+> reset if not available
 > 
-> Not quite sure if I understand the reported issue.
+> On 11/23/2011 11:05 AM, voice :
+>> Using software reset instead hardware reset if not available
 > 
-> If the old config file had CONFIG_X86_X2APIC and 
-> CONFIG_INTR_REMAP set, doing "make oldconfig" on the newer 
-> kernel is asking if I want the new CONFIG_IRQ_REMAP option to 
-> be set and if I say yes, then I have both CONFIG_X86_X2APIC 
-> and CONFIG_IRQ_REMAP set and all is well.
+> Ping?
+> Can you please tell me what is the status of this fix? Will it go
+> upstream for 3.3?
 > 
-> But if I say no, then as expected CONFIG_X86_X2APIC gets 
-> disabled (as IRQ_REMAP is not selected).
+>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>> ---
+>>  sound/atmel/ac97c.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+>> index 6e5adde..73516f6 100644
+>> --- a/sound/atmel/ac97c.c
+>> +++ b/sound/atmel/ac97c.c
+>> @@ -899,6 +899,10 @@ static void atmel_ac97c_reset(struct atmel_ac97c
+> *chip)
+>>  		/* AC97 v2.2 specifications says minimum 1 us. */
+>>  		udelay(2);
+>>  		gpio_set_value(chip->reset_pin, 1);
+>> +	} else {
+>> +		ac97c_writel(chip, MR, AC97C_MR_WRST | AC97C_MR_ENA);
+>> +		udelay(2);
+>> +		ac97c_writel(chip, MR, AC97C_MR_ENA);
+>>  	}
+>>  }
+>>  
+> 
+> 
 
-The problem is spuriously re-asking a question that *has already 
-been answered by the user*, and if the user accidentally just 
-accepts the default, the config breaks.
 
-We try to keep things working fine across 'make oldconfig', i.e. 
-if the .config worked before, it should work after a 'make 
-oldconfig' as well.
-
-Thanks,
-
-	Ingo
+-- 
+Nicolas Ferre
