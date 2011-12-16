@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab1LPJzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 04:55:40 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60310 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab1LPJzf convert rfc822-to-8bit (ORCPT
+	id S1751611Ab1LPKB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:01:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50563 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab1LPKBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 04:55:35 -0500
-Message-ID: <1324029272.18942.73.camel@twins>
-Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-From: Peter Zijlstra <peterz@infradead.org>
-To: frank.rowand@am.sony.com
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
-        rostedt@goodmis.org
-Date: Fri, 16 Dec 2011 10:54:32 +0100
-In-Reply-To: <4EEAB90D.3050504@am.sony.com>
-References: <4EEAB90D.3050504@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 16 Dec 2011 05:01:20 -0500
+Date: Fri, 16 Dec 2011 11:01:10 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Siarhei Siamashka <siarhei.siamashka@nokia.com>,
+        Valdis.Kletnieks@vt.edu, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nokia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] [RESEND] Handle instruction cache maintenance fault
+ properly
+Message-ID: <20111216100110.GK24496@pengutronix.de>
+References: <AANLkTilVp0xvAJNns3TEe4SzEUpN8hMC9DdwmwW7i9yX@mail.gmail.com>
+ <20111215215649.GJ24496@pengutronix.de>
+ <20111216022205.GA28787@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111216022205.GA28787@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ now without loosing CC's ]
+Hallo,
 
-On Thu, 2011-12-15 at 19:20 -0800, Frank Rowand wrote:
-> ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
-> (application specific ID). The number of ASIDs is limited to 256 and
-> the allocation algorithm requires IPIs when all the ASIDs have been
-> used.  The IPIs require interrupts enabled during context switch for
-> deadlock avoidance.
+On Fri, Dec 16, 2011 at 04:22:05AM +0200, Kirill A. Shutemov wrote:
+> On Thu, Dec 15, 2011 at 10:56:49PM +0100, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Tue, May 11, 2010 at 01:33:14PM +0300, Kirill A. Shutemov wrote:
+> > > Between "clean D line..." and "invalidate I line" operations in
+> > > v7_coherent_user_range(), the memory page may get swapped out.
+> > > And the fault on "invalidate I line" could not be properly handled
+> > > causing the oops.
+> > > 
+> > > In ARMv6 "external abort on linefetch" replaced by "instruction cache
+> > > maintenance fault". Let's handle it as translation fault. It fixes the
+> > > issue.
+> > > 
+> > > I'm not sure if it's reasonable to check arch version in run-time.
+> > > Let's do it in compile time for now.
+> > > 
+> > > Signed-off-by: Siarhei Siamashka <siarhei.siamashka@nokia.com>
+> > > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> > I found this patch in Catalin's stack that I picked up to get support
+> > for Cortex-M3. Is this still relevant?
 > 
-> The RT patch mm-protect-activate-switch-mm.patch disables irqs around
-> activate_mm() and switch_mm(), which are the portion of the ARMv6
-> context switch that require interrupts enabled.
-> 
-> The solution for the ARMv6 processors could be to _not_ disable irqs.
-> A more conservative solution is to provide the same environment that
-> the scheduler provides, that is preempt_disable().  This is more
-> resilient for possible future changes to the ARM context switch code
-> that is not aware of the RT patches.
-> 
-> This patch will conflict slightly with Catalin's patch set to remove
-> __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
-> 
->    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
-> 
-> When Catalin's patch set is accepted, this RT patch will need to reverse
-> the change in patch 6 to arch/arm/include/asm/system.h:
+> It's in upstream. See 8c0b742.
+Ah, I missed that because it applies again on top of 3.2-rc because of
 
+	993bf4e (ARM: 6256/1: Check arch version and modify fsr_info[] depends on it at runtime)
 
-We could just merge Catalin's stuff in -rt to give it a test ride and
-see if anything horrible happens.. :-)
+Thanks and sorry for the noise,
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
