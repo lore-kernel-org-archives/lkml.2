@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab1LPAQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 19:16:32 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:58448 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759671Ab1LPAQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 19:16:31 -0500
-Message-ID: <4EEA8DB1.6060505@fb.com>
-Date: Thu, 15 Dec 2011 16:15:45 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1759967Ab1LPAR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 19:17:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60510 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759900Ab1LPARx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 19:17:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-sh list" <linux-sh@vger.kernel.org>
+Subject: [Update][PATCH 5/5] PM / shmobile: Allow the A4R domain to be turned off at run time
+Date: Fri, 16 Dec 2011 01:16:58 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201112100042.45168.rjw@sisk.pl> <201112160110.09124.rjw@sisk.pl>
+In-Reply-To: <201112160110.09124.rjw@sisk.pl>
 MIME-Version: 1.0
-To: <avagin@gmail.com>
-CC: <avagin@openvz.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 3/4] trace: add ability to collect call chain of non-current
- task.
-References: <1317052535-1765247-1-git-send-email-avagin@openvz.org> <1317052535-1765247-4-git-send-email-avagin@openvz.org> <1317132351.15383.66.camel@twins> <20110927205548.GN18553@somewhere> <4EE01ACB.1000102@fb.com> <4EE1EC0B.4020600@openvz.org> <4EE903B1.7000600@fb.com> <4EEA101C.7060505@gmail.com> <4EEA45C6.2020106@fb.com>
-In-Reply-To: <4EEA45C6.2020106@fb.com>
-Content-Type: text/plain; charset="KOI8-R"; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-15_07:2011-12-16,2011-12-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Message-Id: <201112160116.58694.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/11 11:08 AM, Arun Sharma wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> I still need to investigate why per-process mode (command line without
-> -a) doesn't work. Will send an updated patch once that's fixed.
->
+After adding PM QoS constraints for the I2C controller in the A4R
+domain, that domain can be allowed to be turned off and on by runtime
+PM, so remove the "always on" governor from it.
 
-The per-process mode works fine after moving the trace point to be after:
+However, the A4R domain has to be "on" when suspend_device_irqs() and
+resume_device_irqs() are executed during system suspend and resume,
+respectively, so that those functions don't crash while accessing the
+INTCS.  For this reason, add a PM notifier to the SH7372 PM code and
+make it restore power to A4R before system suspend and remove power
+from all unused PM domains after system resume.
 
-         perf_event_task_sched_in(prev, current);
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Magnus Damm <damm@opensource.se>
+---
+ arch/arm/mach-shmobile/pm-sh7372.c |   29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
-App developers using this feature here say they're fine not having the 
-block vs sleep distinction because they intend to use it with "-g" and 
-the callstack makes it obvious which one it was.
+Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -239,7 +239,6 @@ struct sh7372_pm_domain sh7372_d4 = {
+ struct sh7372_pm_domain sh7372_a4r = {
+ 	.genpd.name = "A4R",
+ 	.bit_shift = 5,
+-	.gov = &pm_domain_always_on_gov,
+ 	.suspend = sh7372_a4r_suspend,
+ 	.resume = sh7372_intcs_resume,
+ };
+@@ -496,9 +495,37 @@ static int sh7372_enter_suspend(suspend_
+ 	return 0;
+ }
+ 
++/**
++ * sh7372_pm_notifier_fn - SH7372 PM notifier routine.
++ * @notifier: Unused.
++ * @pm_event: Event being handled.
++ * @unused: Unused.
++ */
++static int sh7372_pm_notifier_fn(struct notifier_block *notifier,
++				 unsigned long pm_event, void *unused)
++{
++	switch (pm_event) {
++	case PM_SUSPEND_PREPARE:
++		/*
++		 * This is necessary, because the A4R domain has to be "on"
++		 * when suspend_device_irqs() and resume_device_irqs() are
++		 * executed during system suspend and resume, respectively, so
++		 * that those functions don't crash while accessing the INTCS.
++		 */
++		pm_genpd_poweron(&sh7372_a4r.genpd);
++		break;
++	case PM_POST_SUSPEND:
++		pm_genpd_poweroff_unused();
++		break;
++	}
++
++	return NOTIFY_DONE;
++}
++
+ static void sh7372_suspend_init(void)
+ {
+ 	shmobile_suspend_ops.enter = sh7372_enter_suspend;
++	pm_notifier(sh7372_pm_notifier_fn, 0);
+ }
+ #else
+ static void sh7372_suspend_init(void) {}
 
-If we really need this info, we should be able to derive it in user 
-space via perf inject.
-
-  -Arun
