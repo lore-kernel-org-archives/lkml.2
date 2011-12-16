@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760680Ab1LPTtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:49:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44890 "EHLO mx2.suse.de"
+	id S932678Ab1LPTti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:49:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44930 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760361Ab1LPTsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:48:54 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:57 2011
-Message-Id: <20111216194557.432245534@clark.kroah.org>
+	id S932585Ab1LPTtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:58 2011
+Message-Id: <20111216194558.582634540@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:18 -0800
+Date: Fri, 16 Dec 2011 11:45:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [21/53] target: Reject SCSI data overflow for fabrics using transport_generic_map_mem_to_cmd
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@infradead.org>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [28/53] cifs: check for NULL last_entry before calling cifs_save_resume_key
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit fef58a6096770ed6ab49103a430cc755254a74d9 upstream.
+commit 7023676f9ee851d94f0942e879243fc1f9081c47 upstream.
 
-This patch changes transport_generic_map_mem_to_cmd() to reject SCSI data
-overflow and to send exception status with CHECK_CONDITION + TCM_INVALID_CDB_FIELD
-for fabrics that are passing a pre-populated struct scatterlist (eg: tcm_loop
-and iscsi-target) being mapped into se_cmd->t_data_sg and se_cmd->t_data_nents.
+Prior to commit eaf35b1, cifs_save_resume_key had some NULL pointer
+checks at the top. It turns out that at least one of those NULL
+pointer checks is needed after all.
 
-This addresses an OOPs where transport_allocate_data_tasks() would walk
-the incorrect post OVERFLOW cmd->data_length value beyond the end of
-the passed scatterlist.
+When the LastNameOffset in a FIND reply appears to be beyond the end of
+the buffer, CIFSFindFirst and CIFSFindNext will set srch_inf.last_entry
+to NULL. Since eaf35b1, the code will now oops in this situation.
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fix this by having the callers check for a NULL last entry pointer
+before calling cifs_save_resume_key. No change is needed for the
+call site in cifs_readdir as it's not reachable with a NULL
+current_entry pointer.
+
+This should fix:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=750247
+
+Cc: Christoph Hellwig <hch@infradead.org>
+Reported-by: Adam G. Metzler <adamgmetzler@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_transport.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ fs/cifs/readdir.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -3873,6 +3873,18 @@ int transport_generic_map_mem_to_cmd(
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -554,7 +554,10 @@ static int find_cifs_entry(const int xid
+ 				 rc);
+ 			return rc;
+ 		}
+-		cifs_save_resume_key(cifsFile->srch_inf.last_entry, cifsFile);
++		/* FindFirst/Next set last_entry to NULL on malformed reply */
++		if (cifsFile->srch_inf.last_entry)
++			cifs_save_resume_key(cifsFile->srch_inf.last_entry,
++						cifsFile);
+ 	}
  
- 	if ((cmd->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB) ||
- 	    (cmd->se_cmd_flags & SCF_SCSI_CONTROL_SG_IO_CDB)) {
-+		/*
-+		 * Reject SCSI data overflow with map_mem_to_cmd() as incoming
-+		 * scatterlists already have been set to follow what the fabric
-+		 * passes for the original expected data transfer length.
-+		 */
-+		if (cmd->se_cmd_flags & SCF_OVERFLOW_BIT) {
-+			pr_warn("Rejecting SCSI DATA overflow for fabric using"
-+				" SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC\n");
-+			cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
-+			cmd->scsi_sense_reason = TCM_INVALID_CDB_FIELD;
-+			return -EINVAL;
-+		}
- 
- 		cmd->t_data_sg = sgl;
- 		cmd->t_data_nents = sgl_count;
+ 	while ((index_to_find >= cifsFile->srch_inf.index_of_last_entry) &&
+@@ -562,7 +565,10 @@ static int find_cifs_entry(const int xid
+ 		cFYI(1, "calling findnext2");
+ 		rc = CIFSFindNext(xid, pTcon, cifsFile->netfid,
+ 				  &cifsFile->srch_inf);
+-		cifs_save_resume_key(cifsFile->srch_inf.last_entry, cifsFile);
++		/* FindFirst/Next set last_entry to NULL on malformed reply */
++		if (cifsFile->srch_inf.last_entry)
++			cifs_save_resume_key(cifsFile->srch_inf.last_entry,
++						cifsFile);
+ 		if (rc)
+ 			return -ENOENT;
+ 	}
 
 
