@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab1LPUHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:07:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44921 "EHLO mx2.suse.de"
+	id S932716Ab1LPUH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:07:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44907 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760671Ab1LPTtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:11 -0500
+	id S1760655Ab1LPTtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:58 2011
-Message-Id: <20111216194558.238199484@clark.kroah.org>
+Message-Id: <20111216194557.925945935@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:23 -0800
+Date: Fri, 16 Dec 2011 11:45:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Christoph Hellwig <hch@lst.de>,
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [26/53] target/file: walk properly over sg list
+Subject: [24/53] target: Fix page length in emulated INQUIRY VPD page 86h
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,63 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 9649fa1b8764f64c8cc4293e197e14cd46fe7205 upstream.
+commit 1289a0571c037b4757f60597d646aedb70361ec3 upstream.
 
-This patch changes fileio to use for_each_sg() when walking se_task->task_sg
-memory passed into from loopback LLD struct scsi_cmnd scatterlist memory.
+The LSB of the page length is at offset 3, not 2.
 
-This addresses an issue where FILEIO backends with loopback where hitting the
-following OOPs with mkfs.ext2:
-
-|kernel BUG at include/linux/scatterlist.h:97!
-|invalid opcode: 0000 [#1] PREEMPT SMP
-|Modules linked in: sd_mod tcm_loop target_core_stgt scsi_tgt target_core_pscsi target_core_file target_core_iblock target_core_mod configfs scsi_mod
-|
-|Pid: 671, comm: LIO_fileio Not tainted 3.1.0-rc10+ #139 Bochs Bochs
-|EIP: 0060:[<e0afd746>] EFLAGS: 00010202 CPU: 0
-|EIP is at fd_do_task+0x396/0x420 [target_core_file]
-| [<e0aa7884>] __transport_execute_tasks+0xd4/0x190 [target_core_mod]
-| [<e0aa797c>] transport_execute_tasks+0x3c/0xf0 [target_core_mod]
-|EIP: [<e0afd746>] fd_do_task+0x396/0x420 [target_core_file] SS:ESP 0068:dea47e90
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_file.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/target/target_core_cdb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -288,9 +288,9 @@ static int fd_do_readv(struct se_task *t
- 		return -ENOMEM;
- 	}
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -477,7 +477,7 @@ target_emulate_evpd_86(struct se_cmd *cm
+ 	if (cmd->data_length < 60)
+ 		return 0;
  
--	for (i = 0; i < task->task_sg_nents; i++) {
--		iov[i].iov_len = sg[i].length;
--		iov[i].iov_base = sg_virt(&sg[i]);
-+	for_each_sg(task->task_sg, sg, task->task_sg_nents, i) {
-+		iov[i].iov_len = sg->length;
-+		iov[i].iov_base = sg_virt(sg);
- 	}
+-	buf[2] = 0x3c;
++	buf[3] = 0x3c;
+ 	/* Set HEADSUP, ORDSUP, SIMPSUP */
+ 	buf[5] = 0x07;
  
- 	old_fs = get_fs();
-@@ -340,9 +340,9 @@ static int fd_do_writev(struct se_task *
- 		return -ENOMEM;
- 	}
- 
--	for (i = 0; i < task->task_sg_nents; i++) {
--		iov[i].iov_len = sg[i].length;
--		iov[i].iov_base = sg_virt(&sg[i]);
-+	for_each_sg(task->task_sg, sg, task->task_sg_nents, i) {
-+		iov[i].iov_len = sg->length;
-+		iov[i].iov_base = sg_virt(sg);
- 	}
- 
- 	old_fs = get_fs();
 
 
