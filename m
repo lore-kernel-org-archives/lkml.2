@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760789Ab1LPVQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 16:16:51 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37964 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760696Ab1LPVQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 16:16:43 -0500
-Date: Fri, 16 Dec 2011 13:16:40 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH -mm] slub: debug_guardpage_minorder documentation tweak
-In-Reply-To: <20111216132349.GB14271@redhat.com>
-Message-ID: <alpine.DEB.2.00.1112161315220.6862@chino.kir.corp.google.com>
-References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com> <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com> <20111212145948.GA2380@redhat.com> <201112130021.41429.rjw@sisk.pl> <alpine.DEB.2.00.1112131640240.32369@chino.kir.corp.google.com>
- <20111216132155.GA14271@redhat.com> <20111216132349.GB14271@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1760803Ab1LPVS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 16:18:59 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:39405 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760696Ab1LPVSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 16:18:52 -0500
+Date: Fri, 16 Dec 2011 15:19:16 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: fix acl count validation in xfs_acl_from_disk()
+Message-ID: <20111216211916.GO29840@sgi.com>
+References: <1323726952-22963-1-git-send-email-xi.wang@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323726952-22963-1-git-send-email-xi.wang@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Dec 2011, Stanislaw Gruszka wrote:
+On Mon, Dec 12, 2011 at 04:55:52PM -0500, Xi Wang wrote:
+> Commit fa8b18ed didn't prevent the integer overflow and possible
+> memory corruption.  "count" can go negative and bypass the check.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
 
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-
-Acked-by: David Rientjes <rientjes@google.com>
-
-Andrew, this should be folded into 
-slub-document-setting-min-order-with-debug_guardpage_minorder-0.patch 
-which should be folded into 
-slub-min-order-when-debug_guardpage_minorder-0.patch
-
-Thanks!
+Looks good.  Nice catch!
+Reviewed-by: Ben Myers <bpm@sgi.com>
