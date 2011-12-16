@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835Ab1LPUDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:03:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45192 "EHLO mx2.suse.de"
+	id S964822Ab1LPUDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:03:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45180 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760017Ab1LPTvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:51:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:09 2011
-Message-Id: <20111216194208.902963139@clark.kroah.org>
+	id S964808Ab1LPTvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:51:21 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:08 2011
+Message-Id: <20111216194208.705973495@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:20 -0800
+Date: Fri, 16 Dec 2011 11:40:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, Arve Hjnnevg <arve@android.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <john.stultz@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [13/45] mm: Ensure that pfn_valid() is called once per pageblock when reserving pageblocks
+        Richard Cochran <richard.cochran@omicron.at>
+Subject: [12/45] ptp: Fix clock_getres() implementation
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,83 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit d021563888312018ca65681096f62e36c20e63cc upstream.
+commit d68fb11c3dae75c8331538dcf083a65e697cc034 upstream.
 
-setup_zone_migrate_reserve() expects that zone->start_pfn starts at
-pageblock_nr_pages aligned pfn otherwise we could access beyond an
-existing memblock resulting in the following panic if
-CONFIG_HOLES_IN_ZONE is not configured and we do not check pfn_valid:
+The clock_getres() function must return the resolution in the timespec
+argument and return 0 for success.
 
-  IP: [<c02d331d>] setup_zone_migrate_reserve+0xcd/0x180
-  *pdpt = 0000000000000000 *pde = f000ff53f000ff53
-  Oops: 0000 [#1] SMP
-  Pid: 1, comm: swapper Not tainted 3.0.7-0.7-pae #1 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-  EIP: 0060:[<c02d331d>] EFLAGS: 00010006 CPU: 0
-  EIP is at setup_zone_migrate_reserve+0xcd/0x180
-  EAX: 000c0000 EBX: f5801fc0 ECX: 000c0000 EDX: 00000000
-  ESI: 000c01fe EDI: 000c01fe EBP: 00140000 ESP: f2475f58
-  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-  Process swapper (pid: 1, ti=f2474000 task=f2472cd0 task.ti=f2474000)
-  Call Trace:
-  [<c02d389c>] __setup_per_zone_wmarks+0xec/0x160
-  [<c02d3a1f>] setup_per_zone_wmarks+0xf/0x20
-  [<c08a771c>] init_per_zone_wmark_min+0x27/0x86
-  [<c020111b>] do_one_initcall+0x2b/0x160
-  [<c086639d>] kernel_init+0xbe/0x157
-  [<c05cae26>] kernel_thread_helper+0x6/0xd
-  Code: a5 39 f5 89 f7 0f 46 fd 39 cf 76 40 8b 03 f6 c4 08 74 32 eb 91 90 89 c8 c1 e8 0e 0f be 80 80 2f 86 c0 8b 14 85 60 2f 86 c0 89 c8 <2b> 82 b4 12 00 00 c1 e0 05 03 82 ac 12 00 00 8b 00 f6 c4 08 0f
-  EIP: [<c02d331d>] setup_zone_migrate_reserve+0xcd/0x180 SS:ESP 0068:f2475f58
-  CR2: 00000000000012b4
-
-We crashed in pageblock_is_reserved() when accessing pfn 0xc0000 because
-highstart_pfn = 0x36ffe.
-
-The issue was introduced in 3.0-rc1 by 6d3163ce ("mm: check if any page
-in a pageblock is reserved before marking it MIGRATE_RESERVE").
-
-Make sure that start_pfn is always aligned to pageblock_nr_pages to
-ensure that pfn_valid s always called at the start of each pageblock.
-Architectures with holes in pageblocks will be correctly handled by
-pfn_valid_within in pageblock_is_reserved.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Tested-by: Dang Bo <bdang@vmware.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Arve Hjnnevg <arve@android.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Stultz <john.stultz@linaro.org>
+Cc: Richard Cochran <richard.cochran@omicron.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/page_alloc.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/ptp/ptp_clock.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3388,9 +3388,15 @@ static void setup_zone_migrate_reserve(s
- 	unsigned long block_migratetype;
- 	int reserve;
+--- a/drivers/ptp/ptp_clock.c
++++ b/drivers/ptp/ptp_clock.c
+@@ -101,7 +101,9 @@ static s32 scaled_ppm_to_ppb(long ppm)
  
--	/* Get the start pfn, end pfn and the number of blocks to reserve */
-+	/*
-+	 * Get the start pfn, end pfn and the number of blocks to reserve
-+	 * We have to be careful to be aligned to pageblock_nr_pages to
-+	 * make sure that we always check pfn_valid for the first page in
-+	 * the block.
-+	 */
- 	start_pfn = zone->zone_start_pfn;
- 	end_pfn = start_pfn + zone->spanned_pages;
-+	start_pfn = roundup(start_pfn, pageblock_nr_pages);
- 	reserve = roundup(min_wmark_pages(zone), pageblock_nr_pages) >>
- 							pageblock_order;
+ static int ptp_clock_getres(struct posix_clock *pc, struct timespec *tp)
+ {
+-	return 1; /* always round timer functions to one nanosecond */
++	tp->tv_sec = 0;
++	tp->tv_nsec = 1;
++	return 0;
+ }
  
+ static int ptp_clock_settime(struct posix_clock *pc, const struct timespec *tp)
 
 
