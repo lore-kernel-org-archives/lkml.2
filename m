@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030255Ab1LPWng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 17:43:36 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:54948 "EHLO
+	id S1030285Ab1LPWno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 17:43:44 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:54946 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760938Ab1LPWnX (ORCPT
+	with ESMTP id S1760936Ab1LPWnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Dec 2011 17:43:23 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -14,146 +14,124 @@ To: linux-kernel@vger.kernel.org, rjw@sisk.pl, x86@kernel.org,
         linux-acpi@vger.kernel.org, liang.tang@oracle.com
 Cc: hpa@zytor.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
-Subject: [PATCH 6/7] x86: Expand the x86_msi_ops to have a restore MSIs.
-Date: Fri, 16 Dec 2011 17:38:18 -0500
-Message-Id: <1324075099-11397-7-git-send-email-konrad.wilk@oracle.com>
+        Shane Wang <shane.wang@intel.com>
+Subject: [PATCH 3/7] x86/acpi/sleep: Provide registration for acpi_suspend_lowlevel.
+Date: Fri, 16 Dec 2011 17:38:15 -0500
+Message-Id: <1324075099-11397-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
 References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4EEBC96E.011A,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EEBC96D.000D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSI restore function will become a function pointer in an
-x86_msi_ops struct. It defaults to the implementation in the
-io_apic.c and msi.c. We piggyback on the indirection mechanism
-introduced by "x86: Introduce x86_msi_ops".
+Which by default will be x86_acpi_suspend_lowlevel.
+This registration allows us to register another callback
+if there is a need to use another platform specific callback.
 
-Cc: x86@kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Len Brown <len.brown@intel.com>
+CC: Joseph Cihula <joseph.cihula@intel.com>
+CC: Shane Wang <shane.wang@intel.com>
+CC: linux-pm@lists.linux-foundation.org
+CC: linux-acpi@vger.kernel.org
+CC: Len Brown <len.brown@intel.com>
+Signed-off-by: Liang Tang <liang.tang@oracle.com>
+[v1: Fix when CONFIG_ACPI_SLEEP is not set]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/pci.h      |    9 +++++++++
- arch/x86/include/asm/x86_init.h |    1 +
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/pci/msi.c               |   29 +++++++++++++++++++++++++++--
- 4 files changed, 38 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/acpi.h  |    2 +-
+ arch/x86/kernel/acpi/boot.c  |    7 +++++++
+ arch/x86/kernel/acpi/sleep.c |    4 ++--
+ arch/x86/kernel/acpi/sleep.h |    2 ++
+ drivers/acpi/sleep.c         |    2 ++
+ 5 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index d498943..df75d07 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -112,19 +112,28 @@ static inline void x86_teardown_msi_irq(unsigned int irq)
- {
- 	x86_msi.teardown_msi_irq(irq);
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 610001d..68cf060 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -115,7 +115,7 @@ static inline void acpi_disable_pci(void)
  }
-+static inline void x86_restore_msi_irqs(struct pci_dev *dev, int irq)
-+{
-+	x86_msi.restore_msi_irqs(dev, irq);
-+}
- #define arch_setup_msi_irqs x86_setup_msi_irqs
- #define arch_teardown_msi_irqs x86_teardown_msi_irqs
- #define arch_teardown_msi_irq x86_teardown_msi_irq
-+#define arch_restore_msi_irqs x86_restore_msi_irqs
- /* implemented in arch/x86/kernel/apic/io_apic. */
- int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void native_teardown_msi_irq(unsigned int irq);
-+void native_restore_msi_irqs(struct pci_dev *dev, int irq);
- /* default to the implementation in drivers/lib/msi.c */
- #define HAVE_DEFAULT_MSI_TEARDOWN_IRQS
-+#define HAVE_DEFAULT_MSI_RESTORE_IRQS
- void default_teardown_msi_irqs(struct pci_dev *dev);
-+void default_restore_msi_irqs(struct pci_dev *dev, int irq);
- #else
- #define native_setup_msi_irqs		NULL
- #define native_teardown_msi_irq		NULL
- #define default_teardown_msi_irqs	NULL
-+#define default_restore_msi_irqs	NULL
- #endif
  
- #define PCI_DMA_BUS_IS_PHYS (dma_ops->is_phys)
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 1971e65..cd52084 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -177,6 +177,7 @@ struct x86_msi_ops {
- 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
-+	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
- };
+ /* Low-level suspend routine. */
+-extern int acpi_suspend_lowlevel(void);
++extern int (*acpi_suspend_lowlevel)(void);
  
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index c1d6cd5..83b05ad 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -114,4 +114,5 @@ struct x86_msi_ops x86_msi = {
- 	.setup_msi_irqs = native_setup_msi_irqs,
- 	.teardown_msi_irq = native_teardown_msi_irq,
- 	.teardown_msi_irqs = default_teardown_msi_irqs,
-+	.restore_msi_irqs = default_restore_msi_irqs,
- };
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 0e6d04d..ba2ea4e 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -86,6 +86,31 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- }
- #endif
+ extern const unsigned char acpi_wakeup_code[];
+ #define acpi_wakeup_address (__pa(TRAMPOLINE_SYM(acpi_wakeup_code)))
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 4558f0d..90e06ef 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -44,6 +44,7 @@
+ #include <asm/mpspec.h>
+ #include <asm/smp.h>
  
-+#ifndef arch_restore_msi_irqs
-+# define arch_restore_msi_irqs default_restore_msi_irqs
-+# define HAVE_DEFAULT_MSI_RESTORE_IRQS
++#include "sleep.h" /* To include x86_acpi_suspend_lowlevel */
+ static int __initdata acpi_force = 0;
+ u32 acpi_rsdt_forced;
+ int acpi_disabled;
+@@ -552,6 +553,12 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
+ 			   int trigger, int polarity) = acpi_register_gsi_pic;
+ 
++#ifdef CONFIG_ACPI_SLEEP
++int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
++#else
++int (*acpi_suspend_lowlevel)(void);
 +#endif
 +
-+#ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
-+void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-+{
-+	struct msi_desc *entry;
-+
-+	entry = NULL;
-+	if (dev->msix_enabled) {
-+		list_for_each_entry(entry, &dev->msi_list, list) {
-+			if (irq == entry->irq)
-+				break;
-+		}
-+	} else if (dev->msi_enabled)  {
-+		entry = irq_get_msi_desc(irq);
-+	}
-+
-+	if (entry)
-+		write_msi_msg(irq, &entry->msg);
-+}
-+#endif
-+
- static void msi_set_enable(struct pci_dev *dev, int pos, int enable)
+ /*
+  * success: return IRQ number (>=0)
+  * failure: return < 0
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 103b6ab..4d2d0b1 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -25,12 +25,12 @@ static char temp_stack[4096];
+ #endif
+ 
+ /**
+- * acpi_suspend_lowlevel - save kernel state
++ * x86_acpi_suspend_lowlevel - save kernel state
+  *
+  * Create an identity mapped page table and copy the wakeup routine to
+  * low memory.
+  */
+-int acpi_suspend_lowlevel(void)
++int x86_acpi_suspend_lowlevel(void)
  {
- 	u16 control;
-@@ -360,7 +385,7 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+ 	struct wakeup_header *header;
+ 	/* address in low memory of the wakeup routine. */
+diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
+index 416d4be..4d3feb5 100644
+--- a/arch/x86/kernel/acpi/sleep.h
++++ b/arch/x86/kernel/acpi/sleep.h
+@@ -13,3 +13,5 @@ extern unsigned long acpi_copy_wakeup_routine(unsigned long);
+ extern void wakeup_long64(void);
  
- 	pci_intx_for_msi(dev, 0);
- 	msi_set_enable(dev, pos, 0);
--	write_msi_msg(dev->irq, &entry->msg);
-+	arch_restore_msi_irqs(dev, dev->irq);
+ extern void do_suspend_lowlevel(void);
++
++extern int x86_acpi_suspend_lowlevel(void);
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 6d9a3ab..355fa4b 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -254,6 +254,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+ 		break;
  
- 	pci_read_config_word(dev, pos + PCI_MSI_FLAGS, &control);
- 	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-@@ -388,7 +413,7 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
- 	pci_write_config_word(dev, pos + PCI_MSIX_FLAGS, control);
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
--		write_msi_msg(entry->irq, &entry->msg);
-+		arch_restore_msi_irqs(dev, entry->irq);
- 		msix_mask_irq(entry, entry->masked);
- 	}
- 
+ 	case ACPI_STATE_S3:
++		if (!acpi_suspend_lowlevel)
++			return -ENOSYS;
+ 		error = acpi_suspend_lowlevel();
+ 		if (error)
+ 			return error;
 -- 
 1.7.7.4
 
