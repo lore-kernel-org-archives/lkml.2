@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030265Ab1LPUxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:53:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49057 "EHLO mx2.suse.de"
+	id S1030268Ab1LPUxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:53:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49049 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030199Ab1LPUwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:31 -0500
+	id S964866Ab1LPUw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:43 2011
-Message-Id: <20111216205043.131327307@clark.kroah.org>
+Message-Id: <20111216205043.042482736@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:42 -0800
+Date: Fri, 16 Dec 2011 12:49:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Eryu Guan <guaneryu@gmail.com>, "Theodore Tso" <tytso@mit.edu>,
-        =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <jmm@inutil.org>
-Subject: [09/16] jbd/jbd2: validate sb->s_first in journal_get_superblock()
+        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@vmware.com>
+Subject: [08/16] linux/log2.h: Fix rounddown_pow_of_two(1)
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,95 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eryu Guan <guaneryu@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8762202dd0d6e46854f786bdb6fb3780a1625efe upstream.
+commit 13c07b0286d340275f2d97adf085cecda37ede37 upstream.
 
-I hit a J_ASSERT(blocknr != 0) failure in cleanup_journal_tail() when
-mounting a fsfuzzed ext3 image. It turns out that the corrupted ext3
-image has s_first = 0 in journal superblock, and the 0 is passed to
-journal->j_head in journal_reset(), then to blocknr in
-cleanup_journal_tail(), in the end the J_ASSERT failed.
+Exactly like roundup_pow_of_two(1), the rounddown version was buggy for
+the case of a compile-time constant '1' argument.  Probably because it
+originated from the same code, sharing history with the roundup version
+from before the bugfix (for that one, see commit 1a06a52ee1b0: "Fix
+roundup_pow_of_two(1)").
 
-So validate s_first after reading journal superblock from disk in
-journal_get_superblock() to ensure s_first is valid.
+However, unlike the roundup version, the fix for rounddown is to just
+remove the broken special case entirely.  It's simply not needed - the
+generic code
 
-The following script could reproduce it:
+    1UL << ilog2(n)
 
-fstype=ext3
-blocksize=1024
-img=$fstype.img
-offset=0
-found=0
-magic="c0 3b 39 98"
+does the right thing for the constant '1' argment too.  The only reason
+roundup needed that special case was because rounding up does so by
+subtracting one from the argument (and then adding one to the result)
+causing the obvious problems with "ilog2(0)".
 
-dd if=/dev/zero of=$img bs=1M count=8
-mkfs -t $fstype -b $blocksize -F $img
-filesize=`stat -c %s $img`
-while [ $offset -lt $filesize ]
-do
-        if od -j $offset -N 4 -t x1 $img | grep -i "$magic";then
-                echo "Found journal: $offset"
-                found=1
-                break
-        fi
-        offset=`echo "$offset+$blocksize" | bc`
-done
+But rounddown doesn't do any of that, since ilog2() naturally truncates
+(ie "rounds down") to the right rounded down value.  And without the
+ilog2(0) case, there's no reason for the special case that had the wrong
+value.
 
-if [ $found -ne 1 ];then
-        echo "Magic \"$magic\" not found"
-        exit 1
-fi
+tl;dr: rounddown_pow_of_two(1) should be 1, not 0.
 
-dd if=/dev/zero of=$img seek=$(($offset+23)) conv=notrunc bs=1 count=1
-
-mkdir -p ./mnt
-mount -o loop $img ./mnt
-
-Cc: Jan Kara <jack@suse.cz>
-Signed-off-by: Eryu Guan <guaneryu@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Moritz Mühlenhoff <jmm@inutil.org>
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/jbd/journal.c  |    8 ++++++++
- fs/jbd2/journal.c |    8 ++++++++
- 2 files changed, 16 insertions(+)
+ include/linux/log2.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1070,6 +1070,14 @@ static int journal_get_superblock(journa
- 		goto out;
- 	}
- 
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
-+
- 	return 0;
- 
- out:
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1183,6 +1183,14 @@ static int journal_get_superblock(journa
- 		goto out;
- 	}
- 
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD2: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
-+
- 	return 0;
- 
- out:
+--- a/include/linux/log2.h
++++ b/include/linux/log2.h
+@@ -185,7 +185,6 @@ unsigned long __rounddown_pow_of_two(uns
+ #define rounddown_pow_of_two(n)			\
+ (						\
+ 	__builtin_constant_p(n) ? (		\
+-		(n == 1) ? 0 :			\
+ 		(1UL << ilog2(n))) :		\
+ 	__rounddown_pow_of_two(n)		\
+  )
 
 
