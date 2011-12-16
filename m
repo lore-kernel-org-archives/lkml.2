@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab1LPKri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:47:38 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42916 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab1LPKrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:47:31 -0500
-Message-ID: <4EEB2182.6040508@mvista.com>
-Date: Fri, 16 Dec 2011 14:46:26 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
-References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
-In-Reply-To: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758833Ab1LPKrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:47:16 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:48164 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab1LPKrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 05:47:05 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/2] ptrace: add ability to attach a file descriptor to another task
+Date: Fri, 16 Dec 2011 13:46:23 +0300
+Message-Id: <1324032383-791758-3-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1324032383-791758-1-git-send-email-avagin@openvz.org>
+References: <1324032383-791758-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 16-12-2011 2:42, Felipe Contreras wrote:
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/linux/ptrace.h |    1 +
+ kernel/ptrace.c        |   27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-> In musb_init_controller() there's a pm_runtime_put(), but there's no
-> pm_runtime_get(), which creates a mismatch that causes the driver to
-> sleep when it shouldn't.
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 800f113..8439ce9 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -50,6 +50,7 @@
+ #define PTRACE_SEIZE		0x4206
+ #define PTRACE_INTERRUPT	0x4207
+ #define PTRACE_LISTEN		0x4208
++#define PTRACE_DUPFD		0x4209
+ 
+ /* flags in @data for PTRACE_SEIZE */
+ #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 24d0447..a646d01 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -24,6 +24,7 @@
+ #include <linux/regset.h>
+ #include <linux/hw_breakpoint.h>
+ #include <linux/cn_proc.h>
++#include <linux/file.h>
+ 
+ 
+ static int ptrace_trapping_sleep_fn(void *flags)
+@@ -826,6 +827,32 @@ int ptrace_request(struct task_struct *child, long request,
+ 		break;
+ 	}
+ #endif
++	case PTRACE_DUPFD:
++	{
++		struct file *file = fget_raw(data);
++		ret = -EBADF;
++
++		if (!file)
++			break;
++
++		task_lock(child);
++		if (!child->files)
++			goto out_getfd;
++
++		ret = alloc_task_fd(child, 0, 0);
++		if (ret < 0) {
++			fput(file);
++			goto out_getfd;
++		}
++
++		fd_task_install(child, ret, file);
++
++out_getfd:
++		task_unlock(child);
++
++		break;
++	}
++
+ 	default:
+ 		break;
+ 	}
+-- 
+1.7.1
 
-> This was introduced in 7acc619, but it wasn't triggered until 18a2689
-> was merged to Linus' branch at point 6899608.
-
-    Please also specify the summaries for the commits you're mentioning.
-
-> However, it seems most of the time this is used in a way that keeps the
-> counter above 0, so nobody noticed. Also, it seems to depend on the
-> configuration used.
-
-> I found the problem by loading isp1704_charger before any usb gadgets:
-> http://article.gmane.org/gmane.linux.kernel/1226122
-
-> All versions after 2.6.39 are affected.
-
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Felipe Contreras<felipe.contreras@gmail.com>
-
-WBR, Sergei
