@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759905Ab1LPBIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 20:08:04 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52266 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab1LPBIB (ORCPT
+	id S1759922Ab1LPBNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 20:13:15 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50488 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab1LPBNN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 20:08:01 -0500
-Date: Fri, 16 Dec 2011 12:07:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20111216120758.60f967a88c934890e77fa7bd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb"
+	Thu, 15 Dec 2011 20:13:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111215235017.GA2242@legolas.emea.dhcp.ti.com>
+References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
+	<20111215230143.GA2090@legolas.emea.dhcp.ti.com>
+	<CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
+	<20111215235017.GA2242@legolas.emea.dhcp.ti.com>
+Date: Fri, 16 Dec 2011 03:13:13 +0200
+Message-ID: <CAMP44s1GCPRjV4weNN1GpboDPbzUobBLVP+u2Y4QvHrt2KoG_Q@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
+        Hema Kalliguddi <hemahk@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 16, 2011 at 1:50 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Dec 16, 2011 at 01:31:02AM +0200, Felipe Contreras wrote:
+>> On Fri, Dec 16, 2011 at 1:01 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> > On Fri, Dec 16, 2011 at 12:42:14AM +0200, Felipe Contreras wrote:
+>> >> --- a/drivers/usb/musb/musb_core.c
+>> >> +++ b/drivers/usb/musb/musb_core.c
+>> >> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+>> >>       if (status < 0)
+>> >>               goto fail3;
+>> >>
+>> >> -     pm_runtime_put(musb->controller);
+>> >
+>> > To me the real fix would be add the missing pm_runtime_get_sync(). On
+>> > probe() we're actually accessing MUSB's address space which needs it's
+>> > clocks turned on. I guess it's only working now by chance, probably
+>> > because glue layer calls pm_runtime_get_sync() to access it's own
+>> > address space and that uses the same clocks.
+>>
+>> Are you sure it's "musb-hdrc", and not "musb-omap2430" the one
+>> accessing the relevant address-space? From the runtime_pm
+>> documentation it looks like only the probe function should deal with
+>> this.
+>>
+>> If "musb-hdrc" was truly accessing these registers, then I would get
+>> the same failure because the clocks are turned off, but I don't...
+>
+> see musb_core_init(); You don't see any problems when accessing those
+> addresses because musb_platform_init() will fall into
+> omap2430_musb_init() which calls pm_runtime_get_sync(), and the same
+> clock actually enables both address spaces (musb-omap2430 and
+> musb-hdrc).
 
-Hi all,
+That's true, but how would I go test this theory? Call
+pm_runtime_put_sync() at the end of omap2430_musb_init()?
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/ipv6/route.c between commit bb3c36863e80 ("ipv6: Check dest prefix
-length on original route not copied one in rt6_alloc_cow()") from the net
-tree and commit 3830847396fa ("ipv6: Various cleanups in route.c") from
-the net-next tree.
+Also, I think most pm_runtime_disable() calls shouldn't be there...
+That would tell PM to activate power for the device, which is not what
+we want. The core drivers code will take care of truly disabling the
+pm_runtime stuff _without_ activating the device.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Cheers.
 
-diff --cc net/ipv6/route.c
-index b582a0a,4bf362b..0000000
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@@ -727,11 -727,11 +727,11 @@@ static struct rt6_info *rt6_alloc_cow(c
-  		struct neighbour *neigh;
-  		int attempts =3D !in_softirq();
- =20
-- 		if (!(rt->rt6i_flags&RTF_GATEWAY)) {
-+ 		if (!(rt->rt6i_flags & RTF_GATEWAY)) {
- -			if (rt->rt6i_dst.plen !=3D 128 &&
- +			if (ort->rt6i_dst.plen !=3D 128 &&
-  			    ipv6_addr_equal(&ort->rt6i_dst.addr, daddr))
-  				rt->rt6i_flags |=3D RTF_ANYCAST;
-- 			ipv6_addr_copy(&rt->rt6i_gateway, daddr);
-+ 			rt->rt6i_gateway =3D *daddr;
-  		}
- =20
-  		rt->rt6i_flags |=3D RTF_CACHE;
-
---Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO6pnuAAoJEECxmPOUX5FEzRUQAI9QGCRHfZJxIgDwF+xCtj5+
-zrUnCOKfv9FV5pZVJHsKbJ8T8DjbBz4IG1XXb6iVN7EynkRqm7xgTDc5gHG7iT6z
-NZSGZKKSWoZxWPGRzIidIXxzIg+l31AIGFZNQPDjyjj8V3JcjKOhp0Zuto/kHxYt
-t7kzrBpkWukwL7miMWCTER/hbO5u4gf8+eaVZRjVzGBwDVkkdBsRABoSDAaUJxBp
-lOxtYNGo/vDT1Kc4sHaowo+LowBqmT0b6N2MG90uzpnFVF1UAoHZrNZvD1QUBJLw
-t8+XzGM1mLuMDKzehbpXmQJzwDXRqxuCoOzhO6TMt4hAkz+AzLjOdEpbvzm1jHn4
-yonQUYepB1Wr4qDJsWjth3Gs8hegAH/RUSXo1L6ecwIN8vG+Ut0sBDQLfy07DE2Z
-yfR+q9i0dHEQrbAyoWYFptwWn45NfofqVcWDe7hd86Km/D3KooWlXVqg4TN+Yo4J
-WSs6dHOCWr0Vg6VocVOHrNKdVHYRLDZk/kNCRn2I1QqpoW6AZwj4LjwvvTbcL1yQ
-vXAasUdeDBmsJ8kW31fEc+wkamczgohCvF7cAtsN7aIdtKYiylpKH1vy8omGYNrn
-DtjWTQAd9pMmcW2kDNfGF9SJxb1YduK4up1BKYwolYleT3s2ekSYFVm1qTasfjqL
-n5Upm5WB9aVh9HL68FFG
-=2UKO
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Dec_2011_12_07_58_+1100_5hdKTycW7OZ7XfXb--
+-- 
+Felipe Contreras
