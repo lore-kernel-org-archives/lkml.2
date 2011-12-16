@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab1LPJCa (ORCPT <rfc822;w@1wt.eu>);
+	id S1760317Ab1LPJCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 04:02:49 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35845 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760216Ab1LPJCa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Dec 2011 04:02:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23478 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760231Ab1LPJBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 04:01:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="102886158"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: [PATCH 3/3] dmaengine: intel_mid_dma: remove legacy pm interface
-Date: Fri, 16 Dec 2011 11:01:40 +0200
-Message-Id: <1324026100-3124-4-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1324026100-3124-1-git-send-email-adrian.hunter@intel.com>
-References: <1324026100-3124-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+Message-ID: <4EEB0923.3000707@gmail.com>
+Date: Fri, 16 Dec 2011 10:02:27 +0100
+From: Julian Sikorski <belegdol@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: bug report: irq 19: nobody cared (try booting with the "irqpoll"
+ option)
+References: <4EEA0485.4050105@gmail.com> <4EEA0521.2030502@gmail.com> <4EEA18A8.5030603@ladisch.de> <4EEA1A81.6030807@gmail.com> <4EEA331F.1060201@ladisch.de> <4EEA34D7.9030109@gmail.com> <4EEB0364.1060101@ladisch.de>
+In-Reply-To: <4EEB0364.1060101@ladisch.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kristen Carlson Accardi <kristen@linux.intel.com>
+W dniu 16.12.2011 09:37, Clemens Ladisch pisze:
+> Julian Sikorski wrote:
+>> W dniu 15.12.2011 18:49, Clemens Ladisch pisze:
+>>> Was it the JMB38x that used a wrong interface number in its PCIe
+>>> transactions, which would make the I/O-MMU map it to the wrong device?
+>>> [...]
+>>> add the kernel parameter intel_iommu=off to the boot loader.
+>>
+>> This did not work
+> 
+>> 00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2
+>>         Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
+>> 00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 4
+>>         Bus: primary=00, secondary=05, subordinate=05, sec-latency=0
+>> ...
+>> 03:00.0 Ethernet controller: JMicron Technology Corp. JMC250 PCI Express Gigabit Ethernet Controller (rev 05)
+>> 03:00.1 System peripheral: JMicron Technology Corp. SD/MMC Host Controller (rev 90)
+>> 03:00.2 SD Host controller: JMicron Technology Corp. Standard SD Host Controller (rev 90) (prog-if 01)
+>> 03:00.3 System peripheral: JMicron Technology Corp. MS Host Controller (rev 90)
+>> 05:00.0 FireWire (IEEE 1394): JMicron Technology Corp. IEEE 1394 Host Controller (prog-if 10 [OHCI])
+> 
+> Sorry, I didn't notice before that your FireWire controller is
+> a physically separate chip on another PCIe port, so whatever is
+> happening is unlikely to be related with another device.
+> 
+> It appears that the JMB381 is not correctly reinitialized when doing
+> a suspend/resume.  However, the driver already does a reset of the chip,
+> so it isn't clear what else could be done.  This might be a problem
+> with the PCI initialization as done by the BIOS; try a BIOS update, if
+> possible.
+> 
+> 
+> Regards,
+> Clemens
 
-Drivers should not support both legacy pm and new framework.
+I am already running the latest BIOS.
+Is there a quirk list somewhere which would force irqpoll for certain
+machines/drivers?
 
-Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
----
- drivers/dma/intel_mid_dma.c      |   12 +++++++-----
- drivers/dma/intel_mid_dma_regs.h |    2 +-
- 2 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index bbcd470..74f70aa 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -873,7 +873,7 @@ static int intel_mid_dma_alloc_chan_resources(struct dma_chan *chan)
- 	pm_runtime_get_sync(&mid->pdev->dev);
- 
- 	if (mid->state == SUSPENDED) {
--		if (dma_resume(mid->pdev)) {
-+		if (dma_resume(&mid->pdev->dev)) {
- 			pr_err("ERR_MDMA: resume failed");
- 			return -EFAULT;
- 		}
-@@ -1346,8 +1346,9 @@ static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
- *
- * This function is called by OS when a power event occurs
- */
--int dma_suspend(struct pci_dev *pci, pm_message_t state)
-+static int dma_suspend(struct device *dev)
- {
-+	struct pci_dev *pci = to_pci_dev(dev);
- 	int i;
- 	struct middma_device *device = pci_get_drvdata(pci);
- 	pr_debug("MDMA: dma_suspend called\n");
-@@ -1371,8 +1372,9 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
- *
- * This function is called by OS when a power event occurs
- */
--int dma_resume(struct pci_dev *pci)
-+int dma_resume(struct device *dev)
- {
-+	struct pci_dev *pci = to_pci_dev(dev);
- 	int ret;
- 	struct middma_device *device = pci_get_drvdata(pci);
- 
-@@ -1438,6 +1440,8 @@ static const struct dev_pm_ops intel_mid_dma_pm = {
- 	.runtime_suspend = dma_runtime_suspend,
- 	.runtime_resume = dma_runtime_resume,
- 	.runtime_idle = dma_runtime_idle,
-+	.suspend = dma_suspend,
-+	.resume = dma_resume,
- };
- 
- static struct pci_driver intel_mid_dma_pci_driver = {
-@@ -1446,8 +1450,6 @@ static struct pci_driver intel_mid_dma_pci_driver = {
- 	.probe		=	intel_mid_dma_probe,
- 	.remove		=	__devexit_p(intel_mid_dma_remove),
- #ifdef CONFIG_PM
--	.suspend = dma_suspend,
--	.resume = dma_resume,
- 	.driver = {
- 		.pm = &intel_mid_dma_pm,
- 	},
-diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
-index c6de919..c83d35b 100644
---- a/drivers/dma/intel_mid_dma_regs.h
-+++ b/drivers/dma/intel_mid_dma_regs.h
-@@ -296,6 +296,6 @@ static inline struct intel_mid_dma_slave *to_intel_mid_dma_slave
- }
- 
- 
--int dma_resume(struct pci_dev *pci);
-+int dma_resume(struct device *dev);
- 
- #endif /*__INTEL_MID_DMAC_REGS_H__*/
--- 
-1.7.6.4
-
+Julian
