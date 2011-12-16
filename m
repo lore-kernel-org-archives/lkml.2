@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1LPIOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 03:14:15 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58115 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759870Ab1LPION (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 03:14:13 -0500
-Date: Fri, 16 Dec 2011 09:14:10 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 4/6] x86, mce: Add mechanism to safely save information
- in MCE handler
-Message-ID: <20111216081410.GA9508@aftab>
-References: <cover.1323979146.git.tony.luck@intel.com>
- <5d6588ab3dadabd8334cffee06b3e87abe3b81b7.1323979146.git.tony.luck@intel.com>
+	id S1760149Ab1LPIPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 03:15:12 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:35775
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756416Ab1LPIPJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 03:15:09 -0500
+X-SpamScore: -15
+X-BigFish: VPS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dajun <dajun.chen@diasemi.com>
+Subject: RE: linux-next: build failure after merge of the regmap tree
+Thread-Topic: linux-next: build failure after merge of the regmap tree
+Thread-Index: AQHMu8pJcS+h6HxWskeAYdU7g1Upj5XeHYhQ
+Date: Fri, 16 Dec 2011 08:15:05 +0000
+Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1F9D1AD3@KCHJEXMB01.kpit.com>
+References: <C3AE124F08223B42BC95AEB82F0F6CED1F9D0895@KCHJEXMB01.kpit.com>
+ <1323941146.32031.49.camel@dhruva>
+ <CACxGe6tfxGToC2ScUdQv7KNu2xdhxA4ZG=Ms=oZZCQ+2A-aiTQ@mail.gmail.com>
+ <C3AE124F08223B42BC95AEB82F0F6CED1F9D1AB5@KCHJEXMB01.kpit.com>
+ <CACxGe6tmqXWZJThk4m31=HzWMZPMMgO4f8h9H=xc_0thjWOJ8Q@mail.gmail.com>
+In-Reply-To: <CACxGe6tmqXWZJThk4m31=HzWMZPMMgO4f8h9H=xc_0thjWOJ8Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.10.38.22]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5d6588ab3dadabd8334cffee06b3e87abe3b81b7.1323979146.git.tony.luck@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 03:55:20PM -0800, Tony Luck wrote:
-> Machine checks on Intel cpus interrupt execution on all cpus, regardless
-> of interrupt masking.  We have a need to save some data about the cause
-> of the machine check (physical address) in the machine check handler that
-> can be retrieved later to attempt recovery in a more flexible execution
-> state.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   43 ++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 645070f..7d7303a 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -887,6 +887,49 @@ static void mce_clear_state(unsigned long *toclear)
->  }
->  
->  /*
-> + * Need to save faulting physical address associated with a process
-> + * in the machine check handler some place where we can grab it back
-> + * later in mce_notify_process()
-> + */
-> +#define	MAX_MCE_INFO	16
-> +
-> +struct mce_info {
-> +	atomic_t		inuse;
-> +	struct task_struct	*t;
-> +	__u64			paddr;
-> +} mce_info[MAX_MCE_INFO];
-> +
-> +static void mce_save_info(__u64 addr)
-> +{
-> +	struct mce_info *mi;
-> +
-> +	for (mi = mce_info; mi < &mce_info[MAX_MCE_INFO]; mi++) {
+-----Original Message-----
+From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+Sent: Friday, December 16, 2011 1:41 PM
+To: Ashish Jangam
+Cc: Stephen Rothwell; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Mark Brown; Dajun
+Subject: Re: linux-next: build failure after merge of the regmap tree
 
-This looks strange, although valid. I thought we do
+On Fri, Dec 16, 2011 at 12:19 AM, Ashish Jangam
+<Ashish.Jangam@kpitcummins.com> wrote:
+>
+>
+> -----Original Message-----
+> From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+> Sent: Thursday, December 15, 2011 11:55 PM
+> To: Ashish Jangam
+> Cc: Stephen Rothwell; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Mark Brown; Dajun
+> Subject: Re: linux-next: build failure after merge of the regmap tree
+>
+> On Thu, Dec 15, 2011 at 2:25 AM, Ashish Jangam
+> <ashish.jangam@kpitcummins.com> wrote:
+>> Fixes DA9052 GPIO errors.
+>>
+>> This patch is functionally tested on Samsung SMDKV6410.
+>>
+>> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+>> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+>> ---
+>>  drivers/gpio/gpio-da9052.c      |   37 ++++--------------------------
+>>  include/linux/mfd/da9052/gpio.h |   48 +++++++++++++++++++++++++++++++++++++++
+>
+> gpio-da9052.c is the only users of mfd/da9052/gpio.h.  Why is this
+> include file needed?  The #defines can simply stay in the .c file.
+> I've picked up the patch, but modified it to keep the header defines
+> in the .c file.  If there is a reason this won't work, then please let
+> me know.
+>
+> This header file is shared between GPIO and LED module. I have already
+> posted this LED long back got ACK but did not got merged due to its
+> dependency on MFD module.
 
-	for (i = 0; i < MCE_INFO_MAX; i++) {
-		struct mce_info *mi = &mce_info[i];
+Are the LEDs attached to GPIOs?  If so, then is there a reason that
+the leds-gpio driver can't be used?
 
-		...
+Oh yes we can use leds-gpio driver.
 
-in such loops. Just a nitpick I guess.
+g.
 
-> +		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
-> +			mi->t = current;
-> +			mi->paddr = addr;
-> +			return;
-> +		}
-> +	}
-> +
-> +	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
 
-So we're setting an artificial limit of 16 in-flight AR errors and if >
-16, we're panicking? Do we really want to do that? I guess we do... I got
-nothing better anyway.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
