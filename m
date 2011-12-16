@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab1LPFjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 00:39:40 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:35459 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab1LPFjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 00:39:37 -0500
-Date: Fri, 16 Dec 2011 16:39:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20111216163928.030494ce1beb330e4e8b7b40@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Dec_2011_16_39_28_+1100_XS=M/gTPfBogq_Gy"
+	id S1751498Ab1LPFvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 00:51:42 -0500
+Received: from tomato.cardboardbox.org.uk ([174.143.157.65]:43147 "EHLO
+	tomato.cardboardbox.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751185Ab1LPFvl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 00:51:41 -0500
+X-Greylist: delayed 842 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Dec 2011 00:51:41 EST
+From: Daniel Palmer <me@danielpalmer.co.uk>
+To: linux-kernel@vger.kernel.org
+Subject: Porting m68k/nommu to a new board.
+Date: Thu, 15 Dec 2011 21:37:29 -0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-rc4-amd64; KDE/4.6.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201112152137.29195.me@danielpalmer.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Dec_2011_16_39_28_+1100_XS=M/gTPfBogq_Gy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Andrew,
+I'm building a custom machine based around a 68sec000 (Fully static 68ec000).
+The "board" is a bunch of parts at the moment but I have written a workable 
+simulator for the machine which I am using as a testbed for testing things 
+like my custom video, DMA controller etc before creating the hardware versions 
+in VHDL.
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I'm interested in getting mmu-less m68k linux (what used to be known as 
+uclinux I guess, seems to be known as m68k/nommu now) running on the simulator 
+and later on the real hardware.
 
-arch/powerpc/kernel/rtas_flash.c: In function 'rtas_flash_release':
-arch/powerpc/kernel/rtas_flash.c:218:16: error: 'struct proc_dir_entry' has=
- no member named 'count'
-arch/powerpc/kernel/rtas_flash.c: In function 'rtas_excl_open':
-arch/powerpc/kernel/rtas_flash.c:343:21: error: 'struct proc_dir_entry' has=
- no member named 'count'
-arch/powerpc/kernel/rtas_flash.c:348:16: error: 'struct proc_dir_entry' has=
- no member named 'count'
-arch/powerpc/kernel/rtas_flash.c: In function 'rtas_excl_release':
-arch/powerpc/kernel/rtas_flash.c:358:16: error: 'struct proc_dir_entry' has=
- no member named 'count'
-arch/powerpc/kernel/rtas_flash.c: In function 'validate_flash_release':
-arch/powerpc/kernel/rtas_flash.c:541:16: error: 'struct proc_dir_entry' has=
- no member named 'count'
+>From what I can tell the nommu m68k port is still active. But does it actually 
+work? All the details on similar hardware (like the older Palm pilots, Atari 
+machines) is pretty ancient, around 2.0. Does anyone have a machine running a 
+recent kernel? Were there issues getting it running?
 
-Caused by commit aef714db6205 ("core kernel: add refcount type and
-refcount misuse debugging").
+I did a bit of digging in the source and doesn't look like it should be too 
+difficult to add the specifics for my machine.. I have a 16550 style UART 
+emulated for I/O so I don't need to write a framebuffer driver at the moment.
+I'm open to any suggestions people have on how to approach this though.
 
-This would also break in drivers/nubus/proc.c
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Please CC me as I'm not subscribed.
 
---Signature=_Fri__16_Dec_2011_16_39_28_+1100_XS=M/gTPfBogq_Gy
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Daniel
 
-iQIcBAEBCAAGBQJO6tmQAAoJEECxmPOUX5FElPkQAKXfEVfU+AGAq15hNllqvb+x
-QY15CozCLj+Mjj4rvUJ31riBFJm/m+nfaSyy4tOCXGzouR7G66aU5vqthKbnXsD2
-HiPYJMvbS9SrYlnJgjolL6PF9ENhNuBnEWpv2/rNPQlODiJY6XPzxkpUZCDil89N
-SriZ25fbiLUoOmf1XxM17wbJOz8iL/W2i6InKT9Ij6aIaoFCNY2nrQWOskdoFYgJ
-SA/POqWd/dsUyq8D73dNcwjeMxoUz9fLKGFjiy7XXO1+kLOanuT+OJzYuz/a93og
-cSb2wR3tM7vM3DDNZktYtIFnVkerzuiaV2fkXNLqzZf9NbmjW0T8pLedRUeWSMN7
-iGAslL0+7kE7okpRE4qpceP1qYipXrzTSpfPQcAfNFAx2FLfTCUATurkSOj6sUOA
-YNHeI/wEbF0IR70SwQkZOy/Dzh64kzBdyRvKv6vR7ICW7jr4Nj7em+E5/BaPedly
-YlPogigFrPo+Y0tls9CGQzIMD/xURfLP+x+PDCQdVBtXUGb0Tje0hp4p5uNXkoSF
-5esiUKvKCvfF5uNFlcjG2Hi+8+U42Pl2Hnh9D9TlflhqSUg7ABFmnf3ugjPqXcu8
-o+wohVEI22Ko6ygiQ+A9U2JvFHe+5z4Fr02dPrUKcibrKJGscDpDPwLIWXn56f1W
-LeB4wSguxv6QLOWepJ6F
-=Po0/
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Dec_2011_16_39_28_+1100_XS=M/gTPfBogq_Gy--
