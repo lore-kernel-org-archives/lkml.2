@@ -1,281 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab1LPKPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 05:15:46 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35563 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab1LPKPh (ORCPT
+	id S1756434Ab1LPKQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 05:16:34 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59858 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab1LPKQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 05:15:37 -0500
-Message-ID: <4EEB1A41.7090902@linux.vnet.ibm.com>
-Date: Fri, 16 Dec 2011 18:15:29 +0800
+	Fri, 16 Dec 2011 05:16:26 -0500
+Message-ID: <4EEB1A71.4040503@linux.vnet.ibm.com>
+Date: Fri, 16 Dec 2011 18:16:17 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 3/8] KVM: MMU: do not add a nonpresent spte to rmaps of its
- child
+Subject: [PATCH 4/8] KVM: MMU: drop unsync_child_bitmap
 References: <4EEB19AF.5070501@linux.vnet.ibm.com>
 In-Reply-To: <4EEB19AF.5070501@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 11121610-5816-0000-0000-000000794F1E
+x-cbid: 11121610-3864-0000-0000-00000088A72C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the spte before adding it to the rmap of its child so that all parent
-spte are valid when propagate unsync bit from a usnync page / children page
-
-And this feature is needed by the later patch
+unsync_child_bitmap is used to record which spte has unsync page or unsync
+children, we can set a free bit in the spte instead of it
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c         |   74 +++++++++++++++----------------------------
- arch/x86/kvm/mmutrace.h    |    2 +-
- arch/x86/kvm/paging_tmpl.h |   14 +++-----
- 3 files changed, 32 insertions(+), 58 deletions(-)
+ Documentation/virtual/kvm/mmu.txt |    4 --
+ arch/x86/include/asm/kvm_host.h   |    1 -
+ arch/x86/kvm/mmu.c                |   77 +++++++++++++++++++++++++------------
+ 3 files changed, 52 insertions(+), 30 deletions(-)
 
+diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+index 4a5fedd..6d70a6e 100644
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -214,10 +214,6 @@ Shadow pages contain the following information:
+   unsync_children:
+     It is used when role.level > 1 and indicates how many sptes in the page
+     point at unsync pages or unsynchronized children.
+-  unsync_child_bitmap:
+-    A bitmap indicating which sptes in spt point (directly or indirectly) at
+-    pages that may be unsynchronized.  Used to quickly locate all unsychronized
+-    pages reachable from a given page.
+
+ Reverse map
+ ===========
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c0a89cd..601c7f6 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -247,7 +247,6 @@ struct kvm_mmu_page {
+ 	};
+
+ 	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+-	DECLARE_BITMAP(unsync_child_bitmap, 512);
+
+ #ifdef CONFIG_X86_32
+ 	int clear_spte_count;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a2d28aa..89202f4 100644
+index 89202f4..9bd2084 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1321,12 +1321,14 @@ static unsigned kvm_page_table_hashfn(gfn_t gfn)
- 	return gfn & ((1 << KVM_MMU_HASH_SHIFT) - 1);
+@@ -147,7 +147,8 @@ module_param(dbg, bool, 0644);
+ #define CREATE_TRACE_POINTS
+ #include "mmutrace.h"
+
+-#define SPTE_HOST_WRITEABLE (1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_UNSYNC_CHILD	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
+
+ #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+ #define SHADOW_PAGE_TABLE						\
+@@ -561,6 +562,40 @@ static void mmu_spte_clear_no_track(u64 *sptep)
+ 	__update_clear_spte_fast(sptep, 0ull);
  }
 
--static void mmu_page_add_parent_pte(struct kvm_vcpu *vcpu,
--				    struct kvm_mmu_page *sp, u64 *parent_pte)
-+static void mmu_page_add_set_parent_pte(struct kvm_vcpu *vcpu,
-+					struct kvm_mmu_page *sp,
-+					u64 *parent_pte)
++static bool mmu_spte_mark_unsync_child(struct kvm_mmu_page *sp, u64 *sptep)
++{
++	u64 new_spte = *sptep;
++	bool unsync_child = new_spte & SPTE_UNSYNC_CHILD;
++
++	if (unsync_child)
++		return true;
++
++	new_spte |= SPTE_UNSYNC_CHILD;
++	__set_spte(sptep, new_spte);
++	return sp->unsync_children++;
++}
++
++static bool mmu_spte_is_unsync_child(u64 *sptep)
++{
++	return *sptep & SPTE_UNSYNC_CHILD;
++}
++
++static void __mmu_spte_clear_unsync_child(u64 *sptep)
++{
++	page_header(__pa(sptep))->unsync_children--;
++	WARN_ON((int)page_header(__pa(sptep))->unsync_children < 0);
++}
++
++static void mmu_spte_clear_unsync_child(u64 *sptep)
++{
++	u64 new_spte = *sptep;
++
++	if (new_spte & SPTE_UNSYNC_CHILD) {
++		__set_spte(sptep, new_spte & ~SPTE_UNSYNC_CHILD);
++		__mmu_spte_clear_unsync_child(sptep);
++	}
++}
++
+ static u64 mmu_spte_get_lockless(u64 *sptep)
  {
- 	if (!parent_pte)
- 		return;
-
-+	mmu_spte_set(parent_pte, __pa(sp->spt) | SHADOW_PAGE_TABLE);
- 	pte_list_add(vcpu, parent_pte, &sp->parent_ptes);
- }
-
-@@ -1357,7 +1359,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
- 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
- 	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	sp->parent_ptes = 0;
--	mmu_page_add_parent_pte(vcpu, sp, parent_pte);
-+	mmu_page_add_set_parent_pte(vcpu, sp, parent_pte);
- 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
- 	return sp;
- }
-@@ -1690,13 +1692,10 @@ static void clear_sp_write_flooding_count(u64 *spte)
- 	__clear_sp_write_flooding_count(sp);
- }
-
--static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
--					     gfn_t gfn,
--					     gva_t gaddr,
--					     unsigned level,
--					     int direct,
--					     unsigned access,
--					     u64 *parent_pte)
-+static struct kvm_mmu_page *
-+kvm_mmu_get_set_page(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gaddr,
-+		     unsigned level, int direct, unsigned access,
-+		     u64 *parent_pte)
+ 	return __get_spte_lockless(sptep);
+@@ -1342,6 +1377,10 @@ static void drop_parent_pte(struct kvm_mmu_page *sp,
+ 			    u64 *parent_pte)
  {
- 	union kvm_mmu_page_role role;
- 	unsigned quadrant;
-@@ -1726,7 +1725,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 		if (sp_is_unsync(sp) && kvm_sync_page_transient(vcpu, sp))
- 			break;
-
--		mmu_page_add_parent_pte(vcpu, sp, parent_pte);
-+		mmu_page_add_set_parent_pte(vcpu, sp, parent_pte);
- 		if (sp_unsync_children_num(sp)) {
- 			kvm_make_request(KVM_REQ_MMU_SYNC, vcpu);
- 			kvm_mmu_mark_parents_unsync(sp);
-@@ -1734,7 +1733,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 			kvm_mmu_mark_parents_unsync(sp);
-
- 		__clear_sp_write_flooding_count(sp);
--		trace_kvm_mmu_get_page(sp, false);
-+		trace_kvm_mmu_get_set_page(sp, false);
- 		return sp;
- 	}
- 	++vcpu->kvm->stat.mmu_cache_miss;
-@@ -1754,7 +1753,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 		account_shadowed(vcpu->kvm, gfn);
- 	}
- 	init_shadow_page_table(sp);
--	trace_kvm_mmu_get_page(sp, true);
-+	trace_kvm_mmu_get_set_page(sp, true);
- 	return sp;
+ 	mmu_page_remove_parent_pte(sp, parent_pte);
++
++	if (*parent_pte & SPTE_UNSYNC_CHILD)
++		__mmu_spte_clear_unsync_child(parent_pte);
++
+ 	mmu_spte_clear_no_track(parent_pte);
  }
 
-@@ -1807,14 +1806,6 @@ static void shadow_walk_next(struct kvm_shadow_walk_iterator *iterator)
- 	return __shadow_walk_next(iterator, *iterator->sptep);
- }
+@@ -1372,16 +1411,10 @@ static void kvm_mmu_mark_parents_unsync(struct kvm_mmu_page *sp)
 
--static void link_shadow_page(u64 *sptep, struct kvm_mmu_page *sp)
--{
--	u64 spte;
--
--	spte = __pa(sp->spt) | SHADOW_PAGE_TABLE;
--	mmu_spte_set(sptep, spte);
--}
--
- static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+ static void mark_unsync(u64 *spte)
  {
- 	if (is_large_pte(*sptep)) {
-@@ -1879,11 +1870,6 @@ static void kvm_mmu_page_unlink_children(struct kvm *kvm,
- 		mmu_page_zap_pte(kvm, sp, sp->spt + i);
- }
-
--static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
--{
--	mmu_page_remove_parent_pte(sp, parent_pte);
--}
--
- static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
- {
- 	u64 *parent_pte;
-@@ -2468,7 +2454,6 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			bool prefault)
- {
- 	struct kvm_shadow_walk_iterator iterator;
 -	struct kvm_mmu_page *sp;
- 	int emulate = 0;
- 	gfn_t pseudo_gfn;
+-	unsigned int index;
++	struct kvm_mmu_page *sp = page_header(__pa(spte));
 
-@@ -2489,16 +2474,9 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+-	sp = page_header(__pa(spte));
+-	index = spte - sp->spt;
+-	if (__test_and_set_bit(index, sp->unsync_child_bitmap))
+-		return;
+-	if (sp->unsync_children++)
+-		return;
+-	kvm_mmu_mark_parents_unsync(sp);
++	if (!mmu_spte_mark_unsync_child(sp, spte))
++		kvm_mmu_mark_parents_unsync(sp);
+ }
 
- 			base_addr &= PT64_LVL_ADDR_MASK(iterator.level);
- 			pseudo_gfn = base_addr >> PAGE_SHIFT;
--			sp = kvm_mmu_get_page(vcpu, pseudo_gfn, iterator.addr,
--					      iterator.level - 1,
--					      1, ACC_ALL, iterator.sptep);
--			if (!sp) {
--				pgprintk("nonpaging_map: ENOMEM\n");
--				kvm_release_pfn_clean(pfn);
--				return -ENOMEM;
--			}
+ static int nonpaging_sync_page(struct kvm_vcpu *vcpu,
+@@ -1411,10 +1444,9 @@ struct kvm_mmu_pages {
+ 	unsigned int nr;
+ };
+
+-#define for_each_unsync_children(bitmap, idx)		\
+-	for (idx = find_first_bit(bitmap, 512);		\
+-	     idx < 512;					\
+-	     idx = find_next_bit(bitmap, 512, idx+1))
++#define for_each_unsync_children(sp, sptep, idx)			\
++	for (idx = 0; idx < 512 && ((sptep) = (sp)->spt + idx); idx++)	\
++		if (!mmu_spte_is_unsync_child(sptep)) {} else
+
+ static int mmu_pages_add(struct kvm_mmu_pages *pvec, struct kvm_mmu_page *sp,
+ 			 int idx)
+@@ -1435,14 +1467,14 @@ static int mmu_pages_add(struct kvm_mmu_pages *pvec, struct kvm_mmu_page *sp,
+ static int __mmu_unsync_walk(struct kvm_mmu_page *sp,
+ 			   struct kvm_mmu_pages *pvec)
+ {
++	u64 *spte;
+ 	int i, ret, nr_unsync_leaf = 0;
+
+-	for_each_unsync_children(sp->unsync_child_bitmap, i) {
++	for_each_unsync_children(sp, spte, i) {
+ 		struct kvm_mmu_page *child;
+-		u64 ent = sp->spt[i];
++		u64 ent = *spte;
+
+-		if (!is_shadow_present_pte(ent) || is_large_pte(ent))
+-			goto clear_child_bitmap;
++		WARN_ON(!is_shadow_present_pte(ent) || is_large_pte(ent));
+
+ 		child = page_header(ent & PT64_BASE_ADDR_MASK);
+
+@@ -1467,12 +1499,9 @@ static int __mmu_unsync_walk(struct kvm_mmu_page *sp,
+ 		continue;
+
+ clear_child_bitmap:
+-		__clear_bit(i, sp->unsync_child_bitmap);
+-		sp->unsync_children--;
+-		WARN_ON((int)sp->unsync_children < 0);
++		mmu_spte_clear_unsync_child(spte);
+ 	}
+
 -
--			link_shadow_page(iterator.sptep, sp);
-+			kvm_mmu_get_set_page(vcpu, pseudo_gfn, iterator.addr,
-+					     iterator.level - 1,
-+					     1, ACC_ALL, iterator.sptep);
- 		}
- 	}
- 	return emulate;
-@@ -2713,8 +2691,8 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
- 	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		kvm_mmu_free_some_pages(vcpu);
--		sp = kvm_mmu_get_page(vcpu, 0, 0, PT64_ROOT_LEVEL,
--				      1, ACC_ALL, NULL);
-+		sp = kvm_mmu_get_set_page(vcpu, 0, 0, PT64_ROOT_LEVEL,
-+					  1, ACC_ALL, NULL);
- 		++sp->root_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = __pa(sp->spt);
-@@ -2725,10 +2703,10 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
- 			ASSERT(!VALID_PAGE(root));
- 			spin_lock(&vcpu->kvm->mmu_lock);
- 			kvm_mmu_free_some_pages(vcpu);
--			sp = kvm_mmu_get_page(vcpu, i << (30 - PAGE_SHIFT),
--					      i << 30,
--					      PT32_ROOT_LEVEL, 1, ACC_ALL,
--					      NULL);
-+			sp = kvm_mmu_get_set_page(vcpu, i << (30 - PAGE_SHIFT),
-+						  i << 30,
-+						  PT32_ROOT_LEVEL, 1, ACC_ALL,
-+						  NULL);
- 			root = __pa(sp->spt);
- 			++sp->root_count;
- 			spin_unlock(&vcpu->kvm->mmu_lock);
-@@ -2764,8 +2742,8 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
+ 	return nr_unsync_leaf;
+ }
 
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		kvm_mmu_free_some_pages(vcpu);
--		sp = kvm_mmu_get_page(vcpu, root_gfn, 0, PT64_ROOT_LEVEL,
--				      0, ACC_ALL, NULL);
-+		sp = kvm_mmu_get_set_page(vcpu, root_gfn, 0, PT64_ROOT_LEVEL,
-+					  0, ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
-@@ -2798,9 +2776,9 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- 		}
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		kvm_mmu_free_some_pages(vcpu);
--		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
--				      PT32_ROOT_LEVEL, 0,
--				      ACC_ALL, NULL);
-+		sp = kvm_mmu_get_set_page(vcpu, root_gfn, i << 30,
-+					  PT32_ROOT_LEVEL, 0,
-+					  ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 7fe9562..f100078 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -145,7 +145,7 @@ TRACE_EVENT(
- );
+@@ -1628,9 +1657,7 @@ static void mmu_pages_clear_parents(struct mmu_page_path *parents)
+ 		if (!sp)
+ 			return;
 
- TRACE_EVENT(
--	kvm_mmu_get_page,
-+	kvm_mmu_get_set_page,
- 	TP_PROTO(struct kvm_mmu_page *sp, bool created),
- 	TP_ARGS(sp, created),
-
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 7dacc80..c79c503 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -503,8 +503,8 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 		sp = NULL;
- 		if (!is_shadow_present_pte(*it.sptep)) {
- 			table_gfn = gw->table_gfn[it.level - 2];
--			sp = kvm_mmu_get_page(vcpu, table_gfn, addr, it.level-1,
--					      false, access, it.sptep);
-+			sp = kvm_mmu_get_set_page(vcpu, table_gfn, addr,
-+					it.level - 1, false, access, it.sptep);
- 		}
-
- 		/*
-@@ -513,9 +513,6 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 		 */
- 		if (FNAME(gpte_changed)(vcpu, gw, it.level - 1))
- 			goto out_gpte_changed;
--
--		if (sp)
--			link_shadow_page(it.sptep, sp);
- 	}
-
- 	for (;
-@@ -533,9 +530,8 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-
- 		direct_gfn = gw->gfn & ~(KVM_PAGES_PER_HPAGE(it.level) - 1);
-
--		sp = kvm_mmu_get_page(vcpu, direct_gfn, addr, it.level-1,
--				      true, direct_access, it.sptep);
--		link_shadow_page(it.sptep, sp);
-+		kvm_mmu_get_set_page(vcpu, direct_gfn, addr, it.level - 1,
-+				     true, direct_access, it.sptep);
- 	}
-
- 	clear_sp_write_flooding_count(it.sptep);
-@@ -548,7 +544,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-
- out_gpte_changed:
- 	if (sp)
--		kvm_mmu_put_page(sp, it.sptep);
-+		drop_parent_pte(sp, it.sptep);
- 	kvm_release_pfn_clean(pfn);
- 	return NULL;
+-		--sp->unsync_children;
+-		WARN_ON((int)sp->unsync_children < 0);
+-		__clear_bit(idx, sp->unsync_child_bitmap);
++		mmu_spte_clear_unsync_child(sp->spt + idx);
+ 		level++;
+ 	} while (level < PT64_ROOT_LEVEL-1 && !sp->unsync_children);
  }
 -- 
 1.7.7.4
