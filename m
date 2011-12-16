@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760067Ab1LPDH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 22:07:29 -0500
-Received: from relay.arba.gov.ar ([170.155.16.100]:36037 "EHLO
-	axiom.infra.arba.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab1LPDH1 convert rfc822-to-8bit (ORCPT
+	id S1760028Ab1LPDVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 22:21:22 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:49546
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751672Ab1LPDVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 22:07:27 -0500
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Dec 2011 22:07:27 EST
-Message-ID: <20111216000541.2056575e0zp6mw05@webmail.ec.gba.gov.ar>
-Date: Fri, 16 Dec 2011 00:05:41 -0300
-From: LULEA UNIVERSITY OF TECHNOLOGY Webmail Upgrade
-	 Department <mcabrera@ec.gba.gov.ar>
-Reply-to: webmail@kimo.com
-To: 1@info.net
-Subject: CUENTA Warnung
+	Thu, 15 Dec 2011 22:21:21 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4EEAB90D.3050504@am.sony.com>
+Date: Thu, 15 Dec 2011 19:20:45 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+To: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <peterz@infradead.org>, <catalin.marinas@arm.com>
+CC: <rostedt@goodmis.org>
+Subject: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Estimado  Email Universitat  titular de la cuenta,
+ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
+(application specific ID). The number of ASIDs is limited to 256 and
+the allocation algorithm requires IPIs when all the ASIDs have been
+used.  The IPIs require interrupts enabled during context switch for
+deadlock avoidance.
 
-Este mensaje es por la Universitat ACTUALIZACIÓN centro de mensajes para todos
-los WEBMAIL Universitat
-propietarios de cuentas de correo electrónico. En estos momentos estamos
-actualizando nuestra base de datos y la cuenta de correo electrónico
-centro. Estamos eliminando todas las cuentas de correo electrónico sin
-clasificar y sin usar para crear espacio para
-nuevas cuentas. Para evitar que su cuenta sea desactivada, tendrá que
-actualizarlo mediante el envío de la información followning.
+The RT patch mm-protect-activate-switch-mm.patch disables irqs around
+activate_mm() and switch_mm(), which are the portion of the ARMv6
+context switch that require interrupts enabled.
 
+The solution for the ARMv6 processors could be to _not_ disable irqs.
+A more conservative solution is to provide the same environment that
+the scheduler provides, that is preempt_disable().  This is more
+resilient for possible future changes to the ARM context switch code
+that is not aware of the RT patches.
 
-CONFIRMAR SU CUENTA DE CORREO ELECTRÓNICO
-Nombre de usuario E-mail: ...............
-Correo electrónico Contraseña: ..............
-Fecha de nacimiento: ..................
-País o territorio: .........
+This patch will conflict slightly with Catalin's patch set to remove
+__ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
 
-Advertencia! Todos titular de la cuenta Universitat que se niega a  
-actualizar su
-cuenta dentro de los siete días de haber recibido este correo electrónico a
-perder su
-cuenta de forma permanente.
+   http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
 
+When Catalin's patch set is accepted, this RT patch will need to reverse
+the change in patch 6 to arch/arm/include/asm/system.h:
 
-Gracias por usar Universitat Webmail!
-Universitat Código Advertencia: USV64MT1
+   -#ifndef CONFIG_CPU_HAS_ASID
+   -#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+   -#endif
 
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
 
-Gracias,
-Universitat ACTUALIZACIÓN DE EQUIPO
-Universitat WEBMAIL EQUIPO Beta
+---
+ fs/exec.c        |    8 	8 +	0 -	0 !
+ mm/mmu_context.c |    8 	8 +	0 -	0 !
+ 2 files changed, 16 insertions(+)
 
-EDU WEBMAIL EQUIPO
-
-
-
-
-
-
+Index: b/fs/exec.c
+===================================================================
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -837,12 +837,20 @@ static int exec_mmap(struct mm_struct *m
+ 		}
+ 	}
+ 	task_lock(tsk);
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	preempt_disable();
++#else
+ 	local_irq_disable_rt();
++#endif
+ 	active_mm = tsk->active_mm;
+ 	tsk->mm = mm;
+ 	tsk->active_mm = mm;
+ 	activate_mm(active_mm, mm);
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	preempt_enable();
++#else
+ 	local_irq_enable_rt();
++#endif
+ 	task_unlock(tsk);
+ 	arch_pick_mmap_layout(mm);
+ 	if (old_mm) {
+Index: b/mm/mmu_context.c
+===================================================================
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -26,7 +26,11 @@ void use_mm(struct mm_struct *mm)
+ 	struct task_struct *tsk = current;
+ 
+ 	task_lock(tsk);
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	preempt_disable();
++#else
+ 	local_irq_disable_rt();
++#endif
+ 	active_mm = tsk->active_mm;
+ 	if (active_mm != mm) {
+ 		atomic_inc(&mm->mm_count);
+@@ -34,7 +38,11 @@ void use_mm(struct mm_struct *mm)
+ 	}
+ 	tsk->mm = mm;
+ 	switch_mm(active_mm, mm, tsk);
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	preempt_enable();
++#else
+ 	local_irq_enable_rt();
++#endif
+ 	task_unlock(tsk);
+ 
+ 	if (active_mm != mm)
 
