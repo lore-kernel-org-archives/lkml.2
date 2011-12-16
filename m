@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab1LPUFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:05:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45033 "EHLO mx2.suse.de"
+	id S932913Ab1LPUFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:05:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45024 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab1LPTuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:50:10 -0500
+	id S932763Ab1LPTuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:50:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:46:01 2011
-Message-Id: <20111216194601.270655811@clark.kroah.org>
+Message-Id: <20111216194600.923232533@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:41 -0800
+Date: Fri, 16 Dec 2011 11:45:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [44/53] ext4: avoid potential hang in mpage_submit_io() when blocksize < pagesize
+        alan@lxorguk.ukuu.org.uk, "Theodore Tso" <tytso@mit.edu>
+Subject: [42/53] ext4: display the correct mount option in /proc/mounts for [no]init_itable
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +24,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 13a79a4741d37fda2fbafb953f0f301dc007928f upstream.
+commit fc6cb1cda5db7b2d24bf32890826214b857c728e upstream.
 
-If there is an unwritten but clean buffer in a page and there is a
-dirty buffer after the buffer, then mpage_submit_io does not write the
-dirty buffer out.  As a result, da_writepages loops forever.
+/proc/mounts was showing the mount option [no]init_inode_table when
+the correct mount option that will be accepted by parse_options() is
+[no]init_itable.
 
-This patch fixes the problem by checking dirty flag.
-
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/ext4/super.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1261,8 +1261,11 @@ static int mpage_da_submit_io(struct mpa
- 					clear_buffer_unwritten(bh);
- 				}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1140,9 +1140,9 @@ static int ext4_show_options(struct seq_
+ 		seq_puts(seq, ",block_validity");
  
--				/* skip page if block allocation undone */
--				if (buffer_delay(bh) || buffer_unwritten(bh))
-+				/*
-+				 * skip page if block allocation undone and
-+				 * block is dirty
-+				 */
-+				if (ext4_bh_delay_or_unwritten(NULL, bh))
- 					skip_page = 1;
- 				bh = bh->b_this_page;
- 				block_start += bh->b_size;
+ 	if (!test_opt(sb, INIT_INODE_TABLE))
+-		seq_puts(seq, ",noinit_inode_table");
++		seq_puts(seq, ",noinit_itable");
+ 	else if (sbi->s_li_wait_mult != EXT4_DEF_LI_WAIT_MULT)
+-		seq_printf(seq, ",init_inode_table=%u",
++		seq_printf(seq, ",init_itable=%u",
+ 			   (unsigned) sbi->s_li_wait_mult);
+ 
+ 	ext4_show_quota_options(seq, sb);
+@@ -1318,8 +1318,7 @@ enum {
+ 	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
+ 	Opt_inode_readahead_blks, Opt_journal_ioprio,
+ 	Opt_dioread_nolock, Opt_dioread_lock,
+-	Opt_discard, Opt_nodiscard,
+-	Opt_init_inode_table, Opt_noinit_inode_table,
++	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
+ };
+ 
+ static const match_table_t tokens = {
+@@ -1392,9 +1391,9 @@ static const match_table_t tokens = {
+ 	{Opt_dioread_lock, "dioread_lock"},
+ 	{Opt_discard, "discard"},
+ 	{Opt_nodiscard, "nodiscard"},
+-	{Opt_init_inode_table, "init_itable=%u"},
+-	{Opt_init_inode_table, "init_itable"},
+-	{Opt_noinit_inode_table, "noinit_itable"},
++	{Opt_init_itable, "init_itable=%u"},
++	{Opt_init_itable, "init_itable"},
++	{Opt_noinit_itable, "noinit_itable"},
+ 	{Opt_err, NULL},
+ };
+ 
+@@ -1871,7 +1870,7 @@ set_qf_format:
+ 		case Opt_dioread_lock:
+ 			clear_opt(sb, DIOREAD_NOLOCK);
+ 			break;
+-		case Opt_init_inode_table:
++		case Opt_init_itable:
+ 			set_opt(sb, INIT_INODE_TABLE);
+ 			if (args[0].from) {
+ 				if (match_int(&args[0], &option))
+@@ -1882,7 +1881,7 @@ set_qf_format:
+ 				return 0;
+ 			sbi->s_li_wait_mult = option;
+ 			break;
+-		case Opt_noinit_inode_table:
++		case Opt_noinit_itable:
+ 			clear_opt(sb, INIT_INODE_TABLE);
+ 			break;
+ 		default:
 
 
