@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760797Ab1LPXhW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:37:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59256 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab1LPXhS (ORCPT
+	id S1760760Ab1LPXrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:47:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58038 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab1LPXq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:37:18 -0500
-Date: Fri, 16 Dec 2011 15:37:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/11] Reduce compaction-related stalls and improve
- asynchronous migration of dirty pages v6
-Message-Id: <20111216153716.434bbf05.akpm@linux-foundation.org>
-In-Reply-To: <1323877293-15401-1-git-send-email-mgorman@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Dec 2011 18:46:57 -0500
+Date: Fri, 16 Dec 2011 21:46:47 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Brian Gitonga Marete <marete@toshnix.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+Message-ID: <20111216234647.GA25813@infradead.org>
+References: <20111020130041.GB1772@ghostprotocols.net>
+ <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+ <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
+ <20111130181011.GA4111@infradead.org>
+ <CAHVUoiQC5RjuHUsfPVTQ_C+W0Khp=hQC+_csP0+fJgUnoaALAA@mail.gmail.com>
+ <20111201141130.GA2323@infradead.org>
+ <CAHVUoiR=gMcdLZcR+TmB6CiRhEP+x8aXjR5r5Wc4k6gZwzLAjg@mail.gmail.com>
+ <20111206134431.GA10709@infradead.org>
+ <CAHVUoiSaOMeyZ45KF0B=aiqC5DGF0Jk+te7F=UNTN6t4QiPcRQ@mail.gmail.com>
+ <CAHVUoiT-tyHikZ6E-08Pxoy-inquTMyO+E3qajtRGun1Y0_adA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHVUoiT-tyHikZ6E-08Pxoy-inquTMyO+E3qajtRGun1Y0_adA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011 15:41:22 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+Em Fri, Dec 16, 2011 at 01:04:14AM +0300, Brian Gitonga Marete escreveu:
+> Looking at the code, it seems that the connection between the TUI
+> interface and the core (where the crash occurs) is that the TUI
+> interface activates the annotation code which otherwise is not run. So
+> the bug is probably in the annotation code? Or in the version of the
+> binary (ELF) decoding libraries that are on my system -- Ubuntu 10.10
 
-> Short summary: There are severe stalls when a USB stick using VFAT
-> is used with THP enabled that are reduced by this series. If you are
-> experiencing this problem, please test and report back and considering
-> I have seen complaints from openSUSE and Fedora users on this as well
-> as a few private mails, I'm guessing it's a widespread issue. This
-> is a new type of USB-related stall because it is due to synchronous
-> compaction writing where as in the past the big problem was dirty
-> pages reaching the end of the LRU and being written by reclaim.
+I'm travelling, so I was unable to work on this report. I should've
+already, and thank you for investigating it further.
 
-Overall footprint:
+While doing presentations about perf on an Atom (32 bit) machine I
+noticed crashes while collecting callchains.
 
- fs/btrfs/disk-io.c            |    5 
- fs/hugetlbfs/inode.c          |    3 
- fs/nfs/internal.h             |    2 
- fs/nfs/write.c                |    4 
- include/linux/fs.h            |   11 +-
- include/linux/migrate.h       |   23 +++-
- include/linux/mmzone.h        |    4 
- include/linux/vm_event_item.h |    1 
- mm/compaction.c               |    5 
- mm/memory-failure.c           |    2 
- mm/memory_hotplug.c           |    2 
- mm/mempolicy.c                |    2 
- mm/migrate.c                  |  171 +++++++++++++++++++++-----------
- mm/page_alloc.c               |   50 +++++++--
- mm/swap.c                     |   74 ++++++++++++-
- mm/vmscan.c                   |  114 ++++++++++++++++++---
- mm/vmstat.c                   |    2 
- 17 files changed, 371 insertions(+), 104 deletions(-)
+Are your crashes noticed on 32-bit or 64-bit?
 
-The line count belies the increase in complexity.
+I'll try to get it fixed as soon as I get back home.
 
-Sigh, this whole hugetlb page thing is just killing us.
+- Arnaldo
