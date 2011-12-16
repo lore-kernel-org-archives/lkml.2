@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760073Ab1LPXNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:13:33 -0500
-Received: from postino.bo.infn.it ([131.154.11.5]:47365 "EHLO
-	postino.bo.infn.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab1LPXN0 (ORCPT
+	id S1760471Ab1LPXOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:14:45 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53815 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab1LPXOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:13:26 -0500
-Date: Sat, 17 Dec 2011 01:15:17 +0100 (CET)
-From: Stefano Laporta <Stefano.Laporta@bo.infn.it>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Stefano Laporta <Stefano.Laporta@bo.infn.it>, linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: Re: 3.1.3 2.6.37.6 2.6.33.4 kernel bug in pata_oldpiix driver
-In-Reply-To: <20111128212734.7818a2d6@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LNX.2.00.1112170047330.2197@g-3.bo.infn.it>
-References: <alpine.LNX.2.00.1111281823440.12891@g-3.bo.infn.it> <20111128212734.7818a2d6@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 16 Dec 2011 18:14:38 -0500
+Date: Fri, 16 Dec 2011 17:14:30 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Urban Loesch <bind@enas.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: divide by zero error: find busiest group on kernel 2.6.38.4
+Message-ID: <20111216231414.GA7941@BohrerMBP.rgmadvisors.com>
+References: <4EDB7CE0.9010105@enas.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (postino.bo.infn.it [131.154.11.5]); Sat, 17 Dec 2011 00:13:16 +0100 (CET)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDB7CE0.9010105@enas.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been able to find another similar PC still working, a Pentium 90MHz
-with Intel i430FX chipset, 32MB of RAM, an 1.2GB HD and a CD-ROM.
-The kernels which crash on my Pentium 133MHz  crash even on the Pentium 90,
-  giving exactly the same error messages.
+On Sun, Dec 04, 2011 at 03:00:00PM +0100, Urban Loesch wrote:
+> I'm running a DELL PE R610 with kernel
+> 2.6.38.4 patched with linux vserver version vs2.3.0.37-rc15 from
+> http://linux-vserver.org.
+> 
+> The server runs fine about 220 days without any problems.
+> But last night there was a kernel panic and the server totally hangs.
+> 
+> Thanks to netconsole I got the following error in my syslogserver:
+> 
+> 
+> 2011-12-04 00:32:16 divide error: 0000 [#1]
+> 2011-12-04 00:32:16 SMP
+<snip>
+> 2011-12-04 00:32:16 Pid: 0, comm: kworker/0:1 Not tainted
+> 2.6.38.4-vs2.3.0.37-rc15-rol-em64t #1
+> 2011-12-04 00:32:16
+> 2011-12-04 00:32:16 Dell Inc. PowerEdge R610
+> 2011-12-04 00:32:16 /
+> 2011-12-04 00:32:16 0F0XJ6
+> 2011-12-04 00:32:16
+> 2011-12-04 00:32:16 RIP: 0010:[<ffffffff8103abb8>]
+> 2011-12-04 00:32:16 [<ffffffff8103abb8>]
+> find_busiest_group+0x428/0xdd0
 
-So it seems not to be a problem of a single machine.
+This looks like the same issue as:
 
-I switched on the debug options in kernel configuration, but this makes 
-the bug (apparently) disappear. Memory overwrites are always difficult 
-to catch.
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=636797
+and
+https://bugs.launchpad.net/linux/+bug/614853
 
+In theory there is also a bugzilla.kernel.org ticket on this issue as
+well though bugzilla.kernel.org is still down.
 
-On Mon, 28 Nov 2011, Alan Cox wrote:
+https://bugzilla.kernel.org/show_bug.cgi?id=16991
 
->> BUG: unable to handle kernel paging request at 45230451
->
-> That looks like junk from somewhere.
->
->> IP: [<c17bb1f3>] oldpiix_set_dmamode+0xb3/0x120
->
->>   [<c17bb3b0>] ? oldpiix_qc_issue+0x40/0x60
->>   [<c1788d8a>] ? ata_qc_issue+0x1ea/0x330
->
-> So we were issuing a command, we called the oldpiix code, it decided that
-> the timings were not loaded for this drive (ie it was those loaded for
-> the other device on the bus)
->
-> It will then have gone into oldpiix_set_piomode which ran succesfully
-> implying that ap and adev were valid at that point but seem to have
-> mysteriously gone invalid later.
->
-> No idea, and the fact that changing things like the pre-empt behaviour or
-> build options makes me wonder if it was scribbled on from elsewhere.
->
->
->
+Debian and Ubuntu have papered over this bug by skipping the divide if
+cpu_power is 0.
+
+> I searched the archives but I didn't find any related information.
+> Have you any idea what this error could be and is it fixed in kernel 3.1?
+
+To my knowledge the cause of this bug is still unknown.  It is
+possible it is fixed in newer kernels, but it is hard to tell since it
+doesn't seem to occur until you have reached 200+ days of uptime.
+
+--
+Shawn
