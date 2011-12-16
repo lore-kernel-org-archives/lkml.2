@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030277Ab1LPUyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:54:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49028 "EHLO mx2.suse.de"
+	id S1760750Ab1LPUyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:54:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48998 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964984Ab1LPUwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:52:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:42 2011
-Message-Id: <20111216205042.791953117@clark.kroah.org>
+	id S932746Ab1LPUwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 15:52:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 12:50:43 2011
+Message-Id: <20111216205043.645629795@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 12:49:38 -0800
+Date: Fri, 16 Dec 2011 12:49:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Carl Love <carll@us.ibm.com>, Robert Richter <robert.richter@amd.com>
-Subject: [05/16] oprofile: Fix locking dependency in sync_start()
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [15/16] ext4: avoid hangs in ext4_da_should_update_i_disksize()
 In-Reply-To: <20111216205049.GA28030@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,153 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@amd.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 130c5ce716c9bfd1c2a2ec840a746eb7ff9ce1e6 upstream.
+commit ea51d132dbf9b00063169c1159bee253d9649224 upstream.
 
-This fixes the A->B/B->A locking dependency, see the warning below.
+If the pte mapping in generic_perform_write() is unmapped between
+iov_iter_fault_in_readable() and iov_iter_copy_from_user_atomic(), the
+"copied" parameter to ->end_write can be zero. ext4 couldn't cope with
+it with delayed allocations enabled. This skips the i_disksize
+enlargement logic if copied is zero and no new data was appeneded to
+the inode.
 
-The function task_exit_notify() is called with (task_exit_notifier)
-.rwsem set and then calls sync_buffer() which locks buffer_mutex. In
-sync_start() the buffer_mutex was set to prevent notifier functions to
-be started before sync_start() is finished. But when registering the
-notifier, (task_exit_notifier).rwsem is locked too, but now in
-different order than in sync_buffer(). In theory this causes a locking
-dependency, what does not occur in practice since task_exit_notify()
-is always called after the notifier is registered which means the lock
-is already released.
+ gdb> bt
+ #0  0xffffffff811afe80 in ext4_da_should_update_i_disksize (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x1\
+ 08000, len=0x1000, copied=0x0, page=0xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2467
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ #2  0xffffffff810d97f1 in generic_perform_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value o\
+ ptimized out>, pos=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2440
+ #3  generic_file_buffered_write (iocb=<value optimized out>, iov=<value optimized out>, nr_segs=<value optimized out>, p\
+ os=0x108000, ppos=0xffff88001e26be40, count=<value optimized out>, written=0x0) at mm/filemap.c:2482
+ #4  0xffffffff810db5d1 in __generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, ppos=0\
+ xffff88001e26be40) at mm/filemap.c:2600
+ #5  0xffffffff810db853 in generic_file_aio_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=<value optimi\
+ zed out>, pos=<value optimized out>) at mm/filemap.c:2632
+ #6  0xffffffff811a71aa in ext4_file_write (iocb=0xffff88001e26bde8, iov=0xffff88001e26bec8, nr_segs=0x1, pos=0x108000) a\
+ t fs/ext4/file.c:136
+ #7  0xffffffff811375aa in do_sync_write (filp=0xffff88003f606a80, buf=<value optimized out>, len=<value optimized out>, \
+ ppos=0xffff88001e26bf48) at fs/read_write.c:406
+ #8  0xffffffff81137e56 in vfs_write (file=0xffff88003f606a80, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x4\
+ 000, pos=0xffff88001e26bf48) at fs/read_write.c:435
+ #9  0xffffffff8113816c in sys_write (fd=<value optimized out>, buf=0x1ec2960 <Address 0x1ec2960 out of bounds>, count=0x\
+ 4000) at fs/read_write.c:487
+ #10 <signal handler called>
+ #11 0x00007f120077a390 in __brk_reservation_fn_dmi_alloc__ ()
+ #12 0x0000000000000000 in ?? ()
+ gdb> print offset
+ $22 = 0xffffffffffffffff
+ gdb> print idx
+ $23 = 0xffffffff
+ gdb> print inode->i_blkbits
+ $24 = 0xc
+ gdb> up
+ #1  ext4_da_write_end (file=0xffff88003f606a80, mapping=0xffff88001d3824e0, pos=0x108000, len=0x1000, copied=0x0, page=0\
+ xffffea0000d792e8, fsdata=0x0) at fs/ext4/inode.c:2512
+ 2512                    if (ext4_da_should_update_i_disksize(page, end)) {
+ gdb> print start
+ $25 = 0x0
+ gdb> print end
+ $26 = 0xffffffffffffffff
+ gdb> print pos
+ $27 = 0x108000
+ gdb> print new_i_size
+ $28 = 0x108000
+ gdb> print ((struct ext4_inode_info *)((char *)inode-((int)(&((struct ext4_inode_info *)0)->vfs_inode))))->i_disksize
+ $29 = 0xd9000
+ gdb> down
+ 2467            for (i = 0; i < idx; i++)
+ gdb> print i
+ $30 = 0xd44acbee
 
-However, after checking the notifier functions it turned out the
-buffer_mutex in sync_start() is unnecessary. This is because
-sync_buffer() may be called from the notifiers even if sync_start()
-did not finish yet, the buffers are already allocated but empty. No
-need to protect this with the mutex.
+This is 100% reproducible with some autonuma development code tuned in
+a very aggressive manner (not normal way even for knumad) which does
+"exotic" changes to the ptes. It wouldn't normally trigger but I don't
+see why it can't happen normally if the page is added to swap cache in
+between the two faults leading to "copied" being zero (which then
+hangs in ext4). So it should be fixed. Especially possible with lumpy
+reclaim (albeit disabled if compaction is enabled) as that would
+ignore the young bits in the ptes.
 
-So we fix this theoretical locking dependency by removing buffer_mutex
-in sync_start(). This is similar to the implementation before commit:
-
- 750d857 oprofile: fix crash when accessing freed task structs
-
-which introduced the locking dependency.
-
-Lockdep warning:
-
-oprofiled/4447 is trying to acquire lock:
- (buffer_mutex){+.+...}, at: [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
-
-but task is already holding lock:
- ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 ((task_exit_notifier).rwsem){++++..}:
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff81463a2b>] down_write+0x44/0x67
-       [<ffffffff810581c0>] blocking_notifier_chain_register+0x52/0x8b
-       [<ffffffff8105a6ac>] profile_event_register+0x2d/0x2f
-       [<ffffffffa00013c1>] sync_start+0x47/0xc6 [oprofile]
-       [<ffffffffa00001bb>] oprofile_setup+0x60/0xa5 [oprofile]
-       [<ffffffffa00014e3>] event_buffer_open+0x59/0x8c [oprofile]
-       [<ffffffff810cd3b9>] __dentry_open+0x1eb/0x308
-       [<ffffffff810cd59d>] nameidata_to_filp+0x60/0x67
-       [<ffffffff810daad6>] do_last+0x5be/0x6b2
-       [<ffffffff810dbc33>] path_openat+0xc7/0x360
-       [<ffffffff810dbfc5>] do_filp_open+0x3d/0x8c
-       [<ffffffff810ccfd2>] do_sys_open+0x110/0x1a9
-       [<ffffffff810cd09e>] sys_open+0x20/0x22
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
--> #0 (buffer_mutex){+.+...}:
-       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
-       [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
-       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
-       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
-       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
-       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
-       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
-       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
-       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
-       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-1 lock held by oprofiled/4447:
- #0:  ((task_exit_notifier).rwsem){++++..}, at: [<ffffffff81058026>] __blocking_notifier_call_chain+0x39/0x67
-
-stack backtrace:
-Pid: 4447, comm: oprofiled Not tainted 2.6.39-00007-gcf4d8d4 #10
-Call Trace:
- [<ffffffff81063193>] print_circular_bug+0xae/0xbc
- [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
- [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
- [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
- [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
- [<ffffffff81062627>] ? mark_lock+0x42f/0x552
- [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
- [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
- [<ffffffffa0000e55>] ? sync_buffer+0x31/0x3ec [oprofile]
- [<ffffffffa0000e55>] sync_buffer+0x31/0x3ec [oprofile]
- [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
- [<ffffffff81058026>] ? __blocking_notifier_call_chain+0x39/0x67
- [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
- [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
- [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
- [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
- [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
- [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
- [<ffffffff81465031>] ? retint_swapgs+0xe/0x13
- [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
- [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
- [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Carl Love <carll@us.ibm.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/oprofile/buffer_sync.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/oprofile/buffer_sync.c
-+++ b/drivers/oprofile/buffer_sync.c
-@@ -154,8 +154,6 @@ int sync_start(void)
- 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
- 		return -ENOMEM;
+---
+ fs/ext4/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3228,7 +3228,7 @@ static int ext4_da_write_end(struct file
+ 	 */
  
--	mutex_lock(&buffer_mutex);
--
- 	err = task_handoff_register(&task_free_nb);
- 	if (err)
- 		goto out1;
-@@ -172,7 +170,6 @@ int sync_start(void)
- 	start_cpu_work();
- 
- out:
--	mutex_unlock(&buffer_mutex);
- 	return err;
- out4:
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
-@@ -189,14 +186,13 @@ out1:
- 
- void sync_stop(void)
- {
--	/* flush buffers */
--	mutex_lock(&buffer_mutex);
- 	end_cpu_work();
- 	unregister_module_notifier(&module_load_nb);
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
- 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
- 	task_handoff_unregister(&task_free_nb);
--	mutex_unlock(&buffer_mutex);
-+	barrier();			/* do all of the above first */
-+
- 	flush_scheduled_work();
- 
- 	free_all_tasks();
+ 	new_i_size = pos + copied;
+-	if (new_i_size > EXT4_I(inode)->i_disksize) {
++	if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+ 		if (ext4_da_should_update_i_disksize(page, end)) {
+ 			down_write(&EXT4_I(inode)->i_data_sem);
+ 			if (new_i_size > EXT4_I(inode)->i_disksize) {
 
 
