@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922Ab1LPBNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 20:13:15 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50488 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab1LPBNN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 20:13:13 -0500
+	id S1759822Ab1LPBUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 20:20:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44716 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756385Ab1LPBUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Dec 2011 20:20:17 -0500
+Message-ID: <4EEA9CB2.9020709@zytor.com>
+Date: Thu, 15 Dec 2011 17:19:46 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111215235017.GA2242@legolas.emea.dhcp.ti.com>
-References: <1323988934-11350-1-git-send-email-felipe.contreras@gmail.com>
-	<20111215230143.GA2090@legolas.emea.dhcp.ti.com>
-	<CAMP44s1JMwF95nOgZLvdL7ke6fYz-ar5SDv=Lu-5QJ==0bkH=Q@mail.gmail.com>
-	<20111215235017.GA2242@legolas.emea.dhcp.ti.com>
-Date: Fri, 16 Dec 2011 03:13:13 +0200
-Message-ID: <CAMP44s1GCPRjV4weNN1GpboDPbzUobBLVP+u2Y4QvHrt2KoG_Q@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: fix pm_runtime mismatch
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
-        Hema Kalliguddi <hemahk@ti.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
+        kay.sievers@vrfy.org, trenn@suse.de, Andi Kleen <ak@linux.intel.com>,
+        davej@redhat.com
+Subject: Re: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org> <1323304882-27953-8-git-send-email-andi@firstfloor.org> <20111208084958.GA23245@gere.osrc.amd.com> <20111208143725.GD24062@one.firstfloor.org>
+In-Reply-To: <20111208143725.GD24062@one.firstfloor.org>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 1:50 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Fri, Dec 16, 2011 at 01:31:02AM +0200, Felipe Contreras wrote:
->> On Fri, Dec 16, 2011 at 1:01 AM, Felipe Balbi <balbi@ti.com> wrote:
->> > On Fri, Dec 16, 2011 at 12:42:14AM +0200, Felipe Contreras wrote:
->> >> --- a/drivers/usb/musb/musb_core.c
->> >> +++ b/drivers/usb/musb/musb_core.c
->> >> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
->> >>       if (status < 0)
->> >>               goto fail3;
->> >>
->> >> -     pm_runtime_put(musb->controller);
->> >
->> > To me the real fix would be add the missing pm_runtime_get_sync(). On
->> > probe() we're actually accessing MUSB's address space which needs it's
->> > clocks turned on. I guess it's only working now by chance, probably
->> > because glue layer calls pm_runtime_get_sync() to access it's own
->> > address space and that uses the same clocks.
->>
->> Are you sure it's "musb-hdrc", and not "musb-omap2430" the one
->> accessing the relevant address-space? From the runtime_pm
->> documentation it looks like only the probe function should deal with
->> this.
->>
->> If "musb-hdrc" was truly accessing these registers, then I would get
->> the same failure because the clocks are turned off, but I don't...
->
-> see musb_core_init(); You don't see any problems when accessing those
-> addresses because musb_platform_init() will fall into
-> omap2430_musb_init() which calls pm_runtime_get_sync(), and the same
-> clock actually enables both address spaces (musb-omap2430 and
-> musb-hdrc).
+On 12/08/2011 06:37 AM, Andi Kleen wrote:
+>> Well, there is CPUID_8000_0007_EDX[7] which denotes the presence
+>> of the P-state registers. It probably could be added to
+>> init_scattered_cpuid_features() but there's still special handling
+>> needed for K8.
+> 
+> Dave is probably right that it's not worth moving the list.
+> 
+>> Can you do both a family and a feature bit test with the autoprobing
+>> code?
+> 
 
-That's true, but how would I go test this theory? Call
-pm_runtime_put_sync() at the end of omap2430_musb_init()?
+Another similar question: is it possible to key a load on more than one
+CPU feature?  It's fairly common that you need more than one feature for
+a specific piece of code to function, and it would be good to be able to
+represent it.
 
-Also, I think most pm_runtime_disable() calls shouldn't be there...
-That would tell PM to activate power for the device, which is not what
-we want. The core drivers code will take care of truly disabling the
-pm_runtime stuff _without_ activating the device.
+	-hpa
 
-Cheers.
 
--- 
-Felipe Contreras
