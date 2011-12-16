@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab1LPTtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:49:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44943 "EHLO mx2.suse.de"
+	id S932640Ab1LPTt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:49:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44934 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932601Ab1LPTtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:24 -0500
+	id S932597Ab1LPTtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:54 2011
-Message-Id: <20111216194554.606846120@clark.kroah.org>
+Message-Id: <20111216194554.439303752@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:01 -0800
+Date: Fri, 16 Dec 2011 11:45:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [04/53] alarmtimers: Fix time comparison
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [03/53] ALSA: hda - Fix GPIO LED setup for IDT 92HD75 codecs
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +24,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c9c024b3f3e07d087974db4c0dc46217fff3a6c0 upstream.
+commit f1a73746c6664442082e3d53e1804f46e1910436 upstream.
 
-The expiry function compares the timer against current time and does
-not expire the timer when the expiry time is >= now. That's wrong. If
-the timer is set for now, then it must expire.
+Some HP laptops with IDT 92HD75 codecs may use a GPIO > 4 for the mute
+LED, but currently the driver doesn't check this properly, and confuses
+the mute LED behavior.  This ended up with the silent output  on some
+HP laptops due to  having another GPIO used as external amp control.
 
-Make the condition expiry > now for breaking out the loop.
+This patch fixes the problem by checking the max GPIO count and
+comparing with the given value from DMI entry instead of magic fixed
+value 4 and 8, and adding a new field to indicate the VREF mute-LED
+behavior.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: John Stultz <john.stultz@linaro.org>
+Reported-and-tested-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/alarmtimer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   45 +++++++++++++++++++++--------------------
+ 1 file changed, 24 insertions(+), 21 deletions(-)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -181,7 +181,7 @@ static enum hrtimer_restart alarmtimer_f
- 		struct alarm *alarm;
- 		ktime_t expired = next->expires;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -214,6 +214,7 @@ struct sigmatel_spec {
+ 	unsigned int gpio_mute;
+ 	unsigned int gpio_led;
+ 	unsigned int gpio_led_polarity;
++	unsigned int vref_mute_led_nid; /* pin NID for mute-LED vref control */
+ 	unsigned int vref_led;
  
--		if (expired.tv64 >= now.tv64)
-+		if (expired.tv64 > now.tv64)
- 			break;
+ 	/* stream */
+@@ -4298,12 +4299,10 @@ static void stac_store_hints(struct hda_
+ 		spec->eapd_switch = val;
+ 	get_int_hint(codec, "gpio_led_polarity", &spec->gpio_led_polarity);
+ 	if (get_int_hint(codec, "gpio_led", &spec->gpio_led)) {
+-		if (spec->gpio_led <= 8) {
+-			spec->gpio_mask |= spec->gpio_led;
+-			spec->gpio_dir |= spec->gpio_led;
+-			if (spec->gpio_led_polarity)
+-				spec->gpio_data |= spec->gpio_led;
+-		}
++		spec->gpio_mask |= spec->gpio_led;
++		spec->gpio_dir |= spec->gpio_led;
++		if (spec->gpio_led_polarity)
++			spec->gpio_data |= spec->gpio_led;
+ 	}
+ }
  
- 		alarm = container_of(next, struct alarm, node);
+@@ -4893,8 +4892,14 @@ static int find_mute_led_gpio(struct hda
+ 			if (sscanf(dev->name, "HP_Mute_LED_%d_%x",
+ 				  &spec->gpio_led_polarity,
+ 				  &spec->gpio_led) == 2) {
+-				if (spec->gpio_led < 4)
++				unsigned int max_gpio;
++				max_gpio = snd_hda_param_read(codec, codec->afg,
++							      AC_PAR_GPIO_CAP);
++				max_gpio &= AC_GPIO_IO_COUNT;
++				if (spec->gpio_led < max_gpio)
+ 					spec->gpio_led = 1 << spec->gpio_led;
++				else
++					spec->vref_mute_led_nid = spec->gpio_led;
+ 				return 1;
+ 			}
+ 			if (sscanf(dev->name, "HP_Mute_LED_%d",
+@@ -5023,15 +5028,12 @@ static int stac92xx_pre_resume(struct hd
+ 	struct sigmatel_spec *spec = codec->spec;
+ 
+ 	/* sync mute LED */
+-	if (spec->gpio_led) {
+-		if (spec->gpio_led <= 8) {
+-			stac_gpio_set(codec, spec->gpio_mask,
+-					spec->gpio_dir, spec->gpio_data);
+-		} else {
+-			stac_vrefout_set(codec,
+-					spec->gpio_led, spec->vref_led);
+-		}
+-	}
++	if (spec->vref_mute_led_nid)
++		stac_vrefout_set(codec, spec->vref_mute_led_nid,
++				 spec->vref_led);
++	else if (spec->gpio_led)
++		stac_gpio_set(codec, spec->gpio_mask,
++			      spec->gpio_dir, spec->gpio_data);
+ 	return 0;
+ }
+ 
+@@ -5042,7 +5044,7 @@ static void stac92xx_set_power_state(str
+ 	struct sigmatel_spec *spec = codec->spec;
+ 
+ 	if (power_state == AC_PWRST_D3) {
+-		if (spec->gpio_led > 8) {
++		if (spec->vref_mute_led_nid) {
+ 			/* with vref-out pin used for mute led control
+ 			 * codec AFG is prevented from D3 state
+ 			 */
+@@ -5095,7 +5097,7 @@ static int stac92xx_update_led_status(st
+ 		}
+ 	}
+ 	/*polarity defines *not* muted state level*/
+-	if (spec->gpio_led <= 8) {
++	if (!spec->vref_mute_led_nid) {
+ 		if (muted)
+ 			spec->gpio_data &= ~spec->gpio_led; /* orange */
+ 		else
+@@ -5113,7 +5115,8 @@ static int stac92xx_update_led_status(st
+ 		muted_lvl = spec->gpio_led_polarity ?
+ 				AC_PINCTL_VREF_GRD : AC_PINCTL_VREF_HIZ;
+ 		spec->vref_led = muted ? muted_lvl : notmtd_lvl;
+-		stac_vrefout_set(codec,	spec->gpio_led, spec->vref_led);
++		stac_vrefout_set(codec,	spec->vref_mute_led_nid,
++				 spec->vref_led);
+ 	}
+ 	return 0;
+ }
+@@ -5634,7 +5637,7 @@ again:
+ 
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+ 	if (spec->gpio_led) {
+-		if (spec->gpio_led <= 8) {
++		if (!spec->vref_mute_led_nid) {
+ 			spec->gpio_mask |= spec->gpio_led;
+ 			spec->gpio_dir |= spec->gpio_led;
+ 			spec->gpio_data |= spec->gpio_led;
+@@ -5955,7 +5958,7 @@ again:
+ 
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+ 	if (spec->gpio_led) {
+-		if (spec->gpio_led <= 8) {
++		if (!spec->vref_mute_led_nid) {
+ 			spec->gpio_mask |= spec->gpio_led;
+ 			spec->gpio_dir |= spec->gpio_led;
+ 			spec->gpio_data |= spec->gpio_led;
 
 
