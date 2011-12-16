@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760833Ab1LPVnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 16:43:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36991 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab1LPVnn (ORCPT
+	id S1760852Ab1LPVvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 16:51:55 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:51614 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760426Ab1LPVvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 16:43:43 -0500
-X-Authority-Analysis: v=2.0 cv=QrfcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=ZLzRVHDcXY0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=0CWTxZ2yh9-9CWDRXIcA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324071820.23971.131.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: frank.rowand@am.sony.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        catalin.marinas@arm.com
-Date: Fri, 16 Dec 2011 16:43:40 -0500
-In-Reply-To: <1324029272.18942.73.camel@twins>
-References: <4EEAB90D.3050504@am.sony.com> <1324029272.18942.73.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 16 Dec 2011 16:51:48 -0500
+Date: Fri, 16 Dec 2011 22:54:51 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
+Message-ID: <20111216215451.GA20271@dztty>
+References: <20111216112534.GA13147@dztty>
+ <20111216125556.db2bf308.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111216125556.db2bf308.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 10:54 +0100, Peter Zijlstra wrote:
-
+On Fri, Dec 16, 2011 at 12:55:56PM -0800, Andrew Morton wrote:
+> On Fri, 16 Dec 2011 12:25:34 +0100
+> Djalal Harouni <tixxdz@opendz.org> wrote:
 > 
-> We could just merge Catalin's stuff in -rt to give it a test ride and
-> see if anything horrible happens.. :-)
+> > 
+> > Calls to notify_change() must hold i_mutex.
+> > 
+>
+> ...
+> 
+> <does a quick audit>
+> 
+> fs/hpfs/namei.c and fs/nfsd/vfs.c:nfsd_setattr() aren't obviosuly
+> holding that lock when calling notify_change().  Everything else under
+> fs/ looks OK.
 
-I think Frank needs something in the stable-rt too. And that's not a
-place to give experimental stuff a test ride.
+fs/nfsd/vfs.c:nfsd_setattr() is calling fh_lock() which calls
+mutex_lock_nested() with the appropriate i_mutex of the dentry object.
+There are some extra functions before the lock which are related to nfsd.
 
-I'll let Thomas give the final say in what goes into stable. I prefer to
-not have things in stable that are not in mainline or in Thomas's tree.
-But if Catalin's stuff is fine for his tree, I'll look for the non risky
-solution for the stable-rt tree.
+fs/hpfs/namei.c:hpfs_unlink() is using hpfs_lock() to lock the whole
+filesystem.
 
+So they are OK.
 
--- Steve
-
-
+-- 
+tixxdz
+http://opendz.org
