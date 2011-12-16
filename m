@@ -1,81 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318Ab1LPNHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 08:07:31 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49998 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab1LPNHY convert rfc822-to-8bit (ORCPT
+	id S1759334Ab1LPNOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 08:14:04 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36366 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758886Ab1LPNN6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 08:07:24 -0500
+	Fri, 16 Dec 2011 08:13:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <201112152053.10535.rjw@sisk.pl>
-References: <1323954769-3918-1-git-send-email-ming.m.lin@intel.com>
-	<1323954769-3918-2-git-send-email-ming.m.lin@intel.com>
-	<201112152053.10535.rjw@sisk.pl>
-Date: Fri, 16 Dec 2011 21:07:23 +0800
-X-Google-Sender-Auth: Vwa_5g2y2AHzaehM4NRGOZMMSTg
-Message-ID: <CAF1ivSYcvw0jpERewg=5+hW2aMrf-QzgASX-_1+GGK66o1Giww@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/4] ahci: port legacy pm interface to struct dev_pm_ops
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com>
+References: <CAH9NwWetBZvU6-16rV_s5n=vrAu1kyfsbsjKh+6O2ejf9mM_ww@mail.gmail.com>
+ <CAErSpo4mbdaT1e2KmS2JjP1FFKfZDToXzgkb+Na_ejoo+t8snQ@mail.gmail.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Fri, 16 Dec 2011 14:13:37 +0100
+Message-ID: <CAH9NwWfN8E5vZbpTGDySnT9VJ+3_-nuK1EAbaLVg7u4xZRLfkA@mail.gmail.com>
+Subject: Re: PCI(e) enumeration
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/16 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Thursday, December 15, 2011, Lin Ming wrote:
->> So we can add runtime pm callbacks later.
+Hi Bjorn,
+
+2011/12/15 Bjorn Helgaas <bhelgaas@google.com>:
+> On Thu, Dec 15, 2011 at 2:41 AM, Christian Gmeiner
+> <christian.gmeiner@gmail.com> wrote:
+>> Hi all,
 >>
->> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
->> ---
->>  drivers/ata/ahci.c |   61 +++++++++++++++++++++++++++++++++++-----------------
->>  1 files changed, 41 insertions(+), 20 deletions(-)
+>> I maintain a debian based linux RFS in my company and my college does the
+>> same for windows. Now we run into a problem that windows and linux use a
+>> different network interface as eth0. In our target system there
+>> are two identical NICs installed.
 >>
->> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
->> index cf26222..c745603 100644
->> --- a/drivers/ata/ahci.c
->> +++ b/drivers/ata/ahci.c
->> @@ -84,8 +84,9 @@ static int ahci_vt8251_hardreset(struct ata_link *link, unsigned int *class,
->>  static int ahci_p5wdh_hardreset(struct ata_link *link, unsigned int *class,
->>                               unsigned long deadline);
->>  #ifdef CONFIG_PM
->> -static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
->> -static int ahci_pci_device_resume(struct pci_dev *pdev);
->> +static int ahci_pci_device_suspend(struct device *dev);
->> +static int ahci_pci_device_hibernate(struct device *dev);
->> +static int ahci_pci_device_resume(struct device *dev);
->>  #endif
+>> So I am now looking to find out, how linux does the PCI enumeration
+>> and in which order
+>> the PCI driver gets called to do the initialization. Can somebody tell
+>> me if a depth-first search
+>> or a breadth-first search is done on the PCI bus.
 >>
->>  static struct scsi_host_template ahci_sht = {
->> @@ -400,6 +401,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
->>       { }     /* terminate list */
->>  };
 >>
->> +static struct dev_pm_ops ahci_pci_pm_ops = {
->> +     .suspend                = ahci_pci_device_suspend,
->> +     .resume                 = ahci_pci_device_resume,
->> +     .poweroff               = ahci_pci_device_hibernate,
->> +};
+>> For instance look at this lspci output:
+>>
+>> 00:01.0 Host bridge: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] Host Bridge (rev 33)
+>> 00:01.1 VGA compatible controller: Advanced Micro Devices [AMD] Geode LX Video
+>> 00:01.2 Entertainment encryption device: Advanced Micro Devices [AMD]
+>> Geode LX AES Security Block
+>> 00:04.0 Ethernet controller: Intel Corporation 8255xER/82551IT Fast
+>> Ethernet Controller (rev 10)
+>> 00:0f.0 ISA bridge: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] ISA (rev 03)
+>> 00:0f.2 IDE interface: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] IDE (rev 01)
+>> 00:0f.3 Multimedia audio controller: Advanced Micro Devices [AMD]
+>> CS5536 [Geode companion] Audio (rev 01)
+>> 00:0f.4 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] OHC (rev 02)
+>> 00:0f.5 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] EHC (rev 02)
+>> 00:0f.7 USB Controller: Advanced Micro Devices [AMD] CS5536 [Geode
+>> companion] UOC (rev 02)
+>>
+>> How will linux does the enumeration?
 >
-> So seem to have forgotten about .restore().  Please define it at least or
-> resume from hibernation will be broken.
+> The kernel enumerates PCI devices with a depth-first traversal, but
+> that isn't what determines the ethX device name. Â That name is
+> determined by the order in which network drivers are loaded and claim
+> devices, which gets into distro details like udev.
+>
+> Here's a nice paper with more details:
+> http://www.dell.com/downloads/global/power/ps1q07-20060392-Domsch.pdf
 
-Will add it.
+Thanks
 
 >
-> Also, are .freeze() and .thaw() callbacks really unnecessary?
+> If that's not enough to solve your problem, a debian-related forum
+> will probably be more useful than LKML.
 
-I'm not sure for now.
-Will test hibernation.
+I don't think that this is a debian related issue, as I use no special
+udev rule. Here is the lscpi
+output of the target machine, where I have this issue.
 
-Thanks for the comments.
 
-Lin Ming
+root@OT1300:~# lspci
+00:00.0 Host bridge: Intel Corporation Atom Processor E6xx PCI Host
+Bridge #1 (rev 05)
+00:01.0 Host bridge: Intel Corporation Atom Processor E6xx
+Configuration Unit (rev 02)
+00:02.0 VGA compatible controller: Intel Corporation Atom Processor
+E6xx Integrated Graphics Controller (rev 05)
+00:03.0 Multimedia video controller: Intel Corporation Atom Processor
+E6xx Integrated Graphics Controller (rev 02)
+00:17.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+Port 1 (rev 02)
+00:18.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+Port 2 (rev 02)
+00:19.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+Port 3 (rev 02)
+00:1a.0 PCI bridge: Intel Corporation Atom Processor E6xx PCI Express
+Port 4 (rev 02)
+00:1f.0 ISA bridge: Intel Corporation Atom Processor E6xx LPC Bridge (rev 02)
+01:00.0 PCI bridge: Intel Corporation Platform Controller Hub EG20T
+PCI Express Port (rev 01)
+02:00.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+Hub EG20T Packet Hub (rev 01)
+02:00.1 Ethernet controller: Intel Corporation Platform Controller Hub
+EG20T Gigabit Ethernet Controller (rev 02)
+02:00.2 Unassigned class [ff00]: Intel Corporation Platform Controller
+Hub EG20T General Purpose IO Controller (rev 01)
+02:02.0 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #4 (rev 02)
+02:02.1 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #5 (rev 02)
+02:02.2 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #6 (rev 02)
+02:02.3 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB2 EHCI Controller #2 (rev 02)
+02:02.4 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB Client Controller (rev 02)
+02:04.0 SD Host controller: Intel Corporation Platform Controller Hub
+EG20T SDIO Controller #1 (rev 01)
+02:04.1 SD Host controller: Intel Corporation Platform Controller Hub
+EG20T SDIO Controller #2 (rev 01)
+02:06.0 SATA controller: Intel Corporation Platform Controller Hub
+EG20T SATA AHCI Controller (rev 02)
+02:08.0 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #1 (rev 02)
+02:08.1 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #2 (rev 02)
+02:08.2 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB OHCI Controller #3 (rev 02)
+02:08.3 USB Controller: Intel Corporation Platform Controller Hub
+EG20T USB2 EHCI Controller #1 (rev 02)
+02:0a.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+Hub EG20T DMA Controller #1
+02:0a.1 Serial controller: Intel Corporation Platform Controller Hub
+EG20T UART Controller 0 (rev 01)
+02:0a.2 Serial controller: Intel Corporation Platform Controller Hub
+EG20T UART Controller 1
+02:0a.3 Serial controller: Intel Corporation Platform Controller Hub
+EG20T UART Controller 2
+02:0a.4 Serial controller: Intel Corporation Platform Controller Hub
+EG20T UART Controller 3
+02:0c.0 Unassigned class [ff00]: Intel Corporation Platform Controller
+Hub EG20T DMA Controller #2
+02:0c.1 Serial bus controller [0c80]: Intel Corporation Platform
+Controller Hub EG20T Serial Peripheral Interface Bus
+02:0c.2 Serial bus controller [0c80]: Intel Corporation Platform
+Controller Hub EG20T I2C Controller
+02:0c.3 CANBUS: Intel Corporation Platform Controller Hub EG20T
+Controller Area Network (CAN) Controller
+02:0c.4 Unassigned class [ff00]: Intel Corporation Platform Controller
+Hub EG20T IEEE 1588 Hardware Assist (rev 01)
+03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
 
->
-> Rafael
+
+The two important lines are these ones:
+
+03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+05:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+
+
+As you can see we have two equal network controllers, which both are using the
+e1000e driver. In this case I think that the driver gets first control
+over 03:00.0
+and then over 05:00.0.
+
+So it is the case that
+- 03:00.0 is eth0
+- 05:00.0 is eth1
+
+To sum it up, if there are two devices handled by the same driver the
+device, which is
+higher in the pci bus, will become eth0. Or?
+
+I could use udev to change the device numbers, but as its is MAC based
+it is no solution
+for me. We are selling devices, which run linux on it and we have lots
+of MAC addresses :)
+
+In the end I think linux did the assignment correctly, whereas for
+windows I did not find
+any documentation :(
+
+Greets,
+--
+Christian Gmeiner, MSc
