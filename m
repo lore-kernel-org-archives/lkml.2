@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab1LPMeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 07:34:09 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46150 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759327Ab1LPMdw (ORCPT
+	id S1758751Ab1LPMeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 07:34:22 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36367 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759337Ab1LPMdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 07:33:52 -0500
+	Fri, 16 Dec 2011 07:33:31 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -24,178 +24,314 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 16 Dec 2011 17:59:35 +0530
-Message-Id: <20111216122935.2085.87091.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 16 Dec 2011 17:58:39 +0530
+Message-Id: <20111216122839.2085.28433.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
 References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v8 3.2.0-rc5 8/9] perf: rename target_module to target
-x-cbid: 11121602-0260-0000-0000-0000003A08FE
+Subject: [PATCH v8 3.2.0-rc5 4/9] uprobes: counter to optimize probe hits.
+x-cbid: 11121612-3864-0000-0000-000000892EC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is a precursor patch that modifies names that refer to
-kernel/module to also refer to user space names.
+Maintain a per-mm counter (number of uprobes that are inserted on
+this process address space). This counter can be used at probe hit
+time to determine if we need to do a uprobe lookup in the uprobes
+rbtree. Everytime a probe gets inserted successfully, the probe
+count is incremented and everytime a probe gets removed successfully
+the probe count is removed.
+
+A new hook munmap_uprobe is added to keep the counter to be correct
+even when a region is unmapped or remapped. This patch expects that
+once a munmap_uprobe() is called, the vma either go away or a
+subsequent mmap_uprobe gets called before a removal of a probe from
+unregister_uprobe in the same address space.
+
+On every executable vma thats cowed at fork, mmap_uprobe is called
+so that the mm_uprobes_count is in sync.
+
+When a vma of interest is mapped, insert the breakpoint at the right
+address. Upon munmap, just make sure the data structures are
+adjusted/cleaned up.
+
+On process creation, make sure the probes count in the child is set
+correctly.
+
+Special cases that are taken care include:
+a. mremap()
+b. VM_DONTCOPY vmas on fork()
+c. insertion/removal races in the parent during fork().
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-probe.c    |   12 ++++++------
- tools/perf/util/probe-event.c |   26 +++++++++++++-------------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+Changelog (since v5)
+- While forking, handle vma's that have VM_DONTCOPY.
+- While forking, handle race of new breakpoints being inserted / removed
+  in the parent process.
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 710ae3d..93d5171 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -61,7 +61,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target_module;
-+	const char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -249,7 +249,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
- 		   "directory", "path to kernel source"),
--	OPT_STRING('m', "module", &params.target_module,
-+	OPT_STRING('m', "module", &params.target,
- 		   "modname|path",
- 		   "target module name (for online) or path (for offline)"),
+Changelog (since v7)
+- Separate this patch from the patch that implements mmap_uprobe.
+- Increment counter only after verifying that the probe lies underneath.
+
+ include/linux/mm_types.h |    1 
+ include/linux/uprobes.h  |    4 ++
+ kernel/fork.c            |    4 ++
+ kernel/uprobes.c         |  104 ++++++++++++++++++++++++++++++++++++++++++++--
+ mm/mmap.c                |   10 ++++
+ 5 files changed, 118 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index e9eac38..2595c9c 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -391,6 +391,7 @@ struct mm_struct {
+ 	struct cpumask cpumask_allocation;
  #endif
-@@ -336,7 +336,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target_module,
-+		ret = show_available_funcs(params.target,
- 					   params.filter);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
-@@ -357,7 +357,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(probe_usage, options);
- 		}
- 
--		ret = show_line_range(&params.line_range, params.target_module);
-+		ret = show_line_range(&params.line_range, params.target);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
- 		return ret;
-@@ -374,7 +374,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
--					  params.target_module,
-+					  params.target,
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-@@ -396,7 +396,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
- 					    params.max_probe_points,
--					    params.target_module,
-+					    params.target,
- 					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index eb25900..d54eefb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -275,10 +275,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- /* Try to find perf_probe_event with debuginfo */
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
--	struct debuginfo *dinfo = open_debuginfo(module);
-+	struct debuginfo *dinfo = open_debuginfo(target);
- 	int ntevs, ret = 0;
- 
- 	if (!dinfo) {
-@@ -297,9 +297,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
- 		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (module)
-+		if (target)
- 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
--							       module);
-+							       target);
- 		return ret < 0 ? ret : ntevs;
- 	}
- 
-@@ -1798,14 +1798,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	struct symbol *sym;
- 	int ret = 0, i;
- 	struct probe_trace_event *tev;
- 
- 	/* Convert perf_probe_event with debuginfo */
--	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
-+	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
- 	if (ret != 0)
- 		return ret;	/* Found in debuginfo or got an error */
- 
-@@ -1821,8 +1821,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 		goto error;
- 	}
- 
--	if (module) {
--		tev->point.module = strdup(module);
-+	if (target) {
-+		tev->point.module = strdup(target);
- 		if (tev->point.module == NULL) {
- 			ret = -ENOMEM;
- 			goto error;
-@@ -1886,7 +1886,7 @@ struct __event_package {
+ #ifdef CONFIG_UPROBES
++	atomic_t mm_uprobes_count;
+ 	struct uprobes_xol_area *uprobes_xol_area;
+ #endif
  };
- 
- int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--			  int max_tevs, const char *module, bool force_add)
-+			  int max_tevs, const char *target, bool force_add)
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 9e25c41..adaa8d3 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -126,6 +126,7 @@ extern void unregister_uprobe(struct inode *inode, loff_t offset,
+ extern void free_uprobe_utask(struct task_struct *tsk);
+ extern void free_uprobes_xol_area(struct mm_struct *mm);
+ extern int mmap_uprobe(struct vm_area_struct *vma);
++extern void munmap_uprobe(struct vm_area_struct *vma);
+ extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
+ extern int uprobe_post_notifier(struct pt_regs *regs);
+ extern int uprobe_bkpt_notifier(struct pt_regs *regs);
+@@ -146,6 +147,9 @@ static inline int mmap_uprobe(struct vm_area_struct *vma)
  {
- 	int i, j, ret;
- 	struct __event_package *pkgs;
-@@ -1909,7 +1909,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
- 						     &pkgs[i].tevs,
- 						     max_tevs,
--						     module);
-+						     target);
- 		if (ret < 0)
- 			goto end;
- 		pkgs[i].ntevs = ret;
-@@ -2065,7 +2065,7 @@ static int filter_available_functions(struct map *map __unused,
- 	return 1;
+ 	return 0;
+ }
++static inline void munmap_uprobe(struct vm_area_struct *vma)
++{
++}
+ static inline void uprobe_notify_resume(struct pt_regs *regs)
+ {
+ }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 2da316e..2b3a5e0 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -417,6 +417,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 
+ 		if (retval)
+ 			goto out;
++
++		if (file && mmap_uprobe(tmp))
++			goto out;
+ 	}
+ 	/* a new mm has just been created */
+ 	arch_dup_mmap(oldmm, mm);
+@@ -738,6 +741,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+ #ifdef CONFIG_UPROBES
++	atomic_set(&mm->mm_uprobes_count, 0);
+ 	mm->uprobes_xol_area = NULL;
+ #endif
+ 
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index d242afc..961c232 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -615,6 +615,30 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma,
+ 	return __copy_insn(mapping, vma, uprobe->insn, bytes, uprobe->offset);
  }
  
--int show_available_funcs(const char *module, struct strfilter *_filter)
-+int show_available_funcs(const char *target, struct strfilter *_filter)
++/*
++ * How mm_uprobes_count gets updated
++ * mmap_uprobe() increments the count if
++ * 	- it successfully adds a breakpoint.
++ * 	- it not add a breakpoint, but sees that there is a underlying
++ * 	  breakpoint (via a is_bkpt_at_addr()).
++ *
++ * munmap_uprobe() decrements the count if
++ * 	- it sees a underlying breakpoint, (via is_bkpt_at_addr)
++ * 	- Subsequent unregister_uprobe wouldnt find the breakpoint
++ * 	  unless a mmap_uprobe kicks in, since the old vma would be
++ * 	  dropped just after munmap_uprobe.
++ *
++ * register_uprobe increments the count if:
++ * 	- it successfully adds a breakpoint.
++ *
++ * unregister_uprobe decrements the count if:
++ * 	- it sees a underlying breakpoint and removes successfully.
++ * 			(via is_bkpt_at_addr)
++ * 	- Subsequent munmap_uprobe wouldnt find the breakpoint
++ * 	  since there is no underlying breakpoint after the
++ * 	  breakpoint removal.
++ */
++
+ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 				struct vm_area_struct *vma, loff_t vaddr)
  {
- 	struct map *map;
- 	int ret;
-@@ -2076,9 +2076,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
- 	if (ret < 0)
- 		return ret;
+@@ -646,7 +670,19 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
  
--	map = kernel_get_module_map(module);
-+	map = kernel_get_module_map(target);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
- 		return -EINVAL;
+ 		uprobe->flags |= UPROBES_COPY_INSN;
  	}
- 	available_func_filter = _filter;
++
++	/*
++	 * Ideally, should be updating the probe count after the breakpoint
++	 * has been successfully inserted. However a thread could hit the
++	 * breakpoint we just inserted even before the probe count is
++	 * incremented. If this is the first breakpoint placed, breakpoint
++	 * notifier might ignore uprobes and pass the trap to the thread.
++	 * Hence increment before and decrement on failure.
++	 */
++	atomic_inc(&mm->mm_uprobes_count);
+ 	ret = set_bkpt(mm, uprobe, addr);
++	if (ret)
++		atomic_dec(&mm->mm_uprobes_count);
+ 
+ 	return ret;
+ }
+@@ -654,7 +690,8 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 							loff_t vaddr)
+ {
+-	set_orig_insn(mm, uprobe, (unsigned long)vaddr, true);
++	if (!set_orig_insn(mm, uprobe, (unsigned long)vaddr, true))
++		atomic_dec(&mm->mm_uprobes_count);
+ }
+ 
+ /*
+@@ -960,7 +997,7 @@ int mmap_uprobe(struct vm_area_struct *vma)
+ 	struct list_head tmp_list;
+ 	struct uprobe *uprobe, *u;
+ 	struct inode *inode;
+-	int ret = 0;
++	int ret = 0, count = 0;
+ 
+ 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
+ 		return ret;	/* Bail-out */
+@@ -984,17 +1021,75 @@ int mmap_uprobe(struct vm_area_struct *vma)
+ 			}
+ 			ret = install_breakpoint(vma->vm_mm, uprobe, vma,
+ 								vaddr);
+-			if (ret == -EEXIST)
++			if (ret == -EEXIST) {
+ 				ret = 0;
++				if (!is_bkpt_at_addr(vma->vm_mm, vaddr))
++					continue;
++
++				/*
++				 * Unable to insert a breakpoint, but
++				 * breakpoint lies underneath. Increment the
++				 * probe count.
++				 */
++				atomic_inc(&vma->vm_mm->mm_uprobes_count);
++			}
++			if (!ret)
++				count++;
++
+ 		}
+ 		put_uprobe(uprobe);
+ 	}
+ 
+ 	mutex_unlock(uprobes_mmap_hash(inode));
++	if (ret)
++		atomic_sub(count, &vma->vm_mm->mm_uprobes_count);
+ 
+ 	return ret;
+ }
+ 
++/*
++ * Called in context of a munmap of a vma.
++ */
++void munmap_uprobe(struct vm_area_struct *vma)
++{
++	struct list_head tmp_list;
++	struct uprobe *uprobe, *u;
++	struct inode *inode;
++
++	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
++		return;		/* Bail-out */
++
++	if (!atomic_read(&vma->vm_mm->mm_uprobes_count))
++		return;
++
++	inode = vma->vm_file->f_mapping->host;
++	if (!inode)
++		return;
++
++	INIT_LIST_HEAD(&tmp_list);
++	mutex_lock(uprobes_mmap_hash(inode));
++	build_probe_list(inode, &tmp_list);
++	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
++		loff_t vaddr;
++
++		list_del(&uprobe->pending_list);
++		vaddr = vma->vm_start + uprobe->offset;
++		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++		if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
++
++			/*
++			 * An unregister could have removed the probe before
++			 * unmap. So check before we decrement the count.
++			 */
++			if (is_bkpt_at_addr(vma->vm_mm, vaddr) == 1)
++				atomic_dec(&vma->vm_mm->mm_uprobes_count);
++		}
++		put_uprobe(uprobe);
++	}
++	mutex_unlock(uprobes_mmap_hash(inode));
++	return;
++}
++
+ /* Slot allocation for XOL */
+ static int xol_add_vma(struct uprobes_xol_area *area)
+ {
+@@ -1397,7 +1492,8 @@ int uprobe_bkpt_notifier(struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask;
+ 
+-	if (!current->mm)
++	if (!current->mm || !atomic_read(&current->mm->mm_uprobes_count))
++		/* task is currently not uprobed */
+ 		return 0;
+ 
+ 	utask = current->utask;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 0966418..83813fa 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		__remove_shared_vm_struct(vma, file, mapping);
+ 		mutex_unlock(&mapping->i_mmap_mutex);
++		munmap_uprobe(vma);
+ 	}
+ }
+ 
+@@ -546,8 +547,14 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 
+ 	if (file) {
+ 		mapping = file->f_mapping;
+-		if (!(vma->vm_flags & VM_NONLINEAR))
++		if (!(vma->vm_flags & VM_NONLINEAR)) {
+ 			root = &mapping->i_mmap;
++			munmap_uprobe(vma);
++
++			if (adjust_next)
++				munmap_uprobe(next);
++		}
++
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		if (insert) {
+ 			/*
+@@ -626,6 +633,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 
+ 	if (remove_next) {
+ 		if (file) {
++			munmap_uprobe(next);
+ 			fput(file);
+ 			if (next->vm_flags & VM_EXECUTABLE)
+ 				removed_exe_file_vma(mm);
 
