@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab1LPPaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 10:30:16 -0500
-Received: from 8bytes.org ([88.198.83.132]:51502 "EHLO 8bytes.org"
+	id S1759934Ab1LPPeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 10:34:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49074 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759955Ab1LPPaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 10:30:12 -0500
-Date: Fri, 16 Dec 2011 16:30:11 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: linux-next: manual merge of the iommu tree with the
-	pci-current tree
-Message-ID: <20111216153011.GC28302@8bytes.org>
-References: <20111216133026.8bac235bb8495cfd8669b761@canb.auug.org.au> <20111216085247.GA28302@8bytes.org> <20111216071840.6e06864f@jbarnes-vaio.home>
+	id S1751498Ab1LPPeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 10:34:08 -0500
+Message-ID: <4EEB6479.8010500@zytor.com>
+Date: Fri, 16 Dec 2011 07:32:09 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111216071840.6e06864f@jbarnes-vaio.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Jan Beulich <JBeulich@suse.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Alexander van Heukelum <heukelum@fastmail.fm>, fweisbec@gmail.com,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Use -m-omit-leaf-frame-pointer to shrink text size
+References: <20111216081915.GA28288@elte.hu> <20111216085259.GA2338@elte.hu> <4EEB0E14.9050505@goop.org> <4EEB3D8B0200007800068759@nat28.tlf.novell.com> <20111216120001.GA27801@elte.hu>
+In-Reply-To: <20111216120001.GA27801@elte.hu>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 07:18:40AM -0800, Jesse Barnes wrote:
-> Yeah, this is probably my fault; pri-changes has drifted relative to my
-> linux-next branch.  I'll rebase it onto linux-next and push again.
-> That should fix things.
+On 12/16/2011 04:00 AM, Ingo Molnar wrote:
+>>
+>> Are you sure about that even if the leaf function uses rBP for 
+>> a different purpose?
+> 
+> Well, i assumed that GCC does not mess with %bp in leaf 
+> functions - a frame pointer is barely useful if it's destroyed 
+> spuriously in leaf functions.
+> 
 
-Please don't rebase. I already pulled in the changes and don't want to
-rebase that :) Can you just merge the pri-changes branch into your
-linux-next branch?
+We should verify that explicitly.  gcc has every "right" to treat it as
+a normal callee-saved register, but I think it is a very low priority
+register in gcc's register allocation scheme.
 
+	-hpa
 
-	Joerg
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
