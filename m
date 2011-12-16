@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030188Ab1LPT6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:58:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45437 "EHLO mx2.suse.de"
+	id S932863Ab1LPT6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:58:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964871Ab1LPTxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:53:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:12 2011
-Message-Id: <20111216194212.312513216@clark.kroah.org>
+	id S964901Ab1LPTxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:53:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:42:13 2011
+Message-Id: <20111216194213.685433813@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:40:41 -0800
+Date: Fri, 16 Dec 2011 11:40:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [34/45] xen: only limit memory map to maximum reservation for domain 0.
+        alan@lxorguk.ukuu.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [42/45] ibft: Fix finding IBFT ACPI table on UEFI
 In-Reply-To: <20111216194603.GA15028@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +25,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Yinghai Lu <yinghai.lu@oracle.com>
 
-commit d3db728125c4470a2d061ac10fa7395e18237263 upstream.
+commit 935a9fee51c945b8942be2d7b4bae069167b4886 upstream.
 
-d312ae878b6a "xen: use maximum reservation to limit amount of usable RAM"
-clamped the total amount of RAM to the current maximum reservation. This is
-correct for dom0 but is not correct for guest domains. In order to boot a guest
-"pre-ballooned" (e.g. with memory=1G but maxmem=2G) in order to allow for
-future memory expansion the guest must derive max_pfn from the e820 provided by
-the toolstack and not the current maximum reservation (which can reflect only
-the current maximum, not the guest lifetime max). The existing algorithm
-already behaves this correctly if we do not artificially limit the maximum
-number of pages for the guest case.
+Found one system with UEFI/iBFT, kernel does not detect the iBFT during
+iscsi_ibft module loading.
 
-For a guest booted with maxmem=512, memory=128 this results in:
- [    0.000000] BIOS-provided physical RAM map:
- [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
- [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
--[    0.000000]  Xen: 0000000000100000 - 0000000008100000 (usable)
--[    0.000000]  Xen: 0000000008100000 - 0000000020800000 (unusable)
-+[    0.000000]  Xen: 0000000000100000 - 0000000020800000 (usable)
-...
- [    0.000000] NX (Execute Disable) protection: active
- [    0.000000] DMI not present or invalid.
- [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
- [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
--[    0.000000] last_pfn = 0x8100 max_arch_pfn = 0x1000000
-+[    0.000000] last_pfn = 0x20800 max_arch_pfn = 0x1000000
- [    0.000000] initial memory mapped : 0 - 027ff000
- [    0.000000] Base memory trampoline at [c009f000] 9f000 size 4096
--[    0.000000] init_memory_mapping: 0000000000000000-0000000008100000
--[    0.000000]  0000000000 - 0008100000 page 4k
--[    0.000000] kernel direct mapping tables up to 8100000 @ 27bb000-27ff000
-+[    0.000000] init_memory_mapping: 0000000000000000-0000000020800000
-+[    0.000000]  0000000000 - 0020800000 page 4k
-+[    0.000000] kernel direct mapping tables up to 20800000 @ 26f8000-27ff000
- [    0.000000] xen: setting RW the range 27e8000 - 27ff000
- [    0.000000] 0MB HIGHMEM available.
--[    0.000000] 129MB LOWMEM available.
--[    0.000000]   mapped low ram: 0 - 08100000
--[    0.000000]   low ram: 0 - 08100000
-+[    0.000000] 520MB LOWMEM available.
-+[    0.000000]   mapped low ram: 0 - 20800000
-+[    0.000000]   low ram: 0 - 20800000
+Root cause: on x86 (UEFI), we are calling of find_ibft_region() much earlier
+- specifically in setup_arch() before ACPI is enabled.
 
-With this change "xl mem-set <domain> 512M" will successfully increase the
-guest RAM (by reducing the balloon).
+Try to split acpi checking code out and call that later
 
-There is no change for dom0.
+At that time ACPI iBFT already get permanent mapped with ioremap.
+So isa_virt_to_bus() will get wrong phys from right virt address.
+We could just skip that phys address printing.
 
-Reported-and-Tested-by:  George Shuklin <george.shuklin@gmail.com>
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+For legacy one, print the found address early.
+
+-v2: update comments and description according to Konrad.
+-v3: fix problem about module use case that is found by Konrad.
+-v4: use acpi_get_table() instead of acpi_table_parse() to handle module use case that is found by Konrad again..
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/setup.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/firmware/iscsi_ibft.c      |   42 +++++++++++++++++++++++++++++++++++--
+ drivers/firmware/iscsi_ibft_find.c |   26 +---------------------
+ 2 files changed, 42 insertions(+), 26 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -192,9 +192,21 @@ static unsigned long __init xen_get_max_
- 	domid_t domid = DOMID_SELF;
- 	int ret;
- 
--	ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
--	if (ret > 0)
--		max_pages = ret;
-+	/*
-+	 * For the initial domain we use the maximum reservation as
-+	 * the maximum page.
-+	 *
-+	 * For guest domains the current maximum reservation reflects
-+	 * the current maximum rather than the static maximum. In this
-+	 * case the e820 map provided to us will cover the static
-+	 * maximum region.
-+	 */
-+	if (xen_initial_domain()) {
-+		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
-+		if (ret > 0)
-+			max_pages = ret;
-+	}
-+
- 	return min(max_pages, MAX_DOMAIN_PAGES);
+--- a/drivers/firmware/iscsi_ibft.c
++++ b/drivers/firmware/iscsi_ibft.c
+@@ -738,6 +738,37 @@ static void __exit ibft_exit(void)
+ 	ibft_cleanup();
  }
  
++#ifdef CONFIG_ACPI
++static const struct {
++	char *sign;
++} ibft_signs[] = {
++	/*
++	 * One spec says "IBFT", the other says "iBFT". We have to check
++	 * for both.
++	 */
++	{ ACPI_SIG_IBFT },
++	{ "iBFT" },
++};
++
++static void __init acpi_find_ibft_region(void)
++{
++	int i;
++	struct acpi_table_header *table = NULL;
++
++	if (acpi_disabled)
++		return;
++
++	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++) {
++		acpi_get_table(ibft_signs[i].sign, 0, &table);
++		ibft_addr = (struct acpi_table_ibft *)table;
++	}
++}
++#else
++static void __init acpi_find_ibft_region(void)
++{
++}
++#endif
++
+ /*
+  * ibft_init() - creates sysfs tree entries for the iBFT data.
+  */
+@@ -745,9 +776,16 @@ static int __init ibft_init(void)
+ {
+ 	int rc = 0;
+ 
++	/*
++	   As on UEFI systems the setup_arch()/find_ibft_region()
++	   is called before ACPI tables are parsed and it only does
++	   legacy finding.
++	*/
++	if (!ibft_addr)
++		acpi_find_ibft_region();
++
+ 	if (ibft_addr) {
+-		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
+-		       (u64)isa_virt_to_bus(ibft_addr));
++		pr_info("iBFT detected.\n");
+ 
+ 		rc = ibft_check_device();
+ 		if (rc)
+--- a/drivers/firmware/iscsi_ibft_find.c
++++ b/drivers/firmware/iscsi_ibft_find.c
+@@ -45,13 +45,6 @@ EXPORT_SYMBOL_GPL(ibft_addr);
+ static const struct {
+ 	char *sign;
+ } ibft_signs[] = {
+-#ifdef CONFIG_ACPI
+-	/*
+-	 * One spec says "IBFT", the other says "iBFT". We have to check
+-	 * for both.
+-	 */
+-	{ ACPI_SIG_IBFT },
+-#endif
+ 	{ "iBFT" },
+ 	{ "BIFT" },	/* Broadcom iSCSI Offload */
+ };
+@@ -62,14 +55,6 @@ static const struct {
+ #define VGA_MEM 0xA0000 /* VGA buffer */
+ #define VGA_SIZE 0x20000 /* 128kB */
+ 
+-#ifdef CONFIG_ACPI
+-static int __init acpi_find_ibft(struct acpi_table_header *header)
+-{
+-	ibft_addr = (struct acpi_table_ibft *)header;
+-	return 0;
+-}
+-#endif /* CONFIG_ACPI */
+-
+ static int __init find_ibft_in_mem(void)
+ {
+ 	unsigned long pos;
+@@ -94,6 +79,7 @@ static int __init find_ibft_in_mem(void)
+ 				 * the table cannot be valid. */
+ 				if (pos + len <= (IBFT_END-1)) {
+ 					ibft_addr = (struct acpi_table_ibft *)virt;
++					pr_info("iBFT found at 0x%lx.\n", pos);
+ 					goto done;
+ 				}
+ 			}
+@@ -108,20 +94,12 @@ done:
+  */
+ unsigned long __init find_ibft_region(unsigned long *sizep)
+ {
+-#ifdef CONFIG_ACPI
+-	int i;
+-#endif
+ 	ibft_addr = NULL;
+ 
+-#ifdef CONFIG_ACPI
+-	for (i = 0; i < ARRAY_SIZE(ibft_signs) && !ibft_addr; i++)
+-		acpi_table_parse(ibft_signs[i].sign, acpi_find_ibft);
+-#endif /* CONFIG_ACPI */
+-
+ 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
+ 	 * only use ACPI for this */
+ 
+-	if (!ibft_addr && !efi_enabled)
++	if (!efi_enabled)
+ 		find_ibft_in_mem();
+ 
+ 	if (ibft_addr) {
 
 
