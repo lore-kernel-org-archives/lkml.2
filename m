@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760728Ab1LPUsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 15:48:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58934 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab1LPUse (ORCPT
+	id S964934Ab1LPUvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 15:51:49 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38665 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932746Ab1LPUvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 15:48:34 -0500
-Message-ID: <1324068493.6652.69.camel@fourier>
-Subject: Re: [PATCH v2 4/7] VFS: Rename and refactor
- writeback_inodes_sb_if_idle
-From: Kamal Mostafa <kamal@canonical.com>
-To: miaox@cn.fujitsu.com
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Date: Fri, 16 Dec 2011 12:48:13 -0800
-In-Reply-To: <4EE6C7AD.3020907@cn.fujitsu.com>
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
-	 <1323367477-21685-5-git-send-email-kamal@canonical.com>
-	 <4EE6C7AD.3020907@cn.fujitsu.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-qqvlbFS0BdWQeiIbhGty"
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 16 Dec 2011 15:51:42 -0500
+X-Sasl-enc: vZYw7WVaNJdZ5/sM2DmD8TdvufW9i6nyY1qQFPVYDzZn 1324068700
+Date: Fri, 16 Dec 2011 12:50:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/16] 2.6.32.51-longterm review
+Message-ID: <20111216205049.GA28030@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the start of the longterm review cycle for the 2.6.32.51 release.
+There are 16 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
---=-qqvlbFS0BdWQeiIbhGty
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Responses should be made by December 19, 2011, 18:00:00 UTC
+Anything received after that time might be too late.
 
-On Tue, 2011-12-13 at 11:34 +0800, Miao Xie wrote:
-> On thu, 8 Dec 2011 10:04:34 -0800, Kamal Mostafa wrote:
-> >  /**
-> > - * writeback_inodes_sb_if_idle	-	start writeback if none underway
-> > + * try_to_writeback_inodes_sb_nr	-	start writeback if none underway
-> >   * @sb: the superblock
-> >   * @nr: the number of pages to write
-> >   *
-> >   * Invoke writeback_inodes_sb if no writeback is currently underway.
-> >   * Returns 1 if writeback was started, 0 if not.
-> >   */
-> > -int writeback_inodes_sb_nr_if_idle(struct super_block *sb,
-> > +int try_to_writeback_inodes_sb_nr(struct super_block *sb,
-> >  				   unsigned long nr,
-> >  				   enum wb_reason reason)
-> >  {
-> >  	if (!writeback_in_progress(sb->s_bdi)) {
-> >  		down_read(&sb->s_umount);
-> > -		writeback_inodes_sb_nr(sb, nr, reason);
-> > +		if (nr =3D=3D 0)
-> > +			writeback_inodes_sb(sb, reason);
-> > +		else
-> > +			writeback_inodes_sb_nr(sb, nr, reason);
-> >  		up_read(&sb->s_umount);
-> >  		return 1;
-> >  	} else
-> >  		return 0;
->=20
-> The comment said "Returns 1 if writeback was started", so if writeback_in=
-_progress()
-> return true, I think this function also should return 1.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.51-rc1.gz
+and the diffstat can be found below.
 
-My interpretation of that comment is that it will return 1 only if this
-call results in a new writeback being started (not if a writeback was
-already in progress).
+thanks,
 
-This patch [4/7] intentionally does not introduce any functional
-changes.
-
-> BTW: Does anyone know when this patchset will be merged into the main tre=
-e?
-
-I also eagerly await the merge of this patch set.
-
- -Kamal
+greg k-h
 
 
---=-qqvlbFS0BdWQeiIbhGty
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJO666NAAoJEOf3EFVUCeQimq4P/AqtbY6gx1zB4K61FAJlTmAf
-sO9wrDoTAEoed0K55GYXGsMfW1m+1GYJnmxwQWp/PjkErMYw+6Jm+JxDfhIazvdk
-T1Dus3ZDSCBqbFhru0gKDBM24B1mT45tVLRhwuk3URuUj0GEinhratqkvjJokC28
-o9V9jxd8/zEFoehwfQgrbIdr4RoWM3Pfvx5thNb9mOvvGal1KnIjraclKgCiBtlT
-2u5AVGvFYrNjTGah/ylk2ish4bQt7QqEgWZUwQmGxFbJC3G4torysAcE7Rv/pGFE
-nIuTPf4xcXKX1FD6IVNgGAEGeQy/LZRec2udrycpFo3ZfZ1fx1pUNhOh5Wn0gxsl
-yvuuCyOcUFKk4r9Mj29Lh/G/Z8dToazY0a0+PTTm3WZ+SxGi49z8/9ZL39Wr3SSO
-6OEvTxvUF2SBE/4YPfWLZ5r8czCuwamN3bb5wF2HuNXdO+0dPRuBcUu8jBXdEbkF
-n9Md4NX7Vrr4qi5f25BzFr46tHhk51TeZbswk1OIA6Q4BeTgxTm6RyCVqftfnWiC
-6RGpymm7m1zMepZvMXqJTeYvYM2ltUv8x4jrY7RPknkxYoy1n7FOevNTFp7VXNND
-7sN5Qk4JR9vFEcov2B1bD+oa59a+1FjCBuQqcul5kHpaGgZf4+7YklyyrJeiUBmY
-wDOD2sI82RFBMA+1gMrK
-=km/7
------END PGP SIGNATURE-----
-
---=-qqvlbFS0BdWQeiIbhGty--
-
+ Makefile                                 |    2 +-
+ arch/arm/mach-davinci/board-dm646x-evm.c |    6 +-
+ arch/x86/oprofile/backtrace.c            |   46 +++++++++++++++++++--
+ arch/x86/oprofile/nmi_int.c              |    8 ++--
+ drivers/oprofile/buffer_sync.c           |   21 +++++-----
+ drivers/usb/class/cdc-acm.c              |   10 +++++
+ fs/ext4/inode.c                          |    2 +-
+ fs/hfs/btree.c                           |   20 +++++++--
+ fs/jbd/journal.c                         |    8 ++++
+ fs/jbd2/journal.c                        |    8 ++++
+ include/linux/log2.h                     |    1 -
+ kernel/taskstats.c                       |    1 +
+ mm/percpu.c                              |   32 +++++++++------
+ mm/util.c                                |   13 ++++++
+ net/xfrm/xfrm_algo.c                     |    4 +-
+ sound/pci/hda/patch_realtek.c            |    2 +
+ sound/pci/sis7019.c                      |   64 ++++++++++++++++++++++++-----
+ 17 files changed, 193 insertions(+), 55 deletions(-)
