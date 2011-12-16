@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab1LPTt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 14:49:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44934 "EHLO mx2.suse.de"
+	id S932734Ab1LPTtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 14:49:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44949 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932597Ab1LPTtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 14:49:22 -0500
+	id S932597Ab1LPTt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 14:49:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Dec 16 11:45:54 2011
-Message-Id: <20111216194554.439303752@clark.kroah.org>
+Message-Id: <20111216194554.789958875@clark.kroah.org>
 User-Agent: quilt/0.50-24.1
-Date: Fri, 16 Dec 2011 11:45:00 -0800
+Date: Fri, 16 Dec 2011 11:45:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [03/53] ALSA: hda - Fix GPIO LED setup for IDT 92HD75 codecs
+        alan@lxorguk.ukuu.org.uk, "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [05/53] ARM: davinci: da850 evm: change audio edma event queue to EVENTQ_0
 In-Reply-To: <20111216194613.GA18395@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,138 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
 
-commit f1a73746c6664442082e3d53e1804f46e1910436 upstream.
+commit f1b21c525693b0159aed83b5871f2d0f077f208e upstream.
 
-Some HP laptops with IDT 92HD75 codecs may use a GPIO > 4 for the mute
-LED, but currently the driver doesn't check this properly, and confuses
-the mute LED behavior.  This ended up with the silent output  on some
-HP laptops due to  having another GPIO used as external amp control.
+On OMAP-L138 platform, EDMA event queue 0 should be used for audio
+transfers so that they are not starved by video data moving on event queue 1.
 
-This patch fixes the problem by checking the max GPIO count and
-comparing with the given value from DMI entry instead of magic fixed
-value 4 and 8, and adding a new field to indicate the VREF mute-LED
-behavior.
+Commit 48519f0ae03bc7e86b3dc93e56f1334d53803770 (ASoC: davinci: let platform
+data define edma queue numbers) had a side-effect of changing this behavior
+by making the driver actually honor the platform data passed.
 
-Reported-and-tested-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix this now by passing event queue 0 as the queue to be used for audio
+transfers.
+
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   45 +++++++++++++++++++++--------------------
- 1 file changed, 24 insertions(+), 21 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -214,6 +214,7 @@ struct sigmatel_spec {
- 	unsigned int gpio_mute;
- 	unsigned int gpio_led;
- 	unsigned int gpio_led_polarity;
-+	unsigned int vref_mute_led_nid; /* pin NID for mute-LED vref control */
- 	unsigned int vref_led;
- 
- 	/* stream */
-@@ -4298,12 +4299,10 @@ static void stac_store_hints(struct hda_
- 		spec->eapd_switch = val;
- 	get_int_hint(codec, "gpio_led_polarity", &spec->gpio_led_polarity);
- 	if (get_int_hint(codec, "gpio_led", &spec->gpio_led)) {
--		if (spec->gpio_led <= 8) {
--			spec->gpio_mask |= spec->gpio_led;
--			spec->gpio_dir |= spec->gpio_led;
--			if (spec->gpio_led_polarity)
--				spec->gpio_data |= spec->gpio_led;
--		}
-+		spec->gpio_mask |= spec->gpio_led;
-+		spec->gpio_dir |= spec->gpio_led;
-+		if (spec->gpio_led_polarity)
-+			spec->gpio_data |= spec->gpio_led;
- 	}
- }
- 
-@@ -4893,8 +4892,14 @@ static int find_mute_led_gpio(struct hda
- 			if (sscanf(dev->name, "HP_Mute_LED_%d_%x",
- 				  &spec->gpio_led_polarity,
- 				  &spec->gpio_led) == 2) {
--				if (spec->gpio_led < 4)
-+				unsigned int max_gpio;
-+				max_gpio = snd_hda_param_read(codec, codec->afg,
-+							      AC_PAR_GPIO_CAP);
-+				max_gpio &= AC_GPIO_IO_COUNT;
-+				if (spec->gpio_led < max_gpio)
- 					spec->gpio_led = 1 << spec->gpio_led;
-+				else
-+					spec->vref_mute_led_nid = spec->gpio_led;
- 				return 1;
- 			}
- 			if (sscanf(dev->name, "HP_Mute_LED_%d",
-@@ -5023,15 +5028,12 @@ static int stac92xx_pre_resume(struct hd
- 	struct sigmatel_spec *spec = codec->spec;
- 
- 	/* sync mute LED */
--	if (spec->gpio_led) {
--		if (spec->gpio_led <= 8) {
--			stac_gpio_set(codec, spec->gpio_mask,
--					spec->gpio_dir, spec->gpio_data);
--		} else {
--			stac_vrefout_set(codec,
--					spec->gpio_led, spec->vref_led);
--		}
--	}
-+	if (spec->vref_mute_led_nid)
-+		stac_vrefout_set(codec, spec->vref_mute_led_nid,
-+				 spec->vref_led);
-+	else if (spec->gpio_led)
-+		stac_gpio_set(codec, spec->gpio_mask,
-+			      spec->gpio_dir, spec->gpio_data);
- 	return 0;
- }
- 
-@@ -5042,7 +5044,7 @@ static void stac92xx_set_power_state(str
- 	struct sigmatel_spec *spec = codec->spec;
- 
- 	if (power_state == AC_PWRST_D3) {
--		if (spec->gpio_led > 8) {
-+		if (spec->vref_mute_led_nid) {
- 			/* with vref-out pin used for mute led control
- 			 * codec AFG is prevented from D3 state
- 			 */
-@@ -5095,7 +5097,7 @@ static int stac92xx_update_led_status(st
- 		}
- 	}
- 	/*polarity defines *not* muted state level*/
--	if (spec->gpio_led <= 8) {
-+	if (!spec->vref_mute_led_nid) {
- 		if (muted)
- 			spec->gpio_data &= ~spec->gpio_led; /* orange */
- 		else
-@@ -5113,7 +5115,8 @@ static int stac92xx_update_led_status(st
- 		muted_lvl = spec->gpio_led_polarity ?
- 				AC_PINCTL_VREF_GRD : AC_PINCTL_VREF_HIZ;
- 		spec->vref_led = muted ? muted_lvl : notmtd_lvl;
--		stac_vrefout_set(codec,	spec->gpio_led, spec->vref_led);
-+		stac_vrefout_set(codec,	spec->vref_mute_led_nid,
-+				 spec->vref_led);
- 	}
- 	return 0;
- }
-@@ -5634,7 +5637,7 @@ again:
- 
- #ifdef CONFIG_SND_HDA_POWER_SAVE
- 	if (spec->gpio_led) {
--		if (spec->gpio_led <= 8) {
-+		if (!spec->vref_mute_led_nid) {
- 			spec->gpio_mask |= spec->gpio_led;
- 			spec->gpio_dir |= spec->gpio_led;
- 			spec->gpio_data |= spec->gpio_led;
-@@ -5955,7 +5958,7 @@ again:
- 
- #ifdef CONFIG_SND_HDA_POWER_SAVE
- 	if (spec->gpio_led) {
--		if (spec->gpio_led <= 8) {
-+		if (!spec->vref_mute_led_nid) {
- 			spec->gpio_mask |= spec->gpio_led;
- 			spec->gpio_dir |= spec->gpio_led;
- 			spec->gpio_data |= spec->gpio_led;
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -748,7 +748,7 @@ static struct snd_platform_data da850_ev
+ 	.num_serializer	= ARRAY_SIZE(da850_iis_serializer_direction),
+ 	.tdm_slots	= 2,
+ 	.serial_dir	= da850_iis_serializer_direction,
+-	.asp_chan_q	= EVENTQ_1,
++	.asp_chan_q	= EVENTQ_0,
+ 	.version	= MCASP_VERSION_2,
+ 	.txnumevt	= 1,
+ 	.rxnumevt	= 1,
 
 
