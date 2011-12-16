@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760685Ab1LPXaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 18:30:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35943 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab1LPXap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 18:30:45 -0500
-Date: Fri, 16 Dec 2011 23:30:42 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: Move attribute flags into non __KERNEL__ space
-Message-ID: <20111216233041.GU2203@ZenIV.linux.org.uk>
-References: <1324021626-10059-1-git-send-email-levinsasha928@gmail.com>
- <20111216192320.GA23748@infradead.org>
- <1324071040.29432.3.camel@sasha>
+	id S1760741Ab1LPXcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 18:32:53 -0500
+Received: from home.keithp.com ([63.227.221.253]:36335 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab1LPXcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 18:32:45 -0500
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org, torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>, Daniel Vetter <daniel@ffwll.ch>
+Subject: [PATCH] Revert "drm/i915: fix infinite recursion on unbind due to ilk vt-d w/a"
+Date: Fri, 16 Dec 2011 15:33:34 -0800
+Message-Id: <1324078414-10945-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324071040.29432.3.camel@sasha>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 11:30:40PM +0200, Sasha Levin wrote:
-> On Fri, 2011-12-16 at 14:23 -0500, Christoph Hellwig wrote:
-> > On Fri, Dec 16, 2011 at 09:47:06AM +0200, Sasha Levin wrote:
-> > > Attribute flags can be useful in userspace when working with filesystems
-> > > such as 9p.
-> > 
-> > No, they aren't.  They are kernel internal values and userspace has no
-> > fucking business messing with them.
-> > 
-> 
-> They became userspace business once they got exposed through 9p.
-> 
-> Take a look at <linux/net/9p/9p.h>:
-> 
-> 	/**
-> 	 * struct p9_iattr_dotl - P9 inode attribute for setattr
-> 	 * @valid: bitfield specifying which fields are valid
-> 	 *         same as in struct iattr
-> 	[...]
-> 
-> That structure is userspace facing, and it's using iattr values.
-> 
-> So either we expose them through fs.h, through 9p.h, or modify 9p code
-> to not use them directly. But claiming that they're kernel internal
-> values isn't entirely correct.
+This reverts commit eb1711bb94991e93669c5a1b5f84f11be2d51ea1.
 
-They *are* kernel internal values and 9P is asking for trouble exposing
-them.  Translation: tomorrow we might reassign those as we bloody wish
-and any userland code that happens to rely on their values will break.
-At which point we'll handle complaints by pointing and laughing.
+This patch has been reported by two people to cause memory corruption
+and application crashes. It exists solely to fix a problem with the
+VT-d workarounds for Ironlake. I would back those out as well as
+without this change, that work-around causes an infinite recursion for
+anyone foolish enough to actually try VT-d for graphics.
 
-It's a 9P bug; fix it there.  Turning random internal constants into a part
-of ABI is not going to work.
+So, without this patch, and when using VT-d for graphics on Ironlake,
+people will experience infinite recursion crashes. With this patch, we
+get memory corruption on all systems.
+
+Cc: dri-devel@lists.freedesktop.org
+Cc: Daniel Vetter <daniel@ffwll.ch>
+Reported-by: Alex Villací­s Lasso <a_villacis@palosanto.com>
+Reported-by: Dirk Hohndel <dirk@hohndel.org>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+---
+ drivers/gpu/drm/i915/i915_gem.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 60ff1b6..8359dc7 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2026,13 +2026,8 @@ i915_wait_request(struct intel_ring_buffer *ring,
+ 	 * to handle this, the waiter on a request often wants an associated
+ 	 * buffer to have made it to the inactive list, and we would need
+ 	 * a separate wait queue to handle that.
+-	 *
+-	 * To avoid a recursion with the ilk VT-d workaround (that calls
+-	 * gpu_idle when unbinding objects with interruptible==false) don't
+-	 * retire requests in that case (because it might call unbind if the
+-	 * active list holds the last reference to the object).
+ 	 */
+-	if (ret == 0 && dev_priv->mm.interruptible)
++	if (ret == 0)
+ 		i915_gem_retire_requests_ring(ring);
+ 
+ 	return ret;
+-- 
+1.7.7.3
+
