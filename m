@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760105Ab1LPEVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Dec 2011 23:21:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54397 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab1LPEV3 (ORCPT
+	id S1760096Ab1LPEZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Dec 2011 23:25:13 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:49745 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751826Ab1LPEZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Dec 2011 23:21:29 -0500
+	Thu, 15 Dec 2011 23:25:11 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAGHG6k55LOCn/2dsb2JhbABEq02BBoFyAQEEATocIwULCAMYLhQlAyETh3q5EhOLDmMElHWSQA
+Date: Fri, 16 Dec 2011 15:25:08 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: XFS/btrfs performance after IO-less dirty throttling
+Message-ID: <20111216042508.GE23662@dastard>
+References: <20111214143156.GA22511@localhost>
+ <20111215133137.GA14562@localhost>
+ <20111216003157.GA23662@dastard>
+ <20111216015311.GA15996@localhost>
 MIME-Version: 1.0
-In-Reply-To: <201112151747.28366.trenn@suse.de>
-References: <1323879532-10490-1-git-send-email-standby24x7@gmail.com>
-	<201112151747.28366.trenn@suse.de>
-Date: Fri, 16 Dec 2011 13:21:28 +0900
-Message-ID: <CALLJCT3hwYhCzrqbfeXG-C4t+PTG8fu_uJP=+S3H=tt4yX+D9w@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: kernel-parameters.txt : Add intel_idle.max_cstate
-From: Masanari Iida <standby24x7@gmail.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rdunlap@xenotime.net, lenb@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111216015311.GA15996@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/16 Thomas Renninger <trenn@suse.de>:
-> On Wednesday, December 14, 2011 05:18:52 PM Masanari Iida wrote:
->> Add missing intel_idle.max_cstate in kernel-parameters.txt
-> I wonder whether this one should get documented at all.
->
-My opinion is, as long as the kernel parameter is available,
-we should document it.  And if developer want to guide the user to use
-cpuidle.max_cstate, we should document so.
+On Fri, Dec 16, 2011 at 09:53:11AM +0800, Wu Fengguang wrote:
+> I'm indeed happy that you don't care that much on that regression
+> introduced by me ;-)
 
-> Better would be to work towards a general cpuidle.max_state=
-> param which deprecates processor.max_cstate= (acpi_idle driver) and
-> intel_idle.max_cstate= and enables this functionality for all
-> other cpuidle drivers out there as well.
->
-cpuidle.max_state is also not in the kernel-parameters.txt,
-Separate patch need to be created.
+Heh.
 
-> Something to turn off intel_idle driver and favor the acpi_idle
-> driver for debugging would still be needed then.
->
-This patch explains how to disable intel_idle.
-Although processor.max_cstate=0 sets cstate to 0,
-but similar option intel_idle.max_cstate=0 didn't set cstate to 0.
-This is confusing for the users.
-This is the reason why I wanted to document it.
+BTW, do these tests run to ENOSPC?
 
-Masanari Iida
+>                 10829.00        +4.3%     11296.00  TOTAL xfs:xfs_delalloc_enospc
+
+This implies that it does.
+
+If so, I'm not sure how much we can really trust these overall
+results because allocation and writeback speeds at ENOSPC is
+anything but deterministic. It will certainly have an effect
+(detrimental) on throughput as the filesystem gets close to full....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
