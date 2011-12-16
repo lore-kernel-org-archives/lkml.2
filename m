@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760852Ab1LPVvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 16:51:55 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:51614 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760426Ab1LPVvs (ORCPT
+	id S1760859Ab1LPV7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 16:59:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34600 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760426Ab1LPV7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 16:51:48 -0500
-Date: Fri, 16 Dec 2011 22:54:51 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
-Message-ID: <20111216215451.GA20271@dztty>
-References: <20111216112534.GA13147@dztty>
- <20111216125556.db2bf308.akpm@linux-foundation.org>
+	Fri, 16 Dec 2011 16:59:31 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: joe@perches.com
+Subject: checkpatch.pl misreporting bugs with array fillings
+Date: Fri, 16 Dec 2011 22:59:28 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Andy Whitcroft <apw@shadowen.org>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111216125556.db2bf308.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112162259.29043.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 12:55:56PM -0800, Andrew Morton wrote:
-> On Fri, 16 Dec 2011 12:25:34 +0100
-> Djalal Harouni <tixxdz@opendz.org> wrote:
-> 
-> > 
-> > Calls to notify_change() must hold i_mutex.
-> > 
->
-> ...
-> 
-> <does a quick audit>
-> 
-> fs/hpfs/namei.c and fs/nfsd/vfs.c:nfsd_setattr() aren't obviosuly
-> holding that lock when calling notify_change().  Everything else under
-> fs/ looks OK.
+Hi,
 
-fs/nfsd/vfs.c:nfsd_setattr() is calling fh_lock() which calls
-mutex_lock_nested() with the appropriate i_mutex of the dentry object.
-There are some extra functions before the lock which are related to nfsd.
+the following testcase is probably misreported by checkpatch.pl:
 
-fs/hpfs/namei.c:hpfs_unlink() is using hpfs_lock() to lock the whole
-filesystem.
+static const unsigned char pci_irq_swizzle[2][PCI_MAX_DEVICES] = {
+        {0, 0, 0, 0, 0, 0, 0, 27, 27, [9 ... PCI_MAX_DEVICES - 1] = 0 },
+        {0, 0, 0, 0, 0, 0, 0, 29, 29, [9 ... PCI_MAX_DEVICES - 1] = 0 },
+};
 
-So they are OK.
+The result is:
 
--- 
-tixxdz
-http://opendz.org
+ERROR: space prohibited before open square bracket '['
+#2: FILE: testcase.c:2:
++       {0, 0, 0, 0, 0, 0, 0, 27, 27, [9 ... PCI_MAX_DEVICES - 1] = 0 },
+
+ERROR: space prohibited before open square bracket '['
+#3: FILE: testcase.c:3:
++       {0, 0, 0, 0, 0, 0, 0, 29, 29, [9 ... PCI_MAX_DEVICES - 1] = 0 },
+
+total: 2 errors, 0 warnings, 5 lines checked
+
+NOTE: Ignored message types: COMPLEX_MACRO CONSIDER_KSTRTO MINMAX 
+MULTISTATEMENT_MACRO_USE_DO_WHILE
+
+testcase.c has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+Cheers!
+M
