@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1LQVpV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 16:45:21 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34604 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1LQVpT (ORCPT
+	id S1752789Ab1LQVri (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 16:47:38 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19350 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab1LQVrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 16:45:19 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] apb: Fix configuration constraints
-To: linux-kernel@vger.kernel.org, mingo@elte.hu
-Date: Sat, 17 Dec 2011 21:57:25 +0000
-Message-ID: <20111217215719.3743.93550.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Sat, 17 Dec 2011 16:47:35 -0500
+Date: Sat, 17 Dec 2011 16:46:26 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ferenc Wagner <wferi@niif.hu>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        linux-x86_64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
+Message-ID: <20111217214626.GA17841@phenom.dumpdata.com>
+References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
+ <20111010155319.GA29140@phenom.oracle.com>
+ <4E934EC9.5030909@goop.org>
+ <87vcppbvc4.fsf@tac.ki.iif.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vcppbvc4.fsf@tac.ki.iif.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4EED0DF0.0086,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Fri, Dec 09, 2011 at 04:47:39PM +0100, Ferenc Wagner wrote:
+> Jeremy Fitzhardinge <jeremy@goop.org> writes:
+> 
+> >> On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
+> >>
+> >>> Run below test on xen pvm.
+> >>> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
+> >>> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
+> >>> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
+> >>>
+> >>> @ X:58562301
+> >>> @ Y:58574282
+> >>> @ IDLE: 199.600
+> >>>
+> >>> Normal idle percent should be around 100%.
+> >>> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
+> >>> but these ticks will be accounted again when idle ticks restarted.
+> >>>
+> >>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> >>> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> >
+> > Does this affect the accounting of stolen ticks?  If it does, that's not
+> > necessarily a showstopper for this patch, but we'll need to do some more
+> > thinking about it.  Certainly, accurate accounting for idleness is
+> > important.
+> 
+> Please see also http://thread.gmane.org/gmane.linux.kernel/734441, where
+> I found that the counter doubling isn't always present under 2.6.26.
+> However, after going to 2.6.32 (Debian lenny-backports kernel, 4th of
+> April on the graph below) that instability seems to disappear.  Please
+> note that the following graph shows halved idle and iowait percentages.
+> 
 
-The APB timer requires SFI, SCU and MID support
+What happenend in Feb?
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+> 
+> (I haven't collected steal values, so the numbers don't sum up to 100%.)
+> I'd be grateful if this discrepancy could be cleared up eventually!
+> It's heartening to see some progress after more than three years. :)
+> 
+> Actually, as Munin doesn't half the idle and iowait values, but
+> truncates the (then overflowing) graph at 100%, I was rather surprised
+> to see iowait completely disappear after the kernel upgrade, and
+> concluded that it was somehow converted into buggy-looping in blkfront.
+> Now I see this isn't the case, but the steadily increasing system CPU
+> usage between reboots is still a mystery.  I'll start a separate thread
+> for that, just wanted to provide some motivation for this topic.
 
- arch/x86/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 13947a2..ea425d0 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -716,6 +716,7 @@ config APB_TIMER
-        def_bool y if X86_INTEL_MID
-        prompt "Intel MID APB Timer Support" if X86_INTEL_MID
-        select DW_APB_TIMER
-+       depends on X86_INTEL_MID && SFI
-        help
-          APB timer is the replacement for 8254, HPET on X86 MID platforms.
-          The APBT provides a stable time base on SMP
+Did you add more memory in the system?
+> --
+> Thanks,
+> Feri.
 
