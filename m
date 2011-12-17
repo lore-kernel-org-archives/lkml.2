@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab1LQAXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 19:23:08 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46682 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab1LQAW7 (ORCPT
+	id S1760726Ab1LQAaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 19:30:25 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10056 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab1LQAaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 19:22:59 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Joe Perches <joe@perches.com>
-Subject: Re: checkpatch.pl misreporting bugs with array fillings
-Date: Sat, 17 Dec 2011 01:22:55 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Andy Whitcroft <apw@shadowen.org>, linux-kernel@vger.kernel.org
-References: <201112162259.29043.marek.vasut@gmail.com> <1324080955.331.16.camel@joe2Laptop>
-In-Reply-To: <1324080955.331.16.camel@joe2Laptop>
+	Fri, 16 Dec 2011 19:30:19 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ZaBJZao2A5cnI8Z4xSBDR
+Date: Fri, 16 Dec 2011 16:30:05 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Fix cross compilation broken by failing size
+ command
+Message-ID: <20111217003005.GC6464@atomide.com>
+References: <20111214215815.GP32251@atomide.com>
+ <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112170122.55827.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 2011-12-16 at 22:59 +0100, Marek Vasut wrote:
-> > static const unsigned char pci_irq_swizzle[2][PCI_MAX_DEVICES] = {
-> > 
-> >         {0, 0, 0, 0, 0, 0, 0, 27, 27, [9 ... PCI_MAX_DEVICES - 1] = 0 },
-> >         {0, 0, 0, 0, 0, 0, 0, 29, 29, [9 ... PCI_MAX_DEVICES - 1] = 0 },
-> > 
-> > };
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111216 02:12]:
+> Since commit 5ffb04f6690d71fab241b3562ebf52b893ac4ff1, "ARM: zImage:
+> make sure appended DTB doesn't get overwritten by kernel .bss", the
+> native 'size' command, which is now always used for calculation of the
+> kernel bss size, may break in selected cross compilation environments
+> with error messages like:
 > 
-> True.
+> size: arch/arm/boot/compressed/../../../../vmlinux: File format is ambiguous
+> size: Matching formats: elf32-littlearm elf32-littlearm-symbian elf32-littlearm-vxworks
 > 
-> Andy will probably figure it out.
-> He's the maintainer.
+> As a consequence, the KBSS_SZ variable extracted from the size output is
+> empty, and the the final linker command, provided with incorrectly
+> formatted arguments, also fails:
 > 
-> Still, in this case all the 0's are unnecessary.
-> I'd probably write that code as:
+>   LD      arch/arm/boot/compressed/vmlinux
+>   arm-angstrom-linux-uclibcgnueabi-ld:--defsym _kernel_bss_size=: syntax error
 > 
-> static const unsigned char pci_irq_swizzle[2][PCI_MAX_DEVICES] = {
-> 	{ [7] = 27, [8] = 27 },
-> 	{ [7] = 29, [8] = 29 },
-> };
+> Don't append the '_kernel_bss_size=$(KBSS_SZ)' argument to the linker
+> command line if that variable is empty because of the failing size
+> command. Moreover, use $(CROSS_COMPILE)size if available instead of
+> native size.
+> 
+> Created and tested against linux-3.2-rc5.
+> 
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-I suspect this is some remnant of ancient code where the people writing it were 
-not sure if the memory under this is all-zeroes. (or the section this lands in 
-wasn't zeroed-out)
+This seems like a good solution to me:
 
-M
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+> ---
+> This patch supersedes my previously submitted "ARM: fix $(CROSS_COMPILE) 
+> prefix missing from size invocation". Thanks to Tony Lindgren for his
+> comments on $(CROSS_COMPILE)size limited availability.
+> 
+> Unfortunately, I've already pushed that old version to the patch system
+> at http://www.arm.linux.org.uk/developer/patches/, which I know is not
+> a review system. Apparently, I was not patient enough, not waiting more
+> than a week with that regression fix for a single reply to my initial
+> submission to Russell King, the ARM PORT maintainer, Cc: Nicolas Pitre,
+> the regression introducing commit author, and the linux-arm-kernel list.
+> Sorry for that, please drop the old version from the Incoming queue, and
+> I'll not be pushing anything to that patch system without prior positive
+> review response any more.
+
+Heh :) The patch system is pretty arcane.. You can move the
+patch there to superseded yourself btw.
+
+Tony
+
+ 
+> Thanks,
+> Janusz
+> 
+>  arch/arm/boot/compressed/Makefile |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
+> index 21f56ff..17972e9 100644
+> --- a/arch/arm/boot/compressed/Makefile
+> +++ b/arch/arm/boot/compressed/Makefile
+> @@ -126,8 +126,11 @@ ccflags-y := -fpic -fno-builtin -I$(obj)
+>  asflags-y := -Wa,-march=all
+>  
+>  # Supply kernel BSS size to the decompressor via a linker symbol.
+> -KBSS_SZ = $(shell size $(obj)/../../../../vmlinux | awk 'END{print $$3}')
+> +KBSS_SZ = $(shell if $(CROSS_COMPILE)size $(obj)/../../../../vmlinux; then :; \
+> +		else size $(obj)/../../../../vmlinux; fi | awk 'END{print $$3}')
+> +ifneq ($(KBSS_SZ),)
+>  LDFLAGS_vmlinux = --defsym _kernel_bss_size=$(KBSS_SZ)
+> +endif
+>  # Supply ZRELADDR to the decompressor via a linker symbol.
+>  ifneq ($(CONFIG_AUTO_ZRELADDR),y)
+>  LDFLAGS_vmlinux += --defsym zreladdr=$(ZRELADDR)
+> -- 
+> 1.7.3.4
+> 
