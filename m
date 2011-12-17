@@ -1,171 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1LQPHw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 10:07:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36636 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab1LQPHu (ORCPT
+	id S1752481Ab1LQPIG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 10:08:06 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52457 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab1LQPIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 10:07:50 -0500
-Date: Sat, 17 Dec 2011 09:07:42 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Azael Avalos <coproscefalo@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        Len Brown <lenb@kernel.org>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] toshiba_acpi: Support alternate hotkey interfaces
-Message-ID: <20111217150742.GA6916@ubuntu-mba>
-Mail-Followup-To: Thomas Renninger <trenn@suse.de>,
-	Azael Avalos <coproscefalo@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
- <1323972371-13189-3-git-send-email-seth.forshee@canonical.com>
- <201112170931.44171.trenn@suse.de>
- <CAGdLNWFeRD=K0YWwr=r2Rznr1N4B6HMPOUF4vWv1aOZbDy+rEQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGdLNWFeRD=K0YWwr=r2Rznr1N4B6HMPOUF4vWv1aOZbDy+rEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 17 Dec 2011 10:08:02 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
+        davem@davemloft.net, aneesh.kumar@linux.vnet.ibm.com,
+        jvrao@linux.vnet.ibm.com, viro@ZenIV.linux.org.uk
+Cc: v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] 9p: Don't use ATTR_* values from fs.h in userspace facing  structs
+Date: Sat, 17 Dec 2011 17:07:02 +0200
+Message-Id: <1324134422-16642-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 04:32:14AM -0700, Azael Avalos wrote:
-> 2011/12/17 Thomas Renninger <trenn@suse.de>:
-> > On Thursday 15 December 2011 19:06:09 Seth Forshee wrote:
-> > ...
-> >> +static bool toshiba_acpi_i8042_filter(unsigned char data, unsigned char str,
-> >> +                                   struct serio *port)
-> >> +{
-> >> +     if (str & 0x20)
-> >> +             return false;
-> >> +
-> >> +     if (unlikely(data == 0xe0))
-> >> +             return false;
-> >> +
-> >> +     if ((data & 0x7f) == TOS1900_FN_SCAN) {
-> >> +             schedule_work(&toshiba_acpi->hotkey_work);
-> >> +             return true;
-> >> +     }
-> > What have you tried to check whether some other kind of ACPI event
-> > is happening?
-> > Do any acpi/SCI interrupts happen?:
-> > watch -n1 "cat /proc/interrupts |grep acpi"
-> 
-> I already did this, no events whatsoever, I was using a Satellite X205
-> at the time
+struct p9_iattr_dotl is userspace facing, but the 'valid' field is documented
+as follows:
 
-I've done similar checks on the NB505, no events.
+	 * @valid: bitfield specifying which fields are valid
+	 *         same as in struct iattr
 
-> >
-> > Could it by chance be an EC or other device GPE/SCI?
-> >
-> 
-> Seth mentioned me something about this, but w/o proper docs from
-> Toshiba, we are blindly shooting.
-> 
-> Seth?
+Which means that the user has to know about kernel internal ATTR_* values.
 
-In the DSDTs I've inspected there is an EC query method that looks like
-it handles events for the hotkeys, but I've never been able to find
-anything that will cause the GPE to trigger when the hotkeys are
-pressed.
+On Fri, 2011-12-16 at 23:30 +0000, Al Viro wrote:
+> They *are* kernel internal values and 9P is asking for trouble exposing
+> them.  Translation: tomorrow we might reassign those as we bloody wish
+> and any userland code that happens to rely on their values will break.
+> At which point we'll handle complaints by pointing and laughing.
+>
+> It's a 9P bug; fix it there.  Turning random internal constants into a part
+> of ABI is not going to work.
 
-Interestingly, I also saw that the Windows hotkey driver for the NB505
-logs some messages that indicate it's also filtering Fn key presses, and
-I also found that the binary contains the NTFY string. That's not proof
-of anything, but it does suggest that the Windows driver might be doing
-something similar to support hotkeys. Which makes me wonder if the GPE
-works at all.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ fs/9p/vfs_inode_dotl.c |   31 ++++++++++++++++++++++++++++++-
+ include/net/9p/9p.h    |   18 ++++++++++++++++++
+ 2 files changed, 48 insertions(+), 1 deletions(-)
 
-> 
-> >> +
-> >> +     return false;
-> >> +}
-> >> +
-> >> +static void toshiba_acpi_hotkey_work(struct work_struct *work)
-> >> +{
-> >> +     acpi_handle ec_handle = ec_get_handle();
-> >> +     acpi_status status;
-> >> +
-> >> +     if (!ec_handle)
-> >> +             return;
-> >> +
-> >> +     status = acpi_evaluate_object(ec_handle, "NTFY", NULL, NULL);
-> >> +     if (ACPI_FAILURE(status))
-> >> +             pr_err("ACPI NTFY method execution failed\n");
-> > Why is calling NTFY needed?
-> 
-> The NTFY method triggers a 0x80 notify event on TOS1900 device,
-> and thus being trapped by toshiba_acpi_notify, here are the methods
-> 
-> Method (NTFY, 0, NotSerialized)
-> {
->   Store (One, ^^^^VALZ.TECF)
->   Notify (VALZ, 0x80)
->   Return (0xAA)
-> }
-> 
-> And then
-> 
-> Method (INFO, 0, NotSerialized)
-> {
->   If (TECF)
->   {
->     Store (Zero, TECF)
->     Store (^^PCI0.LPCB.EC0.TOHK, Local0)
->     Store (Zero, ^^PCI0.LPCB.EC0.TOHK)
->   }
->   Else
->   {
->     Store (Zero, Local0)
->   }
-> 
->   Return (Local0)
-> }
-
-The NB505 is very similar. We might be able to get by without NTFY if
-all it was doing was providing the notification, but as you can see it
-also sets a flag that's needed to read the hotkey event with the INFO
-method.
-
-> >
-> > ...
-> >
-> >> +static int toshiba_acpi_suspend(struct acpi_device *acpi_dev,
-> >> +                             pm_message_t state)
-> >> +{
-> >> +     struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
-> >> +     u32 result;
-> >> +
-> >> +     if (dev->hotkey_dev)
-> >> +             hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_DISABLE, &result);
-> >> +
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +static int toshiba_acpi_resume(struct acpi_device *acpi_dev)
-> >> +{
-> >> +     struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
-> >> +     u32 result;
-> >> +
-> >> +     if (dev->hotkey_dev)
-> >> +             hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_ENABLE, &result);
-> >> +
-> >> +     return 0;
-> >> +}
-> > What are the suspend/resume funcs for?
-> > What bad things happen without them?
-> 
-> Some models (NB500 among others) stop sending hotkey events
-> when resumed, and even activating the hotkeys again don't work,
-> the suspend/resume functions do the trick ;)
-
-The NB505 (which is what I've been testing with) requires this as well.
-
-Seth
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 0b5745e..a948214 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -523,6 +523,35 @@ v9fs_vfs_getattr_dotl(struct vfsmount *mnt, struct dentry *dentry,
+ 	return 0;
+ }
+ 
++int v9fs_vfs_iattr_to_9p_valid(u32 ia_valid)
++{
++	u32 valid = 0, i;
++	static u32 attr_map[][2] = {
++		{ATTR_MODE,		P9_ATTR_MODE},
++		{ATTR_UID,		P9_ATTR_UID},
++		{ATTR_SIZE,		P9_ATTR_SIZE},
++		{ATTR_ATIME,		P9_ATTR_ATIME},
++		{ATTR_MTIME,		P9_ATTR_MTIME},
++		{ATTR_CTIME,		P9_ATTR_CTIME},
++		{ATTR_ATIME_SET,	P9_ATTR_ATIME_SET},
++		{ATTR_MTIME_SET,	P9_ATTR_MTIME_SET},
++		{ATTR_FORCE,		P9_ATTR_FORCE},
++		{ATTR_ATTR_FLAG,	P9_ATTR_ATTR_FLAG},
++		{ATTR_KILL_SUID,	P9_ATTR_KILL_SUID},
++		{ATTR_KILL_SGID,	P9_ATTR_KILL_SGID},
++		{ATTR_FILE,		P9_ATTR_FILE},
++		{ATTR_KILL_PRIV,	P9_ATTR_KILL_PRIV},
++		{ATTR_OPEN,		P9_ATTR_OPEN},
++		{ATTR_TIMES_SET,	P9_ATTR_TIMES_SET},
++	};
++
++	for (i = 0; i < ARRAY_SIZE(attr_map); i++)
++		if (ia_valid & attr_map[i][0])
++			valid |= attr_map[i][1];
++
++	return valid;
++}
++
+ /**
+  * v9fs_vfs_setattr_dotl - set file metadata
+  * @dentry: file whose metadata to set
+@@ -543,7 +572,7 @@ int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
+ 	if (retval)
+ 		return retval;
+ 
+-	p9attr.valid = iattr->ia_valid;
++	p9attr.valid = v9fs_vfs_iattr_to_9p_valid(iattr->ia_valid);
+ 	p9attr.mode = iattr->ia_mode;
+ 	p9attr.uid = iattr->ia_uid;
+ 	p9attr.gid = iattr->ia_gid;
+diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
+index 2d70b95..98b3f71 100644
+--- a/include/net/9p/9p.h
++++ b/include/net/9p/9p.h
+@@ -468,6 +468,24 @@ struct p9_stat_dotl {
+ #define P9_STATS_BASIC		0x000007ffULL /* Mask for fields up to BLOCKS */
+ #define P9_STATS_ALL		0x00003fffULL /* Mask for All fields above */
+ 
++#define P9_ATTR_MODE		(1 << 0)
++#define P9_ATTR_UID		(1 << 1)
++#define P9_ATTR_GID		(1 << 2)
++#define P9_ATTR_SIZE		(1 << 3)
++#define P9_ATTR_ATIME		(1 << 4)
++#define P9_ATTR_MTIME		(1 << 5)
++#define P9_ATTR_CTIME		(1 << 6)
++#define P9_ATTR_ATIME_SET	(1 << 7)
++#define P9_ATTR_MTIME_SET	(1 << 8)
++#define P9_ATTR_FORCE		(1 << 9) /* Not a change, but a change it */
++#define P9_ATTR_ATTR_FLAG	(1 << 10)
++#define P9_ATTR_KILL_SUID	(1 << 11)
++#define P9_ATTR_KILL_SGID	(1 << 12)
++#define P9_ATTR_FILE		(1 << 13)
++#define P9_ATTR_KILL_PRIV	(1 << 14)
++#define P9_ATTR_OPEN		(1 << 15) /* Truncating from open(O_TRUNC) */
++#define P9_ATTR_TIMES_SET	(1 << 16)
++
+ /**
+  * struct p9_iattr_dotl - P9 inode attribute for setattr
+  * @valid: bitfield specifying which fields are valid
+-- 
+1.7.8
 
