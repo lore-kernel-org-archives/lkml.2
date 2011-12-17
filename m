@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1LQN0F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 08:26:05 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54858 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1LQN0C convert rfc822-to-8bit (ORCPT
+	id S1752263Ab1LQNft (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 08:35:49 -0500
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:47474 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752165Ab1LQNfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 08:26:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EEC5286.3070408@gmx.de>
-References: <4EEC5286.3070408@gmx.de>
-Date: Sat, 17 Dec 2011 14:26:01 +0100
-Message-ID: <CAFLxGvxjLCyMCPXtpm7a7RaOL4A4=bhCLPKD=FVAc8xOdx_CsQ@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_Kernel=2DDOS_error_in_arp_mechanism_=96_no_delete_?=
-	=?windows-1252?Q?off_incomplete_arp_adresses?=
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Robert Gladewitz <gladewitz@gmx.de>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Sat, 17 Dec 2011 08:35:46 -0500
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [RFC 2/2] perf: duct tape a crash on perf kvm --guestmount=$(pwd) report
+Date: Sat, 17 Dec 2011 14:35:38 +0100
+Message-Id: <1324128938-17553-2-git-send-email-sebastian@breakpoint.cc>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1324128938-17553-1-git-send-email-sebastian@breakpoint.cc>
+References: <1324128938-17553-1-git-send-email-sebastian@breakpoint.cc>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 9:27 AM, Robert Gladewitz <gladewitz@gmx.de> wrote:
-> Hello,
->
-> first i have to say sorry for m y bad english. I try my best to descripe the
-> error.
->
-> I Use Linux-Routers for internal and external firewall components. For this
-> I Use own kernel configurations und use only the drivers an modules what I
-> need. Other features and modules I deactivated in my kernel versions
->
-> Since the kernel version 2.6.36 there is some mistake in the ipv4 arp
-> implementation. The the System try to find an unknown system, the send an
-> “who is” and marked the ip address as “incomplete” (German: unvollständig).
-> The thing is, usually linux delete all incomplete and complete entries in
-> some time, but in all kernel versions since 2.6.36 he doas not delete any
-> addresses.
->
-> In my case, I scan my network-segmens for new devices (Kaspersky, Landesk)
-> and on this process, the router learned a lot of incomplete addresses. I
-> have some class b networks (from the history), and this means the router
-> will be learned mor then 2^16 adresses.
->
-> Now the kerlen learn a maximum addresses – I know this is defined on
-> gc_thresh1 , gc_thresh2 and gc_thresh3 in the proc system under
-> sys.net.ipv4.neight.default. If the table have the maximum addresses in the
-> table (default=1024), no new host can send traffic packet over this router.
-> This means, we have a classical risk of DOS. In my case, I have only an
-> internal risk, but some providers may have also external risc.
->
-> I hope, my description help you to find this error. I send also my kernel
-> config, may there is some relation to small configurations in kernel
->
-> Viele Grüße
->
-> Robert Gladewitz
->
+Data was collected with
+|perf kvm --guestmount=$(pwd) record -a -R -g -s -d -T
 
-CC'ing netdev.
+After executing
+|kvm --guestmount=$(pwd) report
 
+I ended up with two segfaults. This patch duct tapes both of them.
+Most likely there is some infomration missing.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ tools/perf/util/map.c    |    2 +-
+ tools/perf/util/symbol.c |    6 +++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 316aa0a..a57f897 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -693,7 +693,7 @@ char *machine__mmap_name(struct machine *self, char *bf, size_t size)
+ 	else if (machine__is_default_guest(self))
+ 		snprintf(bf, size, "[%s]", "guest.kernel.kallsyms");
+ 	else
+-		snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
++		snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self ? self->pid : -1);
+ 
+ 	return bf;
+ }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index f2dd916..2760ab1 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1876,8 +1876,12 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ 				const char *filename)
+ {
+ 	struct map *map;
+-	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, filename);
++	struct dso *dso;
++
++	if (!machine)
++		return NULL;
+ 
++	dso = __dsos__findnew(&machine->kernel_dsos, filename);
+ 	if (dso == NULL)
+ 		return NULL;
+ 
 -- 
-Thanks,
-//richard
+1.7.7.3
+
