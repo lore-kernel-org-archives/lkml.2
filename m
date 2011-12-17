@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1LQJ0k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 04:26:40 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56678 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751034Ab1LQJ0g (ORCPT
+	id S1751738Ab1LQJdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 04:33:16 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38578 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1LQJdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 04:26:36 -0500
-Date: Sat, 17 Dec 2011 09:26:34 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: linaro-dev@lists.linaro.org, lrg@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
-        paul.liu@linaro.org, sameo@linux.intel.com
-Subject: Re: [Patch] Regulator: Replace kzalloc with devm_kzalloc and if-else
- with a switch-case for da9052-regulator
-Message-ID: <20111217092634.GE2833@opensource.wolfsonmicro.com>
-References: <1323955793.32031.88.camel@dhruva>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323955793.32031.88.camel@dhruva>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 17 Dec 2011 04:33:13 -0500
+Message-ID: <1324114379.28427.1.camel@phoenix>
+Subject: ASoC: missed hx4700-audio platform device for hx4700
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Dmitry Artamonow <mad_soft@inbox.ru>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Date: Sat, 17 Dec 2011 17:32:59 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 06:59:53PM +0530, Ashish Jangam wrote:
-> Reported-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+The iPAQ hx4700 machine driver needs a hx4700-audio platform device which is
+not (yet) merged.
 
-Applied, but this really should have been sent as two separate patches
-as it's two unrelated changes which don't overlap with each other.
+The patchs was post on LKML: https://lkml.org/lkml/2011/5/18/222
+but [PATCH v3 3/3] pxa/hx4700: add platform device and I2C info for AK4641 codec is missed.
+
+Regards,
+Axel
+
+
