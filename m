@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759793Ab1LQAkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 19:40:42 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56365 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab1LQAkf (ORCPT
+	id S1760429Ab1LQAmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 19:42:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59888 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab1LQAmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 19:40:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWufpJ7LwNiBnpS9bR_Sk4e5=wNZp2NmKp117+i56h=Sg@mail.gmail.com>
-References: <20111215210538.GA12248@konrad-lan>
-	<CAE9FiQXFgOU3c9Ej-B_sZfhs5sRN87xE93BtZoU2K=M6=_O9YA@mail.gmail.com>
-	<20111216000716.GA14822@suse.de>
-	<CAE9FiQWufpJ7LwNiBnpS9bR_Sk4e5=wNZp2NmKp117+i56h=Sg@mail.gmail.com>
-Date: Fri, 16 Dec 2011 16:40:34 -0800
-X-Google-Sender-Auth: fwuPXR5SujMzLY6zAqEf4-yZCeM
-Message-ID: <CAE9FiQXsnc5FqbhPaZLsFbZa1zz44M8k-9yP-ow814oPEEDhjQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ibft fix for 3.2-rc6
-From: Yinghai Lu <yinghai@kernel.org>
-To: Greg KH <gregkh@suse.de>, stable@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-kernel@vger.kernel.org,
-        pjones@redhat.com
-Content-Type: multipart/mixed; boundary=001636ed654e3191a104b43ef76e
+	Fri, 16 Dec 2011 19:42:44 -0500
+Date: Fri, 16 Dec 2011 16:42:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genalloc: add support of named pool
+Message-Id: <20111216164243.01c41930.akpm@linux-foundation.org>
+In-Reply-To: <1323359408-24407-1-git-send-email-plagnioj@jcrosoft.com>
+References: <1323359408-24407-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636ed654e3191a104b43ef76e
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu,  8 Dec 2011 16:50:08 +0100
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
 
-On Thu, Dec 15, 2011 at 4:37 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Dec 15, 2011 at 4:07 PM, Greg KH <gregkh@suse.de> wrote:
->
->> The patch as-is does not apply to 2.6.32, so I can't apply it there. =A0=
-If
->> you want it applied there, please provide the backport to the above
->> mentioned email address.
+> so we can get the pool in the driver by name instead of passing it via
+> parameter
 
-please check back ported patch for 2.6.36 to 2.6.39
+I'm not seeing any code whcih actually uses this interface, so there's
+no reason to apply the patch?
 
-We don't need to this one for 2.6.32, because EFI/ACPI ibft detecting
-is only added from 2.6.36.
+The changelog should tell us why you believe this patch is needed: use
+case, end-user value, etc.
 
-but 2.6.32 base kernel still could take iscsi_ibft.c related changes
-in the patch, and ignore conflicts with iscs_ibft_find.c.
-but that will add new feature to 2.6.32. Not sure if stable tree
-should take that kind of change.
+> --- a/include/linux/genalloc.h
+> +++ b/include/linux/genalloc.h
+> @@ -33,9 +33,12 @@
+>   *  General purpose special memory pool descriptor.
+>   */
+>  struct gen_pool {
+> +	char *name;			/* pool name */
+>  	spinlock_t lock;
+>  	struct list_head chunks;	/* list of chunks in this pool */
+>  	int min_alloc_order;		/* minimum allocation order */
+> +
+> +	struct list_head list;
 
-Thanks
+The other fields have nice descriptive comments - why shouldn't this one?
 
-Yinghai
+> +static LIST_HEAD(pools);
 
---001636ed654e3191a104b43ef76e
-Content-Type: text/x-patch; charset=US-ASCII; name="fix_ibft_checking_2.6.39.patch"
-Content-Disposition: attachment; filename="fix_ibft_checking_2.6.39.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gw9wd4k60
+Except for certain special circumstances (which I don't think apply
+here), a global list needs a global lock to protect it.
 
-W1BBVENIIC1zdGFibGVdIGliZnQ6IEZpeCBmaW5kaW5nIElCRlQgQUNQSSB0YWJsZSBvbiBVRUZJ
-Cgpjb21taXQgOTM1YTlmZWU1MWM5NDViODk0MmJlMmQ3YjRiYWUwNjkxNjdiNDg4NiB1cHN0cmVh
-bS4KCml0IGlzIGJhY2twb3J0aW5nIGZvcjoKCWtlcm5lbCAyLjYuMzYsIDIuNi4zNywgMi42LjM4
-LCAyLjYuMzkKCkZvdW5kIG9uZSBzeXN0ZW0gd2l0aCBVRUZJL2lCRlQsIGtlcm5lbCBkb2VzIG5v
-dCBkZXRlY3QgdGhlIGlCRlQgZHVyaW5nCmlzY3NpX2liZnQgbW9kdWxlIGxvYWRpbmcuCgpSb290
-IGNhdXNlOiBvbiB4ODYgKFVFRkkpLCB3ZSBhcmUgY2FsbGluZyBvZiBmaW5kX2liZnRfcmVnaW9u
-KCkgbXVjaCBlYXJsaWVyCgktIHNwZWNpZmljYWxseSBpbiBzZXR1cF9hcmNoKCkgYmVmb3JlIEFD
-UEkgaXMgZW5hYmxlZC4KClRyeSB0byBzcGxpdCBhY3BpIGNoZWNraW5nIGNvZGUgb3V0IGFuZCBj
-YWxsIHRoYXQgbGF0ZXIKCkF0IHRoYXQgdGltZSBBQ1BJIGlCRlQgYWxyZWFkeSBnZXQgcGVybWFu
-ZW50IG1hcHBlZCB3aXRoIGlvcmVtYXAuClNvIGlzYV92aXJ0X3RvX2J1cygpIHdpbGwgZ2V0IHdy
-b25nIHBoeXMgZnJvbSByaWdodCB2aXJ0IGFkZHJlc3MuCldlIGNvdWxkIGp1c3Qgc2tpcCB0aGF0
-IHBoeXMgYWRkcmVzcyBwcmludGluZy4KCkZvciBsZWdhY3kgb25lLCBwcmludCB0aGUgZm91bmQg
-YWRkcmVzcyBlYXJseS4KCi12MjogdXBkYXRlIGNvbW1lbnRzIGFuZCBkZXNjcmlwdGlvbiBhY2Nv
-cmRpbmcgdG8gS29ucmFkLgotdjM6IGZpeCBwcm9ibGVtIGFib3V0IG1vZHVsZSB1c2UgY2FzZSB0
-aGF0IGlzIGZvdW5kIGJ5IEtvbnJhZC4KLXY0OiB1c2UgYWNwaV9nZXRfdGFibGUoKSBpbnN0ZWFk
-IG9mIGFjcGlfdGFibGVfcGFyc2UoKSB0byBoYW5kbGUgbW9kdWxlIHVzZSBjYXNlIHRoYXQgaXMg
-Zm91bmQgYnkgS29ucmFkIGFnYWluLi4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdo
-YWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9maXJtd2FyZS9pc2NzaV9pYmZ0LmMgICAgICB8
-ICAgNDIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLQogZHJpdmVycy9maXJt
-d2FyZS9pc2NzaV9pYmZ0X2ZpbmQuYyB8ICAgMjIgKy0tLS0tLS0tLS0tLS0tLS0tLQogMiBmaWxl
-cyBjaGFuZ2VkLCA0MiBpbnNlcnRpb25zKCspLCAyMiBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51
-eC0yLjYvZHJpdmVycy9maXJtd2FyZS9pc2NzaV9pYmZ0LmMKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvZHJpdmVycy9maXJtd2FyZS9pc2NzaV9pYmZ0LmMKKysrIGxpbnV4LTIuNi9kcml2
-ZXJzL2Zpcm13YXJlL2lzY3NpX2liZnQuYwpAQCAtNzM4LDYgKzczOCwzNyBAQCBzdGF0aWMgdm9p
-ZCBfX2V4aXQgaWJmdF9leGl0KHZvaWQpCiAJaWJmdF9jbGVhbnVwKCk7CiB9CiAKKyNpZmRlZiBD
-T05GSUdfQUNQSQorc3RhdGljIGNvbnN0IHN0cnVjdCB7CisJY2hhciAqc2lnbjsKK30gaWJmdF9z
-aWduc1tdID0geworCS8qCisJICogT25lIHNwZWMgc2F5cyAiSUJGVCIsIHRoZSBvdGhlciBzYXlz
-ICJpQkZUIi4gV2UgaGF2ZSB0byBjaGVjaworCSAqIGZvciBib3RoLgorCSAqLworCXsgQUNQSV9T
-SUdfSUJGVCB9LAorCXsgImlCRlQiIH0sCit9OworCitzdGF0aWMgdm9pZCBfX2luaXQgYWNwaV9m
-aW5kX2liZnRfcmVnaW9uKHZvaWQpCit7CisJaW50IGk7CisJc3RydWN0IGFjcGlfdGFibGVfaGVh
-ZGVyICp0YWJsZSA9IE5VTEw7CisKKwlpZiAoYWNwaV9kaXNhYmxlZCkKKwkJcmV0dXJuOworCisJ
-Zm9yIChpID0gMDsgaSA8IEFSUkFZX1NJWkUoaWJmdF9zaWducykgJiYgIWliZnRfYWRkcjsgaSsr
-KSB7CisJCWFjcGlfZ2V0X3RhYmxlKGliZnRfc2lnbnNbaV0uc2lnbiwgMCwgJnRhYmxlKTsKKwkJ
-aWJmdF9hZGRyID0gKHN0cnVjdCBhY3BpX3RhYmxlX2liZnQgKil0YWJsZTsKKwl9Cit9CisjZWxz
-ZQorc3RhdGljIHZvaWQgX19pbml0IGFjcGlfZmluZF9pYmZ0X3JlZ2lvbih2b2lkKQoreworfQor
-I2VuZGlmCisKIC8qCiAgKiBpYmZ0X2luaXQoKSAtIGNyZWF0ZXMgc3lzZnMgdHJlZSBlbnRyaWVz
-IGZvciB0aGUgaUJGVCBkYXRhLgogICovCkBAIC03NDUsOSArNzc2LDE2IEBAIHN0YXRpYyBpbnQg
-X19pbml0IGliZnRfaW5pdCh2b2lkKQogewogCWludCByYyA9IDA7CiAKKwkvKgorCSAgIEFzIG9u
-IFVFRkkgc3lzdGVtcyB0aGUgc2V0dXBfYXJjaCgpL2ZpbmRfaWJmdF9yZWdpb24oKQorCSAgIGlz
-IGNhbGxlZCBiZWZvcmUgQUNQSSB0YWJsZXMgYXJlIHBhcnNlZCBhbmQgaXQgb25seSBkb2VzCisJ
-ICAgbGVnYWN5IGZpbmRpbmcuCisJKi8KKwlpZiAoIWliZnRfYWRkcikKKwkJYWNwaV9maW5kX2li
-ZnRfcmVnaW9uKCk7CisKIAlpZiAoaWJmdF9hZGRyKSB7Ci0JCXByaW50ayhLRVJOX0lORk8gImlC
-RlQgZGV0ZWN0ZWQgYXQgMHglbGx4LlxuIiwKLQkJICAgICAgICh1NjQpaXNhX3ZpcnRfdG9fYnVz
-KGliZnRfYWRkcikpOworCQlwcl9pbmZvKCJpQkZUIGRldGVjdGVkLlxuIik7CiAKIAkJcmMgPSBp
-YmZ0X2NoZWNrX2RldmljZSgpOwogCQlpZiAocmMpCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9m
-aXJtd2FyZS9pc2NzaV9pYmZ0X2ZpbmQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9k
-cml2ZXJzL2Zpcm13YXJlL2lzY3NpX2liZnRfZmluZC5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9m
-aXJtd2FyZS9pc2NzaV9pYmZ0X2ZpbmQuYwpAQCAtNDksMTQgKzQ5LDYgQEAgRVhQT1JUX1NZTUJP
-TF9HUEwoaWJmdF9hZGRyKTsKICNkZWZpbmUgVkdBX01FTSAweEEwMDAwIC8qIFZHQSBidWZmZXIg
-Ki8KICNkZWZpbmUgVkdBX1NJWkUgMHgyMDAwMCAvKiAxMjhrQiAqLwogCi0jaWZkZWYgQ09ORklH
-X0FDUEkKLXN0YXRpYyBpbnQgX19pbml0IGFjcGlfZmluZF9pYmZ0KHN0cnVjdCBhY3BpX3RhYmxl
-X2hlYWRlciAqaGVhZGVyKQotewotCWliZnRfYWRkciA9IChzdHJ1Y3QgYWNwaV90YWJsZV9pYmZ0
-ICopaGVhZGVyOwotCXJldHVybiAwOwotfQotI2VuZGlmIC8qIENPTkZJR19BQ1BJICovCi0KIHN0
-YXRpYyBpbnQgX19pbml0IGZpbmRfaWJmdF9pbl9tZW0odm9pZCkKIHsKIAl1bnNpZ25lZCBsb25n
-IHBvczsKQEAgLTc3LDYgKzY5LDcgQEAgc3RhdGljIGludCBfX2luaXQgZmluZF9pYmZ0X2luX21l
-bSh2b2lkKQogCQkJICogdGhlIHRhYmxlIGNhbm5vdCBiZSB2YWxpZC4gKi8KIAkJCWlmIChwb3Mg
-KyBsZW4gPD0gKElCRlRfRU5ELTEpKSB7CiAJCQkJaWJmdF9hZGRyID0gKHN0cnVjdCBhY3BpX3Rh
-YmxlX2liZnQgKil2aXJ0OworCQkJCXByX2luZm8oImlCRlQgZm91bmQgYXQgMHglbHguXG4iLCBw
-b3MpOwogCQkJCWJyZWFrOwogCQkJfQogCQl9CkBAIC05MiwyMSArODUsMTAgQEAgdW5zaWduZWQg
-bG9uZyBfX2luaXQgZmluZF9pYmZ0X3JlZ2lvbih1bgogCiAJaWJmdF9hZGRyID0gTlVMTDsKIAot
-I2lmZGVmIENPTkZJR19BQ1BJCi0JLyoKLQkgKiBPbmUgc3BlYyBzYXlzICJJQkZUIiwgdGhlIG90
-aGVyIHNheXMgImlCRlQiLiBXZSBoYXZlIHRvIGNoZWNrCi0JICogZm9yIGJvdGguCi0JICovCi0J
-aWYgKCFpYmZ0X2FkZHIpCi0JCWFjcGlfdGFibGVfcGFyc2UoQUNQSV9TSUdfSUJGVCwgYWNwaV9m
-aW5kX2liZnQpOwotCWlmICghaWJmdF9hZGRyKQotCQlhY3BpX3RhYmxlX3BhcnNlKElCRlRfU0lH
-TiwgYWNwaV9maW5kX2liZnQpOwotI2VuZGlmIC8qIENPTkZJR19BQ1BJICovCi0KIAkvKiBpQkZU
-IDEuMDMgc2VjdGlvbiAxLjQuMy4xIG1hbmRhdGVzIHRoYXQgVUVGSSBtYWNoaW5lcyB3aWxsCiAJ
-ICogb25seSB1c2UgQUNQSSBmb3IgdGhpcyAqLwogCi0JaWYgKCFpYmZ0X2FkZHIgJiYgIWVmaV9l
-bmFibGVkKQorCWlmICghZWZpX2VuYWJsZWQpCiAJCWZpbmRfaWJmdF9pbl9tZW0oKTsKIAogCWlm
-IChpYmZ0X2FkZHIpIHsK
---001636ed654e3191a104b43ef76e--
+> +
+>  static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
+>  {
+>  	unsigned long val, nval;
+> @@ -136,23 +138,50 @@ static int bitmap_clear_ll(unsigned long *map, int start, int nr)
+>  }
+>  
+>  /**
+> + * gen_pool_byname - get pool by name
+> + * @name: pool name
+> + *
+
+Remove that empty comment line.
+
+> + */
+> +struct gen_pool* gen_pool_byname(char *name)
+
+The patch has several minor coding-style errors which can be detected
+by scripts/checkpatch.pl.
+
+> +{
+> +	struct gen_pool *pool;
+> +
+> +	if (!name)
+> +		return NULL;
+> +
+> +	list_for_each_entry(pool, &pools, list) {
+> +		if(pool->name && strcmp(pool->name, name) == 0)
+> +			return pool;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL(gen_pool_byname);
+
+This function is racy and cannot be fixed.  If some other process comes
+along and deletes *pool immediately after this function has completed,
+the caller of this function is left holding a dead pointer.
+
+
