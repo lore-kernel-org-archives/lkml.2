@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab1LQMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 07:17:09 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:50739 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752115Ab1LQMRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 07:17:03 -0500
-X-Authenticated: #989139
-X-Provags-ID: V01U2FsdGVkX1+YMQtqS4qYrf1dVa7Cu03kWhHJzE9b18MJ9ofyvB
-	MjSN+qy7LxyukX
-Message-ID: <4EEC8839.1010801@gmx.de>
-Date: Sat, 17 Dec 2011 13:16:57 +0100
-From: Ignaz Forster <ignaz.forster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110905 Firefox/6.0.2 SeaMonkey/2.3.3
+	id S1752078Ab1LQND7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 08:03:59 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:47777 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab1LQNDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 08:03:55 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: Fix cross compilation broken by failing size command
+Date: Sat, 17 Dec 2011 14:01:30 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <20111214215815.GP32251@atomide.com> <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111217105737.GO14542@n2100.arm.linux.org.uk>
+In-Reply-To: <20111217105737.GO14542@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Enable HID_QUIRK_MULTI_INPUT for Trio Linker Plus II
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Message-Id: <201112171401.30635.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add quirk for the Trio Linker Plus II - the adapter supports several controllers simultaneously, generating a new HID entry for each connected device.
+On Saturday 17 of December 2011 at 11:57:37, Russell King - ARM Linux wrote:
+> On Fri, Dec 16, 2011 at 11:42:26AM +0100, Janusz Krzysztofik wrote:
+> > Unfortunately, I've already pushed that old version to the patch system
+> > at http://www.arm.linux.org.uk/developer/patches/, which I know is not
+> > a review system. Apparently, I was not patient enough, not waiting more
+> > than a week with that regression fix for a single reply to my initial
+> 
+> I'll disagree with you there: this is not a regression fix.  A regression
+> fix implies that it was something that worked before, a change happened
+> to the kernel, and now it's broken.
+> 
+> That is not the case: a change happened to binutils
 
-Signed-off-by: Ignaz Forster <ignaz.forster@gmx.de>
----
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 5028d60..4d256a7 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -47,6 +47,7 @@ static const struct hid_blacklist {
- 
- 	{ USB_VENDOR_ID_AFATECH, USB_DEVICE_ID_AFATECH_AF9016, HID_QUIRK_FULLSPEED_INTERVAL },
- 
-+	{ USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_ETURBOTOUCH, USB_DEVICE_ID_ETURBOTOUCH, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_PANTHERLORD, USB_DEVICE_ID_PANTHERLORD_TWIN_USB_JOYSTICK, HID_QUIRK_MULTI_INPUT | HID_QUIRK_SKIP_OUTPUT_REPORTS },
+Not to mine, I'm still using the same version as before.
 
+> which meant 'size'
+> no longer parses foreign ELF formats. 
+
+But 'size' was not there before v3.2-rc1! The problem has arised because 
+arch/arm/boot/compress/Makefile, which belongs to the kernel sources, 
+not to binutils you're trying to blame, was changed. The 'size' call was 
+introduced into that Makefile, i.e. the file that belongs to the kernel 
+sources, whithout taking care of what can happen if that command fails. 
+And I was just lucky enough to find out it may fail in certains build 
+environments, like mine.
+
+> This is not a change to the
+> kernel, 
+
+but a change to a file in the kernel source tree. Isn't it the same?
+
+> and therefore it is not a kernel regression.
+
+Than, you say that if a kernel Makefile is broken, effectively breaking 
+the kernel compilation in certain build environments, then it's not a 
+kernel regression and can be released as is? Funny.
+
+> Therefore, I consider it lower priority than true kernel regression
+> fixes, and also lower priority than normal bug fixes to the kernel:
+> it's actually a feature change - changing the kernel to work with a
+> new toolchain.
+
+I repeat: I haven't changed my toolchain. A file that belongs to the 
+kernel sources was changed.
+
+> Since the original proposed change causes _me_ problems (I'm missing
+> an arm-linux-size for some unknown reason - which I've yet to resolve
+> one way or other) I've not yet considered the change any further than
+> noting that fact.
+
+If you were so kind to share your findings once discovered, you would 
+give me a chance to correct that problem with missing 
+$(CROSS_COMPILE)size tool already several weeks ago. Fortunately, Tony 
+was kind enough to comment, better late than never.
+
+> If it turns out that older versions of binutils do not supply a 'size'
+> command, then we need something like your v2 patch.  If it's the case
+> that for some reason it never got transferred when I changed machines,
+> then your v1 patch is appropriate and I need to fix that.  But that
+> requires investigation on my side, and I've not been able to do that
+> yet.
+
+Thanks to Tony's help, you now have two versions of the patch to choose 
+from, the initial one, with its own issue, and the corrected one, with 
+Tony's Ack.
+
+If you are sure this is not a regression and can wait while the stable 
+kernel version is released with that issue not corrected - your choice. 
+You are the ARM port maintainer, not me, and I respect your rights to 
+manage things the way you like. I only disagree with your opinion about 
+this issue not being a regression.
+
+I'm not representing any third party interests, only my own (and public 
+to some extent, I thought), and even if not happy, I'm willing to handle 
+that issue myslef in my build environment as long as it exists in the 
+official kernel sources, in order to be able to still help solving other 
+kernel issues I happen to find out from time to time.
+
+Thanks,
+Janusz
