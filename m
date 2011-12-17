@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab1LQWaj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 17:30:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48289 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab1LQWah (ORCPT
+	id S1752616Ab1LQWcj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 17:32:39 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22648 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab1LQWcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 17:30:37 -0500
-Date: Sat, 17 Dec 2011 22:30:33 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Namhyung Kim <namhyung@gmail.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: fput() called in loop_clr_fd() may cause bd_mutex
- recursive locking
-Message-ID: <20111217223033.GB2203@ZenIV.linux.org.uk>
-References: <20111217215333.GA3313@swordfish>
- <20111217221232.GA2203@ZenIV.linux.org.uk>
- <20111217221928.GB3313@swordfish>
+	Sat, 17 Dec 2011 17:32:36 -0500
+Date: Sat, 17 Dec 2011 23:32:33 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, trivial@kernel.org
+Subject: [PATCH][TRIVIAL] SCSI, pmcraid: Fix 'failed' misspelled as 'faile'
+ in error message
+Message-ID: <alpine.LNX.2.00.1112172329580.21713@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111217221928.GB3313@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 01:19:28AM +0300, Sergey Senozhatsky wrote:
 
-> Sorry, why is that a false positive?
-> 
-> blkdev_put() calls lo_release() while holding bd_mutex,
-> lo_release() calls loop_clr_fd() -> fput(). fput() once again
-> attempts to grub already held bd_mutex calling blkdev_put().
-> Looks like a recursion to me.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/scsi/pmcraid.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Because of this:
-        /* Avoid recursion */
-        f = file;
-        while (is_loop_device(f)) {
-                struct loop_device *l;
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 5163edb..ea8a0b4 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -4105,7 +4105,7 @@ static long pmcraid_chr_ioctl(
+ 	hdr = kmalloc(sizeof(struct pmcraid_ioctl_header), GFP_KERNEL);
+ 
+ 	if (!hdr) {
+-		pmcraid_err("faile to allocate memory for ioctl header\n");
++		pmcraid_err("failed to allocate memory for ioctl header\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-- 
+1.7.8
 
-                if (f->f_mapping->host->i_bdev == bdev)
-                        goto out_putf;
 
-                l = f->f_mapping->host->i_bdev->bd_disk->private_data;
-                if (l->lo_state == Lo_unbound) {
-                        error = -EINVAL;
-                        goto out_putf;
-                }
-                f = l->lo_backing_file;
-        }
-in loop_set_fd().  Think of it for a minute - if we could run into the
-same bdev in that recursion, what would have happened on read() from
-that sucker?  So yes, it is a false positive.  And your patch would
-simply leave the underlying device opened, with all the consequences...
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
