@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1LQQnB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 11:43:01 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61588 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab1LQQm7 (ORCPT
+	id S1752470Ab1LQQwt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 11:52:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42355 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752359Ab1LQQwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 11:42:59 -0500
-Message-ID: <1324140266.4240.81.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 5/15] sm_ftl: fix module parameter.
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Date: Sat, 17 Dec 2011 18:44:26 +0200
-In-Reply-To: <87y5uesfea.fsf@rustcorp.com.au>
-References: <87y5uesfea.fsf@rustcorp.com.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-4oYHUPoVB8uAA5yxpqo6"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+	Sat, 17 Dec 2011 11:52:41 -0500
+Message-ID: <1324140746.2825.335.camel@deadeye>
+Subject: bnx2x firmware version 6.x.y
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Eilon Greenstein <eilong@broadcom.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
+        Vladislav Zolotarov <vladz@broadcom.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Sat, 17 Dec 2011 16:52:26 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-BRW11N11I0lwHUfZjHFt"
+X-Mailer: Evolution 3.2.1-1 
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-4oYHUPoVB8uAA5yxpqo6
+--=-BRW11N11I0lwHUfZjHFt
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2011-12-15 at 13:35 +1030, Rusty Russell wrote:
-> You didn't mean this to be a bool.
->=20
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: linux-mtd@lists.infradead.org
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+In general, linux-firmware includes all blobs that any released version
+of a driver may need.
 
-Pushed to l2-mtd-2.6.git, thanks!
+Therefore, I'm about to add the bnx2x firmware versions 6.0.34.0,
+6.2.5.0 and 6.2.9.0 (taken from kernel versions 2.6.37, 2.6.38 and 3.0
+respectively) into linux-firmware.
+
+The full lists of bnx2x firmware blobs that will be included after this
+is:
+
+bnx2x-e1-4.8.53.0.fw
+bnx2x-e1-5.2.13.0.fw
+bnx2x-e1-5.2.7.0.fw
+bnx2x-e1h-4.8.53.0.fw
+bnx2x-e1h-5.2.13.0.fw
+bnx2x-e1h-5.2.7.0.fw
+bnx2x/bnx2x-e1-6.0.34.0.fw
+bnx2x/bnx2x-e1-6.2.5.0.fw
+bnx2x/bnx2x-e1-6.2.9.0.fw
+bnx2x/bnx2x-e1-7.0.20.0.fw
+bnx2x/bnx2x-e1-7.0.23.0.fw
+bnx2x/bnx2x-e1-7.0.29.0.fw
+bnx2x/bnx2x-e1h-6.0.34.0.fw
+bnx2x/bnx2x-e1h-6.2.5.0.fw
+bnx2x/bnx2x-e1h-6.2.9.0.fw
+bnx2x/bnx2x-e1h-7.0.20.0.fw
+bnx2x/bnx2x-e1h-7.0.23.0.fw
+bnx2x/bnx2x-e1h-7.0.29.0.fw
+bnx2x/bnx2x-e2-6.0.34.0.fw
+bnx2x/bnx2x-e2-6.2.5.0.fw
+bnx2x/bnx2x-e2-6.2.9.0.fw
+bnx2x/bnx2x-e2-7.0.20.0.fw
+bnx2x/bnx2x-e2-7.0.23.0.fw
+bnx2x/bnx2x-e2-7.0.29.0.fw
+
+Ben.
 
 --=20
-Best Regards,
-Artem Bityutskiy
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
 
---=-4oYHUPoVB8uAA5yxpqo6
+--=-BRW11N11I0lwHUfZjHFt
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO7MbrAAoJECmIfjd9wqK0ij8P/07DGU/5C3HJABBfGTvVN4qZ
-2YOY+m+DbItx7fpTZZciWR8xkPcbmTPu1hdGybDFsLjPQfqUlbeLDt+75f1GzsHu
-9XbvmimBHb3Euy1qIyRuHYTWx/kplJRrDEhnl1pqovHSZmtyBDnnQH9zaKCCSsLf
-ofxAd7K3wvEoKqJ/rbz0gL4T/9q5n75Ves8xL+0VrIVTsFH7xhbkqFDXatwr2mlv
-1r/9oUxedBxyTtjlRErIbPC6fR2XIRIb8c3WFXLk0KS3EpeWwRWttob7/X9xQhFV
-46Y7Y3W3gvi9MFF5FZepBHwBThy9fW4xqxGxdJEQHHZMHUIgd9V6ML67tPOQvnDA
-aH6qBjfyRv99MDrI4SFjktfAD2D+9T6TgDt82DM+qvCQ4ejT5ew+Zu+2RidCqyWp
-yINY+hmE0kOYVbUYzbtmgbCadD91p8B1WnHqCcGWwAOUrHwbHPzqIhGWL8tMs4ko
-q+GU0xY/hExGc+N2xRinusTsCOkwjanb5X9FkWSM47f9O19c14Y7iuVDr5Mva0Qr
-rawflWw2uf3x0oksebBB6yIZrbLJTeTXVnRk3RuDbbzkyHZM0MmvSWCmVJBxdxp9
-QFRiSNcRDLT7Ittg5zIvCqo29x9lZ/GabRa8SjBI1nyoGdXprVg//i+dr7dwNWgJ
-bLBq3T+JbmOc+2KzPL3r
-=9SCf
+iQIVAwUATuzIy+e/yOyVhhEJAQpc3w/+OtbqGI5ySzbR4wrBSXmglmpr59RV4i9v
+bRt/ro5mbbL+qSpNzG5wy0btjzvFSsbDUtKpmdFtmNaLDS6mwHvSg2CmkvWV1Lto
+Oxh8NV1aAyeMCH1yfokDw11QDsBVOFFhJUUNoR5Ye/fDP2+HcqbBmt8Pm+4Cy48S
+NdueOkAkGKut2X6xVEUerR3pNaNkig13hCR71JQxM5D+jB78ajyt9861kHelEWYC
+AUxluzzOydqOPdb0rrvsgsJqHB2Oo8SrfSk/zIzQ7mmTNy0QLfTysTUYWIjL9OYE
+Gx3X9zKo5e1fdplfIyRIqJXjMS9xpaOPH4yw+SNnAlcC6ozOJ3sWT0KfJD1gO41R
+mwJG0lP9cUlupk5HhvYQEV+2AZFsjWW3AoEjaPPdUMF6ki6j1I93gg5b06EucIpw
+61vRmzCkTiXNmwSCi69wJEV6aHrZUudjdNhv4kwZ9oEiiBnCkhgvQR1dhpk3CTCt
+OX7sP5qY+xACP3qIAiQWpRNMVd4tP964rFbxk6hT56nGcqOmnxJHDr3BqqMtgvjn
+wOVoTd/1T+hYcJ/T0Et6eEs22ARxIaFKSzLzGficEchKB71HflPTB7d7bO6HRxvh
+wi2a0SLVl+06jOrUt6VE3soadyVRm6Sx0Q1yG1l5YEm8e4vONJSAD0ZQOEsviQqZ
++zXnIW51lcU=
+=w6lh
 -----END PGP SIGNATURE-----
 
---=-4oYHUPoVB8uAA5yxpqo6--
-
+--=-BRW11N11I0lwHUfZjHFt--
