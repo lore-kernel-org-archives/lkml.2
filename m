@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab1LQFCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 00:02:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38767 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab1LQFCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 00:02:44 -0500
-Date: Sat, 17 Dec 2011 16:02:28 +1100
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: build failure after merge of the final tree (akpm
- tree related)
-Message-ID: <20111217160228.3a946f4b@notabene.brown>
-In-Reply-To: <20111217154219.5f3d476c25e648b1b4239857@canb.auug.org.au>
-References: <20111217154219.5f3d476c25e648b1b4239857@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/JxugTYmFfFTVMjaJjdK45Rb"; protocol="application/pgp-signature"
+	id S1751530Ab1LQFLY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 00:11:24 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41620 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab1LQFLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 00:11:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <87bor9qtau.fsf@rustcorp.com.au>
+References: <1323731569-20644-1-git-send-email-jim.cromie@gmail.com>
+ <1323731569-20644-18-git-send-email-jim.cromie@gmail.com> <87bor9qtau.fsf@rustcorp.com.au>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Fri, 16 Dec 2011 22:10:48 -0700
+Message-ID: <CAJfuBxy7W3yZJ1rg3wxuxFbMJ51kogGxJPnBUO4OrVW8iPvOew@mail.gmail.com>
+Subject: Re: [PATCH 18/25] dynamic_debug: Introduce global fake module param $module.dyndbg
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: jbaron@redhat.com, greg@kroah.com, linux-kernel@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/JxugTYmFfFTVMjaJjdK45Rb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 15, 2011 at 5:00 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Mon, 12 Dec 2011 16:12:44 -0700, jim.cromie@gmail.com wrote:
+>> From: Jim Cromie <jim.cromie@gmail.com>
+>>
+>> Rework Thomas Renninger's $module.ddebug boot-time debugging feature,
+>> from https://lkml.org/lkml/2010/9/15/397
+>
+> OK, this looks cleaner!
+>
+> s/modname/doing/ here, since it's a generic callback.
+>
+> s/modname/doing/ (or /s/modname/unused/).
+>
+> Same as above.
+>
+> s/modname/doing/ here too, makes it clear.
+>
+> ... again....
 
-On Sat, 17 Dec 2011 15:42:19 +1100 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
+All done, to be sent shortly.
+Thanks
 
-> Hi all,
->=20
-> After merging the final tree, today's linux-next build (m68k allmodconfig)
-> failed like this:
->=20
-> drivers/leds/leds-tca6507.c:158: error: field 'gpio' has incomplete type
-> drivers/leds/leds-tca6507.c: In function 'tca6507_gpio_set_value':
-> drivers/leds/leds-tca6507.c:534: warning: type defaults to 'int' in decla=
-ration of '__mptr'
-> drivers/leds/leds-tca6507.c:534: warning: initialization from incompatibl=
-e pointer type
-> drivers/leds/leds-tca6507.c: In function 'tca6507_probe':
-> drivers/leds/leds-tca6507.c:618: error: implicit declaration of function =
-'gpiochip_add'
-> drivers/leds/leds-tca6507.c: In function 'tca6507_remove':
-> drivers/leds/leds-tca6507.c:651: error: implicit declaration of function =
-'gpiochip_remove'
->=20
-> Caused by commit 7a9244d89523 ("leds: add driver for TCA6507 LED controll=
-er").
->=20
-> Maybe this driver needs some dependencies ...
 
-Yes... I think it actually needs the 'gpio' aspect of the driver to be
-dependant of GPIOLIB being available.
+>
+>> +/* find & process .dyndbg params (prefixed by modname) in cmdline */
+>> +static __init void ddebug_boot_parse_args(void)
+>> +{
+>
+> OK, I don't get why you are doing your own parsing for builtins?
+>
 
-I'll get a patch or two off to Andrew on Monday.
+After some poking around I didnt want to thrash too much,
+and went for Thomas' original approach for builtins.
 
-Thanks,
-NeilBrown
 
---Sig_/JxugTYmFfFTVMjaJjdK45Rb
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> Can't you call something from init/main.c:unknown_bootoption()?
+>
+> If that's too early, I have a patch we're working on which adds
+> parameter parsing to each initlevel.
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+It looks too early (unless Ive misunderstood)
+dynamic_debug is enabled via arch_initcall
 
-iQIVAwUBTuwiZDnsnt1WYoG5AQIH4BAAtbZ8jDc2NBQ059HCvm11HemZy9WKfcfM
-k4905I1oU2mdQ4BqZ0xSG8j+BHDTvHUsJ422CWT5P55NbFhejiRhRk1a71UwX2uU
-lrPHa/Ih0IDJxa5t+AC6DK8AgM5uzmQPMmL9OtNGmhSFtQYERy/qBLOSV2t8c+cW
-QV5qHmVEbA7I9BTUSn1cTxvUOeW31pWSgmjIvHJ9A04o22xerco7Pf99969jN3Xx
-By/Cxr5kBbDhT/371cdDjG/o/7C7Pl866JKkSuT2nIGQ9v9np5IIkTHMcRxGUvBs
-VPuvUonKh89gcaLRF1RLFMjv3qq80Bfyty6Gw0junXHeDwe9jsJDVM1bBfdsQNgB
-ydJmy2WHs0UDo8mtox++5mJOVIIm2CZgxIGXNfZri5VkljoxzzVD128oTmNnUZQ6
-wSzhblRSyXQhAdBKZC/hzJb1LaCqN6x9b+2NOn+6rYOUxoWONdbRjQGQCJgOwbiK
-tguM4uah7Ex0e/2vPegFmj6PgpHibMO1UuxaGyj2/BWlZobzVSEPTo6gV9S5ETY7
-XQcwq2FSELLCCxFq1Zeqem84eQafGSvLF98u8l/gccPMKHKdCgq59BiwMi87oKqV
-oxKKYqL7nbE0t1ykp85ZAJbDI2bK2ANFJLJU1+rWKXhkCFICXNYnQ/67bakDcv1q
-sd2/jR1f3D4=
-=t4Jc
------END PGP SIGNATURE-----
+    977 static int __init dynamic_debug_init(void)
+    978 {
+...
+   1018         }
+   1019         ddebug_boot_parse_args();
+...
+   1027 }
 
---Sig_/JxugTYmFfFTVMjaJjdK45Rb--
+   1028 /* Allow early initialization for boot messages via boot param */
+   1029 arch_initcall(dynamic_debug_init);
+   1030 /* Debugfs setup must be done later */
+   1031 module_init(dynamic_debug_init_debugfs);
+
+
+Do you have a pointer to that patch ?
+Is it targetted for v3.3 ?
+If so, it sounds like I should aim to use it.
+
+BTW, is this/your desc of arg-processing still accurate/current/complete ?
+http://thread.gmane.org/gmane.linux.kernel/767172/focus=767361
+
+
+
+> Thanks,
+> Rusty.
+
+thank you
+Jim Cromie
