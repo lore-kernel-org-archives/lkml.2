@@ -1,29 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab1LQOwh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 09:52:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38334 "EHLO
+	id S1752363Ab1LQO6e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 09:58:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53897 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab1LQOwf (ORCPT
+	with ESMTP id S1752149Ab1LQO6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 09:52:35 -0500
+	Sat, 17 Dec 2011 09:58:32 -0500
 From: Nai Xia <nai.xia@gmail.com>
 Reply-To: nai.xia@gmail.com
-To: Andi Kleen <ak@suse.de>
+To: Andi Kleen <ak@linux.intel.com>
 Subject: Question about missing "cld" in x86 string assembly code
-Date: Sat, 17 Dec 2011 22:52:26 +0800
+Date: Sat, 17 Dec 2011 22:58:24 +0800
 User-Agent: KMail/1.13.6 (Linux/2.6.38-13-generic-pae-uksm; KDE/4.6.5; i686; ; )
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "Linux-MM" <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Message-Id: <201112172258.24221.nai.xia@gmail.com>
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112172252.26439.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andi, 
+
+Seems I used a stale email address of you from a related git commit log,
+so this is a resend, sorry.
+
+=======
 Hi, 
 
 I notice that all x86 assembly code for string operations containing
