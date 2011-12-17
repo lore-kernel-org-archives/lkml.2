@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760744Ab1LQCCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 21:02:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33662 "EHLO mga09.intel.com"
+	id S1760756Ab1LQCFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 21:05:53 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60239 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab1LQCCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 21:02:17 -0500
+	id S1760643Ab1LQCFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 21:05:46 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="87515340"
-Subject: Re: [PATCH -v8] x86: Disable x2apic if nox2apic is specified or
- intr-remap can not be enabled
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="86663301"
+Subject: Re: Latest tip kernel(3.2-rc1-tip_cf6b3899) fails to boot on
+ x3850x5 machine
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 16 Dec 2011 18:07:03 -0800
-In-Reply-To: <1324083546-1003-1-git-send-email-yinghai@kernel.org>
-References: <1324083546-1003-1-git-send-email-yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Date: Fri, 16 Dec 2011 18:10:34 -0800
+In-Reply-To: <20111216083634.GA4170@elte.hu>
+References: <87ehw7ig2v.fsf@abhimanyu.in.ibm.com>
+	 <alpine.LFD.2.02.1112141423380.3020@ionos>
+	 <alpine.LFD.2.02.1112142116540.3020@ionos>
+	 <CAE9FiQXz6n=2gR1CY29pEbfbwx-e27WrUoDQeH9qxmL_kwP+mA@mail.gmail.com>
+	 <87y5ueo9m5.fsf@abhimanyu.in.ibm.com>
+	 <CAE9FiQXL3N6UZ6REfdUT_o1b-ed_KnYqKm_wSEhsaRPeaE9-9Q@mail.gmail.com>
+	 <20111215071901.GF14237@elte.hu>
+	 <CAE9FiQXh8tiJ0Aa80uGJBiVv_3-rirMt1roQwZ3dBws-p0=j9A@mail.gmail.com>
+	 <1323980706.1984.255.camel@sbsiddha-desk.sc.intel.com>
+	 <20111216083634.GA4170@elte.hu>
 Organization: Intel Corp
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1324087625.1984.296.camel@sbsiddha-desk.sc.intel.com>
+Message-ID: <1324087834.1984.299.camel@sbsiddha-desk.sc.intel.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-16 at 16:59 -0800, Yinghai Lu wrote:
-> For
-> 1. x2apic preenabled system
-> 2. first kernel have x2apic enabled, and try to kexec second kernel with "nox2apic"
+On Fri, 2011-12-16 at 00:36 -0800, Ingo Molnar wrote:
+> The problem is spuriously re-asking a question that *has already 
+> been answered by the user*, and if the user accidentally just 
+> accepts the default, the config breaks.
 > 
-> Will put back cpu with apic id < 255 into xapic mode, instead of panic.
+> We try to keep things working fine across 'make oldconfig', i.e. 
+> if the .config worked before, it should work after a 'make 
+> oldconfig' as well.
 > 
 
-Yinghai, I didn't get a chance to review this patch completely. But few
-things.
-
-a. Need to split this patch into multiple patches, specially the cpuid
-mechanism to get the initial apic id, flat_probe etc. While I understand
-the reason behind the flat_probe change, it isn't quite obvious from
-this changelog.
-
-b. for nox2apic, as you try to disable x2apic even if the bios has
-enabled it along with interrupt-remapping, this will probably not work
-unless we disable interrupt-remapping. So either we need to ignore the
-nox2apic when OS can find that interrupt-remapping is already enabled or
-disable interrupt-remapping. Let me think a bit more about this and get
-back to you by monday with detailed review of this.
+Ok. So what is the recommended way to do this, for example when we
+change a config option name with no other dependency changes etc?
 
 thanks,
 suresh
