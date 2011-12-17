@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab1LQItx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 03:49:53 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34334 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab1LQIts (ORCPT
+	id S1751519Ab1LQJVF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 04:21:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57109 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750875Ab1LQJU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 03:49:48 -0500
-Date: Sat, 17 Dec 2011 08:49:44 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: Linux 3.2-rc6
-Message-ID: <20111217084944.GV2203@ZenIV.linux.org.uk>
-References: <CA+55aFzd6K2szJD5MLmy3Stcai9oAR=tRXZdQtKgVWBzDr5bdg@mail.gmail.com>
+	Sat, 17 Dec 2011 04:20:59 -0500
+Date: Sat, 17 Dec 2011 09:20:44 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
+ platform devices with GPIOs
+Message-ID: <20111217092044.GC2833@opensource.wolfsonmicro.com>
+References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <4EE7A31E.7080301@gmail.com>
+ <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
+ <20111214120240.GC25088@sirena.org.uk>
+ <E30C4693-0D31-4A9A-9E9D-0FC03C5F6B8A@boeing.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzd6K2szJD5MLmy3Stcai9oAR=tRXZdQtKgVWBzDr5bdg@mail.gmail.com>
+In-Reply-To: <E30C4693-0D31-4A9A-9E9D-0FC03C5F6B8A@boeing.com>
+X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 06:53:17PM -0800, Linus Torvalds wrote:
+On Wed, Dec 14, 2011 at 02:34:37PM -0600, Moffett, Kyle D wrote:
+> On Dec 14, 2011, at 07:02, Mark Brown wrote:
 
-> Casey Schaufler (1):
->       BTRFS: Establish i_ops before calling d_instantiate
+> > The regulator API in -next has DT bindings.
 
-I'm sorry, but that's nowhere near enough.  As I said in followup to
-the original posting of that patch, it still leaves a race window
-where inode is already associated with dentry but still doesn't have
-->a_ops, etc. set up.  Hell, ->symlink() doesn't write the symlink
-body until after that point...
+> Based on the description of our hardware, is there a good way that I
+> can wire up gpio-regulator driver to our hardware with just the device
+> tree (and maybe one small board-specific function) to make it shut down
+> each domain in sequence at poweroff time? Otherwise I will just go back
+> to my custom board-specific function for GPIO-twiddling.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 329a5c6..d9501f5 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4590,10 +4590,6 @@ static int btrfs_add_nondir(struct btrfs_trans_handle *trans,
- 	int err = btrfs_add_link(trans, dir, inode,
- 				 dentry->d_name.name, dentry->d_name.len,
- 				 backref, index);
--	if (!err) {
--		d_instantiate(dentry, inode);
--		return 0;
--	}
- 	if (err > 0)
- 		err = -EEXIST;
- 	return err;
-@@ -4655,6 +4651,7 @@ static int btrfs_mknod(struct inode *dir, struct dentry *dentry,
- 	else {
- 		init_special_inode(inode, inode->i_mode, rdev);
- 		btrfs_update_inode(trans, root, inode);
-+		d_instantiate(dentry, inode);
- 	}
- out_unlock:
- 	nr = trans->blocks_used;
-@@ -4722,6 +4719,7 @@ static int btrfs_create(struct inode *dir, struct dentry *dentry,
- 		inode->i_mapping->a_ops = &btrfs_aops;
- 		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
- 		BTRFS_I(inode)->io_tree.ops = &btrfs_extent_io_ops;
-+		d_instantiate(dentry, inode);
- 	}
- out_unlock:
- 	nr = trans->blocks_used;
-@@ -4780,6 +4778,7 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
- 		err = btrfs_update_inode(trans, root, inode);
- 		BUG_ON(err);
- 		btrfs_log_new_name(trans, inode, NULL, parent);
-+		d_instantiate(dentry, inode);
- 	}
- 
- 	nr = trans->blocks_used;
-@@ -7244,6 +7243,8 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
- 		drop_inode = 1;
- 
- out_unlock:
-+	if (!err)
-+		d_instantiate(dentry, inode);
- 	nr = trans->blocks_used;
- 	btrfs_end_transaction_throttle(trans, root);
- 	if (drop_inode) {
+No, it's a very rare use case so there's nothing off the shelf.  But it
+should be straightfoward to write a device driver doing this.
