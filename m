@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab1LQIby (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 03:31:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43670 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750806Ab1LQIbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 03:31:47 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH 2/4] toshiba_acpi: Support alternate hotkey interfaces
-Date: Sat, 17 Dec 2011 09:31:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com> <1323972371-13189-3-git-send-email-seth.forshee@canonical.com>
-In-Reply-To: <1323972371-13189-3-git-send-email-seth.forshee@canonical.com>
+	id S1751437Ab1LQItx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 03:49:53 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34334 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab1LQIts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 03:49:48 -0500
+Date: Sat, 17 Dec 2011 08:49:44 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Linux 3.2-rc6
+Message-ID: <20111217084944.GV2203@ZenIV.linux.org.uk>
+References: <CA+55aFzd6K2szJD5MLmy3Stcai9oAR=tRXZdQtKgVWBzDr5bdg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112170931.44171.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzd6K2szJD5MLmy3Stcai9oAR=tRXZdQtKgVWBzDr5bdg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 December 2011 19:06:09 Seth Forshee wrote:
-...  
-> +static bool toshiba_acpi_i8042_filter(unsigned char data, unsigned char str,
-> +				      struct serio *port)
-> +{
-> +	if (str & 0x20)
-> +		return false;
-> +
-> +	if (unlikely(data == 0xe0))
-> +		return false;
-> +
-> +	if ((data & 0x7f) == TOS1900_FN_SCAN) {
-> +		schedule_work(&toshiba_acpi->hotkey_work);
-> +		return true;
-> +	}
-What have you tried to check whether some other kind of ACPI event
-is happening?
-Do any acpi/SCI interrupts happen?:
-watch -n1 "cat /proc/interrupts |grep acpi"
+On Fri, Dec 16, 2011 at 06:53:17PM -0800, Linus Torvalds wrote:
 
-Could it by chance be an EC or other device GPE/SCI?
+> Casey Schaufler (1):
+>       BTRFS: Establish i_ops before calling d_instantiate
 
-> +
-> +	return false;
-> +}
-> +
-> +static void toshiba_acpi_hotkey_work(struct work_struct *work)
-> +{
-> +	acpi_handle ec_handle = ec_get_handle();
-> +	acpi_status status;
-> +
-> +	if (!ec_handle)
-> +		return;
-> +
-> +	status = acpi_evaluate_object(ec_handle, "NTFY", NULL, NULL);
-> +	if (ACPI_FAILURE(status))
-> +		pr_err("ACPI NTFY method execution failed\n");
-Why is calling NTFY needed?
+I'm sorry, but that's nowhere near enough.  As I said in followup to
+the original posting of that patch, it still leaves a race window
+where inode is already associated with dentry but still doesn't have
+->a_ops, etc. set up.  Hell, ->symlink() doesn't write the symlink
+body until after that point...
 
-...
-
-> +static int toshiba_acpi_suspend(struct acpi_device *acpi_dev,
-> +				pm_message_t state)
-> +{
-> +	struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
-> +	u32 result;
-> +
-> +	if (dev->hotkey_dev)
-> +		hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_DISABLE, &result);
-> +
-> +	return 0;
-> +}
-> +
-> +static int toshiba_acpi_resume(struct acpi_device *acpi_dev)
-> +{
-> +	struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
-> +	u32 result;
-> +
-> +	if (dev->hotkey_dev)
-> +		hci_write1(dev, HCI_HOTKEY_EVENT, HCI_HOTKEY_ENABLE, &result);
-> +
-> +	return 0;
-> +}
-What are the suspend/resume funcs for?
-What bad things happen without them?
-
-
-     Thomas
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 329a5c6..d9501f5 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4590,10 +4590,6 @@ static int btrfs_add_nondir(struct btrfs_trans_handle *trans,
+ 	int err = btrfs_add_link(trans, dir, inode,
+ 				 dentry->d_name.name, dentry->d_name.len,
+ 				 backref, index);
+-	if (!err) {
+-		d_instantiate(dentry, inode);
+-		return 0;
+-	}
+ 	if (err > 0)
+ 		err = -EEXIST;
+ 	return err;
+@@ -4655,6 +4651,7 @@ static int btrfs_mknod(struct inode *dir, struct dentry *dentry,
+ 	else {
+ 		init_special_inode(inode, inode->i_mode, rdev);
+ 		btrfs_update_inode(trans, root, inode);
++		d_instantiate(dentry, inode);
+ 	}
+ out_unlock:
+ 	nr = trans->blocks_used;
+@@ -4722,6 +4719,7 @@ static int btrfs_create(struct inode *dir, struct dentry *dentry,
+ 		inode->i_mapping->a_ops = &btrfs_aops;
+ 		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
+ 		BTRFS_I(inode)->io_tree.ops = &btrfs_extent_io_ops;
++		d_instantiate(dentry, inode);
+ 	}
+ out_unlock:
+ 	nr = trans->blocks_used;
+@@ -4780,6 +4778,7 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
+ 		err = btrfs_update_inode(trans, root, inode);
+ 		BUG_ON(err);
+ 		btrfs_log_new_name(trans, inode, NULL, parent);
++		d_instantiate(dentry, inode);
+ 	}
+ 
+ 	nr = trans->blocks_used;
+@@ -7244,6 +7243,8 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
+ 		drop_inode = 1;
+ 
+ out_unlock:
++	if (!err)
++		d_instantiate(dentry, inode);
+ 	nr = trans->blocks_used;
+ 	btrfs_end_transaction_throttle(trans, root);
+ 	if (drop_inode) {
