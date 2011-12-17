@@ -1,222 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab1LQH7j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 02:59:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62527 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1LQH7c (ORCPT
+	id S1751316Ab1LQIBm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 03:01:42 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48696 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab1LQIBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 02:59:32 -0500
-Date: Fri, 16 Dec 2011 23:59:24 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Randy Dunlap <rdunlap@xenotime.net>, Naveen Yadav <yad.naveen@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] rtth: advance to userspace-rcu-0.6.7
-In-Reply-To: <alpine.LSU.2.00.1112162347440.1981@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1112162357510.1981@eggly.anvils>
-References: <alpine.LSU.2.00.1112162347440.1981@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sat, 17 Dec 2011 03:01:36 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: sedat.dilek@gmail.com
+Date: Sat, 17 Dec 2011 09:01:35 +0100
+Message-ID: <CA+icZUXVin2-D951yuvdHaZkr=xVzRUsB3uFnH8itfEQ_+Sk9Q@mail.gmail.com>
+Subject: Re: Linux 3.2-rc6 (wireless/iwlwifi)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        John Linville <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Content-Type: multipart/mixed; boundary=20cf3074b2dc570a3104b44520e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up to here I've been building rtth with userspace-rcu-0.5.4,
-since 0.6 introduces a conflicting declaration of struct rcu_head:
-rtth has its own little implementation of call_rcu(), with the
-comment /* switch to urcu implementation when it is merged. */
+--20cf3074b2dc570a3104b44520e6
+Content-Type: text/plain; charset=UTF-8
 
-userspace-rcu-0.6 (available since June) implements call_rcu() where
-0.5 did not, so remove rtth's rcupdate.c and conflicting declarations,
-converting to rely on userspace-rcu-0.6.7 for call_rcu().
+Hi,
 
-And now the nr_allocated count of radix_tree_nodes does go down to zero.
+unfortunately, this -rc6 is missing some important iwlwifi fixes.
+These were included in wireless.git#master (master-2011-12-14).
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+I have attached a single "wireless" patch to make affected people happy.
 
- Makefile         |    2 -
- linux.c          |    2 -
- linux/rcupdate.h |   15 -------
- main.c           |    3 +
- rcupdate.c       |   86 ---------------------------------------------
- regression1.c    |    4 +-
- 6 files changed, 6 insertions(+), 106 deletions(-)
+Regards,
+- Sedat -
 
---- rtth4/Makefile	2011-01-24 22:12:10.000000000 -0800
-+++ rtth5/Makefile	2011-12-16 18:44:06.623896843 -0800
-@@ -2,7 +2,7 @@
- CFLAGS += -I. -g -Wall -D_LGPL_SOURCE
- LDFLAGS += -lpthread -lurcu
- TARGETS = main
--OFILES = main.o rcupdate.o radix-tree.o linux.o test.o tag_check.o regression1.o regression2.o
-+OFILES = main.o radix-tree.o linux.o test.o tag_check.o regression1.o regression2.o
- 
- targets: $(TARGETS)
- 
---- rtth4/linux/rcupdate.h	2010-11-10 16:35:29.000000000 -0800
-+++ rtth5/linux/rcupdate.h	2011-12-16 18:44:06.623896843 -0800
-@@ -3,21 +3,6 @@
- 
- #include <urcu.h>
- 
--void rcupdate_init(void);
--void rcupdate_thread_init(void);
--void rcupdate_thread_exit(void);
--
--/**
-- * struct rcu_head - callback structure for use with RCU
-- * @next: next update requests in a list
-- * @func: actual update function to call after the grace period.
-- */
--struct rcu_head {
--        struct rcu_head *next;
--        void (*func)(struct rcu_head *head);
--};
--
- #define rcu_dereference_raw(p) rcu_dereference(p)
--void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *head));
- 
- #endif
---- rtth4/linux.c	2011-12-16 18:44:05.587897075 -0800
-+++ rtth5/linux.c	2011-12-16 18:44:05.587897075 -0800
-@@ -6,7 +6,7 @@
- 
- #include <linux/mempool.h>
- #include <linux/slab.h>
--#include <urcu/uatomic_arch.h>
-+#include <urcu/uatomic.h>
- 
- int nr_allocated;
- 
---- rtth4/main.c	2011-12-16 18:44:05.587897075 -0800
-+++ rtth5/main.c	2011-12-16 18:44:06.623896843 -0800
-@@ -256,7 +256,7 @@ static void single_thread_tests(void)
- 
- int main()
- {
--	rcupdate_init();
-+	rcu_register_thread();
- 	radix_tree_init();
- 
- 	regression1_test();
-@@ -265,6 +265,7 @@ int main()
- 
- 	sleep(1);
- 	printf("after sleep(1): %d allocated\n", nr_allocated);
-+	rcu_unregister_thread();
- 
- 	exit(0);
- }
---- rtth4/rcupdate.c	2010-11-10 16:35:48.000000000 -0800
-+++ rtth5/rcupdate.c	1969-12-31 16:00:00.000000000 -0800
-@@ -1,86 +0,0 @@
--#include <linux/rcupdate.h>
--#include <pthread.h>
--#include <stdio.h>
--#include <assert.h>
--
--static pthread_mutex_t rculock = PTHREAD_MUTEX_INITIALIZER;
--static struct rcu_head *rcuhead_global = NULL;
--static __thread int nr_rcuhead = 0;
--static __thread struct rcu_head *rcuhead = NULL;
--static __thread struct rcu_head *rcutail = NULL;
--
--static pthread_cond_t rcu_worker_cond = PTHREAD_COND_INITIALIZER;
--
--/* switch to urcu implementation when it is merged. */
--void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *head))
--{
--	head->func = func;
--	head->next = rcuhead;
--	rcuhead = head;
--	if (!rcutail)
--		rcutail = head;
--	nr_rcuhead++;
--	if (nr_rcuhead >= 1000) {
--		int signal = 0;
--
--		pthread_mutex_lock(&rculock);
--		if (!rcuhead_global)
--			signal = 1;
--		rcutail->next = rcuhead_global;
--		rcuhead_global = head;
--		pthread_mutex_unlock(&rculock);
--
--		nr_rcuhead = 0;
--		rcuhead = NULL;
--		rcutail = NULL;
--
--		if (signal) {
--			pthread_cond_signal(&rcu_worker_cond);
--		}
--	}
--}
--
--static void *rcu_worker(void *arg)
--{
--	struct rcu_head *r;
--
--	rcupdate_thread_init();
--
--	while (1) {
--		pthread_mutex_lock(&rculock);
--		while (!rcuhead_global) {
--			pthread_cond_wait(&rcu_worker_cond, &rculock);
--		}
--		r = rcuhead_global;
--		rcuhead_global = NULL;
--
--		pthread_mutex_unlock(&rculock);
--
--		synchronize_rcu();
--
--		while (r) {
--			struct rcu_head *tmp = r->next;
--			r->func(r);
--			r = tmp;
--		}
--	}
--
--	rcupdate_thread_exit();
--
--	return NULL;
--}
--
--static pthread_t worker_thread;
--void rcupdate_init(void)
--{
--	pthread_create(&worker_thread, NULL, rcu_worker, NULL);
--}
--
--void rcupdate_thread_init(void)
--{
--	rcu_register_thread();
--}
--void rcupdate_thread_exit(void)
--{
--	rcu_unregister_thread();
--}
---- rtth4/regression1.c	2011-12-16 18:44:04.551896997 -0800
-+++ rtth5/regression1.c	2011-12-16 18:44:06.627896873 -0800
-@@ -135,7 +135,7 @@ static pthread_barrier_t worker_barrier;
- 
- static void *regression1_fn(void *arg)
- {
--	rcupdate_thread_init();
-+	rcu_register_thread();
- 
- 	if (pthread_barrier_wait(&worker_barrier) ==
- 			PTHREAD_BARRIER_SERIAL_THREAD) {
-@@ -180,7 +180,7 @@ static void *regression1_fn(void *arg)
- 		}
- 	}
- 
--	rcupdate_thread_exit();
-+	rcu_unregister_thread();
- 
- 	return NULL;
- }
+--20cf3074b2dc570a3104b44520e6
+Content-Type: text/x-diff; charset=US-ASCII; name="wireless.patch"
+Content-Disposition: attachment; filename="wireless.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gwac4snd0
+
+RGFuIENhcnBlbnRlciAoMSk6CiAgICAgIG5mYzogc2lnbmVkbmVzcyBidWcgaW4gX19uY2lfcmVx
+dWVzdCgpCgpKb2hhbm5lcyBCZXJnICgxKToKICAgICAgaXdsd2lmaTogdHhfc3luYyBvbmx5IG9u
+IFBBTiBjb250ZXh0CgpSYWprdW1hciBNYW5vaGFyYW4gKDEpOgogICAgICBhdGg5azogZml4IG1h
+eCBwaHkgcmF0ZSBhdCByYXRlIGNvbnRyb2wgaW5pdAoKU2VkYXQgRGlsZWsgKDEpOgogICAgICBN
+ZXJnZSBnaXQ6Ly9naXQua2VybmVsLm9yZy8uLi4vbGludmlsbGUvd2lyZWxlc3MKCldleS1ZaSBH
+dXkgKDIpOgogICAgICBpd2x3aWZpOiBkbyBub3Qgc2V0IHRoZSBzZXF1ZW5jZSBjb250cm9sIGJp
+dCBpcyBub3QgbmVlZGVkCiAgICAgIGl3bHdpZmk6IGFsbG93IHRvIHN3aXRjaCB0byBIVDQwIGlm
+IG5vdCBhc3NvY2lhdGVkCgpZb2dlc2ggQXNob2sgUG93YXIgKDEpOgogICAgICBtd2lmaWV4OiBh
+dm9pZCBkb3VibGUgbGlzdF9kZWwgaW4gY29tbWFuZCBjYW5jZWwgcGF0aAoKIGRyaXZlcnMvbmV0
+L3dpcmVsZXNzL2F0aC9hdGg5ay9yYy5jICAgICAgICAgfCAgICA0ICsrKy0KIGRyaXZlcnMvbmV0
+L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFnbi1yeG9uLmMgfCAgICA0ICsrLS0KIGRyaXZlcnMvbmV0
+L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFnbi10eC5jICAgfCAgICA1ICsrKystCiBkcml2ZXJzL25l
+dC93aXJlbGVzcy9pd2x3aWZpL2l3bC1hZ24uYyAgICAgIHwgICAgNiArKysrKysKIGRyaXZlcnMv
+bmV0L3dpcmVsZXNzL213aWZpZXgvY21kZXZ0LmMgICAgICAgfCAgICA5ICsrLS0tLS0tLQogbmV0
+L25mYy9uY2kvY29yZS5jICAgICAgICAgICAgICAgICAgICAgICAgICB8ICAgIDIgKy0KIDYgZmls
+ZXMgY2hhbmdlZCwgMTggaW5zZXJ0aW9ucygrKSwgMTIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvYXRoL2F0aDlrL3JjLmMgYi9kcml2ZXJzL25ldC93aXJl
+bGVzcy9hdGgvYXRoOWsvcmMuYwppbmRleCA4ODhhYmMyLi41MjhkNWYzIDEwMDY0NAotLS0gYS9k
+cml2ZXJzL25ldC93aXJlbGVzcy9hdGgvYXRoOWsvcmMuYworKysgYi9kcml2ZXJzL25ldC93aXJl
+bGVzcy9hdGgvYXRoOWsvcmMuYwpAQCAtMTI3MSw3ICsxMjcxLDkgQEAgc3RhdGljIHZvaWQgYXRo
+X3JjX2luaXQoc3RydWN0IGF0aF9zb2Z0YyAqc2MsCiAKIAlhdGhfcmNfcHJpdi0+bWF4X3ZhbGlk
+X3JhdGUgPSBrOwogCWF0aF9yY19zb3J0X3ZhbGlkcmF0ZXMocmF0ZV90YWJsZSwgYXRoX3JjX3By
+aXYpOwotCWF0aF9yY19wcml2LT5yYXRlX21heF9waHkgPSBhdGhfcmNfcHJpdi0+dmFsaWRfcmF0
+ZV9pbmRleFtrLTRdOworCWF0aF9yY19wcml2LT5yYXRlX21heF9waHkgPSAoayA+IDQpID8KKwkJ
+CQkJYXRoX3JjX3ByaXYtPnZhbGlkX3JhdGVfaW5kZXhbay00XSA6CisJCQkJCWF0aF9yY19wcml2
+LT52YWxpZF9yYXRlX2luZGV4W2stMV07CiAJYXRoX3JjX3ByaXYtPnJhdGVfdGFibGUgPSByYXRl
+X3RhYmxlOwogCiAJYXRoX2RiZyhjb21tb24sIEFUSF9EQkdfQ09ORklHLApkaWZmIC0tZ2l0IGEv
+ZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtYWduLXJ4b24uYyBiL2RyaXZlcnMvbmV0
+L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFnbi1yeG9uLmMKaW5kZXggYTdhNmRlZi4uNWM3YzE3YyAx
+MDA2NDQKLS0tIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtYWduLXJ4b24uYwor
+KysgYi9kcml2ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3bC1hZ24tcnhvbi5jCkBAIC02MDYs
+OCArNjA2LDggQEAgaW50IGl3bGFnbl9tYWNfY29uZmlnKHN0cnVjdCBpZWVlODAyMTFfaHcgKmh3
+LCB1MzIgY2hhbmdlZCkKIAkJCWlmIChjdHgtPmh0LmVuYWJsZWQpIHsKIAkJCQkvKiBpZiBIVDQw
+IGlzIHVzZWQsIGl0IHNob3VsZCBub3QgY2hhbmdlCiAJCQkJICogYWZ0ZXIgYXNzb2NpYXRlZCBl
+eGNlcHQgY2hhbm5lbCBzd2l0Y2ggKi8KLQkJCQlpZiAoaXdsX2lzX2Fzc29jaWF0ZWRfY3R4KGN0
+eCkgJiYKLQkJCQkgICAgICFjdHgtPmh0LmlzXzQwbWh6KQorCQkJCWlmICghY3R4LT5odC5pc180
+MG1oeiB8fAorCQkJCQkJIWl3bF9pc19hc3NvY2lhdGVkX2N0eChjdHgpKQogCQkJCQlpd2xhZ25f
+Y29uZmlnX2h0NDAoY29uZiwgY3R4KTsKIAkJCX0gZWxzZQogCQkJCWN0eC0+aHQuaXNfNDBtaHog
+PSBmYWxzZTsKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFn
+bi10eC5jIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtYWduLXR4LmMKaW5kZXgg
+MzVhNmI3MS4uZGYxNTQwYyAxMDA2NDQKLS0tIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lm
+aS9pd2wtYWduLXR4LmMKKysrIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXdsd2lmaS9pd2wtYWdu
+LXR4LmMKQEAgLTkxLDcgKzkxLDEwIEBAIHN0YXRpYyB2b2lkIGl3bGFnbl90eF9jbWRfYnVpbGRf
+YmFzaWMoc3RydWN0IGl3bF9wcml2ICpwcml2LAogCQl0eF9jbWQtPnRpZF90c3BlYyA9IHFjWzBd
+ICYgMHhmOwogCQl0eF9mbGFncyAmPSB+VFhfQ01EX0ZMR19TRVFfQ1RMX01TSzsKIAl9IGVsc2Ug
+ewotCQl0eF9mbGFncyB8PSBUWF9DTURfRkxHX1NFUV9DVExfTVNLOworCQlpZiAoaW5mby0+Zmxh
+Z3MgJiBJRUVFODAyMTFfVFhfQ1RMX0FTU0lHTl9TRVEpCisJCQl0eF9mbGFncyB8PSBUWF9DTURf
+RkxHX1NFUV9DVExfTVNLOworCQllbHNlCisJCQl0eF9mbGFncyAmPSB+VFhfQ01EX0ZMR19TRVFf
+Q1RMX01TSzsKIAl9CiAKIAlpd2xhZ25fdHhfY21kX3Byb3RlY3Rpb24ocHJpdiwgaW5mbywgZmMs
+ICZ0eF9mbGFncyk7CmRpZmYgLS1naXQgYS9kcml2ZXJzL25ldC93aXJlbGVzcy9pd2x3aWZpL2l3
+bC1hZ24uYyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFnbi5jCmluZGV4IGJh
+Y2MwNmMuLmUwZTlhM2QgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkv
+aXdsLWFnbi5jCisrKyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2l3bHdpZmkvaXdsLWFnbi5jCkBA
+IC0yODUwLDYgKzI4NTAsOSBAQCBzdGF0aWMgaW50IGl3bGFnbl9tYWNfdHhfc3luYyhzdHJ1Y3Qg
+aWVlZTgwMjExX2h3ICpodywKIAlpbnQgcmV0OwogCXU4IHN0YV9pZDsKIAorCWlmIChjdHgtPmN0
+eGlkICE9IElXTF9SWE9OX0NUWF9QQU4pCisJCXJldHVybiAwOworCiAJSVdMX0RFQlVHX01BQzgw
+MjExKHByaXYsICJlbnRlclxuIik7CiAJbXV0ZXhfbG9jaygmcHJpdi0+c2hyZC0+bXV0ZXgpOwog
+CkBAIC0yODk4LDYgKzI5MDEsOSBAQCBzdGF0aWMgdm9pZCBpd2xhZ25fbWFjX2ZpbmlzaF90eF9z
+eW5jKHN0cnVjdCBpZWVlODAyMTFfaHcgKmh3LAogCXN0cnVjdCBpd2xfdmlmX3ByaXYgKnZpZl9w
+cml2ID0gKHZvaWQgKil2aWYtPmRydl9wcml2OwogCXN0cnVjdCBpd2xfcnhvbl9jb250ZXh0ICpj
+dHggPSB2aWZfcHJpdi0+Y3R4OwogCisJaWYgKGN0eC0+Y3R4aWQgIT0gSVdMX1JYT05fQ1RYX1BB
+TikKKwkJcmV0dXJuOworCiAJSVdMX0RFQlVHX01BQzgwMjExKHByaXYsICJlbnRlclxuIik7CiAJ
+bXV0ZXhfbG9jaygmcHJpdi0+c2hyZC0+bXV0ZXgpOwogCmRpZmYgLS1naXQgYS9kcml2ZXJzL25l
+dC93aXJlbGVzcy9td2lmaWV4L2NtZGV2dC5jIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvbXdpZmll
+eC9jbWRldnQuYwppbmRleCBhYzI3ODE1Li42ZTBhM2VhIDEwMDY0NAotLS0gYS9kcml2ZXJzL25l
+dC93aXJlbGVzcy9td2lmaWV4L2NtZGV2dC5jCisrKyBiL2RyaXZlcnMvbmV0L3dpcmVsZXNzL213
+aWZpZXgvY21kZXZ0LmMKQEAgLTkzOSw3ICs5MzksNiBAQCBtd2lmaWV4X2NhbmNlbF9wZW5kaW5n
+X2lvY3RsKHN0cnVjdCBtd2lmaWV4X2FkYXB0ZXIgKmFkYXB0ZXIpCiB7CiAJc3RydWN0IGNtZF9j
+dHJsX25vZGUgKmNtZF9ub2RlID0gTlVMTCwgKnRtcF9ub2RlID0gTlVMTDsKIAl1bnNpZ25lZCBs
+b25nIGNtZF9mbGFnczsKLQl1bnNpZ25lZCBsb25nIGNtZF9wZW5kaW5nX3FfZmxhZ3M7CiAJdW5z
+aWduZWQgbG9uZyBzY2FuX3BlbmRpbmdfcV9mbGFnczsKIAl1aW50MTZfdCBjYW5jZWxfc2Nhbl9j
+bWQgPSBmYWxzZTsKIApAQCAtOTQ5LDEyICs5NDgsOSBAQCBtd2lmaWV4X2NhbmNlbF9wZW5kaW5n
+X2lvY3RsKHN0cnVjdCBtd2lmaWV4X2FkYXB0ZXIgKmFkYXB0ZXIpCiAJCWNtZF9ub2RlID0gYWRh
+cHRlci0+Y3Vycl9jbWQ7CiAJCWNtZF9ub2RlLT53YWl0X3FfZW5hYmxlZCA9IGZhbHNlOwogCQlj
+bWRfbm9kZS0+Y21kX2ZsYWcgfD0gQ01EX0ZfQ0FOQ0VMRUQ7Ci0JCXNwaW5fbG9ja19pcnFzYXZl
+KCZhZGFwdGVyLT5jbWRfcGVuZGluZ19xX2xvY2ssCi0JCQkJICBjbWRfcGVuZGluZ19xX2ZsYWdz
+KTsKLQkJbGlzdF9kZWwoJmNtZF9ub2RlLT5saXN0KTsKLQkJc3Bpbl91bmxvY2tfaXJxcmVzdG9y
+ZSgmYWRhcHRlci0+Y21kX3BlbmRpbmdfcV9sb2NrLAotCQkJCSAgICAgICBjbWRfcGVuZGluZ19x
+X2ZsYWdzKTsKIAkJbXdpZmlleF9pbnNlcnRfY21kX3RvX2ZyZWVfcShhZGFwdGVyLCBjbWRfbm9k
+ZSk7CisJCW13aWZpZXhfY29tcGxldGVfY21kKGFkYXB0ZXIsIGFkYXB0ZXItPmN1cnJfY21kKTsK
+KwkJYWRhcHRlci0+Y3Vycl9jbWQgPSBOVUxMOwogCQlzcGluX3VubG9ja19pcnFyZXN0b3JlKCZh
+ZGFwdGVyLT5td2lmaWV4X2NtZF9sb2NrLCBjbWRfZmxhZ3MpOwogCX0KIApAQCAtOTgxLDcgKzk3
+Nyw2IEBAIG13aWZpZXhfY2FuY2VsX3BlbmRpbmdfaW9jdGwoc3RydWN0IG13aWZpZXhfYWRhcHRl
+ciAqYWRhcHRlcikKIAkJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmYWRhcHRlci0+bXdpZmlleF9j
+bWRfbG9jaywgY21kX2ZsYWdzKTsKIAl9CiAJYWRhcHRlci0+Y21kX3dhaXRfcS5zdGF0dXMgPSAt
+MTsKLQltd2lmaWV4X2NvbXBsZXRlX2NtZChhZGFwdGVyLCBhZGFwdGVyLT5jdXJyX2NtZCk7CiB9
+CiAKIC8qCmRpZmYgLS1naXQgYS9uZXQvbmZjL25jaS9jb3JlLmMgYi9uZXQvbmZjL25jaS9jb3Jl
+LmMKaW5kZXggMzkyNWM2NS4uZWE2NjAzNCAxMDA2NDQKLS0tIGEvbmV0L25mYy9uY2kvY29yZS5j
+CisrKyBiL25ldC9uZmMvbmNpL2NvcmUuYwpAQCAtNjksNyArNjksNyBAQCBzdGF0aWMgaW50IF9f
+bmNpX3JlcXVlc3Qoc3RydWN0IG5jaV9kZXYgKm5kZXYsCiAJX191MzIgdGltZW91dCkKIHsKIAlp
+bnQgcmMgPSAwOwotCXVuc2lnbmVkIGxvbmcgY29tcGxldGlvbl9yYzsKKwlsb25nIGNvbXBsZXRp
+b25fcmM7CiAKIAluZGV2LT5yZXFfc3RhdHVzID0gTkNJX1JFUV9QRU5EOwogCg==
+--20cf3074b2dc570a3104b44520e6--
