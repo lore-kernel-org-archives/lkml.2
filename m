@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1LQXrF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 18:47:05 -0500
-Received: from home.keithp.com ([63.227.221.253]:34139 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab1LQXrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 18:47:04 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Patrik Kullman <patrik.kullman@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915: 3.2 rc1/2 KMS regression
-In-Reply-To: <CAGPN=9Sesv8GMgj1rbvqDsns6=O-Nao4=mZ72QYu+4-SiY9OmA@mail.gmail.com>
-References: <CAGPN=9THOv-M4Td4haE94uDcsAjW3eGMG7ioLeu+p8xUOBPd7w@mail.gmail.com> <861usye0og.fsf@sumi.keithp.com> <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com> <86sjlccchg.fsf@sumi.keithp.com> <CAGPN=9SLsESVPdwhBwJN9G+nkENcFDqhrcva8GC-VTnx_E=apg@mail.gmail.com> <86pqge96z1.fsf@sumi.keithp.com> <CAGPN=9RZgCJy9hF4RqY1BLmC7cA7QWavWfRM26U3czWZ6RBNMQ@mail.gmail.com> <CAGPN=9Tk69_-oNZpabY+9pWnjdLR=AdMY1N7s9iCkRsonCsotQ@mail.gmail.com> <86d3cc5f1d.fsf@sumi.keithp.com> <CAGPN=9Sesv8GMgj1rbvqDsns6=O-Nao4=mZ72QYu+4-SiY9OmA@mail.gmail.com>
-User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sat, 17 Dec 2011 15:47:58 -0800
-Message-ID: <868vma3glt.fsf@sumi.keithp.com>
+	id S1752528Ab1LQXu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 18:50:58 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35198 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab1LQXuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 18:50:55 -0500
+Date: Sun, 18 Dec 2011 02:47:30 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Namhyung Kim <namhyung@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: fput() called in loop_clr_fd() may cause bd_mutex
+ recursive locking
+Message-ID: <20111217234730.GE3313@swordfish>
+References: <20111217215333.GA3313@swordfish>
+ <20111217221232.GA2203@ZenIV.linux.org.uk>
+ <20111217221928.GB3313@swordfish>
+ <20111217223033.GB2203@ZenIV.linux.org.uk>
+ <20111217223745.GC3313@swordfish>
+ <20111217225846.GC2203@ZenIV.linux.org.uk>
+ <20111217232053.GD3313@swordfish>
+ <20111217233857.GD2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111217233857.GD2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On (12/17/11 23:38), Al Viro wrote:
+> On Sun, Dec 18, 2011 at 02:20:53AM +0300, Sergey Senozhatsky wrote:
+> 
+> > > IOW, we have to prevent such setups anyway and not just because of
+> > > problems on close() - they would be deadly on read() and write()...
+> > > 
+> > 
+> > Preventing recursion in the first place? For example, in lo_open()?
+> 
+> Uh?  No, in loop_set_fd(), where we decide what loop devices will be
+> backed by what - the code I quoted to you upthread.
+> 
 
-On Sat, 17 Dec 2011 12:10:45 +0100, Patrik Kullman <patrik.kullman@gmail.co=
-m> wrote:
-> This has been solved with commit
-> ed4a51842a9d9e618d4f4c31349b15b974dba5df in 3.2-rc6.
+Oops, sorry. Long day at work . Need to sleep.
 
-Thanks for your help in resolving this regression.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTu0qLjYtFsjWk68qAQg/WBAAgubzOSkNvYtKULzhgaYp1Ytey9R9YFfK
-uLNHteubXhK6xgybDHAeF6fouyXIPCEi6qCBO/z0SF1C8n0fPt3VksJUBFky33Io
-90UYsAvvvlyYAZrrQcDqNKXh3roSrMN7aHkjjAoyM0w3POJsxUs6gqH2z3+ZUKZs
-VQwmzSgL3hyNJcZkS5ApdOWSpRb7txTpqoeOL7CkM4nvMwZ0dt4fod4bcFY+fy3o
-6XF9ZLsPzTzbA69DACNVxEH6xivmJynJ/lWl+FrabcAXYV2cwMePYPPRH9lUXWM4
-CEaU9wA8k+/dHq449Jc+j2m9IJhLDzuYDjWDMb20Yz0+PpGODhBPHm0ZfEQDBnff
-t7+mHer0ZfTG2wWJDHlAyNLW+cMIBVZQ105FHXY/6fFpW5V+yWksfiz8qjSq+m2j
-KkRVZwSTw9/fzHVXHjSNAYn8or2TCx6i1IfHYta0Tl6N8axtCLuTYIeHEyVup1Hz
-thZBl3mH8T5XRmlWolELxGXGB9ZAMOf+cdkzKg8G/4mZjXWGsfDYwwtF9iPICgi4
-eBnM7BVu/5DTM9MB8HEfqbId/mR/uvgZjoG1cKlgLmdrsKelKbmIicaxyd7PXeoE
-2QGwigQv+qb8R5aXiU4HHP5R5hnYZoTKljG2gwtk06c+Kuxr1chbELb3U/fAMnpC
-JU5g2Ht/AdY=
-=aR94
------END PGP SIGNATURE-----
---=-=-=--
+	Sergey
