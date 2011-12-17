@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab1LQUzs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 15:55:48 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56878 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab1LQUzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 15:55:45 -0500
-Message-ID: <1324155340.3323.23.camel@edumazet-laptop>
-Subject: Re: Memory corruption warnings triggered by repeated slabinfo -v
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alex =?ISO-8859-1?Q?Villac=EDs?= Lasso <a_villacis@palosanto.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sat, 17 Dec 2011 21:55:40 +0100
-In-Reply-To: <4EECF64B.1020409@palosanto.com>
-References: <4EEBFAF3.60609@palosanto.com>
-	 <1324092514.2621.49.camel@edumazet-laptop> <4EECF64B.1020409@palosanto.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752134Ab1LQUzS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 15:55:18 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45223 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab1LQUzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 15:55:15 -0500
+Date: Sat, 17 Dec 2011 21:53:18 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] perf fix
+Message-ID: <20111217205318.GA3146@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 17 décembre 2011 à 15:06 -0500, Alex Villacís Lasso a écrit :
-> El 16/12/11 22:28, Eric Dumazet escribió:
-> > Le vendredi 16 décembre 2011 à 21:14 -0500, Alex Villacís Lasso a
-> > écrit :
-> >> I am running Fedora 16 x86_64 and testing vanilla kernel 3.2-rc5. I
-> >> wanted to test the slabinfo program, so I wrote a small shell script
-> >> slabinfo-forever.sh (attached) that invokes slabinfo -v every 3 seconds.
-> >> Just by doing this, I was able to trigger several memory validation
-> >> warnings, attached in this message. The reason I wanted to test slabinfo
-> >> is because back when I was running Fedora 14, I had some video issues
-> >> that seemed consistent with memory corruption. I tried to submit a
-> >> kernel bug at https://bugzilla.kernel.org/show_bug.cgi?id=42312 just
-> >> before the kernel.org hack issue, but bugzilla.kernel.org never came up
-> >> after that.
-> > Problem is known and fixes were submitted.
-> >
-> >
-> Still happening in 3.2-rc6. The dmesg output is attached.
-> 
-> What are the git commits of the fixes? Are they scheduled to go into 3.2 
-> stable?
+Linus,
 
-Fixes were submitted but not yet accepted in mainline.
+Please pull the latest perf-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Will Deacon (1):
+      perf events: Fix ring_buffer_wakeup() brown paperbag bug
 
 
+ kernel/events/core.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d3b9df5..58690af 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3558,9 +3558,13 @@ static void ring_buffer_wakeup(struct perf_event *event)
+ 
+ 	rcu_read_lock();
+ 	rb = rcu_dereference(event->rb);
+-	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
++	if (!rb)
++		goto unlock;
++
++	list_for_each_entry_rcu(event, &rb->event_list, rb_entry)
+ 		wake_up_all(&event->waitq);
+-	}
++
++unlock:
+ 	rcu_read_unlock();
+ }
+ 
