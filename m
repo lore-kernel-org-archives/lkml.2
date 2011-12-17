@@ -1,84 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab1LQWWz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 17:22:55 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34426 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab1LQWWx convert rfc822-to-8bit (ORCPT
+	id S1752374Ab1LQWXl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 17:23:41 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:39124 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab1LQWXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 17:22:53 -0500
-Date: Sun, 18 Dec 2011 01:19:28 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Namhyung Kim <namhyung@gmail.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: fput() called in loop_clr_fd() may cause bd_mutex
- recursive locking
-Message-ID: <20111217221928.GB3313@swordfish>
-References: <20111217215333.GA3313@swordfish>
- <20111217221232.GA2203@ZenIV.linux.org.uk>
+	Sat, 17 Dec 2011 17:23:39 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
+	<20111214104449.3991.61989.stgit@localhost6.localdomain6>
+Date: Sat, 17 Dec 2011 14:25:14 -0800
+In-Reply-To: <20111214104449.3991.61989.stgit@localhost6.localdomain6>
+	(Stanislav Kinsbursky's message of "Wed, 14 Dec 2011 14:44:49 +0300")
+Message-ID: <m1bor6rg39.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20111217221232.GA2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/1tW/M42v1UGQkjeHmffuky1bfhdgc/EA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stanislav Kinsbursky <skinsbursky@parallels.com>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (12/17/11 22:12), Al Viro wrote:
-> > 
-> > [23044.654647] umount/24442 is trying to acquire lock:
-> > [23044.654652]  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81144311>] blkdev_put+0x1f/0x131
-> > [23044.654670] 
-> > [23044.654672] but task is already holding lock:
-> > [23044.654677]  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff811441a1>] __blkdev_put+0x33/0x184
-> > [23044.654690] 
-> > [23044.654692] other info that might help us debug this:
-> > [23044.654697]  Possible unsafe locking scenario:
-> > [23044.654727] 
-> > [23044.654731] 1 lock held by umount/24442:
-> > [23044.654735]  #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff811441a1>] __blkdev_put+0x33/0x184
-> > [23044.654748] 
-> > [23044.654762] Call Trace:
-> > [23044.654773]  [<ffffffff81075611>] __lock_acquire+0x15bf/0x1659
-> > [23044.654784]  [<ffffffff8114b3e3>] ? inotify_free_group_priv+0x4f/0x4f
-> > [23044.654792]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
-> > [23044.654799]  [<ffffffff81075c6a>] lock_acquire+0x138/0x1b3
-> > [23044.654807]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
-> > [23044.654814]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
-> > [23044.654824]  [<ffffffff8147ce67>] mutex_lock_nested+0x5e/0x325
-> > [23044.654831]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
-> > [23044.654838]  [<ffffffff81149963>] ? fsnotify+0x441/0x459
-> > [23044.654846]  [<ffffffff81144311>] blkdev_put+0x1f/0x131
-> > [23044.654853]  [<ffffffff81144443>] blkdev_close+0x20/0x22
-> > [23044.654863]  [<ffffffff81116b21>] fput+0x117/0x1cf
-> > [23044.654874]  [<ffffffffa016eb71>] loop_clr_fd+0x1f2/0x201 [loop]
-> > [23044.654882]  [<ffffffffa016f861>] lo_release+0x40/0x6f [loop]
-> > [23044.654890]  [<ffffffff81144244>] __blkdev_put+0xd6/0x184
-> > [23044.654898]  [<ffffffff8114441a>] blkdev_put+0x128/0x131
-> > [23044.654906]  [<ffffffff8111704e>] kill_block_super+0x60/0x65
-> > [23044.654914]  [<ffffffff81117366>] deactivate_locked_super+0x32/0x63
-> > [23044.654922]  [<ffffffff81117cc9>] deactivate_super+0x3a/0x3e
-> > [23044.654931]  [<ffffffff8112fc5d>] mntput_no_expire+0xbf/0xc4
-> > [23044.654939]  [<ffffffff811309c7>] sys_umount+0x2c5/0x2f3
-> > [23044.654949]  [<ffffffff81484b12>] system_call_fastpath+0x16/0x1b
-[..]
-> 
-> NAK - you've "fixed" a false positive from lock checker by failing to close
-> the underlying device.
-> 
+Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
 
-Sorry, why is that a false positive?
+> These routines are required for making SUNRPC sysctl's per network namespace
+> context.
 
-blkdev_put() calls lo_release() while holding bd_mutex,
-lo_release() calls loop_clr_fd() -> fput(). fput() once again
-attempts to grub already held bd_mutex calling blkdev_put().
-Looks like a recursion to me.
+Why does sunrpc require it's own sysctl root?  You should be able to use
+the generic per network namespace root and call it good.
+
+What makes register_net_sysctl_table and register_net_sysctl_ro_table
+unsuitable for sunrpc.  I skimmed through your patches and I haven't
+seen anything obvious.
+
+Eric
 
 
-	Sergey
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>
+> ---
+>  include/linux/sysctl.h |    1 +
+>  kernel/sysctl.c        |   11 +++++++++++
+>  2 files changed, 12 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+> index 703cfa3..be586a9 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -1084,6 +1084,7 @@ struct ctl_path {
+>  };
+>  
+>  void register_sysctl_root(struct ctl_table_root *root);
+> +void unregister_sysctl_root(struct ctl_table_root *root);
+>  struct ctl_table_header *__register_sysctl_paths(
+>  	struct ctl_table_root *root, struct nsproxy *namespaces,
+>  	const struct ctl_path *path, struct ctl_table *table);
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index ae27196..fb016a9 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1700,6 +1700,15 @@ void register_sysctl_root(struct ctl_table_root *root)
+>  	list_add_tail(&root->root_list, &sysctl_table_root.root_list);
+>  	spin_unlock(&sysctl_lock);
+>  }
+> +EXPORT_SYMBOL_GPL(register_sysctl_root);
+> +
+> +void unregister_sysctl_root(struct ctl_table_root *root)
+> +{
+> +	spin_lock(&sysctl_lock);
+> +	list_del(&root->root_list);
+> +	spin_unlock(&sysctl_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(unregister_sysctl_root);
+>  
+>  /*
+>   * sysctl_perm does NOT grant the superuser all rights automatically, because
+> @@ -1925,6 +1934,7 @@ struct ctl_table_header *__register_sysctl_paths(
+>  
+>  	return header;
+>  }
+> +EXPORT_SYMBOL_GPL(__register_sysctl_paths);
+>  
+>  /**
+>   * register_sysctl_table_path - register a sysctl table hierarchy
+> @@ -2007,6 +2017,7 @@ void setup_sysctl_set(struct ctl_table_set *p,
+>  	p->parent = parent ? parent : &sysctl_table_root.default_set;
+>  	p->is_seen = is_seen;
+>  }
+> +EXPORT_SYMBOL_GPL(setup_sysctl_set);
+>  
+>  #else /* !CONFIG_SYSCTL */
+>  struct ctl_table_header *register_sysctl_table(struct ctl_table * table)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
