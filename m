@@ -1,179 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760414Ab1LQBDj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 20:03:39 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14932 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab1LQBDd convert rfc822-to-8bit (ORCPT
+	id S1760623Ab1LQBFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 20:05:53 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:55799 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab1LQBFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 20:03:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 16 Dec 2011 17:03:28 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
-CC: "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 17 Dec 2011 02:03:15 +0100
-Subject: Re: [PATCH v2 2/2] [RFC] ARM: IOMMU: Tegra30: iommu_ops for SMMU
- driver
-Thread-Topic: [PATCH v2 2/2] [RFC] ARM: IOMMU: Tegra30: iommu_ops for SMMU
- driver
-Thread-Index: Acy8V66qu93y8+vwTq2bX7YtEGYG0Q==
-Message-ID: <20111217.030315.2218721757650628823.hdoyu@nvidia.com>
-References: <1323954690-7000-1-git-send-email-hdoyu@nvidia.com><1323954690-7000-3-git-send-email-hdoyu@nvidia.com><20111216153904.GC29877@amd.com>
-In-Reply-To: <20111216153904.GC29877@amd.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Fri, 16 Dec 2011 20:05:45 -0500
+Date: Sat, 17 Dec 2011 12:05:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] genalloc: add support of named pool
+Message-Id: <20111217120526.29aa2b0b35a70c8038727300@canb.auug.org.au>
+In-Reply-To: <1323359408-24407-1-git-send-email-plagnioj@jcrosoft.com>
+References: <1323359408-24407-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__17_Dec_2011_12_05_26_+1100_I=pBjSSIqBaHsrJS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg, Thank you for your quick review.
+--Signature=_Sat__17_Dec_2011_12_05_26_+1100_I=pBjSSIqBaHsrJS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH v2 2/2] [RFC] ARM: IOMMU: Tegra30: iommu_ops for SMMU driver
-Date: Fri, 16 Dec 2011 16:39:04 +0100
-Message-ID: <20111216153904.GC29877@amd.com>
+Hi,
 
-> On Thu, Dec 15, 2011 at 03:11:30PM +0200, Hiroshi DOYU wrote:
-> > +static int smmu_iommu_attach_dev(struct iommu_domain *domain,
-> > +				 struct device *dev)
-> > +{
-> > +	struct smmu_as *as = domain->priv;
-> > +	struct smmu_client *client, *c;
-> > +	u32 map;
-> > +	int err;
-> > +
-> > +	client = kmalloc(sizeof(*c), GFP_KERNEL);
-> > +	if (!client)
-> > +		return -ENOMEM;
-> > +	client->dev = dev;
-> > +	client->as = as;
-> > +	map = (unsigned long)dev->platform_data;
-> > +	if (!map)
-> > +		return -EINVAL;
-> > +
-> > +	err = smmu_client_enable_hwgrp(client, map);
-> > +	if (err)
-> > +		goto err_hwgrp;
-> > +
-> > +	spin_lock(&as->client_lock);
-> > +	list_for_each_entry(c, &as->client, list) {
-> > +		if (c->dev == dev) {
-> > +			pr_err("%s is already attached\n", dev_name(dev));
-> > +			err = -EINVAL;
-> > +			goto err_client;
-> > +		}
-> > +	}
-> > +	list_add(&client->list, &as->client);
-> > +	spin_unlock(&as->client_lock);
-> > +
-> > +	/*
-> > +	 * Reserve "page zero" for AVP vectors using a common dummy
-> > +	 * page.
-> > +	 */
-> > +	if (map & HWG_AVPC) {
-> > +		struct page *page;
-> > +
-> > +		page = as->smmu->avp_vector_page;
-> > +		__smmu_iommu_map_pfn(as, 0, page_to_pfn(page));
-> > +
-> > +		pr_info("Reserve \"page zero\" for AVP vectors using a common dummy\n");
-> > +	}
-> > +
-> > +	pr_debug("Attached %s\n", dev_name(dev));
-> > +	return 0;
-> > +err_client:
-> > +	smmu_client_disable_hwgrp(client);
-> > +	spin_unlock(&as->client_lock);
-> > +err_hwgrp:
-> > +	kfree(client);
-> > +	return err;
-> > +}
-> 
-> Hmm, I have a question about that. Reading the code it looks like your
-> SMMU exists per pheripheral device
+On Thu,  8 Dec 2011 16:50:08 +0100 Jean-Christophe PLAGNIOL-VILLARD <plagni=
+oj@jcrosoft.com> wrote:
+>
+>  struct gen_pool {
+> +	char *name;			/* pool name */
 
-A single SMMU is shared with multiple peripheral devices, a single
-SMMU has multiple ASIDs. ASID is used per group of peripheral
-devices. These peripheral groups can be configured by the above
-"hwgrp"/"map" passed via platform_data. The above "struct device"
-represents a groupd of peripheral devices, a kind of virtual device.
+Any reason that this can't be "const char *"?
 
-The above "struct device" ~= a group of peripheral devices.
+> +extern struct gen_pool *gen_pool_create_byname(char*, int, int);
 
-> and the SMMU hardware supports multiple address spaces per device,
-> right?
+const char *
 
-Yes, where "device" is a gropud of peripheral devices.
-
-> The domains are implemented for one address-space.
-
-Yes.
-
-> So is it right that a device can have multiple
-> address-spaces?
-
-No, at least, the following code prevents if a peripheral is already
-assigned ASID.
-
-smmu_client_enable_hwgrp():
-....
-+	for_each_set_bit(i, &map, BITS_PER_LONG) {
-+		offs = HWGRP_ASID_REG(i);
-+		val = smmu_read(smmu, offs);
-+		if (on) {
-+			if (WARN_ON(val & mask))
-+				goto err_hw_busy;
+> +extern struct gen_pool* gen_pool_byname(char *name);
 
 
-> If so, what kind of devices do you bind to the domains
-> then. I doesn't make sense to bind whole peripheral devices in this
-> case.
+const char *
 
-Here, the above "struct device" ~= a group of any peripheral
-devices. Those groups are configurable.
+> +/**
+>   * gen_pool_create - create a new special memory pool
 
+gen_pool_create_byname
 
-In my simple DMA API test(not posted), the above hwgrp/map is configured as below:
+> +struct gen_pool *gen_pool_create_byname(char *name, int min_alloc_order,=
+ int nid)
 
-   146  static int __init dmaapi_test_init(void)
-   147  {
-   148          int i;
-   149          struct dma_iommu_mapping *map;
-   150  
-   151          map = arm_iommu_create_mapping(IOVA_START, IOVA_SIZE, 0);
-   152          BUG_ON(!map);
-   153          pr_debug("Allocate IOVA: %08x-%08x\n", map->base, map->base + IOVA_SIZE);
-   154  
-   155          for (i = 0; i < ARRAY_SIZE(dmaapi_dummy_device); i++) {
-   156                  int err;
-   157                  struct platform_device *pdev = &dmaapi_dummy_device[i];
-   158  
-   159                  pdev->dev.platform_data = (void *)dummy_hwgrp_map[i];
-   160                  err = platform_device_register(pdev);
-   161                  BUG_ON(err);
-   162  
-   163                  err = arm_iommu_attach_device(&pdev->dev, map);
-   164                  BUG_ON(err);
-   165                  pr_debug("IOMMU API: Attached to %s\n", dev_name(&pdev->dev));
-   166          }
+const char *
 
-So peripheral devices can be divided into multiple groups, and each
-each group represents struct device with hwgrp/map info in
-platform_data.
+>  {
+>  	struct gen_pool *pool;
+> =20
+> +	if (gen_pool_byname(name))
+> +		return NULL;
+> +
+>  	pool =3D kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
+>  	if (pool !=3D NULL) {
+>  		spin_lock_init(&pool->lock);
+>  		INIT_LIST_HEAD(&pool->chunks);
+>  		pool->min_alloc_order =3D min_alloc_order;
+>  	}
+> +
+> +	list_add_tail(&pool->list, &pools);
+>  	return pool;
+>  }
+
+I don't see where you assign pool->name to anything ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sat__17_Dec_2011_12_05_26_+1100_I=pBjSSIqBaHsrJS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO6+rWAAoJEECxmPOUX5FEhOsP/2/QZrKseJK+wxENZMfJj2Rc
+jfebwFNdA9pcdL0MXRRLdxNexvgeXq29fK/yHLxTwGOQeOlB/DgQ/1aG4+78ZDdC
+p281+dZOpVh+XE/RzjB6+dM3IloNGBgNPH/vqVRAbGEKG7OyKQImSoN8LSRyxIpN
+W2reZCpPR4DUQgOWG2zq0LALx9yCydrYGzWFpRvLbo/uhpaZNCwoNramrqC50pLW
+gsAfPO0fE/vByobAQ/lFbyl+lZtg7IikHgW/hxNUhalZf4/IHF93GP+mdTGRymjE
+sShgx/RjtelmPYUk0br39bZ3eJ/YKOReCv7MKZ7B6u96ev/6R/65ube5gn1ZUkEW
+vtOSx1jVXnxIglwTpLNyQGqqcxyNavIFxiEGXaD0pXU4Lj/q8SiT93/5/423NmBO
+YP6hXnOj99fUK/SmC9OyhAezK5GQpPPZh1CcoyDh/xOCf/novquAnRCaYBjr/KpB
+XRm9NY+U2kLU0u/BZUUVavDBpr3po5i19AYFoaXy1t6iHrOfq68mDGEn9QQ5OwT7
+59FbfH60nbhm8EBf56OZ5GakHNEemBEoX/GURPhtGOGujyMa+S3sFf7aW8r0MIVn
+aaLtt+UX+3dYpgdPbMBTzsa/zaIa2Hm2p88SgAfaluSMUD00LAiKLpx6iiKymfnH
+cXYnLgg5U1owAdXJH5Xm
+=UtQk
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__17_Dec_2011_12_05_26_+1100_I=pBjSSIqBaHsrJS--
