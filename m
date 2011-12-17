@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1LQNGl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 08:06:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40284 "EHLO mga01.intel.com"
+	id S1752232Ab1LQNYx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 08:24:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21263 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab1LQNGg convert rfc822-to-8bit (ORCPT
+	id S1751794Ab1LQNYp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 08:06:36 -0500
+	Sat, 17 Dec 2011 08:24:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="97366534"
+   d="scan'208";a="97369179"
 From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
+To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Date: Sat, 17 Dec 2011 21:06:30 +0800
-Subject: [PATCH] intel-iommu: Add device info into list before doing context
- mapping
-Thread-Topic: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Index: Acy8u746aXLTiGjsR8aCXu7ZvAWHAA==
-Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
+Date: Sat, 17 Dec 2011 21:24:40 +0800
+Subject: [PATCH] PCI: Enable ATS at the device state restore 
+Thread-Topic: [PATCH] PCI: Enable ATS at the device state restore 
+Thread-Index: Acy8vYBdrOPLkdxfSSiIqKHdDEFTLQ==
+Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD4@shsmsx502.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,42 +33,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add device info into list before do context mapping. Because device info will be used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats would not be called without this patch, so ATS did not enable while a PCI device which has ATS capability is assigned to a guest.
+When system go to S3 or S4 sleep and then return, some register of PCI device does not be restored correctly, such as ATS capability. The same problem happen on pci reset function.
+
+This patch enables ATS at the device state restore if PCI device has ATS capability.
 
 Signed-off-by: Xudong Hao <xudong.hao@intel.com>
 Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
 ---
- drivers/iommu/intel-iommu.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c0c7820..f0b5d38 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2264,12 +2264,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- 	if (!info)
- 		return -ENOMEM;
+ drivers/pci/ats.c |   17 +++++++++++++++++
+ drivers/pci/pci.c |    1 +
+ drivers/pci/pci.h |    8 ++++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
  
--	ret = domain_context_mapping(domain, pdev, translation);
--	if (ret) {
--		free_devinfo_mem(info);
--		return ret;
--	}
--
- 	info->segment = pci_domain_nr(pdev->bus);
- 	info->bus = pdev->bus->number;
- 	info->devfn = pdev->devfn;
-@@ -2282,6 +2276,14 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- 	pdev->dev.archdata.iommu = info;
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
- 
-+	ret = domain_context_mapping(domain, pdev, translation);
-+	if (ret) {
-+		list_del(&info->link);
-+		list_del(&info->global);
-+		free_devinfo_mem(info);
-+		return ret;
-+	}
-+
- 	return 0;
+diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
+index 7ec56fb..a6c2b35 100644
+--- a/drivers/pci/ats.c
++++ b/drivers/pci/ats.c
+@@ -127,6 +127,23 @@ void pci_disable_ats(struct pci_dev *dev)
  }
+ EXPORT_SYMBOL_GPL(pci_disable_ats);
+ 
++void pci_restore_ats_state(struct pci_dev *dev)
++{
++	u16 ctrl;
++
++	if (!pci_ats_enabled(dev))
++		return;
++	if (!pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS))
++		BUG();
++
++	ctrl = PCI_ATS_CTRL_ENABLE;
++	if (!dev->is_virtfn)
++		ctrl |= PCI_ATS_CTRL_STU(dev->ats->stu - PCI_ATS_MIN_STU);
++
++	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl);
++}
++EXPORT_SYMBOL_GPL(pci_restore_ats_state);
++
+ /**
+  * pci_ats_queue_depth - query the ATS Invalidate Queue Depth
+  * @dev: the PCI device
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 6f45a73..6dafc1d 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -956,6 +956,7 @@ void pci_restore_state(struct pci_dev *dev)
+ 
+ 	/* PCI Express register must be restored first */
+ 	pci_restore_pcie_state(dev);
++	pci_restore_ats_state(dev);
+ 
+ 	/*
+ 	 * The Base Address register should be programmed before the command
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index b74084e..a4f3140 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -249,6 +249,14 @@ struct pci_sriov {
+ 	u8 __iomem *mstate;	/* VF Migration State Array */
+ };
+ 
++#ifdef CONFIG_PCI_ATS
++extern void pci_restore_ats_state(struct pci_dev *dev);
++#else
++static inline void pci_restore_ats_state(struct pci_dev *dev)
++{
++}
++#endif /* CONFIG_PCI_ATS */
++
+ #ifdef CONFIG_PCI_IOV
+ extern int pci_iov_init(struct pci_dev *dev);
+ extern void pci_iov_release(struct pci_dev *dev);
