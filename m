@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1LQVri (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 16:47:38 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19350 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1LQVrf (ORCPT
+	id S1752078Ab1LQV5A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 16:57:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38241 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1LQV46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 16:47:35 -0500
-Date: Sat, 17 Dec 2011 16:46:26 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ferenc Wagner <wferi@niif.hu>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        linux-x86_64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
-Message-ID: <20111217214626.GA17841@phenom.dumpdata.com>
-References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
- <20111010155319.GA29140@phenom.oracle.com>
- <4E934EC9.5030909@goop.org>
- <87vcppbvc4.fsf@tac.ki.iif.hu>
+	Sat, 17 Dec 2011 16:56:58 -0500
+Date: Sun, 18 Dec 2011 00:53:33 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Namhyung Kim <namhyung@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] loop: fput() called in loop_clr_fd() may cause bd_mutex
+ recursive locking
+Message-ID: <20111217215333.GA3313@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87vcppbvc4.fsf@tac.ki.iif.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4EED0DF0.0086,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 04:47:39PM +0100, Ferenc Wagner wrote:
-> Jeremy Fitzhardinge <jeremy@goop.org> writes:
-> 
-> >> On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
-> >>
-> >>> Run below test on xen pvm.
-> >>> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
-> >>> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
-> >>> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
-> >>>
-> >>> @ X:58562301
-> >>> @ Y:58574282
-> >>> @ IDLE: 199.600
-> >>>
-> >>> Normal idle percent should be around 100%.
-> >>> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
-> >>> but these ticks will be accounted again when idle ticks restarted.
-> >>>
-> >>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> >>> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> >
-> > Does this affect the accounting of stolen ticks?  If it does, that's not
-> > necessarily a showstopper for this patch, but we'll need to do some more
-> > thinking about it.  Certainly, accurate accounting for idleness is
-> > important.
-> 
-> Please see also http://thread.gmane.org/gmane.linux.kernel/734441, where
-> I found that the counter doubling isn't always present under 2.6.26.
-> However, after going to 2.6.32 (Debian lenny-backports kernel, 4th of
-> April on the graph below) that instability seems to disappear.  Please
-> note that the following graph shows halved idle and iowait percentages.
-> 
+Unmonting mounted with `-o loop' block device causes recursive
+bd_mutex locking. fput() calls blkdev_put() for bdev that issued 
+disk->fops->release() (loop_clr_fd()) call:
 
-What happenend in Feb?
+[23044.654647] umount/24442 is trying to acquire lock:
+[23044.654652]  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81144311>] blkdev_put+0x1f/0x131
+[23044.654670] 
+[23044.654672] but task is already holding lock:
+[23044.654677]  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff811441a1>] __blkdev_put+0x33/0x184
+[23044.654690] 
+[23044.654692] other info that might help us debug this:
+[23044.654697]  Possible unsafe locking scenario:
+[23044.654727] 
+[23044.654731] 1 lock held by umount/24442:
+[23044.654735]  #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff811441a1>] __blkdev_put+0x33/0x184
+[23044.654748] 
+[23044.654762] Call Trace:
+[23044.654773]  [<ffffffff81075611>] __lock_acquire+0x15bf/0x1659
+[23044.654784]  [<ffffffff8114b3e3>] ? inotify_free_group_priv+0x4f/0x4f
+[23044.654792]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
+[23044.654799]  [<ffffffff81075c6a>] lock_acquire+0x138/0x1b3
+[23044.654807]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
+[23044.654814]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
+[23044.654824]  [<ffffffff8147ce67>] mutex_lock_nested+0x5e/0x325
+[23044.654831]  [<ffffffff81144311>] ? blkdev_put+0x1f/0x131
+[23044.654838]  [<ffffffff81149963>] ? fsnotify+0x441/0x459
+[23044.654846]  [<ffffffff81144311>] blkdev_put+0x1f/0x131
+[23044.654853]  [<ffffffff81144443>] blkdev_close+0x20/0x22
+[23044.654863]  [<ffffffff81116b21>] fput+0x117/0x1cf
+[23044.654874]  [<ffffffffa016eb71>] loop_clr_fd+0x1f2/0x201 [loop]
+[23044.654882]  [<ffffffffa016f861>] lo_release+0x40/0x6f [loop]
+[23044.654890]  [<ffffffff81144244>] __blkdev_put+0xd6/0x184
+[23044.654898]  [<ffffffff8114441a>] blkdev_put+0x128/0x131
+[23044.654906]  [<ffffffff8111704e>] kill_block_super+0x60/0x65
+[23044.654914]  [<ffffffff81117366>] deactivate_locked_super+0x32/0x63
+[23044.654922]  [<ffffffff81117cc9>] deactivate_super+0x3a/0x3e
+[23044.654931]  [<ffffffff8112fc5d>] mntput_no_expire+0xbf/0xc4
+[23044.654939]  [<ffffffff811309c7>] sys_umount+0x2c5/0x2f3
+[23044.654949]  [<ffffffff81484b12>] system_call_fastpath+0x16/0x1b
 
-> 
-> (I haven't collected steal values, so the numbers don't sum up to 100%.)
-> I'd be grateful if this discrepancy could be cleared up eventually!
-> It's heartening to see some progress after more than three years. :)
-> 
-> Actually, as Munin doesn't half the idle and iowait values, but
-> truncates the (then overflowing) graph at 100%, I was rather surprised
-> to see iowait completely disappear after the kernel upgrade, and
-> concluded that it was somehow converted into buggy-looping in blkfront.
-> Now I see this isn't the case, but the steadily increasing system CPU
-> usage between reboots is still a mystery.  I'll start a separate thread
-> for that, just wanted to provide some motivation for this topic.
 
-Did you add more memory in the system?
-> --
-> Thanks,
-> Feri.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 1e888c9..b004779 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1028,6 +1028,15 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	 * lock dependency possibility warning as fput can take
+ 	 * bd_mutex which is usually taken before lo_ctl_mutex.
+ 	 */
++	/*
++	 * Need to put file f_op, otherwise fput() may cause
++	 * recursive locking on bd_mutex, calling blkdev_put()
++	 * for bdev that issued disk->fops->release() call.
++	 */
++	if (bdev && bdev == bdev->bd_contains) {
++		fops_put(filp->f_op);
++		filp->f_op = NULL;
++	}
+ 	fput(filp);
+ 	return 0;
+ }
+
 
