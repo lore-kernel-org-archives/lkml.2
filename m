@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab1LQRQf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 12:16:35 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43161 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab1LQRQd (ORCPT
+	id S1752537Ab1LQR3m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 12:29:42 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49759 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751936Ab1LQR3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 12:16:33 -0500
-Date: Sat, 17 Dec 2011 17:15:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
+	Sat, 17 Dec 2011 12:29:41 -0500
+Date: Sat, 17 Dec 2011 09:29:35 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Fix cross compilation broken by failing size
-	command
-Message-ID: <20111217171545.GP14542@n2100.arm.linux.org.uk>
-References: <20111214215815.GP32251@atomide.com> <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111217105737.GO14542@n2100.arm.linux.org.uk> <201112171401.30635.jkrzyszt@tis.icnet.pl> <alpine.LFD.2.02.1112171109210.2907@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1112171109210.2907@xanadu.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Subject: [git pull] PCI fixes
+Message-ID: <20111217092935.2c2e075e@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Jqot3q7I0bAoN0p2nzClItU"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 11:38:34AM -0500, Nicolas Pitre wrote:
-> Given that the build works for the vast majority of people now, there is 
-> a risk that applying your first patch might break the build for more 
-> people (currently only one known) than the number of people for whom 
-> this is an improvement (currently only one known).
-> 
-> I suggested a simple fix for Russell's installation already:
-> 
-> 	ln -s size arm-linux-size
+--Sig_/Jqot3q7I0bAoN0p2nzClItU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-One which I've refused to do until I've investigated _why_ I don't have
-this command.  And I've now done that (having waited the half-hour for
-the fsck of the old machine to complete.)  It appears that several of
-the binutils commands weren't transferred to the new machine from the
-old machine.
+The following changes since commit
+8e8da023f5af71662867729db5547dc54786093c:
 
-That's now fixed - and it suggests that there isn't a version of
-binutils which missed out on this command, so I think we can go with
-the original patch.
+  x86: Fix boot failures on older AMD CPU's (2011-12-04 11:57:09 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci for-linus
+
+Just a few regression fixes.  We have a fix for the extra msleep you
+pointed out last time as well, but I was saving it for -next since it
+took awhile for Kenji-san and Yinghai to settle on something, and it
+changes a core behavior.
+
+Ajaykumar Hotchandani (1):
+      PCI: Set device power state to PCI_D0 for device without native PM su=
+pport
+
+James Bottomley (1):
+      PCI: fix ats compile failure
+
+Rafael J. Wysocki (1):
+      PCI hotplug: Always allow acpiphp to handle non-PCIe bridges
+
+Ram Pai (1):
+      PCI: defer enablement of SRIOV BARS
+
+ drivers/pci/ats.c                  |    1 +
+ drivers/pci/hotplug/acpiphp_glue.c |   30 ++++++++++++------------------
+ drivers/pci/iov.c                  |    7 +++++++
+ drivers/pci/pci.c                  |    5 ++++-
+ 4 files changed, 24 insertions(+), 19 deletions(-)
+
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/Jqot3q7I0bAoN0p2nzClItU
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO7NF/AAoJEIEoDkX4Qk9hwTwP/RFGF084QRkSNWHh8MKOyyHk
+GvK/WsJqzk+XnBNHsBMMWUrnDchctWhoSnVAC3gnpeq+AReJRbTfjWKMSCwsyRkB
+Fs8xeahL/nxUBRPph99cU6d8e1dGHos9ap3a4xU1nH2FgDUNffuzKYRXk0uYCzGn
+WktLI9g6gWOSbT/dCp3WOAMh9fL9qCPpXsjzEOphWFx89CLxQHmZjtdrCMsOte9S
+sv+0uAdEvmG5mjXRscB5p4O9npvVNqXqQXeZO+5ekRQbfRWIy9M1V64x6KQOc1NZ
+r9uiXqJ4kEx7NhLWrV3VAD9DJh9oT4ebfEVGf8mZW2TuWDKmxWxzuDqFkJ9lu4+u
+b/2qomFENf6FvVAw9xIoWFzgTzMPkDa6nsra+C/ohnX/9nGcxA2BL7cfry9Zy1ba
+gxKpsi5AThdihOvL/yU4l+tiHsXG961F+ULyyWiG6LbtqQRa1UO9Se8Wv7xb7mL2
+TshuhvmhmzdcLezJq7E62Oo5qErb//zlacLTKiiLwmB0X6GX1B3l6vSpEesTLHY/
+O914vZTcIyu9ENxftOzFiWa4bocN/NOawlIHrQU9CbdRFnOQvDdKAftlK6qYJRpT
+uRz9xFmBfoXe9GsKmMttxizbMgN2Adt5Gvqz8+RLU136LgdCKF2MupBvMg+d9Mmr
+T3C7T3mE3E1zL/cf5reH
+=KAh2
+-----END PGP SIGNATURE-----
+
+--Sig_/Jqot3q7I0bAoN0p2nzClItU--
