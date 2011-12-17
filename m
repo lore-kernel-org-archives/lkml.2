@@ -1,55 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440Ab1LQA55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 19:57:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52364 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703Ab1LQA5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 19:57:49 -0500
-Message-ID: <4EEBE8FC.80309@zytor.com>
-Date: Fri, 16 Dec 2011 16:57:32 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1760568Ab1LQA6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 19:58:21 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:43450 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752708Ab1LQA6O convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Dec 2011 19:58:14 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
- above 4 GB from direct mapping.
-References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com> <4EA09EA2.3030203@zytor.com> <1319149574.13035.6.camel@jshin-Toonie> <4EE9266A.90200@zytor.com> <20111214231425.GA18068@jshin-Toonie> <20111216162004.GC18068@jshin-Toonie> <4EEB8320.4010809@oracle.com> <4EEB85F1.7050903@zytor.com> <CAE9FiQXTeJ2XZy-Pjwvdb4Fp5wb_XLq88tC-2M_3RbjSLk5d4A@mail.gmail.com> <4EEB8EAE.6010306@zytor.com> <CAE9FiQUNwK5=Nos7Ce_DS1aSXgf0WNUgE=5HXnt4E01JWYbWjQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQUNwK5=Nos7Ce_DS1aSXgf0WNUgE=5HXnt4E01JWYbWjQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4EE830D5.5070305@gmail.com>
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+ <1323834838-2206-6-git-send-email-mturquette@linaro.org> <4EE830D5.5070305@gmail.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Fri, 16 Dec 2011 16:57:52 -0800
+Message-ID: <CAJOA=zMcRzZ8LAzFzf_=1L2ZCrFHHjx_PTsxkb6US4HpWp8BOA@mail.gmail.com>
+Subject: Re: [PATCH v4 5/6] clk: basic gateable and fixed-rate clks
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, paul@pwsan.com,
+        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
+        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
+        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
+        grant.likely@secretlab.ca, sboyd@quicinc.com, shawn.guo@freescale.com,
+        skannan@quicinc.com, magnus.damm@gmail.com, arnd.bergmann@linaro.org,
+        eric.miao@linaro.org, richard.zhao@linaro.org, andrew@lunn.ch,
+        Jamie Iles <jamie@jamieiles.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 12:59 PM, Yinghai Lu wrote:
-> On Fri, Dec 16, 2011 at 10:32 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+On Tue, Dec 13, 2011 at 9:15 PM, Ryan Mallon <rmallon@gmail.com> wrote:
+> On 14/12/11 14:53, Mike Turquette wrote:
+>
+>> Many platforms support simple gateable clks and fixed-rate clks that
+>> should not be re-implemented by every platform.
 >>
->> Well, there are two options for memory hotplug: either we always leave
->> address space that can be used for memory hotplug mapped at all times, or we
->> need to track it anyway.  Either way we need to know where there regions
->> are.  Am I correct that right now we always map memory hotpluggable regions,
->> being below the top pfn?
-> 
-> in arch/x86/mm/init_64.c::arch_add_memory()
-> it will call init_memory_mapping to map new added memory.
-> and will update max_pfn_mapped, max-pfn, max_low_pfn.
-> 
+>> This patch introduces a gateable clk with a common programming model of
+>> gate control via a write of 1 bit to a register.  Both set-to-enable and
+>> clear-to-enable are supported.
+>>
+>> Also introduced is a fixed-rate clk which has no reprogrammable aspects.
+>>
+>> The purpose of both types of clks is documented in drivers/clk/basic.c.
+>>
+>> TODO: add support for a simple divider, simple mux and a dummy clk for
+>> stubbing out platform support.
+>>
+>> Based on original patch by Jeremy Kerr and contribution by Jamie Iles.
+>>
+>> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+>> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+>> Cc: Jamie Iles <jamie@jamieiles.com>
+>
+> <snip>
+>
+>> +int clk_register_gate(struct device *dev, const char *name, unsigned long flags,
+>> +             struct clk *fixed_parent, void __iomem *reg, u8 bit_idx,
+>> +             int set_to_enable)
+>> +{
+>> +     struct clk_hw_gate *gclk;
+>> +     struct clk *clk;
+>> +
+>> +     gclk = kmalloc(sizeof(struct clk_hw_gate), GFP_KERNEL);
+>> +
+>> +     if (!gclk) {
+>> +             pr_err("%s: could not allocate gated clk\n", __func__);
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     clk = &gclk->clk;
+>> +
+>> +     /* struct clk_hw_gate assignments */
+>> +     gclk->fixed_parent = fixed_parent;
+>> +     gclk->reg = reg;
+>> +     gclk->bit_idx = bit_idx;
+>> +
+>> +     /* struct clk assignments */
+>> +     clk->name = name;
+>> +     clk->flags = flags;
+>> +
+>> +     if (set_to_enable)
+>> +             clk->ops = &clk_hw_gate_set_enable_ops;
+>> +     else
+>> +             clk->ops = &clk_hw_gate_set_disable_ops;
+>
+>
+> You could avoid having two sets of operations if you stored the
+> set_to_enable value in struct clk_hw_gate. It might be useful to store
+> additional information in struct clk_hw_gate if you also want to extend
+> to supporting non-32bit registers (readb, etc), clocks with write only
+> registers, or support clocks which require more than one bit to be set
+> or cleared to enable them, etc. See the basic mmio gpio driver for a
+> similar case.
 
-OK, so that would seem to match the invariant that all the memory blocks
-which are RAM have mappings, and the ones that don't don't have them, or
-is that violated elsewhere?  Either way, the same notion applies -- we
-should either leverage an existing range map or have a new one, but
-there is nothing magic about holes above or below the 4 GiB boundary;
-the only "magic" is for 32 bits the HIGHMEM boundary and < 1 MiB
-(because of the fixed MTRRs).
+I haven't given the basic clks enough attention, mostly because I
+haven't started using them yet in my own platform's conversion to
+common struct clk :-/
 
-	-hpa
+I think the original reason for the extra operations is to avoid the
+conditional in the enable/disable path, but if we're going to end up
+adding other conditionals anyways (such as the register locking in the
+iMX platform implementation) then we should probably forget about that
+approach and just deal with the complexity in one set of common
+enable/disable functions.
 
+Thanks for the review,
+Mike
+
+>
+> ~Ryan
+>
