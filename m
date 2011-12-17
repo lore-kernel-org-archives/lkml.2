@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab1LQNrW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 08:47:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64390 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab1LQNrT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 08:47:19 -0500
-Message-ID: <4EEC9D54.502@gmail.com>
-Date: Sat, 17 Dec 2011 21:47:00 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752320Ab1LQOLg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 09:11:36 -0500
+Received: from nic.fns.uniba.sk ([158.195.45.10]:35221 "EHLO nic.fns.uniba.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239Ab1LQOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Dec 2011 09:11:35 -0500
+X-Greylist: delayed 10618 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Dec 2011 09:11:35 EST
+Message-ID: <789ce2759c9eee27295cd9fc6e7fd0aa.squirrel@nic.fns.uniba.sk>
+Date: Sat, 17 Dec 2011 11:57:02 +0100
+Subject: upgrade your account.  
+From: "WEBMASTER" <korec@fns.uniba.sk>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mempolicy.c: use enum value MPOL_REBIND_ONCE instead
- of 0 in mpol_rebind_policy
-References: <4EE8A461.2080406@gmail.com> <alpine.DEB.2.00.1112141840550.27595@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1112141840550.27595@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011年12月15日 10:42, David Rientjes wrote:
-> On Wed, 14 Dec 2011, Wang Sheng-Hui wrote:
-> 
->> We have enum definition in mempolicy.h: MPOL_REBIND_ONCE.
->> It should replace the magic number 0 for step comparison in
->> function mpol_rebind_policy.
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> Tip: when proposing patches, it's helpful to run scripts/get_maintainer.pl 
-> on your patch file from git to determine who should be cc'd on the email.
+You have exceeded the storage limit on your mailbox.
+You will not be able to send or receive new mail until you upgrade your
+email quota.
 
-Thanks for your tip.
-I have tried the script with option -f, and only get the mm, kernel mailing
-lists, no specific maintainer provided. So here I just posted the patch to 
-these 2 lists.
+Copy any of the below link and fill the form to upgrade your account.
+
+http://www.pimall.com/form/use/chi/form1.html
+
+
+System Administrator
+192.168.0.1
+
+
+
