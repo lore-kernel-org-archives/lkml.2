@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1LQE1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Dec 2011 23:27:41 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:42862 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1LQE1f (ORCPT
+	id S1752942Ab1LQE26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Dec 2011 23:28:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37587 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750901Ab1LQE2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Dec 2011 23:27:35 -0500
-Date: Sat, 17 Dec 2011 15:27:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20111217152729.38099acb10e3514b389a5d0d@canb.auug.org.au>
-In-Reply-To: <20111217152253.1aedda0936cd5d1d98be5e76@canb.auug.org.au>
-References: <20111217152253.1aedda0936cd5d1d98be5e76@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Fri, 16 Dec 2011 23:28:53 -0500
+Message-ID: <1324096119.2825.310.camel@deadeye>
+Subject: [PATCH linux-firmware 0/4] Complete source for GPL'd firmware
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Date: Sat, 17 Dec 2011 04:28:39 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-wleZHEGLMukLPGlQOtvU"
+X-Mailer: Evolution 3.2.1-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__17_Dec_2011_15_27_29_+1100_Be/LydVoavsvbLNu"
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__17_Dec_2011_15_27_29_+1100_Be/LydVoavsvbLNu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-wleZHEGLMukLPGlQOtvU
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Some of the source code for firmware licenced under the GPL is not
+included in the linux-firmware repository or has incomplete or
+inaccurate build instructions.  This series adds the missing pieces.
+With the appropriate tools installed, these makefiles produce identical
+binaries to those already in the repository.
 
-On Sat, 17 Dec 2011 15:22:53 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (sh
-> edosk7705_defconfig and lots of other sh configs) failed like this:
->=20
-> mm/pgtable-generic.c: In function 'pmdp_clear_flush_young':
-> mm/pgtable-generic.c:76: error: call to '__build_bug_failed' declared wit=
-h attribute error: BUILD_BUG failed
->=20
-> This is the
->=20
-> 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
->=20
-> in pmdp_clear_flush_young().
->=20
-> Exposed by commit 835cea45a4a0 ("hugetlb: replace BUG() with BUILD_BUG()
-> for dummy definitions") from the akpm tree but I don't know the root
-> cause.
->=20
-> This may have a fix somewhere (if it is sh specific) but the current sh
-> tree in linux-next
-> (git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git) does
-> not exist.
+Ben.
 
-We are getting the same for all the cris config builds.
+Ben Hutchings (4):
+  dsp56k: Add makefile for building from source
+  dvb-ttpci: Add source code and makefile
+  keyspan_pda: Fix parse error with as31 version 2.3.1
+  keyspan_pda: Add makefile for building from source
+
+ WHENCE                     |   10 +++-
+ av7110/Boot.S              |  109 ++++++++++++++++++++++++++++++++++++++++=
+++++
+ av7110/Makefile            |   11 ++++
+ dsp56k/Makefile            |    6 ++
+ dsp56k/concat-bootstrap.pl |   33 +++++++++++++
+ keyspan_pda/Makefile       |   12 +++++
+ keyspan_pda/keyspan_pda.S  |    7 ++-
+ 7 files changed, 185 insertions(+), 3 deletions(-)
+ create mode 100644 av7110/Boot.S
+ create mode 100644 av7110/Makefile
+ create mode 100644 dsp56k/Makefile
+ create mode 100644 dsp56k/concat-bootstrap.pl
+ create mode 100644 keyspan_pda/Makefile
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+1.7.7.3
 
---Signature=_Sat__17_Dec_2011_15_27_29_+1100_Be/LydVoavsvbLNu
-Content-Type: application/pgp-signature
+
+
+--=-wleZHEGLMukLPGlQOtvU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJO7BoxAAoJEECxmPOUX5FEG9YP/RasaKyJxZsNC+XztVswT0uW
-h9UuGOzEcRnySoo1/9JegBqgJHXB0JecpJVmVdhIVaLRtvM+eCbzwFpiQz+8xN8d
-vBv5xZnh6zi1k3d03w6+rHUE1Aks4aUtKu6pU6eFB4tG/ciq4suXl3TWtPLkpoFM
-uhJmOtmZ3naM+MHLGw+1giFdcpleZMrh6cxu/d8dSEpGHhdVH4rhtSnMkJPv0Ez0
-62tpR09VsF+qsVahj/pOOz7ax7GxdhRbGNhr/JOAv3P/tgHuYrM2UY8oiUXL4+aX
-VlvvP0OK1D+lvGb/8bxCKcVGU08cR0IOrTjsTmBVFiOnMdQNRA6l9KTEcJfV7+yy
-okt9VzFiZalMpPh7MPDeJ0wW+UrKdAtuLVi/98HgbBDvRs30tiotNOlDYiT3Iuft
-5NBkp07EcnXgmFhR47AjySQcOFu6YtEO/JYwEUTxS20KXNQVRf0Jw7Z4WHloujvZ
-VmejUbnyBmYrIfKPLKOQnWzejZqmln9zj6OgKLTmLTacoIEMzXeycFaNHBNBz/Oh
-Ej7Yt3yP3AEP6n9FuE8msU7Sjw5BjR1lv7lsRxXYlLuDypRXBaxb2MW5jOeiI7wv
-rGbS0QStgWUfay+vCgSA/cALeRFO3hsC7KS9KcUIeKcpwrQHLD9ctT49611wmw8p
-ECWHK5yGYlHmGiAF5C/i
-=6ri5
+iQIVAwUATuwad+e/yOyVhhEJAQqg3xAAsoeJvkDCY+SmF/wUGpzRSITJhSQ8vHjY
+EvUXf3J2p4zT2UrazRx+O5J+MMiulrjmqCkASTLWtS+wg2L8zMdc7fYtXOgozszG
+NJVWeMqMQ4ps5T2Dom0wna+XFyEbjWZ25qwRqnuh0TAHFZb7YmVEAwoeu5Gz2Fgs
+jo4KodeZlzTKrB+zPgyKVvLTfw3yeQ11G9cuwfExdpJtn95MHwn9dCCsQd4dTUKH
+6nMxBXcYKTnuZrwmSFAuEFCLLfTBR3TnIaVZUU+MCwzEdk+cmPNlhIwm+XIkTM4T
++/pEroP5LG84ETOWkD+7Z0/EvCqnm6rCIVMB3zG1ibijUwWTNlv5AxE6HGNXA7fS
+R1NjyYbJdKXp/opz5ubOMM78pLyx0hzxeqbnYobZq3sWwtHwv5Pm+CUK6x6cWnHs
+RAmHFiYWFehrVNLRCHvRjg1l0a0Vt5uwWmGvq/n8i20sblLIbb2I8CBrGkpMwYXL
+C1mSXUqCf517WLmnXLJLK0v1DoRM6w3cx4yKe9bFZs0u6UlTg655F/4rsF5xEOYd
+2UlyFMBHC0emvW3CAJzohsUc9nQnI66YaIhcJOUufh5NmYcVWovGhzVKIrTp5L71
+ckeKjxJWOX9D5ML1uBALeL1CbGQDpLS6SI/YtmCs390tJW6q3y/y+3CZcyViFSKb
+/WoIJhp9glc=
+=qIPq
 -----END PGP SIGNATURE-----
 
---Signature=_Sat__17_Dec_2011_15_27_29_+1100_Be/LydVoavsvbLNu--
+--=-wleZHEGLMukLPGlQOtvU--
