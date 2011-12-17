@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1LQQil (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 11:38:41 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53275 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297Ab1LQQii (ORCPT
+	id S1752448Ab1LQQjP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 11:39:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44372 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab1LQQjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 11:38:38 -0500
-Date: Sat, 17 Dec 2011 11:38:34 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Fix cross compilation broken by failing size
- command
-In-Reply-To: <201112171401.30635.jkrzyszt@tis.icnet.pl>
-Message-ID: <alpine.LFD.2.02.1112171109210.2907@xanadu.home>
-References: <20111214215815.GP32251@atomide.com> <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111217105737.GO14542@n2100.arm.linux.org.uk> <201112171401.30635.jkrzyszt@tis.icnet.pl>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 17 Dec 2011 11:39:13 -0500
+Message-ID: <1324140039.4240.79.camel@sauron.fi.intel.com>
+Subject: RE: [PATCH v2] Integrated Flash Controller support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Li Yang-R58472 <r58472@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Liu Shuo-B35362 <B35362@freescale.com>,
+        "linux-kernel@vger.kernel.org Kernel" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>
+Date: Sat, 17 Dec 2011 18:40:39 +0200
+In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F056964B0@039-SN2MPN1-023.039d.mgd.msft.net>
+References: <1320053901-23801-1-git-send-email-b35362@freescale.com>
+	 <CCF7C6DB-437C-4140-894F-2F497AD610DC@kernel.crashing.org>
+	 <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org>
+	 <1322602860.2150.10.camel@koala> <4ED5531C.6030104@freescale.com>
+	 <EFF451D9-552A-4820-90D3-BF3156D5B25F@kernel.crashing.org>
+	 <1322643080.24797.413.camel@sauron.fi.intel.com>
+	 <94F013E7935FF44C83EBE7784D62AD3F056964B0@039-SN2MPN1-023.039d.mgd.msft.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-TKiVDr+89xRzipLIeYF+"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Dec 2011, Janusz Krzysztofik wrote:
 
-> On Saturday 17 of December 2011 at 11:57:37, Russell King - ARM Linux wrote:
-> > On Fri, Dec 16, 2011 at 11:42:26AM +0100, Janusz Krzysztofik wrote:
-> > > Unfortunately, I've already pushed that old version to the patch system
-> > > at http://www.arm.linux.org.uk/developer/patches/, which I know is not
-> > > a review system. Apparently, I was not patient enough, not waiting more
-> > > than a week with that regression fix for a single reply to my initial
-> > 
-> > I'll disagree with you there: this is not a regression fix.  A regression
-> > fix implies that it was something that worked before, a change happened
-> > to the kernel, and now it's broken.
-> > 
-> > That is not the case: a change happened to binutils
-> 
-> Not to mine, I'm still using the same version as before.
-> 
-> > which meant 'size'
-> > no longer parses foreign ELF formats. 
-> 
-> But 'size' was not there before v3.2-rc1! The problem has arised because 
-> arch/arm/boot/compress/Makefile, which belongs to the kernel sources, 
-> not to binutils you're trying to blame, was changed. The 'size' call was 
-> introduced into that Makefile, i.e. the file that belongs to the kernel 
-> sources, whithout taking care of what can happen if that command fails. 
-> And I was just lucky enough to find out it may fail in certains build 
-> environments, like mine.
+--=-TKiVDr+89xRzipLIeYF+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-OK let's stop arguing in circles please.
+On Wed, 2011-12-14 at 11:13 +0000, Li Yang-R58472 wrote:
+> >-----Original Message-----
+> >From: Artem Bityutskiy [mailto:dedekind1@gmail.com]
+> >Sent: Wednesday, November 30, 2011 4:51 PM
+> >To: Kumar Gala
+> >Cc: Wood Scott-B07421; Li Yang-R58472; Liu Shuo-B35362; linux-
+> >kernel@vger.kernel.org Kernel; linux-mtd@lists.infradead.org; Andrew
+> >Morton; David Woodhouse; linuxppc-dev@lists.ozlabs.org list
+> >Subject: Re: [PATCH v2] Integrated Flash Controller support
+> >
+> >On Tue, 2011-11-29 at 19:47 -0600, Kumar Gala wrote:
+> >> As Scott said, I was more asking about the 2nd patch in the
+> sequence
+> >> which did touch MTD.  Since that one is dependent on this patch,
+> >> wondering how we wanted to handle them.
+> >
+> >I do not have time to review it, but it looks OK, so I'd suggest to
+> >merge it vie the same tree as the rest of the patches.
+>=20
+> Hi Artem,
+>=20
+> So what is your suggestion on this patch?  Can we regard your previous
+> email as an ACK and merge it through the powerpc tree?  Or do you
+> prefer to merge them through the MTD tree with Kumar's ACK instead?
 
-I introduced the call to 'size' so by definition I'm the one who broke 
-the build for you.
+I am fine if it is merged via PPC tree. I do not have bandwith to look
+at it closely, so I cannot ack it, although I also do not have reasons
+to nack it :-)
 
-However I don't have any problem using the native 'size' command with a 
-foreign architecture binary.  My binutils version is 2.21.51.0.6 on 
-X86-64.  And clearly I'm not alone in that situation otherwise we would 
-have been overwhelmed by complaints from a much bigger crowd by now.  So 
-your installation must be "special".
+--=20
+Best Regards,
+Artem Bityutskiy
 
-OTOH all cross-compiler installations I've seen had $(CROSS_COMPILE)size 
-available.  It is therefore well possible that Russell's cross compiler 
-installation is also "special".
+--=-TKiVDr+89xRzipLIeYF+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Given that the build works for the vast majority of people now, there is 
-a risk that applying your first patch might break the build for more 
-people (currently only one known) than the number of people for whom 
-this is an improvement (currently only one known).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I suggested a simple fix for Russell's installation already:
+iQIcBAABAgAGBQJO7MYHAAoJECmIfjd9wqK0TVsP/159t9dLDdXVM5hX8sUQhHCS
+JN/1GvYyMC0gAvbR/4nPrHViJUv4bFpjlxWH99ktXlyLiPhriMhmkLLW0QFcASzM
+O+ZpHTgc8Z9cBa4w5Z9CmRLgZMqIO+6bOWQDCffPSqB7yLoD6Oj7ydRq53yOdKks
+098m++7kWsaBPVIrQ90ilFl6hRRkr64CJ8WARTy4IftUWfOX9Q+OaWUHv5UJpLGl
+BBioc/CuYgly3uN5gF0/dODrlbEBN6HJ7iLioOssdxBfqCNY6LDF8iPmaxDrqarw
+I22IQVFKjogB77YOGrqRfOGmqVJUTXjqhsudo8B+2fN2wSdFsFTcwmqpODTzpJu5
+p7VWKje0SnhASmqZOgkYsnUntOCz8KaeEPWrWv1MTaU4ltJr3Ts6magZ653V2tHV
+9Mej5HH2FSAQVVgQSjCr/HssJjYkY1m2UDbDihDjvCijeBqA08eCpHml4ctWaxrV
+gspck0KN39rLVeusPLQtdYp6QnFSgMRuaaVjkvEnGdooctX80aSReBe14rsX4Mzp
+EqEQBP6Y5LbOQJNjkwprLRfVi9ofoVNDkb0VDjC5khqteAzyYcKOCbsuRLfO5CO4
+ekoIWG9q7o6UMw0DxvDiL3zTXS/fFGvGfOJTQyutzaHl5zsZF9oMyIfMHcrCfiuv
+ePiUYJHy5ovIrRf9g+/9
+=FXqb
+-----END PGP SIGNATURE-----
 
-	ln -s size arm-linux-size
+--=-TKiVDr+89xRzipLIeYF+--
 
-I don't know what is special about yours though, and maybe it is worth 
-investigating given that, as I said, you appear to be alone so far 
-having problems with the current Makefile which is rather intriguing.  
-If it is clear with references to facts (binutils release notes, etc.) 
-that the problem is something that will persist in the future then we 
-have a more solid basis for choosing either of your solutions.  
-Otherwise we can't call it a "regression" just yet.
-
-
-Nicolas
