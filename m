@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1LQWCC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 17:02:02 -0500
-Received: from smtp.cmdik.pan.pl ([212.87.26.100]:54662 "EHLO
-	medres.cmdik.pan.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750896Ab1LQWCA (ORCPT
+	id S1752243Ab1LQWKk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 17:10:40 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42348 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1LQWKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 17:02:00 -0500
-X-Greylist: delayed 7134 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Dec 2011 17:02:00 EST
-Date: Sat, 17 Dec 2011 21:02:24 +0200
-From: "optusnet.com.au" <customer-careaccountant@ml.lt>
-Reply-to: "optusnet.com.au" <customer-careaccountant@ml.lt>
-Subject: Updating
-X-Priority: 3
-X-Mailer: UebiMiau 2.7.2
-X-Original-IP: 202.77.119.114
-Content-Transfer-Encoding: 8bit
-X-MSMail-Priority: Medium
-Importance: Medium
-Content-Type: text/plain; charset="iso-8859-2";
+	Sat, 17 Dec 2011 17:10:38 -0500
+Date: Sat, 17 Dec 2011 22:10:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
+Message-ID: <20111217221028.GZ2203@ZenIV.linux.org.uk>
+References: <20111216112534.GA13147@dztty>
+ <20111216125556.db2bf308.akpm@linux-foundation.org>
+ <20111217214137.GY2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Message-Id: <20111217200224.7EF6B250588@medres.cmdik.pan.pl>
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111217214137.GY2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear optusnet.com.au User
+On Sat, Dec 17, 2011 at 09:41:37PM +0000, Al Viro wrote:
 
-HTK4S a virus was detected in optusnet.com.au Webmail server, and
-optusnet.com.au all webmail accounts must be updated immediately to prevent
-damage to the webmail optusnet.com.au.
+> xfs and ext4_ioctl() need to be fixed; XFS fix follows, ext4 I'd rather left
+> to ext4 folks - I don't know how wide an area needs i_mutex there
 
-You are asked to provide the identity account listed below to allow us to
-check and maintain your account with the new version HTK4S
-anti-virus/anti-Spam 2011. failure to provide valid information, your
-account will be temporarily suspended from our services.
+Oh, for fsck sake...  People, this is *obviously* broken - if nothing else,
+removing suid after modifying the file contents is too late.  Moreover,
+this mext_inode_double_lock() thing is asking for trouble; it's deadlock-free
+only because nothing else takes i_mutex on more than one non-directory inode
+and does that as the innermost lock.  Start calling it for directories
+(or have somebody cut'n'paste it and use it for directories) and you've got
+a nice, shiny deadlock...  BTW, is ordering really needed in
+double_down_write_data_sem()?  IOW, can we get contention between several
+callers of that thing?
 
-Name :..................
-User Name ...............
-Password :............
-Date of Birth :...........
+>From my reading of that code, all call chains leading to this sucker
+are guaranteed to already hold i_mutex on both inodes.  If that is true,
+we don't need any ordering in double_down_write_data_sem() at all...
 
-Webmail Copyright © optusnet.com.au 2011 All rights reserved
-
-________________________________________________
-Message sent using http://mail.cmdik.pan.pl
-
+AFAICS, the minimal fix is to move file_remove_suid() call into
+ext4_move_extents(), just after we have acquired i_mutex in there.
+Moreover, I think it should be done to *both* files, since both have
+contents modified.  And I see no point in making that conditional...
