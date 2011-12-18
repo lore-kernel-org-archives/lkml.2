@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab1LRRGv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 12:06:51 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57902 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751781Ab1LRRGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 12:06:50 -0500
-Message-ID: <1324228007.14500.4.camel@joe2Laptop>
-Subject: Re: [PATCH] m68k/irq: don't use pr_crit in an header
-From: Joe Perches <joe@perches.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, debian-kernel@lists.debian.org,
-        linux-m68k@vger.kernel.org, Thorsten Glaser <tg@debian.org>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 18 Dec 2011 09:06:47 -0800
-In-Reply-To: <20111218104248.GS24496@pengutronix.de>
-References: <Pine.BSM.4.64L.1112161437090.856@herc.mirbsd.org>
-	 <1324152592-1718-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <CAMuHMdXyf_ofM+y6yKrzftyKTOyrSKzW7fUVAJyY6XTV_FVhNA@mail.gmail.com>
-	 <20111218104248.GS24496@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751955Ab1LRRQs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 12:16:48 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43115 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1LRRQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 12:16:46 -0500
+MIME-Version: 1.0
+Date: Sun, 18 Dec 2011 19:16:44 +0200
+Message-ID: <CAKt3ReLqE-s4bCLh_afpyPAPBiWYnzOgSYOD4=wRAYhzV4ZCGA@mail.gmail.com>
+Subject: Kernel migration thread cpu usage is crazy in 3.1.5
+From: "Darius D." <darius.ski@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-18 at 11:42 +0100, Uwe Kleine-König wrote:
-> On Sun, Dec 18, 2011 at 11:32:21AM +0100, Geert Uytterhoeven wrote:
-> > 2011/12/17 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> > > Using pr_crit in an header results in funny messages. Consider
-> > >        #define pr_fmt(fmt) "mydriver: " fmt
-> > >        #include <linux/hardirq.h>
-> > > which makes the message from ack_bad_irq
-> > >        mydriver: unexpected IRQ trap...
-> > > so better use plain printk with KERN_CRIT directly.
+Hi,
 
-Why or when is that inappropriate?
 
-> I only wondered if it is also desirable to
-> have messages in headers modified depending on the module the header is
-> included in.
-[]
-> > Nack. Nowadays pr_crit(...) is recommended over "printk(KERN_CRIT ...)".
-> I know that, I just wonder if the proponents of this recommendation are
-> aware of the issue when using pr_* in headers. Joe?
+there has already been a report about migration thread CPU usage
+craziness in 3.2 ( https://lkml.org/lkml/2011/11/17/375 ), but it is
+in 3.1.5 as well.
 
-I believe it to be a feature rather than a defect.
+problem manifests itself like this: after some time top/ps starts
+reporting huge time for migration/X threads, adding them 1 at time
+with larger and larger values (sometimes already existing entry is
+"incremented" ), so after a while it looks like this:
 
-For instance:  commit 256ee435b9a9ee9cca69602fe8046b27ca99fbee
+   47 root      RT   0     0    0    0 S    0  0.0   1100:35 [migration/14]
+   14 root      RT   0     0    0    0 S    0  0.0   1081:39 [migration/3]
+   50 root      RT   0     0    0    0 S    0  0.0 978:44.59 [migration/15]
+   53 root      RT   0     0    0    0 S    0  0.0 840:53.83 [migration/16]
+   74 root      RT   0     0    0    0 S    0  0.0 779:58.12 [migration/23]
+   44 root      RT   0     0    0    0 S    0  0.0 773:43.01 [migration/13]
+   41 root      RT   0     0    0    0 S    0  0.0 539:50.44 [migration/12]
+   59 root      RT   0     0    0    0 S    0  0.0 380:05.40 [migration/18]
+   56 root      RT   0     0    0    0 S    0  0.0 293:07.90 [migration/17]
+   68 root      RT   0     0    0    0 S    0  0.0 150:10.87 [migration/21]
+   26 root      RT   0     0    0    0 S    0  0.0 145:13.37 [migration/7]
+   11 root      RT   0     0    0    0 S    0  0.0 130:11.83 [migration/2]
 
-    netdevice: Convert printk to pr_info in netif_tx_stop_queue
-    
-    This allows any caller to be prefaced by any specific
-    pr_fmt to better identify which device driver is using
-    this function inappropriately. 
+sar and other tools are not showing any increased cpu activity ( no
+misreporting, as box is under very low load and power usage would
+shoot sky high if there was some well hidden cpu usage )
 
-cheers, Joe
 
+System is dual Xeon X5650 NUMA box. Last kernel it was running with
+same kernel config was 2.6.39.2.
+The only outside visible "change" i have noticed is this:
+In munin graphs during low activity periods there were ~1k Local timer
+interrupts, after booting 3.1.5 graphs are completely different, now
+there are just ~500 Local timer interrupts, but Rescheduling
+interrupts are ~400 ( used to be none on low load ). Is this related
+to crazy cpu usage problem ?
+
+
+Darius.
