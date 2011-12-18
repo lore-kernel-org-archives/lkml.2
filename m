@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab1LRItX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 03:49:23 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37816 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1LRItV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 03:49:21 -0500
-Date: Sun, 18 Dec 2011 09:47:32 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Berck E. Nash" <flyboy@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x2apic boot failure on recent sandy bridge system
-Message-ID: <20111218084732.GH4144@elte.hu>
-References: <CAE9FiQXk7y_oafNZG-QF5h3kDUQ3J6SP3A=ezHBT2W4Njo=uxQ@mail.gmail.com>
- <4EE5291C.1030302@gmail.com>
- <CAE9FiQXf2GzR2Uuw23CK7YVN4djtCd+aOFTRrf=96u9NTXRn=A@mail.gmail.com>
- <4EE68C80.7000408@gmail.com>
- <1323735902.1984.165.camel@sbsiddha-desk.sc.intel.com>
- <CAE9FiQW5GNTqgpFtV1JuOY51H4sUBCwLwJhJqxVtwksCFsdvHQ@mail.gmail.com>
- <1323740475.1984.171.camel@sbsiddha-desk.sc.intel.com>
- <CAE9FiQWxYgCd2AVzXWfuqFA6NkgzgD0+XuAkUfEG1GN2EFBpTg@mail.gmail.com>
- <CAE9FiQVhLKhRT=XivpG6KHYhpA+HN695CZ3cQ82-teaRPEBxNg@mail.gmail.com>
- <4EEB4EA5.2040607@gmail.com>
+	id S1751750Ab1LRIyy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 03:54:54 -0500
+Received: from mail01.manz-automation.com ([88.79.234.227]:35893 "EHLO
+	mail01.manz-automation.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751241Ab1LRIyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 03:54:52 -0500
+Message-ID: <1324198486.4924.3.camel@raz>
+Subject: Re: Subject:[PATCH 1:1] boot paramer "root=" gets a list of devices
+From: Raz Ben Yehuda <rbenyehuda@manz.com>
+Reply-To: <rbenyehuda@manz.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "wad@chromium.org" <wad@chromium.org>,
+        Rasty Slutsker <RSlutsker@manz.com>, Lior Brafman <LBrafman@manz.com>,
+        <linux-kernel@vger.kernel.org>
+Date: Sun, 18 Dec 2011 10:54:46 +0200
+In-Reply-To: <CAPXgP12QS3jGi3pcEhSAoGcWdtjmujL-HP69Cgy9_+kRLFq1sQ@mail.gmail.com>
+References: <1323940396.16032.2.camel@raz> <4EEA0C05.4030907@zytor.com>
+	 <1323962398.11872.3.camel@raz> <4EEA10BC.3000906@zytor.com>
+	 <CAPXgP12QS3jGi3pcEhSAoGcWdtjmujL-HP69Cgy9_+kRLFq1sQ@mail.gmail.com>
+Organization: Manz
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEB4EA5.2040607@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Berck E. Nash <flyboy@gmail.com> wrote:
-
-> On 12/12/2011 10:13 PM, Yinghai Lu wrote:
-> > please check -v7.
+On Thu, 2011-12-15 at 19:11 +0100, Kay Sievers wrote:
+> On Thu, Dec 15, 2011 at 16:22, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 12/15/2011 07:19 AM, Raz Ben Yehuda wrote:
+> >>>
+> >>> To which point I have to ask, once again, at which point we stop putting
+> >>> this stuff in the kernel to "bypass the need for initramfs"...
+> >>
+> >> because there are times where we cannot use initramfs. is this a problem
+> >> with way i phrase or with with the whole idea ?
 > 
-> Works just fine for me.
+> I don't see why stuff needs to search a hard-coded list of stuff. That
+> logic seems pretty much backwards to me. You either use the GPT stuff
+> that allows to flag the right partition to boot from a set of
+> partitions, or you go as far as make the kernel parse the filesystem
+> UUID of partitions. But hard-coding search lists on the commandline, I
+> really don't understand.
+Will GPT or fs UUID parsing solve the problem of having the kernel
+think that hda has the root filesystem while hdc has it ?
+> > There are problems with the whole concept of "cannot use initramfs".  We
+> > allow the initramfs to be integrated with the kernel image for a reason, for
+> > example.
+> >
+> > I'm obviously ranting on this in part to make people think about what they
+> > are doing, and partly to remind that the more complex the in-kernel
+> > root-mounting code get, the more it might be worth reconsidering klibc in
+> > the kernel build tree.
+> 
+> I think the whole picture of klibc is confusing and I very much don't
+> want to see that busybox-style hacking in the kernel sources.
+> 
+> Distros can not afford to support 2 libcs at bootup, and the distro
+> initramfss gets so complicated today, that a klibc-only solution does
+> not really work. So we end up with 2 libcs in the same initramfs
+> image, which makes zero sense. Leave alone the fact, that the klibc
+> tools duplicate all the stuff that already works in the real root in a
+> completely different and mostly insufficient and sometimes scary way.
+> 
+> The thing is, if the setup is that simple that klibc works, it is very
+> likely that the current in-kernel mount code is simple, well tested
+> and sufficient enough. If a distro-style intramfs is needed, klibc is
+> not usable (see above). The big distros will very unlikely ever pick
+> it up. The the remaining use-cases will stay a niche, that, I think,
+> does not justify the kernel inclusion of klibc.
+> 
+> If the whole klibc approach, if not entirely rethought, I doubt it
+> will ever go anywhere. In my opinion, with all what I've seen the last
+> years, we either work on a full libc in the kernel tree, that can be
+> used by normal userspace too, or we leave the tiny stuff to busybox
+> and one of the existing tiny libcs.
+> 
+> Kay
 
-That's interesting.
 
-Now if this could be made completely automatic (no extra 
-parameter passing), then we have a usable fallback mode - which 
-is preferred to crashing the box.
-
-Thanks,
-
-	Ingo
