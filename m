@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab1LRSWf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 13:22:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30348 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab1LRSWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 13:22:31 -0500
-Date: Sun, 18 Dec 2011 19:17:02 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Roland McGrath <roland@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/2] ptrace: add ability to attach a file descriptor to
-	another task
-Message-ID: <20111218181702.GA22240@redhat.com>
-References: <1324032383-791758-1-git-send-email-avagin@openvz.org> <1324032383-791758-3-git-send-email-avagin@openvz.org>
+	id S1752023Ab1LRS1k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 13:27:40 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57293 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1LRS1h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 13:27:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324032383-791758-3-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAMVnO+mCHQtyO3xUQJqoPSbBnDB0Avr0EEVKpEF31GpyQS-snw@mail.gmail.com>
+References: <1324232035-2717-1-git-send-email-frdrc66@gmail.com>
+	<CAMVnO+mCHQtyO3xUQJqoPSbBnDB0Avr0EEVKpEF31GpyQS-snw@mail.gmail.com>
+Date: Sun, 18 Dec 2011 19:27:37 +0100
+Message-ID: <CAMVnO+=bwk5B-Ez-zot3xc9rdRoA79rRT8-4AW3vkjRd3S=A+w@mail.gmail.com>
+Subject: Re: [PATCH] at25: DeviceTree support added
+From: Frederic LAMBERT <frdrc66@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Andrew Vagin wrote:
+Patch cleaned and without line wrapped this time (Sorry for the extra
+"Signed-off-by").
+This driver is really useful for lots of devices, not only EEPROMs
+(I'm using it with a nvSRAM from Cypres...), and the DTS support was
+really missing.
+
+Hoping it can be useful to other people,
+
+Best regards,
+Frederic
+
+2011/12/18 Frederic LAMBERT <frdrc66@gmail.com>
 >
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-
-Nice changelog ;)
-
-I agree with Tejun, this doesn't look like the good idea to me...
-
-
-
-As for the patch itself,
-
-> @@ -826,6 +827,32 @@ int ptrace_request(struct task_struct *child, long request,
->  		break;
->  	}
->  #endif
-> +	case PTRACE_DUPFD:
-> +	{
-> +		struct file *file = fget_raw(data);
-> +		ret = -EBADF;
-> +
-> +		if (!file)
-> +			break;
-> +
-> +		task_lock(child);
-> +		if (!child->files)
-> +			goto out_getfd;
-> +
-> +		ret = alloc_task_fd(child, 0, 0);
-
-alloc_fdtable() does kmalloc(GFP_KERNEL)/vmalloc(), not good under
-spin_lock().
-
-> +		if (ret < 0) {
-> +			fput(file);
-
-We can't do this under task_lock() too.
-
-A tracer's sub-thread (or any CLONE_FILES task) can close this file,
-it is possible that we have the last reference.
-
-
-Probably, instead of the new *_task_* helpers, you can add
-alloc_file_fd/fd_files_install which take the result of
-get_files_struct() as the additional argument. This way you can
-avoid task_lock().
-
-Oleg.
-
+> From: Frederic Lambert <frdrc66@gmail.com>
+>
+> Signed-off-by: Frederic Lambert <frdrc66@gmail.com>
+> Signed-off-by: Frederic LAMBERT <frdrc66@gmail.com>
+> ---
+>  Documentation/devicetree/bindings/spi/spi-bus.txt |   19 ++++++
+>  drivers/misc/eeprom/at25.c                        |   62 ++++++++++++++++----
+>  2 files changed, 68 insertions(+), 13 deletions(-)
+> ...
