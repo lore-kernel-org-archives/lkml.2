@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab1LRS74 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 13:59:56 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36479 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab1LRS7w convert rfc822-to-8bit (ORCPT
+	id S1752041Ab1LRTsG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 14:48:06 -0500
+Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:8493 "EHLO
+	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab1LRTsE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 13:59:52 -0500
+	Sun, 18 Dec 2011 14:48:04 -0500
+X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Dec 2011 14:48:04 EST
+Date: Sun, 18 Dec 2011 19:33:02 +0000 (UTC)
+From: Thorsten Glaser <tg@debian.org>
+X-X-Sender: tg@herc.mirbsd.org
+To: linux-kernel@vger.kernel.org
+cc: 648996@bugs.debian.org, debian-68k@lists.debian.org,
+        Bastian Blank <waldi@debian.org>
+Subject: Re: Bug#648996: linux-2.6: FTBFS [m68k] in modpost: "strlen"
+ [iscsi_target_mod.ko] undefined! (and others)
+In-Reply-To: <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
+Message-ID: <Pine.BSM.4.64L.1112181929380.856@herc.mirbsd.org>
+References: <20111116181424.14920.7730.reportbug@ara5.mirbsd.org>
+ <Pine.BSM.4.64L.1111301751500.12725@herc.mirbsd.org>
+ <CAMuHMdW8t8Q7OqxJM602iLG4aSv1KMTY-fhiGS7hyy8xBReh1A@mail.gmail.com>
+ <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
 MIME-Version: 1.0
-In-Reply-To: <1324142068.2825.341.camel@deadeye>
-References: <1324142068.2825.341.camel@deadeye>
-Date: Sun, 18 Dec 2011 10:59:50 -0800
-Message-ID: <CAA9_cmd9KMS3UBsQJ0WxT0rtQJVWceVwxvyXtRD+PuzwjUHUGA@mail.gmail.com>
-Subject: Re: [RFC][PATCH linux-firmware] isci: Add firmware blob and sources
-From: Dan Williams <dan.j.williams@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Intel SCU Linux support <intel-linux-scu@intel.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 9:14 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> isci requires a parameter blob which is usually found in NVRAM, but it
-> can fall back to loading with request_firmware().  These files are
-> taken from the Linux source tree where they were wrongly added in
-> Linux 3.0.
+Dixi quodâ€¦
 
-Oh, I was of the impression that the external firmware tree was for
-license incompatible firmware images?
+>I suspect gcc emitting a call to strFOO for __builtin_strFOO.
 
-> ---
-> I'm a bit unclear on the purpose and use of isci_firmware.bin.  Is it
-> needed for production hardware?
+And indeed, it does; waldi just pointed me to the fact that the
+Linux kernel, despite being a kernel and not a hosted environment,
+does not use -ffreestanding in its CFLAGS. No surprise it does
+that, then.
 
-It's a stop gap for platforms with missing or broken oem parameters.
-It is meant to become vestigial once the platform revisions quiet
-down.
+When I first upgraded from gcc 2.x to gcc 3.x in MirBSD, the kernel
+inherited from OpenBSD had similar issues, and adding -ffreestanding
+as should be fixed that.
 
-> Does it need to be customised
-> per-system, or are module parameters sufficient for that?  (If not, why
-> isn't it built into the driver?)
+So, please, compile the Linux kernel with -ffreestanding, too.
 
-It is customized per system to meet EMI and signal integrity targets
-of a given platform.
-
-> probe_roms.h is labelled with a dual BSD/GPLv2 licence but the other
-> files had no licence header so I've treated them as GPLv2 by default.
-
-The latest version of probe_roms.h [1] supports the v1.3 oem parameter
-format, this patch appears to be v1.0 based.
-
-Regards,
-Dan
-
-[1]: http://git.kernel.org/?p=linux/kernel/git/djbw/isci.git;a=blob;f=drivers/scsi/isci/probe_roms.h;hb=refs/heads/fixes
+bye,
+//mirabilos
+-- 
+In traditional syntax ' is ignored, but in c99 everything between two ' is
+handled as character constant.  Therefore you cannot use ' in a preproces-
+sing file in c99 mode.	-- Ragge
+No faith left in ISO C99, undefined behaviour, etc.
