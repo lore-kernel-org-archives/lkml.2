@@ -1,71 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1LROdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:33:18 -0500
-Received: from gateway.alibaba-inc.com ([121.0.29.128]:56587 "EHLO
-	CNHZ-ExGW-01.ali.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751127Ab1LROdQ convert rfc822-to-8bit (ORCPT
+	id S1752086Ab1LROgr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:36:47 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58713 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751184Ab1LROgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:33:16 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Dec 2011 09:33:15 EST
-X-AuditID: 0a14034b-b7cb9ae000002f99-4d-4eedf621aab8
-To: undisclosed-recipients:;
-Message-ID: <4EEDF620.8070008@taobao.com>
-Date: Sun, 18 Dec 2011 22:18:08 +0800
-From: boyu <boyu.mt@taobao.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
-        <tm@tao.ma>
-Subject: [PATCH V3 00/21] ext4: Add inline data support.
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.20.8.3]
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 18 Dec 2011 09:36:39 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: adilger@dilger.ca, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH V3 12/21] ext4: Let ext4_readdir handle inline data.
+Date: Sun, 18 Dec 2011 22:24:29 +0800
+Message-Id: <1324218278-2460-12-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1324218278-2460-1-git-send-email-tm@tao.ma>
+References: <4EEDF6B1.7050206@tao.ma>
+ <1324218278-2460-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.15.203 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted, Andreas and list,
-        This is the v3 attempt to add inline data support to ext4 inode.
-For more information about the background, please refer to the thread
-http://marc.info/?l=linux-ext4&m=131715205428067&w=2
+From: Tao Ma <boyu.mt@taobao.com>
 
-Changelog from v2 to v3:
-1. Add support for evict data from inode if we can store xattr in it.
-2. Add support for fiemap
-3. Some nasty bug fixes
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/dir.c    |   23 ++++------
+ fs/ext4/ext4.h   |   12 +++++
+ fs/ext4/inline.c |  124 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/ext4/xattr.h  |    7 +++
+ 4 files changed, 153 insertions(+), 13 deletions(-)
 
-The v2 can be found here:
-http://marc.info/?l=linux-ext4&m=132189338604177&w=2
+diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+index 6c2199e..691548c 100644
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -27,10 +27,7 @@
+ #include <linux/slab.h>
+ #include <linux/rbtree.h>
+ #include "ext4.h"
+-
+-static unsigned char ext4_filetype_table[] = {
+-	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
+-};
++#include "xattr.h"
+ 
+ static int ext4_readdir(struct file *, void *, filldir_t);
+ static int ext4_dx_readdir(struct file *filp,
+@@ -51,19 +48,13 @@ const struct file_operations ext4_dir_operations = {
+ };
+ 
+ 
+-static unsigned char get_dtype(struct super_block *sb, int filetype)
+-{
+-	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FILETYPE) ||
+-	    (filetype >= EXT4_FT_MAX))
+-		return DT_UNKNOWN;
+-
+-	return (ext4_filetype_table[filetype]);
+-}
+-
+ /*
+  * Return 0 if the directory entry is OK, and 1 if there is a problem
+  *
+  * Note: this is the opposite of what ext2 and ext3 historically returned...
++ *
++ * bh passed here can be an inode block or a dir data block, depending
++ * on the inode inline data flag.
+  */
+ int __ext4_check_dir_entry(const char *function, unsigned int line,
+ 			   struct inode *dir, struct file *filp,
+@@ -122,6 +113,12 @@ static int ext4_readdir(struct file *filp,
+ 
+ 	sb = inode->i_sb;
+ 
++	if (ext4_has_inline_data(inode)) {
++		ret = ext4_read_inline_dir(filp, dirent, filldir);
++		if (ret > 0 || ret < 0)
++			return ret;
++	}
++
+ 	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
+ 				    EXT4_FEATURE_COMPAT_DIR_INDEX) &&
+ 	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index e61c967..25d6e58 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1832,6 +1832,18 @@ static inline void ext4_update_dx_flag(struct inode *inode)
+ 				     EXT4_FEATURE_COMPAT_DIR_INDEX))
+ 		ext4_clear_inode_flag(inode, EXT4_INODE_INDEX);
+ }
++static unsigned char ext4_filetype_table[] = {
++	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
++};
++
++static inline  unsigned char get_dtype(struct super_block *sb, int filetype)
++{
++	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FILETYPE) ||
++	    (filetype >= EXT4_FT_MAX))
++		return DT_UNKNOWN;
++
++	return ext4_filetype_table[filetype];
++}
+ 
+ /* fsync.c */
+ extern int ext4_sync_file(struct file *, loff_t, loff_t, int);
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index db70d3e..0a41d64 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1176,6 +1176,130 @@ out:
+ }
+ 
+ /*
++ * Get the inline dentry at offset.
++ */
++static inline struct ext4_dir_entry_2 *
++ext4_get_inline_entry(struct inode *inode,
++		      struct ext4_iloc *iloc,
++		      unsigned int offset,
++		      void **inline_start,
++		      int *inline_size)
++{
++	void *inline_pos;
++
++	BUG_ON(offset > ext4_get_inline_size(inode));
++
++	if (offset < EXT4_MIN_INLINE_DATA_SIZE) {
++		inline_pos = ext4_raw_inode(iloc)->i_block;
++		*inline_size = EXT4_MIN_INLINE_DATA_SIZE;
++	} else {
++		inline_pos = ext4_get_inline_xattr_pos(inode, iloc);
++		offset -= EXT4_MIN_INLINE_DATA_SIZE;
++		*inline_size = ext4_get_inline_size(inode) -
++				EXT4_MIN_INLINE_DATA_SIZE;
++	}
++
++	if (inline_start)
++		*inline_start = inline_pos;
++	return (struct ext4_dir_entry_2 *)(inline_pos + offset);
++}
++
++int ext4_read_inline_dir(struct file *filp,
++			 void *dirent, filldir_t filldir)
++{
++	int error = 0;
++	unsigned int offset;
++	int i, stored;
++	void *inline_pos;
++	struct ext4_dir_entry_2 *de;
++	struct super_block *sb;
++	struct inode *inode = filp->f_path.dentry->d_inode;
++	int ret, inline_size = 0;
++	struct ext4_iloc iloc;
++
++	ret = ext4_get_inode_loc(inode, &iloc);
++	if (ret)
++		return ret;
++
++	down_read(&EXT4_I(inode)->xattr_sem);
++	if (!ext4_has_inline_data(inode))
++		goto out;
++
++	sb = inode->i_sb;
++	stored = 0;
++	offset = filp->f_pos & (sb->s_blocksize - 1);
++
++	while (!error && !stored && filp->f_pos < inode->i_size) {
++revalidate:
++		/* If the version has changed since the last call to
++		 * readdir(2), then we might be pointing to an invalid
++		 * dirent right now.  Scan from the start of the block
++		 * to make sure. */
++		if (filp->f_version != inode->i_version) {
++			for (i = 0; i < inode->i_size && i < offset; ) {
++				de = ext4_get_inline_entry(inode, &iloc, i,
++							   NULL, &inline_size);
++				/* It's too expensive to do a full
++				 * dirent test each time round this
++				 * loop, but we do have to test at
++				 * least that it is non-zero.  A
++				 * failure will be detected in the
++				 * dirent test below. */
++				if (ext4_rec_len_from_disk(de->rec_len,
++					inline_size) < EXT4_DIR_REC_LEN(1))
++					break;
++				i += ext4_rec_len_from_disk(de->rec_len,
++							    inline_size);
++			}
++			offset = i;
++			filp->f_pos = offset;
++			filp->f_version = inode->i_version;
++		}
++
++		while (!error && filp->f_pos < inode->i_size) {
++			de = ext4_get_inline_entry(inode, &iloc, offset,
++						   &inline_pos, &inline_size);
++			if (ext4_check_dir_entry(inode, filp, de,
++						 iloc.bh, inline_pos,
++						 inline_size, offset)) {
++				ret = stored;
++				goto out;
++			}
++			offset += ext4_rec_len_from_disk(de->rec_len,
++							 inline_size);
++			if (le32_to_cpu(de->inode)) {
++				/* We might block in the next section
++				 * if the data destination is
++				 * currently swapped out.  So, use a
++				 * version stamp to detect whether or
++				 * not the directory has been modified
++				 * during the copy operation.
++				 */
++				u64 version = filp->f_version;
++
++				error = filldir(dirent, de->name,
++						de->name_len,
++						filp->f_pos,
++						le32_to_cpu(de->inode),
++						get_dtype(sb, de->file_type));
++				if (error)
++					break;
++				if (version != filp->f_version)
++					goto revalidate;
++				stored++;
++			}
++			filp->f_pos += ext4_rec_len_from_disk(de->rec_len,
++							      inline_size);
++		}
++		offset = 0;
++	}
++out:
++	up_read(&EXT4_I(inode)->xattr_sem);
++	brelse(iloc.bh);
++	return ret;
++}
++
++/*
+  * Try to create the inline data for the new dir.
+  * If it succeeds, return 0, otherwise return the error.
+  * In case of ENOSPC, the caller should create the normal disk layout dir.
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index 0229a78..e9e23ba 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -166,6 +166,8 @@ extern int ext4_try_add_inline_entry(handle_t *handle, struct dentry *dentry,
+ extern int ext4_try_create_inline_dir(handle_t *handle,
+ 				      struct inode *parent,
+ 				      struct inode *inode);
++extern int ext4_read_inline_dir(struct file *filp,
++				void *dirent, filldir_t filldir);
+ # else  /* CONFIG_EXT4_FS_XATTR */
+ 
+ static inline int
+@@ -343,6 +345,11 @@ static inline int ext4_try_create_inline_dir(handle_t *handle,
+ {
+ 	return 0;
+ }
++static inline int ext4_read_inline_dir(struct file *filp,
++				       void *dirent, filldir_t filldir)
++{
++	return 0;
++}
+ # endif  /* CONFIG_EXT4_FS_XATTR */
+ 
+ #ifdef CONFIG_EXT4_FS_SECURITY
+-- 
+1.7.0.4
 
-The v1 can be found here:
-http://marc.info/?l=linux-ext4&m=131961438221255&w=2
-
-any suggestions are welcomed.
-
-git diff --stat master..
- fs/ext4/Makefile  |    2 +-
- fs/ext4/dir.c     |   39 +-
- fs/ext4/ext4.h    |   77 +++-
- fs/ext4/extents.c |   18 +-
- fs/ext4/ialloc.c  |    4 +
- fs/ext4/inline.c  | 1642 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/ext4/inode.c   |  236 ++++++--
- fs/ext4/namei.c   |  364 +++++++++----
- fs/ext4/xattr.c   |   64 +--
- fs/ext4/xattr.h   |  263 +++++++++
- 10 files changed, 2481 insertions(+), 228 deletions(-)
-
-Thanks
-Tao
-
-
-________________________________
-
-This email (including any attachments) is confidential and may be legally privileged. If you received this email in error, please delete it immediately and do not copy it or use it for any purpose or disclose its contents to any other person. Thank you.
-
-本电邮(包括任何附件)可能含有机密资料并受法律保护。如您不是正确的收件人，请您立即删除本邮件。请不要将本电邮进行复制并用作任何其他用途、或透露本邮件之内容。谢谢。
