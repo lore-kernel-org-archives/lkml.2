@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab1LRCGF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 21:06:05 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59848 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab1LRCGE (ORCPT
+	id S1751517Ab1LRCIK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 21:08:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45909 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751198Ab1LRCII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 21:06:04 -0500
-Date: Sun, 18 Dec 2011 11:05:52 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/11] mm: compaction: Introduce sync-light migration for
- use by compaction
-Message-ID: <20111218020552.GB13069@barrios-laptop.redhat.com>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <1323877293-15401-9-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323877293-15401-9-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 17 Dec 2011 21:08:08 -0500
+Message-ID: <1324174076.2844.11.camel@deadeye>
+Subject: [RFC][PATCH 1/2] firmware, module: Keep names of firmware blobs
+ required by built-in drivers
+From: Ben Hutchings <ben@decadent.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>
+Date: Sun, 18 Dec 2011 02:07:56 +0000
+In-Reply-To: <1324173539.2844.9.camel@deadeye>
+References: <1324173539.2844.9.camel@deadeye>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-NLUluxHECkDg6VW3iyzh"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 03:41:30PM +0000, Mel Gorman wrote:
-> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
-> mode that avoids writing back pages to backing storage. Async
-> compaction maps to MIGRATE_ASYNC while sync compaction maps to
-> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
-> hotplug, MIGRATE_SYNC is used.
-> 
-> This avoids sync compaction stalling for an excessive length of time,
-> particularly when copying files to a USB stick where there might be
-> a large number of dirty pages backed by a filesystem that does not
-> support ->writepages.
-> 
-> [aarcange@redhat.com: This patch is heavily based on Andrea's work]
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+--=-NLUluxHECkDg6VW3iyzh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  fs/btrfs/disk-io.c      |    3 +-
->  fs/hugetlbfs/inode.c    |    2 +-
->  fs/nfs/internal.h       |    2 +-
->  fs/nfs/write.c          |    2 +-
->  include/linux/fs.h      |    6 ++-
->  include/linux/migrate.h |   23 +++++++++++---
->  mm/compaction.c         |    2 +-
->  mm/memory-failure.c     |    2 +-
->  mm/memory_hotplug.c     |    2 +-
->  mm/mempolicy.c          |    2 +-
->  mm/migrate.c            |   78 ++++++++++++++++++++++++++---------------------
->  11 files changed, 74 insertions(+), 50 deletions(-)
-> 
-> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-> index 896b87a..dbe9518 100644
-> --- a/fs/btrfs/disk-io.c
-> +++ b/fs/btrfs/disk-io.c
-> @@ -872,7 +872,8 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
->  
->  #ifdef CONFIG_MIGRATION
->  static int btree_migratepage(struct address_space *mapping,
-> -			struct page *newpage, struct page *page, bool sync)
-> +			struct page *newpage, struct page *page,
-> +			enum migrate_mode sync)
->  {
->  	/*
->  	 * we can't safely write a btree page from here,
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index 10b9883..6b80537 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -577,7 +577,7 @@ static int hugetlbfs_set_page_dirty(struct page *page)
->  
->  static int hugetlbfs_migrate_page(struct address_space *mapping,
->  				struct page *newpage, struct page *page,
-> -				bool sync)
-> +				enum migrate_mode mode)
+[This belongs before the previous patch, which should be considered
+2/2.]
 
-Nitpick, except this one, we use enum migrate_mode sync.
+Change MODULE_FIRMWARE() to include the given blob name to the object
+file even when not building a module.  Discard that information when
+linking vmlinux.
 
--- 
-Kind regards,
-Minchan Kim
+This will allow us to stop repeating this information in
+firmware/Makefile.
+---
+ include/asm-generic/vmlinux.lds.h |    1 +
+ include/linux/module.h            |    7 +++++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinu=
+x.lds.h
+index b5e2e4c..7d1f1d7 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -678,6 +678,7 @@
+ 	EXIT_CALL							\
+ 	*(.discard)							\
+ 	*(.discard.*)							\
++	*(.firmware_wanted)						\
+ 	}
+=20
+ /**
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 3cb7839..2cc323d 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -176,7 +176,14 @@ extern const struct gtype##_id __mod_##gtype##_table		=
+\
+ /* Optional firmware file (or files) needed by the module
+  * format is simply firmware file name.  Multiple firmware
+  * files require multiple MODULE_FIRMWARE() specifiers */
++#ifdef MODULE
+ #define MODULE_FIRMWARE(_firmware) MODULE_INFO(firmware, _firmware)
++#else
++#define MODULE_FIRMWARE(_firmware)					\
++	static const char __module_cat(firmware, __LINE__)[]		\
++	__used __attribute__((section(".firmware_wanted"), unused, aligned(1))) \
++	=3D _firmware
++#endif
+=20
+ /* Given an address, look for it in the exception tables */
+ const struct exception_table_entry *search_exception_tables(unsigned long =
+add);
+--=20
+1.7.7.3
+
+
+
+--=-NLUluxHECkDg6VW3iyzh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATu1K/Oe/yOyVhhEJAQqTrBAAyE5GxaT+6Ve2Ylk33jWEPpNR+6He1bQ4
+dQTirTRqwhYg+r4HHi7ftbMevpDJzSWORTuWk+ez2+3gfKHU9cxyoYxVypNW5pa8
+BCmU40X7WcXjlCB5TKptEy02LuA0qVd3HNL5r8KjP+pNpWN5++7XGu3WhznZYKuO
+jWg5fyBmjDUwNaMTClcprx33Da0ukYONo3aObhUlj8lTJ3x+nG/9+ediUs9kK7ty
+4P8ll1H7bQFBQtrRv9GsfWhetW0DyYnNm9WH6n0andL5vHTMTxfAnbUBhWtwFKVi
+A/SLwrfmjE5ae3npccLNrsHmR/ePeWIfBKw8q3fSHy5Stgul4EP/uteDb+aV90yd
+Mq+RwgI49/Q2kOmHy2PQRfbwOPaLEnFOag2XU7GVUUC79jbCJDTvL/ub8MAzTbmn
+LDR1o7jm6qMssxOEfuyS0M9keqs2ybPOnH1lj2xFZD/7RmMSJhyB+9SklUroNcOr
+/sUpr7p313hGVifW9Xg44OYiEJAvhYnO0Ttc3//qxentQmUHhHVjA4mUNvf8TWW6
+EwxQNcgFEWWFT4soSaPwaaMIHgu+4Lf56DyG/9x15GwyffZjPmflBwyYTqrEZaob
+ZHzIEz0/WatB4vtBEs5t6IzoPLIxNpFPhScLMzZuvVJtM9UGxZMl6/X2rLIhXAeQ
++JoH90NSA8w=
+=c/jP
+-----END PGP SIGNATURE-----
+
+--=-NLUluxHECkDg6VW3iyzh--
