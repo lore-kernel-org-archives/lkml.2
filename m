@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449Ab1LRID4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 03:03:56 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56515 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab1LRIDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 03:03:54 -0500
-Date: Sun, 18 Dec 2011 09:02:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/7] Add conditional oopsing with annotation
-Message-ID: <20111218080205.GA4144@elte.hu>
-References: <20111216141357.24668.49793.stgit@warthog.procyon.org.uk>
+	id S1751557Ab1LRIEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 03:04:11 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:50541 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1LRID6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 03:03:58 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Damien Millescamps <damien.millescamps@6wind.com>,
+        Anca Emanuel <anca.emanuel@gmail.com>,
+        Benjamin LaHaise <bcrl@kvack.org>
+References: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com>
+	<m1obv9rkyp.fsf@fess.ebiederm.org>
+Date: Sun, 18 Dec 2011 00:05:31 -0800
+In-Reply-To: <m1obv9rkyp.fsf@fess.ebiederm.org> (Eric W. Biederman's message
+	of "Fri, 16 Dec 2011 00:15:26 -0800")
+Message-ID: <m1fwgipano.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111216141357.24668.49793.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX196/38u/To2u0CbSXeAJ310gMcqRxd+LDs=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0003]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+X-Spam-Relay-Country: **
+Subject: Re: v6: faster tree-based sysctl implementation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Howells <dhowells@redhat.com> wrote:
+I spent some time playing this and managed to get something that works
+using proc_dir_entries.  And while it is simpler (600 less lines of
+code) it takes about 3x the space of just what using ctl_table entries
+does.
 
-> This facility can be made use of by one of:
-> 
-> 	ANNOTATED_BUG(const char *fmt, ...);
-> 	ANNOTATED_BUG_ON(bool condition, const char *fmt, ...);
+I managed to prove to myself that the current sysctl infrastructure
+relies the union directory existence semantics pretty strongly.  Despite
+all of Al's work to the contrary when he introduced attached_by and kin
+in sysctl head.
 
-Hm, what about WARN_ON()s?
+One nice thing I managed to do was to shift around the problem a bit
+so that only at /proc/sys/net do we to namespace weirdness.  Which also
+considerably simplifies the problem.
 
-WARN_ON() and WARN_ON_ONCE() covers like 99% of the *actual* 
-bugreports we get: we are actively getting rid of BUG()s that do 
-trigger and are asking all new patches to come with WARN_ON()s.
+Now that I know that normal unix directory semantics are a lost cause
+removing the child entry from ctl_table looks like a very productive
+exercise.  
 
-BUG()s are generally a poor way of reporting bugs.
+Furthermore it feels like the optimal data structure would be a
+directory tree that is created on demand as we create entries,
+and a second copy of that directory tree that is per network namespace.
 
-Another, much bigger issue is the actual syntax:
+That is very similar to the data structure you wound up with.
 
-> -       BUG_ON(atomic_read(&cookie->usage) <= 0);
-> +       ASSERTCMP(atomic_read(&cookie->usage), >, 0);
+So in the next little bit I am going to see if I can combine what
+you did and what I did and see if I can come up with something that
+is obvious in how it works from looking at it's data structures.
 
-NAK on that concept on two grounds!
-
-1) BUG_ON() is a well-known pattern. Changing it to the inverted
-   assert() braindamage is going to cause confusion years down
-   the road. Years ago we've settled on using BUG*() and WARN*()
-   assertions to include conditions that check the 'bad'
-   condition'. assert() covers the negated 'good' condition -
-   which works but the two are truly awful when mixed.
-
-2) The '>,0' syntax is ugly.
-
-Why don't we simply extend the *existing* primitives with a 
-'verbose' variant that saves the text string of the macro using 
-the '#param' syntax, intead of modifying the usage sites with a 
-pointless splitting along logical ops?
-
-Doing that would also remove the rather pointess ANNOTATED_() 
-prefix, which is like totally uninteresting in the actual usage 
-sites. WARN()s want to be as short, obvious and low-profile as 
-possible.
-
-So the whole schizophrenic split between BUG_ON()/WARN_ON() and 
-the assert() world is nonsensical and confusing - we should 
-settle on *one* logical variant to make code reading easier. And 
-i thought in the kernel we already settled on one of these 
-variants and are using it almost exclusively ...
-
-So this series does not look good enough to me yet.
-
-Thanks,
-
-	Ingo
+Eric
