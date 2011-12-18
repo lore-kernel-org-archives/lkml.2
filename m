@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab1LROVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:21:12 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:60024 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751868Ab1LROVK (ORCPT
+	id S1751572Ab1LRO1P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:27:15 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:53644 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751039Ab1LRO1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:21:10 -0500
-Message-ID: <4EEDF6B1.7050206@tao.ma>
-Date: Sun, 18 Dec 2011 22:20:33 +0800
+	Sun, 18 Dec 2011 09:27:13 -0500
 From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Andreas Dilger <adilger@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        tm@tao.ma
-Subject: [PATCH V3 00/21] ext4: Add inline data support.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-ext4@vger.kernel.org
+Cc: adilger@dilger.ca, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH V3 01/21] ext4: Move extra inode read to a new function.
+Date: Sun, 18 Dec 2011 22:24:18 +0800
+Message-Id: <1324218278-2460-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <4EEDF6B1.7050206@tao.ma>
+References: <4EEDF6B1.7050206@tao.ma>
 X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.15.203 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted, Andreas and list,
-        This is the v3 attempt to add inline data support to ext4 inode.
-For more information about the background, please refer to the thread
-http://marc.info/?l=linux-ext4&m=131715205428067&w=2
+From: Tao Ma <boyu.mt@taobao.com>
 
-Changelog from v2 to v3:
-1. Add support for evict data from inode if we can store xattr in it.
-2. Add support for fiemap
-3. Some nasty bug fixes
+Currently, in ext4_iget we do a simple check to see whether
+there does exist some information starting from the end
+of i_extra_size. With inline data added, this procedure
+is more complicated. So move it to a new function named
+ext4_iget_extra_inode.
 
-The v2 can be found here:
-http://marc.info/?l=linux-ext4&m=132189338604177&w=2
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/inode.c |   19 ++++++++++++-------
+ 1 files changed, 12 insertions(+), 7 deletions(-)
 
-The v1 can be found here:
-http://marc.info/?l=linux-ext4&m=131961438221255&w=2
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index fffec40..dc55c1f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3762,6 +3762,16 @@ static blkcnt_t ext4_inode_blocks(struct ext4_inode *raw_inode,
+ 	}
+ }
+ 
++static inline void ext4_iget_extra_inode(struct inode *inode,
++					 struct ext4_inode *raw_inode,
++					 struct ext4_inode_info *ei)
++{
++	__le32 *magic = (void *)raw_inode +
++			EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize;
++	if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
++		ext4_set_inode_state(inode, EXT4_STATE_XATTR);
++}
++
+ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ {
+ 	struct ext4_iloc iloc;
+@@ -3872,13 +3882,8 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 			/* The extra space is currently unused. Use it. */
+ 			ei->i_extra_isize = sizeof(struct ext4_inode) -
+ 					    EXT4_GOOD_OLD_INODE_SIZE;
+-		} else {
+-			__le32 *magic = (void *)raw_inode +
+-					EXT4_GOOD_OLD_INODE_SIZE +
+-					ei->i_extra_isize;
+-			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
+-				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
+-		}
++		} else
++			ext4_iget_extra_inode(inode, raw_inode, ei);
+ 	} else
+ 		ei->i_extra_isize = 0;
+ 
+-- 
+1.7.0.4
 
-any suggestions are welcomed.
-
-git diff --stat master..
- fs/ext4/Makefile  |    2 +-
- fs/ext4/dir.c     |   39 +-
- fs/ext4/ext4.h    |   77 +++-
- fs/ext4/extents.c |   18 +-
- fs/ext4/ialloc.c  |    4 +
- fs/ext4/inline.c  | 1642
-+++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/ext4/inode.c   |  236 ++++++--
- fs/ext4/namei.c   |  364 +++++++++----
- fs/ext4/xattr.c   |   64 +--
- fs/ext4/xattr.h   |  263 +++++++++
- 10 files changed, 2481 insertions(+), 228 deletions(-)
-
-Thanks
-Tao
