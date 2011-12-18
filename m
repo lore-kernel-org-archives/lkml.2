@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab1LRJe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 04:34:58 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42218 "EHLO mx2.mail.elte.hu"
+	id S1751567Ab1LRJkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 04:40:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33445 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab1LRJex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 04:34:53 -0500
-Date: Sun, 18 Dec 2011 10:32:50 +0100
+	id S1751327Ab1LRJkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 04:40:07 -0500
+Date: Sun, 18 Dec 2011 10:38:06 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Cc: linux-kernel@vger.kernel.org, the arch/x86 maintainers <x86@kernel.org>
 Subject: Re: [PATCH] apb: Fix configuration constraints
-Message-ID: <20111218093250.GA19092@elte.hu>
+Message-ID: <20111218093806.GA6070@elte.hu>
 References: <20111217215719.3743.93550.stgit@bob.linux.org.uk>
+ <20111218093250.GA19092@elte.hu>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="8t9RHnE3ZwKMSgU+"
+Content-Type: multipart/mixed; boundary="3MwIy2ne0vdjdPXF"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111217215719.3743.93550.stgit@bob.linux.org.uk>
+In-Reply-To: <20111218093250.GA19092@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.6
+X-ELTE-SpamScore: -1.2
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.6 required=5.9 tests=AWL,BAYES_00,UPPERCASE_50_75 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-1.2 required=5.9 tests=BAYES_00,UPPERCASE_50_75 autolearn=no SpamAssassin version=3.3.1
 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
 	0.8 UPPERCASE_50_75        message body is 50-75% uppercase
-	-0.4 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---8t9RHnE3ZwKMSgU+
+--3MwIy2ne0vdjdPXF
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 
 
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> From: Alan Cox <alan@linux.intel.com>
+> In fact on latest tip:x86/platform i get:
 > 
-> The APB timer requires SFI, SCU and MID support
+> arch/x86/platform/mrst/mrst.c:306:37: error: ‘apbt_setup_secondary_clock’ undeclared (first use in this function)
 > 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Have all your recent Kconfig patches applied there, with 
+> probably one of them mixed up:
+> 
+> arch/x86/Kconfig:393:error: recursive dependency detected!
 
-Even with all you latest Kconfig fixes i get trivial build 
-failures:
+Ok, x86/platform was missing two x86/urgent fixes in this area. 
+I've merged in v3.2-rc6 which solved the Kconfig problem.
 
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-arch/x86/built-in.o: In function `apbt_cpuhp_notify':
-apb_timer.c:(.text+0x14b91): undefined reference to `dw_apb_clockevent_pause'
-apb_timer.c:(.text+0x14ba5): undefined reference to `dw_apb_clockevent_stop'
-arch/x86/built-in.o: In function `apbt_set_mapping':
-apb_timer.c:(.text+0x14c86): undefined reference to `dw_apb_clocksource_init'
-arch/x86/built-in.o: In function `apbt_setup_secondary_clock':
-(.text+0x14cf3): undefined reference to `dw_apb_clockevent_init'
-arch/x86/built-in.o: In function `apbt_setup_secondary_clock':
-(.text+0x14d06): undefined reference to `dw_apb_clockevent_resume'
-arch/x86/built-in.o: In function `apbt_setup_secondary_clock':
-(.text+0x14d73): undefined reference to `dw_apb_clockevent_register'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14d97): undefined reference to `dw_apb_clocksource_start'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14da1): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14db1): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14dde): undefined reference to `dw_apb_clocksource_start'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14de8): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_quick_calibrate':
-(.text+0x14e04): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb17c): undefined reference to `dw_apb_clocksource_start'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb186): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb1b5): undefined reference to `dw_apb_clocksource_read'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb1d9): undefined reference to `dw_apb_clocksource_register'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb24b): undefined reference to `dw_apb_clockevent_init'
-arch/x86/built-in.o: In function `apbt_time_init':
-(.init.text+0xb281): undefined reference to `dw_apb_clockevent_register'
-
-In fact on latest tip:x86/platform i get:
-
-arch/x86/platform/mrst/mrst.c:306:37: error: ‘apbt_setup_secondary_clock’ undeclared (first use in this function)
-
-Have all your recent Kconfig patches applied there, with 
-probably one of them mixed up:
-
-arch/x86/Kconfig:393:error: recursive dependency detected!
-
-Config attached.
+The link build bug is still present - config attached for that 
+failure mode.
 
 Thanks,
 
 	Ingo
 
---8t9RHnE3ZwKMSgU+
+--3MwIy2ne0vdjdPXF
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: attachment; filename=config
 
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/i386 3.2.0-rc4 Kernel Configuration
+# Linux/i386 3.2.0-rc6 Kernel Configuration
 #
 # CONFIG_64BIT is not set
 CONFIG_X86_32=y
@@ -368,8 +324,10 @@ CONFIG_SMP=y
 CONFIG_X86_MPPARSE=y
 CONFIG_X86_BIGSMP=y
 CONFIG_X86_EXTENDED_PLATFORM=y
+CONFIG_X86_WANT_INTEL_MID=y
 CONFIG_X86_INTEL_MID=y
 # CONFIG_X86_MRST is not set
+CONFIG_X86_MDFLD=y
 # CONFIG_X86_RDC321X is not set
 CONFIG_X86_32_NON_STANDARD=y
 CONFIG_X86_NUMAQ=y
@@ -440,6 +398,7 @@ CONFIG_CPU_SUP_AMD=y
 # CONFIG_CPU_SUP_TRANSMETA_32 is not set
 # CONFIG_CPU_SUP_UMC_32 is not set
 # CONFIG_HPET_TIMER is not set
+CONFIG_APB_TIMER=y
 # CONFIG_DMI is not set
 # CONFIG_IOMMU_HELPER is not set
 CONFIG_NR_CPUS=32
@@ -3357,4 +3316,4 @@ CONFIG_NLATTR=y
 CONFIG_AVERAGE=y
 CONFIG_CORDIC=m
 
---8t9RHnE3ZwKMSgU+--
+--3MwIy2ne0vdjdPXF--
