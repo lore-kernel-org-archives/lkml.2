@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1LRVN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 16:13:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36650 "EHLO mx2.suse.de"
+	id S1752077Ab1LRVRV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 16:17:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32283 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab1LRVN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 16:13:56 -0500
-Date: Sun, 18 Dec 2011 22:13:52 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Foley <pefoley2@verizon.net>
-Subject: Re: [PATCH] kconfig: adapt update-po-config to new UML layout
-Message-ID: <20111218211352.GD25931@sepie.suse.cz>
-References: <1320492090.14409.321.camel@x61.thuisdomein>
+	id S1751939Ab1LRVRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 16:17:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="88824264"
+Date: Sun, 18 Dec 2011 22:21:50 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        linaro-dev@lists.linaro.org, arnd@arndb.de, eric.miao@linaro.org
+Subject: Re: [PATCH 01/06] MFD: DA9052/53 MFD core module v10
+Message-ID: <20111218212150.GV11800@sortiz-mobl>
+References: <1323700616.1626.7.camel@dhruva>
+ <20111213063344.GC7148@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320492090.14409.321.camel@x61.thuisdomein>
+In-Reply-To: <20111213063344.GC7148@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 05, 2011 at 12:21:30PM +0100, Paul Bolle wrote:
-> Commit 5c48b108 ("um: take arch/um/sys-x86 to arch/x86/um") broke the
-> make target update-po-config, as its symlink trick (again) fails.
-> (Previous breakage was fixed with commit bdc69ca4 ("kconfig: change
-> update-po-config to reflect new layout of arch/um").)
-> 
-> The new UML layout allows to drop the symlick trick entirely. And if,
-> one day, another architecture supports UML too, that should now work
-> without again breaking this make target.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Hi Mark,
 
-Thanks, applied to kbuild.git#rc-fixes.
+On Tue, Dec 13, 2011 at 02:33:45PM +0800, Mark Brown wrote:
+> On Mon, Dec 12, 2011 at 08:06:56PM +0530, Ashish Jangam wrote:
+> > The DA9052/53 is a highly integrated PMIC subsystem with supply domain
+> > flexibility to support wide range of high performance application.
+> 
+> > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> > control and other functionality.
+> 
+> > This patch is functionally tested on Samsung SMDKV6410.
+> 
+> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> Looking good now!  Samuel, this uses regmap-irq so either I can carry
+> this or you can merge:
+The former is fine with me, thanks in advance.
 
-Michal
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
