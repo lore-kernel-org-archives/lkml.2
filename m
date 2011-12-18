@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686Ab1LRLmp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 06:42:45 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14167 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538Ab1LRLmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 06:42:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="86947546"
-Date: Sun, 18 Dec 2011 19:32:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.2.0-rc5 NULL dereference BUG
-Message-ID: <20111218113237.GA1359@localhost>
-References: <20111218055359.GA17182@localhost>
- <20111218063054.GA4979@localhost>
- <CAGBYx2bxdnkXcZF+A1iOvnsW=xdtDJR7Fx3Rz-HWeWH5n0ByKg@mail.gmail.com>
+	id S1751779Ab1LRLo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 06:44:26 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56426 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab1LRLoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 06:44:24 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Sisir Koppaka <sisir.koppaka@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Simplify task_group_is_autogroup
+In-Reply-To: <CAJd0RV=NdYFY8sLnB5EQY9wiWm+0U0C3EaCmKE8jpunHdYkcAA@mail.gmail.com>
+References: <CAJd0RV=NdYFY8sLnB5EQY9wiWm+0U0C3EaCmKE8jpunHdYkcAA@mail.gmail.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Sun, 18 Dec 2011 17:15:31 +0530
+Message-ID: <8762heumqs.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGBYx2bxdnkXcZF+A1iOvnsW=xdtDJR7Fx3Rz-HWeWH5n0ByKg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11121811-2674-0000-0000-000002AC7EF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yongqiang,
-
-Thanks for the quick fix!
-
-On Sun, Dec 18, 2011 at 03:17:18PM +0800, Yongqiang Yang wrote:
-> Hi Fengguang,
+On Sun, 18 Dec 2011 15:42:53 +0530, Sisir Koppaka <sisir.koppaka@gmail.com> wrote:
+> Removing the !! in task_group_is_autogroup doesn't impede functionality.
 > 
-> Could you try the patch [ext4: do not reference pa_inode from group_pa]?
+> Tested with and without CONFIG_SCHED_AUTOGROUP.
+> 
+> Signed-off-by: Sisir Koppaka <sisir.koppaka@gmail.com>
+> ---
+>  kernel/sched/auto_group.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched/auto_group.h b/kernel/sched/auto_group.h
+> index 8bd0471..f628798 100644
+> --- a/kernel/sched/auto_group.h
+> +++ b/kernel/sched/auto_group.h
+> @@ -21,7 +21,7 @@ extern void autogroup_free(struct task_group *tg);
+> 
+>  static inline bool task_group_is_autogroup(struct task_group *tg)
+>  {
+> -	return !!tg->autogroup;
+> +	return tg->autogroup;
+>
+The return is supposed to be a boolean. So the code is correct.
 
-It works! You can add my tested-by and CC stable.
+Regards,
+Nikunj
 
-Thanks,
-Fengguang
