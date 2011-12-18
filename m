@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1LRReA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 12:34:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58630 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab1LRRdx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 12:33:53 -0500
+	id S1751955Ab1LRSDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 13:03:04 -0500
+Received: from 8bytes.org ([88.198.83.132]:42246 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751841Ab1LRSDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 13:03:00 -0500
+Date: Sun, 18 Dec 2011 19:02:59 +0100
+From: "'Joerg Roedel'" <joro@8bytes.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'KyongHo Cho'" <pullip.cho@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
+Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
+	Samsung Exynos
+Message-ID: <20111218180258.GD28302@8bytes.org>
+References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com> <20111123114626.GH20535@8bytes.org> <045b01ccaffa$ef48c430$cdda4c90$%kim@samsung.com> <20111201185821.GL20535@8bytes.org> <04f601ccb0ce$72590550$570b0ff0$%kim@samsung.com> <20111202084922.GM20535@8bytes.org> <4EEE0F02.8070800@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20111217182955.GX2203@ZenIV.linux.org.uk>
-References: <1324021626-10059-1-git-send-email-levinsasha928@gmail.com>
- <20111216192320.GA23748@infradead.org> <1324071040.29432.3.camel@sasha>
- <20111216233041.GU2203@ZenIV.linux.org.uk> <87vcpfjosl.fsf@linux.vnet.ibm.com>
- <20111217182955.GX2203@ZenIV.linux.org.uk>
-From: Eric Van Hensbergen <ericvh@gmail.com>
-Date: Sun, 18 Dec 2011 11:33:30 -0600
-Message-ID: <CAFkjPTkgryXQLBvm_z6rRDzbYxZRB+jemg+wALQg8W=SQ5OcEg@mail.gmail.com>
-Subject: Re: [PATCH] fs: Move attribute flags into non __KERNEL__ space
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEE0F02.8070800@samsung.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If these aren't normally exposed to user space, then how are they
-typically set?  That interface may make more sense at the protocol
-level (and perhaps more so from the server side implementation).
+On Mon, Dec 19, 2011 at 01:04:18AM +0900, Kukjin Kim wrote:
+> Hmm, I cannot find the iommu/exynos branch what you said in your iommu  
+> tree yet. Maybe you missed or any problem?
 
-        -eric
+Problems. I tried to apply the patches and there were conflicts. After
+solving them I wasn't able to find a kernel-config for Exynos that
+conpiled for upstream Linux.
+Additionally new objections were raised about the patches. Enough to not
+merge these patches at this point. When I have a config to at least
+compile-test the code you send me and repost the patches rebased to a
+recent upstream commit with the objections fixed I can retry to merge
+it.
 
 
-On Sat, Dec 17, 2011 at 12:29 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, Dec 17, 2011 at 07:14:26PM +0530, Aneesh Kumar K.V wrote:
->
->> > It's a 9P bug; fix it there.  Turning random internal constants into a part
->> > of ABI is not going to work.
->>
->> I guess we would need to define them at the protocol level then.
->> Something like f88657ce3f9713a0c62101dffb0e972a979e77b9.
->
-> The question is which ones make sense at the protocol level...
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks,
+
+	Joerg
+
