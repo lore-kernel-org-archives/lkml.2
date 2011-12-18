@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab1LRWpk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 17:45:40 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62703 "EHLO
+	id S1752047Ab1LRWrl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 17:47:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49370 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab1LRWpi (ORCPT
+	with ESMTP id S1751465Ab1LRWri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 17:45:38 -0500
-Date: Sun, 18 Dec 2011 14:45:36 -0800 (PST)
+	Sun, 18 Dec 2011 17:47:38 -0500
+Date: Sun, 18 Dec 2011 14:47:35 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mempolicy.c: use enum value MPOL_REBIND_ONCE instead
- of 0 in mpol_rebind_policy
-In-Reply-To: <4EEC9D54.502@gmail.com>
-Message-ID: <alpine.DEB.2.00.1112181444530.1364@chino.kir.corp.google.com>
-References: <4EE8A461.2080406@gmail.com> <alpine.DEB.2.00.1112141840550.27595@chino.kir.corp.google.com> <4EEC9D54.502@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, "Alex,Shi" <alex.shi@intel.com>,
+        Shaohua Li <shaohua.li@intel.com>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH] slub: prefetch next freelist pointer in slab_alloc()
+In-Reply-To: <1324049134.25554.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Message-ID: <alpine.DEB.2.00.1112181447220.1364@chino.kir.corp.google.com>
+References: <1324049134.25554.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,25 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 Dec 2011, Eric Dumazet wrote:
 
-On Sat, 17 Dec 2011, Wang Sheng-Hui wrote:
-
-> > Tip: when proposing patches, it's helpful to run scripts/get_maintainer.pl 
-> > on your patch file from git to determine who should be cc'd on the email.
+> Recycling a page is a problem, since freelist link chain is hot on
+> cpu(s) which freed objects, and possibly very cold on cpu currently
+> owning slab.
 > 
-> Thanks for your tip.
-> I have tried the script with option -f, and only get the mm, kernel mailing
-> lists, no specific maintainer provided. So here I just posted the patch to 
-> these 2 lists.
+> Adding a prefetch of cache line containing the pointer to next object in
+> slab_alloc() helps a lot in many workloads, in particular on assymetric
+> ones (allocations done on one cpu, frees on another cpus). Added cost is
+> three machine instructions only.
 > 
+> Examples on my dual socket quad core ht machine (Intel CPU E5540
+> @2.53GHz) (16 logical cpus, 2 memory nodes), 64bit kernel.
+> 
+> Before patch :
+> 
+> # perf stat -r 32 hackbench 50 process 4000 >/dev/null
+> 
+>  Performance counter stats for 'hackbench 50 process 4000' (32 runs):
+> 
+>      327577,471718 task-clock                #   15,821 CPUs utilized            ( +-  0,64% )
+>         28 866 491 context-switches          #    0,088 M/sec                    ( +-  1,80% )
+>          1 506 929 CPU-migrations            #    0,005 M/sec                    ( +-  3,24% )
+>            127 151 page-faults               #    0,000 M/sec                    ( +-  0,16% )
+>    829 399 813 448 cycles                    #    2,532 GHz                      ( +-  0,64% )
+>    580 664 691 740 stalled-cycles-frontend   #   70,01% frontend cycles idle     ( +-  0,71% )
+>    197 431 700 448 stalled-cycles-backend    #   23,80% backend  cycles idle     ( +-  1,03% )
+>    503 548 648 975 instructions              #    0,61  insns per cycle        
+>                                              #    1,15  stalled cycles per insn  ( +-  0,46% )
+>     95 780 068 471 branches                  #  292,389 M/sec                    ( +-  0,48% )
+>      1 426 407 916 branch-misses             #    1,49% of all branches          ( +-  1,35% )
+> 
+>       20,705679994 seconds time elapsed                                          ( +-  0,64% )
+> 
+> After patch :
+> 
+> # perf stat -r 32 hackbench 50 process 4000 >/dev/null
+> 
+>  Performance counter stats for 'hackbench 50 process 4000' (32 runs):
+> 
+>      286236,542804 task-clock                #   15,786 CPUs utilized            ( +-  1,32% )
+>         19 703 372 context-switches          #    0,069 M/sec                    ( +-  4,99% )
+>          1 658 249 CPU-migrations            #    0,006 M/sec                    ( +-  6,62% )
+>            126 776 page-faults               #    0,000 M/sec                    ( +-  0,12% )
+>    724 636 593 213 cycles                    #    2,532 GHz                      ( +-  1,32% )
+>    499 320 714 837 stalled-cycles-frontend   #   68,91% frontend cycles idle     ( +-  1,47% )
+>    156 555 126 809 stalled-cycles-backend    #   21,60% backend  cycles idle     ( +-  2,22% )
+>    463 897 792 661 instructions              #    0,64  insns per cycle        
+>                                              #    1,08  stalled cycles per insn  ( +-  0,94% )
+>     87 717 352 563 branches                  #  306,451 M/sec                    ( +-  0,99% )
+>        941 738 280 branch-misses             #    1,07% of all branches          ( +-  3,35% )
+> 
+>       18,132070670 seconds time elapsed                                          ( +-  1,30% )
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Pekka Enberg <penberg@kernel.org>
+> CC: Matt Mackall <mpm@selenic.com> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: "Alex,Shi" <alex.shi@intel.com>
+> CC: Shaohua Li <shaohua.li@intel.com>
 
-$ ./scripts/get_maintainer.pl -f mm/mempolicy.c
-Andrew Morton <akpm@linux-foundation.org> (commit_signer:19/23=83%)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> (commit_signer:8/23=35%)
-Stephen Wilson <wilsons@start.ca> (commit_signer:6/23=26%)
-Andrea Arcangeli <aarcange@redhat.com> (commit_signer:5/23=22%)
-Johannes Weiner <hannes@cmpxchg.org> (commit_signer:3/23=13%)
-linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
-linux-kernel@vger.kernel.org (open list)
-
-All of those people should be cc'd on patches touching mm/mempolicy.c.
+Acked-by: David Rientjes <rientjes@google.com>
