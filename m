@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1LRPTe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 10:19:34 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:33143 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751670Ab1LRPTc (ORCPT
+	id S1751991Ab1LRP3I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 10:29:08 -0500
+Received: from server102.greatnet.de ([83.133.97.2]:45066 "EHLO
+	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1LRP3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 10:19:32 -0500
-X-Sasl-enc: ZJWFGOZ7TYrUo9nHVltyoxplp89u0sJUcl5+p86OKXA1 1324221571
-Subject: Re: chroot(2) and bind mounts as non-root
-From: Colin Walters <walters@verbum.org>
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>, serue@us.ibm.com,
-        dhowells@redhat.com, kzak@redhat.com
-Date: Sun, 18 Dec 2011 10:19:12 -0500
-In-Reply-To: <CALQRfL4_zWAp3ZUM2GXKaw_6ofEfLUGs9WypD9qi_-15MeQx0Q@mail.gmail.com>
-References: <1323280461.10724.13.camel@lenny> <4EDFCDD4.2080603@zytor.com>
-	 <20111207205459.031a0609@lxorguk.ukuu.org.uk>
-	 <CALQRfL6A+XUiLUVzsSOkz52rs7Pejtb_v8QZbpWxh5W8yYDYtg@mail.gmail.com>
-	 <1324050284.3734.14.camel@lenny>
-	 <CALQRfL4_zWAp3ZUM2GXKaw_6ofEfLUGs9WypD9qi_-15MeQx0Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1324221552.21713.7.camel@lenny>
-Mime-Version: 1.0
+	Sun, 18 Dec 2011 10:29:07 -0500
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Dec 2011 10:29:06 EST
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+MIME-Version: 1.0
+Date: Sun, 18 Dec 2011 16:22:13 +0100
+From: Benjamin Block <bebl@mageta.org>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, <hpa@zytor.com>,
+        <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
+        <eranian@google.com>, <brgerst@gmail.com>, <robert.richter@amd.com>,
+        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Benjamin Block <benjamin.block@amd.com>
+Reply-To: bebl@mageta.org
+In-Reply-To: <20111218080443.GB4144@elte.hu>
+References: <20111216160757.GL665@escobedo.osrc.amd.com> <1324051943-21112-1-git-send-email-hans.rosenfeld@amd.com> <1324051943-21112-4-git-send-email-hans.rosenfeld@amd.com> <20111218080443.GB4144@elte.hu>
+Message-ID: <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de>
+User-Agent: RoundCube Webmail/0.3-stable
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-17 at 17:22 -0800, Andrew G. Morgan wrote:
 
-> I don't read any issues with this in your original post. What I read
-> there is that you want to run a build in a chroot environment. Are you
-> also implying that the user gets to build this chroot filesystem from
-> nothing - without any privileges - 
+On Sun, 18 Dec 2011 09:04:43 +0100, Ingo Molnar <mingo@elte.hu> wrote:
 
-Yes.  The filesystem is owned by the user.  
+> * Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
 
-> If the former, then yes I think you are going to have a very hard
-> time.
+> 
 
-Well, it already works with the setuid program I attached earlier.
-So...what are we trying to accomplish in this discussion? 
+>> From: Benjamin Block <benjamin.block@amd.com>
 
-If you think there's a way to allow users to chroot *without* cutting
-off setuid binaries, I am definitely interested in that.  However I'm
-very, very skeptical.
+>> 
+
+>> Implements a basic integration of LWP into perf. Permits a way 
+
+>> to create a perf-event that will be backed by LWP. The PMU 
+
+>> creates the required structures and userspace-memories. The 
+
+>> PMU also collects the samples from the ring-buffer, but as 
+
+>> there is currently no interrupt- and overflow-implementation, 
+
+>> they are not reported (TODO).
+
+> 
+
+> Ok, this is a step in the right direction - once the threshold 
+
+> IRQ flow control mechanism is implemented we are looking at 
+
+> something that might be mergeable. Any ETA on those bits?
+
+> 
 
 
+
+The threshold-interrupt is already integrated with patch 5 of this 
+
+patch-set.
+
+
+
+Maybe I wrote the descriptions a little misleading. Sry for that. :)
+
+
+
+best regards,
+
+- Benjamin
