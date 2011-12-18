@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab1LROnW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:43:22 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:52311 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751677Ab1LROnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:43:20 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-ext4@vger.kernel.org
-Cc: adilger@dilger.ca, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH V3 13/21] ext4: Create a new function search_dir.
-Date: Sun, 18 Dec 2011 22:24:30 +0800
-Message-Id: <1324218278-2460-13-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1324218278-2460-1-git-send-email-tm@tao.ma>
-References: <4EEDF6B1.7050206@tao.ma>
- <1324218278-2460-1-git-send-email-tm@tao.ma>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.15.203 authed with tm@tao.ma}
+	id S1752292Ab1LROnl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:43:41 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:55711 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab1LROng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 09:43:36 -0500
+Message-ID: <4EEDFC16.90303@nod.at>
+Date: Sun, 18 Dec 2011 15:43:34 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: JBottomley@parallels.com
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi_dh: Fix return value of scsi_dh_attach()
+References: <1321572864-23628-1-git-send-email-richard@nod.at>
+In-Reply-To: <1321572864-23628-1-git-send-email-richard@nod.at>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigE41059AB5314126B7C474680"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigE41059AB5314126B7C474680
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-search_dirblock is used to search a dir block, but the code is
-almost the same for searching an inline dir.
+Am 18.11.2011 00:34, schrieb Richard Weinberger:
+> scsi_dh_attach() should return a negative value on error.
+>=20
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  include/scsi/scsi_dh.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/include/scsi/scsi_dh.h b/include/scsi/scsi_dh.h
+> index e3f2db2..e07ab10 100644
+> --- a/include/scsi/scsi_dh.h
+> +++ b/include/scsi/scsi_dh.h
+> @@ -74,7 +74,7 @@ static inline int scsi_dh_handler_exist(const char *n=
+ame)
+>  }
+>  static inline int scsi_dh_attach(struct request_queue *req, const char=
+ *name)
+>  {
+> -	return SCSI_DH_NOSYS;
+> +	return -SCSI_DH_NOSYS;
+>  }
+>  static inline void scsi_dh_detach(struct request_queue *q)
+>  {
 
-So create a new fuction search_dir and let search_dirblock
-call it.
+James,
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- fs/ext4/ext4.h  |    7 +++++++
- fs/ext4/namei.c |   26 +++++++++++++++++++-------
- 2 files changed, 26 insertions(+), 7 deletions(-)
+can you please pickup this patch?
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 25d6e58..16efcad 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1967,6 +1967,13 @@ extern int ext4_orphan_add(handle_t *, struct inode *);
- extern int ext4_orphan_del(handle_t *, struct inode *);
- extern int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
- 				__u32 start_minor_hash, __u32 *next_hash);
-+extern int search_dir(struct buffer_head *bh,
-+		      char *search_buf,
-+		      int buf_size,
-+		      struct inode *dir,
-+		      const struct qstr *d_name,
-+		      unsigned int offset,
-+		      struct ext4_dir_entry_2 **res_dir);
- 
- /* resize.c */
- extern int ext4_group_add(struct super_block *sb,
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 77312dc..6e97dd2 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -794,11 +794,13 @@ static inline int ext4_match (int len, const char * const name,
- /*
-  * Returns 0 if not found, -1 on failure, and 1 on success
-  */
--static inline int search_dirblock(struct buffer_head *bh,
--				  struct inode *dir,
--				  const struct qstr *d_name,
--				  unsigned int offset,
--				  struct ext4_dir_entry_2 ** res_dir)
-+int search_dir(struct buffer_head *bh,
-+	       char *search_buf,
-+	       int buf_size,
-+	       struct inode *dir,
-+	       const struct qstr *d_name,
-+	       unsigned int offset,
-+	       struct ext4_dir_entry_2 **res_dir)
- {
- 	struct ext4_dir_entry_2 * de;
- 	char * dlimit;
-@@ -806,8 +808,8 @@ static inline int search_dirblock(struct buffer_head *bh,
- 	const char *name = d_name->name;
- 	int namelen = d_name->len;
- 
--	de = (struct ext4_dir_entry_2 *) bh->b_data;
--	dlimit = bh->b_data + dir->i_sb->s_blocksize;
-+	de = (struct ext4_dir_entry_2 *)search_buf;
-+	dlimit = search_buf + buf_size;
- 	while ((char *) de < dlimit) {
- 		/* this code is executed quadratically often */
- 		/* do minimal checking `by hand' */
-@@ -832,6 +834,16 @@ static inline int search_dirblock(struct buffer_head *bh,
- 	return 0;
- }
- 
-+static inline int search_dirblock(struct buffer_head *bh,
-+				  struct inode *dir,
-+				  const struct qstr *d_name,
-+				  unsigned int offset,
-+				  struct ext4_dir_entry_2 **res_dir)
-+{
-+	return search_dir(bh, bh->b_data, dir->i_sb->s_blocksize, dir,
-+			  d_name, offset, res_dir);
-+}
-+
- 
- /*
-  *	ext4_find_entry()
--- 
-1.7.0.4
+Thanks,
+//richard
 
+
+--------------enigE41059AB5314126B7C474680
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJO7fwWAAoJEN9758yqZn9e9F8H/1/E9DIM+oP8rJcMAUt1L0w7
+lhXebzYude0Q2KOzff34WtFg4czWOfEL/qwguooIreGtxUawrxjUWbTqTghQwDkm
+Z6tfYLXqxje1xyOiwv4oUptHjakwUJNIl3pSJrLl7eMN07rPQ0xs/ENV/senstrk
+R/BEQRfEBkw9fma73ZH5XEQCVKTFqohua4hNcmEyj9NPLn/4lBeH+xfx7+Ldl2Z0
+Flc2x4PPOnVcjs54FM2oUCGozMprzdq6D9HabNiHERvrUV5ainxm1oRGUwhqR1Y/
+ZTxIbgzg9bAKqmq3TYQC/qIguk911wBhnFrEjcDuS9crKcg4klILfNIFINHFHVQ=
+=sNk5
+-----END PGP SIGNATURE-----
+
+--------------enigE41059AB5314126B7C474680--
