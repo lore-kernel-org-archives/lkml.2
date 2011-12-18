@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1LRTsG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 14:48:06 -0500
-Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:8493 "EHLO
-	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab1LRTsE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 14:48:04 -0500
-X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Dec 2011 14:48:04 EST
-Date: Sun, 18 Dec 2011 19:33:02 +0000 (UTC)
-From: Thorsten Glaser <tg@debian.org>
-X-X-Sender: tg@herc.mirbsd.org
-To: linux-kernel@vger.kernel.org
-cc: 648996@bugs.debian.org, debian-68k@lists.debian.org,
-        Bastian Blank <waldi@debian.org>
-Subject: Re: Bug#648996: linux-2.6: FTBFS [m68k] in modpost: "strlen"
- [iscsi_target_mod.ko] undefined! (and others)
-In-Reply-To: <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
-Message-ID: <Pine.BSM.4.64L.1112181929380.856@herc.mirbsd.org>
-References: <20111116181424.14920.7730.reportbug@ara5.mirbsd.org>
- <Pine.BSM.4.64L.1111301751500.12725@herc.mirbsd.org>
- <CAMuHMdW8t8Q7OqxJM602iLG4aSv1KMTY-fhiGS7hyy8xBReh1A@mail.gmail.com>
- <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
-X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
+	id S1752033Ab1LRUzO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 15:55:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36202 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751965Ab1LRUzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 15:55:09 -0500
+Date: Sun, 18 Dec 2011 21:55:07 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] kbuild: use xfwrite wrapper function to silence warnings
+Message-ID: <20111218205507.GA25931@sepie.suse.cz>
+References: <alpine.LNX.2.00.1110221045310.59156@linux>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1110221045310.59156@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dixi quod…
+On Sat, Oct 22, 2011 at 10:48:49AM -0400, Peter Foley wrote:
+> Use the xfwrite wrapper function defined in lkc.h to check the return value of
+> fwrite and silence these warnings.
+> 
+>   HOSTCC  scripts/kconfig/zconf.tab.o
+> scripts/kconfig/zconf.tab.c: In function 'header_print_comment':
+> /usr/src/lto/scripts/kconfig/confdata.c:551:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result
+> scripts/kconfig/zconf.tab.c: In function 'kconfig_print_comment':
+> /usr/src/lto/scripts/kconfig/confdata.c:467:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result
+> 
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+> ---
+>  scripts/kconfig/confdata.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
->I suspect gcc emitting a call to strFOO for __builtin_strFOO.
+Applied to kbuild.git#kconfig, thanks.
 
-And indeed, it does; waldi just pointed me to the fact that the
-Linux kernel, despite being a kernel and not a hosted environment,
-does not use -ffreestanding in its CFLAGS. No surprise it does
-that, then.
-
-When I first upgraded from gcc 2.x to gcc 3.x in MirBSD, the kernel
-inherited from OpenBSD had similar issues, and adding -ffreestanding
-as should be fixed that.
-
-So, please, compile the Linux kernel with -ffreestanding, too.
-
-bye,
-//mirabilos
--- 
-In traditional syntax ' is ignored, but in c99 everything between two ' is
-handled as character constant.  Therefore you cannot use ' in a preproces-
-sing file in c99 mode.	-- Ragge
-No faith left in ISO C99, undefined behaviour, etc.
+Michal
