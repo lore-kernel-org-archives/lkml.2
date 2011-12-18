@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab1LRAe0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 19:34:26 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50287 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1LRAeY (ORCPT
+	id S1751430Ab1LRAnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 19:43:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34701 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab1LRAnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 19:34:24 -0500
-Date: Sun, 18 Dec 2011 00:34:19 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-mm@kvack.org,
+	Sat, 17 Dec 2011 19:43:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1112180128070.21784@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1112180128070.21784@swampdragon.chaosbits.net>
+Date: Sat, 17 Dec 2011 16:43:11 -0800
+Message-ID: <CANN689GQyzMGfnxsKmni7wDFpqo4s=D3dpu6w9UxN0tKbqakig@mail.gmail.com>
+Subject: Re: [PATCH] Use 'do {} while (0)' for empty flush_tlb_fix_spurious_fault()
+ macro
+From: Michel Lespinasse <walken@google.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: x86@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Hugh Dickins <hughd@google.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] Put braces around potentially empty 'if' body in
- handle_pte_fault()
-Message-ID: <20111218003419.GE2203@ZenIV.linux.org.uk>
-References: <alpine.LNX.2.00.1112180059080.21784@swampdragon.chaosbits.net>
- <1324167535.3323.63.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324167535.3323.63.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 01:18:55AM +0100, Eric Dumazet wrote:
-> Thats should be fixed in the reverse way :
-> 
-> #define flush_tlb_fix_spurious_fault(vma, address) do { } while (0)
+On Sat, Dec 17, 2011 at 4:32 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> If one builds the kernel with -Wempty-body one gets this warning:
+>
+>  mm/memory.c:3432:46: warning: suggest braces around empty body in an ‘if’ statement [-Wempty-body]
+>
+> due to the fact that 'flush_tlb_fix_spurious_fault' is a macro that
+> can sometimes be defined to nothing.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-There's a better way to do that -
-#define f(a) do { } while(0)
-does not work as a function returning void -
-	f(1), g();
-won't work.  OTOH
-#define f(a) ((void)0)
-works just fine.
+Looks good to me. I'd be happy with either that or Al's alternative suggestion.
+
+Reviewed-by: Michel Lespinasse <walken@google.com>
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
