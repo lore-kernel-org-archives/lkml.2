@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1LRV01 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 16:26:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53346 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752088Ab1LRV0R (ORCPT
+	id S1752046Ab1LRV2p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 16:28:45 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:36321 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1LRV2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 16:26:17 -0500
-Message-ID: <1324243556.2844.22.camel@deadeye>
-Subject: Re: [RFC][PATCH linux-firmware] isci: Add firmware blob and sources
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Dan Williams <dan.j.williams@gmail.com>
-Cc: Intel SCU Linux support <intel-linux-scu@intel.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Sun, 18 Dec 2011 21:25:56 +0000
-In-Reply-To: <CAA9_cmd9KMS3UBsQJ0WxT0rtQJVWceVwxvyXtRD+PuzwjUHUGA@mail.gmail.com>
-References: <1324142068.2825.341.camel@deadeye>
-	 <CAA9_cmd9KMS3UBsQJ0WxT0rtQJVWceVwxvyXtRD+PuzwjUHUGA@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-57pL3DIPV8/whev+/Blg"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 18 Dec 2011 16:28:43 -0500
+Message-ID: <4EEE5B08.8010703@gmail.com>
+Date: Sun, 18 Dec 2011 16:28:40 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ryota Ozaki <ozaki.ryota@gmail.com>
+CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH][RESEND] mm: Fix off-by-one bug in print_nodes_state
+References: <1324209529-15892-1-git-send-email-ozaki.ryota@gmail.com>
+In-Reply-To: <1324209529-15892-1-git-send-email-ozaki.ryota@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(12/18/11 6:58 AM), Ryota Ozaki wrote:
+> /sys/devices/system/node/{online,possible} involve a garbage byte
+> because print_nodes_state returns content size + 1. To fix the bug,
+> the patch changes the use of cpuset_sprintf_cpulist to follow the
+> use at other places, which is clearer and safer.
+> 
+> This bug was introduced since v2.6.24.
+> 
+> Signed-off-by: Ryota Ozaki<ozaki.ryota@gmail.com>
+> ---
+>   drivers/base/node.c |    8 +++-----
+>   1 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/base/node.c b/drivers/base/node.c
+> index 5693ece..ef7c1f9 100644
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -587,11 +587,9 @@ static ssize_t print_nodes_state(enum node_states state, char *buf)
+>   {
+>   	int n;
+> 
+> -	n = nodelist_scnprintf(buf, PAGE_SIZE, node_states[state]);
+> -	if (n>  0&&  PAGE_SIZE>  n + 1) {
+> -		*(buf + n++) = '\n';
+> -		*(buf + n++) = '\0';
+> -	}
+> +	n = nodelist_scnprintf(buf, PAGE_SIZE-2, node_states[state]);
 
---=-57pL3DIPV8/whev+/Blg
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+PAGE_SIZE-1. This seems another off by one. buf[n++] = '(J\n' mean
+override old trailing '\0' and buf[n] = '\0' mean to append one byte.
+Then totally, we append one byte.
 
-On Sun, 2011-12-18 at 10:59 -0800, Dan Williams wrote:
-> On Sat, Dec 17, 2011 at 9:14 AM, Ben Hutchings <ben@decadent.org.uk> wrot=
-e:
-> > isci requires a parameter blob which is usually found in NVRAM, but it
-> > can fall back to loading with request_firmware().  These files are
-> > taken from the Linux source tree where they were wrongly added in
-> > Linux 3.0.
->=20
-> Oh, I was of the impression that the external firmware tree was for
-> license incompatible firmware images?
+> +	buf[n++] = '(B\n';
+> +	buf[n] = '\0';
+>   	return n;
+>   }
+> 
 
-firmware/README.AddingFirmware doesn't say that the licence makes a
-difference.
-
-> > ---
-> > I'm a bit unclear on the purpose and use of isci_firmware.bin.  Is it
-> > needed for production hardware?
->=20
-> It's a stop gap for platforms with missing or broken oem parameters.
-> It is meant to become vestigial once the platform revisions quiet
-> down.
->=20
-> > Does it need to be customised
-> > per-system, or are module parameters sufficient for that?  (If not, why
-> > isn't it built into the driver?)
->=20
-> It is customized per system to meet EMI and signal integrity targets
-> of a given platform.
-
-Given this, does it make sense to distribute a binary at all?
-
-Ben.
-
-> > probe_roms.h is labelled with a dual BSD/GPLv2 licence but the other
-> > files had no licence header so I've treated them as GPLv2 by default.
->=20
-> The latest version of probe_roms.h [1] supports the v1.3 oem parameter
-> format, this patch appears to be v1.0 based.
->=20
-> Regards,
-> Dan
->=20
-> [1]: http://git.kernel.org/?p=3Dlinux/kernel/git/djbw/isci.git;a=3Dblob;f=
-=3Ddrivers/scsi/isci/probe_roms.h;hb=3Drefs/heads/fixes
-
---=20
-Ben Hutchings
-Teamwork is essential - it allows you to blame someone else.
-
---=-57pL3DIPV8/whev+/Blg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATu5aZOe/yOyVhhEJAQoYsg/+J2iHG3UKzsi09bvfvnHZ+1rioqDyVPPT
-cJuKkcstXyJQ+urHg4dpaZebV67ZyG7aa0MKEuILhQcAPqJCIsFyLp5p/3urW8hq
-+u5O1jMItxSRs0l7/zh+m3hf7P0fNWKXlq4KaEBxHJPtK0KmYZY3NmLDtJmVKuJt
-h4bENcvclxHou8r/CUAxZABsH93nrhSo42Vck15Y671dIpDsYjKn+Kd/FxM1gJ/k
-WRF1cckWS22yxJEGAjuqnlg5LRGHtFI9Su2IliVdObsoPv36UAXbvf7IJ75v989w
-YGnlpOcNRS+NYki0Jsg20tCGaXFcHomNI9gFriKfuW9UYqo2OLraMKVWV0pAeu4F
-1zArmKkwdugNGAKcxXZ5Ebwgk4jZjgQO7xreH8N4SLa9ooBoGPNSRCCX4YQWPD7b
-0U4P5wux8Q4xl0iKnRVj3tLl0vWGna+svCkxuFU43UZFOdzbR+EQBrHc+nFR8UfZ
-eC+LgKr0d20KMKAQx16GwPCkZSBd8S5qpianF/G9JhUs+TauNSvdpDKxVxg+VVuc
-m5ZqUn+L3pHXJcbE2fK/doTlXeWQd5uI4Eh/oQ2c37aqOqojJXtAc+u7Gp6hMi6P
-S8F5r/BxHgRhVoa4Q8N18V+TOcMGYnHRvGsfN3ihcZRPMYv5f8uumtMc71yr2Clm
-fL/SzISsY6I=
-=EF8N
------END PGP SIGNATURE-----
-
---=-57pL3DIPV8/whev+/Blg--
