@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab1LRS3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 13:29:47 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61242 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab1LRS3p (ORCPT
+	id S1752055Ab1LRSaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 13:30:00 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:44374 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1LRS37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 13:29:45 -0500
-Message-ID: <4EEE3115.80801@gmail.com>
-Date: Sun, 18 Dec 2011 13:29:41 -0500
+	Sun, 18 Dec 2011 13:29:59 -0500
+Message-ID: <4EEE3124.7070605@gmail.com>
+Date: Sun, 18 Dec 2011 13:29:56 -0500
 From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
@@ -52,7 +52,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Cc: Jiri Slaby<jslaby@suse.cz>
 
 Andrew, can you please pick up this series into your tree? because your
-tree have related Doug mqueue.
+tree have related Doug mqueue patch series.
 
 Thanks.
 
