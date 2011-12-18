@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab1LRMiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 07:38:00 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47909 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab1LRMh4 (ORCPT
+	id S1751779Ab1LRMx5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 07:53:57 -0500
+Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:54962 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751615Ab1LRMxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 07:37:56 -0500
+	Sun, 18 Dec 2011 07:53:54 -0500
+Date: Sun, 18 Dec 2011 13:48:29 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Ben Dooks <ben@simtec.co.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [rtc-linux] [PATCH RESEND] rtc: convert drivers/rtc/* to use
+ module_platform_driver()
+Message-ID: <20111218124829.GC7899@game.jcrosoft.org>
+References: <1323931602.3305.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20111214211652.GO2203@ZenIV.linux.org.uk>
-References: <CAE04G=Bu4WnU9SYU9u3-ap6OrBEjWONK8TA8bYBy5OSCCzzDqg@mail.gmail.com>
-	<20111214211652.GO2203@ZenIV.linux.org.uk>
-Date: Sun, 18 Dec 2011 20:37:55 +0800
-Message-ID: <CAE04G=BvDFrAu2SoY5sQ9XjoFh9g2kp-gbzO0ETC2i4XMqi0AQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] x86: Add process memory layout to coredump file
-From: t cheney <cdmalord@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        gdb-patches@sourceware.org, binutils@sourceware.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323931602.3305.1.camel@phoenix>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16300215902694714289
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrgedtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrtdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/11, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, Dec 10, 2011 at 10:37:02PM +0800, t cheney wrote:
->> This patch just add memory layout(same as /proc/pid/maps) to
->> coredump file. The layout is appended to corenote segment with
->> flag NT_MAPS=7.
->
->> +		len = sprintf(buf, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu",
->> +			start,
->> +			end,
->> +			flags & VM_READ ? 'r' : '-',
->> +			flags & VM_WRITE ? 'w' : '-',
->> +			flags & VM_EXEC ? 'x' : '-',
->> +			flags & VM_MAYSHARE ? 's' : 'p',
->> +			pgoff,
->> +			MAJOR(dev), MINOR(dev), ino);
->
-> Device numbers may be wider than 16 bits.
-Yes, it should be:
-len = sprintf(buf, "%08lx-%08lx %c%c%c%c %08llx %03x:%05x %lu",
-and  corresponding change from 25 to 29 in function pad_spaces:
-static int pad_spaces(char *p, int len)
-{
-       len = 29 + sizeof(void *) * 6 - len;
+On 14:46 Thu 15 Dec     , Axel Lin wrote:
+> This patch converts the drivers in drivers/rtc/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
+> 
+> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Mike Frysinger <vapier.adi@gmail.com>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Ben Dooks <ben@simtec.co.uk>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
+> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
->
->> +			p = d_path(&vma->vm_file->f_path, s, maps_size-1);
->
-> What if somebody renames the file (or, better yet, its parent directory)
-> between two calls of that thing?
->
-Yes, function core_handle_maps is called twice, first one just calculate size,
-second one write maps into coredump file. If the pathname is changed,
-the size may changed too.
-If the new size is less than or same as origin, all maps string is
-written to file.
-If the new size is  more than  origin, just part is written to file,
-the rest is ignored.
+Best Regards,
+J.
