@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1LRQ1X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 11:27:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52362 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab1LRQ1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 11:27:21 -0500
-Date: Sun, 18 Dec 2011 17:27:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH resend] nohz: Remove update_ts_time_stat from
- tick_nohz_start_idle
-Message-ID: <20111218162715.GA25717@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751935Ab1LRRGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 12:06:51 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:57902 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751781Ab1LRRGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 12:06:50 -0500
+Message-ID: <1324228007.14500.4.camel@joe2Laptop>
+Subject: Re: [PATCH] m68k/irq: don't use pr_crit in an header
+From: Joe Perches <joe@perches.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, debian-kernel@lists.debian.org,
+        linux-m68k@vger.kernel.org, Thorsten Glaser <tg@debian.org>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 18 Dec 2011 09:06:47 -0800
+In-Reply-To: <20111218104248.GS24496@pengutronix.de>
+References: <Pine.BSM.4.64L.1112161437090.856@herc.mirbsd.org>
+	 <1324152592-1718-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <CAMuHMdXyf_ofM+y6yKrzftyKTOyrSKzW7fUVAJyY6XTV_FVhNA@mail.gmail.com>
+	 <20111218104248.GS24496@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to call update_ts_time_stat from tick_nohz_start_idle
-anymore (after e0e37c20 sched: Eliminate the ts->idle_lastupdate field)
-when we updated idle_lastupdate unconditionally.
+On Sun, 2011-12-18 at 11:42 +0100, Uwe Kleine-König wrote:
+> On Sun, Dec 18, 2011 at 11:32:21AM +0100, Geert Uytterhoeven wrote:
+> > 2011/12/17 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> > > Using pr_crit in an header results in funny messages. Consider
+> > >        #define pr_fmt(fmt) "mydriver: " fmt
+> > >        #include <linux/hardirq.h>
+> > > which makes the message from ack_bad_irq
+> > >        mydriver: unexpected IRQ trap...
+> > > so better use plain printk with KERN_CRIT directly.
 
-We haven't set idle_active yet and do not provide last_update_time so
-the whole call end up being just 2 wasted branches.
+Why or when is that inappropriate?
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-sched.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> I only wondered if it is also desirable to
+> have messages in headers modified depending on the module the header is
+> included in.
+[]
+> > Nack. Nowadays pr_crit(...) is recommended over "printk(KERN_CRIT ...)".
+> I know that, I just wonder if the proponents of this recommendation are
+> aware of the issue when using pr_* in headers. Joe?
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 4042064..be3cab0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -186,8 +186,6 @@ static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
- 
- 	now = ktime_get();
- 
--	update_ts_time_stats(cpu, ts, now, NULL);
--
- 	ts->idle_entrytime = now;
- 	ts->idle_active = 1;
- 	sched_clock_idle_sleep_event();
--- 
-1.7.7.3
+I believe it to be a feature rather than a defect.
+
+For instance:  commit 256ee435b9a9ee9cca69602fe8046b27ca99fbee
+
+    netdevice: Convert printk to pr_info in netif_tx_stop_queue
+    
+    This allows any caller to be prefaced by any specific
+    pr_fmt to better identify which device driver is using
+    this function inappropriately. 
+
+cheers, Joe
+
