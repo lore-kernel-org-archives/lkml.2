@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab1LROmf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:42:35 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:55708 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086Ab1LROmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:42:33 -0500
-Message-ID: <4EEDFBCF.4040802@nod.at>
-Date: Sun, 18 Dec 2011 15:42:23 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Moger, Babu" <Babu.Moger@netapp.com>
-CC: JBottomley@parallels.com, Somasundaram.Krishnasamy@lsi.com,
-        yanling.qi@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_dh_rdac: Fix error path
-References: <1321577067-26332-1-git-send-email-richard@nod.at> <47D23AD8469A2B448F33C24BD7A39BD9108C7178@RTPMVEXC1-PRD.hq.netapp.com>
-In-Reply-To: <47D23AD8469A2B448F33C24BD7A39BD9108C7178@RTPMVEXC1-PRD.hq.netapp.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig35DB04A0A08F01CA45C45A81"
+	id S1752203Ab1LROnW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:43:22 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:52311 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751677Ab1LROnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 09:43:20 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-ext4@vger.kernel.org
+Cc: adilger@dilger.ca, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH V3 13/21] ext4: Create a new function search_dir.
+Date: Sun, 18 Dec 2011 22:24:30 +0800
+Message-Id: <1324218278-2460-13-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1324218278-2460-1-git-send-email-tm@tao.ma>
+References: <4EEDF6B1.7050206@tao.ma>
+ <1324218278-2460-1-git-send-email-tm@tao.ma>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.15.203 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig35DB04A0A08F01CA45C45A81
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+From: Tao Ma <boyu.mt@taobao.com>
 
-Am 18.11.2011 15:34, schrieb Moger, Babu:
-> Looks good to me..
->=20
->> -----Original Message-----
->> From: Richard Weinberger [mailto:richard@nod.at]
->> Sent: Thursday, November 17, 2011 6:44 PM
->> To: JBottomley@parallels.com
->> Cc: Moger, Babu; Somasundaram.Krishnasamy@lsi.com; yanling.qi@lsi.com;=
+search_dirblock is used to search a dir block, but the code is
+almost the same for searching an inline dir.
 
->> linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; Richard
->> Weinberger
->> Subject: [PATCH] scsi_dh_rdac: Fix error path
->>
->> If create_singlethread_workqueue() failes, rdac_init should fail too.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  drivers/scsi/device_handler/scsi_dh_rdac.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c
->> b/drivers/scsi/device_handler/scsi_dh_rdac.c
->> index 1d31279..2802394 100644
->> --- a/drivers/scsi/device_handler/scsi_dh_rdac.c
->> +++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
->> @@ -934,6 +934,8 @@ static int __init rdac_init(void)
->>  	if (!kmpath_rdacd) {
->>  		scsi_unregister_device_handler(&rdac_dh);
->>  		printk(KERN_ERR "kmpath_rdacd creation failed.\n");
->> +
->> +		r =3D -EINVAL;
->>  	}
->>  done:
->>  	return r;
->> --
->> 1.7.7.3
->=20
+So create a new fuction search_dir and let search_dirblock
+call it.
 
-James,
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/ext4/ext4.h  |    7 +++++++
+ fs/ext4/namei.c |   26 +++++++++++++++++++-------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
-can you please pickup this patch?
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 25d6e58..16efcad 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1967,6 +1967,13 @@ extern int ext4_orphan_add(handle_t *, struct inode *);
+ extern int ext4_orphan_del(handle_t *, struct inode *);
+ extern int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
+ 				__u32 start_minor_hash, __u32 *next_hash);
++extern int search_dir(struct buffer_head *bh,
++		      char *search_buf,
++		      int buf_size,
++		      struct inode *dir,
++		      const struct qstr *d_name,
++		      unsigned int offset,
++		      struct ext4_dir_entry_2 **res_dir);
+ 
+ /* resize.c */
+ extern int ext4_group_add(struct super_block *sb,
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 77312dc..6e97dd2 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -794,11 +794,13 @@ static inline int ext4_match (int len, const char * const name,
+ /*
+  * Returns 0 if not found, -1 on failure, and 1 on success
+  */
+-static inline int search_dirblock(struct buffer_head *bh,
+-				  struct inode *dir,
+-				  const struct qstr *d_name,
+-				  unsigned int offset,
+-				  struct ext4_dir_entry_2 ** res_dir)
++int search_dir(struct buffer_head *bh,
++	       char *search_buf,
++	       int buf_size,
++	       struct inode *dir,
++	       const struct qstr *d_name,
++	       unsigned int offset,
++	       struct ext4_dir_entry_2 **res_dir)
+ {
+ 	struct ext4_dir_entry_2 * de;
+ 	char * dlimit;
+@@ -806,8 +808,8 @@ static inline int search_dirblock(struct buffer_head *bh,
+ 	const char *name = d_name->name;
+ 	int namelen = d_name->len;
+ 
+-	de = (struct ext4_dir_entry_2 *) bh->b_data;
+-	dlimit = bh->b_data + dir->i_sb->s_blocksize;
++	de = (struct ext4_dir_entry_2 *)search_buf;
++	dlimit = search_buf + buf_size;
+ 	while ((char *) de < dlimit) {
+ 		/* this code is executed quadratically often */
+ 		/* do minimal checking `by hand' */
+@@ -832,6 +834,16 @@ static inline int search_dirblock(struct buffer_head *bh,
+ 	return 0;
+ }
+ 
++static inline int search_dirblock(struct buffer_head *bh,
++				  struct inode *dir,
++				  const struct qstr *d_name,
++				  unsigned int offset,
++				  struct ext4_dir_entry_2 **res_dir)
++{
++	return search_dir(bh, bh->b_data, dir->i_sb->s_blocksize, dir,
++			  d_name, offset, res_dir);
++}
++
+ 
+ /*
+  *	ext4_find_entry()
+-- 
+1.7.0.4
 
-Thanks,
-//richard
-
-
-
---------------enig35DB04A0A08F01CA45C45A81
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJO7fvUAAoJEN9758yqZn9eLw0IANYEkKJRhX7wSk4BDFj5nT6I
-sPRhglcdP/G5CFjU1yXsFWEZ+EhIB8SuWooY7ue257wLa+M5ZX2IH90GYGNBBIVu
-30vAAor5uizpMP1wlhr6VPKMhnSGfSe8Ef0tcW5viL+iGS0eO78K9ay0rnBKHYdJ
-JzROcIAXYbklRHKlBBp+r4obLz1+G2cNmjHFbcmA3pLPwGBazLZ/X6EB/j7QmeH9
-rF8Vlr0FpXs0vPm/9D4X5ZVxqU+CvNNZJQkR7gUPaosPkLKSMYrRPo7ro7R1SEIJ
-PzXJybp8UQwn+vEt872uhw9UdPK5onaBnIR0fNH+UG0KCLASO4kgU/H0q1bG60Y=
-=6YMG
------END PGP SIGNATURE-----
-
---------------enig35DB04A0A08F01CA45C45A81--
