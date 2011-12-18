@@ -1,77 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1LRIiK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 03:38:10 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49229 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab1LRIiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 03:38:06 -0500
-Date: Sun, 18 Dec 2011 09:36:14 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Michael Demeter <michael.demeter@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH] Added some addition debug prints for pb_keys
-Message-ID: <20111218083614.GF4144@elte.hu>
-References: <20111215223116.10166.50803.stgit@bob.linux.org.uk>
+	id S1751716Ab1LRIj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 03:39:57 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42092 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab1LRIjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 03:39:54 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, Sasha Levin <levinsasha928@gmail.com>
+Cc: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
+        davem@davemloft.net, jvrao@linux.vnet.ibm.com,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 9p: Don't use ATTR_* values from fs.h in userspace facing structs
+In-Reply-To: <20111217174725.GW2203@ZenIV.linux.org.uk>
+References: <1324134422-16642-1-git-send-email-levinsasha928@gmail.com> <20111217174725.GW2203@ZenIV.linux.org.uk>
+User-Agent: Notmuch/0.10.2+102~g61445d1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 18 Dec 2011 14:08:50 +0530
+Message-ID: <87pqfmgtph.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111215223116.10166.50803.stgit@bob.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+x-cbid: 11121808-3352-0000-0000-0000016DB721
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> From: Michael Demeter <michael.demeter@intel.com>
+On Sat, 17 Dec 2011 17:47:25 +0000, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> On Sat, Dec 17, 2011 at 05:07:02PM +0200, Sasha Levin wrote:
+> > struct p9_iattr_dotl is userspace facing, but the 'valid' field is documented
+> > as follows:
+> > 
+> > 	 * @valid: bitfield specifying which fields are valid
+> > 	 *         same as in struct iattr
+> > 
+> > Which means that the user has to know about kernel internal ATTR_* values.
+> > 
+> > On Fri, 2011-12-16 at 23:30 +0000, Al Viro wrote:
+> > > They *are* kernel internal values and 9P is asking for trouble exposing
+> > > them.  Translation: tomorrow we might reassign those as we bloody wish
+> > > and any userland code that happens to rely on their values will break.
+> > > At which point we'll handle complaints by pointing and laughing.
+> > >
+> > > It's a 9P bug; fix it there.  Turning random internal constants into a part
+> > > of ABI is not going to work.
+> > 
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  fs/9p/vfs_inode_dotl.c |   31 ++++++++++++++++++++++++++++++-
+> >  include/net/9p/9p.h    |   18 ++++++++++++++++++
+> >  2 files changed, 48 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+> > index 0b5745e..a948214 100644
+> > --- a/fs/9p/vfs_inode_dotl.c
+> > +++ b/fs/9p/vfs_inode_dotl.c
+> > @@ -523,6 +523,35 @@ v9fs_vfs_getattr_dotl(struct vfsmount *mnt, struct dentry *dentry,
+> >  	return 0;
+> >  }
+> >  
+> > +int v9fs_vfs_iattr_to_9p_valid(u32 ia_valid)
+> > +{
+> > +	u32 valid = 0, i;
+> > +	static u32 attr_map[][2] = {
+> > +		{ATTR_MODE,		P9_ATTR_MODE},
+> > +		{ATTR_UID,		P9_ATTR_UID},
+> > +		{ATTR_SIZE,		P9_ATTR_SIZE},
+> > +		{ATTR_ATIME,		P9_ATTR_ATIME},
+> > +		{ATTR_MTIME,		P9_ATTR_MTIME},
+> > +		{ATTR_CTIME,		P9_ATTR_CTIME},
+> > +		{ATTR_ATIME_SET,	P9_ATTR_ATIME_SET},
+> > +		{ATTR_MTIME_SET,	P9_ATTR_MTIME_SET},
+> > +		{ATTR_FORCE,		P9_ATTR_FORCE},
+> > +		{ATTR_ATTR_FLAG,	P9_ATTR_ATTR_FLAG},
+> > +		{ATTR_KILL_SUID,	P9_ATTR_KILL_SUID},
+> > +		{ATTR_KILL_SGID,	P9_ATTR_KILL_SGID},
+> > +		{ATTR_FILE,		P9_ATTR_FILE},
+> > +		{ATTR_KILL_PRIV,	P9_ATTR_KILL_PRIV},
+> > +		{ATTR_OPEN,		P9_ATTR_OPEN},
+> > +		{ATTR_TIMES_SET,	P9_ATTR_TIMES_SET},
+> > +	};
 > 
-> Added additional debug output that we always seem to add
-> during power ons to validate firmware operation.
+> a) ATTR_GID is lost
+> b) passing ATTR_FILE is bloody pointless; look at what it does and
+> realize that 9p doesn't as much as look at ia_file.
+> c) ATTR_KILL_PRIV is very dubious; what's the legitimate use of that
+> puppy in fs code?
 > 
-> Signed-off-by: Michael Demeter <michael.demeter@intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
+> Look, that's the problem with exposing this stuff to protocol; you don't
+> get clear semantics and are you seriously asking for trouble on kernel
+> changes.  Suppose tomorrow we get rid of e.g. ATTR_KILL_PRIV; what are you
+> guys going to do?  Hope that no 9p server has behaviour dependent on that
+> flag being set or cleared?
 > 
->  arch/x86/platform/mrst/mrst.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> Don't turn the kernel internals into a part of ABI.  And blind bulk remapping
+> of constants is exactly that...
 > 
-> 
-> diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-> index a9a4732..3002cc86 100644
-> --- a/arch/x86/platform/mrst/mrst.c
-> +++ b/arch/x86/platform/mrst/mrst.c
-> @@ -1035,6 +1035,8 @@ static int __init pb_keys_init(void)
->  	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
->  	for (i = 0; i < num; i++) {
->  		gb[i].gpio = get_gpio_by_name(gb[i].desc);
-> +		pr_debug("info[%2d]: name = %s,"
-> +				"gpio = %d\n", i, gb[i].desc, gb[i].gpio);
 
-I've fixed this to lie on a single line - there's no point in 
-line-breaking pr_debug()s in general - especially not the format 
-string.
+I am testing this locally.
 
-Note that merging the format string unearthed a small formatting 
-ugly:
+commit 8ebbbcf5185096acccc523fb040e770d7876d4cd
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Sat Dec 17 21:01:08 2011 +0530
 
-	"info[%2d]: name = %s,gpio = %d\n"
+    fs/9p: iattr_valid flags are kernel internal flags map them to 9p values.
+    
+    Kernel internal values can change, add protocol values for these constant and
+    use them.
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-I edited that to the probably intended:
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 0b5745e..a81808a 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -523,6 +523,46 @@ v9fs_vfs_getattr_dotl(struct vfsmount *mnt, struct dentry *dentry,
+ 	return 0;
+ }
+ 
++/*
++ * Attribute flags.
++ */
++#define P9_ATTR_MODE		(1 << 0)
++#define P9_ATTR_UID		(1 << 1)
++#define P9_ATTR_GID		(1 << 2)
++#define P9_ATTR_SIZE		(1 << 3)
++#define P9_ATTR_ATIME		(1 << 4)
++#define P9_ATTR_MTIME		(1 << 5)
++#define P9_ATTR_CTIME		(1 << 6)
++#define P9_ATTR_ATIME_SET	(1 << 7)
++#define P9_ATTR_MTIME_SET	(1 << 8)
++
++struct dotl_iattr_map {
++	int iattr_valid;
++	int p9_iattr_valid;
++};
++
++static int v9fs_mapped_iattr_valid(int iattr_valid)
++{
++	int i;
++	int p9_iattr_valid = 0;
++	struct dotl_iattr_map dotl_iattr_map[] = {
++		{ ATTR_MODE,		P9_ATTR_MODE },
++		{ ATTR_UID,		P9_ATTR_UID },
++		{ ATTR_GID,		P9_ATTR_GID },
++		{ ATTR_SIZE,		P9_ATTR_SIZE },
++		{ ATTR_ATIME,		P9_ATTR_ATIME },
++		{ ATTR_MTIME,		P9_ATTR_MTIME },
++		{ ATTR_CTIME,		P9_ATTR_CTIME },
++		{ ATTR_ATIME_SET,	P9_ATTR_ATIME_SET },
++		{ ATTR_MTIME_SET,	P9_ATTR_MTIME_SET },
++	};
++	for (i = 0; i < ARRAY_SIZE(dotl_iattr_map); i++) {
++		if (iattr_valid & dotl_iattr_map[i].iattr_valid)
++			p9_iattr_valid |= dotl_iattr_map[i].p9_iattr_valid;
++	}
++	return p9_iattr_valid;
++}
++
+ /**
+  * v9fs_vfs_setattr_dotl - set file metadata
+  * @dentry: file whose metadata to set
+@@ -543,7 +583,7 @@ int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
+ 	if (retval)
+ 		return retval;
+ 
+-	p9attr.valid = iattr->ia_valid;
++	p9attr.valid = v9fs_mapped_iattr_valid(iattr->ia_valid);
+ 	p9attr.mode = iattr->ia_mode;
+ 	p9attr.uid = iattr->ia_uid;
+ 	p9attr.gid = iattr->ia_gid;
 
-	"info[%2d]: name = %s, gpio = %d\n"
-
-Thanks,
-
-	Ingo
