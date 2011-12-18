@@ -1,181 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1LROGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:06:25 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63373 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1LROGX (ORCPT
+	id S1751928Ab1LROLh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:11:37 -0500
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:47298 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab1LROLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:06:23 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Marek Vasut <marek.vasut@gmail.com>,
-        Wolfgang Denk <wd@denx.de>, Stefano Babic <sbabic@denx.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH] MXS: Convert mutexes in clock.c to spinlocks
-Date: Sun, 18 Dec 2011 15:06:13 +0100
-Message-Id: <1324217174-6574-1-git-send-email-marek.vasut@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	Sun, 18 Dec 2011 09:11:34 -0500
+Date: Sun, 18 Dec 2011 15:11:01 +0100
+From: Udo Steinberg <udo@hypervisor.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: PCI suspend warnings in 3.2-rc6
+Message-ID: <20111218151101.083bc530@x220.fritz.box>
+X-Mailer: X-Mailer 5.0 Gold
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/U5Xvlyo3x1ucEjXBt_vzdp0"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mutexes can't be safely used under certain circumstances. I noticed this
-issue during some network instability at home:
+--Sig_/U5Xvlyo3x1ucEjXBt_vzdp0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-1) I received information about duplicate ipv6 address
-2) I use amba-pl011 driver for console output
+Hi,
 
-Backtrace produced (not 80-per-line aligned):
+When suspending to RAM, I'm getting a bunch of warnings from the PCI layer
+in Linux-3.2-rc6, which I didn't get with Linux-3.1. Please let me know if
+I should provide more information about platform, config, etc.
 
-eth0: IPv6 duplicate address XXXX::YYYY:ZZZZ:WWWW:0 detected!
-------------[ cut here ]------------
-WARNING: at kernel/mutex.c:198 mutex_lock_nested+0x284/0x2c0()
-Modules linked in:
-[<c0013ab8>] (unwind_backtrace+0x0/0xf0) from [<c001d934>] (warn_slowpath_common+0x4c/0x64)
-[<c001d934>] (warn_slowpath_common+0x4c/0x64) from [<c001d968>] (warn_slowpath_null+0x1c/0x24)
-[<c001d968>] (warn_slowpath_null+0x1c/0x24) from [<c033a4f4>] (mutex_lock_nested+0x284/0x2c0)
-[<c033a4f4>] (mutex_lock_nested+0x284/0x2c0) from [<c0017d88>] (clk_enable+0x20/0x48)
-[<c0017d88>] (clk_enable+0x20/0x48) from [<c01dfbf0>] (pl011_console_write+0x20/0x74)
-[<c01dfbf0>] (pl011_console_write+0x20/0x74) from [<c001da98>] (__call_console_drivers+0x7c/0x94)
-[<c001da98>] (__call_console_drivers+0x7c/0x94) from [<c001df20>] (console_unlock+0xf8/0x244)
-[<c001df20>] (console_unlock+0xf8/0x244) from [<c001e308>] (vprintk+0x29c/0x484)
-[<c001e308>] (vprintk+0x29c/0x484) from [<c03355a8>] (printk+0x20/0x30)
-[<c03355a8>] (printk+0x20/0x30) from [<c02df600>] (addrconf_dad_failure+0x148/0x158)
-[<c02df600>] (addrconf_dad_failure+0x148/0x158) from [<c02ebde0>] (ndisc_rcv+0xb38/0xdb0)
-[<c02ebde0>] (ndisc_rcv+0xb38/0xdb0) from [<c02f1b28>] (icmpv6_rcv+0x6ec/0x9c4)
-[<c02f1b28>] (icmpv6_rcv+0x6ec/0x9c4) from [<c02da9a4>] (ip6_input_finish+0x144/0x4e0)
-[<c02da9a4>] (ip6_input_finish+0x144/0x4e0) from [<c02db424>] (ip6_mc_input+0xb8/0x154)
-[<c02db424>] (ip6_mc_input+0xb8/0x154) from [<c02db12c>] (ipv6_rcv+0x300/0x53c)
-[<c02db12c>] (ipv6_rcv+0x300/0x53c) from [<c0267b78>] (__netif_receive_skb+0x240/0x420)
-[<c0267b78>] (__netif_receive_skb+0x240/0x420) from [<c0267de8>] (process_backlog+0x90/0x150)
-[<c0267de8>] (process_backlog+0x90/0x150) from [<c026a5f8>] (net_rx_action+0xc0/0x264)
-[<c026a5f8>] (net_rx_action+0xc0/0x264) from [<c0023cfc>] (__do_softirq+0xa8/0x214)
-[<c0023cfc>] (__do_softirq+0xa8/0x214) from [<c00242c0>] (irq_exit+0x8c/0x94)
-[<c00242c0>] (irq_exit+0x8c/0x94) from [<c000f6d0>] (handle_IRQ+0x34/0x84)
-[<c000f6d0>] (handle_IRQ+0x34/0x84) from [<c000e5d8>] (__irq_usr+0x38/0x80)
----[ end trace 32eab6a8dcdca9c0 ]---
+Cheers,
 
-So the problem summary:
-1) ICMPv6 packet is received
-2) Interrupt is produced, packet is actually received
-3) Packet processing goes on (in tasklet)
-4) Duplicate ipv6 address detected, warning produced
-5) printk() called, calls pl011_console_write()
-6) pl011_console_write() calls clk_enable()
-7) clk_enable() for mxs does a mutex_lock(), which is wrong in this context
+	- Udo
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-Cc: Wolfgang Denk <wd@denx.de>
-Cc: Stefano Babic <sbabic@denx.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Huang Shijie <b32955@freescale.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
----
- arch/arm/mach-mxs/clock.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+[ 4213.638873] PM: Syncing filesystems ... done.
+[ 4213.804067] PM: Preparing system for mem sleep
+[ 4214.475672] Freezing user space processes ... (elapsed 0.01 seconds) don=
+e.
+[ 4214.491035] Freezing remaining freezable tasks ... (elapsed 0.01 seconds=
+) done.
+[ 4214.507017] PM: Entering mem sleep
+[ 4214.507137] Suspending console(s) (use no_console_suspend to debug)
+[ 4214.519837] sd 2:0:0:0: [sdb] Synchronizing SCSI cache
+[ 4214.520505] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+[ 4214.520532] sd 2:0:0:0: [sdb] Stopping disk
+[ 4214.535795] ------------[ cut here ]------------
+[ 4214.535812] WARNING: at drivers/pci/pci-driver.c:607 pci_has_legacy_pm_s=
+upport.clone.3+0x48/0x4c()
+[ 4214.535817] Hardware name: 4290W4H
+[ 4214.535823] Pid: 18161, comm: kworker/u:14 Not tainted 3.2.0-rc6 #1
+[ 4214.535827] Call Trace:
+[ 4214.535840]  [<ffffffff81037044>] ? warn_slowpath_common+0x73/0x87
+[ 4214.535848]  [<ffffffff81179840>] ? pci_has_legacy_pm_support.clone.3+0x=
+48/0x4c
+[ 4214.535856]  [<ffffffff81179e53>] ? pci_pm_suspend+0x30/0xea
+[ 4214.535868]  [<ffffffff8123a8b5>] ? dpm_wait+0x35/0x35
+[ 4214.535875]  [<ffffffff8123b05f>] ? pm_op+0x88/0x148
+[ 4214.535882]  [<ffffffff8123b270>] ? __device_suspend+0xfc/0x193
+[ 4214.535890]  [<ffffffff81050f57>] ? __async_schedule+0x121/0x121
+[ 4214.535897]  [<ffffffff8123b53e>] ? async_suspend+0x19/0x83
+[ 4214.535903]  [<ffffffff81050fed>] ? async_run_entry_fn+0x96/0x141
+[ 4214.535912]  [<ffffffff81047492>] ? process_one_work+0x1c8/0x2e3
+[ 4214.535919]  [<ffffffff81046b23>] ? need_to_create_worker+0x15/0x2d
+[ 4214.535927]  [<ffffffff81048261>] ? worker_thread+0x17a/0x23a
+[ 4214.535934]  [<ffffffff810480e7>] ? manage_workers.clone.18+0x15b/0x15b
+[ 4214.535941]  [<ffffffff8104bc97>] ? kthread+0x7a/0x82
+[ 4214.535949]  [<ffffffff813e3574>] ? kernel_thread_helper+0x4/0x10
+[ 4214.535956]  [<ffffffff8104bc1d>] ? kthread_flush_work_fn+0x11/0x11
+[ 4214.535962]  [<ffffffff813e3570>] ? gs_change+0xb/0xb
+[ 4214.535972] ---[ end trace 50804e7504fa4fca ]---
+[ 4214.536061] snd_hda_intel 0000:00:1b.0: PCI INT A disabled
+[ 4214.537252] sdhci-pci 0000:0d:00.0: PCI INT A disabled
+[ 4214.539032] ACPI handle has no context!
+[ 4214.545824] sd 0:0:0:0: [sda] Stopping disk
+[ 4214.554906] i915 0000:00:02.0: power state changed by ACPI to D3
+[ 4214.626750] ehci_hcd 0000:00:1d.0: PCI INT A disabled
+[ 4214.630739] ehci_hcd 0000:00:1a.0: PCI INT A disabled
+[ 4214.630753] e1000e 0000:00:19.0: PCI INT A disabled
+[ 4214.630766] e1000e 0000:00:19.0: PME# enabled
+[ 4214.630774] e1000e 0000:00:19.0: wake-up capability enabled by ACPI
+[ 4214.818745] PM: suspend of devices complete after 311.805 msecs
+[ 4214.819011] xhci_hcd 0000:0e:00.0: PME# enabled
+[ 4214.819036] pcieport 0000:00:1c.6: wake-up capability enabled by ACPI
+[ 4214.834654] ------------[ cut here ]------------
+[ 4214.834673] WARNING: at drivers/pci/pci-driver.c:607 pci_has_legacy_pm_s=
+upport.clone.3+0x48/0x4c()
+[ 4214.834679] Hardware name: 4290W4H
+[ 4214.834686] Pid: 18148, comm: acpi_handler.sh Tainted: G        W    3.2=
+.0-rc6 #1
+[ 4214.834690] Call Trace:
+[ 4214.834701]  [<ffffffff81037044>] ? warn_slowpath_common+0x73/0x87
+[ 4214.834710]  [<ffffffff81179840>] ? pci_has_legacy_pm_support.clone.3+0x=
+48/0x4c
+[ 4214.834717]  [<ffffffff81179acf>] ? pci_pm_suspend_noirq+0x2e/0x10c
+[ 4214.834726]  [<ffffffff8123b67a>] ? pm_noirq_op+0xd2/0x1ad
+[ 4214.834733]  [<ffffffff8123b9a4>] ? dpm_suspend_noirq+0x9f/0x1e8
+[ 4214.834743]  [<ffffffff8105e04c>] ? suspend_devices_and_enter+0x8e/0x1ec
+[ 4214.834751]  [<ffffffff8105e2c1>] ? enter_state+0x117/0x168
+[ 4214.834757]  [<ffffffff8105d4ca>] ? state_store+0xb4/0x108
+[ 4214.834764]  [<ffffffff810f0801>] ? sysfs_write_file+0xd3/0x10f
+[ 4214.834775]  [<ffffffff810aa823>] ? vfs_write+0xaf/0x129
+[ 4214.834782]  [<ffffffff810aa950>] ? sys_write+0x45/0x6e
+[ 4214.834794]  [<ffffffff813e21fb>] ? system_call_fastpath+0x16/0x1b
+[ 4214.834799] ---[ end trace 50804e7504fa4fcb ]---
+[ 4214.850794] ehci_hcd 0000:00:1d.0: PME# enabled
+[ 4214.850814] ehci_hcd 0000:00:1d.0: wake-up capability enabled by ACPI
+[ 4214.866576] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D3
+[ 4214.866677] ehci_hcd 0000:00:1a.0: PME# enabled
+[ 4214.866692] ehci_hcd 0000:00:1a.0: wake-up capability enabled by ACPI
+[ 4214.882555] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D3
+[ 4214.882675] PM: late suspend of devices complete after 64.003 msecs
+[ 4214.883556] ACPI: Preparing to enter system sleep state S3
+[ 4215.054409] PM: Saving platform NVS memory
+[ 4215.064347] Disabling non-boot CPUs ...
+[ 4215.067271] CPU 1 is now offline
+[ 4215.170127] CPU 2 is now offline
+[ 4215.273993] CPU 3 is now offline
+[ 4215.274566] Extended CMOS year: 2000
+[ 4215.275541] ACPI: Low-level resume complete
+[ 4215.275577] PM: Restoring platform NVS memory
+[ 4215.276354] Extended CMOS year: 2000
+[ 4215.276372] Enabling non-boot CPUs ...
+[ 4215.284592] Booting Node 0 Processor 1 APIC 0x1
+[ 4215.284597] smpboot cpu 1: start_ip =3D 98000
+[ 4215.296268] Calibrating delay loop (skipped) already calibrated this CPU
+[ 4215.296280] Disabled fast string operations
+[ 4215.363838] CPU1 is up
+[ 4215.364104] Booting Node 0 Processor 2 APIC 0x2
+[ 4215.364109] smpboot cpu 2: start_ip =3D 98000
+[ 4215.375712] Calibrating delay loop (skipped) already calibrated this CPU
+[ 4215.375723] Disabled fast string operations
+[ 4215.491556] CPU2 is up
+[ 4215.491896] Booting Node 0 Processor 3 APIC 0x3
+[ 4215.491897] smpboot cpu 3: start_ip =3D 98000
+[ 4215.502909] Calibrating delay loop (skipped) already calibrated this CPU
+[ 4215.502920] Disabled fast string operations
+[ 4215.571679] CPU3 is up
+[ 4215.576087] ACPI: Waking up from system sleep state S3
+[ 4215.767262] ACPI: \_SB_.PCI0.LPC_.EC__.BAT1 - docking
+[ 4215.775227] ACPI: Unable to dock!
+[ 4215.907164] i915 0000:00:02.0: restoring config space at offset 0xf (was=
+ 0x100, writing 0x10b)
+[ 4215.907189] i915 0000:00:02.0: restoring config space at offset 0x1 (was=
+ 0x900007, writing 0x900407)
+[ 4215.907236] pci 0000:00:16.0: restoring config space at offset 0xf (was =
+0x100, writing 0x1ff)
+[ 4215.907269] pci 0000:00:16.0: restoring config space at offset 0x4 (was =
+0xfed0a004, writing 0xf2625004)
+[ 4215.907284] pci 0000:00:16.0: restoring config space at offset 0x1 (was =
+0x100006, writing 0x180006)
+[ 4215.907324] serial 0000:00:16.3: restoring config space at offset 0xf (w=
+as 0x200, writing 0x2ff)
+[ 4215.907354] serial 0000:00:16.3: restoring config space at offset 0x5 (w=
+as 0x0, writing 0xf262c000)
+[ 4215.907364] serial 0000:00:16.3: restoring config space at offset 0x4 (w=
+as 0x1, writing 0x50b1)
+[ 4215.907379] serial 0000:00:16.3: restoring config space at offset 0x1 (w=
+as 0xb00000, writing 0xb00003)
+[ 4215.907425] e1000e 0000:00:19.0: restoring config space at offset 0xf (w=
+as 0x100, writing 0x1ff)
+[ 4215.907452] e1000e 0000:00:19.0: restoring config space at offset 0x6 (w=
+as 0x1, writing 0x5081)
+[ 4215.907470] e1000e 0000:00:19.0: restoring config space at offset 0x1 (w=
+as 0x100002, writing 0x100007)
+[ 4215.907523] ehci_hcd 0000:00:1a.0: restoring config space at offset 0xf =
+(was 0x100, writing 0x1ff)
+[ 4215.907554] ehci_hcd 0000:00:1a.0: restoring config space at offset 0x4 =
+(was 0x0, writing 0xf262a000)
+[ 4215.907570] ehci_hcd 0000:00:1a.0: restoring config space at offset 0x1 =
+(was 0x2900000, writing 0x2900002)
+[ 4215.907617] ehci_hcd 0000:00:1a.0: wake-up capability disabled by ACPI
+[ 4215.907626] ehci_hcd 0000:00:1a.0: PME# disabled
+[ 4215.907635] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
+[ 4215.907644] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
+[ 4215.907678] snd_hda_intel 0000:00:1b.0: restoring config space at offset=
+ 0xf (was 0x100, writing 0x1ff)
+[ 4215.907709] snd_hda_intel 0000:00:1b.0: restoring config space at offset=
+ 0x4 (was 0x4, writing 0xf2620004)
+[ 4215.907720] snd_hda_intel 0000:00:1b.0: restoring config space at offset=
+ 0x3 (was 0x0, writing 0x10)
+[ 4215.907732] snd_hda_intel 0000:00:1b.0: restoring config space at offset=
+ 0x1 (was 0x100000, writing 0x100002)
+[ 4215.907790] pcieport 0000:00:1c.0: restoring config space at offset 0xf =
+(was 0x100, writing 0x1ff)
+[ 4215.907813] pcieport 0000:00:1c.0: restoring config space at offset 0x9 =
+(was 0x10001, writing 0x1fff1)
+[ 4215.907823] pcieport 0000:00:1c.0: restoring config space at offset 0x8 =
+(was 0x0, writing 0xfff0)
+[ 4215.907834] pcieport 0000:00:1c.0: restoring config space at offset 0x7 =
+(was 0x20000000, writing 0x200000f0)
+[ 4215.907852] pcieport 0000:00:1c.0: restoring config space at offset 0x3 =
+(was 0x810000, writing 0x810010)
+[ 4215.907866] pcieport 0000:00:1c.0: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100004)
+[ 4215.907930] pcieport 0000:00:1c.1: restoring config space at offset 0xf =
+(was 0x200, writing 0x2ff)
+[ 4215.907953] pcieport 0000:00:1c.1: restoring config space at offset 0x9 =
+(was 0x10001, writing 0x1fff1)
+[ 4215.907964] pcieport 0000:00:1c.1: restoring config space at offset 0x8 =
+(was 0x0, writing 0xf250f250)
+[ 4215.907974] pcieport 0000:00:1c.1: restoring config space at offset 0x7 =
+(was 0x0, writing 0x200000f0)
+[ 4215.907990] pcieport 0000:00:1c.1: restoring config space at offset 0x3 =
+(was 0x810000, writing 0x810010)
+[ 4215.908003] pcieport 0000:00:1c.1: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100007)
+[ 4215.908071] pcieport 0000:00:1c.3: restoring config space at offset 0xf =
+(was 0x400, writing 0x4ff)
+[ 4215.908094] pcieport 0000:00:1c.3: restoring config space at offset 0x9 =
+(was 0x10001, writing 0xf0b1f041)
+[ 4215.908104] pcieport 0000:00:1c.3: restoring config space at offset 0x8 =
+(was 0x0, writing 0xf240f1d0)
+[ 4215.908114] pcieport 0000:00:1c.3: restoring config space at offset 0x7 =
+(was 0x20000000, writing 0x4040)
+[ 4215.908132] pcieport 0000:00:1c.3: restoring config space at offset 0x3 =
+(was 0x810000, writing 0x810010)
+[ 4215.908146] pcieport 0000:00:1c.3: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100007)
+[ 4215.908212] pcieport 0000:00:1c.4: restoring config space at offset 0xf =
+(was 0x100, writing 0x1ff)
+[ 4215.908234] pcieport 0000:00:1c.4: restoring config space at offset 0x9 =
+(was 0x10001, writing 0xf131f0c1)
+[ 4215.908245] pcieport 0000:00:1c.4: restoring config space at offset 0x8 =
+(was 0x0, writing 0xf1c0f150)
+[ 4215.908256] pcieport 0000:00:1c.4: restoring config space at offset 0x7 =
+(was 0x20000000, writing 0x3030)
+[ 4215.908273] pcieport 0000:00:1c.4: restoring config space at offset 0x3 =
+(was 0x810000, writing 0x810010)
+[ 4215.908286] pcieport 0000:00:1c.4: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100007)
+[ 4215.908348] pcieport 0000:00:1c.6: restoring config space at offset 0xf =
+(was 0x300, writing 0x3ff)
+[ 4215.908369] pcieport 0000:00:1c.6: restoring config space at offset 0x9 =
+(was 0x10001, writing 0x1fff1)
+[ 4215.908379] pcieport 0000:00:1c.6: restoring config space at offset 0x8 =
+(was 0x0, writing 0xf140f140)
+[ 4215.908390] pcieport 0000:00:1c.6: restoring config space at offset 0x7 =
+(was 0x0, writing 0x200000f0)
+[ 4215.908405] pcieport 0000:00:1c.6: restoring config space at offset 0x3 =
+(was 0x810000, writing 0x810010)
+[ 4215.908418] pcieport 0000:00:1c.6: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100007)
+[ 4215.908477] ehci_hcd 0000:00:1d.0: restoring config space at offset 0xf =
+(was 0x100, writing 0x1ff)
+[ 4215.908508] ehci_hcd 0000:00:1d.0: restoring config space at offset 0x4 =
+(was 0x0, writing 0xf2629000)
+[ 4215.908523] ehci_hcd 0000:00:1d.0: restoring config space at offset 0x1 =
+(was 0x2900000, writing 0x2900002)
+[ 4215.908556] ehci_hcd 0000:00:1d.0: wake-up capability disabled by ACPI
+[ 4215.908565] ehci_hcd 0000:00:1d.0: PME# disabled
+[ 4215.908571] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
+[ 4215.908579] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
+[ 4215.908700] ahci 0000:00:1f.2: restoring config space at offset 0x1 (was=
+ 0x2b00403, writing 0x2b00407)
+[ 4215.909066] iwlwifi 0000:03:00.0: restoring config space at offset 0xf (=
+was 0x100, writing 0x1ff)
+[ 4215.909120] iwlwifi 0000:03:00.0: restoring config space at offset 0x4 (=
+was 0x4, writing 0xf2500004)
+[ 4215.909134] iwlwifi 0000:03:00.0: restoring config space at offset 0x3 (=
+was 0x0, writing 0x10)
+[ 4215.909151] iwlwifi 0000:03:00.0: restoring config space at offset 0x1 (=
+was 0x100000, writing 0x100006)
+[ 4215.909490] sdhci-pci 0000:0d:00.0: restoring config space at offset 0x3=
+ (was 0x800010, writing 0x10)
+[ 4215.909537] sdhci-pci 0000:0d:00.0: restoring config space at offset 0x1=
+ (was 0x100002, writing 0x100006)
+[ 4215.909604] ------------[ cut here ]------------
+[ 4215.909618] WARNING: at drivers/pci/pci-driver.c:607 pci_has_legacy_pm_s=
+upport.clone.3+0x48/0x4c()
+[ 4215.909623] Hardware name: 4290W4H
+[ 4215.909629] Pid: 18148, comm: acpi_handler.sh Tainted: G        W    3.2=
+.0-rc6 #1
+[ 4215.909633] Call Trace:
+[ 4215.909646]  [<ffffffff81037044>] ? warn_slowpath_common+0x73/0x87
+[ 4215.909654]  [<ffffffff81179840>] ? pci_has_legacy_pm_support.clone.3+0x=
+48/0x4c
+[ 4215.909661]  [<ffffffff811799c8>] ? pci_pm_resume_noirq+0x25/0x62
+[ 4215.909671]  [<ffffffff8123b696>] ? pm_noirq_op+0xee/0x1ad
+[ 4215.909677]  [<ffffffff8123b82e>] ? dpm_resume_noirq+0xd9/0x1b0
+[ 4215.909687]  [<ffffffff8105e132>] ? suspend_devices_and_enter+0x174/0x1ec
+[ 4215.909695]  [<ffffffff8105e2c1>] ? enter_state+0x117/0x168
+[ 4215.909702]  [<ffffffff8105d4ca>] ? state_store+0xb4/0x108
+[ 4215.909709]  [<ffffffff810f0801>] ? sysfs_write_file+0xd3/0x10f
+[ 4215.909719]  [<ffffffff810aa823>] ? vfs_write+0xaf/0x129
+[ 4215.909727]  [<ffffffff810aa950>] ? sys_write+0x45/0x6e
+[ 4215.909738]  [<ffffffff813e21fb>] ? system_call_fastpath+0x16/0x1b
+[ 4215.909744] ---[ end trace 50804e7504fa4fcc ]---
+[ 4215.909804] xhci_hcd 0000:0e:00.0: restoring config space at offset 0xf =
+(was 0x100, writing 0x1ff)
+[ 4215.909844] xhci_hcd 0000:0e:00.0: restoring config space at offset 0x4 =
+(was 0x4, writing 0xf1400004)
+[ 4215.909856] xhci_hcd 0000:0e:00.0: restoring config space at offset 0x3 =
+(was 0x0, writing 0x10)
+[ 4215.909870] xhci_hcd 0000:0e:00.0: restoring config space at offset 0x1 =
+(was 0x100000, writing 0x100402)
+[ 4215.909934] pcieport 0000:00:1c.6: wake-up capability disabled by ACPI
+[ 4215.909944] xhci_hcd 0000:0e:00.0: PME# disabled
+[ 4215.910048] PM: early resume of devices complete after 2.971 msecs
+[ 4215.910321] ------------[ cut here ]------------
+[ 4215.910330] WARNING: at drivers/pci/pci-driver.c:607 pci_has_legacy_pm_s=
+upport.clone.3+0x48/0x4c()
+[ 4215.910334] Hardware name: 4290W4H
+[ 4215.910339] Pid: 18152, comm: kworker/u:5 Tainted: G        W    3.2.0-r=
+c6 #1
+[ 4215.910343] Call Trace:
+[ 4215.910351]  [<ffffffff81037044>] ? warn_slowpath_common+0x73/0x87
+[ 4215.910362] xhci_hcd 0000:0e:00.0: setting latency timer to 64
+[ 4215.910373]  [<ffffffff81179840>] ? pci_has_legacy_pm_support.clone.3+0x=
+48/0x4c
+[ 4215.910380]  [<ffffffff81179cca>] ? pci_pm_resume+0x3b/0x7a
+[ 4215.910387]  [<ffffffff8123b07d>] ? pm_op+0xa6/0x148
+[ 4215.910394]  [<ffffffff8123bbdf>] ? device_resume+0xa4/0x100
+[ 4215.910402]  [<ffffffff81050f57>] ? __async_schedule+0x121/0x121
+[ 4215.910409] usb usb3: root hub lost power or was reset
+[ 4215.910415] usb usb4: root hub lost power or was reset
+[ 4215.910422]  [<ffffffff8123be5d>] ? async_resume+0x14/0x38
+[ 4215.910429]  [<ffffffff81050fed>] ? async_run_entry_fn+0x96/0x141
+[ 4215.910438]  [<ffffffff81047492>] ? process_one_work+0x1c8/0x2e3
+[ 4215.910445]  [<ffffffff81048261>] ? worker_thread+0x17a/0x23a
+[ 4215.910453]  [<ffffffff810480e7>] ? manage_workers.clone.18+0x15b/0x15b
+[ 4215.910460]  [<ffffffff810480e7>] ? manage_workers.clone.18+0x15b/0x15b
+[ 4215.910466]  [<ffffffff8104bc97>] ? kthread+0x7a/0x82
+[ 4215.910473]  [<ffffffff813e3574>] ? kernel_thread_helper+0x4/0x10
+[ 4215.910480]  [<ffffffff8104bc1d>] ? kthread_flush_work_fn+0x11/0x11
+[ 4215.910486]  [<ffffffff813e3570>] ? gs_change+0xb/0xb
+[ 4215.910490] ---[ end trace 50804e7504fa4fcd ]---
+[ 4215.911008] e1000e 0000:00:19.0: wake-up capability disabled by ACPI
+[ 4215.911012] xhci_hcd 0000:0e:00.0: irq 42 for MSI/MSI-X
+[ 4215.911015] e1000e 0000:00:19.0: PME# disabled
+[ 4215.911017] xhci_hcd 0000:0e:00.0: irq 44 for MSI/MSI-X
+[ 4215.911022] xhci_hcd 0000:0e:00.0: irq 45 for MSI/MSI-X
+[ 4215.911027] xhci_hcd 0000:0e:00.0: irq 46 for MSI/MSI-X
+[ 4215.911031] xhci_hcd 0000:0e:00.0: irq 47 for MSI/MSI-X
+[ 4215.911043] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
+[ 4215.911231] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
+[ 4215.911254] snd_hda_intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low)=
+ -> IRQ 22
+[ 4215.911262] snd_hda_intel 0000:00:1b.0: setting latency timer to 64
+[ 4215.911358] snd_hda_intel 0000:00:1b.0: irq 48 for MSI/MSI-X
+[ 4215.911377] e1000e 0000:00:19.0: irq 49 for MSI/MSI-X
+[ 4215.911414] ahci 0000:00:1f.2: setting latency timer to 64
+[ 4215.911487] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) -> =
+IRQ 16
+[ 4215.911492] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
+[ 4215.911500] ehci_hcd 0000:00:1a.0: PCI INT A -> GSI 16 (level, low) -> I=
+RQ 16
+[ 4215.911510] ehci_hcd 0000:00:1a.0: setting latency timer to 64
+[ 4215.911534] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
+[ 4215.911542] ehci_hcd 0000:00:1d.0: PCI INT A -> GSI 23 (level, low) -> I=
+RQ 23
+[ 4215.911551] ehci_hcd 0000:00:1d.0: setting latency timer to 64
+[ 4215.911846] i915 0000:00:02.0: power state changed by ACPI to D0
+[ 4215.911862] i915 0000:00:02.0: power state changed by ACPI to D0
+[ 4215.911876] i915 0000:00:02.0: setting latency timer to 64
+[ 4215.926937] sd 2:0:0:0: [sdb] Starting disk
+[ 4215.926952] sd 0:0:0:0: [sda] Starting disk
 
-diff --git a/arch/arm/mach-mxs/clock.c b/arch/arm/mach-mxs/clock.c
-index a7093c8..677ecff 100644
---- a/arch/arm/mach-mxs/clock.c
-+++ b/arch/arm/mach-mxs/clock.c
-@@ -32,7 +32,7 @@
- #include <linux/kernel.h>
- #include <linux/list.h>
- #include <linux/module.h>
--#include <linux/mutex.h>
-+#include <linux/spinlock.h>
- #include <linux/platform_device.h>
- #include <linux/proc_fs.h>
- #include <linux/semaphore.h>
-@@ -41,7 +41,7 @@
- #include <mach/clock.h>
- 
- static LIST_HEAD(clocks);
--static DEFINE_MUTEX(clocks_mutex);
-+static DEFINE_SPINLOCK(clocks_lock);
- 
- /*-------------------------------------------------------------------------
-  * Standard clock functions defined in include/linux/clk.h
-@@ -80,13 +80,14 @@ static int __clk_enable(struct clk *clk)
- int clk_enable(struct clk *clk)
- {
- 	int ret = 0;
-+	unsigned long flags;
- 
- 	if (clk == NULL || IS_ERR(clk))
- 		return -EINVAL;
- 
--	mutex_lock(&clocks_mutex);
-+	spin_lock_irqsave(&clocks_lock, flags);
- 	ret = __clk_enable(clk);
--	mutex_unlock(&clocks_mutex);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
- 
- 	return ret;
- }
-@@ -98,12 +99,14 @@ EXPORT_SYMBOL(clk_enable);
-  */
- void clk_disable(struct clk *clk)
- {
-+	unsigned long flags;
-+
- 	if (clk == NULL || IS_ERR(clk))
- 		return;
- 
--	mutex_lock(&clocks_mutex);
-+	spin_lock_irqsave(&clocks_lock, flags);
- 	__clk_disable(clk);
--	mutex_unlock(&clocks_mutex);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
- }
- EXPORT_SYMBOL(clk_disable);
- 
-@@ -142,14 +145,15 @@ EXPORT_SYMBOL(clk_round_rate);
-  */
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
-+	unsigned long flags;
- 	int ret = -EINVAL;
- 
- 	if (clk == NULL || IS_ERR(clk) || clk->set_rate == NULL || rate == 0)
- 		return ret;
- 
--	mutex_lock(&clocks_mutex);
-+	spin_lock_irqsave(&clocks_lock, flags);
- 	ret = clk->set_rate(clk, rate);
--	mutex_unlock(&clocks_mutex);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
- 
- 	return ret;
- }
-@@ -160,6 +164,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- {
- 	int ret = -EINVAL;
- 	struct clk *old;
-+	unsigned long flags;
- 
- 	if (clk == NULL || IS_ERR(clk) || parent == NULL ||
- 	    IS_ERR(parent) || clk->set_parent == NULL)
-@@ -168,7 +173,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (clk->usecount)
- 		clk_enable(parent);
- 
--	mutex_lock(&clocks_mutex);
-+	spin_lock_irqsave(&clocks_lock, flags);
- 	ret = clk->set_parent(clk, parent);
- 	if (ret == 0) {
- 		old = clk->parent;
-@@ -176,7 +181,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	} else {
- 		old = parent;
- 	}
--	mutex_unlock(&clocks_mutex);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
- 
- 	if (clk->usecount)
- 		clk_disable(old);
--- 
-1.7.6.4
+--Sig_/U5Xvlyo3x1ucEjXBt_vzdp0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7t9HUACgkQnhRzXSM7nSlg4wCfdpTtZ07lTxp9LEEh9cJA23I5
+aoEAmwVzSb23/7FpnI+oARuWgKpnuOPv
+=P+pW
+-----END PGP SIGNATURE-----
+
+--Sig_/U5Xvlyo3x1ucEjXBt_vzdp0--
