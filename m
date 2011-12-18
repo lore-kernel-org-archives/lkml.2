@@ -1,98 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449Ab1LRGqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 01:46:14 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50285 "EHLO e7.ny.us.ibm.com"
+	id S1751300Ab1LRHQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 02:16:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37639 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab1LRGqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 01:46:12 -0500
-Date: Sun, 18 Dec 2011 12:11:46 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: linux-next: strange commit in the uprobes tree
-Message-ID: <20111218064146.GN8575@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111217182811.ead5e91706f5198f7d7f5560@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111217182811.ead5e91706f5198f7d7f5560@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11121806-5806-0000-0000-0000109F450A
+	id S1750814Ab1LRHQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 02:16:12 -0500
+Date: Sun, 18 Dec 2011 18:15:50 +1100
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>, MyungJoo Ham <myungjoo.ham@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>
+Subject: Re: [PATCH v2 0/3] introduce External Connector Class (extcon)
+Message-ID: <20111218181550.3fd35f6c@notabene.brown>
+In-Reply-To: <20111215065154.GA24248@opensource.wolfsonmicro.com>
+References: <1323858508-27198-1-git-send-email-myungjoo.ham@samsung.com>
+	<20111215133229.20e7f0f2@notabene.brown>
+	<20111215065154.GA24248@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/R9sKTVA6jqWbY1riPC0VmUV"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [2011-12-17 18:28:11]:
+--Sig_/R9sKTVA6jqWbY1riPC0VmUV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Srikar,
-> 
-> I just fetched the uprobes tree and noticed that commit 05f7cebbdbc8
-> ("rcu: Introduce bulk reference count") has no patch, just a commit
-> message.   In the previous version of your tree, the commit had Paul as
-> author and now has you (which is what brought it to my attention), but
-> the lack of patch is more interesting ... I do notice that there is
-> another patch from Paul ("rcu: Introduce raw SRCU read-side primitives")
-> and was wondering if that replaces the above patch.
-> 
+On Thu, 15 Dec 2011 14:51:55 +0800 Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-Thanks Stephen for reporting this.  yes, the patch from Paul replaces
-the empty commit that you see.  After I cherry-picked the 3 commits from
-the -tip tree, I had pushed my existing patches that had older Paul's
-bulkref patch (removed the changes as part of merge; thats why it shows
-my name in author for the faulty commit;) I should have removed the
-commit. 
+> On Thu, Dec 15, 2011 at 01:32:29PM +1100, NeilBrown wrote:
+>=20
+> j> 3/ The use of extcon_get_extcon_dev() requires that the port device be
+> >    registered before the device that wants to be notified by it.  Ensur=
+ing
+> >    correct ordering of device discovery is (I believe) not always easy -
+> >    particularly with module loading.
+>=20
+> This is a massive problem throughout the kernel=20
 
-Sorry for the inconvienience.
+So it seems.  I just tripped over it with regulators. When one is supplied =
+by
+another they need to be probed in the right order.
+Sounds like we need to find a general solution.
 
-git log --oneline -n 16 output  as reported by you.
------------------------------
-6a80f33 perf: perf interface for uprobes
-6bb498e perf: rename target_module to target
-73cf3b4 tracing: uprobes trace_event interface
-b0c3265 tracing: Extract out common code for kprobes/uprobes traceevents.
-bdc41f9 tracing: modify is_delete, is_return from ints to bool.
-10b7939 uprobes: counter to optimize probe hits.
-e7ff3d7 uprobes: slot allocation.
-6866510 uprobes: handle breakpoint and signal step exception.
-8f5ef11 uprobes: Install and remove breakpoints.
-05f7ceb rcu: Introduce bulk reference count
-	^^^^ faulty commit.
-18fe9f4 x86: Call do_notify_resume() with interrupts enabled
-557824a x86: Clean up and extend do_int3()
-e73ddde rcu: Introduce raw SRCU read-side primitives
-	^^^^ 3 commits cherry-picked from -tip including the
-	superseeding patch from Paul.
-dc47ce9 Linux 3.2-rc5
-8def5f5 Merge git://git.samba.org/sfrench/cifs-2.6
-a776878 Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+>=20
+> >    Would it make sense to instead have one device register as a
+> >    switch-provider and the other device register as a switch-listener a=
+nd as
+> >    soon as they both exist they get connected: a bit like how 'devices'=
+ and
+> >    'drivers' can be registered in any order.
+> >    Maybe the same device/driver infrastructure could be reused (an extc=
+on
+> >    bus maybe?) but I'm not really familiar enough with it to say (Greg?=
+?).
+>=20
+> Grant has a proposal for this which revolves around devices trying to
+> acquire their resources and returning a "please retry" error code if
+> they don't have all their dependencies.  Half the problem here is that
+> coming up with the dependency graph (and finding ways to talk about
+> devices that haven't been enumerated yet) is a very hard problem.
+
+I can see how an -EAGAIN might work ... and it would exercise a lot of error
+paths that otherwise never get called - I wonder if that is a good thing :-)
+
+It doesn't feel quite like the right solution though.  Deciding when to ret=
+ry,
+and where to queue the device/driver pairs might be messy.
+
+A possibility I have been thinking about is to multithread do_initcalls() a=
+nd
+have the various request functions (gpio_request, regulator_get, request_ir=
+q,
+etc) optionally block if the resource isn't available.
+
+We wouldn't create a new thread for every initcall, just when all current
+threads are blocked.  And threads that have to block die once they finish
+their initcall, so there is only ever one that is allowed to move on to the
+'next' initcall.
+
+Do we need to talk about devices that haven't been enumerated yet? or was
+that just if we wanted to create an explicit dependency graph?
+
+We would need names for resources that haven't been registered yet but that
+seems fairly with with simple string names assigned in the board file (or
+eventually the device-tree file I guess).
+
+I might try hacking something together and see how badly it breaks.
 
 
-new git log --oneline -n 16 output after making the correction
---------------------------------------------------------------
-1b46788 perf: perf interface for uprobes
-9b6b4a2 perf: rename target_module to target
-ceeb93e tracing: uprobes trace_event interface
-fa05b8b tracing: Extract out common code for kprobes/uprobes traceevents.
-1a355a5 tracing: modify is_delete, is_return from ints to bool.
-3f563d4 uprobes: counter to optimize probe hits.
-59c919d uprobes: slot allocation.
-599b83b uprobes: handle breakpoint and signal step exception.
-70b8389 uprobes: Install and remove breakpoints.
-18fe9f4 x86: Call do_notify_resume() with interrupts enabled
-557824a x86: Clean up and extend do_int3()
-e73ddde rcu: Introduce raw SRCU read-side primitives
-dc47ce9 Linux 3.2-rc5
-8def5f5 Merge git://git.samba.org/sfrench/cifs-2.6
-a776878 Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-e2f4e0b Merge branch 'spi/for-3.2' of git://git.pengutronix.de/git/wsa/linux-2.6
+>=20
+> >    Are there other examples of inter-device dependencies that can be us=
+ed as
+> >    a model?
+>=20
+> The current solution is to fiddle with initcall order so that drivers
+> for devices that other devices depend on enumerate first.
+
+:-(  I was afraid of that.
+
+NeilBrown
 
 
-I have pushed in the change to for-next branch.
+--Sig_/R9sKTVA6jqWbY1riPC0VmUV
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
--- 
-Thanks and Regards
-Srikar
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
+iQIVAwUBTu2TJjnsnt1WYoG5AQKiTQ/+LRhDSQDh2aScbutXCygXfohwSU+SvJwJ
+qs2x253mSHZyjJCWM2gO3bMwNCjmcxD5fB8O8YUFuj3KGXFcF9RChjr44Tvf0qTG
+bYZu/o1DPWNH3r/4jcMcGuaj9RBQLBVNu5mP5STLHY/k+WjXyLMiNcoemJwKmL71
+txayw7kDzmuToLS2UnLmepcW2Y/eFNW3Yz71NIi5rZKbV8SDqUlFxS2vwYRcUq+t
++DtvP0I8ndkIe0XhysCNAU/SfGk1gyNDGE6k2o9MAjcSmSwJ/vqGzS38G7Ibzl91
+twWVR0wfLvWkFfg85mC3MV5WmWTTosAAmrWHncsFVYnJKR9Q58vs9gVHZT5aLFvD
+HdH4pqU+6eJnjiZlcm3blFOCbkS41zPgiWgsN9MyVssIw4KdFbGcOSfPMUzjzl24
+qGwWOPog62icXGA7hEH6bqxOuHHayDzB8Pcf9fB6+DhmEZC5mGMnCzx23MafBJYD
+Uz+b1OHdum3RJjPVMbJRVhSjW9C2MpBFvnU+j03NcJKWRtRcct6+mWXK9GnQ2Hqe
+j9JLC6DPLKu9lwuFSrOI65j0GUkj8rUqux2zqezldYWHnrH844F8R4OM/l8XkSAH
+ZeUm6LJh0rlretWc/33z4kwlHIy67LrsGdzyyCsgg4hSUAzwljQbWzW/n4skQDaG
+EcBM9GLhcnA=
+=x6Td
+-----END PGP SIGNATURE-----
+
+--Sig_/R9sKTVA6jqWbY1riPC0VmUV--
