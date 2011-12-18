@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1LROxI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:53:08 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:34924 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab1LROxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 09:53:05 -0500
-Message-ID: <4EEDFE4E.6090104@nod.at>
-Date: Sun, 18 Dec 2011 15:53:02 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_dh: Fix return value of scsi_dh_attach()
-References: <1321572864-23628-1-git-send-email-richard@nod.at>  <4EEDFC16.90303@nod.at> <1324219540.3091.28.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1324219540.3091.28.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig60DEDFA65EC78D6EB03FC35D"
+	id S1752007Ab1LRPTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 10:19:34 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:33143 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751670Ab1LRPTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 10:19:32 -0500
+X-Sasl-enc: ZJWFGOZ7TYrUo9nHVltyoxplp89u0sJUcl5+p86OKXA1 1324221571
+Subject: Re: chroot(2) and bind mounts as non-root
+From: Colin Walters <walters@verbum.org>
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>, serue@us.ibm.com,
+        dhowells@redhat.com, kzak@redhat.com
+Date: Sun, 18 Dec 2011 10:19:12 -0500
+In-Reply-To: <CALQRfL4_zWAp3ZUM2GXKaw_6ofEfLUGs9WypD9qi_-15MeQx0Q@mail.gmail.com>
+References: <1323280461.10724.13.camel@lenny> <4EDFCDD4.2080603@zytor.com>
+	 <20111207205459.031a0609@lxorguk.ukuu.org.uk>
+	 <CALQRfL6A+XUiLUVzsSOkz52rs7Pejtb_v8QZbpWxh5W8yYDYtg@mail.gmail.com>
+	 <1324050284.3734.14.camel@lenny>
+	 <CALQRfL4_zWAp3ZUM2GXKaw_6ofEfLUGs9WypD9qi_-15MeQx0Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1324221552.21713.7.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig60DEDFA65EC78D6EB03FC35D
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2011-12-17 at 17:22 -0800, Andrew G. Morgan wrote:
 
-Am 18.12.2011 15:45, schrieb James Bottomley:
-> On Sun, 2011-12-18 at 15:43 +0100, Richard Weinberger wrote:
->> Am 18.11.2011 00:34, schrieb Richard Weinberger:
->>> scsi_dh_attach() should return a negative value on error.
->>>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>> ---
->>>  include/scsi/scsi_dh.h |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/include/scsi/scsi_dh.h b/include/scsi/scsi_dh.h
->>> index e3f2db2..e07ab10 100644
->>> --- a/include/scsi/scsi_dh.h
->>> +++ b/include/scsi/scsi_dh.h
->>> @@ -74,7 +74,7 @@ static inline int scsi_dh_handler_exist(const char =
-*name)
->>>  }
->>>  static inline int scsi_dh_attach(struct request_queue *req, const ch=
-ar *name)
->>>  {
->>> -	return SCSI_DH_NOSYS;
->>> +	return -SCSI_DH_NOSYS;
->>>  }
->>>  static inline void scsi_dh_detach(struct request_queue *q)
->>>  {
->>
->> James,
->>
->> can you please pickup this patch?
->=20
-> It still needs an ack from rdac people (other one just got overlooked).=
+> I don't read any issues with this in your original post. What I read
+> there is that you want to run a build in a chroot environment. Are you
+> also implying that the user gets to build this chroot filesystem from
+> nothing - without any privileges - 
 
->=20
+Yes.  The filesystem is owned by the user.  
 
-Who are the rdac people?
-I sent the patch to all addresses reported by get_maintainers.pl.
+> If the former, then yes I think you are going to have a very hard
+> time.
 
-Thanks,
-//richard
+Well, it already works with the setuid program I attached earlier.
+So...what are we trying to accomplish in this discussion? 
+
+If you think there's a way to allow users to chroot *without* cutting
+off setuid binaries, I am definitely interested in that.  However I'm
+very, very skeptical.
 
 
---------------enig60DEDFA65EC78D6EB03FC35D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJO7f5PAAoJEN9758yqZn9e6gsIANAV834jgwFjKiWSGmXHWFHu
-eSMHIrMmLVzvu73poG2iNUKEA1hZGya3JYlvkIZSm9RduJ/ebDlO95ryWwZKlkbL
-D+rKI729C2JCZSWgDV8RGQPUdUCfFVUeMjJw7k8Sg4iXwhtr9DgNuTfYmxx58cVi
-/ft7RSIXDdYXAoZ7sPzgIaATng5Z0tMbP6bMnHyuaL9Odbkty0+woC5O9n40cn+7
-fvggefh2raD5ApxqpPQKI0FGjl4pbN4U6tryil7nVpRMRGb/dbkOgjUaerNpRqS2
-bx2dGA4xRl4Tdope3hWy5yQjgMhgHdHMKN4kdpLlOzw2kw8wUiiJ1uuVPQ8+YC4=
-=E8Lj
------END PGP SIGNATURE-----
-
---------------enig60DEDFA65EC78D6EB03FC35D--
