@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab1LRCDd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 21:03:33 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38510 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab1LRCDb (ORCPT
+	id S1751487Ab1LRCGF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 21:06:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59848 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1LRCGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 21:03:31 -0500
-Message-ID: <1324173796.6958.1.camel@phoenix>
-Subject: [PATCH] misc: Fix irq leak in max8997_muic_probe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Donggeun Kim <dg77.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Date: Sun, 18 Dec 2011 10:03:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 17 Dec 2011 21:06:04 -0500
+Date: Sun, 18 Dec 2011 11:05:52 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/11] mm: compaction: Introduce sync-light migration for
+ use by compaction
+Message-ID: <20111218020552.GB13069@barrios-laptop.redhat.com>
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
+ <1323877293-15401-9-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323877293-15401-9-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does not properly free allocated irqs if request_threaded_irq
-returns error, fix it.
+On Wed, Dec 14, 2011 at 03:41:30PM +0000, Mel Gorman wrote:
+> This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
+> mode that avoids writing back pages to backing storage. Async
+> compaction maps to MIGRATE_ASYNC while sync compaction maps to
+> MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
+> hotplug, MIGRATE_SYNC is used.
+> 
+> This avoids sync compaction stalling for an excessive length of time,
+> particularly when copying files to a USB stick where there might be
+> a large number of dirty pages backed by a filesystem that does not
+> support ->writepages.
+> 
+> [aarcange@redhat.com: This patch is heavily based on Andrea's work]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/misc/max8997-muic.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-diff --git a/drivers/misc/max8997-muic.c b/drivers/misc/max8997-muic.c
-index 74a9448..409b7fc 100644
---- a/drivers/misc/max8997-muic.c
-+++ b/drivers/misc/max8997-muic.c
-@@ -566,10 +566,6 @@ static int __devinit max8997_muic_probe(struct platform_device *pdev)
- 				"failed: irq request (IRQ: %d,"
- 				" error :%d)\n",
- 				muic_irq->irq, ret);
--
--			for (i = i - 1; i >= 0; i--)
--				free_irq(muic_irq->irq, info);
--
- 			goto err_irq;
- 		}
- 	}
-@@ -583,6 +579,8 @@ static int __devinit max8997_muic_probe(struct platform_device *pdev)
- 	return ret;
- 
- err_irq:
-+	while (--i >= 0)
-+		free_irq(pdata->irq_base + muic_irqs[i].irq, info);
- 	sysfs_remove_group(&pdev->dev.kobj, &max8997_muic_group);
- err_sysfs:
- err_pdata:
+> ---
+>  fs/btrfs/disk-io.c      |    3 +-
+>  fs/hugetlbfs/inode.c    |    2 +-
+>  fs/nfs/internal.h       |    2 +-
+>  fs/nfs/write.c          |    2 +-
+>  include/linux/fs.h      |    6 ++-
+>  include/linux/migrate.h |   23 +++++++++++---
+>  mm/compaction.c         |    2 +-
+>  mm/memory-failure.c     |    2 +-
+>  mm/memory_hotplug.c     |    2 +-
+>  mm/mempolicy.c          |    2 +-
+>  mm/migrate.c            |   78 ++++++++++++++++++++++++++---------------------
+>  11 files changed, 74 insertions(+), 50 deletions(-)
+> 
+> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+> index 896b87a..dbe9518 100644
+> --- a/fs/btrfs/disk-io.c
+> +++ b/fs/btrfs/disk-io.c
+> @@ -872,7 +872,8 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
+>  
+>  #ifdef CONFIG_MIGRATION
+>  static int btree_migratepage(struct address_space *mapping,
+> -			struct page *newpage, struct page *page, bool sync)
+> +			struct page *newpage, struct page *page,
+> +			enum migrate_mode sync)
+>  {
+>  	/*
+>  	 * we can't safely write a btree page from here,
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index 10b9883..6b80537 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -577,7 +577,7 @@ static int hugetlbfs_set_page_dirty(struct page *page)
+>  
+>  static int hugetlbfs_migrate_page(struct address_space *mapping,
+>  				struct page *newpage, struct page *page,
+> -				bool sync)
+> +				enum migrate_mode mode)
+
+Nitpick, except this one, we use enum migrate_mode sync.
+
 -- 
-1.7.5.4
-
-
-
+Kind regards,
+Minchan Kim
