@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab1LRLo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 06:44:26 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56426 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab1LRLoY (ORCPT
+	id S1751828Ab1LRL7X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 06:59:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54895 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab1LRL7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 06:44:24 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Sisir Koppaka <sisir.koppaka@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: Simplify task_group_is_autogroup
-In-Reply-To: <CAJd0RV=NdYFY8sLnB5EQY9wiWm+0U0C3EaCmKE8jpunHdYkcAA@mail.gmail.com>
-References: <CAJd0RV=NdYFY8sLnB5EQY9wiWm+0U0C3EaCmKE8jpunHdYkcAA@mail.gmail.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Sun, 18 Dec 2011 17:15:31 +0530
-Message-ID: <8762heumqs.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11121811-2674-0000-0000-000002AC7EF2
+	Sun, 18 Dec 2011 06:59:19 -0500
+From: Ryota Ozaki <ozaki.ryota@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-mm@kvack.org, stable@kernel.org
+Subject: [PATCH][RESEND] mm: Fix off-by-one bug in print_nodes_state
+Date: Sun, 18 Dec 2011 20:58:49 +0900
+Message-Id: <1324209529-15892-1-git-send-email-ozaki.ryota@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Dec 2011 15:42:53 +0530, Sisir Koppaka <sisir.koppaka@gmail.com> wrote:
-> Removing the !! in task_group_is_autogroup doesn't impede functionality.
-> 
-> Tested with and without CONFIG_SCHED_AUTOGROUP.
-> 
-> Signed-off-by: Sisir Koppaka <sisir.koppaka@gmail.com>
-> ---
->  kernel/sched/auto_group.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/auto_group.h b/kernel/sched/auto_group.h
-> index 8bd0471..f628798 100644
-> --- a/kernel/sched/auto_group.h
-> +++ b/kernel/sched/auto_group.h
-> @@ -21,7 +21,7 @@ extern void autogroup_free(struct task_group *tg);
-> 
->  static inline bool task_group_is_autogroup(struct task_group *tg)
->  {
-> -	return !!tg->autogroup;
-> +	return tg->autogroup;
->
-The return is supposed to be a boolean. So the code is correct.
+/sys/devices/system/node/{online,possible} involve a garbage byte
+because print_nodes_state returns content size + 1. To fix the bug,
+the patch changes the use of cpuset_sprintf_cpulist to follow the
+use at other places, which is clearer and safer.
 
-Regards,
-Nikunj
+This bug was introduced since v2.6.24.
+
+Signed-off-by: Ryota Ozaki <ozaki.ryota@gmail.com>
+---
+ drivers/base/node.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 5693ece..ef7c1f9 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -587,11 +587,9 @@ static ssize_t print_nodes_state(enum node_states state, char *buf)
+ {
+ 	int n;
+ 
+-	n = nodelist_scnprintf(buf, PAGE_SIZE, node_states[state]);
+-	if (n > 0 && PAGE_SIZE > n + 1) {
+-		*(buf + n++) = '\n';
+-		*(buf + n++) = '\0';
+-	}
++	n = nodelist_scnprintf(buf, PAGE_SIZE-2, node_states[state]);
++	buf[n++] = '\n';
++	buf[n] = '\0';
+ 	return n;
+ }
+ 
+-- 
+1.7.5.4
 
