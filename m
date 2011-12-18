@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab1LRKmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 05:42:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39127 "EHLO mx1.redhat.com"
+	id S1751686Ab1LRLmp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 06:42:45 -0500
+Received: from mga14.intel.com ([143.182.124.37]:14167 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab1LRKme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 05:42:34 -0500
-Message-ID: <4EEDC396.8090600@redhat.com>
-Date: Sun, 18 Dec 2011 12:42:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1751538Ab1LRLmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 06:42:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="86947546"
+Date: Sun, 18 Dec 2011 19:32:38 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.2.0-rc5 NULL dereference BUG
+Message-ID: <20111218113237.GA1359@localhost>
+References: <20111218055359.GA17182@localhost>
+ <20111218063054.GA4979@localhost>
+ <CAGBYx2bxdnkXcZF+A1iOvnsW=xdtDJR7Fx3Rz-HWeWH5n0ByKg@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 8/8] KVM: MMU: remove PT64_SECOND_AVAIL_BITS_SHIFT
-References: <4EEB19AF.5070501@linux.vnet.ibm.com> <4EEB1AFB.1090806@linux.vnet.ibm.com>
-In-Reply-To: <4EEB1AFB.1090806@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGBYx2bxdnkXcZF+A1iOvnsW=xdtDJR7Fx3Rz-HWeWH5n0ByKg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2011 12:18 PM, Xiao Guangrong wrote:
-> It is not used, remove it
->
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 5d0f0e3..234a32e 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -91,7 +91,6 @@ module_param(dbg, bool, 0644);
->  #define PTE_PREFETCH_NUM		8
->
->  #define PT_FIRST_AVAIL_BITS_SHIFT 9
-> -#define PT64_SECOND_AVAIL_BITS_SHIFT 52
->
->
+Yongqiang,
 
-Don't see a reason to drop it, we may use it some day.
+Thanks for the quick fix!
 
--- 
-error compiling committee.c: too many arguments to function
+On Sun, Dec 18, 2011 at 03:17:18PM +0800, Yongqiang Yang wrote:
+> Hi Fengguang,
+> 
+> Could you try the patch [ext4: do not reference pa_inode from group_pa]?
 
+It works! You can add my tested-by and CC stable.
+
+Thanks,
+Fengguang
