@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1LROhR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 09:37:17 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:36119 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751974Ab1LROgk (ORCPT
+	id S1752317Ab1LROiW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 09:38:22 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:58722 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751876Ab1LROgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Dec 2011 09:36:40 -0500
 From: Tao Ma <tm@tao.ma>
 To: linux-ext4@vger.kernel.org
 Cc: adilger@dilger.ca, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Subject: [PATCH V3 15/21] ext4: make ext4_delete_entry generic.
-Date: Sun, 18 Dec 2011 22:24:32 +0800
-Message-Id: <1324218278-2460-15-git-send-email-tm@tao.ma>
+Subject: [PATCH V3 21/21] ext4: Enable ext4 inline support.
+Date: Sun, 18 Dec 2011 22:24:38 +0800
+Message-Id: <1324218278-2460-21-git-send-email-tm@tao.ma>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1324218278-2460-1-git-send-email-tm@tao.ma>
 References: <4EEDF6B1.7050206@tao.ma>
@@ -25,132 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tao Ma <boyu.mt@taobao.com>
 
-Currently ext4_delete_entry is used only for dir entry
-removing from a dir block. So let us create a new function
-ext4_generic_delete_entry and this function takes a entry_buf
-and a buf_size so that it can be used for inline data.
-
 Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 ---
- fs/ext4/ext4.h  |    6 +++++
- fs/ext4/namei.c |   62 ++++++++++++++++++++++++++++++++++++------------------
- 2 files changed, 47 insertions(+), 21 deletions(-)
+ fs/ext4/ext4.h   |    4 +++-
+ fs/ext4/ialloc.c |    4 ++++
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 16efcad..48185ba 100644
+index 48185ba..ca1f79f 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -1974,6 +1974,12 @@ extern int search_dir(struct buffer_head *bh,
- 		      const struct qstr *d_name,
- 		      unsigned int offset,
- 		      struct ext4_dir_entry_2 **res_dir);
-+extern int ext4_generic_delete_entry(handle_t *handle,
-+				     struct inode *dir,
-+				     struct ext4_dir_entry_2 *de_del,
-+				     struct buffer_head *bh,
-+				     void *entry_buf,
-+				     int buf_size);
+@@ -1416,6 +1416,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_INCOMPAT_FLEX_BG		0x0200
+ #define EXT4_FEATURE_INCOMPAT_EA_INODE		0x0400 /* EA in inode */
+ #define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000 /* data in dirent */
++#define EXT4_FEATURE_INCOMPAT_INLINEDATA	0x8000 /* data in inode */
  
- /* resize.c */
- extern int ext4_group_add(struct super_block *sb,
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 92f7b67..f706b0f 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1693,32 +1693,28 @@ cleanup:
- }
+ #define EXT2_FEATURE_COMPAT_SUPP	EXT4_FEATURE_COMPAT_EXT_ATTR
+ #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT4_FEATURE_INCOMPAT_FILETYPE| \
+@@ -1439,7 +1440,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ 					 EXT4_FEATURE_INCOMPAT_EXTENTS| \
+ 					 EXT4_FEATURE_INCOMPAT_64BIT| \
+ 					 EXT4_FEATURE_INCOMPAT_FLEX_BG| \
+-					 EXT4_FEATURE_INCOMPAT_MMP)
++					 EXT4_FEATURE_INCOMPAT_MMP |	\
++					 EXT4_FEATURE_INCOMPAT_INLINEDATA)
+ #define EXT4_FEATURE_RO_COMPAT_SUPP	(EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER| \
+ 					 EXT4_FEATURE_RO_COMPAT_LARGE_FILE| \
+ 					 EXT4_FEATURE_RO_COMPAT_GDT_CSUM| \
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 00beb4f..4f7fe21 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -897,6 +897,10 @@ got:
  
- /*
-- * ext4_delete_entry deletes a directory entry by merging it with the
-- * previous entry
-+ * ext4_generic_delete_entry deletes a directory entry by merging it
-+ * with the previous entry
-  */
--static int ext4_delete_entry(handle_t *handle,
--			     struct inode *dir,
--			     struct ext4_dir_entry_2 *de_del,
--			     struct buffer_head *bh)
-+int ext4_generic_delete_entry(handle_t *handle,
-+			      struct inode *dir,
-+			      struct ext4_dir_entry_2 *de_del,
-+			      struct buffer_head *bh,
-+			      void *entry_buf,
-+			      int buf_size)
- {
- 	struct ext4_dir_entry_2 *de, *pde;
- 	unsigned int blocksize = dir->i_sb->s_blocksize;
--	int i, err;
-+	int i;
+ 	ei->i_extra_isize = EXT4_SB(sb)->s_want_extra_isize;
  
- 	i = 0;
- 	pde = NULL;
--	de = (struct ext4_dir_entry_2 *) bh->b_data;
--	while (i < bh->b_size) {
-+	de = (struct ext4_dir_entry_2 *)entry_buf;
-+	while (i < buf_size) {
- 		if (ext4_check_dir_entry(dir, NULL, de, bh,
- 					 bh->b_data, bh->b_size, i))
- 			return -EIO;
- 		if (de == de_del)  {
--			BUFFER_TRACE(bh, "get_write_access");
--			err = ext4_journal_get_write_access(handle, bh);
--			if (unlikely(err)) {
--				ext4_std_error(dir->i_sb, err);
--				return err;
--			}
- 			if (pde)
- 				pde->rec_len = ext4_rec_len_to_disk(
- 					ext4_rec_len_from_disk(pde->rec_len,
-@@ -1729,12 +1725,6 @@ static int ext4_delete_entry(handle_t *handle,
- 			else
- 				de->inode = 0;
- 			dir->i_version++;
--			BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
--			err = ext4_handle_dirty_metadata(handle, dir, bh);
--			if (unlikely(err)) {
--				ext4_std_error(dir->i_sb, err);
--				return err;
--			}
- 			return 0;
- 		}
- 		i += ext4_rec_len_from_disk(de->rec_len, blocksize);
-@@ -1744,6 +1734,36 @@ static int ext4_delete_entry(handle_t *handle,
- 	return -ENOENT;
- }
- 
-+static int ext4_delete_entry(handle_t *handle,
-+			     struct inode *dir,
-+			     struct ext4_dir_entry_2 *de_del,
-+			     struct buffer_head *bh)
-+{
-+	int err;
++	ei->i_inline_off = 0;
++	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_INLINEDATA))
++		ext4_set_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
 +
-+	BUFFER_TRACE(bh, "get_write_access");
-+	err = ext4_journal_get_write_access(handle, bh);
-+	if (unlikely(err))
-+		goto out;
-+
-+	err = ext4_generic_delete_entry(handle, dir, de_del,
-+					bh, bh->b_data,
-+					dir->i_sb->s_blocksize);
-+	if (err)
-+		goto out;
-+
-+	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
-+	err = ext4_handle_dirty_metadata(handle, dir, bh);
-+	if (unlikely(err))
-+		goto out;
-+
-+	return 0;
-+out:
-+	if (err != -ENOENT)
-+		ext4_std_error(dir->i_sb, err);
-+	return err;
-+}
-+
- /*
-  * DIR_NLINK feature is set if 1) nlinks > EXT4_LINK_MAX or 2) nlinks == 2,
-  * since this indicates that nlinks count was previously 1.
+ 	ret = inode;
+ 	dquot_initialize(inode);
+ 	err = dquot_alloc_inode(inode);
 -- 
 1.7.0.4
 
