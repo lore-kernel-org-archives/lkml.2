@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1LRAnO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 19:43:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34701 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab1LRAnM convert rfc822-to-8bit (ORCPT
+	id S1751487Ab1LRAtY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 19:49:24 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57408 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab1LRAtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 19:43:12 -0500
+	Sat, 17 Dec 2011 19:49:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1112180128070.21784@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1112180128070.21784@swampdragon.chaosbits.net>
-Date: Sat, 17 Dec 2011 16:43:11 -0800
-Message-ID: <CANN689GQyzMGfnxsKmni7wDFpqo4s=D3dpu6w9UxN0tKbqakig@mail.gmail.com>
-Subject: Re: [PATCH] Use 'do {} while (0)' for empty flush_tlb_fix_spurious_fault()
- macro
-From: Michel Lespinasse <walken@google.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: x86@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+In-Reply-To: <1323875693-3504-1-git-send-email-tm@tao.ma>
+References: <20111213164507.fbee477c.akpm@linux-foundation.org>
+	<1323875693-3504-1-git-send-email-tm@tao.ma>
+Date: Sun, 18 Dec 2011 09:49:20 +0900
+Message-ID: <CAEwNFnBrczRf6XMeN6EaTkANVPdzLeAXqahJxAWPGz3GDW5nWg@mail.gmail.com>
+Subject: Re: [PATCH v3] vmscan/trace: Add 'file' info to trace_mm_vmscan_lru_isolate.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 4:32 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> If one builds the kernel with -Wempty-body one gets this warning:
+On Thu, Dec 15, 2011 at 12:14 AM, Tao Ma <tm@tao.ma> wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
 >
->  mm/memory.c:3432:46: warning: suggest braces around empty body in an ‘if’ statement [-Wempty-body]
+> In trace_mm_vmscan_lru_isolate, we don't output 'file'
+> information to the trace event and it is a bit inconvenient for the
+> user to get the real information(like pasted below).
+> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
+> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
 >
-> due to the fact that 'flush_tlb_fix_spurious_fault' is a macro that
-> can sometimes be defined to nothing.
+> 'active' can be gotten by analyzing mode(Thanks go to Minchan and Mel),
+> So this patch adds 'file' to the trace event and it now looks like:
+> mm_vmscan_lru_isolate: isolate_mode=2 order=0 nr_requested=32 nr_scanned=32
+> nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0 file=0
 >
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 
-Looks good to me. I'd be happy with either that or Al's alternative suggestion.
+Andrew pointed out that   trace_mm_vmscan_memcg_isolate is out , Otherwise,
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-Reviewed-by: Michel Lespinasse <walken@google.com>
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Kind regards,
+Minchan Kim
