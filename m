@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1LRBAh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Dec 2011 20:00:37 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24305 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1LRBAd (ORCPT
+	id S1751565Ab1LRBLh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Dec 2011 20:11:37 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50798 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751058Ab1LRBLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Dec 2011 20:00:33 -0500
-Date: Sun, 18 Dec 2011 02:00:31 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Michel Lespinasse <walken@google.com>
-cc: x86@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH] Use 'do {} while (0)' for empty flush_tlb_fix_spurious_fault()
- macro
-In-Reply-To: <CANN689GQyzMGfnxsKmni7wDFpqo4s=D3dpu6w9UxN0tKbqakig@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1112180158330.21784@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1112180128070.21784@swampdragon.chaosbits.net> <CANN689GQyzMGfnxsKmni7wDFpqo4s=D3dpu6w9UxN0tKbqakig@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 17 Dec 2011 20:11:35 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-91926389-1324170031=:21784"
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <1324169888-6687-1-git-send-email-marek.vasut@gmail.com>
+References: <1324169888-6687-1-git-send-email-marek.vasut@gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Sun, 18 Dec 2011 09:11:12 +0800
+Message-ID: <CAF+7xWn+2jeoDiuweWnsoqYdCeAinWF5-jfeSVeGzYJRm5aKXw@mail.gmail.com>
+Subject: Re: [PATCH] MXSFB: Fix driver registration
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Wolfgang Denk <wd@denx.de>,
+        Stefano Babic <sbabic@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Huang Shijie <b32955@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+2011/12/18 Marek Vasut <marek.vasut@gmail.com>:
+> The driver should be registered with mxsfb_driver, not with mxsfb_devtype.
+> This caused obvious null pointer dereference and crash.
 
---8323328-91926389-1324170031=:21784
-Content-Type: TEXT/PLAIN; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Acked-by: Axel Lin <axel.lin@gmail.com>
 
-On Sat, 17 Dec 2011, Michel Lespinasse wrote:
-
-> On Sat, Dec 17, 2011 at 4:32 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > If one builds the kernel with -Wempty-body one gets this warning:
-> >
-> >  mm/memory.c:3432:46: warning: suggest braces around empty body in an ‘if’ statement [-Wempty-body]
-> >
-> > due to the fact that 'flush_tlb_fix_spurious_fault' is a macro that
-> > can sometimes be defined to nothing.
-> >
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> 
-> Looks good to me. I'd be happy with either that or Al's alternative suggestion.
-> 
-> Reviewed-by: Michel Lespinasse <walken@google.com>
-> 
-Thanks for the review.
-
-I did see Al's suggestion and he does have a point. But since it doesn't 
-actually matter much in this specific case I'd say "let's just go with 
-this one - it matches what's done nearly everywhere else".
-But, If someone disagrees strongly I'll cook up a different patch. :-)
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-91926389-1324170031=:21784--
+Also Cc: Florian Tobias Schandinat
