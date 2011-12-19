@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab1LSHNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 02:13:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713Ab1LSHNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 02:13:46 -0500
-Message-ID: <4EEEE5FF.9050502@redhat.com>
-Date: Mon, 19 Dec 2011 15:21:35 +0800
-From: Amos Kong <akong@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752219Ab1LSHcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 02:32:04 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54980 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab1LSHcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 02:32:01 -0500
+Message-ID: <4EEEE866.2000203@linux.vnet.ibm.com>
+Date: Mon, 19 Dec 2011 13:01:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rhod <rhod@redhat.com>, Jason Wang <jasowang@redhat.com>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>  <1322867384.11728.20.camel@pasglop> <87hb1iqls3.fsf@rustcorp.com.au>  <20111211122544.GC11504@redhat.com> <1323642447.19891.8.camel@pasglop>  <4EE56FCD.9030609@redhat.com> <87wra2tlue.fsf@rustcorp.com.au>  <4EEE9F16.8000501@redhat.com> <1324262474.30454.12.camel@pasglop>
-In-Reply-To: <1324262474.30454.12.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: mc@linux.vnet.ibm.com
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+References: <1324265775.25089.20.camel@mengcong>
+In-Reply-To: <1324265775.25089.20.camel@mengcong>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 11121821-7014-0000-0000-00000047645A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/12/11 10:41, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-12-19 at 10:19 +0800, Amos Kong wrote:
->
->> I tested with the same environment and scenarios.
->> tested one scenarios for three times and compute the average for more
->> precision.
->>
->> Thanks, Amos
->>
->> --------- compare results -----------
->> Mon Dec 19 09:51:09 2011
->>
->> 1 - avg-old.netperf.exhost_guest.txt
->> 2 - avg-fixed.netperf.exhost_guest.txt
->
-> The output is word wrapped and generally unreadable. Any chance you can
-> provide us with a summary of the outcome ?
->
-> Cheers,
-> Ben.
 
-Hi Ben,
+Hi,
 
-The change of TCP_RR Throughput is very small.
-external host -> guest: Some of throughput of TCP_STREAM and TCP_MAERTS 
-reduced a little.
-local host -> guest: Some of throughput of TCP_STREAM and TCP_MAERTS 
-increased a little.
+I feel the following patch is a better fix for 2 reasons:
+
+1. As Al Viro pointed out, if we do for_each_possible_cpus() then we might
+encounter unnecessary performance hit in some scenarios. So working with
+only online cpus, safely(a.k.a race-free), if possible, would be a good
+solution (which this patch implements).
+
+2. *_global_lock_online() and *_global_unlock_online() needs fixing as well
+because, the names suggest that they lock/unlock per-CPU locks of only the
+currently online CPUs, but unfortunately they do not have any synchronization
+to prevent offlining those CPUs in between, if it happens to race with a CPU
+hotplug operation.
+
+And if we solve issue 2 above "carefully" (as mentioned in the changelog below),
+it solves this whole thing!
+
+---
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] VFS: Fix race between CPU hotplug and *_global_[un]lock_online()
 
 
-About compare result format:
----------------------------
->> 1 - avg-old.netperf.exhost_guest.txt
+The *_global_[un]lock_online() macros defined in include/linux/lglock.h
+can race with CPU hotplug operations. Fix this race by using the pair
+get_online_cpus() and put_online_cpus() around them, so as to prevent CPU
+hotplug happening at the same time.
 
-average result (tested 3 times) file of test 1
->> 2 - avg-fixed.netperf.exhost_guest.txt
+But be careful to note the semantics here: if we enable CPU hotplug in-between
+a lock_online() and the corresponding unlock_online(), the lock states can
+get messed up, since we might end up for example, in a situation such as taking
+a lock on an online CPU but not releasing it because that CPU was offline when
+unlock_online() was invoked (thanks to Cong Meng for debugging this issue).
+[Soft-lockups detected as a consequence of this issue was reported earlier in
+https://lkml.org/lkml/2011/8/24/185.]
 
-average result file of test 2
->>
->> ======
->> TCP_STREAM
+So, we are careful to allow CPU hotplug only after the lock-unlock sequence
+is complete.
 
-^^^ protocol
+Debugged-by: Cong Meng <mc@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
->>       sessions| size|throughput|   cpu| normalize|  #tx-pkts| #rx-pkts| #tx-byts|  #rx-byts| #re-trans| #tx-intr|  #rx-intr|  #io_exit|  #irq_inj|#tpkt/#exit| #rpkt/#irq
->> 1            1|   64|   1073.54| 10.50|       102|  ....
+ include/linux/lglock.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-^^^ average result of old kernel, start netserver in guest, start 
-netperf client(s) in external host
+diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+index f549056..583d1a8 100644
+--- a/include/linux/lglock.h
++++ b/include/linux/lglock.h
+@@ -22,6 +22,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/lockdep.h>
+ #include <linux/percpu.h>
++#include <linux/cpu.h>
+ 
+ /* can make br locks by using local lock for read side, global lock for write */
+ #define br_lock_init(name)	name##_lock_init()
+@@ -126,6 +127,7 @@
+ 	int i;								\
+ 	preempt_disable();						\
+ 	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
++	get_online_cpus();						\
+ 	for_each_online_cpu(i) {					\
+ 		arch_spinlock_t *lock;					\
+ 		lock = &per_cpu(name##_lock, i);			\
+@@ -142,6 +144,7 @@
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		arch_spin_unlock(lock);					\
+ 	}								\
++	put_online_cpus();						\
+ 	preempt_enable();						\
+  }									\
+  EXPORT_SYMBOL(name##_global_unlock_online);				\
 
->> 2            1|   64|   1079.44| 10.29|       104|  ....
 
-^^^ average result of fixed kernel
-
->> %             |  0.0|      +0.5|  -2.0|      +2.0|  ....
-
-^^^ augment rate between test1 and test2
-
---------
-sessions: netperf clients number
-size: request/response sizes
-#rx-pkts: received packets number
-#rx-byts: received bytes number
-#rx-intr: interrupt number for receive
-#io_exit: io exit number
-#irq_inj: injected irq number
-
-
-Thanks, Amos.
 
