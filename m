@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1LSUtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:49:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33400 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab1LSUtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:49:35 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wom5GMh1gUkA:10 a=yE2yJAP_VjkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=VwQbUJbxAAAA:8 a=07d9gI8wAAAA:8 a=oLbdE008AAAA:8 a=6XVD6acMnkdxDKJbqKUA:9 a=AaNZhrUb1Lssaf7gbCcA:7 a=CjuIK1q_8ugA:10 a=HEdnscJc8mAA:10 a=U62fhAwekXMA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Mon, 19 Dec 2011 15:49:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rijndael Cosque <rijcos@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "J.H." <warthog9@kernel.org>
-Subject: Re: kernel.org/pub/ was re-organized recently?
-Message-ID: <20111219204932.GA13165@home.goodmis.org>
-References: <CAJm7N86LJeiiarRjQBDKGDK5=qxjiKHDUiDYkEbhPejP7VBqiQ@mail.gmail.com>
+	id S1752787Ab1LSUuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:50:35 -0500
+Received: from sm1.jlab.org ([129.57.52.19]:36382 "EHLO sm1.jlab.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752218Ab1LSUud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 15:50:33 -0500
+X-Greylist: delayed 25615 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Dec 2011 15:50:32 EST
+Message-ID: <65011.210.195.3.149.1324301815.squirrel@webmail.jlab.org>
+Date: Mon, 19 Dec 2011 08:36:55 -0500 (EST)
+Subject: 
+From: "Sgt Luguard Edmund" <info@yahoo.com>
+Reply-To: sgtlugaurdedmund@xnmsn.com
+User-Agent: SquirrelMail/1.4.8-5.el5_4.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJm7N86LJeiiarRjQBDKGDK5=qxjiKHDUiDYkEbhPejP7VBqiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 10:51:14PM +0800, Rijndael Cosque wrote:
-> Hi all,
-> I'm sorry if I report this below issue in the wrong mailing list...
-
-This is as good of a list as any. But since there are over 600 emails a
-day on this list, you can easily be lost in the noise. Luckily for you,
-I got bored while waiting for my test box to reboot and decided to
-browse LKML where your subject line intgrigued my curiostity.
 
 
-> 
-> Recently when I tried to wget the following packages, I got a HTTP 404
-> error (not found):
-> 
-> http://kernel.org/pub/linux/kernel/people/jsipek/guilt/guilt-0.33.tar.gz
-> http://kernel.org/pub/linux/libs/pam/library/Linux-PAM-1.1.4.tar.bz2
-> http://kernel.org/pub/linux/bluetooth/bluez-hcidump-2.1.tar.gz
-> http://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.22.tar.bz2
-> http://kernel.org/pub/software/utils/pciutils/pciutils-3.1.7.tar.bz2
-> http://kernel.org/pub/linux/utils/usb/usbutils/usbutils-0.91.tar.gz
-> http://kernel.org/pub/linux/utils/kernel/module-init-tools/module-init-tools-3.16.tar.bz2
-> http://kernel.org/pub/linux/utils/util-linux-ng/v2.19/util-linux-2.19.1.tar.bz2
-> http://kernel.org/pub/linux/bluetooth/bluez-4.96.tar.gz
-> http://kernel.org/pub/linux/utils/kernel/hotplug/udev-164.tar.gz
-> http://kernel.org/pub/linux/utils/kernel/kexec/kexec-tools-2.0.2.tar.gz
-> http://kernel.org/pub/linux/network/ofono/ofono-0.50.tar.bz2
-> http://kernel.org/pub/linux/utils/kernel/pcmcia/pcmciautils-018.tar.bz2
 
-Yep, they aint there anymore.
+Good Day From Libya,
 
-> 
-> I'm sure I could wget them before.
-> Can somebody point to me what happened to the packages? Where were
-> they moved to?
+My name is (Sgt Luguard Edmund),I am one of the US NATO soldier, for peace
+keeping in Libya, and I am seeking your kind assistance to move the sum 
+Twenty Five Million Dollar($25 million U.S Dollars) which  already
+Deposited with a Diplomatic Company for security and Safety Purpose,I want
+to hand over this funds to a Trust Worth Person that we help me keep it
+till I am back from the TRIPOLI in JULY  2012, Since Our Final Troops is
+leaving Tripoli 2012.If you are Interested in this Offer  Kindly Send Your
+Reply To My Email: sgtlugaurdedmund@xnmsn.com
 
-I don't know where they are now. Probably somewhere on the developers
-computers that created them.
+If you are interested kindly send me your reply and i shall provide you
+with further details.
 
-Here's the issue. You may want to read up on what happened recently with
-kernel.org:
+Regards,
+Sgt Luguard Edmund
 
-  http://lwn.net/Articles/457142/
-
-And you can get a lot more info here:
-
-  http://lmgtfy.com/?q=kernel.org+hacked
-
-To sum it up in a nutshell; kernel.org has been wiped clean,
-reinstalled, and all the content on there today has been loaded up by
-the original developers as they saw fit to put it back. Not all the
-developers that had access to kernel.org before has access today. The
-above tools may comeback slowly. If you need them, you might want to
-find the developers that created the tools and ask them where they are.
-
-Sorry I can't be of more help. Good luck in finding what you need.
-
--- Steve
 
 
