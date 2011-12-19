@@ -1,209 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab1LSXOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 18:14:34 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:36609 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab1LSXOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 18:14:32 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH v2 7/7] input: serio: ams-delta: toggle keyboard power over GPIO
-Date: Tue, 20 Dec 2011 00:08:57 +0100
-Message-Id: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
-In-Reply-To: <cover.1324331816.git.jkrzyszt@tis.icnet.pl>
-References: <cover.1324331816.git.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1753482Ab1LSXPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 18:15:04 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:33782 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752453Ab1LSXO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 18:14:59 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX180eLwmeXk09A6eYPoEL6WQ0gaMxyidHpwpe7vHmk
+	wPtnauUUTFEyKz
+Message-ID: <4EEFC56F.3000409@gmx.de>
+Date: Mon, 19 Dec 2011 23:14:55 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 1/3] video: convert mbxfb to use module_platform_driver()
+References: <1323395873.3740.4.camel@phoenix>
+In-Reply-To: <1323395873.3740.4.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use Amstrad Delta custom I/O functions once GPIO interface is
-available for the underlying hardware.
+On 12/09/2011 01:57 AM, Axel Lin wrote:
+> This patch converts mbxfb to use the module_platform_driver() macro
+> which makes the code smaller and a bit simpler.
+> 
+> Cc: Mike Rapoport <mike@compulab.co.il>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-While requesting and initializing GPIO pins used, also take care of one
-extra pin KEYBRD_DATAOUT which, even if not used by the driver, belongs
-to the device and affects its functioning.
-
-Once done, move the driver initialization back to the device_initcall
-level, reverting the temporary chane introduced with patch 1/7 "ARM:
-OMAP1: ams-delta: register latch dependent devices from late_initcall".
-That change is no longer required once the driver takes care of
-registering used GPIO pins, and it's better to initialize the device
-before others using the latch2 based GPIO pins, otherwise a garbage is
-reported on boot, perhaps due to random data already captured by the FIQ
-handler while the keyboard related latch bits are written with random
-values during initialization of those other latch2 dependent devices.
-
-Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
-basic_mmio_gpio"
-
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
----
-Changes against initial version:
-* was 9/10,
-* rebased on top of v2 of patch 2/7, just in case,
-* moved AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT pin handling from the board
-  code to the driver,
-* reverted a temporary change to the driver initcall level, introduced
-  by the new solution provided with patch 1/7.
+Applied.
 
 
- arch/arm/mach-omap1/board-ams-delta.c             |   10 ----
- arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
- drivers/input/serio/ams_delta_serio.c             |   55 ++++++++++++---------
- 3 files changed, 31 insertions(+), 36 deletions(-)
+Thanks,
 
-diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-index 3aba8f9..673cf21 100644
---- a/arch/arm/mach-omap1/board-ams-delta.c
-+++ b/arch/arm/mach-omap1/board-ams-delta.c
-@@ -227,16 +227,6 @@ static struct gpio latch_gpios[] __initconst = {
- 		.label	= "dockit2",
- 	},
- 	{
--		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "keybrd_pwr",
--	},
--	{
--		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "keybrd_dataout",
--	},
--	{
- 		.gpio	= AMS_DELTA_GPIO_PIN_SCARD_RSTIN,
- 		.flags	= GPIOF_OUT_INIT_LOW,
- 		.label	= "scard_rstin",
-diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-index e9ad673..027e79e 100644
---- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-+++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-@@ -28,8 +28,6 @@
- 
- #if defined (CONFIG_MACH_AMS_DELTA)
- 
--#define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
--#define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
- #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
- #define AMD_DELTA_LATCH2_SCARD_CMDVCC	0x0800
- #define AMS_DELTA_LATCH2_MODEM_NRESET	0x1000
-diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
-index 56ffd7c..ef1ec40 100644
---- a/drivers/input/serio/ams_delta_serio.c
-+++ b/drivers/input/serio/ams_delta_serio.c
-@@ -92,8 +92,7 @@ static irqreturn_t ams_delta_serio_interrupt(int irq, void *dev_id)
- static int ams_delta_serio_open(struct serio *serio)
- {
- 	/* enable keyboard */
--	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR,
--			AMD_DELTA_LATCH2_KEYBRD_PWR);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 1);
- 
- 	return 0;
- }
-@@ -101,9 +100,32 @@ static int ams_delta_serio_open(struct serio *serio)
- static void ams_delta_serio_close(struct serio *serio)
- {
- 	/* disable keyboard */
--	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR, 0);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 0);
- }
- 
-+static struct gpio _gpios[] __initconst_or_module = {
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATA,
-+		.flags	= GPIOF_DIR_IN,
-+		.label	= "serio-data",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_CLK,
-+		.flags	= GPIOF_DIR_IN,
-+		.label	= "serio-clock",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "serio-power",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "serio-dataout",
-+	},
-+};
-+
- static int __init ams_delta_serio_init(void)
- {
- 	int err;
-@@ -123,19 +145,11 @@ static int __init ams_delta_serio_init(void)
- 	strlcpy(ams_delta_serio->phys, "GPIO/serio0",
- 			sizeof(ams_delta_serio->phys));
- 
--	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_DATA, "serio-data");
-+	err = gpio_request_array(_gpios, ARRAY_SIZE(_gpios));
- 	if (err) {
--		pr_err("ams_delta_serio: Couldn't request gpio pin for data\n");
-+		pr_err("ams_delta_serio: Couldn't request gpio pins\n");
- 		goto serio;
- 	}
--	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
--
--	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_CLK, "serio-clock");
--	if (err) {
--		pr_err("ams_delta_serio: couldn't request gpio pin for clock\n");
--		goto gpio_data;
--	}
--	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
- 
- 	err = request_irq(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK),
- 			ams_delta_serio_interrupt, IRQ_TYPE_EDGE_RISING,
-@@ -143,7 +157,7 @@ static int __init ams_delta_serio_init(void)
- 	if (err < 0) {
- 		pr_err("ams_delta_serio: couldn't request gpio interrupt %d\n",
- 				gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
--		goto gpio_clk;
-+		goto gpio;
- 	}
- 	/*
- 	 * Since GPIO register handling for keyboard clock pin is performed
-@@ -157,25 +171,18 @@ static int __init ams_delta_serio_init(void)
- 	dev_info(&ams_delta_serio->dev, "%s\n", ams_delta_serio->name);
- 
- 	return 0;
--gpio_clk:
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
--gpio_data:
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-+gpio:
-+	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
- serio:
- 	kfree(ams_delta_serio);
- 	return err;
- }
--#ifndef MODULE
--late_initcall(ams_delta_serio_init);
--#else
- module_init(ams_delta_serio_init);
- 
- static void __exit ams_delta_serio_exit(void)
- {
- 	serio_unregister_port(ams_delta_serio);
- 	free_irq(OMAP_GPIO_IRQ(AMS_DELTA_GPIO_PIN_KEYBRD_CLK), 0);
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-+	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
- }
- module_exit(ams_delta_serio_exit);
--#endif
--- 
-1.7.3.4
+Florian Tobias Schandinat
+
+> ---
+>  drivers/video/mbx/mbxfb.c |   13 +------------
+>  1 files changed, 1 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
+> index 6ce3416..55bf619 100644
+> --- a/drivers/video/mbx/mbxfb.c
+> +++ b/drivers/video/mbx/mbxfb.c
+> @@ -1053,18 +1053,7 @@ static struct platform_driver mbxfb_driver = {
+>  	},
+>  };
+>  
+> -int __devinit mbxfb_init(void)
+> -{
+> -	return platform_driver_register(&mbxfb_driver);
+> -}
+> -
+> -static void __devexit mbxfb_exit(void)
+> -{
+> -	platform_driver_unregister(&mbxfb_driver);
+> -}
+> -
+> -module_init(mbxfb_init);
+> -module_exit(mbxfb_exit);
+> +module_platform_driver(mbxfb_driver);
+>  
+>  MODULE_DESCRIPTION("loadable framebuffer driver for Marathon device");
+>  MODULE_AUTHOR("Mike Rapoport, Compulab");
 
