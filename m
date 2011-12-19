@@ -1,70 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab1LSILq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 03:11:46 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:57395 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752424Ab1LSILo (ORCPT
+	id S1752490Ab1LSITP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 03:19:15 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:48214 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab1LSITN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 03:11:44 -0500
-Date: Mon, 19 Dec 2011 10:11:38 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH 1/3] usb: musb: fix pm_runtime mismatches
-Message-ID: <20111219081137.GF3146@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1323990310-11905-1-git-send-email-felipe.contreras@gmail.com>
- <1323990310-11905-2-git-send-email-felipe.contreras@gmail.com>
+	Mon, 19 Dec 2011 03:19:13 -0500
+Date: Mon, 19 Dec 2011 10:19:09 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111219091909.GA1614@x4>
+References: <20111121082445.GD1625@x4.trippels.de>
+ <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121131531.GA1679@x4.trippels.de>
+ <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121153621.GA1678@x4.trippels.de>
+ <1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121161036.GA1679@x4.trippels.de>
+ <20111121163459.GA1679@x4.trippels.de>
+ <20111122083630.GA1672@x4.trippels.de>
+ <m1liq9l009.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aYDVKSzuImP48n7V"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1323990310-11905-2-git-send-email-felipe.contreras@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m1liq9l009.fsf@fess.ebiederm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011.12.18 at 19:21 -0800, Eric W. Biederman wrote:
+> Markus Trippelsdorf <markus@trippelsdorf.de> writes:
+> 
+> > On 2011.11.21 at 17:34 +0100, Markus Trippelsdorf wrote:
+> >> On 2011.11.21 at 17:10 +0100, Markus Trippelsdorf wrote:
+> >> > On 2011.11.21 at 16:48 +0100, Eric Dumazet wrote:
+> >> > > Le lundi 21 novembre 2011 à 16:36 +0100, Markus Trippelsdorf a écrit :
+> >> > > > On 2011.11.21 at 15:16 +0100, Eric Dumazet wrote:
+> >> > > > > Le lundi 21 novembre 2011 à 14:15 +0100, Markus Trippelsdorf a écrit :
+> >> > > > > 
+> >> > > > > > I've enabled CONFIG_SLUB_DEBUG_ON and this is what happend:
+> >> > > > > > 
+> >> > > > > 
+> >> > > > > Thanks
+> >> > > > > 
+> >> > > > > Please continue to provide more samples.
+> >> > > > > 
+> >> > > > > There is something wrong somewhere, but where exactly, its hard to say.
+> >> > > > 
+> >> > > > New sample. This one points to lib/idr.c:
+> >> > > > 
+> >> > > > =============================================================================
+> >> > > > BUG idr_layer_cache: Poison overwritten
+> >> > > > -----------------------------------------------------------------------------
+> >> > > 
+> >> > > Thanks, could you now add "CONFIG_DEBUG_PAGEALLOC=y" in your config as
+> >> > > well ?
+> >> > 
+> >> > Sure. This one happend with CONFIG_DEBUG_PAGEALLOC=y:
+> >> > 
+> >> > =============================================================================
+> >> > BUG task_struct: Poison overwritten
+> >> > -----------------------------------------------------------------------------
+> >> 
+> >> And sometimes this one that I've reported earlier already:
+> >> 
+> >> (see: http://thread.gmane.org/gmane.linux.kernel/1215023 )
+> >> 
+> >>  ------------[ cut here ]------------
+> >>  WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
+> >>  Hardware name: System Product Name
+> >>  Pid: 1876, comm: slabinfo Not tainted 3.2.0-rc2-00274-g6fe4c6d #72
+> >>  Call Trace:
+> >>  [<ffffffff8106cac5>] warn_slowpath_common+0x75/0xb0
+> >>  [<ffffffff8106cbc5>] warn_slowpath_null+0x15/0x20
+> >>  [<ffffffff81163236>] sysfs_get_inode+0x136/0x140
+> >>  [<ffffffff81164cef>] sysfs_lookup+0x6f/0x110
+> >>  [<ffffffff811173f9>] d_alloc_and_lookup+0x39/0x80
+> >>  [<ffffffff81118774>] do_lookup+0x294/0x3a0
+> >>  [<ffffffff8111798a>] ? inode_permission+0x7a/0xb0
+> >>  [<ffffffff8111a3f7>] do_last.isra.46+0x137/0x7f0
+> >>  [<ffffffff8111ab76>] path_openat+0xc6/0x370
+> >>  [<ffffffff81117606>] ? getname_flags+0x36/0x230
+> >>  [<ffffffff810ec852>] ? handle_mm_fault+0x192/0x290
+> >>  [<ffffffff8111ae5c>] do_filp_open+0x3c/0x90
+> >>  [<ffffffff81127c8c>] ? alloc_fd+0xdc/0x120
+> >>  [<ffffffff8110ce77>] do_sys_open+0xe7/0x1c0
+> >>  [<ffffffff8110cf6b>] sys_open+0x1b/0x20
+> >>  [<ffffffff814ccb7b>] system_call_fastpath+0x16/0x1b
+> >>  ---[ end trace b1377eb8b131d37d ]---
+> >
+> > Hm, the "sysfs: use rb-tree" thing hit again during boot. Could this be
+> > the root cause of this all?
+> >
+> > I wrote down the following:
+> >
+> > RIP : rb_next
+> >
+> > Trace:
+> >  sysfs_dir_pos
+> >  sysfs_readdir
+> >  ? sys_ioctl
+> >  vfs_readdir
+> >  sys_getdents
+> 
+> Thanks for reporting this.
+> 
+> Has this by any chance been resolved or stopped happening?
 
---aYDVKSzuImP48n7V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes.
 
-On Fri, Dec 16, 2011 at 01:05:08AM +0200, Felipe Contreras wrote:
-> Properly call pm_runtime_put() afer pm_runttime_get() on errors.
->=20
-> Untested.
+> This looks for all of the world like something is stomping your sysfs
+> dirents.   I haven't seen anyone else complaining so this seems like the
+> problem is unique to your configuration.  Which suggests that it is not
+> sysfs itself that is wrong.
+> 
+> I have been through the code a time or two and I haven't seen anything
+> obviously wrong.  Everything that sysfs does is protected by the
+> sysfs_mutex so the locking is very very simple.
+> 
+> My best guess of why now is that the rbtree code make a sysfs dirent
+> 48 bytes larger.  And so it is much more exposed to these kinds of
+> problems.
 
-sorry, but I'm not applying untested patches. I need someone to give a
-Tested-by.
+Sorry, but your subsystem was just accidentally hit by a bug in the
+Radeon driver, that sometimes randomly writes 0 dwords somewhere to
+memory after a kexec boot (see the rest of this huge thread).
+It's still not fixed in mainline, because Linus refused to take the fix
+this late in the series.
 
---=20
-balbi
-
---aYDVKSzuImP48n7V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO7vG5AAoJEIaOsuA1yqRE+VYP+QGsGk2Hp2mjuBhA43cvFu8R
-y5eZ/X8ylW3JRl9JzDdUDBOW0JEbPx2qPwYpNdZDWtfdakDLLBQIg+bgKH21ubA/
-tQ3eXwY0g25accjcWb/0ii4uSdz9P6DAGLmfLtbI/kBfeYOZtoIJbk6Ekw5GaG4g
-LrvVXjgvWyLS5ddZyw+jRcaZSSzUfLxAKBGAv0+EYwFvomPYdUUjchzS4OAQMiKq
-joHSiSLPcnfi2jMb2annBIGcstN1VyDorBeNq71Rz79nOnFq8P3YZAuWNnS+1Fxu
-0IfXY5s4RKhABcKrYWlbFetwyj4tHUEjEqYCk3L7iKK+q0j2FTW91HrNQO8kNT55
-fAjsQL+l8yT+qXMw0KmCEZek21C+yji3tVVnN6ymDV1U5F7b9T051BS+RkLgJnjF
-ddfbaVGKFvO5q/XqBEqn7PjS/k2WaZ4pH0TO8s+1CIcSgefOFjV9Up+JP7uUBYuP
-j2rhMKmdEErOchhZF0Kw/onCzeZGSgOmo/cpEfuduNZ46S1vn6Kw6ZOvVbavE0xU
-CIUo9KDyRdfY9xbcbvTE1Dkq+e98OTNXtPfngfJl+Kz8dZckBmkVT/7D2vexkvoJ
-V3/bQxUPNzmj9cBTKahs6tI5mkaddadbUJ8JpTd8/TZj9MWtr4YbGY3bFNNTcQ+w
-/tVBbhHUN+dpR+1moszY
-=dfPB
------END PGP SIGNATURE-----
-
---aYDVKSzuImP48n7V--
+-- 
+Markus
