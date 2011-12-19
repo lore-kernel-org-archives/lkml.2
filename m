@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1LSJJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 04:09:35 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:38339 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1LSJJc (ORCPT
+	id S1751601Ab1LSJLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 04:11:48 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:52237 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1LSJLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 04:09:32 -0500
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dKzz1202hzzz2dh668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LWG1FM-02-098-02
-X-M-MSG: 
-Date: Mon, 19 Dec 2011 10:09:23 +0100
-From: Robert Richter <robert.richter@amd.com>
+	Mon, 19 Dec 2011 04:11:45 -0500
+Date: Mon, 19 Dec 2011 10:11:34 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 To: Ingo Molnar <mingo@elte.hu>
-CC: Benjamin Block <bebl@mageta.org>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        <hpa@zytor.com>, <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
-        <eranian@google.com>, <brgerst@gmail.com>, <Andreas.Herrmann3@amd.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Benjamin Block <benjamin.block@amd.com>
-Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
-Message-ID: <20111219090923.GB16765@erda.amd.com>
-References: <20111216160757.GL665@escobedo.osrc.amd.com>
- <1324051943-21112-1-git-send-email-hans.rosenfeld@amd.com>
- <1324051943-21112-4-git-send-email-hans.rosenfeld@amd.com>
- <20111218080443.GB4144@elte.hu>
- <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de>
- <20111218234309.GA12958@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111218234309.GA12958@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Glauber Costa <glommer@parallels.com>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+Message-ID: <20111219101134.3c2c0db5@de.ibm.com>
+In-Reply-To: <20111219080813.GB30432@elte.hu>
+References: <20111219154010.c2044c038a6174dd8fb6f477@canb.auug.org.au>
+	<20111219080813.GB30432@elte.hu>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 11121909-5024-0000-0000-0000012135CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.12.11 00:43:10, Ingo Molnar wrote:
-> So the question becomes, how well is it integrated: can
-> perf 'record -a + perf report', or 'perf top' use LWP,
-> to do system-wide precise [user-space] profiling and such?
+On Mon, 19 Dec 2011 09:08:13 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-There is only self-monitoring of a process possible, no kernel and
-system-wide profiling. This is because we can not allocate memory
-regions in the kernel for a thread other than the current. This would
-require a complete rework of mm code.
+> 
+> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> > Hi all,
+> > 
+> > Today's linux-next merge of the tip tree got a conflict in
+> > fs/proc/uptime.c between commit c3e0ef9a298e ("[S390] fix cputime
+> > overflow in uptime_proc_show") from the cputime tree and commit
+> > 3292beb340c7 ("sched/accounting: Change cpustat fields to an array") from
+> > the tip tree.
+> > 
+> > I fixed it up (I think - see below) and can carry the fix as necessary.
+> > 
+> > Generally, you guys seem to be working a little at cross purposes ...
+> 
+> Agreed.
+> 
+> Martin, could you please send Peter and me a pull request of the 
+> current cputime bits merged on top of tip:sched/core? Those bits 
+> should go upstream via the scheduler tree.
+> 
 
--Robert
+All of it including "[S390] cputime: add sparse checking and cleanup" or
+just the fix for uptime ?
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
