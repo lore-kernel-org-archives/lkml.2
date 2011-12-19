@@ -1,92 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab1LSKjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:39:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64152 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752140Ab1LSKgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:36:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87190441"
-Message-Id: <20111219102357.046474492@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 19 Dec 2011 18:23:12 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Jan Kara <jack@suse.cz>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/10] readahead: tag mmap page fault call sites
-References: <20111219102308.488847921@intel.com>
-Content-Disposition: inline; filename=readahead-for-mmap
+	id S1752690Ab1LSKjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:39:35 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34336 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1LSKjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 05:39:33 -0500
+Date: Mon, 19 Dec 2011 10:39:54 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Arve =?ISO-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Android low memory killer vs. memory pressure notifications
+Message-ID: <20111219103954.354d68af@pyramind.ukuu.org.uk>
+In-Reply-To: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
+References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a bit field ra->for_mmap for tagging mmap reads.
-The tag will be cleared immediate after submitting the IO.
+>   The main downside of this approach is that mem_cg needs 20 bytes per
+>   page (on a 32 bit machine). So on a 32 bit machine with 4K pages
+>   that's approx. 0.5% of RAM, or, in other words, 5MB on a 1GB machine.
 
-Acked-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/fs.h |    1 +
- mm/filemap.c       |    6 +++++-
- mm/readahead.c     |    1 +
- 3 files changed, 7 insertions(+), 1 deletion(-)
+The obvious question would be why? Would fixing memcg make more sense ?
 
---- linux-next.orig/include/linux/fs.h	2011-12-16 19:36:12.000000000 +0800
-+++ linux-next/include/linux/fs.h	2011-12-16 19:36:12.000000000 +0800
-@@ -949,6 +949,7 @@ struct file_ra_state {
- 	unsigned int ra_pages;		/* Maximum readahead window */
- 	u16 mmap_miss;			/* Cache miss stat for mmap accesses */
- 	u8 pattern;			/* one of RA_PATTERN_* */
-+	unsigned int for_mmap:1;	/* readahead for mmap accesses */
- 
- 	loff_t prev_pos;		/* Cache last read() position */
- };
---- linux-next.orig/mm/filemap.c	2011-12-16 19:36:12.000000000 +0800
-+++ linux-next/mm/filemap.c	2011-12-16 19:36:12.000000000 +0800
-@@ -1578,6 +1578,7 @@ static void do_sync_mmap_readahead(struc
- 		return;
- 
- 	if (VM_SequentialReadHint(vma)) {
-+		ra->for_mmap = 1;
- 		page_cache_sync_readahead(mapping, ra, file, offset,
- 					  ra->ra_pages);
- 		return;
-@@ -1597,6 +1598,7 @@ static void do_sync_mmap_readahead(struc
- 	/*
- 	 * mmap read-around
- 	 */
-+	ra->for_mmap = 1;
- 	ra->pattern = RA_PATTERN_MMAP_AROUND;
- 	ra_pages = max_sane_readahead(ra->ra_pages);
- 	ra->start = max_t(long, 0, offset - ra_pages / 2);
-@@ -1622,9 +1624,11 @@ static void do_async_mmap_readahead(stru
- 		return;
- 	if (ra->mmap_miss > 0)
- 		ra->mmap_miss--;
--	if (PageReadahead(page))
-+	if (PageReadahead(page)) {
-+		ra->for_mmap = 1;
- 		page_cache_async_readahead(mapping, ra, file,
- 					   page, offset, ra->ra_pages);
-+	}
- }
- 
- /**
---- linux-next.orig/mm/readahead.c	2011-12-16 19:36:12.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-12-16 19:36:12.000000000 +0800
-@@ -259,6 +259,7 @@ unsigned long ra_submit(struct file_ra_s
- 	actual = __do_page_cache_readahead(mapping, filp,
- 					ra->start, ra->size, ra->async_size);
- 
-+	ra->for_mmap = 0;
- 	return actual;
- }
- 
-
-
+The only problem I see with having a user space manager is that manager
+probably has to be mlock to avoid awkward fail cases and that may in fact
+make it smaller kernel side.
