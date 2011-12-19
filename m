@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1LSIWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 03:22:45 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48318 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1LSIWn (ORCPT
+	id S1752369Ab1LSI1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 03:27:47 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:55916
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751713Ab1LSI1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 03:22:43 -0500
-Date: Mon, 19 Dec 2011 08:22:25 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Wolfgang Denk <wd@denx.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>,
-        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        Stefano Babic <sbabic@denx.de>
-Subject: Re: [PATCH] MXS: Convert mutexes in clock.c to spinlocks
-Message-ID: <20111219082225.GC14542@n2100.arm.linux.org.uk>
-References: <1324217174-6574-1-git-send-email-marek.vasut@gmail.com> <20111219032712.GB4962@S2100-06.ap.freescale.net> <201112190503.46668.marek.vasut@gmail.com>
+	Mon, 19 Dec 2011 03:27:44 -0500
+Message-ID: <4EEEF570.2040502@compulab.co.il>
+Date: Mon, 19 Dec 2011 10:27:28 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112190503.46668.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Fix cross compilation broken by failing size command
+References: <Message-ID: <20111214215815.GP32251@atomide.com> <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl>
+In-Reply-To: <1324032146-723-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 05:03:45AM +0100, Marek Vasut wrote:
-> > On Sun, Dec 18, 2011 at 03:06:13PM +0100, Marek Vasut wrote:
-> > > The mutexes can't be safely used under certain circumstances. I noticed
-> > > this
-> > 
-> > > issue during some network instability at home:
-> > Yes, this is a known issue.  And there was some discussion[1] about
-> > why mutex is needed.
+Hi Janusz,
+
+On 12/16/11 12:42, Janusz Krzysztofik wrote:
+> Since commit 5ffb04f6690d71fab241b3562ebf52b893ac4ff1, "ARM: zImage:
+> make sure appended DTB doesn't get overwritten by kernel .bss", the
+> native 'size' command, which is now always used for calculation of the
+> kernel bss size, may break in selected cross compilation environments
+> with error messages like:
 > 
-> Thanks for pointing this out, I was unaware of it.
+> size: arch/arm/boot/compressed/../../../../vmlinux: File format is ambiguous
+> size: Matching formats: elf32-littlearm elf32-littlearm-symbian elf32-littlearm-vxworks
 > 
-> > But I really have not thought about why we can
-> > not use spinlock only, since using mutex only leads to the issue we
-> > are seeing here, and using spinlock in enable/disable and mutex in
-> > rate/parent will not work, because the mxs clocks have enable/disable
-> > and rate/parent functions access the same register.  I know it's not
-> > good to hold spinlock in rate/parent functions for a long time, but
-> > do we have a way around rather than using spinlock for both sets of
-> > functions?
+> As a consequence, the KBSS_SZ variable extracted from the size output is
+> empty, and the the final linker command, provided with incorrectly
+> formatted arguments, also fails:
 > 
-> Yea, spinlock is not good either. On the other hand, is it really held for so 
-> long ?
+>   LD      arch/arm/boot/compressed/vmlinux
+>   arm-angstrom-linux-uclibcgnueabi-ld:--defsym _kernel_bss_size=: syntax error
+> 
+> Don't append the '_kernel_bss_size=$(KBSS_SZ)' argument to the linker
+> command line if that variable is empty because of the failing size
+> command. Moreover, use $(CROSS_COMPILE)size if available instead of
+> native size.
+> 
+> Created and tested against linux-3.2-rc5.
+> 
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+> ---
 
-There is another solution to this, which I've pointed out before when
-this has come up:
+Tested-by: Igor Grinberg <grinberg@compulab.co.il>
 
-1. Convert all your drivers to _also_ use clk_prepare()/clk_unprepare().
-   You need to do this anyway as it will become mandatory for the common
-   clk stuff.
+Thanks for the patch, it fixes the build for me, so you are
+not the only one having this issue...
+I currently, use CodeSourcery 2010q1, but have multiple
+cross tool chains installed.
 
-2. Rename your existing clk_enable()/clk_disable() implementation to
-   clk_prepare()/clk_unprepare().  Ensure CONFIG_HAVE_CLK_PREPARE is
-   selected.
 
-3. Provide a new no-op clk_enable()/clk_disable() functions.
-
-This fixes the issue because clk_prepare()/clk_unprepare() must only be
-called from process contexts, whereas clk_enable()/clk_disable() may be
-called from atomic contexts as well.
+-- 
+Regards,
+Igor.
