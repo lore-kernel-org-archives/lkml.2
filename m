@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1LSKgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:36:33 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64152 "EHLO mga03.intel.com"
+	id S1752730Ab1LSKiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:38:10 -0500
+Received: from mga03.intel.com ([143.182.124.21]:48432 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab1LSKgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:36:31 -0500
+	id S1752377Ab1LSKgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 05:36:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87190434"
-Message-Id: <20111219102356.754591774@intel.com>
+   d="scan'208";a="87190454"
+Message-Id: <20111219102357.682742832@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 19 Dec 2011 18:23:10 +0800
+Date: Mon, 19 Dec 2011 18:23:17 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Linux Memory Management List <linux-mm@kvack.org>,
         <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/10] readahead: make context readahead more conservative
+Subject: [PATCH 09/10] readahead: dont do start-of-file readahead after lseek()
 References: <20111219102308.488847921@intel.com>
-Content-Disposition: inline; filename=readahead-context-tt
+Content-Disposition: inline; filename=readahead-lseek.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to prevent negatively impact moderately dense random reads on SSD.
+Some applications (eg. blkid, id3tool etc.) seek around the file
+to get information. For example, blkid does
 
-Transaction-Per-Second numbers provided by Taobao:
+	     seek to	0
+	     read	1024
+	     seek to	1536
+	     read	16384
 
-		QPS	case
-		-------------------------------------------------------
-		7536	disable context readahead totally
-w/ patch:	7129	slower size rampup and start RA on the 3rd read
-		6717	slower size rampup
-w/o patch:	5581	unmodified context readahead
+The start-of-file readahead heuristic is wrong for them, whose
+access pattern can be identified by lseek() calls.
 
-Before, readahead will be started whenever reading page N+1 when it
-happen to read N recently. After patch, we'll only start readahead
-when *three* random reads happen to access pages N, N+1, N+2. The
-probability of this happening is extremely low for pure random reads,
-unless they are very dense, which actually deserves some readahead.
+So test-and-set a READAHEAD_LSEEK flag on lseek() and don't
+do start-of-file readahead on seeing it. Proposed by Linus.
 
-Also start with a smaller readahead window. The impact to interleaved
-sequential reads should be small, because for a long run stream, the
-the small readahead window rampup phase is negletable.
-
-The context readahead actually benefits clustered random reads on HDD
-whose seek cost is pretty high.  However as SSD is increasingly used for
-random read workloads it's better for the context readahead to
-concentrate on interleaved sequential reads.
-
-Tested-by: Tao Ma <tm@tao.ma>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/readahead.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/read_write.c    |    3 +++
+ include/linux/fs.h |    1 +
+ mm/readahead.c     |    4 ++++
+ 3 files changed, 8 insertions(+)
 
---- linux-next.orig/mm/readahead.c	2011-12-19 18:12:35.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-12-19 18:12:51.000000000 +0800
-@@ -369,10 +369,10 @@ static int try_context_readahead(struct 
- 	size = count_history_pages(mapping, ra, offset, max);
+--- linux-next.orig/mm/readahead.c	2011-12-19 16:09:45.000000000 +0800
++++ linux-next/mm/readahead.c	2011-12-19 16:10:06.000000000 +0800
+@@ -476,6 +476,7 @@ unsigned long ra_submit(struct file_ra_s
+ 			ra->pattern, ra->start, ra->size, ra->async_size,
+ 			actual);
  
- 	/*
--	 * no history pages:
-+	 * not enough history pages:
- 	 * it could be a random read
++	ra->lseek = 0;
+ 	ra->for_mmap = 0;
+ 	ra->for_metadata = 0;
+ 	return actual;
+@@ -627,6 +628,8 @@ ondemand_readahead(struct address_space 
+ 	 * start of file
  	 */
--	if (!size)
-+	if (size <= req_size)
- 		return 0;
+ 	if (!offset) {
++		if (ra->lseek && req_size < max)
++			goto random_read;
+ 		ra->pattern = RA_PATTERN_INITIAL;
+ 		goto initial_readahead;
+ 	}
+@@ -712,6 +715,7 @@ ondemand_readahead(struct address_space 
+ 	if (try_context_readahead(mapping, ra, offset, req_size, max))
+ 		goto readit;
  
++random_read:
  	/*
-@@ -383,8 +383,8 @@ static int try_context_readahead(struct 
- 		size *= 2;
- 
- 	ra->start = offset;
--	ra->size = get_init_ra_size(size + req_size, max);
--	ra->async_size = ra->size;
-+	ra->size = min(size + req_size, max);
-+	ra->async_size = 1;
- 
- 	return 1;
+ 	 * standalone, small random read
+ 	 */
+--- linux-next.orig/fs/read_write.c	2011-12-18 14:06:28.000000000 +0800
++++ linux-next/fs/read_write.c	2011-12-19 16:09:45.000000000 +0800
+@@ -47,6 +47,9 @@ static loff_t lseek_execute(struct file 
+ 		file->f_pos = offset;
+ 		file->f_version = 0;
+ 	}
++
++	file->f_ra.lseek = 1;
++
+ 	return offset;
  }
+ 
+--- linux-next.orig/include/linux/fs.h	2011-12-19 16:09:45.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-12-19 16:09:45.000000000 +0800
+@@ -951,6 +951,7 @@ struct file_ra_state {
+ 	u8 pattern;			/* one of RA_PATTERN_* */
+ 	unsigned int for_mmap:1;	/* readahead for mmap accesses */
+ 	unsigned int for_metadata:1;	/* readahead for meta data */
++	unsigned int lseek:1;		/* this read has a leading lseek */
+ 
+ 	loff_t prev_pos;		/* Cache last read() position */
+ };
 
 
