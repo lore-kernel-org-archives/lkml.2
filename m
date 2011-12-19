@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1LSVVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 16:21:22 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:46530 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1LSVVT (ORCPT
+	id S1753311Ab1LSVWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 16:22:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:59128 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1LSVW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 16:21:19 -0500
-Message-ID: <4EEFAA95.6070600@ah.jp.nec.com>
-Date: Mon, 19 Dec 2011 16:20:21 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Organization: NEC Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
-References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com> <4EEF8F85.9010408@gmail.com> <4EEF9E04.1040007@ah.jp.nec.com> <4EEFA308.2090608@gmail.com>
-In-Reply-To: <4EEFA308.2090608@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 19 Dec 2011 16:22:28 -0500
+Date: Mon, 19 Dec 2011 16:22:10 -0500 (EST)
+Message-Id: <20111219.162210.1739976094495078504.davem@davemloft.net>
+To: rusty@rustcorp.com.au
+Cc: joe@perches.com, linux-kernel@vger.kernel.org, pawel.moll@arm.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 14/15] module_param: make bool parameters really bool
+ (net & drivers/net)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <87ehw1nm9r.fsf@rustcorp.com.au>
+References: <87k45xqvfs.fsf@rustcorp.com.au>
+	<20111215.231517.185391590658983405.davem@davemloft.net>
+	<87ehw1nm9r.fsf@rustcorp.com.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 19 Dec 2011 13:22:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 03:48:08PM -0500, KOSAKI Motohiro wrote:
-> >> The detail of transparent hugepage are hidden by design. We hope it
-> >> keep 'transparent'.
-> >> Until any explain why we should expose KPF_THP, we don't agree it.
-> > 
-> > The reason why I want to know physical address of thp is testing.
-> > I'm working on memory error recovery and writing test code to confirm
-> > that memory recovery really works when an error occurs on thps.
-> > There I need to locate thps on the physical memory.
-> 
-> I'm sorry, I simply don't understand what you say. Why do you think
-> memory recovery and thp are related feature?
+From: Rusty Russell <rusty@rustcorp.com.au>
+Date: Mon, 19 Dec 2011 16:19:52 +1030
 
-This is because memory error can occur on thp and then we should be
-able to handle them (otherwise we can use corrupted date) and
-verify that it works.
+> On Thu, 15 Dec 2011 23:15:17 -0500 (EST), David Miller <davem@davemloft.net> wrote:
+>> From: Rusty Russell <rusty@rustcorp.com.au>
+>> Date: Fri, 16 Dec 2011 09:44:31 +1030
+>> 
+>> > Dave, did you want a true/false cleanup too?
+>> 
+>> Please, this kind of stuff rots forever and not using bool properly
+>> drives me crazy.
+> 
+> And here's the updated patch:
+
+Neither of your two patches comes close to applying cleanly to net-next,
+even when I try to apply it by hand there are rejects and references to
+files that don't even exist in net-next any more.
+
+Please respin them.
+
+Thanks!
