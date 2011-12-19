@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab1LSSUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 13:20:31 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15407 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab1LSSU2 convert rfc822-to-8bit (ORCPT
+	id S1752685Ab1LSSYj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 13:24:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58938 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab1LSSYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 13:20:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 19 Dec 2011 10:20:27 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 19 Dec 2011 10:20:05 -0800
-Subject: RE: [PATCH 2/2] pinctrl: Pass name instead of device to pin_config_*
-Thread-Topic: [PATCH 2/2] pinctrl: Pass name instead of device to
- pin_config_*
-Thread-Index: Acy91C/2yZVZLRGfQV+wnmONAaUnzAApkRzg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176BE92A7E@HQMAIL01.nvidia.com>
-References: <1323993437-15149-1-git-send-email-swarren@nvidia.com>
-	<1323993437-15149-2-git-send-email-swarren@nvidia.com>
- <CACRpkdaKWcCReO27O6VjQNBCnSDu_tMLPLCkqR0aroUf7gLEVw@mail.gmail.com>
-In-Reply-To: <CACRpkdaKWcCReO27O6VjQNBCnSDu_tMLPLCkqR0aroUf7gLEVw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Dec 2011 13:24:36 -0500
+Date: Mon, 19 Dec 2011 12:24:28 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Azael Avalos <coproscefalo@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        Len Brown <lenb@kernel.org>, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] toshiba_acpi: Support alternate hotkey interfaces
+Message-ID: <20111219182428.GC2737@thinkpad-t410>
+Mail-Followup-To: Thomas Renninger <trenn@suse.de>,
+	Azael Avalos <coproscefalo@gmail.com>,
+	Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
+	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1323972371-13189-1-git-send-email-seth.forshee@canonical.com>
+ <CAGdLNWFeRD=K0YWwr=r2Rznr1N4B6HMPOUF4vWv1aOZbDy+rEQ@mail.gmail.com>
+ <20111217150742.GA6916@ubuntu-mba>
+ <201112181501.36299.trenn@suse.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112181501.36299.trenn@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Sunday, December 18, 2011 3:27 PM:
-> On Fri, Dec 16, 2011 at 12:57 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> 
-> > Obtaining a "struct pinctrl_dev *" is difficult for code not directly
-> > related to the pinctrl subsystem. However, the device name of the pinctrl
-> > device is fairly well known. So, modify pin_config_*() to take the device
-> > name instead of the "struct pinctrl_dev *".
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Thanks Stephen, excellent, both applied.
-> 
-> I had to fix it up a bit to match the other
-> refactoring patch I made so check the result in my tree or -next.
+On Sun, Dec 18, 2011 at 03:01:35PM +0100, Thomas Renninger wrote:
+> > In the DSDTs I've inspected there is an EC query method that looks like
+> > it handles events for the hotkeys, but I've never been able to find
+> > anything that will cause the GPE to trigger when the hotkeys are
+> > pressed.
+> Be careful, those EC event notifications do not show up in:
+> /sys/firmware/acpi/interrupts/gpe*
+> If no acpi irqs are happening (you said you've tried already):
+> watch -n1 "cat /proc/interrupts |grep acpi"
+> filtering the key events sounds appropriate.
+> I see you dig quite a bit already:
 
-Yes, I think that looks fine, thanks.
+I just went back and tried this specifically again to verify my memory
+is correct. Without toshiba_acpi loaded, I see nothing. With it loaded
+(with this patch series applied, which turns out to be important) I do
+see the interrupt count increase. Further investigation leads me to
+conclude that this activity appears to be associated with execution of
+the INFO method -- reading and writing a variable in the EC address
+space.
 
-Thanks for fixing up the documentation for me too.
-
-BTW, do you know which commits you're planning on you're planning on
-sending to mainline during the next merge window? If it includes these
-two patches, I may be able to convert Tegra over to using the new pinctrl
-driver in 3.3. And is your for-next branch stable (i.e. never rebased)
-so that the arm-soc tree can use it as a dependency for my patches?
-
--- 
-nvpublic
-
+Seth
