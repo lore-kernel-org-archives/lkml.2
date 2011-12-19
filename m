@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab1LSWMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:12:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56118 "EHLO mx1.redhat.com"
+	id S1752802Ab1LSWM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:12:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab1LSWMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:12:44 -0500
-Date: Mon, 19 Dec 2011 17:12:39 -0500
+	id S1752253Ab1LSWMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:12:49 -0500
+Date: Mon, 19 Dec 2011 17:12:44 -0500
 From: Jason Baron <jbaron@redhat.com>
 To: greg@kroah.com
 Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org
-Message-Id: <827b14ebdbb9db66ae27ac09c9bc4776970d5259.1324318997.git.jbaron@redhat.com>
+Message-Id: <f920bf7c290d3c21042a5e3963d4d01b9a4835e8.1324318997.git.jbaron@redhat.com>
 In-Reply-To: <cover.1324318997.git.jbaron@redhat.com>
 References: <cover.1324318997.git.jbaron@redhat.com>
-Subject: [PATCH 07/16] dynamic_debug: drop explicit !=NULL checks
+Subject: [PATCH 08/16] dynamic_debug: describe_flags with '=[pmflt_]*'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Convert 'if (x !=NULL)' checks into 'if (x)'.
+Change describe_flags() to emit '=[pmflt_]+' for current callsite
+flags, or just '=_' when they're disabled.  Having '=' in output
+allows a more selective grep expression; in contrast '-' may appear
+in filenames, line-ranges, and format-strings.  '=' also has better
+mnemonics, saying; "the current setting is equal to <flags>".
+
+This allows grep "=_" <dbgfs>/dynamic_debug/control to see disabled
+callsites while avoiding the many occurrences of " = " seen in format
+strings.
+
+Enlarge flagsbufs to handle additional flag char, and alter
+ddebug_parse_flags() to allow flags=0, so that user can turn off all
+debug flags via:
+
+  ~# echo =_ > <dbgfs>/dynamic_debug/control
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- lib/dynamic_debug.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+ include/linux/dynamic_debug.h |    3 ++-
+ lib/dynamic_debug.c           |   21 ++++++++++-----------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 29ea09a..fc39640 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -21,7 +21,8 @@ struct _ddebug {
+  	 * The bits here are changed dynamically when the user
+ 	 * writes commands to <debugfs>/dynamic_debug/control
+ 	 */
+-#define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
++#define _DPRINTK_FLAGS_NONE	0
++#define _DPRINTK_FLAGS_PRINT	(1<<0) /* printk() a message using the format */
+ #define _DPRINTK_FLAGS_INCL_MODNAME	(1<<1)
+ #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
+ #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d232025..b199e09 100644
+index b199e09..cde4dfe 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -115,27 +115,26 @@ static void ddebug_change(const struct ddebug_query *query,
- 	list_for_each_entry(dt, &ddebug_tables, link) {
+@@ -75,6 +75,7 @@ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
+ 	{ _DPRINTK_FLAGS_INCL_FUNCNAME, 'f' },
+ 	{ _DPRINTK_FLAGS_INCL_LINENO, 'l' },
+ 	{ _DPRINTK_FLAGS_INCL_TID, 't' },
++	{ _DPRINTK_FLAGS_NONE, '_' },
+ };
  
- 		/* match against the module name */
--		if (query->module != NULL &&
--		    strcmp(query->module, dt->mod_name))
-+		if (query->module && strcmp(query->module, dt->mod_name))
- 			continue;
+ /* format a string into buf[] which describes the _ddebug's flags */
+@@ -84,12 +85,12 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+ 	char *p = buf;
+ 	int i;
  
- 		for (i = 0 ; i < dt->num_ddebugs ; i++) {
- 			struct _ddebug *dp = &dt->ddebugs[i];
+-	BUG_ON(maxlen < 4);
++	BUG_ON(maxlen < 6);
+ 	for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
+ 		if (dp->flags & opt_array[i].flag)
+ 			*p++ = opt_array[i].opt_char;
+ 	if (p == buf)
+-		*p++ = '-';
++		*p++ = '_';
+ 	*p = '\0';
  
- 			/* match against the source filename */
--			if (query->filename != NULL &&
-+			if (query->filename &&
- 			    strcmp(query->filename, dp->filename) &&
- 			    strcmp(query->filename, basename(dp->filename)))
+ 	return buf;
+@@ -108,7 +109,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 	struct ddebug_table *dt;
+ 	unsigned int newflags;
+ 	unsigned int nfound = 0;
+-	char flagbuf[8];
++	char flagbuf[10];
+ 
+ 	/* search for matching ddebugs */
+ 	mutex_lock(&ddebug_lock);
+@@ -152,7 +153,7 @@ static void ddebug_change(const struct ddebug_query *query,
  				continue;
+ 			dp->flags = newflags;
+ 			if (verbose)
+-				pr_info("changed %s:%d [%s]%s %s\n",
++				pr_info("changed %s:%d [%s]%s =%s\n",
+ 					dp->filename, dp->lineno,
+ 					dt->mod_name, dp->function,
+ 					ddebug_describe_flags(dp, flagbuf,
+@@ -370,8 +371,6 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		if (i < 0)
+ 			return -EINVAL;
+ 	}
+-	if (flags == 0)
+-		return -EINVAL;
+ 	if (verbose)
+ 		pr_info("flags=0x%x\n", flags);
  
- 			/* match against the function */
--			if (query->function != NULL &&
-+			if (query->function &&
- 			    strcmp(query->function, dp->function))
- 				continue;
+@@ -666,7 +665,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ {
+ 	struct ddebug_iter *iter = m->private;
+ 	struct _ddebug *dp = p;
+-	char flagsbuf[8];
++	char flagsbuf[10];
  
- 			/* match against the format */
--			if (query->format != NULL &&
--			    strstr(dp->format, query->format) == NULL)
-+			if (query->format &&
-+			    !strstr(dp->format, query->format))
- 				continue;
+ 	if (verbose)
+ 		pr_info("called m=%p p=%p\n", m, p);
+@@ -677,10 +676,10 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 		return 0;
+ 	}
  
- 			/* match against the line number range */
+-	seq_printf(m, "%s:%u [%s]%s %s \"",
+-		   dp->filename, dp->lineno,
+-		   iter->table->mod_name, dp->function,
+-		   ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
++	seq_printf(m, "%s:%u [%s]%s =%s \"",
++		dp->filename, dp->lineno,
++		iter->table->mod_name, dp->function,
++		ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
+ 	seq_escape(m, dp->format, "\t\r\n\"");
+ 	seq_puts(m, "\"\n");
+ 
 -- 
 1.7.7.3
 
