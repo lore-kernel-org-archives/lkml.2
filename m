@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab1LSVWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 16:22:30 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:59128 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1LSVW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 16:22:28 -0500
-Date: Mon, 19 Dec 2011 16:22:10 -0500 (EST)
-Message-Id: <20111219.162210.1739976094495078504.davem@davemloft.net>
-To: rusty@rustcorp.com.au
-Cc: joe@perches.com, linux-kernel@vger.kernel.org, pawel.moll@arm.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 14/15] module_param: make bool parameters really bool
- (net & drivers/net)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87ehw1nm9r.fsf@rustcorp.com.au>
-References: <87k45xqvfs.fsf@rustcorp.com.au>
-	<20111215.231517.185391590658983405.davem@davemloft.net>
-	<87ehw1nm9r.fsf@rustcorp.com.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 19 Dec 2011 13:22:12 -0800 (PST)
+	id S1753338Ab1LSVYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 16:24:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34670 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752287Ab1LSVYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 16:24:02 -0500
+Date: Mon, 19 Dec 2011 22:23:48 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
+Message-ID: <20111219212348.GP16411@redhat.com>
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <4EEF8F85.9010408@gmail.com>
+ <4EEF9F3E.9000107@linux.vnet.ibm.com>
+ <4EEFA278.7010200@gmail.com>
+ <4EEFA51D.2050707@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEFA51D.2050707@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Mon, 19 Dec 2011 16:19:52 +1030
+On Mon, Dec 19, 2011 at 12:57:01PM -0800, Dave Hansen wrote:
+> But, every single one of the pagemap flags is really just a snapshot
+> KPF_DIRTY, KPF_LOCKED, etc...  The entire interface is inherently a racy
+> snapshot, and there's not a whole lot you can do about it.
 
-> On Thu, 15 Dec 2011 23:15:17 -0500 (EST), David Miller <davem@davemloft.net> wrote:
->> From: Rusty Russell <rusty@rustcorp.com.au>
->> Date: Fri, 16 Dec 2011 09:44:31 +1030
->> 
->> > Dave, did you want a true/false cleanup too?
->> 
->> Please, this kind of stuff rots forever and not using bool properly
->> drives me crazy.
-> 
-> And here's the updated patch:
+Having read the discussion, while I don't see a big need of the
+KPF_THP, I also see how it in certain corner cases it can be used to
+test memory failure injection and I agree with you on the above. Maybe
+it can also be used to check if at certain virtual offsets
+(pid/pagemap lookup followed by a kpageflags lookup) we always fail to
+find THP inside big vmas, maybe out of not aligned mprotect that may
+be optimized by aligning it.
 
-Neither of your two patches comes close to applying cleanly to net-next,
-even when I try to apply it by hand there are rejects and references to
-files that don't even exist in net-next any more.
+The other kernel internal bits may also be stale and go away quicker
+than the KPF_THP, so I don't see a problem in exposing it. We also
+provide THP related info in meminfo/smaps, if they were supposed to be
+invisible that wouldn't be allowed too.
 
-Please respin them.
-
-Thanks!
+A bigger concern to me is that the new bitfield alters the protocol,
+but old code by adding one more bit (if sanely coded...) shouldn't break.
