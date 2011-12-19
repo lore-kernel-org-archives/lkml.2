@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1LSNMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:12:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab1LSNMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:12:03 -0500
-Message-ID: <4EEF380E.6040101@redhat.com>
-Date: Mon, 19 Dec 2011 14:11:42 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752950Ab1LSNMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:12:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58817 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab1LSNMC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 08:12:02 -0500
+Message-ID: <4EEF37E3.9000705@mvista.com>
+Date: Mon, 19 Dec 2011 17:10:59 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [PATCH v3 1/2] virtio-scsi: first version
-References: <1324296188-3426-1-git-send-email-pbonzini@redhat.com> <1324296188-3426-2-git-send-email-pbonzini@redhat.com> <4EEF2C86.6010003@suse.de>
-In-Reply-To: <4EEF2C86.6010003@suse.de>
+To: balbi@ti.com
+CC: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "Greg Kroah-Hartman (supporter:USB SUBSYSTEM ,commit_signer:28/50=56%)" 
+	<gregkh@suse.de>,
+        "Thomas Dahlmann (supporter:AMD GEODE CS5536...)" 
+	<dahlmann.thomas@arcor.de>,
+        "Kuninori Morimoto (commit_signer:43/50=86%)" 
+	<kuninori.morimoto.gx@renesas.com>,
+        "open list:DESIGNWARE USB3 D..." <linux-omap@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:AMD GEODE CS5536..." <linux-geode@lists.infradead.org>
+Subject: Re: [PATCH 9/9] usb: gadget: goku: use generic map/unmap routines
+References: <1324290632-23758-1-git-send-email-balbi@ti.com> <1324290632-23758-10-git-send-email-balbi@ti.com> <4EEF35FB.9090707@mvista.com> <20111219130946.GB3146@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20111219130946.GB3146@legolas.emea.dhcp.ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 01:22 PM, Hannes Reinecke wrote:
->> +	case VIRTIO_SCSI_S_UNDERRUN:
->> +		set_host_byte(sc, DID_ERROR);
->> +		break;
-> Hmm. Not sure this is correct.
-> UNDERRUN could be a valid state, eg it is quite common to send
-> an INQUIRY with a length of 255 bytes. And only evaluate the
-> bytes which are actually send back.
+Hello.
 
-This happens when you send an INQUIRY with a sglist of 255 bytes and an 
-ALLOCATION LENGTH of 300 bytes.  The spec says "VIRTIO_SCSI_S_UNDERRUN 
-[is returned] if the content of the CDB requires transferring more data 
-than is available in the data buffers".
+On 19-12-2011 17:09, Felipe Balbi wrote:
 
-> And, it's not good style to match the same DID_XXX error code to
-> several internal errors. I would prefer having a 1:1 match for
-> VIRTIO_SCSI_S_XXX and DID_XXX error codes.
+>> On 19-12-2011 14:30, Felipe Balbi wrote:
 
-There is no DID_XXX value for underrun, but it's quite useful to have it 
-diagnosed separately in traces.
+>>> those routines have everything we need to map/unmap
+>>> USB requests and it's better to use them.
 
->> +static struct scsi_host_template virtscsi_host_template = {
->> +	.module = THIS_MODULE,
->> +	.name = "Virtio SCSI HBA",
->> +	.proc_name = "virtio_scsi",
->> +	.queuecommand = virtscsi_queuecommand,
->> +	.this_id = -1,
->> +
->> +	.can_queue = 1024,
->> +	.dma_boundary = UINT_MAX,
->> +	.use_clustering = ENABLE_CLUSTERING,
->> +};
->> +
-> Hmm. Apparently you support more than one LUN, yet no
-> ->slave_alloc() callback is present. So how do you scan the bus here?
+>>> Signed-off-by: Felipe Balbi<balbi@ti.com>
+>>> ---
+>>>   drivers/usb/gadget/goku_udc.c |   17 +++++++----------
+>>>   1 files changed, 7 insertions(+), 10 deletions(-)
 
-What does slave_alloc have to do with scanning?  I don't need hostdata, 
-so I don't have slave_alloc.
+>>> diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+>>> index 5af70fcc..bc47735 100644
+>>> --- a/drivers/usb/gadget/goku_udc.c
+>>> +++ b/drivers/usb/gadget/goku_udc.c
+>> [...]
+>>> @@ -736,10 +732,11 @@ goku_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
+>>>   		return -EBUSY;
+>>>
+>>>   	/* set up dma mapping in case the caller didn't */
+>>> -	if (ep->dma&&   _req->dma == DMA_ADDR_INVALID) {
+>>> -		_req->dma = pci_map_single(dev->pdev, _req->buf, _req->length,
+>>> -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
+>>> -		req->mapped = 1;
+>>> +	if (ep->dma) {
+>>> +		status = usb_gadget_map_request(&dev->gadget,&req->req,
 
-Scanning is here:
+>>     Not '&_req->req'?
 
-         err = scsi_add_host(shost, &vdev->dev);
-         if (err)
-                 goto scsi_add_host_failed;
+> of course not. _req is the usb_request not Goku's internal
+> representation. I could change that to:
 
-         scsi_scan_host(shost);
+> 	usb_gadget_map_request(&dev->gadget, _req, ep->is_in);
 
-> Do you actually have a working backend implementation?
+> though.
 
-Hmm... yes, of course...
+    Yes, I've corrected myself already.
 
-Paolo
+WBR, Sergei
