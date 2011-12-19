@@ -1,77 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab1LSOkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:40:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49318 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab1LSOkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:40:07 -0500
-Date: Mon, 19 Dec 2011 14:40:02 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/11] Reduce compaction-related stalls and improve
- asynchronous migration of dirty pages v6
-Message-ID: <20111219144002.GN3487@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <20111216145600.908fc77e.akpm@linux-foundation.org>
+	id S1753302Ab1LSOpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:45:50 -0500
+Received: from mail.smtpl.com.sg ([210.24.56.243]:47677 "EHLO
+	mail2.jspl.com.sg" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751229Ab1LSOpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 09:45:47 -0500
+Reply-To: <joe_moore@w.cn>
+From: " I am Dr. Joe working in a pharmaceutical company based in London" 
+	<ganesan.qad@jspl.com.sg>
+Subject: Dear Sir/Madam,
+Date: Mon, 19 Dec 2011 20:15:36 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111216145600.908fc77e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <255cb5dee7f22ddd363992dd1ecf2de5@jspl.com.sg>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 02:56:00PM -0800, Andrew Morton wrote:
-> On Wed, 14 Dec 2011 15:41:22 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > Short summary: There are severe stalls when a USB stick using VFAT
-> > is used with THP enabled that are reduced by this series. If you are
-> > experiencing this problem, please test and report back and considering
-> > I have seen complaints from openSUSE and Fedora users on this as well
-> > as a few private mails, I'm guessing it's a widespread issue. This
-> > is a new type of USB-related stall because it is due to synchronous
-> > compaction writing where as in the past the big problem was dirty
-> > pages reaching the end of the LRU and being written by reclaim.
-> > 
-> > Am cc'ing Andrew this time and this series would replace
-> > mm-do-not-stall-in-synchronous-compaction-for-thp-allocations.patch.
-> > I'm also cc'ing Dave Jones as he might have merged that patch to Fedora
-> > for wider testing and ideally it would be reverted and replaced by
-> > this series.
-> 
-> So it appears that the problem is painful for distros and users and
-> that we won't have this fixed until 3.2 at best, and that fix will be a
-> difficult backport for distributors of earlier kernels.
-> 
-
-It is only difficult because the series "Do not call ->writepage[s]
-from direct reclaim and use a_ops->writepages() where possible"
-is also required. If both are put into -stable, then the backport
-is straight forward but I was skeptical that -stable will take two
-series that are this far reaching for a performance problem.
-
-> To serve those people better, I'm wondering if we should merge
-> mm-do-not-stall-in-synchronous-compaction-for-thp-allocations now, make
-> it available for -stable backport and then revert it as part of this
-> series?   ie: give people a stopgap while we fix it properly?
-
-If -stable cannot take both series then this is probably the
-only realistic option. I'd be ok with this but it will hurt THP
-allocation success rates on those kernels so that will hurt other
-people like Andrea and David Rientjes. It's between a rock and a hard
-place. Another realistic option might be for distros to disable THP
-by default on 3.0 and 3.1.
-
--- 
-Mel Gorman
-SUSE Labs
+I am Dr. Joe working in a pharmaceutical company based in London,
+United Kingdom.based on our company's urgent need to
+establish a mutual business relationship with a company or an individual in
+India; contact me through my private email
+address mentioned below: {joe_moore@w.cn} for more detail
