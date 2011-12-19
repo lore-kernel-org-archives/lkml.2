@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1LSOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:38:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54667 "EHLO mx1.redhat.com"
+	id S1753311Ab1LSOkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:40:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49318 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab1LSOiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:38:13 -0500
-Subject: Re: [PATCH 3/4] vfs: count unlinked inodes
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jack@suse.cz, akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com,
-        mszeredi@suse.cz
-In-Reply-To: <20111217073604.GA31872@ZenIV.linux.org.uk>
-References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
-	 <1321873893-4544-4-git-send-email-miklos@szeredi.hu>
-	 <20111217073604.GA31872@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 19 Dec 2011 14:38:42 +0000
-Message-ID: <1324305522.2723.51.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751229Ab1LSOkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 09:40:07 -0500
+Date: Mon, 19 Dec 2011 14:40:02 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/11] Reduce compaction-related stalls and improve
+ asynchronous migration of dirty pages v6
+Message-ID: <20111219144002.GN3487@suse.de>
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
+ <20111216145600.908fc77e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20111216145600.908fc77e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, 2011-12-17 at 07:36 +0000, Al Viro wrote:
-> On Mon, Nov 21, 2011 at 12:11:32PM +0100, Miklos Szeredi wrote:
-> > @@ -241,6 +242,11 @@ void __destroy_inode(struct inode *inode)
-> >  	BUG_ON(inode_has_buffers(inode));
-> >  	security_inode_free(inode);
-> >  	fsnotify_inode_delete(inode);
-> > +	if (!inode->i_nlink) {
-> > +		WARN_ON(atomic_long_read(&inode->i_sb->s_remove_count) == 0);
-> > +		atomic_long_dec(&inode->i_sb->s_remove_count);
-> > +	}
+On Fri, Dec 16, 2011 at 02:56:00PM -0800, Andrew Morton wrote:
+> On Wed, 14 Dec 2011 15:41:22 +0000
+> Mel Gorman <mgorman@suse.de> wrote:
 > 
-> Umm...  That relies on ->destroy_inode() doing nothing stupid; granted,
-> all work on actual file removal should've been done in ->evice_inode()
-> leaving only (RCU'd) freeing of in-core, but there are odd ones that
-> do strange things in ->destroy_inode() and I'm not sure that it's not
-> a Yet Another Remount Race(tm).  OTOH, it's clearly not worse than what
-> we used to have; just something to keep in mind for future work.
+> > Short summary: There are severe stalls when a USB stick using VFAT
+> > is used with THP enabled that are reduced by this series. If you are
+> > experiencing this problem, please test and report back and considering
+> > I have seen complaints from openSUSE and Fedora users on this as well
+> > as a few private mails, I'm guessing it's a widespread issue. This
+> > is a new type of USB-related stall because it is due to synchronous
+> > compaction writing where as in the past the big problem was dirty
+> > pages reaching the end of the LRU and being written by reclaim.
+> > 
+> > Am cc'ing Andrew this time and this series would replace
+> > mm-do-not-stall-in-synchronous-compaction-for-thp-allocations.patch.
+> > I'm also cc'ing Dave Jones as he might have merged that patch to Fedora
+> > for wider testing and ideally it would be reverted and replaced by
+> > this series.
 > 
-GFS2 is one of those cases. The issue is that when we enter
-->evict_inode() with i_nlink 0, we do not know whether any other node
-still has the inode open. If it does, then we do not deallocate it in
-->evict_inode() but instead just forget about it, just as if i_nlink was
-> 0 leaving the remaining opener(s) to do the deallocation later,
+> So it appears that the problem is painful for distros and users and
+> that we won't have this fixed until 3.2 at best, and that fix will be a
+> difficult backport for distributors of earlier kernels.
+> 
 
-Steve.
+It is only difficult because the series "Do not call ->writepage[s]
+from direct reclaim and use a_ops->writepages() where possible"
+is also required. If both are put into -stable, then the backport
+is straight forward but I was skeptical that -stable will take two
+series that are this far reaching for a performance problem.
 
+> To serve those people better, I'm wondering if we should merge
+> mm-do-not-stall-in-synchronous-compaction-for-thp-allocations now, make
+> it available for -stable backport and then revert it as part of this
+> series?   ie: give people a stopgap while we fix it properly?
 
+If -stable cannot take both series then this is probably the
+only realistic option. I'd be ok with this but it will hurt THP
+allocation success rates on those kernels so that will hurt other
+people like Andrea and David Rientjes. It's between a rock and a hard
+place. Another realistic option might be for distros to disable THP
+by default on 3.0 and 3.1.
+
+-- 
+Mel Gorman
+SUSE Labs
