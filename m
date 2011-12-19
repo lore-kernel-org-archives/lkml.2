@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1LSDg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 22:36:27 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54456 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab1LSDgZ (ORCPT
+	id S1752215Ab1LSEBc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 23:01:32 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:39902 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab1LSEBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 22:36:25 -0500
-Message-ID: <1324265775.25089.20.camel@mengcong>
-Subject: [PATCH] VFS: br_write_lock locks on possible CPUs other than online
- CPUs
-From: mengcong <mc@linux.vnet.ibm.com>
-Reply-To: mc@linux.vnet.ibm.com
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>
-Date: Mon, 19 Dec 2011 11:36:15 +0800
-Organization: LTC, IBM
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11121903-8256-0000-0000-0000008AEB35
+	Sun, 18 Dec 2011 23:01:30 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Date: Sun, 18 Dec 2011 20:03:08 -0800
+Message-ID: <m1aa6pky2r.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+ba0Z9NOy1/so8A9XI9n8av5ds7341OjQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
+X-Spam-Relay-Country: **
+Subject: [PATCH 0/4] sysfs:  Reduce the size of sysfs_dirent
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a heavily loaded system, when frequently turning on and off CPUs, the
-kernel will detect soft-lockups on multiple CPUs. The detailed bug report
-is at https://lkml.org/lkml/2011/8/24/185.
 
-The root cause is that brlock functions, i.e. br_write_lock() and
-br_write_unlock(), only locks/unlocks the per-CPU spinlock of CPUs that
-are online, which means, if one online CPU is locked and then goes
-offline, any later unlocking operation happens during its offline state
-will not touch it; and when it goes online again, it has the incorrect
-brlock state. This has been verified in current kernel.
+After throwing rb_trees at the problem sysfs_dirent increased in size by
+6 pointers, or 48 bytes.    Since the point of having struct
+sysfs_dirent is to keep the size down increasing in size that much seems
+unfortunate.
 
-I can reproduce this bug on the intact 3.1 kernel. After my patch applied, 
-I've ran an 8-hours long test(test script provided by the bug reporter), 
-and no soft lockup happened again.
+The following patches attack this problem and if I have counted right
+reduce the size of sysfs_dirent by 4 pointers on 64bit.  Not quite
+where we were but reducing sysfs_dirent by 32bytes to 104 bytes is
+an improvement.
 
-Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
- include/linux/lglock.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-index f549056..08b9e84 100644
---- a/include/linux/lglock.h
-+++ b/include/linux/lglock.h
-@@ -27,8 +27,8 @@
- #define br_lock_init(name)	name##_lock_init()
- #define br_read_lock(name)	name##_local_lock()
- #define br_read_unlock(name)	name##_local_unlock()
--#define br_write_lock(name)	name##_global_lock_online()
--#define br_write_unlock(name)	name##_global_unlock_online()
-+#define br_write_lock(name)	name##_global_lock()
-+#define br_write_unlock(name)	name##_global_unlock()
-
- #define DECLARE_BRLOCK(name)	DECLARE_LGLOCK(name)
- #define DEFINE_BRLOCK(name)	DEFINE_LGLOCK(name)
--- 
-1.7.5.4
-
+Eric
 
 
