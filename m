@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1LSNCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:02:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab1LSNCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:02:02 -0500
-Message-ID: <4EEF35B5.2090005@redhat.com>
-Date: Mon, 19 Dec 2011 15:01:41 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752739Ab1LSNDy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:03:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51757 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab1LSNDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 08:03:53 -0500
+Message-ID: <4EEF35FB.9090707@mvista.com>
+Date: Mon, 19 Dec 2011 17:02:51 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com,
-        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
-        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped
- by host
-References: <1323116344-17911-1-git-send-email-emunson@mgebm.net> <4EDF7B0D.4060001@redhat.com> <20111208151929.GA6301@mgebm.net> <4EE8BBF4.8070108@redhat.com> <20111214175844.GD4075@mgebm.net> <4EE9C274.3030603@redhat.com> <20111215185346.GA2829@mgebm.net>
-In-Reply-To: <20111215185346.GA2829@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Felipe Balbi <balbi@ti.com>
+CC: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "Greg Kroah-Hartman (supporter:USB SUBSYSTEM ,commit_signer:28/50=56%)" 
+	<gregkh@suse.de>,
+        "Thomas Dahlmann (supporter:AMD GEODE CS5536...)" 
+	<dahlmann.thomas@arcor.de>,
+        "Kuninori Morimoto (commit_signer:43/50=86%)" 
+	<kuninori.morimoto.gx@renesas.com>,
+        "open list:DESIGNWARE USB3 D..." <linux-omap@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:AMD GEODE CS5536..." <linux-geode@lists.infradead.org>
+Subject: Re: [PATCH 9/9] usb: gadget: goku: use generic map/unmap routines
+References: <1324290632-23758-1-git-send-email-balbi@ti.com> <1324290632-23758-10-git-send-email-balbi@ti.com>
+In-Reply-To: <1324290632-23758-10-git-send-email-balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 08:53 PM, Eric B Munson wrote:
-> I am working on V7 to incorporate the __this_cpu_and suggestion, would you
-> consider that for inclusion and we can continue discussing the need for the
-> preemption notification work?  
+Hello.
 
-Okay.
+On 19-12-2011 14:30, Felipe Balbi wrote:
 
-> I think that having a guest complain when the
-> host is so loaded that the guest watchdog threads can't make any progress is
-> desirable behavior, it may be the only notification that an admin gets that a
-> particular host is over loaded.
+> those routines have everything we need to map/unmap
+> USB requests and it's better to use them.
 
-It's the wrong admin, consider a cloud scenario where the host admin and
-guest admin are different people.
+> Signed-off-by: Felipe Balbi<balbi@ti.com>
+> ---
+>   drivers/usb/gadget/goku_udc.c |   17 +++++++----------
+>   1 files changed, 7 insertions(+), 10 deletions(-)
 
-Notification on host overload (to initiate migration, say) is a good
-idea, but it would be a different mechanism.
+> diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+> index 5af70fcc..bc47735 100644
+> --- a/drivers/usb/gadget/goku_udc.c
+> +++ b/drivers/usb/gadget/goku_udc.c
+[...]
+> @@ -736,10 +732,11 @@ goku_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
+>   		return -EBUSY;
+>
+>   	/* set up dma mapping in case the caller didn't */
+> -	if (ep->dma&&  _req->dma == DMA_ADDR_INVALID) {
+> -		_req->dma = pci_map_single(dev->pdev, _req->buf, _req->length,
+> -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
+> -		req->mapped = 1;
+> +	if (ep->dma) {
+> +		status = usb_gadget_map_request(&dev->gadget, &req->req,
 
--- 
-error compiling committee.c: too many arguments to function
+    Not '&_req->req'?
 
+WBR, Sergei
