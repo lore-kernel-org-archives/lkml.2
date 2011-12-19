@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab1LSXdD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 18:33:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138Ab1LSXc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 18:32:59 -0500
-Date: Mon, 19 Dec 2011 18:32:47 -0500
-From: Dave Jones <davej@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        trenn@suse.de, kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
-        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
-        ying.huang@intel.com
-Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading for
- x86 crypto drivers
-Message-ID: <20111219233247.GC570@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-	linux-kernel@vger.kernel.org, trenn@suse.de, kay.sievers@vrf.org,
-	Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org,
-	axboe@kernel.dk, herbert@gondor.hengli.com.au, ying.huang@intel.com
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
- <1324334865-30459-4-git-send-email-andi@firstfloor.org>
- <20111219232246.GB570@redhat.com>
- <4EEFC7D2.70803@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEFC7D2.70803@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753391Ab1LSXev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 18:34:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45940 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab1LSXes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 18:34:48 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=jYu58pNXGn8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=lqPVVqY_XRlDlGsjoTQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324337685.5916.47.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/2] tracing, sched: Add delay info to sched_switch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Date: Mon, 19 Dec 2011 18:34:45 -0500
+In-Reply-To: <1324337287.24621.22.camel@twins>
+References: <1324337005-31718-1-git-send-email-asharma@fb.com>
+	 <1324337005-31718-3-git-send-email-asharma@fb.com>
+	 <1324337287.24621.22.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 03:25:06PM -0800, H. Peter Anvin wrote:
+On Tue, 2011-12-20 at 00:28 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-12-19 at 15:23 -0800, Arun Sharma wrote:
+> > +#ifdef CONFIG_SCHEDSTATS
+> > +               __entry->delay          = next->se.statistics.block_start ? next->se.statistics.block_start
+> > +                                         : next->se.statistics.sleep_start ? next->se.statistics.sleep_start : 0;
+> > +               __entry->delay = __entry->delay ? now - __entry->delay : 0;
+> > +#else
+> > +               __entry->delay = 0;
+> > +#endif 
+> 
+> I don't really like this, this should be one of those sched_*_stat
+> thingies, not sched_switch().
 
- > >  > -	if (!cpu_has_phe) {
- > >  > -		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
- > >  > -		return -ENODEV;
- > >  > -	}
- > >  > -
- > >  > -	if (!cpu_has_phe_enabled) {
- > >  > -		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
- > >  > +	if (!x86_match_cpu(padlock_sha_ids) || !cpu_has_phe_enabled)
- > >  >  		return -ENODEV;
- > >  > -	}
- > > 
- > > don't we want to keep the printk ?
- > > 
- > > Seems that if it's been disabled by the BIOS for some reason, it will now
- > > silently fail instead of printing a nice warning.
- > 
- > The first printk is insanely annoying, because the end result is that we
- > get a printk of all the crypto engines that are *not* enabled...
- > arguably it would be somewhat nice to get a printk when a crypto engine
- > *is* enabled.
+Agreed.
 
-Sorry, I just meant the second printk, which should hopefully not get
-printed by default.
+-- Steve
 
-	Dave
 
