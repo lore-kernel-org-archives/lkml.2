@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab1LSKd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:33:27 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:59805 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752345Ab1LSKbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:31:12 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Linux USB Mailing List <linux-usb@vger.kernel.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de> (supporter:USB SUBSYSTEM 
-	,commit_signer:28/50=56%),
-        Thomas Dahlmann <dahlmann.thomas@arcor.de> (supporter:AMD GEODE
-	CS5536...),
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> (commit_signer:43/50=86%),
-        linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
-        linux-kernel@vger.kernel.org (open list),
-        linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
-Subject: [PATCH 3/9] usb: gadget: langwell: use generic map/unmap functions
-Date: Mon, 19 Dec 2011 12:30:25 +0200
-Message-Id: <1324290632-23758-4-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.8.rc3
-In-Reply-To: <1324290632-23758-1-git-send-email-balbi@ti.com>
-References: <1324290632-23758-1-git-send-email-balbi@ti.com>
-Organization: Texas Instruments\n
+	id S1752560Ab1LSKgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:36:35 -0500
+Received: from mga03.intel.com ([143.182.124.21]:64152 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904Ab1LSKgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 05:36:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="87190437"
+Message-Id: <20111219102308.488847921@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 19 Dec 2011 18:23:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Andi Kleen <andi@firstfloor.org>
+cc: Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/10] readahead stats/tracing, backwards prefetching and more (v3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-those routines have everything we need to map/unmap
-USB requests and it's better to use them.
+Andrew,
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/gadget/langwell_udc.c |   45 +++++-------------------------------
- 1 files changed, 7 insertions(+), 38 deletions(-)
+This introduces the per-cpu readahead stats, tracing, backwards prefetching,
+fixes context readahead for SSD random reads and does some other minor changes.
 
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index fa0fcc1..fe7fbe3 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -406,16 +406,7 @@ static void done(struct langwell_ep *ep, struct langwell_request *req,
- 		dma_pool_free(dev->dtd_pool, curr_dtd, curr_dtd->dtd_dma);
- 	}
- 
--	if (req->mapped) {
--		dma_unmap_single(&dev->pdev->dev,
--			req->req.dma, req->req.length,
--			is_in(ep) ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
--		req->req.dma = DMA_ADDR_INVALID;
--		req->mapped = 0;
--	} else
--		dma_sync_single_for_cpu(&dev->pdev->dev, req->req.dma,
--				req->req.length,
--				is_in(ep) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
-+	usb_gadget_unmap_request(&dev->gadget, &req->req, is_in(ep));
- 
- 	if (status != -ESHUTDOWN)
- 		dev_dbg(&dev->pdev->dev,
-@@ -754,7 +745,8 @@ static int langwell_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
- 	struct langwell_ep	*ep;
- 	struct langwell_udc	*dev;
- 	unsigned long		flags;
--	int			is_iso = 0, zlflag = 0;
-+	int			is_iso = 0;
-+	int			ret;
- 
- 	/* always require a cpu-view buffer */
- 	req = container_of(_req, struct langwell_request, req);
-@@ -781,33 +773,10 @@ static int langwell_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
- 	if (unlikely(!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN))
- 		return -ESHUTDOWN;
- 
--	/* set up dma mapping in case the caller didn't */
--	if (_req->dma == DMA_ADDR_INVALID) {
--		/* WORKAROUND: WARN_ON(size == 0) */
--		if (_req->length == 0) {
--			dev_vdbg(&dev->pdev->dev, "req->length: 0->1\n");
--			zlflag = 1;
--			_req->length++;
--		}
--
--		_req->dma = dma_map_single(&dev->pdev->dev,
--				_req->buf, _req->length,
--				is_in(ep) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
--		if (zlflag && (_req->length == 1)) {
--			dev_vdbg(&dev->pdev->dev, "req->length: 1->0\n");
--			zlflag = 0;
--			_req->length = 0;
--		}
--
--		req->mapped = 1;
--		dev_vdbg(&dev->pdev->dev, "req->mapped = 1\n");
--	} else {
--		dma_sync_single_for_device(&dev->pdev->dev,
--				_req->dma, _req->length,
--				is_in(ep) ?  DMA_TO_DEVICE : DMA_FROM_DEVICE);
--		req->mapped = 0;
--		dev_vdbg(&dev->pdev->dev, "req->mapped = 0\n");
--	}
-+	/* set up dma mapping */
-+	ret = usb_gadget_map_request(&dev->gadget, &req->req, is_in(ep));
-+	if (ret)
-+		return ret;
- 
- 	dev_dbg(&dev->pdev->dev,
- 			"%s queue req %p, len %u, buf %p, dma 0x%08x\n",
--- 
-1.7.8.rc3
+Changes since v2:
+- use per-cpu counters for readahead stats
+- make context readahead more conservative
+- simplify readahead tracing format and use __print_symbolic()
+- backwards prefetching and snap to EOF fixes and cleanups
+
+Changes since v1:
+- use bit fields: pattern, for_mmap, for_metadata, lseek
+- comment the various readahead patterns
+- drop boot options "readahead=" and "readahead_stats="
+- add for_metadata
+- add snapping to EOF
+
+ [PATCH 01/10] block: limit default readahead size for small devices
+ [PATCH 02/10] readahead: make context readahead more conservative
+ [PATCH 03/10] readahead: record readahead patterns
+ [PATCH 04/10] readahead: tag mmap page fault call sites
+ [PATCH 05/10] readahead: tag metadata call sites
+ [PATCH 06/10] readahead: add vfs/readahead tracing event
+ [PATCH 07/10] readahead: add /debug/readahead/stats
+ [PATCH 08/10] readahead: basic support for backwards prefetching
+ [PATCH 09/10] readahead: dont do start-of-file readahead after lseek()
+ [PATCH 10/10] readahead: snap readahead request to EOF
+
+ block/genhd.c              |   20 ++
+ fs/Makefile                |    1 
+ fs/ext3/dir.c              |    1 
+ fs/ext4/dir.c              |    1 
+ fs/read_write.c            |    3 
+ fs/trace.c                 |    2 
+ include/linux/fs.h         |   41 ++++
+ include/linux/mm.h         |    4 
+ include/trace/events/vfs.h |   78 +++++++++
+ mm/Kconfig                 |   15 +
+ mm/filemap.c               |    9 -
+ mm/readahead.c             |  301 +++++++++++++++++++++++++++++++++--
+ 12 files changed, 461 insertions(+), 15 deletions(-)
+
+Thanks,
+Fengguang
+
+
 
