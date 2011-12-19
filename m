@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1LSXXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 18:23:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab1LSXXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 18:23:17 -0500
-Date: Mon, 19 Dec 2011 18:22:46 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, trenn@suse.de,
-        kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
-        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
-        ying.huang@intel.com
-Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading for
- x86 crypto drivers
-Message-ID: <20111219232246.GB570@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org,
-	Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org,
-	axboe@kernel.dk, herbert@gondor.hengli.com.au, ying.huang@intel.com
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
- <1324334865-30459-4-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324334865-30459-4-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753009Ab1LSXXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 18:23:36 -0500
+Received: from outmail019.snc4.facebook.com ([66.220.144.153]:34926 "EHLO
+	intmgw001.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752655Ab1LSXXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 18:23:34 -0500
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>
+Subject: [PATCH 0/2] Sleep profiling
+Date: Mon, 19 Dec 2011 15:23:23 -0800
+Message-Id: <1324337005-31718-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 02:47:39PM -0800, Andi Kleen wrote:
+When debugging latency, users want to know where their code
+is executing on the CPU (cycle profiling) as well as where 
+it's waiting sleeping or waiting for IO. The following patch set
+tries to address the latter.
 
- >  static int __init padlock_init(void)
- >  {
- >  	int rc = -ENODEV;
- > @@ -533,15 +540,8 @@ static int __init padlock_init(void)
- >  	struct shash_alg *sha1;
- >  	struct shash_alg *sha256;
- >  
- > -	if (!cpu_has_phe) {
- > -		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
- > -		return -ENODEV;
- > -	}
- > -
- > -	if (!cpu_has_phe_enabled) {
- > -		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
- > +	if (!x86_match_cpu(padlock_sha_ids) || !cpu_has_phe_enabled)
- >  		return -ENODEV;
- > -	}
+Normal users can use this tracepoint without root privileges
+and on a system with lots of context switches, load can be
+reduced by filtering out uninteresting switches.
 
-don't we want to keep the printk ?
+Sample command lines:
 
-Seems that if it's been disabled by the BIOS for some reason, it will now
-silently fail instead of printing a nice warning.
+perf record -gPe sched:sched_switch --filter "delay > 10000" -- ./test
+perf report --stdio -g graph -G
 
-	Dave
+Arun Sharma (2):
+  tracing, sched: move the sched_switch tracepoint
+  tracing, sched: Add delay info to sched_switch
+
+ include/trace/events/sched.h      |   21 +++++++++++++++++----
+ kernel/sched.c                    |    2 +-
+ kernel/sched_fair.c               |    6 ++++--
+ kernel/trace/trace_sched_switch.c |    2 +-
+ 4 files changed, 23 insertions(+), 8 deletions(-)
+
+-- 
+1.7.4
 
