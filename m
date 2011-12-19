@@ -1,148 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab1LSMDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 07:03:48 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40182 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752891Ab1LSMD1 (ORCPT
+	id S1752846Ab1LSMFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 07:05:45 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37572 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1LSMFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 07:03:27 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: [PATCH v3 2/2] virtio-scsi: add error handling
-Date: Mon, 19 Dec 2011 13:03:08 +0100
-Message-Id: <1324296188-3426-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1324296188-3426-1-git-send-email-pbonzini@redhat.com>
-References: <1324296188-3426-1-git-send-email-pbonzini@redhat.com>
+	Mon, 19 Dec 2011 07:05:43 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <4EEF2729.6080501@redhat.com>
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <4EEF2382.4010605@redhat.com> <87hb0wbx0p.fsf@abhimanyu.in.ibm.com> <4EEF2729.6080501@redhat.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 19 Dec 2011 17:36:52 +0530
+Message-ID: <87ehw0bw9v.fsf@abhimanyu.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11121902-3568-0000-0000-000000E8C8A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds basic error handling to the virtio-scsi
-HBA device.  Task management functions are sent synchronously
-via the control virtqueue.
+On Mon, 19 Dec 2011 13:59:37 +0200, Avi Kivity <avi@redhat.com> wrote:
+> On 12/19/2011 01:50 PM, Nikunj A Dadhania wrote:
+> > On Mon, 19 Dec 2011 13:44:02 +0200, Avi Kivity <avi@redhat.com> wrote:
+> > > On 12/19/2011 01:23 PM, Ingo Molnar wrote:
+> > > > What's behind this huge speedup? Does ebizzy use user-space 
+> > > > spinlocks perhaps? Could we do something on the user-space side 
+> > > > to get a similar speedup?
+> > > 
+> > > kvm tries to detect spinlocks (by trapping repeated executions of PAUSE)
+> > > and yield to a related vcpu.  It's far from perfect however, and relies
+> > > on the spinlock code using PAUSE.
+> > > 
+> > Avi, is this soft-PLE kind of thing?
+> 
+> No, hard PLE, see the calls to yield_to.
+> 
+The above ebizzy result is from a non-PLE machine, will yield_to come
+in to picture here?
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-        v2->v3: added mempool, used GFP_NOIO instead of GFP_ATOMIC,
-	formatting fixes
+I have two set of results, one for PLE machine and other for non-PLE.
 
-	v1->v2: use scmd_printk
-
- drivers/scsi/virtio_scsi.c |   75 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 74 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index cf8732f..35ab0ef 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -36,6 +36,7 @@ static void dbg(const char *fmt, ...)
- /* Command queue element */
- struct virtio_scsi_cmd {
- 	struct scsi_cmnd *sc;
-+	struct completion *comp;
- 	union {
- 		struct virtio_scsi_cmd_req       cmd;
- 		struct virtio_scsi_ctrl_tmf_req  tmf;
-@@ -172,11 +173,12 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vq, virtscsi_complete_cmd);
- };
- 
--/* These are still stubs.  */
- static void virtscsi_complete_free(void *buf)
- {
- 	struct virtio_scsi_cmd *cmd = buf;
- 
-+	if (cmd->comp)
-+		complete_all(cmd->comp);
- 	mempool_free(cmd, virtscsi_cmd_pool);
- }
- 
-@@ -306,12 +308,79 @@ out:
- 	return ret;
- }
- 
-+static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-+{
-+	DECLARE_COMPLETION_ONSTACK(comp);
-+	int ret;
-+
-+	cmd->comp = &comp;
-+	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd);
-+	if (ret < 0)
-+		return FAILED;
-+
-+	wait_for_completion(&comp);
-+	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-+	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-+		return FAILED;
-+
-+	return SUCCESS;
-+}
-+
-+static int virtscsi_device_reset(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	sdev_printk(KERN_INFO, sc->device, "device reset\n");
-+	cmd = mempool_alloc(virtscsi_cmd_pool, GFP_NOIO);
-+	if (!cmd)
-+		return FAILED;
-+
-+	memset(cmd, 0, sizeof(*cmd));
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
-+static int virtscsi_abort(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	scmd_printk(KERN_INFO, sc, "abort\n");
-+	cmd = mempool_alloc(virtscsi_cmd_pool, GFP_NOIO);
-+	if (!cmd)
-+		return FAILED;
-+
-+	memset(cmd, 0, sizeof(*cmd));
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_ABORT_TASK,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+		.tag = (__u64)sc,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
- static struct scsi_host_template virtscsi_host_template = {
- 	.module = THIS_MODULE,
- 	.name = "Virtio SCSI HBA",
- 	.proc_name = "virtio_scsi",
- 	.queuecommand = virtscsi_queuecommand,
- 	.this_id = -1,
-+	.eh_abort_handler = virtscsi_abort,
-+	.eh_device_reset_handler = virtscsi_device_reset,
- 
- 	.can_queue = 1024,
- 	.dma_boundary = UINT_MAX,
--- 
-1.7.7.1
+Nikunj
 
