@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab1LSJMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 04:12:39 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:25026 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1LSJMh (ORCPT
+	id S1751925Ab1LSJNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 04:13:13 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64328 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1LSJNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 04:12:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6564"; a="145666841"
-Message-ID: <4EEF0003.3010800@codeaurora.org>
-Date: Mon, 19 Dec 2011 01:12:35 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 19 Dec 2011 04:13:08 -0500
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: mc@linux.vnet.ibm.com, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com>
-In-Reply-To: <4EEEE866.2000203@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.172.242.107]
+In-Reply-To: <477F20668A386D41ADCC57781B1F704308185E330B@SC-VEXCH1.marvell.com>
+References: <20111205125416.6093ecd8@notabene.brown> <CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
+ <20111206060654.0e8bebe0@notabene.brown> <CAK=WgbbqgAYZ8uurf+xVyCxfZxoHcLdytxzdUNtoP9VNYPd57A@mail.gmail.com>
+ <20111210181546.6da7099a@notabene.brown> <CAK=WgbbZU=NJupPCeXfy5WcFCvzoCgmcf5HPWUEFaHMwLLCWJg@mail.gmail.com>
+ <477F20668A386D41ADCC57781B1F704308185E330B@SC-VEXCH1.marvell.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 19 Dec 2011 11:12:47 +0200
+Message-ID: <CAK=Wgbb9nnC8e8aLS3XwLfHi8N2bXFSMYeviAOE9LOeocAPckQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc/sdio: don't allow interface to runtime-suspend until
+ probe is finished.
+To: Bing Zhao <bzhao@marvell.com>
+Cc: NeilBrown <neilb@suse.de>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Daniel Drake <dsd@laptop.org>,
+        Joe Woodward <jw@terrafix.co.uk>, Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2011 11:31 PM, Srivatsa S. Bhat wrote:
-> Hi,
+Hello Bing,
+
+On Thu, Dec 15, 2011 at 9:35 AM, Bing Zhao <bzhao@marvell.com> wrote:
+>> I wonder why the sdio reset command isn't helpful for you - it did
+>> seem to resolve some issues for Daniel. Maybe you have two different
+>> hardware revisions of the 8686 which behave differently in this
+>> respect ?
 >
-> I feel the following patch is a better fix for 2 reasons:
->
-> 1. As Al Viro pointed out, if we do for_each_possible_cpus() then we might
-> encounter unnecessary performance hit in some scenarios. So working with
-> only online cpus, safely(a.k.a race-free), if possible, would be a good
-> solution (which this patch implements).
->
-> 2. *_global_lock_online() and *_global_unlock_online() needs fixing as well
-> because, the names suggest that they lock/unlock per-CPU locks of only the
-> currently online CPUs, but unfortunately they do not have any synchronization
-> to prevent offlining those CPUs in between, if it happens to race with a CPU
-> hotplug operation.
->
-> And if we solve issue 2 above "carefully" (as mentioned in the changelog below),
-> it solves this whole thing!
+> CMD52 Card Reset (writing bit3=1 to CCCR 0x06) may not reset the SD8686 properly for some systems. The reliable way to reset SD8686 is via RESETn toggling.
 
-We started seeing this same problem last week. I've come up with almost 
-the same solution but you beat me to the list!
+Thanks a lot for confirming this.
 
-> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-> index f549056..583d1a8 100644
-> --- a/include/linux/lglock.h
-> +++ b/include/linux/lglock.h
-> @@ -126,6 +127,7 @@
->   	int i;								\
->   	preempt_disable();						\
->   	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
-> +	get_online_cpus();						\
->   	for_each_online_cpu(i) {					\
->   		arch_spinlock_t *lock;					\
->   		lock =&per_cpu(name##_lock, i);			\
-> @@ -142,6 +144,7 @@
->   		lock =&per_cpu(name##_lock, i);			\
->   		arch_spin_unlock(lock);					\
->   	}								\
-> +	put_online_cpus();						\
->   	preempt_enable();						\
->    }									\
->    EXPORT_SYMBOL(name##_global_unlock_online);				\
-
-Don't you want to call {get,put}_online_cpus() outside the 
-preempt_{disable,enable}()? Otherwise you are scheduling while atomic?
-
-With that fixed
-
-Acked-by: Stephen Boyd <sboyd@codeaurora.org>
-
-but I wonder if taking the hotplug mutex even for a short time reduces 
-the effectiveness of these locks? Or is it more about fast readers and 
-slow writers?
+Ohad.
