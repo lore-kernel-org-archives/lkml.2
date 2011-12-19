@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1LSCB5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 21:01:57 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40151 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1LSCBy (ORCPT
+	id S1752174Ab1LSCD0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 21:03:26 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39933 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab1LSCDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 21:01:54 -0500
-Date: Mon, 19 Dec 2011 03:01:49 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH] cgroup: remove redundate get/put of old css_set from
- migrate
-Message-ID: <20111219020147.GA13171@somewhere>
-References: <1324053511-24591-1-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324053511-24591-1-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Dec 2011 21:03:23 -0500
+Message-ID: <1324260184.3006.15.camel@ThinkPad-T61>
+Subject: [PATCH powerpc] fix unpaired probe_hcall_entry and probe_hcall_exit
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, anton@samba.org,
+        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+Date: Mon, 19 Dec 2011 10:03:04 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11121816-7014-0000-0000-00000046E8B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 08:38:31AM -0800, Mandeep Singh Baines wrote:
-> We can now assume that the css_set reference held by the task
-> will not go away for an exiting task. PF_EXITING state can be
-> trusted throughout migration by checking it after locking
-> threadgroup.
-> 
-> This patch depends on:
-> 
-> commit cd3d095275374220921fcf0d4e0c16584b26ddbc
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Mon Dec 12 18:12:21 2011 -0800
-> 
->     cgroup: always lock threadgroup during migration
-> 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |   25 ++++++-------------------
->  1 files changed, 6 insertions(+), 19 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 1b3b841..eb95e32 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1856,7 +1856,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
->  	 */
->  	task_lock(tsk);
->  	oldcg = tsk->cgroups;
-> -	get_css_set(oldcg);
->  	task_unlock(tsk);
+Unpaired calling of probe_hcall_entry and probe_hcall_exit might happen
+as following, which could cause incorrect preempt count. 
 
-Seems we don't need these task_lock() anymore. I'm cooking a patch to clean that up.
+__trace_hcall_entry => trace_hcall_entry -> probe_hcall_entry =>
+get_cpu_var => preempt_disable
+
+__trace_hcall_exit => trace_hcall_exit -> probe_hcall_exit =>
+put_cpu_var => preempt_enable
+
+where: 
+A => B and A -> B means A calls B, but
+=> means A will call B through function name, and B will definitely be
+called.
+-> means A will call B through function pointer, so B might not be
+called if the function pointer is not set.
+
+So error happens when only one of probe_hcall_entry and probe_hcall_exit
+get called during a hcall.
+
+This patch tries to move the preempt count operations from
+probe_hcall_entry and probe_hcall_exit to its callers.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/hvCall_inst.c |    4 +---
+ arch/powerpc/platforms/pseries/lpar.c        |    2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
+index f106662..c9311cf 100644
+--- a/arch/powerpc/platforms/pseries/hvCall_inst.c
++++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
+@@ -109,7 +109,7 @@ static void probe_hcall_entry(void *ignored, unsigned long opcode, unsigned long
+ 	if (opcode > MAX_HCALL_OPCODE)
+ 		return;
+ 
+-	h = &get_cpu_var(hcall_stats)[opcode / 4];
++	h = &__get_cpu_var(hcall_stats)[opcode / 4];
+ 	h->tb_start = mftb();
+ 	h->purr_start = mfspr(SPRN_PURR);
+ }
+@@ -126,8 +126,6 @@ static void probe_hcall_exit(void *ignored, unsigned long opcode, unsigned long
+ 	h->num_calls++;
+ 	h->tb_total += mftb() - h->tb_start;
+ 	h->purr_total += mfspr(SPRN_PURR) - h->purr_start;
+-
+-	put_cpu_var(hcall_stats);
+ }
+ 
+ static int __init hcall_inst_init(void)
+diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
+index 27a4950..dc36ea6 100644
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -554,6 +554,7 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+ 		goto out;
+ 
+ 	(*depth)++;
++	preempt_disable();
+ 	trace_hcall_entry(opcode, args);
+ 	(*depth)--;
+ 
+@@ -576,6 +577,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
+ 
+ 	(*depth)++;
+ 	trace_hcall_exit(opcode, retval, retbuf);
++	preempt_enable();
+ 	(*depth)--;
+ 
+ out:
+-- 
+1.7.5.4
+
