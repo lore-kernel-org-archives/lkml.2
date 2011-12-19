@@ -1,142 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1LSLp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 06:45:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39105 "EHLO mx2.suse.de"
+	id S1752815Ab1LSLpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 06:45:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39120 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364Ab1LSLp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 06:45:27 -0500
-Date: Mon, 19 Dec 2011 11:45:22 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/11] mm: compaction: Introduce sync-light migration for
- use by compaction
-Message-ID: <20111219114522.GK3487@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <1323877293-15401-9-git-send-email-mgorman@suse.de>
- <20111218020552.GB13069@barrios-laptop.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111218020552.GB13069@barrios-laptop.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752403Ab1LSLpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 06:45:36 -0500
+Date: Mon, 19 Dec 2011 22:45:19 +1100
+From: NeilBrown <neilb@suse.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MFD: TWL: add power off functionality
+Message-ID: <20111219224519.05c81112@notabene.brown>
+In-Reply-To: <20111219113645.GI11800@sortiz-mobl>
+References: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
+	<4ED205F9.3070908@compulab.co.il>
+	<4EE71FCA.8040000@compulab.co.il>
+	<20111219113645.GI11800@sortiz-mobl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/gxxX+ZKnziDTT3yTTVxaIB="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 11:05:52AM +0900, Minchan Kim wrote:
-> On Wed, Dec 14, 2011 at 03:41:30PM +0000, Mel Gorman wrote:
-> > This patch adds a lightweight sync migrate operation MIGRATE_SYNC_LIGHT
-> > mode that avoids writing back pages to backing storage. Async
-> > compaction maps to MIGRATE_ASYNC while sync compaction maps to
-> > MIGRATE_SYNC_LIGHT. For other migrate_pages users such as memory
-> > hotplug, MIGRATE_SYNC is used.
-> > 
-> > This avoids sync compaction stalling for an excessive length of time,
-> > particularly when copying files to a USB stick where there might be
-> > a large number of dirty pages backed by a filesystem that does not
-> > support ->writepages.
-> > 
-> > [aarcange@redhat.com: This patch is heavily based on Andrea's work]
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> 
+--Sig_/gxxX+ZKnziDTT3yTTVxaIB=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Mon, 19 Dec 2011 12:36:45 +0100 Samuel Ortiz <sameo@linux.intel.com> wro=
+te:
 
-> > <SNIP>
-> > diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> > index 10b9883..6b80537 100644
-> > --- a/fs/hugetlbfs/inode.c
-> > +++ b/fs/hugetlbfs/inode.c
-> > @@ -577,7 +577,7 @@ static int hugetlbfs_set_page_dirty(struct page *page)
-> >  
-> >  static int hugetlbfs_migrate_page(struct address_space *mapping,
-> >  				struct page *newpage, struct page *page,
-> > -				bool sync)
-> > +				enum migrate_mode mode)
-> 
-> Nitpick, except this one, we use enum migrate_mode sync.
-> 
+> Hi Igor,
+>=20
+> On Tue, Dec 13, 2011 at 11:50:02AM +0200, Igor Grinberg wrote:
+> > Samuel,
+> >=20
+> > Can we get this one into 3.3?
+> Afaiu, af8db1508f2c9f3b6e633e2d2d906c6557c617f9 needs to be (partially)
+> reverted for it to be working. Is the core PM fix queued for 3.3 as well =
+?=20
+>=20
+> Cheers,
+> Samuel.
+>=20
 
-Actually, in all the core code, I used "mode" but I was inconsistent in
-the headers and some of the filesystems. I should have converted all use
-of "sync" which was a boolean to a mode which has three possible values
-after this patch.
 
-==== CUT HERE ====
-mm: compaction: Introduce sync-light migration for use by compaction fix
+Already fixed by
 
-Consistently name enum migrate_mode parameters "mode" instead of "sync".
+commit fe6b91f47080eb17d21cbf2a39311877d57f6938
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- fs/btrfs/disk-io.c      |    2 +-
- fs/nfs/write.c          |    2 +-
- include/linux/migrate.h |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
+NeilBrown
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index dbe9518..ff45cdf 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -873,7 +873,7 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
- #ifdef CONFIG_MIGRATION
- static int btree_migratepage(struct address_space *mapping,
- 			struct page *newpage, struct page *page,
--			enum migrate_mode sync)
-+			enum migrate_mode mode)
- {
- 	/*
- 	 * we can't safely write a btree page from here,
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index adb87d9..1f4f18f9 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1711,7 +1711,7 @@ out_error:
- 
- #ifdef CONFIG_MIGRATION
- int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
--		struct page *page, enum migrate_mode sync)
-+		struct page *page, enum migrate_mode mode)
- {
- 	/*
- 	 * If PagePrivate is set, then the page is currently associated with
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 775787c..eaf8674 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -27,10 +27,10 @@ extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode sync);
-+			enum migrate_mode mode);
- extern int migrate_huge_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode sync);
-+			enum migrate_mode mode);
- 
- extern int fail_migrate_page(struct address_space *,
- 			struct page *, struct page *);
-@@ -49,10 +49,10 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode sync) { return -ENOSYS; }
-+		enum migrate_mode mode) { return -ENOSYS; }
- static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode sync) { return -ENOSYS; }
-+		enum migrate_mode mode) { return -ENOSYS; }
- 
- static inline int migrate_prep(void) { return -ENOSYS; }
- static inline int migrate_prep_local(void) { return -ENOSYS; }
+--Sig_/gxxX+ZKnziDTT3yTTVxaIB=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTu8j0Dnsnt1WYoG5AQIyuw//Zxt76fW2xhJQYTXA3fEtX/9T5lzwY9oe
+Bhga0CWxTBuITfZShtOu4Nvl6Z0kZTRcnDRREtds6Gst031qcaH10YfxYDLJXDci
+EEzH4/OeQq4rV5H9aLKp/7pHbu08n1pjQcSM52HkS0nFmdqVKHOhywQY35hw19ka
+JS12wZXCSguWXc1v8MEDp8m4WowLaeBEawIciGJL0JR2iWbKGge7EwmNUf6jLQlt
+hMXqBLFI8aSSp9lM4haYRXzrcIdFbSP0dwol66ktgwj5Hcj3s/7uVbX4rNWFrn3e
+yaoTJ6SL3hdicsLUhlhB1diG8t/CGFY1loCHoewunHkTI2oQVBXlvBlOlGgOMtsv
+33fYBOESs+ZNpY+wtd0eccyIZ4a+2wvTQUsgGm5OO5tqVNjWOxrkW1w0OxKVtjC0
+cvkBXTbJD3JtwlcMJgzBrjVfM3/wtJmxdqwFdu4EILFcmOaJYVz70AtNmdaz5Ecf
+UNNC4siAW92hEaU+NNxTlxw95lJRSIW2ZDn9uKhYHIYFE3GMArKEx6Uh99HF6HNu
+su3GWnEUDrCRTf6xo0o6E5uJJM3MNFzBx2KEaBu1M0xFcuHILiWPLD6dCec7/yZI
+tcf3nc8XL4kf5bJiJaKxN5ZssKVMAy87OCsUl5X+rFH2vmKH3XVYoSQIjyZ5KRzk
+jM1ULGHQjy8=
+=r0f3
+-----END PGP SIGNATURE-----
+
+--Sig_/gxxX+ZKnziDTT3yTTVxaIB=--
