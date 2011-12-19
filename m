@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab1LSLNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 06:13:54 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31542 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752403Ab1LSLNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 06:13:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="97854427"
-Date: Mon, 19 Dec 2011 12:18:24 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/2] mfd: Add missing mutex.h inclusion to WM8994 core.h
-Message-ID: <20111219111824.GD11800@sortiz-mobl>
-References: <1322747814-31877-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
+	id S1752677Ab1LSLRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 06:17:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35638 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab1LSLRi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 06:17:38 -0500
+References: <4EEDF6B1.7050206@tao.ma> <1324218278-2460-1-git-send-email-tm@tao.ma>
+In-Reply-To: <1324218278-2460-1-git-send-email-tm@tao.ma>
+Mime-Version: 1.0 (1.0)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322747814-31877-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <BB5BC380-D840-4AD8-80CC-C320AF780FEF@whamcloud.com>
+Content-Transfer-Encoding: 8BIT
+Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "adilger@dilger.ca" <adilger@dilger.ca>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+From: Andreas Dilger <adilger@whamcloud.com>
+Subject: Re: [PATCH V3 01/21] ext4: Move extra inode read to a new function.
+Date: Mon, 19 Dec 2011 09:32:41 +0100
+To: Tao Ma <tm@tao.ma>
+X-Mailer: iPhone Mail (9A405)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 2011-12-18, at 15:24, Tao Ma <tm@tao.ma> wrote:
 
-On Thu, Dec 01, 2011 at 01:56:53PM +0000, Mark Brown wrote:
-> struct wm8994 includes a mutex so we need to include mutex.h before we
-> declare it. All current users rely on this being done implicitly.
-Patch applied, thanks.
+> From: Tao Ma <boyu.mt@taobao.com>
+> 
+> Currently, in ext4_iget we do a simple check to see whether
+> there does exist some information starting from the end
+> of i_extra_size. With inline data added, this procedure
+> is more complicated. So move it to a new function named
+> ext4_iget_extra_inode.
+> 
+> +        } else
+> +            ext4_iget_extra_inode(inode, raw_inode, ei);
+>    } else
 
-Cheers,
-Samuel.
+(style) if one half of an if-else uses braces then the other half should as well. 
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Cheers, Andreas
