@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab1LSRx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 12:53:57 -0500
-Received: from tac.ki.iif.hu ([193.6.222.43]:51885 "EHLO tac.ki.iif.hu"
+	id S1752684Ab1LSR7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 12:59:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab1LSRxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 12:53:53 -0500
-From: Ferenc Wagner <wferi@niif.hu>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        linux-x86_64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
-References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
-	<20111010155319.GA29140@phenom.oracle.com> <4E934EC9.5030909@goop.org>
-	<87vcppbvc4.fsf@tac.ki.iif.hu>
-	<20111217214626.GA17841@phenom.dumpdata.com>
-Date: Mon, 19 Dec 2011 18:53:38 +0100
-In-Reply-To: <20111217214626.GA17841@phenom.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Sat, 17 Dec 2011 16:46:26 -0500")
-Message-ID: <878vm8bg7x.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751695Ab1LSR7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 12:59:49 -0500
+Date: Mon, 19 Dec 2011 23:29:21 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
+        levinsasha928@gmail.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped by
+ host
+Message-ID: <20111219175921.GA4668@amit-x200.redhat.com>
+References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
+ <20111208113422.GA27919@amit-x200.redhat.com>
+ <4EE9E023.4000904@redhat.com>
+ <20111219125217.GC3139@amit-x200.redhat.com>
+ <4EEF3538.9060808@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEF3538.9060808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+On (Mon) 19 Dec 2011 [14:59:36], Avi Kivity wrote:
+> On 12/19/2011 02:52 PM, Amit Shah wrote:
 
-> On Fri, Dec 09, 2011 at 04:47:39PM +0100, Ferenc Wagner wrote:
->
->> Jeremy Fitzhardinge <jeremy@goop.org> writes:
->> 
->>>> On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
->>>>
->>>>> Run below test on xen pvm.
->>>>> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
->>>>> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
->>>>> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
->>>>>
->>>>> @ X:58562301
->>>>> @ Y:58574282
->>>>> @ IDLE: 199.600
->>>>>
->>>>> Normal idle percent should be around 100%.
->>>>> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
->>>>> but these ticks will be accounted again when idle ticks restarted.
->>>>>
->>>>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
->>>>> Signed-off-by: Joe Jin <joe.jin@oracle.com>
->>>
->>> Does this affect the accounting of stolen ticks?  If it does, that's not
->>> necessarily a showstopper for this patch, but we'll need to do some more
->>> thinking about it.  Certainly, accurate accounting for idleness is
->>> important.
->> 
->> Please see also http://thread.gmane.org/gmane.linux.kernel/734441, where
->> I found that the counter doubling isn't always present under 2.6.26.
->> However, after going to 2.6.32 (Debian lenny-backports kernel, 4th of
->> April on the graph below) that instability seems to disappear.  Please
->> note that the following graph shows halved idle and iowait percentages.
->
-> What happenend in Feb?
+(snip)
 
-Probably a live migration or a reboot, I can't remember.  See
-http://article.gmane.org/gmane.comp.emulators.xen.devel/57771, where I
-described a very similar occurence in detail.
+> > S4 needs some treatment, though, as resume after s4 doesn't work with
+> > kvmclock enabled.  I didn't realise this series was only handling the
+> > soft lockup case.
+> >
+> 
+> What's the issue there?
 
->> (I haven't collected steal values, so the numbers don't sum up to 100%.)
->> I'd be grateful if this discrepancy could be cleared up eventually!
->> It's heartening to see some progress after more than three years. :)
->> 
->> Actually, as Munin doesn't half the idle and iowait values, but
->> truncates the (then overflowing) graph at 100%, I was rather surprised
->> to see iowait completely disappear after the kernel upgrade, and
->> concluded that it was somehow converted into buggy-looping in blkfront.
->> Now I see this isn't the case, but the steadily increasing system CPU
->> usage between reboots is still a mystery.  I'll start a separate thread
->> for that, just wanted to provide some motivation for this topic.
->
-> Did you add more memory in the system?
+Not sure yet; after resume, the VM freezes while bringing the 2nd vcpu
+up.  Maybe it's just sitting there spinning, maybe the delta needs
+adjusting.  Haven't poked at it yet.
 
-I didn't.  Neither in February (when idle and iowait accounting
-temporarily doubled), nor in April (since when the accounting is stable
-and the system CPU usage is growing between reboots under the new
-kernel).
--- 
-Thanks,
-Feri.
+		Amit
