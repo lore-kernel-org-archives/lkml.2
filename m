@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab1LSWLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:11:21 -0500
-Received: from gate.crashing.org ([63.228.1.57]:54735 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1LSWLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752398Ab1LSWLS (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 19 Dec 2011 17:11:18 -0500
-Message-ID: <1324332646.30454.19.camel@pasglop>
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com, paulus <paulus@samba.org>
-Date: Tue, 20 Dec 2011 09:10:46 +1100
-In-Reply-To: <1324309901.24621.14.camel@twins>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com>
-	 <1324309901.24621.14.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Received: from mx1.redhat.com ([209.132.183.28]:53632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab1LSWLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:11:15 -0500
+Date: Mon, 19 Dec 2011 17:11:09 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: greg@kroah.com
+Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org
+Message-Id: <fdac89c3d2f0a1aa49591afdde2c9dddcc6c33d7.1324318997.git.jbaron@redhat.com>
+In-Reply-To: <cover.1324318997.git.jbaron@redhat.com>
+References: <cover.1324318997.git.jbaron@redhat.com>
+Subject: [PATCH 01/16] dynamic_debug: fix whitespace complaints from scripts/cleanfile
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-19 at 16:51 +0100, Peter Zijlstra wrote:
-> On Mon, 2011-12-19 at 14:03 +0530, Nikunj A. Dadhania wrote:
-> > The following patches implements gang scheduling. These patches
-> >     are *highly* experimental in nature and are not proposed for
-> >     inclusion at this time.
-> 
-> Nor will they ever be, I've always strongly opposed the whole concept
-> and I'm not about to change my mind. Gang scheduling is a scalability
-> nightmare. 
-> 
-> >     Gang scheduling can be helpful in virtualization scenario. It will
-> >     help in avoiding the lock-holder-preemption[1] problem and other
-> >     benefits include improved lock-acquisition times. This feature
-> >     will help address some limitations of KVM on Power
-> 
-> Use paravirt ticket locks or a pause-loop-filter like thing.
-> 
-> >     On Power, we have an interesting hardware restriction on guests
-> >     running across SMT theads: on any single core, we can only run one
-> >     mm context at any given time. 
-> 
-> OMFG are your hardware engineers insane?
+From: Jim Cromie <jim.cromie@gmail.com>
 
-No we can run separate mm contexts, but we can only run one -partition-
-at a time. Sadly the host kernel is also a partition for the MMU so that
-means that all 4 threads must be running the same guest and enter/exit
-the guest at the same time.
+Style cleanups.
 
-> Anyway, I had a look at your patches and I don't see how could ever
-> work. You gang-schedule cgroup entities, but there's no guarantee the
-> load-balancer will have at least one task for each group on every cpu.
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ lib/dynamic_debug.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-Cheers,
-Ben.
-
-
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index dcdade3..e487d13 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -187,7 +187,7 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 		if (!*buf)
+ 			break;	/* oh, it was trailing whitespace */
+ 
+-		/* Run `end' over a word, either whitespace separated or quoted */
++		/* find `end' of word, whitespace separated or quoted */
+ 		if (*buf == '"' || *buf == '\'') {
+ 			int quote = *buf++;
+ 			for (end = buf ; *end && *end != quote ; end++)
+@@ -199,8 +199,8 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 				;
+ 			BUG_ON(end == buf);
+ 		}
+-		/* Here `buf' is the start of the word, `end' is one past the end */
+ 
++		/* `buf' is start of word, `end' is one past its end */
+ 		if (nwords == maxwords)
+ 			return -EINVAL;	/* ran out of words[] before bytes */
+ 		if (*end)
+@@ -452,7 +452,8 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
+ 		pos += snprintf(buf + pos, remaining(pos), "%s:",
+ 					desc->function);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		pos += snprintf(buf + pos, remaining(pos), "%d:", desc->lineno);
++		pos += snprintf(buf + pos, remaining(pos), "%d:",
++					desc->lineno);
+ 	if (pos - pos_after_tid)
+ 		pos += snprintf(buf + pos, remaining(pos), " ");
+ 	if (pos >= PREFIX_SIZE)
+@@ -708,10 +709,11 @@ static const struct seq_operations ddebug_proc_seqops = {
+ };
+ 
+ /*
+- * File_ops->open method for <debugfs>/dynamic_debug/control.  Does the seq_file
+- * setup dance, and also creates an iterator to walk the _ddebugs.
+- * Note that we create a seq_file always, even for O_WRONLY files
+- * where it's not needed, as doing so simplifies the ->release method.
++ * File_ops->open method for <debugfs>/dynamic_debug/control.  Does
++ * the seq_file setup dance, and also creates an iterator to walk the
++ * _ddebugs.  Note that we create a seq_file always, even for O_WRONLY
++ * files where it's not needed, as doing so simplifies the ->release
++ * method.
+  */
+ static int ddebug_proc_open(struct inode *inode, struct file *file)
+ {
+-- 
+1.7.7.3
 
