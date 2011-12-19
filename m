@@ -1,168 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab1LSJFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 04:05:11 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:49321 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab1LSJFI convert rfc822-to-8bit (ORCPT
+	id S1751501Ab1LSJJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 04:09:35 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:38339 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab1LSJJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 04:05:08 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org
-References: <20111121082445.GD1625@x4.trippels.de>
-	<1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121131531.GA1679@x4.trippels.de>
-	<1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121153621.GA1678@x4.trippels.de>
-	<1321890510.10470.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20111121161036.GA1679@x4.trippels.de>
-	<20111121163459.GA1679@x4.trippels.de>
-	<20111122083630.GA1672@x4.trippels.de>
-	<m1liq9l009.fsf@fess.ebiederm.org> <20111219091909.GA1614@x4>
-Date: Mon, 19 Dec 2011 01:06:45 -0800
-In-Reply-To: <20111219091909.GA1614@x4> (Markus Trippelsdorf's message of
-	"Mon, 19 Dec 2011 10:19:09 +0100")
-Message-ID: <m1fwghj5ga.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 19 Dec 2011 04:09:32 -0500
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dKzz1202hzzz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LWG1FM-02-098-02
+X-M-MSG: 
+Date: Mon, 19 Dec 2011 10:09:23 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Benjamin Block <bebl@mageta.org>, Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        <hpa@zytor.com>, <tglx@linutronix.de>, <suresh.b.siddha@intel.com>,
+        <eranian@google.com>, <brgerst@gmail.com>, <Andreas.Herrmann3@amd.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Benjamin Block <benjamin.block@amd.com>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111219090923.GB16765@erda.amd.com>
+References: <20111216160757.GL665@escobedo.osrc.amd.com>
+ <1324051943-21112-1-git-send-email-hans.rosenfeld@amd.com>
+ <1324051943-21112-4-git-send-email-hans.rosenfeld@amd.com>
+ <20111218080443.GB4144@elte.hu>
+ <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de>
+ <20111218234309.GA12958@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+ComxrYSTbWkzK1SZSfRzKZe3gTmKh8mQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 XM_URI_RBL_RM URI removed in uri.bl.xmission.com
-	*      [URIs: gmane.org]
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Markus Trippelsdorf <markus@trippelsdorf.de>
-X-Spam-Relay-Country: **
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111218234309.GA12958@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Markus Trippelsdorf <markus@trippelsdorf.de> writes:
+On 19.12.11 00:43:10, Ingo Molnar wrote:
+> So the question becomes, how well is it integrated: can
+> perf 'record -a + perf report', or 'perf top' use LWP,
+> to do system-wide precise [user-space] profiling and such?
 
-> On 2011.12.18 at 19:21 -0800, Eric W. Biederman wrote:
->> Markus Trippelsdorf <markus@trippelsdorf.de> writes:
->> 
->> > On 2011.11.21 at 17:34 +0100, Markus Trippelsdorf wrote:
->> >> On 2011.11.21 at 17:10 +0100, Markus Trippelsdorf wrote:
->> >> > On 2011.11.21 at 16:48 +0100, Eric Dumazet wrote:
->> >> > > Le lundi 21 novembre 2011 à 16:36 +0100, Markus Trippelsdorf a écrit :
->> >> > > > On 2011.11.21 at 15:16 +0100, Eric Dumazet wrote:
->> >> > > > > Le lundi 21 novembre 2011 à 14:15 +0100, Markus Trippelsdorf a écrit :
->> >> > > > > 
->> >> > > > > > I've enabled CONFIG_SLUB_DEBUG_ON and this is what happend:
->> >> > > > > > 
->> >> > > > > 
->> >> > > > > Thanks
->> >> > > > > 
->> >> > > > > Please continue to provide more samples.
->> >> > > > > 
->> >> > > > > There is something wrong somewhere, but where exactly, its hard to say.
->> >> > > > 
->> >> > > > New sample. This one points to lib/idr.c:
->> >> > > > 
->> >> > > > =============================================================================
->> >> > > > BUG idr_layer_cache: Poison overwritten
->> >> > > > -----------------------------------------------------------------------------
->> >> > > 
->> >> > > Thanks, could you now add "CONFIG_DEBUG_PAGEALLOC=y" in your config as
->> >> > > well ?
->> >> > 
->> >> > Sure. This one happend with CONFIG_DEBUG_PAGEALLOC=y:
->> >> > 
->> >> > =============================================================================
->> >> > BUG task_struct: Poison overwritten
->> >> > -----------------------------------------------------------------------------
->> >> 
->> >> And sometimes this one that I've reported earlier already:
->> >> 
->> >> (see: http://thread.gmane.org/gmane.linux.kernel/1215023 )
->> >> 
->> >>  ------------[ cut here ]------------
->> >>  WARNING: at fs/sysfs/sysfs.h:195 sysfs_get_inode+0x136/0x140()
->> >>  Hardware name: System Product Name
->> >>  Pid: 1876, comm: slabinfo Not tainted 3.2.0-rc2-00274-g6fe4c6d #72
->> >>  Call Trace:
->> >>  [<ffffffff8106cac5>] warn_slowpath_common+0x75/0xb0
->> >>  [<ffffffff8106cbc5>] warn_slowpath_null+0x15/0x20
->> >>  [<ffffffff81163236>] sysfs_get_inode+0x136/0x140
->> >>  [<ffffffff81164cef>] sysfs_lookup+0x6f/0x110
->> >>  [<ffffffff811173f9>] d_alloc_and_lookup+0x39/0x80
->> >>  [<ffffffff81118774>] do_lookup+0x294/0x3a0
->> >>  [<ffffffff8111798a>] ? inode_permission+0x7a/0xb0
->> >>  [<ffffffff8111a3f7>] do_last.isra.46+0x137/0x7f0
->> >>  [<ffffffff8111ab76>] path_openat+0xc6/0x370
->> >>  [<ffffffff81117606>] ? getname_flags+0x36/0x230
->> >>  [<ffffffff810ec852>] ? handle_mm_fault+0x192/0x290
->> >>  [<ffffffff8111ae5c>] do_filp_open+0x3c/0x90
->> >>  [<ffffffff81127c8c>] ? alloc_fd+0xdc/0x120
->> >>  [<ffffffff8110ce77>] do_sys_open+0xe7/0x1c0
->> >>  [<ffffffff8110cf6b>] sys_open+0x1b/0x20
->> >>  [<ffffffff814ccb7b>] system_call_fastpath+0x16/0x1b
->> >>  ---[ end trace b1377eb8b131d37d ]---
->> >
->> > Hm, the "sysfs: use rb-tree" thing hit again during boot. Could this be
->> > the root cause of this all?
->> >
->> > I wrote down the following:
->> >
->> > RIP : rb_next
->> >
->> > Trace:
->> >  sysfs_dir_pos
->> >  sysfs_readdir
->> >  ? sys_ioctl
->> >  vfs_readdir
->> >  sys_getdents
->> 
->> Thanks for reporting this.
->> 
->> Has this by any chance been resolved or stopped happening?
->
-> Yes.
->
->> This looks for all of the world like something is stomping your sysfs
->> dirents.   I haven't seen anyone else complaining so this seems like the
->> problem is unique to your configuration.  Which suggests that it is not
->> sysfs itself that is wrong.
->> 
->> I have been through the code a time or two and I haven't seen anything
->> obviously wrong.  Everything that sysfs does is protected by the
->> sysfs_mutex so the locking is very very simple.
->> 
->> My best guess of why now is that the rbtree code make a sysfs dirent
->> 48 bytes larger.  And so it is much more exposed to these kinds of
->> problems.
->
-> Sorry, but your subsystem was just accidentally hit by a bug in the
-> Radeon driver, that sometimes randomly writes 0 dwords somewhere to
-> memory after a kexec boot (see the rest of this huge thread).
-> It's still not fixed in mainline, because Linus refused to take the fix
-> this late in the series.
+There is only self-monitoring of a process possible, no kernel and
+system-wide profiling. This is because we can not allocate memory
+regions in the kernel for a thread other than the current. This would
+require a complete rework of mm code.
 
-Awesome.  
+-Robert
 
-I guess that means I am only responsible for the Radeon driver having
-the opportunity to take that code path. It is nice to see kexec being
-used and being well known enough I didn't have to get involved.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-Eric
