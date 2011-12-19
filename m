@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab1LSU6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:58:44 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41814 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab1LSU6m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:58:42 -0500
-Message-ID: <4EEFA51D.2050707@linux.vnet.ibm.com>
-Date: Mon, 19 Dec 2011 12:57:01 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1753259Ab1LSVBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 16:01:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752295Ab1LSVBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 16:01:17 -0500
+Date: Mon, 19 Dec 2011 16:00:46 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
+ WARN_ON()
+Message-ID: <20111219210046.GG5650@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57DC0D10@USINDEVS01.corp.hds.com>
+ <20111212155827.GR1669@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
+ <0207C53569FE594381A4F2EB66570B2A018EFB83C4@orsmsx508.amr.corp.intel.com>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
-References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com> <4EEF8F85.9010408@gmail.com> <4EEF9F3E.9000107@linux.vnet.ibm.com> <4EEFA278.7010200@gmail.com>
-In-Reply-To: <4EEFA278.7010200@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-x-cbid: 11121920-2398-0000-0000-000002D96B65
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0207C53569FE594381A4F2EB66570B2A018EFB83C4@orsmsx508.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 12:45 PM, KOSAKI Motohiro wrote:
-> (12/19/11 3:31 PM), Dave Hansen wrote:
->> Let's say you profiled a application and the data shows you're missing
->> the TLB a bunch, but you're also using THP.  This might give you a shot
->> at figuring out which parts of your application are *TRULY* THP-backed
->> instead of just the areas you *think* are backed.
->>
->> I'm not sure there's another way to figure it out at the moment.
+On Mon, Dec 12, 2011 at 10:48:52AM -0800, Luck, Tony wrote:
+> > if (reason == KMSG_DUMP_PANIC) {
+> > 	if(is_spin_locked(&psinfo->buf_lock))
+> > 		pr_err("lock is taken.\n");
+> > else {
+> > 	spin_lock_irqsave(&psinfo->buf_lock, flags);
+> > }
+> >
+> > However, this won't work for this reason.
+> >  - printk() must not be called in serialized path because deadlock of logbuf_lock may cause.
 > 
-> A snapshot status of THP doesn't help your purpose. I think you need
-> perf or similar profiling subsystem enhancement.
->
-> Because of, if you've seen KPF_THP at once, It has no guarantee to keep
-> hugepages until applications run. Opposite, If you only need rough
-> statistics, the best way is to add some new stat to
-> /sys/kernel/mm/transparent_hugepage.
+> There is also the issue that kmsg has already computed the addresses
+> of useful pieces in __log_buf at this point - so any printk() we
+> add here is not going to be saved into pstore.  So a user relying
+> on pstore to see what happened, won't see any messages we add here.
 
-But, every single one of the pagemap flags is really just a snapshot
-KPF_DIRTY, KPF_LOCKED, etc...  The entire interface is inherently a racy
-snapshot, and there's not a whole lot you can do about it.
-sys_mincore() has the exact same issues.  But, that does not make them
-useless, nor mean they shouldn't be in the kernel.
+Ah.  Good point.
 
-A tracepoint or something similar to watch for THP promotions or
-demotions would be a great addition to this interface.  That way, you at
-least have a concept if the data you got has become stale.
+Now we have a scenario (though rare), where kmsg_dump can fail to save a
+dump because some one already has the lock.  Hitachi's whole goal behind
+kmsg_dump is to record every possible reason for rebooting the machine for
+inspection on reboot, I think if I understood Seiji privately.
 
+Seiji, has does this failure impact kmsg_dump's goal?
+
+Cheers,
+Don
