@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab1LSEFU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 23:05:20 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:56905 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab1LSEFT (ORCPT
+	id S1752323Ab1LSEFq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 23:05:46 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:45637 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab1LSEFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 23:05:19 -0500
-Date: Mon, 19 Dec 2011 04:06:04 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Colin Walters <walters@verbum.org>, LKML <linux-kernel@vger.kernel.org>,
-        alan@lxorguk.ukuu.org.uk, morgan@kernel.org, luto@mit.edu,
-        kzak@redhat.com, Steve Grubb <sgrubb@redhat.com>
-Subject: Re: chroot(2) and bind mounts as non-root
-Message-ID: <20111219040604.GA2205@hallyn.com>
-References: <1323280461.10724.13.camel@lenny>
- <20111210052945.GA14931@hallyn.com>
- <1323708089.29338.39.camel@lenny>
- <20111212231149.GA16408@hallyn.com>
- <1323982580.31563.15.camel@lenny>
- <m1k45xyreb.fsf@fess.ebiederm.org>
- <1324224103.21713.26.camel@lenny>
- <m1ehw1mlcf.fsf@fess.ebiederm.org>
+	Sun, 18 Dec 2011 23:05:44 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+References: <m1aa6pky2r.fsf@fess.ebiederm.org>
+	<m14nwxkxyg.fsf@fess.ebiederm.org>
+Date: Sun, 18 Dec 2011 20:07:23 -0800
+In-Reply-To: <m14nwxkxyg.fsf@fess.ebiederm.org> (Eric W. Biederman's message
+	of "Sun, 18 Dec 2011 20:05:43 -0800")
+Message-ID: <m1zkepjjb8.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1ehw1mlcf.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+iIg41CDtJoArbeGlV9FPiX+7kSi990GA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
+X-Spam-Relay-Country: **
+Subject: [PATCH 2/4] sysfs: Reduce s_flags to an unsinged short so it packs well with s_mode
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> Colin Walters <walters@verbum.org> writes:
-> 
-> > On Thu, 2011-12-15 at 22:14 -0800, Eric W. Biederman wrote:
-> >
-> >> Which means it is safe to enter a new user namespace without root
-> >> privileges as once you are in if you execute a suid app it will be suid
-> >> relative to your user namespace.  The careful changing of capable to
-> >> ns_capable will allow other namespaces and other things that today are
-> >> root only because of fears of mucking up the execution environment to be
-> >> enabled.
-> >> 
-> >> What is slightly up in the air is how do we map user namespaces to
-> >> filesystems.  The simplest solution looks to be to setup a uid and gid
-> >> mappings from each child user namespace to the initial system user
-> >> namespace.  Then in a child user namespace setuid(2) will fail if
-> >> you attempt to use an id that does not have a mapping.
-> >
-> > But setting up a mapping is a privileged operation, right?  So then it
-> > seems that practically speaking in an "out of the box" scenario on a
-> > distro like RHEL or Debian, since there's no mapping configured, after a
-> > process enters a new namespace it can't run setuid binaries?  
-> 
-> Sort of.  Allowing the use of more than your current uid in the mapping
-> is a privileged operation.  I have a prototype that does an upcall using
-> the request-key infrastructure for the validation.
 
-If I understand you both right, I think what Eric said here is not relevant
-to what Colin cares about.
+On 32bit this reduces sizeof(struct sysfs_dirent) by 2 bytes.
 
-Colin, for the case of "fakeroot debian/rules binary" or
-build+create-tarball inside of a user namespace, all that will matter
-to you is that yes, inside the user namespace which you created without
-privilege you will be able to create files which are owned by (the user
-namespace's) root, and so you'll be able to get the tarball or .deb with
-root owned files.
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/sysfs/sysfs.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-The mapping Eric is talking about here is new even to me, but I think it
-is an implementation detail referring to a proposal where each uid in the
-container maps to a real uid on the host.  The only thing about that mapping
-that matters is that none of the host uids conflict with existing host
-uids (or uids mapped for other containers).  Now if you want to do cool
-things like map uid 501 on the host to 1001 in the container as well as
-502 on the host to 1010 in the container, that will be supported - and I
-think that's what Eric is referring to.
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 545a8d4..e10ff98 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -77,7 +77,7 @@ struct sysfs_dirent {
+ 		struct sysfs_elem_bin_attr	s_bin_attr;
+ 	};
+ 
+-	unsigned int		s_flags;
++	unsigned short		s_flags;
+ 	unsigned short		s_mode;
+ 	ino_t			s_ino;
+ 	struct sysfs_inode_attrs *s_iattr;
+@@ -94,11 +94,11 @@ struct sysfs_dirent {
+ #define SYSFS_ACTIVE_REF		(SYSFS_KOBJ_ATTR | SYSFS_KOBJ_BIN_ATTR)
+ 
+ /* identify any namespace tag on sysfs_dirents */
+-#define SYSFS_NS_TYPE_MASK		0xff00
++#define SYSFS_NS_TYPE_MASK		0xf00
+ #define SYSFS_NS_TYPE_SHIFT		8
+ 
+ #define SYSFS_FLAG_MASK			~(SYSFS_NS_TYPE_MASK|SYSFS_TYPE_MASK)
+-#define SYSFS_FLAG_REMOVED		0x020000
++#define SYSFS_FLAG_REMOVED		0x02000
+ 
+ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ {
+-- 
+1.7.2.5
 
-But for the sake of fire-off-a-build, you can ignore that and use random
-uids on the host side of the mapping.
-
-> I expect by the time this makes it to "out of the box" experiences on
-> enterprise distros, useradd and friends will be giving out 1000 or so uids
-> to new accounts.
-> 
-> > Also I don't see how user namespaces can replace "fakeroot" if this is
-> > true.  The whole point of fakeroot is being able to do things like "make
-> > install DESTDIR=/home/user/tmpdir && tar cz -C /home/user/tmpdir -f
-> > foo.tar.gz ." to get a tarball with root-owned files, without actually
-> > requiring the privileges to temporarily make real root owned files.  But
-> > without a privileged mapping operation there's no way to map uid 0 in
-> > the namespace to something else on the filesystem, right?
-> 
-> Inside the user namespace the creators uid appears as uid 0.
-
-That's the most important thing, for your (Colin) use case, which should
-give you what you ened.
-
-...
-
-> > So it seems like practically speaking if the goal is to be able to
-> > securely run code that "feels like" uid 0 in a container (e.g. start
-> > apache) you have to drop off most of the capabilities that let you take
-> > over the "host".  There's a number of these in CAP_SYS_ADMIN.
-> 
-> You misunderstood.  And you can look at the code in the kernel right
-> now for how this is implemented.
-> 
-> CAP_SYS_ADMIN in a user namespace is not the global CAP_SYS_ADMIN.
-
-In particular, compare
-
-capable(CAP_SYS_ADMIN)
-
-to
-
-ns_capable(ns, CAP_SYS_ADMIN).
-
-...
-
-> I think the user namespace will do what you need. Certainly it appears
-
-As do I.
-
-> that everything in your example binary will be allowed by the time it is
-> done.  Still there is the old saying about a bird in the hand being
-> worth more than two birds in the bush.
-> 
-> Eric
-
-Right, this isn't there yet, after all, and your (Colin) program is  :)
-
--serge
