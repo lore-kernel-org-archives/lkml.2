@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1LSDUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 22:20:00 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50092 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab1LSDTm (ORCPT
+	id S1752223Ab1LSDg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 22:36:27 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54456 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab1LSDgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 22:19:42 -0500
-Date: Mon, 19 Dec 2011 14:19:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20111219141929.e27fd6b6ac0b9f6ae33f89c7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Sun, 18 Dec 2011 22:36:25 -0500
+Message-ID: <1324265775.25089.20.camel@mengcong>
+Subject: [PATCH] VFS: br_write_lock locks on possible CPUs other than online
+ CPUs
+From: mengcong <mc@linux.vnet.ibm.com>
+Reply-To: mc@linux.vnet.ibm.com
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>
+Date: Mon, 19 Dec 2011 11:36:15 +0800
+Organization: LTC, IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Dec_2011_14_19_29_+1100_U=mnUbijSZNrzGYw"
+x-cbid: 11121903-8256-0000-0000-0000008AEB35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Dec_2011_14_19_29_+1100_U=mnUbijSZNrzGYw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In a heavily loaded system, when frequently turning on and off CPUs, the
+kernel will detect soft-lockups on multiple CPUs. The detailed bug report
+is at https://lkml.org/lkml/2011/8/24/185.
 
-Hi Jens,
+The root cause is that brlock functions, i.e. br_write_lock() and
+br_write_unlock(), only locks/unlocks the per-CPU spinlock of CPUs that
+are online, which means, if one online CPU is locked and then goes
+offline, any later unlocking operation happens during its offline state
+will not touch it; and when it goes online again, it has the incorrect
+brlock state. This has been verified in current kernel.
 
-After merging the block tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+I can reproduce this bug on the intact 3.1 kernel. After my patch applied, 
+I've ran an 8-hours long test(test script provided by the bug reporter), 
+and no soft lockup happened again.
 
-ERROR: "ioc_cgroup_changed" [block/blk-cgroup.ko] undefined!
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+ include/linux/lglock.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Caused by commit dc86900e0a8f ("block, cfq: move ioc ioprio/cgroup
-changed handling to cic").
+diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+index f549056..08b9e84 100644
+--- a/include/linux/lglock.h
++++ b/include/linux/lglock.h
+@@ -27,8 +27,8 @@
+ #define br_lock_init(name)	name##_lock_init()
+ #define br_read_lock(name)	name##_local_lock()
+ #define br_read_unlock(name)	name##_local_unlock()
+-#define br_write_lock(name)	name##_global_lock_online()
+-#define br_write_unlock(name)	name##_global_unlock_online()
++#define br_write_lock(name)	name##_global_lock()
++#define br_write_unlock(name)	name##_global_unlock()
 
-I have used the block tree from next-20111215 again today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ #define DECLARE_BRLOCK(name)	DECLARE_LGLOCK(name)
+ #define DEFINE_BRLOCK(name)	DEFINE_LGLOCK(name)
+-- 
+1.7.5.4
 
---Signature=_Mon__19_Dec_2011_14_19_29_+1100_U=mnUbijSZNrzGYw
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJO7q1BAAoJEECxmPOUX5FEJLUP/jlWgIID4FEsU5DcZq6PReWN
-69+nyF8zhgFcV9HJ8XgptXIUIvph5opjwOoIdhI4pha4s7wDo5ptJuQXhr0w9DRO
-S1J0uT5k8xjILubmHCRnpS4SseMdteObglUy3GrHQPTXyEx7SXAOKGdGZyu3XjQE
-9Hp1fCZr0eoARZk4Dmph9ucGer+h4Cn6ZPFdnNqnC1wm7b/Dv4gSTgFrGBzJAIxE
-PPWMDlmXdv3Udo6NQTaHoxMI+T8rjADqZtsnSpaNMP4QyvlNh+fbzqi+Yk+mJF2v
-JwELC1OXXXRODfrDJr1SzgJdBSENHSsLoO0zfZSg3f/ruKQe96GdXa0TNS9feY0c
-8Q+ltiP0aQs9UZ/bYZV+r89w6ktr4ZOk3PSTSgF32KmJDV7btM8k8t0PyFXuSg8h
-fKvoJh13RLirzCubDNPJCJlJKTTAyJNWgNVpgUfJ9pMTWoj442L4okGslfvAsKgv
-m3jyzL5oelKr/aFcYCVz2uClFKeW8fp5YW9E+bb55dcN6XuGkPaG6XevLmUgX+y2
-PYkjE8gd+p7xXkDY18WN7fHZpjhjChyRp6Nk1oALGtTiXHXqy1G7CoBua+f8qeYB
-aqnOJZyxnVuhmgKONdNxCvcgo0gGuGpngJtKYqDgfHiRB1EavLAayVTd27GV/Beg
-PX+Jee4jSx9HthWZfjxD
-=lAM4
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Dec_2011_14_19_29_+1100_U=mnUbijSZNrzGYw--
