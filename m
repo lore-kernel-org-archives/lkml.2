@@ -1,229 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1LSShP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 13:37:15 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46250 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752037Ab1LSShN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 13:37:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <1324280623.19383.8.camel@igor-pc.lan>
-References: <1324280623.19383.8.camel@igor-pc.lan>
-Date: Mon, 19 Dec 2011 10:37:13 -0800
-X-Google-Sender-Auth: TnfxVlsHVpYXUiUwEb4p2TJyqoc
-Message-ID: <CANEJEGseZ6Emt=iT1wGyQVJdAEsjgDX6yOV4OGa6Aht=BAVT+A@mail.gmail.com>
-Subject: Re: drivers/net/usb/asix: strange numeration of eth interfaces
-From: Grant Grundler <grundler@chromium.org>
-To: Igor Egorkin <igor@egorkin.ru>
-Cc: linux-kernel@vger.kernel.org, Allan Chou <allan@asix.com.tw>,
-        Freddy Xin <freddy@asix.com.tw>, Mark Lord <kernel@teksavvy.com>,
-        netdev@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752800Ab1LSSiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 13:38:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752483Ab1LSSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 13:38:15 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [RFC][PATCH 1/3] pagemap: avoid splitting thp when reading /proc/pid/pagemap
+Date: Mon, 19 Dec 2011 13:38:37 -0500
+Message-Id: <1324319919-31720-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Freddy Xin, Mark Lord, +netdev
+Thp split is not necessary if we explicitly check whether pmds are
+mapping thps or not. This patch introduces the check and the code
+to generate pagemap entries for pmds mapping thps, which results in
+less performance impact of pagemap on thp.
 
-On Sun, Dec 18, 2011 at 11:43 PM, Igor Egorkin <igor@egorkin.ru> wrote:
-> Hello!
->
-> $ uname -a
-> Linux 2.6.32-5-amd64 #1 SMP Thu Nov 3 03:41:26 UTC 2011 x86_64 GNU/Linux
->
-> $ cat /etc/debian_version
-> 6.0.3
->
-> $ lsusb|grep -i asix
-> Bus 004 Device 014: ID 0b95:772b ASIX Electronics Corp.
->
->
-> 1) Driver asix.c from linux-3.2-rc6.
->   asix.c little modified for compiling in 2.6.32 . Diff is at the end of message.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c |   48 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 44 insertions(+), 4 deletions(-)
 
-Hi Igor!
-The goal(s) of your email/patch aren't 100% clear to me.
+diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
+index e418c5a..90c4b7a 100644
+--- 3.2-rc5.orig/fs/proc/task_mmu.c
++++ 3.2-rc5/fs/proc/task_mmu.c
+@@ -600,6 +600,9 @@ struct pagemapread {
+ 	u64 *buffer;
+ };
+ 
++#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
++#define PAGEMAP_WALK_MASK	(PMD_MASK)
++
+ #define PM_ENTRY_BYTES      sizeof(u64)
+ #define PM_STATUS_BITS      3
+ #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
+@@ -658,6 +661,22 @@ static u64 pte_to_pagemap_entry(pte_t pte)
+ 	return pme;
+ }
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++{
++	u64 pme = 0;
++	if (pte_present(pte))
++		pme = PM_PFRAME(pte_pfn(pte) + offset)
++			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
++	return pme;
++}
++#else
++static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++{
++	return 0;
++}
++#endif
++
+ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 			     struct mm_walk *walk)
+ {
+@@ -666,10 +685,33 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	pte_t *pte;
+ 	int err = 0;
+ 
+-	split_huge_page_pmd(walk->mm, pmd);
+-
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
++
++	spin_lock(&walk->mm->page_table_lock);
++	if (pmd_trans_huge(*pmd)) {
++		if (pmd_trans_splitting(*pmd)) {
++			spin_unlock(&walk->mm->page_table_lock);
++			wait_split_huge_page(vma->anon_vma, pmd);
++		} else {
++			u64 pfn = PM_NOT_PRESENT;
++
++			for (; addr != end; addr += PAGE_SIZE) {
++				int offset = (addr & ~PAGEMAP_WALK_MASK)
++					>> PAGE_SHIFT;
++				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
++							       offset);
++				err = add_to_pagemap(addr, pfn, pm);
++				if (err)
++					break;
++			}
++			spin_unlock(&walk->mm->page_table_lock);
++			return err;
++		}
++	} else {
++		spin_unlock(&walk->mm->page_table_lock);
++	}
++
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		u64 pfn = PM_NOT_PRESENT;
+ 
+@@ -754,8 +796,6 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+  * determine which areas of memory are actually mapped and llseek to
+  * skip over unmapped regions.
+  */
+-#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+-#define PAGEMAP_WALK_MASK	(PMD_MASK)
+ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 			    size_t count, loff_t *ppos)
+ {
+-- 
+1.7.7.3
 
-Is the main goal to provide a backport of 3.2-rc6  asix.c driver to
-pre-2.6.35 kernels?
-
-(If so - thanks! I'm sure someone can make use of it.)
-
-Why the comparison to ASIX v4.2.0 driver?
-
-cheers,
-grant
-
->  Adapter inserted to USB connector:
-> Dec 18 20:03:24 kernel: [492657.344037] usb 4-2: new high speed USB device using ehci_hcd and address 12
-> Dec 18 20:03:24 kernel: [492657.489541] usb 4-2: New USB device found, idVendor=0b95, idProduct=772b
-> Dec 18 20:03:24 kernel: [492657.489545] usb 4-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> Dec 18 20:03:24 kernel: [492657.489548] usb 4-2: Product: AX88772B
-> Dec 18 20:03:24 kernel: [492657.489550] usb 4-2: Manufacturer: ASIX Elec. Corp.
-> Dec 18 20:03:24 kernel: [492657.489552] usb 4-2: SerialNumber: 000001
-> Dec 18 20:03:24 kernel: [492657.489661] usb 4-2: configuration #1 chosen from 1 choice
-> Dec 18 20:03:24 kernel: [492657.802645] eth1: register 'asix' at usb-0000:01:00.2-2, ASIX AX88772 USB 2.0 Ethernet, 00:60:6e:01:0e:99
->
-> # ethtool -i eth1
-> Cannot get driver information: No such device
->
-> # ethtool -i eth2
-> driver: asix
-> version: 08-Nov-2011
-> firmware-version: ASIX AX88772 USB 2.0 Ethernet
-> bus-info: usb-0000:01:00.2-2
->
-> $ ip addr ls dev eth1
-> Device "eth1" does not exist.
->
-> $ ip addr ls dev eth2
-> 77: eth2: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN qlen 1000
->    link/ether 00:60:6e:01:0e:99 brd ff:ff:ff:ff:ff:ff
->
->  Adapter removed from USB connector:
-> Dec 18 20:40:58 kernel: [494911.485333] usb 4-2: USB disconnect, address 12
-> Dec 18 20:40:58 kernel: [494911.485426] eth2: unregister 'asix' usb-0000:01:00.2-2, ASIX AX88772 USB 2.0 Ethernet
->
->
->
-> 2) Driver AX88772B_772A_760_772_178_LINUX_Driver_v4.2.0_Source.zip from asix.com.tw . Unmodified.
-> Problem is the same.
->
->  Adapter inserted to USB connector:
-> Dec 18 20:42:53 kernel: [495026.620036] usb 4-2: new high speed USB device using ehci_hcd and address 13
-> Dec 18 20:42:53 kernel: [495026.765514] usb 4-2: New USB device found, idVendor=0b95, idProduct=772b
-> Dec 18 20:42:53 kernel: [495026.765519] usb 4-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> Dec 18 20:42:53 kernel: [495026.765522] usb 4-2: Product: AX88772B
-> Dec 18 20:42:53 kernel: [495026.765523] usb 4-2: Manufacturer: ASIX Elec. Corp.
-> Dec 18 20:42:53 kernel: [495026.765525] usb 4-2: SerialNumber: 000001
-> Dec 18 20:42:53 kernel: [495026.765639] usb 4-2: configuration #1 chosen from 1 choice
-> Dec 18 20:42:54 kernel: [495027.399871] ASIX USB Ethernet Adapter:v4.2.0 20:17:18 Dec 17 2011
-> Dec 18 20:42:54 kernel: [495027.399873] <6>    http://www.asix.com.tw
-> Dec 18 20:42:54 kernel: [495027.399877] eth%d: status ep1in, 8 bytes period 11
-> Dec 18 20:42:54 kernel: [495027.400873] eth1: register 'asix' at usb-0000:01:00.2-2, ASIX AX88772B USB 2.0 Ethernet, 00:60:6e:01:0e:99
->
-> $ ip addr ls dev eth1
-> Device "eth1" does not exist.
->
-> $ ip addr ls dev eth2
-> 78: eth2: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN qlen 1000
->    link/ether 00:60:6e:01:0e:99 brd ff:ff:ff:ff:ff:ff
->
->
-> # ethtool -i eth1
-> Cannot get driver information: No such device
->
-> # ethtool -i eth2
-> driver: asix
-> version: 22-Aug-2005
-> firmware-version: ASIX AX88772B USB 2.0 Ethernet
-> bus-info: usb-0000:01:00.2-2
->
->  Adapter removed from USB connector:
-> Dec 18 20:44:41 kernel: [495134.784792] usb 4-2: USB disconnect, address 13
-> Dec 18 20:44:41 kernel: [495134.784882] eth2: unregister 'asix' usb-0000:01:00.2-2, ASIX AX88772B USB 2.0 Ethernet
->
->
->
-> ===============================================================================================================
->
->
->  For compiling asix.c in 2.6.32  i do modification (i take it from AX88772B_772A_760_772_178_LINUX_Driver_v4.2.0_Source.zip):
->
->
-> $ diff -ruN asix.c.from_linux-3.2-rc6 asix.c
-> --- asix.c.from_linux-3.2-rc6   2011-12-17 06:36:26.000000000 +0400
-> +++ asix.c      2011-12-18 20:00:46.000000000 +0400
-> @@ -22,7 +22,7 @@
->
->  // #define     DEBUG                   // error path messages, extra info
->  // #define     VERBOSE                 // more; success messages
-> -
-> +#include <linux/version.h>
->  #include <linux/module.h>
->  #include <linux/kmod.h>
->  #include <linux/init.h>
-> @@ -593,8 +593,24 @@
->                 * for our 8 byte filter buffer
->                 * to avoid allocating memory that
->                 * is tricky to free later */
-> -               struct netdev_hw_addr *ha;
->                u32 crc_bits;
-> +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-> +               struct dev_mc_list *mc_list = net->mc_list;
-> +               int i;
-> +
-> +               memset(data->multi_filter, 0, AX_MCAST_FILTER_SIZE);
-> +
-> +               /* Build the multicast hash filter. */
-> +               for (i = 0; i < net->mc_count; i++) {
-> +                       crc_bits =
-> +                           ether_crc(ETH_ALEN,
-> +                               mc_list->dmi_addr) >> 26;
-> +                       data->multi_filter[crc_bits >> 3] |=
-> +                           1 << (crc_bits & 7);
-> +                       mc_list = mc_list->next;
-> +               }
-> +#else
-> +               struct netdev_hw_addr *ha;
->
->                memset(data->multi_filter, 0, AX_MCAST_FILTER_SIZE);
->
-> @@ -604,7 +620,7 @@
->                        data->multi_filter[crc_bits >> 3] |=
->                            1 << (crc_bits & 7);
->                }
-> -
-> +#endif
->                asix_write_cmd_async(dev, AX_CMD_WRITE_MULTI_FILTER, 0, 0,
->                                   AX_MCAST_FILTER_SIZE, data->multi_filter);
->
-> @@ -827,18 +843,33 @@
->                 * for our 8 byte filter buffer
->                 * to avoid allocating memory that
->                 * is tricky to free later */
-> -               struct netdev_hw_addr *ha;
->                u32 crc_bits;
-> +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-> +               struct dev_mc_list *mc_list = net->mc_list;
-> +               int i;
->
->                memset(data->multi_filter, 0, AX_MCAST_FILTER_SIZE);
->
->                /* Build the multicast hash filter. */
-> +               for (i = 0; i < net->mc_count; i++) {
-> +                       crc_bits =
-> +                           ether_crc(ETH_ALEN,
-> +                               mc_list->dmi_addr) >> 26;
-> +                       data->multi_filter[crc_bits >> 3] |=
-> +                           1 << (crc_bits & 7);
-> +                       mc_list = mc_list->next;
-> +               }
-> +#else
-> +               struct netdev_hw_addr *ha;
-> +               memset(data->multi_filter, 0, AX_MCAST_FILTER_SIZE);
-> +
-> +               /* Build the multicast hash filter. */
->                netdev_for_each_mc_addr(ha, net) {
->                        crc_bits = ether_crc(ETH_ALEN, ha->addr) >> 26;
->                        data->multi_filter[crc_bits >> 3] |=
->                            1 << (crc_bits & 7);
->                }
-> -
-> +#endif
->                asix_write_cmd_async(dev, AX_CMD_WRITE_MULTI_FILTER, 0, 0,
->                                   AX_MCAST_FILTER_SIZE, data->multi_filter);
->
->
->
-> ==============================================================================================
->
->
-> Thank you!
-> --
-> Igor E.
->
->
