@@ -1,35 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1LSWr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:47:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27694 "EHLO mga11.intel.com"
+	id S1752935Ab1LSWtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:49:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2384 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503Ab1LSWry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:47:54 -0500
+	id S1752143Ab1LSWr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:47:56 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98090047"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="89260547"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org
-Subject: Updated cpuid-match patchkit v2
-Date: Mon, 19 Dec 2011 14:47:36 -0800
-Message-Id: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
+Cc: hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 09/10] x86: autoload microcode driver on Intel and AMD systems
+Date: Mon, 19 Dec 2011 14:47:45 -0800
+Message-Id: <1324334865-30459-10-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.4
+In-Reply-To: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
+References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchkit allows automatic udev loading of drivers based on x86
-CPUID models and feature ids.
+From: Andi Kleen <ak@linux.intel.com>
 
-This version addresses the review feedback, except:
-- no multi match to keep things simple
-- only matches boot cpu (also to make it simple)
+Don't try to describe the actual models for now.
 
-I changed all the tables to const and did some other improvements.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/microcode_core.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-More testing still appreciated, especially in a real distribution.
-
--Andi
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 9d46f5e..6911a41 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -86,6 +86,7 @@
+ 
+ #include <asm/microcode.h>
+ #include <asm/processor.h>
++#include <asm/cpu_device_id.h>
+ 
+ MODULE_DESCRIPTION("Microcode Update Driver");
+ MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
+@@ -502,6 +503,20 @@ static struct notifier_block __refdata mc_cpu_notifier = {
+ 	.notifier_call	= mc_cpu_callback,
+ };
+ 
++#ifdef MODULE
++/* Autoload on Intel and AMD systems */
++static const struct x86_cpu_id microcode_id[] = {
++#ifdef CONFIG_MICROCODE_INTEL
++       { X86_VENDOR_INTEL, X86_VENDOR_ANY, X86_MODEL_ANY, },
++#endif
++#ifdef CONFIG_MICROCODE_AMD
++       { X86_VENDOR_AMD, X86_VENDOR_ANY, X86_MODEL_ANY, },
++#endif
++       {}
++};
++MODULE_DEVICE_TABLE(x86cpu, microcode_id);
++#endif
++
+ static int __init microcode_init(void)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+-- 
+1.7.7.4
 
