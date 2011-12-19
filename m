@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1LSWNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:13:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45148 "EHLO mx1.redhat.com"
+	id S1753411Ab1LSWNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:13:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab1LSWNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:13:16 -0500
-Date: Mon, 19 Dec 2011 17:13:12 -0500
+	id S1751877Ab1LSWNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:13:12 -0500
+Date: Mon, 19 Dec 2011 17:13:07 -0500
 From: Jason Baron <jbaron@redhat.com>
 To: greg@kroah.com
 Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org
-Message-Id: <2de3288bd94ae76c7a7d7486b94e2e59e5ca97a8.1324318997.git.jbaron@redhat.com>
+Message-Id: <f81023a9a96efb709e4679d955dcb19360680ec5.1324318997.git.jbaron@redhat.com>
 In-Reply-To: <cover.1324318997.git.jbaron@redhat.com>
 References: <cover.1324318997.git.jbaron@redhat.com>
-Subject: [PATCH 14/16] dynamic_debug: add trim_prefix() to provide source-root relative paths
+Subject: [PATCH 13/16] dynamic_debug: enlarge command/query write buffer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-trim_prefix(path) skips past the absolute source path root, and
-returns the pointer to the relative path from there.  It is used to
-shorten the displayed path in $DBGMT/dynamic_debug/control via
-ddebug_proc_show(), and in ddebug_change() to allow relative filenames
-to be used in applied queries.  For example:
+Current query write buffer is 256 bytes, on stack.  In comparison, the
+ddebug_query boot-arg is 1024.  Allocate the buffer off heap, and
+enlarge it to 4096 bytes, big enough for ~100 queries (at 40 bytes
+each), and error out if not.  This makes it play nicely with large
+query sets (to be added later).  The buffer should be enough for most
+uses, and others should probably be split into subsets.
 
-  ~# echo file kernel/freezer.c +p > $DBGMT/dynamic_debug/control
-
-  kernel/freezer.c:128 [freezer]cancel_freezing p "  clean up: %s\012"
-
-trim_prefix(path) insures common prefix before trimming it, so
-out-of-tree module paths are shown as full absolute paths.
-
+[jbaron@redhat.com: changed USER_BUF_PAGE from 4095 -> 4096 ]
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- Documentation/dynamic-debug-howto.txt |    7 ++++---
- lib/dynamic_debug.c                   |   18 +++++++++++++++---
- 2 files changed, 19 insertions(+), 6 deletions(-)
+ lib/dynamic_debug.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index f959909..378b5d1 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -144,11 +144,12 @@ func
-     func svc_tcp_accept
- 
- file
--    The given string is compared against either the full
--    pathname or the basename of the source file of each
--    callsite.  Examples:
-+    The given string is compared against either the full pathname, the
-+    src-root relative pathname, or the basename of the source file of
-+    each callsite.  Examples:
- 
-     file svcsock.c
-+    file kernel/freezer.c
-     file /usr/src/packages/BUILD/sgi-enhancednfs-1.4/default/net/sunrpc/svcsock.c
- 
- module
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d8773dc..a5508a1 100644
+index 86a9abb..d8773dc 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -69,6 +69,17 @@ static inline const char *basename(const char *path)
- 	return tail ? tail+1 : path;
- }
+@@ -570,24 +570,32 @@ __setup("ddebug_query=", ddebug_setup_query);
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
+  */
++#define USER_BUF_PAGE 4096
+ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 				  size_t len, loff_t *offp)
+ {
+-	char tmpbuf[256];
++	char *tmpbuf;
+ 	int ret;
  
-+/* Return the path relative to source root */
-+static inline const char *trim_prefix(const char *path)
-+{
-+	int skip = strlen(__FILE__) - strlen("lib/dynamic_debug.c");
-+
-+	if (strncmp(path, __FILE__, skip))
-+		skip = 0; /* prefix mismatch, don't skip */
-+
-+	return path + skip;
-+}
-+
- static struct { unsigned flag:8; char opt_char; } opt_array[] = {
- 	{ _DPRINTK_FLAGS_PRINT, 'p' },
- 	{ _DPRINTK_FLAGS_INCL_MODNAME, 'm' },
-@@ -125,7 +136,8 @@ static void ddebug_change(const struct ddebug_query *query,
- 			/* match against the source filename */
- 			if (query->filename &&
- 			    strcmp(query->filename, dp->filename) &&
--			    strcmp(query->filename, basename(dp->filename)))
-+			    strcmp(query->filename, basename(dp->filename)) &&
-+			    strcmp(query->filename, trim_prefix(dp->filename)))
- 				continue;
+ 	if (len == 0)
+ 		return 0;
+-	/* we don't check *offp -- multiple writes() are allowed */
+-	if (len > sizeof(tmpbuf)-1)
++	if (len > USER_BUF_PAGE - 1) {
++		pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
+ 		return -E2BIG;
+-	if (copy_from_user(tmpbuf, ubuf, len))
++	}
++	tmpbuf = kmalloc(len + 1, GFP_KERNEL);
++	if (!tmpbuf)
++		return -ENOMEM;
++	if (copy_from_user(tmpbuf, ubuf, len)) {
++		kfree(tmpbuf);
+ 		return -EFAULT;
++	}
+ 	tmpbuf[len] = '\0';
+ 	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
  
- 			/* match against the function */
-@@ -154,7 +166,7 @@ static void ddebug_change(const struct ddebug_query *query,
- 			dp->flags = newflags;
- 			if (verbose)
- 				pr_info("changed %s:%d [%s]%s =%s\n",
--					dp->filename, dp->lineno,
-+					trim_prefix(dp->filename), dp->lineno,
- 					dt->mod_name, dp->function,
- 					ddebug_describe_flags(dp, flagbuf,
- 							sizeof(flagbuf)));
-@@ -714,7 +726,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
- 	}
+ 	ret = ddebug_exec_query(tmpbuf);
++	kfree(tmpbuf);
+ 	if (ret)
+ 		return ret;
  
- 	seq_printf(m, "%s:%u [%s]%s =%s \"",
--		dp->filename, dp->lineno,
-+		trim_prefix(dp->filename), dp->lineno,
- 		iter->table->mod_name, dp->function,
- 		ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
- 	seq_escape(m, dp->format, "\t\r\n\"");
 -- 
 1.7.7.3
 
