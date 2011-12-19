@@ -1,63 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1LSNv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:51:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49354 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab1LSNv0 convert rfc822-to-8bit (ORCPT
+	id S1753114Ab1LSNv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:51:56 -0500
+Received: from mbox2.netikka.net ([213.250.81.203]:52070 "EHLO
+	mbox2.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab1LSNvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:51:26 -0500
+	Mon, 19 Dec 2011 08:51:53 -0500
+X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Dec 2011 08:51:52 EST
+Reply-To: <cole.william2010@yahoo.es>
+From: "Dr. William Cole" <WilliamCole@yahoo.com>
+Subject: LET US WORK TOGETHER
+Date: Mon, 19 Dec 2011 05:39:57 -0800
 MIME-Version: 1.0
-In-Reply-To: <1324169888-6687-1-git-send-email-marek.vasut@gmail.com>
-References: <1324169888-6687-1-git-send-email-marek.vasut@gmail.com>
-Date: Mon, 19 Dec 2011 21:51:24 +0800
-Message-ID: <CAAQ0ZWSJ0Yzr2Gk9MBQ0nvVCWxr0yWF_RFTy3isqc0pgEDdRxw@mail.gmail.com>
-Subject: Re: [PATCH] MXSFB: Fix driver registration
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Marek Vasut <marek.vasut@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Wolfgang Denk <wd@denx.de>,
-        Stefano Babic <sbabic@denx.de>, Huang Shijie <b32955@freescale.com>,
-        Axel Lin <axel.lin@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0026_01C2A9A6.2A89A7C6"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20111219133946.C42764B008B@tupu.netikka.net>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc-ed Florian and linux-fbdev@vger.kernel.org, as I guess Florian is
-the person who will take this patch.
+This is a multi-part message in MIME format.
 
--- Regards,Shawn
-On 18 December 2011 08:58, Marek Vasut <marek.vasut@gmail.com> wrote:
-> The driver should be registered with mxsfb_driver, not with mxsfb_devtype.
-> This caused obvious null pointer dereference and crash.
->
-> Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-> Cc: Wolfgang Denk <wd@denx.de>
-> Cc: Stefano Babic <sbabic@denx.de>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Huang Shijie <b32955@freescale.com>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  drivers/video/mxsfb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
-> index 18742c2..d29c7c0 100644
-> --- a/drivers/video/mxsfb.c
-> +++ b/drivers/video/mxsfb.c
-> @@ -902,7 +902,7 @@ static struct platform_driver mxsfb_driver = {
->        },
->  };
->
-> -module_platform_driver(mxsfb_devtype);
-> +module_platform_driver(mxsfb_driver);
->
->  MODULE_DESCRIPTION("Freescale mxs framebuffer driver");
->  MODULE_AUTHOR("Sascha Hauer, Pengutronix");
-> --
-> 1.7.6.4
->
+------=_NextPart_000_0026_01C2A9A6.2A89A7C6
+Content-Type: text/plain;
+	charset="big5"
+Content-Transfer-Encoding: 7bit
+
+To ensure that you get this message
+I have attached a file to this mail. 
+Please ensure you read the attached file
+and reply as soon as possible
+
+------=_NextPart_000_0026_01C2A9A6.2A89A7C6
+Content-Type: application/octet-stream;
+	name="LET US WORK TOGETHER.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="LET US WORK TOGETHER.rtf"
+
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmcHJxMlxmY2hhcnNldDAgQ2FsaWJyaTt9e1xm
+MVxmc3dpc3NcZmNoYXJzZXQwIEFyaWFsO319DQp7XGNvbG9ydGJsIDtccmVk
+MFxncmVlbjBcYmx1ZTI1NTt9DQp7XCpcZ2VuZXJhdG9yIE1zZnRlZGl0IDUu
+NDEuMjEuMjUwOTt9XHZpZXdraW5kNFx1YzFccGFyZFxzYTIwMFxzbDI3Nlxz
+bG11bHQxXGJcZjBcZnMyMlxwYXINClxiMCBEZWFyIEZyaWVuZCxccGFyDQpc
+cGFyDQpccGFyDQpccGFyDQpccGFyDQpcYlxwYXINClxiMCBNeSBuYW1lIGlz
+IG5hbWUgaXMgRHIuIFdpbGxpYW0gQ29sZSwgYSBCcml0aXNoIG5hdGlvbmFs
+IGFuZCBhbiBpbnZlc3RtZW50IGNvbnN1bHRhbnQgYXR0YWNoZWQgdG8gdGhl
+IExpYnlhbiBpbnZlc3RtZW50IEF1dGhvcml0eSAoTElBKS5ccGFyDQpccGFy
+DQpccGFyDQpccGFyDQpccGFyDQogSSBzdGFydGVkIHdvcmtpbmcgZm9yIHRo
+ZSBMaWJ5YW4gZ292ZXJubWVudCB1bmRlciB0aGUgbGVhZGVyc2hpcCBvZiBN
+dWFtbWFyIE11aGFtbWFkIGFsLUdhZGRhZmkgc2luY2UgdGhlIGJlZ2lubmlu
+ZyBvZiAyMDAwIGFuZCBoYXZlIGFycmFuZ2VkIHNvIG1hbnkgZGVhbHMgYmV0
+d2VlbiB0aGUgZ292ZXJubWVudCBhbmQgdGhlIGludGVybmF0aW9uYWwgcGFy
+dG5lcnMgYnV0IGR1ZSB0byB0aGUgb25nb2luZyBjcmlzaXMgaW4gdGhlIGNv
+dW50cnkgSSBkZWNpZGVkIHRvIHF1aXQgbXkgam9iIGFuZCByZXR1cm4gdG8g
+bXkgaG9tZSBjb3VudHJ5IEVuZ2xhbmQgYmVjYXVzZSBJIGFtIG5vdCBpbiBz
+dXBwb3J0IG9mIHRoZSBMaWJ5YW4gbGVhZGVyIE11YW1tYXIgTXVoYW1tYWQg
+YWwtR2FkZGFmaSBkdWUgdG8gaGlzIGNyYWNrIGRvd24gb24gdGhlIG9wcG9z
+aXRpb24uIFxwYXINClxwYXINClxwYXINClxwYXINClxwYXINClRoZXJlIGFy
+ZSBzb21lIGZ1bmRzIHdoaWNoIEkgd2FzIGRpcmVjdGVkIHRvIG1vdmUgdG8g
+bmVpZ2hib3JpbmcgR2hhbmEgYXQgdGhlIGJlZ2lubmluZyBvZiB0aGUgdXBy
+aXNpbmcgZm9yIGZ1cnRoZXIgdHJhbnNmZXIgdG8gQ2hpbmEgZm9yIHRoZSBw
+dXJjaGFzZSBvZiBhcm1zIHRvIGJlIHVzZWQgaW4gdGhlIG9uZ29pbmcgd2Fy
+IGluIHRoZSBMaWJ5YS4gXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0K
+VGhlIGZ1bmRzIHdoaWNoIEkgc3VjY2VlZGVkIGluIG1vdmluZyB0aHJvdWdo
+IGEgY2xhbmRlc3RpbmUgYXJyYW5nZW1lbnQgdG8gYSBwcml2YXRlIGZpbmFu
+Y2UgY29tcGFueSBpbiBHaGFuYSBpcyBub3cgZGVwb3NpdGVkIHRoZXJlIHdh
+aXRpbmcgZm9yIG15IGZ1cnRoZXIgaW5zdHJ1Y3Rpb24gZm9yIG9ud2FyZCB0
+cmFuc2ZlciB0byBjaGluYSBmb3IgdGhlIHB1cmNoYXNlIG9mIHRoZSBhcm1z
+IGFuZCBhbW11bml0aW9ucyBmcm9tIGFuIGFybXMgbWFudWZhY3R1cmluZyBj
+b21wYW55IGluIENoaW5hIGJ1dCBJIG5vdyBkZWNpZGVkIHRvIGxlYXZlIHRo
+ZSBjb3VudHJ5IHdpdGggdGhlIHdob2xlIGRvY3VtZW50cyByZWxhdGluZyB0
+byB0aGlzIGZ1bmRzIGFzIHRoZSBMaWJ5YW4gbGVhZGVyIE11aGFtbWFkIGFs
+LUdhZGRhZmkgaGFzIGJlZW4gdG9wcGxlZCBhbmQga2lsbGVkIGJ5IHRoZSBy
+ZWJlbCBzLiBccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpJIHNhdyB0
+aGlzIGFzIGFuIG9wcG9ydHVuaXR5IHRvIGRpdmVydCB0aGlzIGZ1bmQgZm9y
+IG91ciBwZXJzb25hbCB1c2Ugc2luY2UgSSBoYXZlIHRoZSB3aG9sZSBkb2N1
+bWVudHMgYmVjYXVzZSB0d28gb2YgbXkgY29sbGVhZ3VlcywgdGhlIGRlZmVu
+c2UgY2hpZWYgQWJ1IEJha3IgWXVuaXMgYW5kIEdoYWRhZmlccnF1b3RlIHMg
+c29uIHdobyBhcmUgYXdhcmUgb2YgdGhpcyBkZXBvc2l0IHdlcmUgYWxsIGtp
+bGxlZCB0aGUgcmViZWwgZm9yY2VzIHRvZ2V0aGVyIHdpdGggR2hhZGFmaSB3
+aGVuIHRoZWlyIGNvbnZveSB3YXMgYXR0YWNoZWQgYnkgTlRPIHdhciBwbGFu
+ZS4gSSBhbSBjdXJyZW50bHkgaW4gbXkgbmF0aXZlIGNvdW50cnkgRW5nbGFu
+ZCB3YWl0aW5nIGZvciBhIHJlbGlhYmxlIHBhcnRuZXIgb24gd2hvc2UgbmFt
+ZSB0aGlzIGZ1bmQgc2hhbGwgYmUgdHJhbnNmZXJyZWQgc2luY2UgSSBhbSBp
+biBwb3NzZXNzaW9uIG9mIGFsbCB0aGUgZG9jdW1lbnRzLlxwYXINClxwYXIN
+ClxwYXINClxwYXINClxwYXINCiBJIHdpbGwgcGVyc29uYWxseSBmYWNpbGl0
+YXRlIHRoZSByZWxlYXNlIG9mIHRoaXMgZnVuZCBhbmQgaGF2ZSBpdCBtb3Zl
+ZCB0byB5b3VyIG5vbWluYXRlZCBhY2NvdW50IGFueXdoZXJlIGFyb3VuZCB0
+aGUgZ2xvYmUuIFxwYXINClxwYXINClxwYXINClxwYXINClxwYXINCkkgd2ls
+bCBiZSBhYmxlIHRvIGRvIHRoaXMgYmVjYXVzZSBJIHdhcyB0aGUgb25lIHRo
+YXQgb3JjaGVzdHJhdGVkIHRoZSBtb3ZlbWVudCBvZiB0aGlzIGZ1bmQgb3V0
+IG9mIExpYnlhIHRvIEdoYW5hIHRoZXJlZm9yZSBpcyBpbiBwb3NzZXNzaW9u
+IG9mIGFsbCB0aGUgcGFwZXJzIHRvIHRoYXQgZWZmZWN0LiBccGFyDQpccGFy
+DQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyZCBGdXJ0aGVyIGRldGFp
+bHMgc2hhbGwgYmUgZ2l2ZW4gdG8geW91IHVwb24gdGhlIHJlY2VpcHQgb2Yg
+eW91ciBpbnRlcmVzdCB0byB3b3JrIHdpdGggbWUgb24gdGhpcyBwcm9qZWN0
+IHNvIHRoYXQgd2UgY2FuIHN1Y2Nlc3NmdWxseSBtb3ZlIHRoaXMgZnVuZCB0
+byB5b3VyIG5vbWluYXRlZCBhY2NvdW50LlxwYXINClxwYXINClxwYXINClxw
+YXINClxwYXINClxwYXINClxwYXINCiBBbGwgYXJyYW5nZW1lbnQgaGFzIGJl
+ZW4gY29uY2x1ZGVkIGZvciB0aGUgc3VjY2Vzc2Z1bCBjb25jbHVzaW9uIG9m
+IHRoZSByZWxlYXNlL3RyYW5zZmVyIG9mIHRoaXMgZnVuZCBpbiB5b3VyIG5h
+bWUuIFxwYXINClxwYXINClxwYXINClxwYXINClxwYXINClxwYXINCkdvIHRv
+IGh0dHA6Ly9zYWhhcmFyZXBvcnRlcnMuY29tL3ByZXNzLXJlbGVhc2UvbmV3
+LWxlYWtlZC1kb2N1bWVudC1yZXZlYWxzLWhzYmMtaGVsZC0xNGJuLWxpYnlh
+bi1mdW5kcyBccGFyDQpodHRwOi8vd2ViY2FjaGUuZ29vZ2xldXNlcmNvbnRl
+bnQuY29tL3NlYXJjaD9obD1lbiZnc19zbT1zJmdzX3VwbD0xMTYyNTgxbDEx
+NzQ3NDlsMGwxMTc2NjIybDM3bDMxbDFsOGwwbDJsMTE1Mmw0MDk2bDYtMS4z
+bDRsMCZxPWNhY2hlOnNZeGh6RTAxREo4SjpodHRwOi8vd3d3LmJiYy5jby51
+ay9uZXdzL3dvcmxkLWFmcmljYS0xNTM4OTU1MCtiYmMrbmV3cytyZXBvcnRz
+K2RlYXRoK29mK2dhZGRhZmkmY3Q9Y2xuayBccGFyDQpodHRwOi8vd3d3LmJi
+Yy5jby51ay9uZXdzL3dvcmxkLWFmcmljYS0xNTM5MDk4MCAgIGZvciBtb3Jl
+IGRldGFpbHMuXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0K
+XHBhcg0KXHBhcg0KUGxlYXNlIHRoaXMgaXMgaGlnaGx5IGNsYXNzaWZpZWQg
+aW5mb3JtYXRpb24gdGhlcmVmb3JlIEkgYWR2aXNlIHRoYXQgeW91IGtlZXAg
+aXQgdG8geW91cnNlbGYuIEkgc2hhbGwgYmUgd2lsbGluZyB0byBtZWV0IHdp
+dGggeW91IGFueXdoZXJlIGluIEV1cm9wZSBvciBwb3NzaWJseSBBZnJpY2Eg
+YnV0IGF0IHRoZSBtb21lbnQgSSBhbSBjdXJyZW50bHkgaW4gbXkgRW5nbGFu
+ZC4gR2V0IGJhY2sgdG8gbWUgb24gdGhpcyBlbWFpbDogXHVsIHcuY29sZTIw
+MDlAaG90bWFpbC5jb21cdWxub25lICBpZiB5b3UgYXJlIGludGVyZXN0ZWQg
+c28gdGhhdCB3ZSBjYW4gcHJvY2VlZC4gIFxwYXINClxwYXINClxwYXINClxw
+YXINClxwYXINClxwYXINCldlIHdpbGwgZGlzY3VzcyB0aGUgc2hhcmluZyBy
+YXRpbyBvbmNlIEkgaGVhciBmcm9tIHlvdSBiZWNhdXNlIHlvdSB3aWxsIHBs
+YXkgYSB2aXRhbCByb2xlIHRvIHRoZSBzdWNjZXNzIG9mIHRoaXMgYnVzaW5l
+c3MuXHBhcg0KUmVnYXJkc1xwYXINCkRyLiBXaWxsaWFtIENvbGVccGFyDQpc
+ZjFcZnMyMFxwYXINCn0NCgA=
+
+------=_NextPart_000_0026_01C2A9A6.2A89A7C6--
