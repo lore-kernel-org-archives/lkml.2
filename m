@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab1LSKbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:31:24 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35419 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751568Ab1LSKbV (ORCPT
+	id S1752682Ab1LSKbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:31:41 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:60033 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752550Ab1LSKbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:31:21 -0500
+	Mon, 19 Dec 2011 05:31:35 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Linux USB Mailing List <linux-usb@vger.kernel.org>
 Cc: Felipe Balbi <balbi@ti.com>,
@@ -18,9 +18,9 @@ Cc: Felipe Balbi <balbi@ti.com>,
         linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
         linux-kernel@vger.kernel.org (open list),
         linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
-Subject: [PATCH 5/9] usb: gadget: amd5536: use generic map/unmap routines
-Date: Mon, 19 Dec 2011 12:30:27 +0200
-Message-Id: <1324290632-23758-6-git-send-email-balbi@ti.com>
+Subject: [PATCH 9/9] usb: gadget: goku: use generic map/unmap routines
+Date: Mon, 19 Dec 2011 12:30:31 +0200
+Message-Id: <1324290632-23758-10-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.8.rc3
 In-Reply-To: <1324290632-23758-1-git-send-email-balbi@ti.com>
 References: <1324290632-23758-1-git-send-email-balbi@ti.com>
@@ -34,60 +34,44 @@ USB requests and it's better to use them.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/gadget/amd5536udc.c |   32 +++++---------------------------
- 1 files changed, 5 insertions(+), 27 deletions(-)
+ drivers/usb/gadget/goku_udc.c |   17 +++++++----------
+ 1 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
-index e9a2c5c..d3d0282 100644
---- a/drivers/usb/gadget/amd5536udc.c
-+++ b/drivers/usb/gadget/amd5536udc.c
-@@ -831,20 +831,7 @@ __acquires(ep->dev->lock)
+diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+index 5af70fcc..bc47735 100644
+--- a/drivers/usb/gadget/goku_udc.c
++++ b/drivers/usb/gadget/goku_udc.c
+@@ -310,12 +310,8 @@ done(struct goku_ep *ep, struct goku_request *req, int status)
+ 		status = req->req.status;
  
  	dev = ep->dev;
- 	/* unmap DMA */
--	if (req->dma_mapping) {
--		if (ep->in)
--			pci_unmap_single(dev->pdev,
--					req->req.dma,
--					req->req.length,
--					PCI_DMA_TODEVICE);
--		else
--			pci_unmap_single(dev->pdev,
--					req->req.dma,
--					req->req.length,
--					PCI_DMA_FROMDEVICE);
--		req->dma_mapping = 0;
--		req->req.dma = DMA_DONT_USE;
+-	if (req->mapped) {
+-		pci_unmap_single(dev->pdev, req->req.dma, req->req.length,
+-			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
+-		req->req.dma = DMA_ADDR_INVALID;
+-		req->mapped = 0;
 -	}
-+	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->in);
++	if (req->mapped)
++		usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
  
- 	halted = ep->halted;
- 	ep->halted = 1;
-@@ -1095,20 +1082,11 @@ udc_queue(struct usb_ep *usbep, struct usb_request *usbreq, gfp_t gfp)
- 		return -ESHUTDOWN;
+ #ifndef USB_TRACE
+ 	if (status && status != -ESHUTDOWN)
+@@ -736,10 +732,11 @@ goku_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
+ 		return -EBUSY;
  
- 	/* map dma (usually done before) */
--	if (ep->dma && usbreq->length != 0
--			&& (usbreq->dma == DMA_DONT_USE || usbreq->dma == 0)) {
+ 	/* set up dma mapping in case the caller didn't */
+-	if (ep->dma && _req->dma == DMA_ADDR_INVALID) {
+-		_req->dma = pci_map_single(dev->pdev, _req->buf, _req->length,
+-			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
+-		req->mapped = 1;
 +	if (ep->dma) {
- 		VDBG(dev, "DMA map req %p\n", req);
--		if (ep->in)
--			usbreq->dma = pci_map_single(dev->pdev,
--						usbreq->buf,
--						usbreq->length,
--						PCI_DMA_TODEVICE);
--		else
--			usbreq->dma = pci_map_single(dev->pdev,
--						usbreq->buf,
--						usbreq->length,
--						PCI_DMA_FROMDEVICE);
--		req->dma_mapping = 1;
-+		retval = usb_gadget_map_request(&udc->gadget, &req->req, ep->in);
-+		if (retval)
-+			return retval;
++		status = usb_gadget_map_request(&dev->gadget, &req->req,
++				ep->is_in);
++		if (status)
++			return status;
  	}
  
- 	VDBG(dev, "%s queue req %p, len %d req->td_data=%p buf %p\n",
+ #ifdef USB_TRACE
 -- 
 1.7.8.rc3
 
