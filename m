@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1LSRjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 12:39:11 -0500
-Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:55702 "HELO
-	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751172Ab1LSRjJ (ORCPT
+	id S1752692Ab1LSRki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 12:40:38 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:36528 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab1LSRkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 12:39:09 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Mon, 19 Dec 2011 09:39:00 -0800
-Message-Id: <1324316340-29223-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 19 Dec 2011 12:40:37 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Subject: Re: [PATCH v2] Input: bcm5974 - Fix USB autosuspend
+Date: Mon, 19 Dec 2011 18:42:08 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+References: <1324314123-2200-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1324314123-2200-1-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112191842.08635.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am Montag, 19. Dezember 2011, 18:02:03 schrieb Henrik Rydberg:
+>  static int bcm5974_suspend(struct usb_interface *iface, pm_message_t message)
+> @@ -870,6 +884,9 @@ static int bcm5974_probe(struct usb_interface *iface,
+>                          dev->tp_data, dev->cfg.tp_datalen,
+>                          bcm5974_irq_trackpad, dev, 1);
+>  
+> +       /* Required for autosuspend */
+> +       iface->needs_remote_wakeup = 1;
+> +
+>         /* create bcm5974 device */
+>         usb_make_path(udev, dev->phys, sizeof(dev->phys));
+>         strlcat(dev->phys, "/input0", sizeof(dev->phys));
 
-Please pull from
+It is not nice to set needs_remote_wakeup on suspend() because
+it influences the decision of usbcore to suspend at all, in particular
+manually set quirks will not be fully honored if you do it this way.
+In addition it will never be reset, even as the device is closed.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+Please set it in open() and clear it in close()
 
-This will get a few last fixes:
-
- - Fix for crash on mlx4 module unload
- - Fix for crash on too-long private data in RDMA CM
- - Trivial fix for context counting bug in qib
-
-Thanks!
-
-Mike Marciniszyn (1):
-      IB/qib: Correct sense on freectxts increment and decrement
-
-Roland Dreier (2):
-      IB/mlx4: Fix shutdown crash accessing a non-existent bitmap
-      Merge branches 'cma', 'mlx4' and 'qib' into for-next
-
-Sean Hefty (1):
-      RDMA/cma: Verify private data length
-
- drivers/infiniband/core/cma.c            |    6 ++++++
- drivers/infiniband/hw/mlx4/main.c        |    6 ++++--
- drivers/infiniband/hw/qib/qib_file_ops.c |    4 ++--
- 3 files changed, 12 insertions(+), 4 deletions(-)
+	Regards
+		Oliver
