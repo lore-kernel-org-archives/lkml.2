@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab1LSQ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 11:29:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44070 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab1LSQ3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 11:29:24 -0500
-Date: Mon, 19 Dec 2011 14:29:16 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Nelson Elhage <nelhage@nelhage.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf: __perf_evlist__mmap: Fix errno value on failed
- map.
-Message-ID: <20111219162916.GA28058@infradead.org>
-References: <1324301972-22740-1-git-send-email-nelhage@nelhage.com>
- <1324301972-22740-2-git-send-email-nelhage@nelhage.com>
- <87k45sr2yd.fsf@gmail.com>
+	id S1752325Ab1LSQaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 11:30:05 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35207 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab1LSQaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 11:30:01 -0500
+Date: Mon, 19 Dec 2011 17:28:09 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+Message-ID: <20111219162808.GB10017@elte.hu>
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com>
+ <20111219112326.GA15090@elte.hu>
+ <87k45sbxa6.fsf@abhimanyu.in.ibm.com>
+ <8762hcbsrv.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87k45sr2yd.fsf@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <8762hcbsrv.fsf@abhimanyu.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 20, 2011 at 12:33:30AM +0900, Namhyung Kim escreveu:
-> Nelson Elhage <nelhage@nelhage.com> writes:
-> > On failure, perf_evlist__mmap_per_{cpu,thread} will try to munmap()
-> > every map that doesn't have a NULL base. This will fail with EINVAL if
-> > one of them has base == MAP_FAILED, clobbering errno, so that
-> > perf_evlist__map will return EINVAL on any failure regardless of the
-> > root cause.
-> >
-> > Fix this by resetting failed maps to a NULL base.
-> >
-> > Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
 
-> Thanks for fixing this. I posted a basically same patch for this [1]
-> last week, but it seems my patch doesn't get included yet (right?),
-> and your patch looks bit simpler. So Arnaldo, I'm totally fine if you
-> decide to take this instead of mine.
+* Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
 
-Ok, and thank you both for the fixes, I was out on a business trip so a
-bit backlogged right now, will get to your patches as soon as possible,
+> On Mon, 19 Dec 2011 17:15:05 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+> > > 
+> > > What's behind this huge speedup? Does ebizzy use user-space 
+> > > spinlocks perhaps? Could we do something on the user-space side 
+> > > to get a similar speedup?
+> > > 
+> > Some more oprofile data here for the above ebizzy-2VM run:
+> > 
+> That is readprofile data, kernel booted with profile=2
 
-Thanks!
+Btw., you could try this newfangled tools/perf/ thing to profile 
+the kernel ;-)
 
-- Arnaldo
- 
-> Thanks.
-> Namhyung Kim
-> 
-> 
-> [1] https://lkml.org/lkml/2011/12/12/275
+Thanks,
+
+	Ingo
