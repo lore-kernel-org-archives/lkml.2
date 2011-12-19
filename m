@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1LSBen (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 20:34:43 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47368 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1LSBek (ORCPT
+	id S1752145Ab1LSBns (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 20:43:48 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37545 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752079Ab1LSBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 20:34:40 -0500
-Date: Mon, 19 Dec 2011 12:34:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Breeds <tony@bakeyournoodle.com>
-Subject: linux-next: build failure after merge of the hid tree
-Message-Id: <20111219123432.f58b93575c90cdbf62a08fbc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Dec_2011_12_34_32_+1100_KSAUh1eEq33P8Xh0"
+	Sun, 18 Dec 2011 20:43:47 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAEGU7k55LOCn/2dsb2JhbABDq1iBBoFyAQEEATocIwULCAMYLhQlAyETh3q2VBOLcQSUfYkbiSg
+Date: Mon, 19 Dec 2011 12:43:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
+Message-ID: <20111219014343.GK23662@dastard>
+References: <20111216112534.GA13147@dztty>
+ <20111216125556.db2bf308.akpm@linux-foundation.org>
+ <20111217214137.GY2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111217214137.GY2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Dec_2011_12_34_32_+1100_KSAUh1eEq33P8Xh0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Dec 17, 2011 at 09:41:37PM +0000, Al Viro wrote:
+> On Fri, Dec 16, 2011 at 12:55:56PM -0800, Andrew Morton wrote:
+> 
+....
+> 
+> We have a shitload of deadlocks on very common paths with that patch.  What
+> of the paths that do lead to file_remove_suid() without i_mutex?
+> *	xfs_file_aio_write_checks(): we drop i_mutex (via xfs_rw_iunlock())
+> just before calling file_remove_suid().  Racy, the fix is obvious - move
+> file_remove_suid() call before unlocking.
 
-Hi Jiri,
+Not exactly. xfs_rw_iunlock() is not doing what you think it's doing
+there.....
 
-After merging the hid tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 753ed9b..33705b1 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -750,17 +750,16 @@ restart:
+>  		*new_sizep = new_size;
+>  	}
+>  
+> -	xfs_rw_iunlock(ip, XFS_ILOCK_EXCL);
+> -	if (error)
+> -		return error;
+> -
+>  	/*
+>  	 * If we're writing the file then make sure to clear the setuid and
+>  	 * setgid bits if the process is not being run by root.  This keeps
+>  	 * people from modifying setuid and setgid binaries.
+>  	 */
+> -	return file_remove_suid(file);
+> +	if (!error)
+> +		error = file_remove_suid(file);
+>  
+> +	xfs_rw_iunlock(ip, XFS_ILOCK_EXCL);
+                               ^^^^^
+> +	return error;
 
-drivers/hid/Kconfig:37: syntax error
-drivers/hid/Kconfig:36: invalid option
+Wrong lock.  That's dropping the internal XFS inode metadata lock,
+but the VFS i_mutex is associated with the internal XFS inode IO
+lock, which is accessed via XFS_IOLOCK_*. Only if we take the iolock
+via XFS_IOLOCK_EXCL do we actually take the i_mutex.
 
-Caused by commit 7e69ba7caeb0 ("HID: introduce proper dependency of
-HID_BATTERY on POWER_SUPPLY").
+Now it gets complex. For buffered IO, we are guaranteed to already
+be holding the i_mutex because we do:
 
-I am sure that this "=3D=3D" v. "=3D" in Kconfig files was discussed last
-week ... :-(
+        *iolock = XFS_IOLOCK_EXCL;
+        xfs_rw_ilock(ip, *iolock);
 
-I have used the hid tree from next-20111216 for today.
---=20
+        ret = xfs_file_aio_write_checks(file, &pos, &count, new_size, iolock);
+
+So that is safe and non-racy right now.
+
+For direct IO, however, we don't always take the IOLOCK exclusively.
+Indeed, we try really, really hard not to do this so we can do
+concurrent reads and writes to the inode, and that results
+in a bunch of lock juggling when we actually need the IOLOCK
+exclusive (like in xfs_file_aio_write_checks()). It sounds like we
+need to know if we are going to have to remove the SUID bit ahead of
+time so that we can  take the correct lock up front. I haven't
+looked at what is needed to do that yet.
+
+As it is, Christoph has a patch set out that I've already reviewed
+for 3.3 that significantly changes the logic and flow of the locking
+through this path, so we probably should fix this in that series as
+for most applications it is already OK and non-racy.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__19_Dec_2011_12_34_32_+1100_KSAUh1eEq33P8Xh0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO7pSoAAoJEECxmPOUX5FEcs0QAIohxlEAdR4kdYMJIx6q4f9N
-u1T7UKMSYS+ONPg5xlV6chA0FbpNyaFH3u3doMfNDUijq7Zr4CapqR2p7anEcmg0
-XFPwMdGL0qQ3plNXwHaPlNVGjaqiQ1s4+R92FhOTz8+vjh0OsrxJYd5Cd/7jV6IY
-TL905QJEziN2h0N/V/OhlBsPcF270gRj6tBnfNGKMxVWrI9vs0owCc/A6nLRZ6vL
-M/Xo7XdWTYhlI5RvpL8+4scO0k0+eZpvII/TSVXtUbTvm80H8cCdAksxuidPttVV
-kv+CUGuR+WeS42a6BRd84QsRTnKUQZDlOoQtX0SBSE4MYblgBGUCE3au0z4dWQ0B
-7tz7cSxFZr8uDe3675ZFTyKtNkeLtudSYA6pe4UCTiG5dcHmBnBSyPMBcNQsVe5a
-BDyOSGjyg0E74roQaKgqxSJCDNIdfw9+DhbImxhWGZWynT4/VvlWija9Fl4RZ0oH
-VEPfKVWMyD2bPm6SWe9EZSEsn7ZOsaPs3Up7UMuOKvw4Xmpc4482QvF9EWaEakFt
-NOs2ccEYyFgdGoKlqmQtCNDu9nHjju4l5hl4ALZdVBImOvG9bUcR6QIUBwxH9Pil
-zCfcE+gLL0r045bhaWrLKUGpyKVjOpQCzSdg/V81AMGLfqTxjtnHCPF29pvCn50j
-dKAuF/EtCvnj+Jq9N7aT
-=hTWd
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Dec_2011_12_34_32_+1100_KSAUh1eEq33P8Xh0--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
