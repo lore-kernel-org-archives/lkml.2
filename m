@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab1LSUtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:49:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49014 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab1LSUtJ (ORCPT
+	id S1752810Ab1LSUtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:49:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33400 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab1LSUtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:49:09 -0500
-Date: Mon, 19 Dec 2011 12:49:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] memcg: reset to root_mem_cgroup at bypassing
-In-Reply-To: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1112191218350.3639@eggly.anvils>
-References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 19 Dec 2011 15:49:35 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wom5GMh1gUkA:10 a=yE2yJAP_VjkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=VwQbUJbxAAAA:8 a=07d9gI8wAAAA:8 a=oLbdE008AAAA:8 a=6XVD6acMnkdxDKJbqKUA:9 a=AaNZhrUb1Lssaf7gbCcA:7 a=CjuIK1q_8ugA:10 a=HEdnscJc8mAA:10 a=U62fhAwekXMA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Mon, 19 Dec 2011 15:49:33 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rijndael Cosque <rijcos@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "J.H." <warthog9@kernel.org>
+Subject: Re: kernel.org/pub/ was re-organized recently?
+Message-ID: <20111219204932.GA13165@home.goodmis.org>
+References: <CAJm7N86LJeiiarRjQBDKGDK5=qxjiKHDUiDYkEbhPejP7VBqiQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJm7N86LJeiiarRjQBDKGDK5=qxjiKHDUiDYkEbhPejP7VBqiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011, KAMEZAWA Hiroyuki wrote:
-> From d620ff605a3a592c2b1de3a046498ce5cd3d3c50 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 19 Dec 2011 16:55:10 +0900
-> Subject: [PATCH 2/2] memcg: reset lru to root_mem_cgroup in special cases.
+On Mon, Dec 19, 2011 at 10:51:14PM +0800, Rijndael Cosque wrote:
+> Hi all,
+> I'm sorry if I report this below issue in the wrong mailing list...
+
+This is as good of a list as any. But since there are over 600 emails a
+day on this list, you can easily be lost in the noise. Luckily for you,
+I got bored while waiting for my test box to reboot and decided to
+browse LKML where your subject line intgrigued my curiostity.
+
+
 > 
-> This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
+> Recently when I tried to wget the following packages, I got a HTTP 404
+> error (not found):
 > 
-> After the patch, all pages which will be onto LRU must have sane
-> pc->mem_cgroup. But, in special case, it's not set.
+> http://kernel.org/pub/linux/kernel/people/jsipek/guilt/guilt-0.33.tar.gz
+> http://kernel.org/pub/linux/libs/pam/library/Linux-PAM-1.1.4.tar.bz2
+> http://kernel.org/pub/linux/bluetooth/bluez-hcidump-2.1.tar.gz
+> http://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.22.tar.bz2
+> http://kernel.org/pub/software/utils/pciutils/pciutils-3.1.7.tar.bz2
+> http://kernel.org/pub/linux/utils/usb/usbutils/usbutils-0.91.tar.gz
+> http://kernel.org/pub/linux/utils/kernel/module-init-tools/module-init-tools-3.16.tar.bz2
+> http://kernel.org/pub/linux/utils/util-linux-ng/v2.19/util-linux-2.19.1.tar.bz2
+> http://kernel.org/pub/linux/bluetooth/bluez-4.96.tar.gz
+> http://kernel.org/pub/linux/utils/kernel/hotplug/udev-164.tar.gz
+> http://kernel.org/pub/linux/utils/kernel/kexec/kexec-tools-2.0.2.tar.gz
+> http://kernel.org/pub/linux/network/ofono/ofono-0.50.tar.bz2
+> http://kernel.org/pub/linux/utils/kernel/pcmcia/pcmciautils-018.tar.bz2
+
+Yep, they aint there anymore.
+
 > 
-> If task->mm is NULL or task is TIF_MEMDIE or fatal_signal_pending(),
-> try_charge() is bypassed and the new charge will not be charged. And
-> pc->mem_cgroup is unset even if the page will be used/mapped and added
-> to LRU. To avoid this,  this patch charges such pages to root_mem_cgroup,
-> then, pc->mem_cgroup will be handled correctly.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 0d6d21c..9268e8e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2324,7 +2324,7 @@ nomem:
->  	*ptr = NULL;
->  	return -ENOMEM;
->  bypass:
-> -	*ptr = NULL;
-> +	*ptr = root_mem_cgroup;
->  	return 0;
->  }
->  
-> -- 
+> I'm sure I could wget them before.
+> Can somebody point to me what happened to the packages? Where were
+> they moved to?
 
-I'm dubious about this patch: certainly you have not fully justified it.
+I don't know where they are now. Probably somewhere on the developers
+computers that created them.
 
-I speak from experience: I did *exactly* the same at "bypass" when
-I introduced our mem_cgroup_reset_page(), which corresponds to your
-mem_cgroup_reset_owner(); it seemed right to me that a successful
-(return 0) call to try_charge() should provide a good *ptr.
+Here's the issue. You may want to read up on what happened recently with
+kernel.org:
 
-But others (Ying and Greg) pointed out that it changes the semantics
-of __mem_cgroup_try_charge() in this case, so you need to justify the
-change to all those places which do something like "if (ret || !memcg)"
-after calling it.  Perhaps it is a good change everywhere, but that's
-not obvious, so we chose caution.
+  http://lwn.net/Articles/457142/
 
-Doesn't it lead to bypass pages being marked as charged to root, so
-they don't get charged to the right owner next time they're touched?
+And you can get a lot more info here:
 
-In our internal kernel, I restored "bypass" to set *ptr = NULL as
-before, but routed those callers that need it to continue on to
-__mem_cgroup_commit_charge() when it's NULL, and let that do a
-quick little mem_cgroup_reset_page() to root_mem_cgroup for this.
+  http://lmgtfy.com/?q=kernel.org+hacked
 
-But I was growing tired of mem_cgroup_reset_page() when I prepared
-the rollup I posted two weeks ago, it adds overhead where we don't
-want it, so I found a way to avoid it completely.
+To sum it up in a nutshell; kernel.org has been wiped clean,
+reinstalled, and all the content on there today has been loaded up by
+the original developers as they saw fit to put it back. Not all the
+developers that had access to kernel.org before has access today. The
+above tools may comeback slowly. If you need them, you might want to
+find the developers that created the tools and ask them where they are.
 
-What you're doing with mem_cgroup_reset_owner() seems reasonable to
-me as a phase to go through (though there's probably more callsites
-to be found - sorry to be unhelpfully mysterious about that, but
-just because per-memcg-lru-locking needed them doesn't imply that
-your patchset needs them), but I expect to (offer a patch to) remove
-it later.
+Sorry I can't be of more help. Good luck in finding what you need.
 
-I am intending to rebase upon your patches, or at least the ones
-which akpm has already taken in (I've not studied the pcg flag ones,
-more noise than I want at the moment).  I'm waiting for those to
-appear in a linux-next, disappointed that they weren't in today's.
+-- Steve
 
-(But I'm afraid my patches will then clash with Mel's new lru work.)
 
-I have been running successfully on several machines with an
-approximation to what I expect linux-next to be when it has your
-patches in.  Ran very stably on two, but one hangs in reclaim after
-a few hours, that's high on my list to investigate (you made no
-change to vmscan.c, maybe the problem comes from Hannes's earlier
-patches, but I hadn't noticed it with those alone).
-
-Hugh
