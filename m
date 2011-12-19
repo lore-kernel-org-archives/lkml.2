@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab1LSMLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 07:11:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60096 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab1LSMLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 07:11:13 -0500
-Date: Mon, 19 Dec 2011 12:11:00 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111219121100.GI2203@ZenIV.linux.org.uk>
-References: <1324265775.25089.20.camel@mengcong>
- <4EEEE866.2000203@linux.vnet.ibm.com>
- <4EEF0003.3010800@codeaurora.org>
- <4EEF1A13.4000801@linux.vnet.ibm.com>
+	id S1752961Ab1LSMNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 07:13:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41118 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab1LSMM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 07:12:57 -0500
+Date: Mon, 19 Dec 2011 13:12:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Android low memory killer vs. memory pressure notifications
+Message-ID: <20111219121255.GA2086@tiehlicka.suse.cz>
+References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EEF1A13.4000801@linux.vnet.ibm.com>
+In-Reply-To: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 04:33:47PM +0530, Srivatsa S. Bhat wrote:
+[Didn't get to the patch yet but a comment on memcg]
 
-> IMHO, we don't need to be concerned here because, {get,put}_online_cpus()
-> implement a refcounting solution, and they don't really serialize stuff
-> unnecessarily. The readers (those who prevent cpu hotplug, such as this lock-
-> unlock code) are fast and can be concurrent, while the writers (the task that
-> is doing the cpu hotplug) waits till all existing readers are gone/done with
-> their work.
+On Mon 19-12-11 06:53:28, Anton Vorontsov wrote:
+[...]
+> - Use memory controller cgroup (CGROUP_MEM_RES_CTLR) notifications from
+>   the kernel side, plus userland "manager" that would kill applications.
 > 
-> So, since we are readers here, IMO, we don't have to worry about performance.
-> (I know that we get serialized just for a moment while incrementing the
-> refcount, but that should not be worrisome right?)
-> 
-> Moreover, using for_each_online_cpu() without using {get,put}_online_cpus()
-> around that, is plain wrong, because of the unhandled race with cpu hotplug.
-> IOW, our primary concern here is functionality, isn't it?
-> 
-> To summarize, in the current design of these VFS locks, using
-> {get,put}_online_cpus() is *essential* to fix a functionality-related bug,
-> (and not so bad performance-wise as well).
-> 
-> The following patch (v2) incorporates your comments:
+>   The main downside of this approach is that mem_cg needs 20 bytes per
+>   page (on a 32 bit machine). So on a 32 bit machine with 4K pages
+>   that's approx. 0.5% of RAM, or, in other words, 5MB on a 1GB machine.
 
-I really don't like that.  Amount of contention is not a big issue, but the
-fact that now br_write_lock(vfsmount_lock) became blocking is really nasty.
-Moreover, we suddenly get cpu_hotplug.lock nested inside namespace_sem...
-BTW, it's seriously blocking - if nothing else, it waits for cpu_down()
-in progress to complete.  Which can involve any number of interesting
-locks taken by notifiers.
+page_cgroup is 16B per page and with the current Johannes' memcg
+naturalization work (in the mmotm tree) we are down to 8B per page (we
+got rid of lru). Kamezawa has some patches to get rid of the flags so we
+will be down to 4B per page on 32b. Is this still too much?
+I would be really careful about a yet another lowmem notification
+mechanism.
 
-Dave's variant is also no good; consider this:
-CPU1: br_write_lock(); spinlocks grabbed
-CPU2: br_read_lock(); spinning on one of them
-CPU3: try to take CPU2 down.  We *can't* proceed to the end, notifiers or no
-notifiers, until CPU2 gets through the critical area.  Which can't happen
-until the spinlock is unlocked, i.e. until CPU1 does br_write_unlock().
-Notifier can't silently do spin_unlock() here or we'll get CPU2 free to go
-into the critical area when it's really not safe there.
+>   0.5% doesn't sound too bad, but 5MB does, quite a little bit. So,
+>   mem_cg feels like an overkill for this simple task (see the driver at
+>   the very bottom).
 
-That got one hell of a deadlock potential ;-/  So far I'm more or less
-in favor of doing get_online_cpus() explicitly in fs/namespace.c, outside
-of namespace_sem.  But I still have not convinced myself that it's
-really safe ;-/
+Why is it an overkill? I think that having 2 groups (active and
+inactive) and move tasks between then sounds quite elegant. You can
+implement an user space oom handler in both groups (active will just
+move a task to the inactive group which inactive will kill a task which
+hasn't been used for the longest time).
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
