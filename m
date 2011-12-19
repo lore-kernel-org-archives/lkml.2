@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1LSOch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:32:37 -0500
-Received: from mail.lippert-at.com ([62.80.22.186]:15707 "EHLO
-	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752868Ab1LSOcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:32:35 -0500
-Message-ID: <4EEF4B0D.1090009@LiPPERTEmbedded.de>
-Date: Mon, 19 Dec 2011 15:32:45 +0100
-From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
+	id S1753304Ab1LSOhi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:37:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49832 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751229Ab1LSOhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 09:37:35 -0500
+Date: Mon, 19 Dec 2011 15:37:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
+Message-ID: <20111219143706.GC1606@m.brq.redhat.com>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+ <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+ <1324044159.18942.104.camel@twins>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: stable@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
-        linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org
-Subject: "clockevents: Set noop handler in clockevents_exchange_device()"
- causes hang with cs5535-clockevt
-References: <4EE620A5.7080402@LiPPERTEmbedded.de> <20111212123131.502be350@queued.net> <4EE77416.8090907@LiPPERTEmbedded.de> <4EE8ECF3.6000900@LiPPERTEmbedded.de>
-In-Reply-To: <4EE8ECF3.6000900@LiPPERTEmbedded.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Dec 2011 14:32:32.0655 (UTC) FILETIME=[0B39F1F0:01CCBE5B]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324044159.18942.104.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Fri, Dec 16, 2011 at 03:02:39PM +0100, Peter Zijlstra wrote:
+> On Thu, 2011-12-15 at 16:30 +0100, Jiri Olsa wrote:
 
-I wrote (to Andres):
-> If I turn off SMP, cs5535-clockevt replaces the pit timer and the MFGPT IRQ
-> starts firing just as you said - at least on 3.0.9. 3.2-rc5 prefers to hang
-> instead, looks like no timer events get generated.
+SNIP
 
-Commit de28f25e8244c7353abed8de0c7792f5f883588c (Linus's tree) makes the
-kernel hang during boot if the cs5535-clockevt driver is used. The (silent)
-hang occurs shortly after the cs5535-clockevt becomes active. The keyboard
-(incl. SysRq) stays responsive but the kernel seems starved of timer events
-and does nothing on its own accord any more. Happens on 3.0.13, 3.1.5 and
-3.2-rc6. Commit went into 2.6.32.50, too, but haven't tested this.
+> > event_breakpoint:       PE_SEP_BP ':' PE_VALUE event_breakpoint_type modifier
+> > event_breakpoint_type:  PE_MODIFIER_BPTYPE | empty
+> > modifier:               PE_MODIFIER_EVENT | empty
+> 
+> This isn't complete, we need means of specifying
+> perf_event_attr::config[12] when specifying a raw event.
+ok
 
-I don't know the code so I can't tell what's really going wrong or provide a
-fix. I played around with it a bit:
-Tried to change the order, putting "old->event_handler =" behind the
-list_add() doesn't help. Neither does adding "if (new)" immediately before
-"old->event_handler =". But "if (!new)" does.
+> 
+> 
 
-As you see, I'm aimlessly guessing around, sorry. Just tell me if you need
-anything tested.
+SNIP
 
-Thanks and best regards,
-Jens Rottmann
+> >                         cpu-migrations|migrations                      |
+> >                         alignment-faults                               |
+> >                         emulation-faults
+> 
+> It might make sense to allow means of custom symbol -> raw mappings.
+>
+right, will save some code..
+
+> > PE_NAME_CACHE_TYPE:     L1-dcache|l1-d|l1d|L1-data             |
+> >                         L1-icache|l1-i|l1i|L1-instruction      |
+> >                         LLC|L2                                 |
+> >                         dTLB|d-tlb|Data-TLB                    |
+> >                         iTLB|i-tlb|Instruction-TLB             |
+> >                         branch|branches|bpu|btb|bpc            |
+> >                         node
+> > 
+> > PE_NAME_CACHE_OP_RESULT: load|loads|read                       |
+> >                         store|stores|write                     |
+> >                         prefetch|prefetches                    |
+> >                         speculative-read|speculative-load      |
+> >                         refs|Reference|ops|access              |
+> >                         misses|miss
+> > 
+> > PE_SEP_RAW:             'r'
+> > PE_SEP_BP:              'mem'
+> > PE_MODIFIER_EVENT:      :[ukhp]{1,2}
+> 
+> You can actually have more than 2 modifiers, eg. "upp". 
+> 
+> [u] | [k] | [h] | [p]{,3} would be more correct I think.
+yay, the boundaries are indeed [0,3], I thought it was bool..
+
+	* precise_ip:
+	*
+	*  0 - SAMPLE_IP can have arbitrary
+	*  skid
+	*  1 - SAMPLE_IP must have constant
+	*  skid
+	*  2 - SAMPLE_IP requested to have 0
+	*  skid
+	*  3 - SAMPLE_IP must have 0 skid
+	*
+
+> 
+> > PE_MODIFIER_BPTYPE:     :[rwx]{1,3}
+> > PE_NAME_TP:             [a-zA-Z_*?]+
+> > PE_VALUE:               number
+> > 
+> > Added flex/bison files for event grammar parsing. Added
+> > flex/bison Makefile rules plus few special dependencies. 
+> 
+> It might be good to include the .c output of flex/bison so that we can
+> build perf without a hard dependency on them -- only people changing the
+> parser will need them.
+ok
+
+thanks,
+jirka
