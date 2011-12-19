@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1LSXDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 18:03:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59749 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab1LSXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 18:03:51 -0500
-Date: Mon, 19 Dec 2011 18:03:42 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, trenn@suse.de,
-        kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
-        kay.sievers@vrfy.org
-Subject: Re: [PATCH 08/10] cpufreq: Add support for x86 cpuinfo auto loading
-Message-ID: <20111219230341.GA570@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org,
-	Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
- <1324334865-30459-9-git-send-email-andi@firstfloor.org>
+	id S1752939Ab1LSXHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 18:07:00 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57739 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab1LSXG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 18:06:58 -0500
+Message-ID: <4EEFC38C.4010201@gmail.com>
+Date: Tue, 20 Dec 2011 10:06:52 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324334865-30459-9-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2] microblaze: Change NO_IRQ to 0
+References: <1324304394-5655-1-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1324304394-5655-1-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 02:47:44PM -0800, Andi Kleen wrote:
+On 20/12/11 01:19, Michal Simek wrote:
 
- > diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
- > index ffe1f2c..05d0f7f 100644
- > --- a/drivers/cpufreq/gx-suspmod.c
- > +++ b/drivers/cpufreq/gx-suspmod.c
- > @@ -82,6 +82,7 @@
- >  #include <linux/errno.h>
- >  #include <linux/slab.h>
- >  
- > +#include <asm/cpu_device_id.h>
- >  #include <asm/processor-cyrix.h>
- >  
- >  /* PCI config registers, all at F0 */
- > @@ -171,12 +172,20 @@ static struct pci_device_id gx_chipset_tbl[] __initdata = {
- >  	{ PCI_VDEVICE(CYRIX, PCI_DEVICE_ID_CYRIX_5510), },
- >  	{ 0, },
- >  };
- > +/* MODULE_DEVICE_TABLE here too? But the CPU should be enough. */
- >  
- >  static void gx_write_byte(int reg, int value)
- >  {
- >  	pci_write_config_byte(gx_params->cs55x0, reg, value);
- >  }
- >  
- > +static const struct x86_cpu_id gx_ids[] = {
- > +	{ X86_VENDOR_NSC, },
- > +	{ X86_VENDOR_CYRIX },
- > +	{}
- > +};
- > +MODULE_DEVICE_TABLE(x86cpu, gx_ids);
- > +
- >  /**
- >   * gx_detect_chipset:
- >   *
- > @@ -185,12 +194,8 @@ static __init struct pci_dev *gx_detect_chipset(void)
- >  {
- >  	struct pci_dev *gx_pci = NULL;
- >  
- > -	/* check if CPU is a MediaGX or a Geode. */
- > -	if ((boot_cpu_data.x86_vendor != X86_VENDOR_NSC) &&
- > -	    (boot_cpu_data.x86_vendor != X86_VENDOR_CYRIX)) {
- > -		pr_debug("error: no MediaGX/Geode processor found!\n");
- > +	if (!x86_match_cpu(gx_ids))
- >  		return NULL;
- > -	}
- >  
- >  	/* detect which companion chip is used */
- >  	for_each_pci_dev(gx_pci) {
+> As has been discussed many times[1], Using NO_IRQ set to anything other
+> than 0 is bug waiting to happen since many drivers follow the pattern
+> "if (!irq)" for testing whether or not an irq has been set.
+> 
+> This patch changes the Microblaze NO_IRQ setting from -1 to 0 to bring
+> it in line with most of the rest of the kernel.  It also prepares for
+> Microblaze eventually supporting multiple interrupt controllers by
+> breaking the assumption that hwirq# == Linux IRQ#.  The Linux IRQ
+> number is just a cookie with no guarantee of a direct relationship
+> with the hardware irq arrangement.
+> 
+> At this point, Microblaze interrupt handling only supports only one
+> instance of one kind of interrupt controller (xilinx_intc).  This change
+> shouldn't affect any architecture code outside of the interrupt
+> controller driver and the irq_of mapping.
+> 
+> Updated to 3.2 and to use irq_data.hwirq by Rob Herring.
+> Tested and fixed by Michal Simek.
+> 
+> [1] http://lkml.org/lkml/2005/11/21/221
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
-Looking closer at this one, I think we could possibly just autoload based on the PCI IDs
-in gx_chipset_tbl, and remove the cpu vendor checking entirely.
-Pretty sure those Cyrix PCI devices won't show up anywhere else.
+<snip>
 
-Otherwise, we could narrow the range this gets loaded on to Cyrix Fam 4 model 5, and
-NatSemi Fam 5, model 4.  (afaik, that covers all the possible cpus this driver works on)
+>  extern unsigned int nr_irq;
+>  
+> -#define NO_IRQ (-1)
+> +#define NO_IRQ 0
 
-	Dave
+IIUC, NO_IRQ should actually be removed in favour of testing against
+zero explictly. On Linus' latest tree there are three appearances of
+NO_IRQ in arch/microblaze: this definition and two uses and
+arch/microblaze/pci/pci-common.c. The latter should be removed by this
+patch. I assume there are still uses of NO_IRQ in drivers used by
+microblaze which prevent removal of NO_IRQ completely?
+
+~Ryan
 
