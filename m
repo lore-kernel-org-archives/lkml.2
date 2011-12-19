@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab1LSTY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 14:24:56 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45813 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab1LSTYy (ORCPT
+	id S1752751Ab1LST1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 14:27:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60030 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1LST1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 14:24:54 -0500
-Message-ID: <4EEF8F85.9010408@gmail.com>
-Date: Mon, 19 Dec 2011 14:24:53 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
-References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 19 Dec 2011 14:27:50 -0500
+X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=L1L9NTbhfHkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=GxSvwpomSuXbLTSrgyAA:9 a=ewNhGe2X1KKppH-wywgA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324322868.5916.40.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCHv2 10/10] ftrace, graph: Add global_ops filter callback
+ for graph tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Mon, 19 Dec 2011 14:27:48 -0500
+In-Reply-To: <1323105776-26961-11-git-send-email-jolsa@redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+	 <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+	 <1323105776-26961-11-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/19/11 1:38 PM), Naoya Horiguchi wrote:
-> This flag shows that a given pages is a subpage of transparent hugepage.
-> It does not care about whether it is a head page or a tail page, because
-> it's clear from pfn of the target page which you should know when you read
-> /proc/kpageflags.
+On Mon, 2011-12-05 at 18:22 +0100, Jiri Olsa wrote:
+> The function graph tracer should depend on the global_ops filter,
+> and process only functions that pass the global_ops filter.
 > 
-> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+> Currently the function graph tracer gets all the functions
+> enabled for tracing no matter what ftrace_ops enabled them.
+> 
+> Adding a hook for the graph entry callback, which ensures the
+> function is compared against the global_ops filter and bail
+> out of if it does not match.
+> 
+> This hook is enabled only if there's at least one non global
+> ftrace_ops registered.
 
-NAK.
 
-The detail of transparent hugepage are hidden by design. We hope it
-keep 'transparent'.
-Until any explain why we should expose KPF_THP, we don't agree it.
+Sorry, I don't like this fix. Right now just let function graph tracer
+act weird. If we put in this workaround, it would let us be lazy and not
+work on function graph for a proper fix.
+
+The function graph code needs a overhaul anyway. A proper fix may
+require fixes in the arch code where the assembly is, as well as a bit
+of rewriting of the original code.
+
+This is on my todo list, although it is a bit low priority now. With
+this patch set coming in, I can up the priority on the real fix. So
+please remove this patch, but keep pinging me to fix it for real ;)
+
+-- Steve
+
 
