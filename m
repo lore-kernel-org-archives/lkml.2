@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab1LSSiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 13:38:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32224 "EHLO mx1.redhat.com"
+	id S1752822Ab1LSSiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 13:38:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56739 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483Ab1LSSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752642Ab1LSSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Dec 2011 13:38:15 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -14,107 +14,57 @@ Cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [RFC][PATCH 1/3] pagemap: avoid splitting thp when reading /proc/pid/pagemap
-Date: Mon, 19 Dec 2011 13:38:37 -0500
-Message-Id: <1324319919-31720-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [RFC][PATCH 2/3] pagemap: export KPF_THP
+Date: Mon, 19 Dec 2011 13:38:38 -0500
+Message-Id: <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thp split is not necessary if we explicitly check whether pmds are
-mapping thps or not. This patch introduces the check and the code
-to generate pagemap entries for pmds mapping thps, which results in
-less performance impact of pagemap on thp.
+This flag shows that a given pages is a subpage of transparent hugepage.
+It does not care about whether it is a head page or a tail page, because
+it's clear from pfn of the target page which you should know when you read
+/proc/kpageflags.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c |   48 ++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 44 insertions(+), 4 deletions(-)
+ fs/proc/page.c                    |    5 +++++
+ include/linux/kernel-page-flags.h |    4 ++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
-index e418c5a..90c4b7a 100644
---- 3.2-rc5.orig/fs/proc/task_mmu.c
-+++ 3.2-rc5/fs/proc/task_mmu.c
-@@ -600,6 +600,9 @@ struct pagemapread {
- 	u64 *buffer;
- };
- 
-+#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
-+#define PAGEMAP_WALK_MASK	(PMD_MASK)
-+
- #define PM_ENTRY_BYTES      sizeof(u64)
- #define PM_STATUS_BITS      3
- #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
-@@ -658,6 +661,22 @@ static u64 pte_to_pagemap_entry(pte_t pte)
- 	return pme;
- }
+diff --git 3.2-rc5.orig/fs/proc/page.c 3.2-rc5/fs/proc/page.c
+index 6d8e6a9..d436fc6 100644
+--- 3.2-rc5.orig/fs/proc/page.c
++++ 3.2-rc5/fs/proc/page.c
+@@ -116,6 +116,11 @@ u64 stable_page_flags(struct page *page)
+ 	if (PageHuge(page))
+ 		u |= 1 << KPF_HUGE;
  
 +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
-+{
-+	u64 pme = 0;
-+	if (pte_present(pte))
-+		pme = PM_PFRAME(pte_pfn(pte) + offset)
-+			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
-+	return pme;
-+}
-+#else
-+static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
-+{
-+	return 0;
-+}
++	if (PageTransCompound(page))
++		u |= 1 << KPF_THP;
 +#endif
 +
- static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 			     struct mm_walk *walk)
- {
-@@ -666,10 +685,33 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	pte_t *pte;
- 	int err = 0;
+ 	/*
+ 	 * Caveats on high order pages: page->_count will only be set
+ 	 * -1 on the head page; SLUB/SLQB do the same for PG_slab;
+diff --git 3.2-rc5.orig/include/linux/kernel-page-flags.h 3.2-rc5/include/linux/kernel-page-flags.h
+index bd92a89..7b83ee7 100644
+--- 3.2-rc5.orig/include/linux/kernel-page-flags.h
++++ 3.2-rc5/include/linux/kernel-page-flags.h
+@@ -31,6 +31,10 @@
  
--	split_huge_page_pmd(walk->mm, pmd);
--
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
-+
-+	spin_lock(&walk->mm->page_table_lock);
-+	if (pmd_trans_huge(*pmd)) {
-+		if (pmd_trans_splitting(*pmd)) {
-+			spin_unlock(&walk->mm->page_table_lock);
-+			wait_split_huge_page(vma->anon_vma, pmd);
-+		} else {
-+			u64 pfn = PM_NOT_PRESENT;
-+
-+			for (; addr != end; addr += PAGE_SIZE) {
-+				int offset = (addr & ~PAGEMAP_WALK_MASK)
-+					>> PAGE_SHIFT;
-+				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
-+							       offset);
-+				err = add_to_pagemap(addr, pfn, pm);
-+				if (err)
-+					break;
-+			}
-+			spin_unlock(&walk->mm->page_table_lock);
-+			return err;
-+		}
-+	} else {
-+		spin_unlock(&walk->mm->page_table_lock);
-+	}
-+
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		u64 pfn = PM_NOT_PRESENT;
+ #define KPF_KSM			21
  
-@@ -754,8 +796,6 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-  * determine which areas of memory are actually mapped and llseek to
-  * skip over unmapped regions.
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++#define KPF_THP			22
++#endif
++
+ /* kernel hacking assistances
+  * WARNING: subject to change, never rely on them!
   */
--#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
--#define PAGEMAP_WALK_MASK	(PMD_MASK)
- static ssize_t pagemap_read(struct file *file, char __user *buf,
- 			    size_t count, loff_t *ppos)
- {
 -- 
 1.7.7.3
 
