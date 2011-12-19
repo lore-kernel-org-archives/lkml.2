@@ -1,30 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1LSOZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:25:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59203 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab1LSOZK (ORCPT
+	id S1753282Ab1LSOZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:25:28 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:35558 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1LSOZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:25:10 -0500
-Date: Mon, 19 Dec 2011 14:25:05 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz, Trond.Myklebust@netapp.com,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] [Trivial]: nfs : Fix typo in dir.c
-Message-ID: <20111219142505.GJ2203@ZenIV.linux.org.uk>
-References: <1324304223-10047-1-git-send-email-standby24x7@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324304223-10047-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Dec 2011 09:25:25 -0500
+Date: Mon, 19 Dec 2011 15:25:19 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+Message-ID: <20111219152519.252b75eb@de.ibm.com>
+In-Reply-To: <1324303723.24621.1.camel@twins>
+References: <20111219154010.c2044c038a6174dd8fb6f477@canb.auug.org.au>
+	<20111219080813.GB30432@elte.hu>
+	<20111219101134.3c2c0db5@de.ibm.com>
+	<20111219103513.GA17928@elte.hu>
+	<20111219133151.4d14af80@de.ibm.com>
+	<1324303723.24621.1.camel@twins>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 11121914-4966-0000-0000-000000E900C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 11:17:03PM +0900, Masanari Iida wrote:
-> Fix typo "iff" -> "if" in dir.c
+On Mon, 19 Dec 2011 15:08:43 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-What makes you think that it's a typo?
+> On Mon, 2011-12-19 at 13:31 +0100, Martin Schwidefsky wrote:
+> > Just one question: are you sure that you want the cpustat array
+> > to be u64 instead of cputime64_t? The content of the cpustat array is defined
+> > by the architecture semantics of cputime64_t, for CONFIG_VIRT_CPU_ACCOUNTING=y
+> > this is not a jiffy counter. If the array is u64 we won't get the sparse
+> > checking when reading from cpustat. 
+> 
+> So as Glauber said the reason was that we wanted to use simply
+> operators, and IIRC he wanted to add a few fields that had to be u64.
+> 
+> I'm not sure what the current plans are wrt adding more fields, but with
+> your work cputime_t should again be a simple type and thus regular math
+> operators should work again, right?
+
+Correct.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
