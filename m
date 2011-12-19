@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1LSC3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 21:29:47 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:10005 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1LSC3p (ORCPT
+	id S1752211Ab1LSCao (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 21:30:44 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:59573 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab1LSCam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 21:29:45 -0500
-X-AuditID: cbfee60f-b7bceae00000240c-ab-4eeea1973fe3
-Date: Mon, 19 Dec 2011 02:29:43 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] misc: Fix irq leak in max8997_muic_probe error path
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20111219021631990@myungjoo.ham
-Msgkey: 20111219021631990@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20111219021631990@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <24320092.1406411324261782944.JavaMail.weblogic@epml05>
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 18 Dec 2011 21:30:42 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vitaly Kuznetsov <vitty@altlinux.ru>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+References: <1b3c733f0412e214042566bac2c3f3e6@hadoop.ru>
+Date: Sun, 18 Dec 2011 18:32:18 -0800
+In-Reply-To: <1b3c733f0412e214042566bac2c3f3e6@hadoop.ru> (Vitaly Kuznetsov's
+	message of "Wed, 14 Dec 2011 19:34:50 +0400")
+Message-ID: <m162hdmgul.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/101O/t0HHlBIzuklWYex+2blfnt3qr4Y=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vitaly Kuznetsov <vitty@altlinux.ru>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH] sysfs: change permissions for /sys from 0755 to 0555
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBJ2Ts8V027606
 
-> Current code does not properly free allocated irqs if request_threaded_irq
-> returns error, fix it.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Vitaly Kuznetsov <vitty@altlinux.ru> writes:
 
-Thanks for pointing that out.
+> There is a misleading difference between /proc and /sys permissions, /proc is
+> 0555 and /sys is 0755. But
+> as it is impossible to create or unlink something in /sys it would be nice to
+> have same permissions.
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Where does this difference matter?  This doesn't look like something
+that could matter in practice.  If this does matter in practice this
+change deserves a comment and a fuller explanation.
 
+The change itself seems reasonable and probably worth making as general
+cleanup.
+
+Eric
+
+> Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
 > ---
->  drivers/misc/max8997-muic.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/misc/max8997-muic.c b/drivers/misc/max8997-muic.c
-> index 74a9448..409b7fc 100644
-> --- a/drivers/misc/max8997-muic.c
-> +++ b/drivers/misc/max8997-muic.c
-> @@ -566,10 +566,6 @@ static int __devinit max8997_muic_probe(struct platform_device *pdev)
->  				"failed: irq request (IRQ: %d,"
->  				" error :%d)\n",
->  				muic_irq->irq, ret);
-> -
-> -			for (i = i - 1; i >= 0; i--)
-> -				free_irq(muic_irq->irq, info);
-> -
->  			goto err_irq;
->  		}
->  	}
-> @@ -583,6 +579,8 @@ static int __devinit max8997_muic_probe(struct platform_device *pdev)
->  	return ret;
->  
->  err_irq:
-> +	while (--i >= 0)
-> +		free_irq(pdata->irq_base + muic_irqs[i].irq, info);
->  	sysfs_remove_group(&pdev->dev.kobj, &max8997_muic_group);
->  err_sysfs:
->  err_pdata:
-> -- 
-> 1.7.5.4
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  fs/sysfs/mount.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+> index 4974995..9d56fdd 100644
+> --- a/fs/sysfs/mount.c
+> +++ b/fs/sysfs/mount.c
+> @@ -36,7 +36,7 @@ struct sysfs_dirent sysfs_root = {
+>         .s_name         = "",
+>         .s_count        = ATOMIC_INIT(1),
+>         .s_flags        = SYSFS_DIR,
+> -       .s_mode         = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
+> +       .s_mode         = S_IFDIR | S_IRUGO | S_IXUGO,
+>         .s_ino          = 1,
+>  };
