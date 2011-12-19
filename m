@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1LSEbx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 23:31:53 -0500
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:46511 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752146Ab1LSEbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 23:31:18 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH V1 Resend 1/3] dmaengine: Allow controller drivers to set channel ids
-Date: Mon, 19 Dec 2011 10:00:58 +0530
-Message-ID: <de4a7d1855fb9366d3e5deac97efabfda9942486.1324268691.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.8.110.g4cb5d
-In-Reply-To: <cover.1324268691.git.viresh.kumar@st.com>
-References: <cover.1324268691.git.viresh.kumar@st.com>
+	id S1752287Ab1LSEg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 23:36:28 -0500
+Received: from smtp22.mail.ru ([94.100.176.175]:51344 "EHLO smtp22.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab1LSEgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 23:36:25 -0500
+Date: Mon, 19 Dec 2011 08:37:14 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: ASoC: missed hx4700-audio platform device for hx4700
+Message-ID: <20111219043713.GA6917@rainbow>
+References: <1324114379.28427.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324114379.28427.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mru-NR: 8
+X-Mru-UID: 1674633
+X-Spam: Not detected
+X-Mras: Ok
+X-Mru-Karma: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently value of chan_id field is updated by dmaengine.c while the dma device
-is registered. In some cases the controller driver may need to assign channel
-numbers by itself. For example, dw_dmac.c wants to control the order in which
-channels are allocated by dmaengine. So it added channels inside channel list of
-dma_device in reverse order. Now channel 7 is allocated first and channel 0 is
-allocated last.
+On 17:32 Sat 17 Dec     , Axel Lin wrote:
+> The iPAQ hx4700 machine driver needs a hx4700-audio platform device which is
+> not (yet) merged.
+> 
+> The patchs was post on LKML: https://lkml.org/lkml/2011/5/18/222
+> but [PATCH v3 3/3] pxa/hx4700: add platform device and I2C info for AK4641 codec is missed.
 
-But as the channel ids are updated by dmaengine, channel numbers in sysfs will
-be overwritten if controller has added channels in reverse order. To represent
-correct channel number in sysfs, it is required that dmaengine must not assume
-that first channel in list is channel 0 and last is 7.
+Hi, Axel! Thanks for noticing this. It's sad but true: this trivial
+piece haven't been merged, making all merged  ASoC parts of hx4700 audio
+support useless. In fact I even resend this patch once (see
+http://lkml.org/lkml/2011/9/12/100), but also without much attention.
+Have no idea what steps are needed to get this finally merged. I think
+it all depends on Eric and he seems to be very busy and lost in incoming
+mail (at least it was back in july - http://lkml.org/lkml/2011/7/11/217)
 
-To handled this situation, chan_ids_set is passed by controller driver inside
-struct dma_device. Controller drivers that need to set channel numbers
-themselves must pass this field as true.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dmaengine.c   |    7 ++++++-
- include/linux/dmaengine.h |    5 +++++
- 2 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index a6c6051..38feff3 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -736,7 +736,12 @@ int dma_async_device_register(struct dma_device *device)
- 			goto err_out;
- 		}
- 
--		chan->chan_id = chancnt++;
-+		/* channel ids are set by controller drivers, don't update it */
-+		if (!device->chan_ids_set)
-+			chan->chan_id = chancnt;
-+
-+		chancnt++;
-+
- 		chan->dev->device.class = &dma_devclass;
- 		chan->dev->device.parent = device->dev;
- 		chan->dev->chan = chan;
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 5532bb8..56f0dd2 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -497,6 +497,8 @@ struct dma_tx_state {
-  * @xor_align: alignment shift for xor operations
-  * @pq_align: alignment shift for pq operations
-  * @fill_align: alignment shift for memset operations
-+ * @chan_ids_set: channel id's are already set by driver and must not be
-+ * reinitialized by dmaengine.
-  * @dev_id: unique device ID
-  * @dev: struct device reference for dma mapping api
-  * @device_alloc_chan_resources: allocate resources and return the
-@@ -537,6 +539,9 @@ struct dma_device {
- 	u8 fill_align;
- 	#define DMA_HAS_PQ_CONTINUE (1 << 15)
- 
-+	/* sysfs */
-+	bool chan_ids_set;
-+
- 	int dev_id;
- 	struct device *dev;
- 
 -- 
-1.7.8.110.g4cb5d
+Best regards,
+Dmitry "MAD" Artamonow
 
