@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab1LSJsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 04:48:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45734 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab1LSJsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 04:48:10 -0500
-Message-ID: <4EEF0856.3040306@kernel.dk>
-Date: Mon, 19 Dec 2011 10:48:06 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the block tree
-References: <20111219141929.e27fd6b6ac0b9f6ae33f89c7@canb.auug.org.au> <CA+icZUWrpTFPhM0cTQgvBPnMqT3zZufcxQ6c6wh7=EtkD4of9w@mail.gmail.com>
-In-Reply-To: <CA+icZUWrpTFPhM0cTQgvBPnMqT3zZufcxQ6c6wh7=EtkD4of9w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751696Ab1LSJ6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 04:58:16 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:4895 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095Ab1LSJ6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 04:58:15 -0500
+From: voice <voice.shen@atmel.com>
+To: tiwai@suse.de
+Cc: linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
+        alsa-devel@alsa-project.org, nicolas.ferre@atmel.com,
+        Hans-Christian.Egtvedt@atmel.com, jm.lin@atmel.com, hong.xu@atmel.com,
+        voice <voice.shen@atmel.com>
+Subject: [PATCH] atmel ac97c: using software reset instead hardware reset if not available
+Date: Mon, 19 Dec 2011 17:57:52 +0800
+Message-Id: <1324288672-29556-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-19 10:45, Sedat Dilek wrote:
-> Just FYI:
-> 
-> - block           git     git://git.kernel.dk/linux-2.6-block.git#for-next
-> + block           git     git://git.kernel.dk/linux-block.git#for-next
+Using software reset instead hardware reset if not available
 
-linux-block.git is the one that should be used, however the 2.6 one is
-just a link to the new one. So old urls work just fine as well, it all
-goes to the same spot.
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ sound/atmel/ac97c.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+index 6e5adde..73516f6 100644
+--- a/sound/atmel/ac97c.c
++++ b/sound/atmel/ac97c.c
+@@ -899,6 +899,10 @@ static void atmel_ac97c_reset(struct atmel_ac97c *chip)
+ 		/* AC97 v2.2 specifications says minimum 1 us. */
+ 		udelay(2);
+ 		gpio_set_value(chip->reset_pin, 1);
++	} else {
++		ac97c_writel(chip, MR, AC97C_MR_WRST | AC97C_MR_ENA);
++		udelay(2);
++		ac97c_writel(chip, MR, AC97C_MR_ENA);
+ 	}
+ }
+ 
 -- 
-Jens Axboe
+1.6.3.3
 
