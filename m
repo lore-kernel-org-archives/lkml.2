@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab1LSIBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 03:01:03 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:50472 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab1LSIA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 03:00:59 -0500
-Message-ID: <4EEEEF13.9090701@parallels.com>
-Date: Mon, 19 Dec 2011 12:00:19 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752482Ab1LSICP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 03:02:15 -0500
+Received: from out2.rolmail.net ([195.254.252.213]:41014 "EHLO
+	out2.rolmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab1LSICM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 03:02:12 -0500
+Message-ID: <4EEEEF7F.8070506@enas.net>
+Date: Mon, 19 Dec 2011 09:02:07 +0100
+From: Urban Loesch <bind@enas.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <daniel.lezcano@free.fr>, <a.p.zijlstra@chello.nl>,
-        <jbottomley@parallels.com>, <pjt@google.com>,
-        <cgroups@vger.kernel.org>, <bsingharora@gmail.com>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] cgroup basic comounting
-References: <1324038549-21605-1-git-send-email-glommer@parallels.com> <4EEEEE9D.1010003@cn.fujitsu.com>
-In-Reply-To: <4EEEEE9D.1010003@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: divide by zero error: find busiest group on kernel 2.6.38.4
+References: <4EDB7CE0.9010105@enas.net> <20111216231414.GA7941@BohrerMBP.rgmadvisors.com>
+In-Reply-To: <20111216231414.GA7941@BohrerMBP.rgmadvisors.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 11:58 AM, Li Zefan wrote:
-> Glauber Costa wrote:
->> Turns out that most of the infrastructure we need to put two controllers in the
->> same hierarchy is by far already into place. All we need to do is not failing
->> when we specify two of them.
+Hi,
+
+On 17.12.2011 00:14, Shawn Bohrer wrote:
+> On Sun, Dec 04, 2011 at 03:00:00PM +0100, Urban Loesch wrote:
+>> I'm running a DELL PE R610 with kernel
+>> 2.6.38.4 patched with linux vserver version vs2.3.0.37-rc15 from
+>> http://linux-vserver.org.
 >>
+>> The server runs fine about 220 days without any problems.
+>> But last night there was a kernel panic and the server totally hangs.
+>>
+>> Thanks to netconsole I got the following error in my syslogserver:
+>>
+>>
+>> 2011-12-04 00:32:16 divide error: 0000 [#1]
+>> 2011-12-04 00:32:16 SMP
+> <snip>
+>> 2011-12-04 00:32:16 Pid: 0, comm: kworker/0:1 Not tainted
+>> 2.6.38.4-vs2.3.0.37-rc15-rol-em64t #1
+>> 2011-12-04 00:32:16
+>> 2011-12-04 00:32:16 Dell Inc. PowerEdge R610
+>> 2011-12-04 00:32:16 /
+>> 2011-12-04 00:32:16 0F0XJ6
+>> 2011-12-04 00:32:16
+>> 2011-12-04 00:32:16 RIP: 0010:[<ffffffff8103abb8>]
+>> 2011-12-04 00:32:16 [<ffffffff8103abb8>]
+>> find_busiest_group+0x428/0xdd0
 >
-> You don't need to change anything to mount with 2 cgroup subsystems:
+> This looks like the same issue as:
 >
-> 	# mount -t cgroup -o cpu,cpuacct xxx /mnt
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=636797
+> and
+> https://bugs.launchpad.net/linux/+bug/614853
 >
-> But you may want to revise and make use of the subsys->bind() callback, which
-> is called at mount/remount/umount when we attach/remove a controller to/from
-> a hierarchy. It's the place you can check if two controllers are going to
-> be comounted/seperated.
+> In theory there is also a bugzilla.kernel.org ticket on this issue as
+> well though bugzilla.kernel.org is still down.
 >
->> With this, we can effectively guarantee that by comounting cpu and cpuacct,
->> we'll have the same set of tasks, therefore allowing us to use cpu cgroup data
->> to fill in the usage fields in cpuacct.
+> https://bugzilla.kernel.org/show_bug.cgi?id=16991
+>
+> Debian and Ubuntu have papered over this bug by skipping the divide if
+> cpu_power is 0.
+>
+>> I searched the archives but I didn't find any related information.
+>> Have you any idea what this error could be and is it fixed in kernel 3.1?
+>
+> To my knowledge the cause of this bug is still unknown.  It is
+> possible it is fixed in newer kernels, but it is hard to tell since it
+> doesn't seem to occur until you have reached 200+ days of uptime.
+>
 
-Yeah, that patch was bogus, sorry for the noise.
+Not sure if that describes exactly the same problem:
 
-What I should really have posted is the test code, but I guess I'll go 
-over that one as well one more time, and then post it.
+http://comments.gmane.org/gmane.linux.kernel/1132515
+
+Patch:
+http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=4cecf6d401a01d054afc1e5f605bcbfe553cb9b9
+
+This issue was fixed in 3.1.5.
+http://www.kernel.org/pub/linux/kernel/v3.0/ChangeLog-3.1.5
+
+> --
+> Shawn
+>
 
 Thanks
->> I decided not to stabilish any dependency between cgroups as Li previously did:
->> cgroups may or may not be comounted, and any of them can be combined (I don't
->> see a reason to prevent any combination).
->>
->> After testing and some trials, I could verify that the current mount behavior
->> plays well under the plans, so I didn't change it. That is:
->>
->>   * If subsystems A and B aren't mounted, we can comount them.
->>   * If subsystem A is mounted, but B is not:
->>     * we can comount them if A has no children,
->>     * we fail otherwise
->>   * If subsystems A and B are comounted at a location, we can't
->>     mount any of them separately at another point. We do can mount
->>     them together.
->>   * If subsystems A and B are comounted at a location,
->>     * we can comount a third subsystem C, if they have no children
->>     * we fail otherwise
->>
->> Paul,
->>
->> Please let me know if this is tuned with the idea you had in mind.
->> If this is okay, I patch that extracts usage from cpu cgroup data
->> in case of comount would follow.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: Paul Turner<pjt@google.com>
->> CC: Li Zefan<lizf@cn.fujitsu.com>
->> ---
->>   kernel/cgroup.c |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
->> index 1fd7867..e894a4f 100644
->> --- a/kernel/cgroup.c
->> +++ b/kernel/cgroup.c
->> @@ -1211,9 +1211,9 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
->>   			set_bit(i,&opts->subsys_bits);
->>   			one_ss = true;
->>
->> -			break;
->> +			continue;
->>   		}
->> -		if (i == CGROUP_SUBSYS_COUNT)
->> +		if (opts->subsys_bits == 0)
->>   			return -ENOENT;
->>   	}
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Urban
