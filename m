@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab1LSSiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 13:38:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab1LSSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 13:38:15 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [RFC][PATCH 2/3] pagemap: export KPF_THP
-Date: Mon, 19 Dec 2011 13:38:38 -0500
-Message-Id: <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1752844Ab1LSSi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 13:38:28 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:9021
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752642Ab1LSSiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 13:38:25 -0500
+X-SpamScore: -14
+X-BigFish: VS-14(zzbb2dI9371I936eK1432N98dKzz1202hzzz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Message-ID: <4EEF849B.7030804@freescale.com>
+Date: Mon, 19 Dec 2011 12:38:19 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: <dedekind1@gmail.com>
+CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
+        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com>    <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>    <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala>   <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala>  <4EE6725C.3050706@freescale.com> <1324132520.4240.26.camel@sauron.fi.intel.com>
+In-Reply-To: <1324132520.4240.26.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag shows that a given pages is a subpage of transparent hugepage.
-It does not care about whether it is a head page or a tail page, because
-it's clear from pfn of the target page which you should know when you read
-/proc/kpageflags.
+On 12/17/2011 08:35 AM, Artem Bityutskiy wrote:
+> On Mon, 2011-12-12 at 15:30 -0600, Scott Wood wrote:
+>> On 12/12/2011 03:19 PM, Artem Bityutskiy wrote:
+>>> On Mon, 2011-12-12 at 15:15 -0600, Scott Wood wrote:
+>>>> NAND chips come from the factory with bad blocks marked at a certain
+>>>> offset into each page.  This offset is normally in the OOB area, but
+>>>> since we change the layout from "4k data, 128 byte oob" to "2k data, 64
+>>>> byte oob, 2k data, 64 byte oob" the marker is no longer in the oob.  On
+>>>> first use we need to migrate the markers so that they are still in the oob.
+>>>
+>>> Ah, I see, thanks. Are you planning to implement in-kernel migration or
+>>> use a user-space tool?
+>>
+>> That's the kind of answer I was hoping to get from Shuo. :-)
+>>
+>> Most likely is a firmware-based tool, but I'd like there to be some way
+>> for the tool to mark that this has happened, so that the Linux driver
+>> can refuse to do non-raw accesses to a chip that isn't marked as having
+>> been migrated (or at least yell loudly in the log).
+>>
+>> Speaking of raw accesses, these are currently broken in the eLBC
+>> driver... we need some way for the generic layer to tell us what kind of
+>> access it is before the transaction starts, not once it wants to read
+>> out the buffer (unless we add more hacks to delay the start of a read
+>> transaction until first buffer access...).  We'd be better off with a
+>> high-level "read page/write page" function that does the whole thing
+>> (not just buffer access, but command issuance as well).
+> 
+> It looks like currently you can re-define chip->read_page, so I guess
+> you should rework MTD and make chip->write_page re-definable?
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/proc/page.c                    |    5 +++++
- include/linux/kernel-page-flags.h |    4 ++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+Unless something has changed very recently, there is no chip->read_page
+or chip->write_page.  There is chip->ecc.read_page and
+chip->ecc.write_page, but they are too low-level.  What we'd need to
+replace is a portion of nand_do_read_ops()/nand_do_write_ops().
 
-diff --git 3.2-rc5.orig/fs/proc/page.c 3.2-rc5/fs/proc/page.c
-index 6d8e6a9..d436fc6 100644
---- 3.2-rc5.orig/fs/proc/page.c
-+++ 3.2-rc5/fs/proc/page.c
-@@ -116,6 +116,11 @@ u64 stable_page_flags(struct page *page)
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	if (PageTransCompound(page))
-+		u |= 1 << KPF_THP;
-+#endif
-+
- 	/*
- 	 * Caveats on high order pages: page->_count will only be set
- 	 * -1 on the head page; SLUB/SLQB do the same for PG_slab;
-diff --git 3.2-rc5.orig/include/linux/kernel-page-flags.h 3.2-rc5/include/linux/kernel-page-flags.h
-index bd92a89..7b83ee7 100644
---- 3.2-rc5.orig/include/linux/kernel-page-flags.h
-+++ 3.2-rc5/include/linux/kernel-page-flags.h
-@@ -31,6 +31,10 @@
- 
- #define KPF_KSM			21
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+#define KPF_THP			22
-+#endif
-+
- /* kernel hacking assistances
-  * WARNING: subject to change, never rely on them!
-  */
--- 
-1.7.7.3
+-Scott
 
