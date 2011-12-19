@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1LSWs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:48:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21211 "EHLO mga03.intel.com"
+	id S1752641Ab1LSWtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:49:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2384 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab1LSWr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:47:56 -0500
+	id S1751095Ab1LSWrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:47:55 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="48753673"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="89260545"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org,
-        Andi Kleen <ak@linux.intel.com>, lenb@kernel.org
-Subject: [PATCH 04/10] intel-idle: convert to x86_cpu_id auto probing
-Date: Mon, 19 Dec 2011 14:47:40 -0800
-Message-Id: <1324334865-30459-5-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, davej@redhat.com,
+        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
+        ying.huang@intel.com
+Subject: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading for x86 crypto drivers
+Date: Mon, 19 Dec 2011 14:47:39 -0800
+Message-Id: <1324334865-30459-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
 References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
@@ -25,196 +27,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With this it should be automatically loaded on suitable systems by
-udev.
+Add support for auto-loading of crypto drivers based on cpuid features.
+This enables auto-loading of the VIA and Intel specific drivers
+for AES, hashing and CRCs.
 
-The old switch () is replaced with a table based approach, this
-also cleans up the code.
+Requires the earlier infrastructure patch to add x86 modinfo.
+I kept it all in a single patch for now.
 
-Cc: lenb@kernel.org
+I dropped the printks when the driver cpuid doesn't match (imho
+drivers never should print anything in such a case)
+
+One drawback is that udev doesn't know if the drivers are used or not,
+so they will be unconditionally loaded at boot up. That's better
+than not loading them at all, like it often happens.
+
+Cc: davej@redhat.com
+Cc: trenn@suse.de
+Cc: kay.sievers@vrfy.org
+Cc: axboe@kernel.dk
+Cc: hpa@zytor.com
+Cc: herbert@gondor.apana.org.au
+Cc: ying.huang@intel.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/idle/intel_idle.c |  116 +++++++++++++++++++++++++-------------------
- 1 files changed, 66 insertions(+), 50 deletions(-)
+ arch/x86/crypto/aesni-intel_glue.c         |   12 +++++++++---
+ arch/x86/crypto/crc32c-intel.c             |   11 ++++++++---
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   12 ++++++++----
+ drivers/crypto/padlock-aes.c               |    9 ++++++++-
+ drivers/crypto/padlock-sha.c               |   16 ++++++++--------
+ 5 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 5d2f8e1..0920cc5 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -62,6 +62,7 @@
- #include <linux/notifier.h>
- #include <linux/cpu.h>
- #include <linux/module.h>
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index 545d0ce..b3350bd 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -28,6 +28,7 @@
+ #include <crypto/aes.h>
+ #include <crypto/cryptd.h>
+ #include <crypto/ctr.h>
 +#include <asm/cpu_device_id.h>
- #include <asm/mwait.h>
- #include <asm/msr.h>
+ #include <asm/i387.h>
+ #include <asm/aes.h>
+ #include <crypto/scatterwalk.h>
+@@ -1253,14 +1254,19 @@ static struct crypto_alg __rfc4106_alg = {
+ };
+ #endif
  
-@@ -81,6 +82,17 @@ static unsigned int mwait_substates;
- /* Reliable LAPIC Timer States, bit 1 for C1 etc.  */
- static unsigned int lapic_timer_reliable_states = (1 << 1);	 /* Default to only C1 */
- 
-+struct idle_cpu {
-+	struct cpuidle_state *state_table;
 +
-+	/*
-+	 * Hardware C-state auto-demotion may not always be optimal.
-+	 * Indicate which enable bits to clear here.
-+	 */
-+	unsigned long auto_demotion_disable_flags;
-+};
-+
-+static const struct idle_cpu *icpu;
- static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
- static int intel_idle(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv, int index);
-@@ -88,12 +100,6 @@ static int intel_idle(struct cpuidle_device *dev,
- static struct cpuidle_state *cpuidle_state_table;
- 
- /*
-- * Hardware C-state auto-demotion may not always be optimal.
-- * Indicate which enable bits to clear here.
-- */
--static unsigned long long auto_demotion_disable_flags;
--
--/*
-  * Set this flag for states where the HW flushes the TLB for us
-  * and so we don't need cross-calls to keep it consistent.
-  * If this flag is set, SW flushes the TLB, so even if the
-@@ -320,27 +326,72 @@ static void auto_demotion_disable(void *dummy)
- 	unsigned long long msr_bits;
- 
- 	rdmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
--	msr_bits &= ~auto_demotion_disable_flags;
-+	msr_bits &= ~(icpu->auto_demotion_disable_flags);
- 	wrmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
- }
- 
-+static const struct idle_cpu idle_cpu_nehalem = {
-+	.state_table = nehalem_cstates,
-+};
-+
-+static const struct idle_cpu idle_cpu_westmere = {
-+	.state_table = nehalem_cstates,
-+	.auto_demotion_disable_flags = NHM_C1_AUTO_DEMOTE | NHM_C3_AUTO_DEMOTE,
-+};
-+
-+static const struct idle_cpu idle_cpu_atom = {
-+	.state_table = atom_cstates,
-+};
-+
-+static const struct idle_cpu idle_cpu_lincroft = {
-+	.state_table = atom_cstates,
-+	.auto_demotion_disable_flags = ATM_LNC_C6_AUTO_DEMOTE,
-+};
-+
-+static const struct idle_cpu idle_cpu_snb = {
-+	.state_table = snb_cstates,
-+};
-+
-+#define ICPU(model, cpu) \
-+	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
-+
-+static const struct x86_cpu_id intel_idle_ids[] = {
-+	ICPU(0x1a, idle_cpu_nehalem),
-+	ICPU(0x1e, idle_cpu_nehalem),
-+	ICPU(0x1f, idle_cpu_nehalem),
-+	ICPU(0x25, idle_cpu_westmere),
-+	ICPU(0x2c, idle_cpu_westmere),
-+	ICPU(0x2f, idle_cpu_westmere),
-+	ICPU(0x1c, idle_cpu_atom),
-+	ICPU(0x26, idle_cpu_lincroft),
-+	ICPU(0x2f, idle_cpu_westmere),
-+	ICPU(0x2a, idle_cpu_snb),
-+	ICPU(0x2d, idle_cpu_snb),
++static const struct x86_cpu_id aesni_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_AES),
 +	{}
 +};
-+MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
++MODULE_DEVICE_TABLE(x86cpu, aesni_cpu_id);
 +
- /*
-  * intel_idle_probe()
-  */
- static int intel_idle_probe(void)
+ static int __init aesni_init(void)
  {
- 	unsigned int eax, ebx, ecx;
-+	const struct x86_cpu_id *id;
+ 	int err;
  
- 	if (max_cstate == 0) {
- 		pr_debug(PREFIX "disabled\n");
- 		return -EPERM;
+-	if (!cpu_has_aes) {
+-		printk(KERN_INFO "Intel AES-NI instructions are not detected.\n");
++	if (!x86_match_cpu(aesni_cpu_id))
+ 		return -ENODEV;
+-	}
+ 
+ 	if ((err = crypto_fpu_init()))
+ 		goto fpu_err;
+diff --git a/arch/x86/crypto/crc32c-intel.c b/arch/x86/crypto/crc32c-intel.c
+index b9d0026..493f959 100644
+--- a/arch/x86/crypto/crc32c-intel.c
++++ b/arch/x86/crypto/crc32c-intel.c
+@@ -31,6 +31,7 @@
+ #include <crypto/internal/hash.h>
+ 
+ #include <asm/cpufeature.h>
++#include <asm/cpu_device_id.h>
+ 
+ #define CHKSUM_BLOCK_SIZE	1
+ #define CHKSUM_DIGEST_SIZE	4
+@@ -173,13 +174,17 @@ static struct shash_alg alg = {
  	}
+ };
  
--	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
--		return -ENODEV;
--
--	if (!boot_cpu_has(X86_FEATURE_MWAIT))
-+	id = x86_match_cpu(intel_idle_ids);
-+	if (!id) {
-+		if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
-+		    boot_cpu_data.x86 == 6)
-+			pr_debug(PREFIX "does not run on family %d model %d\n",
-+				boot_cpu_data.x86, boot_cpu_data.x86_model);
++static const struct x86_cpu_id crc32c_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_XMM4_2),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, crc32c_cpu_id);
+ 
+ static int __init crc32c_intel_mod_init(void)
+ {
+-	if (cpu_has_xmm4_2)
+-		return crypto_register_shash(&alg);
+-	else
++	if (!x86_match_cpu(crc32c_cpu_id))
  		return -ENODEV;
-+	}
++	return crypto_register_shash(&alg);
+ }
  
- 	if (boot_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
+ static void __exit crc32c_intel_mod_fini(void)
+diff --git a/arch/x86/crypto/ghash-clmulni-intel_glue.c b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+index 976aa64..b4bf0a6 100644
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -20,6 +20,7 @@
+ #include <crypto/gf128mul.h>
+ #include <crypto/internal/hash.h>
+ #include <asm/i387.h>
++#include <asm/cpu_device_id.h>
+ 
+ #define GHASH_BLOCK_SIZE	16
+ #define GHASH_DIGEST_SIZE	16
+@@ -294,15 +295,18 @@ static struct ahash_alg ghash_async_alg = {
+ 	},
+ };
+ 
++static const struct x86_cpu_id pcmul_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ), /* Pickle-Mickle-Duck */
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, pcmul_cpu_id);
++
+ static int __init ghash_pclmulqdqni_mod_init(void)
+ {
+ 	int err;
+ 
+-	if (!cpu_has_pclmulqdq) {
+-		printk(KERN_INFO "Intel PCLMULQDQ-NI instructions are not"
+-		       " detected.\n");
++	if (!x86_match_cpu(pcmul_cpu_id))
  		return -ENODEV;
-@@ -353,44 +404,9 @@ static int intel_idle_probe(void)
+-	}
  
- 	pr_debug(PREFIX "MWAIT substates: 0x%x\n", mwait_substates);
+ 	err = crypto_register_shash(&ghash_alg);
+ 	if (err)
+diff --git a/drivers/crypto/padlock-aes.c b/drivers/crypto/padlock-aes.c
+index 29b9469..37b2e94 100644
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -19,6 +19,7 @@
+ #include <linux/percpu.h>
+ #include <linux/smp.h>
+ #include <linux/slab.h>
++#include <asm/cpu_device_id.h>
+ #include <asm/byteorder.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+@@ -503,12 +504,18 @@ static struct crypto_alg cbc_aes_alg = {
+ 	}
+ };
  
--
--	if (boot_cpu_data.x86 != 6)	/* family 6 */
--		return -ENODEV;
--
--	switch (boot_cpu_data.x86_model) {
--
--	case 0x1A:	/* Core i7, Xeon 5500 series */
--	case 0x1E:	/* Core i7 and i5 Processor - Lynnfield Jasper Forest */
--	case 0x1F:	/* Core i7 and i5 Processor - Nehalem */
--	case 0x2E:	/* Nehalem-EX Xeon */
--	case 0x2F:	/* Westmere-EX Xeon */
--	case 0x25:	/* Westmere */
--	case 0x2C:	/* Westmere */
--		cpuidle_state_table = nehalem_cstates;
--		auto_demotion_disable_flags =
--			(NHM_C1_AUTO_DEMOTE | NHM_C3_AUTO_DEMOTE);
--		break;
--
--	case 0x1C:	/* 28 - Atom Processor */
--		cpuidle_state_table = atom_cstates;
--		break;
--
--	case 0x26:	/* 38 - Lincroft Atom Processor */
--		cpuidle_state_table = atom_cstates;
--		auto_demotion_disable_flags = ATM_LNC_C6_AUTO_DEMOTE;
--		break;
--
--	case 0x2A:	/* SNB */
--	case 0x2D:	/* SNB Xeon */
--		cpuidle_state_table = snb_cstates;
--		break;
--
--	default:
--		pr_debug(PREFIX "does not run on family %d model %d\n",
--			boot_cpu_data.x86, boot_cpu_data.x86_model);
++static struct x86_cpu_id padlock_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_XCRYPT),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, padlock_cpu_id);
++
+ static int __init padlock_init(void)
+ {
+ 	int ret;
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 
+-	if (!cpu_has_xcrypt)
++	if (!x86_match_cpu(padlock_cpu_id))
+ 		return -ENODEV;
+ 
+ 	if (!cpu_has_xcrypt_enabled) {
+diff --git a/drivers/crypto/padlock-sha.c b/drivers/crypto/padlock-sha.c
+index 06bdb4b..9266c0e 100644
+--- a/drivers/crypto/padlock-sha.c
++++ b/drivers/crypto/padlock-sha.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/scatterlist.h>
++#include <asm/cpu_device_id.h>
+ #include <asm/i387.h>
+ 
+ struct padlock_sha_desc {
+@@ -526,6 +527,12 @@ static struct shash_alg sha256_alg_nano = {
+ 	}
+ };
+ 
++static struct x86_cpu_id padlock_sha_ids[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_PHE),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, padlock_sha_ids);
++
+ static int __init padlock_init(void)
+ {
+ 	int rc = -ENODEV;
+@@ -533,15 +540,8 @@ static int __init padlock_init(void)
+ 	struct shash_alg *sha1;
+ 	struct shash_alg *sha256;
+ 
+-	if (!cpu_has_phe) {
+-		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
 -		return -ENODEV;
 -	}
 -
-+	icpu = (const struct idle_cpu *)id->driver_data;
-+	cpuidle_state_table = icpu->state_table;
-+	
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
- 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
- 	else {
-@@ -470,7 +486,7 @@ static int intel_idle_cpuidle_driver_init(void)
- 		drv->state_count += 1;
- 	}
+-	if (!cpu_has_phe_enabled) {
+-		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
++	if (!x86_match_cpu(padlock_sha_ids) || !cpu_has_phe_enabled)
+ 		return -ENODEV;
+-	}
  
--	if (auto_demotion_disable_flags)
-+	if (icpu->auto_demotion_disable_flags)
- 		smp_call_function(auto_demotion_disable, NULL, 1);
- 
- 	return 0;
+ 	/* Register the newly added algorithm module if on *
+ 	* VIA Nano processor, or else just do as before */
 -- 
 1.7.7.4
 
