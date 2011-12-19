@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab1LSBTc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 20:19:32 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:12156
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752053Ab1LSBTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 20:19:30 -0500
-X-SpamScore: -16
-X-BigFish: VS-16(zz1432N98dK14ffOzz1202hzzz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Date: Mon, 19 Dec 2011 09:32:36 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Richard Zhao <richard.zhao@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20111219013235.GA4962@S2100-06.ap.freescale.net>
-References: <20111219105548.d30839e148800b38bc93d001@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111219105548.d30839e148800b38bc93d001@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1752174Ab1LSBYe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 20:24:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3594 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab1LSBYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 20:24:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="87916593"
+Message-ID: <1324257869.4639.1.camel@yhuang-dev>
+Subject: RE: [RFC][PATCH]ACPI,APEI,ERST, back end driver for NVRAM
+From: Huang Ying <ying.huang@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, "Chen, Gong" <gong.chen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 19 Dec 2011 09:24:29 +0800
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57F7ADB5@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57AC8046@USINDEVS01.corp.hds.com>
+	 <1321581563.13860.111.camel@yhuang-dev>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57B4FA66@USINDEVS01.corp.hds.com>
+	 <1321836227.13860.121.camel@yhuang-dev>
+	 <5C4C569E8A4B9B42A84A977CF070A35B2C57F7ADB5@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-3+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 10:55:48AM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Fri, 2011-12-16 at 00:03 +0800, Seiji Aguchi wrote:
+> Hi,
 > 
-Hi Stephen,
-
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-imx/mach-imx6q.c between commit 1237f0f6ecf6 ("ARM: 7198/1:
-> arm/imx6: add restart support for imx6q") from the arm tree and commit
-> 477fce49aef4 ("arm/imx6q-sabrelite: add enet phy ksz9021rn fixup") from
-> the arm-soc tree.
+> >
+> >No.  I have different understanding.
+> >
+> >Because error log address range resides in NVRAM, the contents will be
+> >reserved even after reboot.  So we do not need read/clear operations at
+> >all, and should place all records in error log address range.
 > 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> I have a quick question about your comment above.
+> Do you know whether this optimization of read/clear operations works 
+> on machines which APEI is enabled by WHEA _OSC call?
 
-It looks all right.  Thanks.
+I have no machine with
 
--- 
-Regards,
-Shawn
+!!(erst_erange.attr & ERST_RANGE_NVRAM) == 1
+
+Do you have?
+
+Best Regards,
+Huang Ying
+
 
