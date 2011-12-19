@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab1LSUNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:13:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36060 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab1LSUNv (ORCPT
+	id S1753091Ab1LSUPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:15:48 -0500
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:37578 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab1LSUPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:13:51 -0500
-Date: Mon, 19 Dec 2011 12:13:36 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Nai Xia <nai.xia@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
-In-Reply-To: <CAPQyPG7MQPmekvXZdMTQ9Z=4HqPfG3xQbjstO2e_hatSYSyV4w@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1112191145310.3639@eggly.anvils>
-References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils> <4EEEF3B3.909@gmail.com> <CAPQyPG7MQPmekvXZdMTQ9Z=4HqPfG3xQbjstO2e_hatSYSyV4w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 19 Dec 2011 15:15:44 -0500
+X-SENDER-IP: [85.230.168.209]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqBGAK2a705V5qjRPGdsb2JhbABDqReCThkBAQEBNzKBcgEBBScTHCMQCAMYLhQlChqID7giE4sOYwSNBCmHUIVejFI
+X-IronPort-AV: E=Sophos;i="4.71,378,1320620400"; 
+   d="scan'208";a="14857118"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 19 Dec 2011 21:30:59 +0100
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH v2] Input: bcm5974 - Fix USB autosuspend
+Message-ID: <20111219203059.GA6749@polaris.bitmath.org>
+References: <1324314123-2200-1-git-send-email-rydberg@euromail.se>
+ <201112191842.08635.oliver@neukum.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112191842.08635.oliver@neukum.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011, Nai Xia wrote:
-> On Mon, Dec 19, 2011 at 4:20 PM, nai.xia <nai.xia@gmail.com> wrote:
-> >
-> > Can rcu_head in someway unionized with radix_tree_node->height
-> > and radix_tree_node->count? count is always referenced under lock
-> > and only the first node's height is referenced during lookup.
-> > Seems like if we atomically set root->rnode to NULL, before
-> > freeing the last node, we can ensure a valid read of the
-> > radix_tree_node->height when lookup by following it with
-> > a root->rnode == NULL test.
-> >
-> > I am not very sure of course, just a naive feeling.
-
-I think you are right about radix_tree_node->count (only used under
-lock, of no interest when lockless), but I'm not so sure about
-radix_tree_node->height.
-
-If you're right, then radix_tree_node->height shouldn't be needed
-at all, we could work from radix_tree_root->height throughout.
-And many places do so, but lockless (rcu locked) ones are relying
-on radix_tree_node->height.
-
-Caution tells me that it's intimately a part of the way we can
-safely look up locklessly while the tree is being expanded or shrunk:
-notice how a node never changes its height.  But perhaps it could be
-reduced to a flag bit, saying whether node is a leafnode or not.
-
-But I wouldn't risk making any such change without spending time to
-think it through, time I must spend on other tasks now.  Please play
-with it yourself if you've a mind to.
-
+On Mon, Dec 19, 2011 at 06:42:08PM +0100, Oliver Neukum wrote:
+> Am Montag, 19. Dezember 2011, 18:02:03 schrieb Henrik Rydberg:
+> >  static int bcm5974_suspend(struct usb_interface *iface, pm_message_t message)
+> > @@ -870,6 +884,9 @@ static int bcm5974_probe(struct usb_interface *iface,
+> >                          dev->tp_data, dev->cfg.tp_datalen,
+> >                          bcm5974_irq_trackpad, dev, 1);
+> >  
+> > +       /* Required for autosuspend */
+> > +       iface->needs_remote_wakeup = 1;
+> > +
+> >         /* create bcm5974 device */
+> >         usb_make_path(udev, dev->phys, sizeof(dev->phys));
+> >         strlcat(dev->phys, "/input0", sizeof(dev->phys));
 > 
-> And besides, I think maybe there were another few ways if
-> we really care about the stack usage of radix_tree_path,
-> e.g.
-> 1. We can make radix_tree_path.offset compact to u8
-> which is enough to index inside a node.
-
-Well, I could have halved the usage with a patch just recalculating
-the offset when ascending; but I'd rather get rid of the whole array.
-
+> It is not nice to set needs_remote_wakeup on suspend() because
+> it influences the decision of usbcore to suspend at all, in particular
+> manually set quirks will not be fully honored if you do it this way.
+> In addition it will never be reset, even as the device is closed.
 > 
-> 2. We can use dynamic array on stack instead of
-> RADIX_TREE_MAX_PATH, I think for most cases
-> this may save half of the space
+> Please set it in open() and clear it in close()
 
-tag_if_tagged() was using a dynamic array on stack: that came as a
-surprise to me, we usually forbid that in kernel.  It becomes hard
-to estimate stack usage, so may cause nasty surprises in rare cases.
+Oliver: thanks for the advice, and thanks for the review.
 
-> 
-> 3. Take benefit of radix_tree_path array already
-> traveled down to clear the tags instead of calling
-> a radix_tree_tag_clear with full array.
+Matthew: There seems to be a problem with the hardware wake-up in
+response to short taps on the trackpad. Too much of a regression to be
+acceptable, I am afraid. Unless this laptop (MBA 3.1) turns out to be
+a special case, I think we will have to let this patch rest.
 
-There must be a more efficient way of doing that, yes; but it's such a
-very rare path that it's not worth extra code, I just added the comment
-"This way of doing it would be inefficient, but seldom is any set".
-
-> 
-> I am not speaking of the negatives of your patch
-> , just some alternatives for your reference.
-> 
-> And forgive my possible selfishness, I just created a home
-> made radix tree traveler based on radix_tree_path array to
-> simulate recursive calls, not ready to its vanishing...
-
-I did remove
-struct radix_tree_path {
-	struct radix_tree_node *node;
-	int offset;
-};
-but it's easy enough for you to add back if you have good use for it.
-
-Hugh
+Thanks,
+Henrik
