@@ -1,149 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1LSNYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:24:00 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:39609
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab1LSNXv (ORCPT
+	id S1753031Ab1LSNYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:24:21 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37807 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab1LSNYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:23:51 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-SS: 13,
-X-FB-DOMAIN-IP-MATCH: fail
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>
-CC: <cocci@diku.dk>, <linux-kernel@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/2] coccinelle: Add patch for replacing open-coded IS_ERR_OR_NULL
-Date: Mon, 19 Dec 2011 14:24:23 +0100
-Message-ID: <1324301063-16117-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1324301063-16117-1-git-send-email-lars@metafoo.de>
-References: <1324301063-16117-1-git-send-email-lars@metafoo.de>
+	Mon, 19 Dec 2011 08:24:17 -0500
+Date: Mon, 19 Dec 2011 13:24:09 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Alessandro Rubini <rubini@unipv.it>
+Cc: linux@arm.linux.org.uk, patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        a.zummo@towertech.it, alsa-devel@alsa-project.org, cjb@laptop.org,
+        dan.j.williams@intel.com, dmitry.torokhov@gmail.com,
+        grant.likely@secretlab.ca, perex@perex.cz, jassisinghbrar@gmail.com,
+        julia@diku.dk, linus.walleij@linaro.org, linux-fbdev@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        lethal@linux-sh.org, Pawel.Moll@arm.com, rtc-linux@googlegroups.com,
+        spi-devel-general@lists.sourceforge.net, tiwai@suse.de,
+        vinod.koul@intel.com, wim@iguana.be
+Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
+ AMBA drivers
+Message-ID: <20111219132409.GB2031@linaro.org>
+References: <20111206151541.GA13774@linaro.org>
+ <1321961573-4562-1-git-send-email-dave.martin@linaro.org>
+ <20111206155911.GA11902@mail.gnudd.com>
+ <20111206161815.GD13769@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206161815.GD13769@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IS_ERR_OR_NULL function returns true if the passed parameter is either a
-ERR_PTR or NULL. This patch adds a semantic patch which finds open-coded
-instances of this check and replaces them.
+Hi Russell,
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- scripts/coccinelle/api/is_err_or_null.cocci |   98 +++++++++++++++++++++++++++
- 1 files changed, 98 insertions(+), 0 deletions(-)
- create mode 100644 scripts/coccinelle/api/is_err_or_null.cocci
+This one isn't urgent, but I'm not seeing the amba modalias patches
+anywhere yet.  Did you have any outstanding concerns which need to be
+resolved?
 
-diff --git a/scripts/coccinelle/api/is_err_or_null.cocci b/scripts/coccinelle/api/is_err_or_null.cocci
-new file mode 100644
-index 0000000..04afd1e
---- /dev/null
-+++ b/scripts/coccinelle/api/is_err_or_null.cocci
-@@ -0,0 +1,98 @@
-+///
-+/// Use IS_ERR_OR_NULL function instead of open coding it
-+///
-+// Confidence: High
-+// Options:
-+//
-+// Keywords: IS_ERR, IS_ERR_OR_NULL
-+// Version min: 2.6.33
-+//
-+
-+virtual context
-+virtual patch
-+virtual org
-+virtual report
-+
-+// Since the logical or operator by itself is not commutative we need rules for
-+// both cases as well as for their De Morgan equivalents.
-+
-+@depends on context@
-+expression x;
-+@@
-+*(IS_ERR(x) || !x)
-+
-+@depends on context@
-+expression x;
-+@@
-+*(!x || IS_ERR(x))
-+
-+@depends on context@
-+expression x;
-+@@
-+*(!IS_ERR(x) && x)
-+
-+@depends on context@
-+expression x;
-+@@
-+*(x && !IS_ERR(x))
-+
-+@depends on patch@
-+expression x;
-+@@
-+-(IS_ERR(x) || !x)
-++IS_ERR_OR_NULL(x)
-+
-+@depends on patch@
-+expression x;
-+@@
-+-(!x || IS_ERR(x))
-++IS_ERR_OR_NULL(x)
-+
-+@depends on patch@
-+expression x;
-+@@
-+-(!IS_ERR(x) && x)
-++ !IS_ERR_OR_NULL(x)
-+
-+@depends on patch@
-+expression x;
-+@@
-+-(x && !IS_ERR(x))
-++ !IS_ERR_OR_NULL(x)
-+
-+@r depends on org || report@
-+expression x;
-+position p;
-+statement S;
-+@@
-+// We'll probably miss some some cases with this, but the if gives us an anchor
-+// and we do not have to write a indivual rule for each case. patch and context
-+// mode will report all cases
-+ if(@p
-+(
-+ IS_ERR(x) || !x
-+|
-+ !x || IS_ERR(x)
-+|
-+ !IS_ERR(x) && x
-+|
-+ x && !IS_ERR(x)
-+)
-+ ) S
-+
-+@script:python depends on org@
-+p << r.p;
-+x << r.x;
-+@@
-+
-+msg="IS_ERR_OR_NULL can be used with %s" % (x)
-+msg_safe=msg.replace("[","@(").replace("]",")")
-+coccilib.org.print_todo(p[0], msg_safe)
-+
-+@script:python depends on report@
-+p << r.p;
-+x << r.x;
-+@@
-+
-+msg="IS_ERR_OR_NULL can be used with %s" % (x)
-+coccilib.report.print_report(p[0], msg)
--- 
-1.7.7.3
+If you can suggest when/if these are likely to merge that would be great.
 
+Since Alessandro is now expecting to have to rebase on top of the amba
+additions anyway, we shouldn't need to worry about conflicting with his
+patches.
 
+Of course, if you've already merged these somewhere, then there's no
+problem.
+
+Cheers
+---Dave
