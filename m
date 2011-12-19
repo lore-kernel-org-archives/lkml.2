@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1LSO73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:59:29 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44103 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab1LSO61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:58:27 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>
-Subject: [RFC PATCH v2 5/6] ARM: Remove current_mm per-cpu variable
-Date: Mon, 19 Dec 2011 14:57:52 +0000
-Message-Id: <1324306673-4282-6-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1324306673-4282-1-git-send-email-catalin.marinas@arm.com>
-References: <1324306673-4282-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 19 Dec 2011 14:58:10.0324 (UTC) FILETIME=[9FBF9D40:01CCBE5E]
-X-MC-Unique: 111121914582205301
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1753042Ab1LSPAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 10:00:42 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:47022 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751286Ab1LSPAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 10:00:40 -0500
+Message-ID: <4EEF5192.50201@interlog.com>
+Date: Mon, 19 Dec 2011 10:00:34 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: [PATCH v3 1/2] virtio-scsi: first version
+References: <1324296188-3426-1-git-send-email-pbonzini@redhat.com> <1324296188-3426-2-git-send-email-pbonzini@redhat.com> <4EEF2C86.6010003@suse.de> <4EEF380E.6040101@redhat.com>
+In-Reply-To: <4EEF380E.6040101@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBJExe7Z031012
 
-The current_mm variable was used to store the new mm between the
-switch_mm() and switch_to() calls where an IPI to reset the context
-could have set the wrong mm. Since the interrupts are disabled during
-context switch, there is no need for this variable, current->active_mm
-already points to the current mm when interrupts are re-enabled.
+On 11-12-19 08:11 AM, Paolo Bonzini wrote:
+> On 12/19/2011 01:22 PM, Hannes Reinecke wrote:
+>>> + case VIRTIO_SCSI_S_UNDERRUN:
+>>> + set_host_byte(sc, DID_ERROR);
+>>> + break;
+>> Hmm. Not sure this is correct.
+>> UNDERRUN could be a valid state, eg it is quite common to send
+>> an INQUIRY with a length of 255 bytes. And only evaluate the
+>> bytes which are actually send back.
+>
+> This happens when you send an INQUIRY with a sglist of 255 bytes and an
+> ALLOCATION LENGTH of 300 bytes. The spec says "VIRTIO_SCSI_S_UNDERRUN [is
+> returned] if the content of the CDB requires transferring more data than is
+> available in the data buffers".
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/include/asm/mmu_context.h |    7 -------
- arch/arm/mm/context.c              |   12 +-----------
- 2 files changed, 1 insertions(+), 18 deletions(-)
+Overrun! That is overrun.
 
-diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index d4adec3..fd6eeba 100644
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -42,9 +42,6 @@ void __check_kvm_seq(struct mm_struct *mm);
- #define ASID_FIRST_VERSION	(1 << ASID_BITS)
- 
- extern unsigned int cpu_last_asid;
--#ifdef CONFIG_SMP
--DECLARE_PER_CPU(struct mm_struct *, current_mm);
--#endif
- 
- void __init_new_context(struct task_struct *tsk, struct mm_struct *mm);
- void __new_context(struct mm_struct *mm);
-@@ -159,10 +156,6 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 		__flush_icache_all();
- #endif
- 	if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next)) || prev != next) {
--#ifdef CONFIG_SMP
--		struct mm_struct **crt_mm = &per_cpu(current_mm, cpu);
--		*crt_mm = next;
--#endif
- 		check_and_switch_context(next, tsk);
- 		if (cache_is_vivt())
- 			cpumask_clear_cpu(cpu, mm_cpumask(prev));
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index 63ebb50..6041f96 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -18,9 +18,6 @@
- 
- static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
- unsigned int cpu_last_asid = ASID_FIRST_VERSION;
--#ifdef CONFIG_SMP
--DEFINE_PER_CPU(struct mm_struct *, current_mm);
--#endif
- 
- void cpu_set_reserved_ttbr0(void)
- {
-@@ -90,14 +87,7 @@ static void reset_context(void *info)
- {
- 	unsigned int asid;
- 	unsigned int cpu = smp_processor_id();
--	struct mm_struct *mm = per_cpu(current_mm, cpu);
--
--	/*
--	 * Check if a current_mm was set on this CPU as it might still
--	 * be in the early booting stages and using the reserved ASID.
--	 */
--	if (!mm)
--		return;
-+	struct mm_struct *mm = current->active_mm;
- 
- 	smp_rmb();
- 	asid = cpu_last_asid + cpu;
+Underrun conventionally refers to the data-in buffer
+containing less data than the transport has allowed
+for. It is detected at the completion of a SCSI command
+and is used to report to the application client that
+bytes beyond a certain position in the data-in buffer
+are not valid (i.e. ignore them).
+
+A mismatch between the allocation length field inside a
+SCSI command (a difficult and dangerous area to snoop in)
+and the data-in buffer length indicated by sglist should be
+called something else. Arguably it should not be treated
+as an error until an overrun occurs.
+
+I think the 'case VIRTIO_SCSI_S_UNDERRUN:' line deserves a
+comment due to its misleading use of the word "underrun".
+It is reporting a potential or actual _overrun_.
+
+Doug Gilbert
 
