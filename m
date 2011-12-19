@@ -1,76 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1LSNMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:12:05 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58817 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1LSNMC (ORCPT
+	id S1753019Ab1LSNMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:12:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43670 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab1LSNMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:12:02 -0500
-Message-ID: <4EEF37E3.9000705@mvista.com>
-Date: Mon, 19 Dec 2011 17:10:59 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 19 Dec 2011 08:12:33 -0500
+Message-ID: <4EEF3836.3040206@gmail.com>
+Date: Mon, 19 Dec 2011 21:12:22 +0800
+From: "nai.xia" <nai.xia@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "Greg Kroah-Hartman (supporter:USB SUBSYSTEM ,commit_signer:28/50=56%)" 
-	<gregkh@suse.de>,
-        "Thomas Dahlmann (supporter:AMD GEODE CS5536...)" 
-	<dahlmann.thomas@arcor.de>,
-        "Kuninori Morimoto (commit_signer:43/50=86%)" 
-	<kuninori.morimoto.gx@renesas.com>,
-        "open list:DESIGNWARE USB3 D..." <linux-omap@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:AMD GEODE CS5536..." <linux-geode@lists.infradead.org>
-Subject: Re: [PATCH 9/9] usb: gadget: goku: use generic map/unmap routines
-References: <1324290632-23758-1-git-send-email-balbi@ti.com> <1324290632-23758-10-git-send-email-balbi@ti.com> <4EEF35FB.9090707@mvista.com> <20111219130946.GB3146@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111219130946.GB3146@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/11] mm: compaction: Determine if dirty pages can be
+ migrated without blocking within ->migratepage
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de> <1323877293-15401-6-git-send-email-mgorman@suse.de> <20111216152054.f7445e98.akpm@linux-foundation.org> <20111219110551.GJ3487@suse.de>
+In-Reply-To: <20111219110551.GJ3487@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 19-12-2011 17:09, Felipe Balbi wrote:
-
->> On 19-12-2011 14:30, Felipe Balbi wrote:
-
->>> those routines have everything we need to map/unmap
->>> USB requests and it's better to use them.
-
->>> Signed-off-by: Felipe Balbi<balbi@ti.com>
->>> ---
->>>   drivers/usb/gadget/goku_udc.c |   17 +++++++----------
->>>   1 files changed, 7 insertions(+), 10 deletions(-)
-
->>> diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
->>> index 5af70fcc..bc47735 100644
->>> --- a/drivers/usb/gadget/goku_udc.c
->>> +++ b/drivers/usb/gadget/goku_udc.c
->> [...]
->>> @@ -736,10 +732,11 @@ goku_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
->>>   		return -EBUSY;
+On 2011年12月19日 19:05, Mel Gorman wrote:
+> On Fri, Dec 16, 2011 at 03:20:54PM -0800, Andrew Morton wrote:
+>> On Wed, 14 Dec 2011 15:41:27 +0000
+>> Mel Gorman<mgorman@suse.de>  wrote:
+>>
+>>> Asynchronous compaction is used when allocating transparent hugepages
+>>> to avoid blocking for long periods of time. Due to reports of
+>>> stalling, there was a debate on disabling synchronous compaction
+>>> but this severely impacted allocation success rates. Part of the
+>>> reason was that many dirty pages are skipped in asynchronous compaction
+>>> by the following check;
 >>>
->>>   	/* set up dma mapping in case the caller didn't */
->>> -	if (ep->dma&&   _req->dma == DMA_ADDR_INVALID) {
->>> -		_req->dma = pci_map_single(dev->pdev, _req->buf, _req->length,
->>> -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
->>> -		req->mapped = 1;
->>> +	if (ep->dma) {
->>> +		status = usb_gadget_map_request(&dev->gadget,&req->req,
+>>> 	if (PageDirty(page)&&  !sync&&
+>>> 		mapping->a_ops->migratepage != migrate_page)
+>>> 			rc = -EBUSY;
+>>>
+>>> This skips over all mapping aops using buffer_migrate_page()
+>>> even though it is possible to migrate some of these pages without
+>>> blocking. This patch updates the ->migratepage callback with a "sync"
+>>> parameter. It is the responsibility of the callback to fail gracefully
+>>> if migration would block.
+>>>
+>>> ...
+>>>
+>>> @@ -259,6 +309,19 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+>>>   	}
+>>>
+>>>   	/*
+>>> +	 * In the async migration case of moving a page with buffers, lock the
+>>> +	 * buffers using trylock before the mapping is moved. If the mapping
+>>> +	 * was moved, we later failed to lock the buffers and could not move
+>>> +	 * the mapping back due to an elevated page count, we would have to
+>>> +	 * block waiting on other references to be dropped.
+>>> +	 */
+>>> +	if (!sync&&  head&&  !buffer_migrate_lock_buffers(head, sync)) {
+>>
+>> Once it has been established that "sync" is true, I find it clearer to
+>> pass in plain old "true" to buffer_migrate_lock_buffers().  Minor point.
+>>
+>
+> Later in the series, sync changes to "mode" to distinguish between
+> async, sync-light and sync compaction. At that point, this becomes
+>
+>          if (mode == MIGRATE_ASYNC&&  head&&
+>                          !buffer_migrate_lock_buffers(head, mode)) {
+>
+> Passing true in here would be fine, but it would just end up being
+> changed back later in the series so it can be left alone.
+>
+>> I hadn't paid a lot of attention to buffer_migrate_page() before.
+>> Scary function.  I'm rather worried about its interactions with ext3
+>> journal commit which locks buffers then plays with them while leaving
+>> the page unlocked.  How vigorously has this been whitebox-tested?
+>>
+>
+> Blackbox testing only AFAIK. This has been tested recently with ext3
+> and nothing unusual was reported. The list of events for migration
+> looks like
+>
+> isolate page from LRU
+>    migrate_pages
+>      unmap_and_move
+>        lock_page(src_page)
+>        if page under writeback, either bail or wait on writeback
+>        try_to_unmap
+>        move_to_new_page
+>        lock_page(dst_page)
+>        buffer_migrate_page
+>          migrate_page_move_mapping
+>            spin_lock_irq(&mapping->tree_lock)
+>            lookup in radix tree
+>            check reference counts to make sure no one else has references
+>            lock buffers if async mode
+>            replace page in radix tree with new page
+>            spin_unlock_irq
+>          lock buffers if !async mode
+>          copy buffers
+>          unlock buffers
+>        unlock_page(dst_page)
+>
+> The critical part is that the copying of buffer data is happening with
+> both page and buffer locks held and no other references to the page
+> exists - it has already been unmapped for example.
+>
+> Journal commit minimally acquires the buffer lock. If migration is
+> in the process of copying the buffers, the buffer lock will prevent
+> journal commit starting at the same time buffers are being copied.
+>
+> block_write_full_page and friends should be taking the buffer lock so
+> they should also be ok.
+>
+> For other accessors, the mapping tree_lock should prevent other users
+> looking up the page in the radix tree in the first place while the radix
+> tree replacement is taking place.
+>
+> Racing against try_to_free_buffer should also be a problem.
+> According to buffer.c, exclusion from try_to_free_buffer "may
+> be obtained by either locking the page or holding the mappings
+> private_lock". Migration is holding the page lock.
+>
+> Taking private_lock would give additional protection but I haven't heard
+> or seen a case where it is necessary.
+>
 
->>     Not '&_req->req'?
+Make sure that it has no risk path by path is good. But maybe it's
+time to make some explicit locking protocol here. I think the only possible
+threat is that we changed buffer head ==> page relationship. Before
+buffer_migrate_page()'s existence, the weak assumption of "if a bh is
+valid then the page it is pointing to should also be valid, even without
+locking" just held, although, like you said above, it seems not really exploited
+by someone.
 
-> of course not. _req is the usb_request not Goku's internal
-> representation. I could change that to:
+But this weak assumption is not true anymore. So maybe it's good to doc
+explicitly like this:
 
-> 	usb_gadget_map_request(&dev->gadget, _req, ep->is_in);
+     Anyone who wants to reference a page should either directly get_page or
+     if you are going through the buffer heads to the page, you should take
+     the buffer lock at least.
 
-> though.
+If there were really "gremlins" somewhere now or in the future, just burn
+them under the supreme holy light of buffer locks!
 
-    Yes, I've corrected myself already.
 
-WBR, Sergei
