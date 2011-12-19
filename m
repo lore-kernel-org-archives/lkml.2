@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab1LSWic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:38:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63634 "EHLO mx1.redhat.com"
+	id S1752232Ab1LSWkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:40:52 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:52265 "EHLO mail.atlantis.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab1LSWi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:38:28 -0500
-Date: Mon, 19 Dec 2011 17:11:13 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: greg@kroah.com
-Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Message-Id: <69f6842eba4b8124f4391a521cf75c469769b4ba.1324318997.git.jbaron@redhat.com>
-In-Reply-To: <cover.1324318997.git.jbaron@redhat.com>
-References: <cover.1324318997.git.jbaron@redhat.com>
-Subject: [PATCH 02/16] dynamic_debug: drop enabled field from struct _ddebug, use _DPRINTK_FLAGS_PRINT
+	id S1751030Ab1LSWkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:40:49 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH] s3fb: fix Virge/VX
+Date: Mon, 19 Dec 2011 23:39:47 +0100
+User-Agent: KMail/1.9.10
+Cc: Paul Mundt <lethal@linux-sh.org>, Ondrej Zajicek <santiago@crfreenet.org>,
+        linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201112192339.52676.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+Add memory size detection for Virge/VX and small delay in mode setting (same
+as in X.org driver) to fix blank screen problem.
 
-Currently any enabled dynamic-debug flag on a pr_debug callsite will
-enable printing, even if _DPRINTK_FLAGS_PRINT is off.  Checking print
-flag directly allows "-p" to disable callsites without fussing with
-other flags, so the following disables everything, without altering
-flags user may have set:
+Also adjust DTPC position to fix garbled screen in some modes (tested that
+this adjustment does not break other cards - at least Trio32, Trio64V+,
+Trio64V2/DX, Virge, Virge/DX).
 
-	echo -p > $DBGFS/dynamic_debug/control
+Tested on ELSA Winner 2000AVI/3D.
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- include/linux/dynamic_debug.h |   10 ++++------
- lib/dynamic_debug.c           |    4 ----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 0564e3c..f71a6b04 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -28,7 +28,6 @@ struct _ddebug {
- #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
- #define _DPRINTK_FLAGS_DEFAULT 0
- 	unsigned int flags:8;
--	char enabled;
- } __attribute__((aligned(8)));
- 
- 
-@@ -62,21 +61,20 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 		.format = (fmt),				\
- 		.lineno = __LINE__,				\
- 		.flags =  _DPRINTK_FLAGS_DEFAULT,		\
--		.enabled = false,				\
+--- linux-3.1-orig/drivers/video/s3fb.c	2011-10-24 09:10:05.000000000 +0200
++++ linux-3.1/drivers/video/s3fb.c	2011-12-19 23:28:34.000000000 +0100
+@@ -727,7 +727,7 @@
+ 	if (par->chip == CHIP_988_VIRGE_VX) {
+ 		vga_wcrt(par->state.vgabase, 0x50, 0x00);
+ 		vga_wcrt(par->state.vgabase, 0x67, 0x50);
+-
++		msleep(10); /* screen remains blank sometimes without this */
+ 		vga_wcrt(par->state.vgabase, 0x63, (mode <= 2) ? 0x90 : 0x09);
+ 		vga_wcrt(par->state.vgabase, 0x66, 0x90);
  	}
+@@ -901,7 +901,8 @@
  
- #define dynamic_pr_debug(fmt, ...)				\
- do {								\
- 	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
--	if (unlikely(descriptor.enabled))			\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
- 		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),	\
- 				   ##__VA_ARGS__);		\
- } while (0)
+ 	/* Set Data Transfer Position */
+ 	hsstart = ((info->var.xres + info->var.right_margin) * hmul) / 8;
+-	value = clamp((htotal + hsstart + 1) / 2, hsstart + 4, htotal + 1);
++	/* + 2 is needed for Virge/VX, does no harm on other cards */
++	value = clamp((htotal + hsstart + 1) / 2 + 2, hsstart + 4, htotal + 1);
+ 	svga_wcrt_multi(par->state.vgabase, s3_dtpc_regs, value);
  
- #define dynamic_dev_dbg(dev, fmt, ...)				\
- do {								\
--	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
--	if (unlikely(descriptor.enabled))			\
-+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
- 		__dynamic_dev_dbg(&descriptor, dev, fmt,	\
- 				  ##__VA_ARGS__);		\
- } while (0)
-@@ -84,7 +82,7 @@ do {								\
- #define dynamic_netdev_dbg(dev, fmt, ...)			\
- do {								\
- 	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
--	if (unlikely(descriptor.enabled))			\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))	\
- 		__dynamic_netdev_dbg(&descriptor, dev, fmt,	\
- 				     ##__VA_ARGS__);		\
- } while (0)
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index e487d13..416c079 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -151,10 +151,6 @@ static void ddebug_change(const struct ddebug_query *query,
- 			if (newflags == dp->flags)
- 				continue;
- 			dp->flags = newflags;
--			if (newflags)
--				dp->enabled = 1;
--			else
--				dp->enabled = 0;
- 			if (verbose)
- 				pr_info("changed %s:%d [%s]%s %s\n",
- 					dp->filename, dp->lineno,
--- 
-1.7.7.3
+ 	memset_io(info->screen_base, 0x00, screen_size);
+@@ -1215,6 +1216,31 @@
+ 			info->screen_size = 2 << 20;
+ 			break;
+ 		}
++	} else if (par->chip == CHIP_988_VIRGE_VX) {
++		switch ((regval & 0x60) >> 5) {
++		case 0: /* 2MB */
++			info->screen_size = 2 << 20;
++			break;
++		case 1: /* 4MB */
++			info->screen_size = 4 << 20;
++			break;
++		case 2: /* 6MB */
++			info->screen_size = 6 << 20;
++			break;
++		case 3: /* 8MB */
++			info->screen_size = 8 << 20;
++			break;
++		}
++		/* off-screen memory */
++		regval = vga_rcrt(par->state.vgabase, 0x37);
++		switch ((regval & 0x60) >> 5) {
++		case 1: /* 4MB */
++			info->screen_size -= 4 << 20;
++			break;
++		case 2: /* 2MB */
++			info->screen_size -= 2 << 20;
++			break;
++		}
+ 	} else
+ 		info->screen_size = s3_memsizes[regval >> 5] << 10;
+ 	info->fix.smem_len = info->screen_size;
 
+
+-- 
+Ondrej Zary
