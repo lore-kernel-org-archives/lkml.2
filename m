@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1LSQ5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 11:57:01 -0500
-Received: from slb-smtpout-01.boeing.com ([130.76.64.48]:42858 "EHLO
-	slb-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1LSQ47 convert rfc822-to-8bit (ORCPT
+	id S1752283Ab1LSQ6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 11:58:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60958 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab1LSQ6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 11:56:59 -0500
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Liam Girdwood <lrg@ti.com>, Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 19 Dec 2011 10:56:41 -0600
-Subject: Re: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-Thread-Topic: [REPOST RFC PATCH 0/3] New "gpio-poweroff" driver to turn off
- platform devices with GPIOs
-Thread-Index: Acy+by7p22unaTj/Thm/u8aI4XKmvg==
-Message-ID: <D482A908-020C-43E0-ADFC-33AE213D7257@boeing.com>
-References: <1323800614-12642-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <4EE7A31E.7080301@gmail.com>
- <895CF182-4BF7-4DF5-A467-944EC008DBC3@boeing.com>
- <20111214120240.GC25088@sirena.org.uk>
- <E30C4693-0D31-4A9A-9E9D-0FC03C5F6B8A@boeing.com>
- <20111217092044.GC2833@opensource.wolfsonmicro.com>
-In-Reply-To: <20111217092044.GC2833@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Dec 2011 11:58:40 -0500
+Date: Mon, 19 Dec 2011 17:58:36 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [RFCv2] ftrace, perf: Adding support to use function trace
+Message-ID: <20111219165833.GA1947@somewhere>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+ <20111219134024.GB1606@m.brq.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111219134024.GB1606@m.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 17, 2011, at 04:20, Mark Brown wrote:
-> On Wed, Dec 14, 2011 at 02:34:37PM -0600, Moffett, Kyle D wrote:
->> On Dec 14, 2011, at 07:02, Mark Brown wrote:
->>> The regulator API in -next has DT bindings.
->> 
->> Based on the description of our hardware, is there a good way that I
->> can wire up gpio-regulator driver to our hardware with just the device
->> tree (and maybe one small board-specific function) to make it shut down
->> each domain in sequence at poweroff time? Otherwise I will just go back
->> to my custom board-specific function for GPIO-twiddling.
+On Mon, Dec 19, 2011 at 02:40:24PM +0100, Jiri Olsa wrote:
+> hi,
+> any feedback?
+
+Sorry for having lost track on this, will have a look soon.
+
+Thanks.
+
 > 
-> No, it's a very rare use case so there's nothing off the shelf.  But it
-> should be straightfoward to write a device driver doing this.
-
-Well, so that's what the "gpio-poweroff" driver I wrote is.  All it does
-is hook into the device model and DT and provide various poweroff hooks
-that poke GPIOs.
-
-I still don't understand how the regulator API is supposed to help in my
-particular case (whole-system poweroff).
-
-Additional advice would be highly appreciated.
-
-Cheers,
-Kyle Moffett
-
+> thanks,
+> jirka
+> 
+> On Mon, Dec 05, 2011 at 06:22:46PM +0100, Jiri Olsa wrote:
+> > hi,
+> > here's another version of perf support for function trace
+> > with filter. The changeset is working and hopefully is not
+> > introducing more bugs.. ;) still testing though..
+> > 
+> > It's still marked RFC since I'm not sure there's better way to go
+> > with patches 2 and 10. Also not sure if the condition fixed by
+> > patch 7 was not intentional. The rest is fixed/updated version
+> > of the v1 changes.
+> > 
+> > attached patches:
+> >  01/10 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
+> >  02/10 ftrace: Change mcount call replacement logic
+> >  03/10 ftrace: Add enable/disable ftrace_ops control interface
+> >  04/10 ftrace, perf: Add open/close tracepoint perf registration actions
+> >  05/10 ftrace, perf: Add add/del tracepoint perf registration actions
+> >  06/10 ftrace, perf: Add support to use function tracepoint in perf
+> >  07/10 ftrace: Change filter/notrace set functions to return exit code
+> >  08/10 ftrace, perf: Distinguish ftrace function event field type
+> >  09/10 ftrace, perf: Add filter support for function trace event
+> >  10/10 ftrace, graph: Add global_ops filter callback for graph tracing
+> > 
+> > v2 changes:
+> >  01/10 - keeping the old fix instead of adding hash_has_contents func
+> >          I'll send separating patchset for this
+> >  02/10 - using different way to avoid the issue (3/9 in v1)
+> >  03/10 - using the way proposed by Steven for controling ftrace_ops
+> >          (4/9 in v1)
+> >  06/10 - added check ensuring the ftrace:function event could be used by
+> >          root only (7/9 in v1)
+> >  08/10 - added more description (8/9 in v1)
+> >  09/10 - changed '&&' operator to '||' which seems more suitable
+> >          in this case (9/9 in v1)
+> > 
+> > thanks for comments,
+> > jirka
+> > ---
+> >  include/linux/ftrace.h             |   18 +++-
+> >  include/linux/ftrace_event.h       |    9 +-
+> >  include/linux/perf_event.h         |    3 +
+> >  kernel/trace/ftrace.c              |  202 +++++++++++++++++++++++++++++------
+> >  kernel/trace/trace.h               |   11 ++-
+> >  kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
+> >  kernel/trace/trace_events.c        |   12 ++-
+> >  kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
+> >  kernel/trace/trace_export.c        |   53 ++++++++-
+> >  kernel/trace/trace_kprobe.c        |    8 +-
+> >  kernel/trace/trace_syscalls.c      |   18 +++-
+> >  11 files changed, 562 insertions(+), 100 deletions(-)
