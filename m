@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab1LSANA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 19:13:00 -0500
-Received: from ozlabs.org ([203.10.76.45]:44861 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1LSAM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 19:12:56 -0500
-Date: Mon, 19 Dec 2011 11:11:25 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
-        benh@kernel.crashing.org, dwmw2@infradead.org, chrisw@redhat.com,
-        agraf@suse.de, scottwood@freescale.com, B08248@freescale.com,
-        rusty@rustcorp.com.au, iommu@lists.linux-foundation.org,
-        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org, joro@8bytes.org
-Subject: Re: [RFC] Device isolation infrastructure v2
-Message-ID: <20111219001125.GA30390@truffala.fritz.box>
-Mail-Followup-To: Joerg Roedel <joerg.roedel@amd.com>,
-	Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
-	benh@kernel.crashing.org, dwmw2@infradead.org, chrisw@redhat.com,
-	agraf@suse.de, scottwood@freescale.com, B08248@freescale.com,
-	rusty@rustcorp.com.au, iommu@lists.linux-foundation.org,
-	qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-	joro@8bytes.org
-References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
- <1323972307.2437.19.camel@x201.home>
- <20111216145353.GA29877@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111216145353.GA29877@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752076Ab1LSAPA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 19:15:00 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:40942 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab1LSAO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Dec 2011 19:14:58 -0500
+Date: Mon, 19 Dec 2011 11:14:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: linux-next: manual merge of the tegra tree with the arm tree
+Message-Id: <20111219111451.057769e7a43a5ba499b092ce@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Dec_2011_11_14_51_+1100_bVV69X5c84Pyr5+R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 03:53:53PM +0100, Joerg Roedel wrote:
-> On Thu, Dec 15, 2011 at 11:05:07AM -0700, Alex Williamson wrote:
-> > Starting with it in the core and hand waving some future use that we
-> > don't plan to implement right now seems like the wrong direction.
-> 
-> I agree with Alex. First of all, I havn't seen any real vfio problem
-> that can't be solved with the current approach, and it has the great
-> advantage of simplicity. It doesn't require a re-implementation of the
-> driver-core based on groups.
+--Signature=_Mon__19_Dec_2011_11_14_51_+1100_bVV69X5c84Pyr5+R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not re-implementing the driver core in terms of groups, just
-adding the concept of groups to the driver core.
+Hi all,
 
-> I agree that we need some improvements to
-> Alex' code for the dma-api layer to solve the problem with broken devices
-> using the wrong requestor-id. But that can be done incrementally with
-> the current (current == in the iommu-tree) approach implemented by Alex.
-> 
-> I also think that all this does not belong into the driver core for two
-> reasons:
-> 
-> 	1) The information for building the device groups is provided
-> 	   by the iommu-layer
+Today's linux-next merge of the tegra tree got a conflict in
+arch/arm/mach-tegra/board-dt-tegra20.c (called
+arch/arm/mach-tegra/board-dt.c in the arm tree) between commit
+b8a0b3079c03 ("ARM: restart: tegra: use new restart hook") from the arm
+tree and commit c37c07ddf269 ("arm/tegra: prepare early init for multiple
+tegra variants") from the tegra tree.
 
-Yes.. no change there.
+Just context change. I fixed it up (see below) and can carry the fix as nec=
+essary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 	2) The group information is provided to vfio by the iommu-api
+diff --cc arch/arm/mach-tegra/board-dt-tegra20.c
+index e417a83,ddaa037..0000000
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@@ -134,6 -144,5 +144,6 @@@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegr
+  	.handle_irq	=3D gic_handle_irq,
+  	.timer		=3D &tegra_timer,
+  	.init_machine	=3D tegra_dt_init,
+ +	.restart	=3D tegra_assert_system_reset,
+- 	.dt_compat	=3D tegra_dt_board_compat,
++ 	.dt_compat	=3D tegra20_dt_board_compat,
+  MACHINE_END
 
-Um.. huh?  Currently, the iommu-api supplies the info vfio, therefore
-it should?  I assume there's a non-circular argument you're trying to
-make here, but I can't figure out what it is.
+--Signature=_Mon__19_Dec_2011_11_14_51_+1100_bVV69X5c84Pyr5+R
+Content-Type: application/pgp-signature
 
-> This makes the iommu-layer the logical point to place the grouping
-> code.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Well.. that's not where it is in Alex's code either.  The iommu layer
-(to the extent that there is such a "layer") supplies the group info,
-but the group management is in vfio, not the iommu layer.  With mine
-it is in the driver core because the struct device seemed the logical
-place for the group id.
+iQIcBAEBCAAGBQJO7oH7AAoJEECxmPOUX5FEcKoP/28Nb/guCjHFPHQEjj6WQYW1
+47PMGXpQAMxnrYit9JwGOWFBo8WXmSKSDL0SvfDaN3QtbQoNxE1vgBYT4N4NvAxZ
+7iw0AADlArfShplDl2tyRUjSBmElFyoKSDeJZrhiv2mlbE74OFNzpmWfVGnav8K8
+KIDY+1OTob/ysSJzt2Z8zeoIpl19nxqf4gjXM379vBABjVpiMWSV/w6V7gSEnlrY
+tTxNxjXuegJ1147IzrucpPdl+wnKIO+dvmdhOUjK9VAZWtISlyITA/dYLZuRYr3g
+5UpAXuAhOxlUNukpEMDg2aAFnFKiyPt3EYGbo/X7A1VGUY6djEDf1V2P2BwkQes3
+WSmk8sES4vKar/bSp/JO1oWkAlyhpjzb63sdnYYD5WrG+EidvdWOHMJt05HlcKIt
+0KpMJ2Wy+GrvF8L/S6CFUyp1p2L1UCQUXyue1KoGE8RmHqT0LcmzNGDJoFXB5gB2
++nPNrp4h5XoG6FYs4lcsPPjutgNUvwphWX8XbW4wf1H6+OUkIo3ZDF9nfqadR19r
+Kfm0/uxxTKI2deeBzznUY0zKX8owcWK7LsFf0pN2POCP6j9T/uY2ggEwAEG/NbeE
+5SapOj5+9/f6a6SjBVEn8ipaPjB6RSlO2X5+m1WKIxKKITVpkb2wvX0LVpmALj+M
+R7k0JKBt9B3vA7RRnLHJ
+=pP8H
+-----END PGP SIGNATURE-----
 
-Moving the group management into the iommu code itself probably does
-make more sense, although I think that would be a change more of code
-location than any actual content change.
-
-> There are some sources outside of the iommu-layer that may influence
-> grouping (like pci-quirks), but most of the job is done by the
-> iommu-drivers.
-
-Right, so, the other problem is that a well boundaried "iommu-driver'
-is something that only exists on x86 at present, and the "iommu api"
-is riddled with x86-centric thinking.  Or more accurately, design
-based on how the current intel and amd iommus work.  On systems like
-POWER, use of the iommu is not optional - it's built into the PCI host
-bridge and must be initialized when the bridge is probed, much earlier
-than iommu driver initialization on x86.  They have no inbuilt concept
-of domains (though we could fake in software in some circumstances).
-
-Now, that is something that needs to be fixed longer term.  I'm just
-not sure how to deal with that and sorting out some sort of device
-isolation / passthrough system.
-
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+--Signature=_Mon__19_Dec_2011_11_14_51_+1100_bVV69X5c84Pyr5+R--
