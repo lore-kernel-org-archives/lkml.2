@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1LSRQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 12:16:40 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46243 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab1LSRQi (ORCPT
+	id S1752528Ab1LSRUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 12:20:35 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34796 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1LSRUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 12:16:38 -0500
-Date: Mon, 19 Dec 2011 09:16:33 -0800
+	Mon, 19 Dec 2011 12:20:32 -0500
+Date: Mon, 19 Dec 2011 09:20:27 -0800
 From: Tejun Heo <tj@kernel.org>
 To: Mandeep Singh Baines <msb@chromium.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
@@ -19,7 +19,7 @@ Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
         Paul Menage <paul@paulmenage.org>
 Subject: Re: [PATCH] cgroup: remove redundate get/put of old css_set from
  migrate
-Message-ID: <20111219171633.GI24519@google.com>
+Message-ID: <20111219172027.GJ24519@google.com>
 References: <1324053511-24591-1-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -54,8 +54,51 @@ On Fri, Dec 16, 2011 at 08:38:31AM -0800, Mandeep Singh Baines wrote:
 > Cc: Oleg Nesterov <oleg@redhat.com>
 > Cc: Andrew Morton <akpm@linux-foundation.org>
 > Cc: Paul Menage <paul@paulmenage.org>
+> ---
+>  kernel/cgroup.c |   25 ++++++-------------------
+>  1 files changed, 6 insertions(+), 19 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 1b3b841..eb95e32 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1856,7 +1856,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+>  	 */
+>  	task_lock(tsk);
+>  	oldcg = tsk->cgroups;
+> -	get_css_set(oldcg);
+>  	task_unlock(tsk);
+>  
+>  	/* locate or allocate a new css_set for this task. */
+> @@ -1872,12 +1871,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+>  		might_sleep();
+>  		/* find_css_set will give us newcg already referenced. */
+>  		newcg = find_css_set(oldcg, cgrp);
+> -		if (!newcg) {
+> -			put_css_set(oldcg);
+> +		if (!newcg)
+>  			return -ENOMEM;
+> -		}
+>  	}
+> -	put_css_set(oldcg);
+>  
+>  	/* @tsk can't exit as its threadgroup is locked */
+>  	task_lock(tsk);
+> @@ -2015,9 +2011,8 @@ struct cg_list_entry {
+>  	struct list_head links;
+>  };
+>  
+> -static bool css_set_check_fetched(struct cgroup *cgrp,
+> -				  struct task_struct *tsk, struct css_set *cg,
+> -				  struct list_head *newcg_list)
+> +static bool css_set_fetched(struct cgroup *cgrp, struct task_struct *tsk,
+> +			    struct css_set *cg, struct list_head *newcg_list)
 
-Li, can you please ack this?
+I know this is a trivial change and am generally okay with somewhat
+related trivial stuff being tacked on other changes but can you please
+note it in the patch description, so that it's clear the change is
+intentional and not from patch contamination?  I usually add a
+paragraph starting with "while at it" at the end.
 
 Thanks.
 
