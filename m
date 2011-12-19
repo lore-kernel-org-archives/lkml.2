@@ -1,113 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1LSO7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:59:05 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44248 "EHLO
+	id S1753284Ab1LSO62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:58:28 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:43694 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab1LSO63 (ORCPT
+	with ESMTP id S1753053Ab1LSO6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:58:29 -0500
+	Mon, 19 Dec 2011 09:58:19 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [RFC PATCH v2 6/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on pre-ARMv6 CPUs
-Date: Mon, 19 Dec 2011 14:57:53 +0000
-Message-Id: <1324306673-4282-7-git-send-email-catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>
+Subject: [RFC PATCH v2 2/6] ARM: Use TTBR1 instead of reserved context ID
+Date: Mon, 19 Dec 2011 14:57:49 +0000
+Message-Id: <1324306673-4282-3-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1324306673-4282-1-git-send-email-catalin.marinas@arm.com>
 References: <1324306673-4282-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 19 Dec 2011 14:58:10.0855 (UTC) FILETIME=[A010A370:01CCBE5E]
-X-MC-Unique: 111121914582402201
+X-OriginalArrivalTime: 19 Dec 2011 14:58:08.0996 (UTC) FILETIME=[9EF4FA40:01CCBE5E]
+X-MC-Unique: 111121914581602901
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBJEx9qR031003
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBJExT5s031008
 
-This patch removes the __ARCH_WANT_INTERRUPTS_ON_CTXSW definition for
-ARMv5 and earlier processors. On such processors, the context switch
-requires a full cache flush. To avoid high interrupt latencies, this
-patch defers the mm switching to the post-lock switch hook if the
-interrupts are disabled.
+From: Will Deacon <will.deacon@arm.com>
 
+On ARMv7 CPUs that cache first level page table entries (like the
+Cortex-A15), using a reserved ASID while changing the TTBR or flushing
+the TLB is unsafe.
+
+This is because the CPU may cache the first level entry as the result of
+a speculative memory access while the reserved ASID is assigned. After
+the process owning the page tables dies, the memory will be reallocated
+and may be written with junk values which can be interpreted as global,
+valid PTEs by the processor. This will result in the TLB being populated
+with bogus global entries.
+
+This patch avoids the use of a reserved context ID in the v7 switch_mm
+and ASID rollover code by temporarily using the swapper_pg_dir pointed
+at by TTBR1, which contains only global entries that are not tagged
+with ASIDs.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Frank Rowand <frank.rowand@am.sony.com>
 ---
- arch/arm/include/asm/mmu_context.h |   30 +++++++++++++++++++++++++-----
- arch/arm/include/asm/system.h      |    9 ---------
- 2 files changed, 25 insertions(+), 14 deletions(-)
+ arch/arm/mm/context.c |   22 ++++++++++++++--------
+ arch/arm/mm/proc-v7.S |   10 ++++------
+ 2 files changed, 18 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index fd6eeba..4ac7809 100644
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -104,19 +104,39 @@ static inline void finish_arch_post_lock_switch(void)
+diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
+index 93aac06..a062230 100644
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -22,11 +22,20 @@ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+ DEFINE_PER_CPU(struct mm_struct *, current_mm);
+ #endif
  
- #else	/* !CONFIG_CPU_HAS_ASID */
- 
-+#ifdef CONFIG_MMU
-+
- static inline void check_and_switch_context(struct mm_struct *mm,
- 					    struct task_struct *tsk)
- {
--#ifdef CONFIG_MMU
- 	if (unlikely(mm->context.kvm_seq != init_mm.context.kvm_seq))
- 		__check_kvm_seq(mm);
--	cpu_switch_mm(mm->pgd, mm);
--#endif
-+
-+	if (irqs_disabled())
-+		/*
-+		 * Defer the cpu_switch_mm() call and continue running with
-+		 * the old mm. Since we only support UP systems on non-ASID
-+		 * CPUs, the old mm will remain valid until the
-+		 * finish_arch_post_lock_switch() call.
-+		 */
-+		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
-+	else
-+		cpu_switch_mm(mm->pgd, mm);
- }
- 
--#define init_new_context(tsk,mm)	0
-+#define finish_arch_post_lock_switch \
-+	finish_arch_post_lock_switch
-+static inline void finish_arch_post_lock_switch(void)
++static void cpu_set_reserved_ttbr0(void)
 +{
-+	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
-+		struct mm_struct *mm = current->mm;
-+		cpu_switch_mm(mm->pgd, mm);
-+	}
++	u32 ttb;
++	/* Copy TTBR1 into TTBR0 */
++	asm volatile(
++	"	mrc	p15, 0, %0, c2, c0, 1		@ read TTBR1\n"
++	"	mcr	p15, 0, %0, c2, c0, 0		@ set TTBR0\n"
++	: "=r" (ttb));
++	isb();
 +}
- 
--#define finish_arch_post_lock_switch()	do { } while (0)
-+#endif	/* CONFIG_MMU */
 +
-+#define init_new_context(tsk,mm)	0
+ /*
+  * We fork()ed a process, and we need a new context for the child
+- * to run in.  We reserve version 0 for initial tasks so we will
+- * always allocate an ASID. The ASID 0 is reserved for the TTBR
+- * register changing sequence.
++ * to run in.
+  */
+ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ {
+@@ -36,9 +45,7 @@ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
  
- #endif	/* CONFIG_CPU_HAS_ASID */
+ static void flush_context(void)
+ {
+-	/* set the reserved ASID before flushing the TLB */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (0));
+-	isb();
++	cpu_set_reserved_ttbr0();
+ 	local_flush_tlb_all();
+ 	if (icache_is_vivt_asid_tagged()) {
+ 		__flush_icache_all();
+@@ -99,8 +106,7 @@ static void reset_context(void *info)
+ 	set_mm_context(mm, asid);
  
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-index 3daebde..ac7fade 100644
---- a/arch/arm/include/asm/system.h
-+++ b/arch/arm/include/asm/system.h
-@@ -218,15 +218,6 @@ static inline void set_copro_access(unsigned int val)
+ 	/* set the new ASID */
+-	asm("mcr	p15, 0, %0, c13, c0, 1\n" : : "r" (mm->context.id));
+-	isb();
++	cpu_switch_mm(mm->pgd, mm);
  }
  
- /*
-- * switch_mm() may do a full cache flush over the context switch,
-- * so enable interrupts over the context switch to avoid high
-- * latency.
-- */
--#ifndef CONFIG_CPU_HAS_ASID
--#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ #else
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 2c559ac..2faff3b 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -116,18 +116,16 @@ ENTRY(cpu_v7_switch_mm)
+ #ifdef CONFIG_ARM_ERRATA_430973
+ 	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
+ #endif
+-#ifdef CONFIG_ARM_ERRATA_754322
+-	dsb
 -#endif
--
--/*
-  * switch_to(prev, next) should switch from task `prev' to `next'
-  * `prev' will never be the same as `next'.  schedule() itself
-  * contains the memory barrier to tell GCC not to cache `current'.
+-	mcr	p15, 0, r2, c13, c0, 1		@ set reserved context ID
+-	isb
+-1:	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
++	mrc	p15, 0, r2, c2, c0, 1		@ load TTB 1
++	mcr	p15, 0, r2, c2, c0, 0		@ into TTB 0
+ 	isb
+ #ifdef CONFIG_ARM_ERRATA_754322
+ 	dsb
+ #endif
+ 	mcr	p15, 0, r1, c13, c0, 1		@ set context ID
+ 	isb
++	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
++	isb
+ #endif
+ 	mov	pc, lr
+ ENDPROC(cpu_v7_switch_mm)
 
