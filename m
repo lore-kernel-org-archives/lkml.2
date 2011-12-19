@@ -1,345 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab1LSTTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 14:19:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53590 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1LSTTd (ORCPT
+	id S1752810Ab1LSTVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 14:21:37 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:60036 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752077Ab1LSTVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 14:19:33 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wmh8ChsIkccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=neNZEGv8iCE7oeLjTt8A:9 a=pr5kbiDNtvmmWalWQIkA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324322370.5916.35.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCHv2 03/10] ftrace: Add enable/disable ftrace_ops control
- interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Date: Mon, 19 Dec 2011 14:19:30 -0500
-In-Reply-To: <1323105776-26961-4-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
+	Mon, 19 Dec 2011 14:21:33 -0500
+Message-ID: <4EEF8E8B.80607@fb.com>
+Date: Mon, 19 Dec 2011 11:20:43 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: <avagin@gmail.com>
+CC: <acme@ghostprotocols.net>, Andrew Vagin <avagin@openvz.org>,
+        <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
+        <paulus@samba.org>, <mingo@elte.hu>, <devel@openvz.org>,
+        <dsahern@gmail.com>, <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH 3/6] perf: add ability to record event period
+References: <1323266161-394927-1-git-send-email-avagin@openvz.org> <1323266161-394927-4-git-send-email-avagin@openvz.org> <4EEAEF83.3080100@gmail.com>
+In-Reply-To: <4EEAEF83.3080100@gmail.com>
+Content-Type: text/plain; charset="KOI8-R"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-19_06:2011-12-19,2011-12-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-05 at 18:22 +0100, Jiri Olsa wrote:
-> Adding a way to temporarily enable/disable ftrace_ops. The change
-> follows the same way as 'global' ftrace_ops are done.
-> 
-> Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
-> which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
-> flag. In addition new per cpu flag called 'disabled' is also added to
-> ftrace_ops to provide the control information for each cpu.
-> 
-> When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
-> set as disabled for all cpus.
-> 
-> The ftrace_control_list contains all the registered 'control' ftrace_ops.
-> The control_ops provides function which iterates ftrace_control_list
-> and does the check for 'disabled' flag on current cpu.
-> 
-> Adding 2 inline functions enable_ftrace_function/disable_ftrace_function,
-> which enable/disable the ftrace_ops for current cpu.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  include/linux/ftrace.h |   14 ++++++
->  kernel/trace/ftrace.c  |  115 +++++++++++++++++++++++++++++++++++++++++++-----
->  kernel/trace/trace.h   |    2 +
->  3 files changed, 120 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 26eafce..b223944 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -35,12 +35,14 @@ enum {
->  	FTRACE_OPS_FL_ENABLED		= 1 << 0,
->  	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
->  	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
-> +	FTRACE_OPS_FL_CONTROL		= 1 << 3,
->  };
->  
->  struct ftrace_ops {
->  	ftrace_func_t			func;
->  	struct ftrace_ops		*next;
->  	unsigned long			flags;
-> +	void __percpu			*disabled;
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  	struct ftrace_hash		*notrace_hash;
->  	struct ftrace_hash		*filter_hash;
-> @@ -97,6 +99,18 @@ int register_ftrace_function(struct ftrace_ops *ops);
->  int unregister_ftrace_function(struct ftrace_ops *ops);
->  void clear_ftrace_function(void);
->  
-> +static inline void enable_ftrace_function(struct ftrace_ops *ops)
-> +{
-> +	atomic_t *disabled = this_cpu_ptr(ops->disabled);
-> +	atomic_dec(disabled);
-> +}
-> +
-> +static inline void disable_ftrace_function(struct ftrace_ops *ops)
-> +{
-> +	atomic_t *disabled = this_cpu_ptr(ops->disabled);
-> +	atomic_inc(disabled);
-> +}
-> +
->  extern void ftrace_stub(unsigned long a0, unsigned long a1);
->  
->  #else /* !CONFIG_FUNCTION_TRACER */
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index b79ab33..c2fa233 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -87,12 +87,14 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
->  };
->  
->  static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
-> +static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
->  static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
->  ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
->  static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
->  ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
->  ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
->  static struct ftrace_ops global_ops;
-> +static struct ftrace_ops control_ops;
->  
->  static void
->  ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
-> @@ -166,6 +168,38 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
->  }
->  #endif
->  
-> +static void control_ops_disable_all(struct ftrace_ops *ops)
-> +{
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu)
-> +		atomic_set(per_cpu_ptr(ops->disabled, cpu), 1);
-> +}
-> +
-> +static int control_ops_alloc(struct ftrace_ops *ops)
-> +{
-> +	atomic_t *disabled;
-> +
-> +	disabled = alloc_percpu(atomic_t);
-> +	if (!disabled)
-> +		return -ENOMEM;
-> +
-> +	ops->disabled = disabled;
-> +	control_ops_disable_all(ops);
-> +	return 0;
-> +}
-> +
-> +static void control_ops_free(struct ftrace_ops *ops)
-> +{
-> +	free_percpu(ops->disabled);
-> +}
-> +
-> +static int control_ops_is_disabled(struct ftrace_ops *ops)
-> +{
-> +	atomic_t *disabled = this_cpu_ptr(ops->disabled);
-> +	return atomic_read(disabled);
-> +}
-> +
->  static void update_global_ops(void)
->  {
->  	ftrace_func_t func;
-> @@ -221,7 +255,7 @@ static void update_ftrace_function(void)
->  #endif
->  }
->  
-> -static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
-> +static void __add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
 
-Don't do the above (see below).
+Acked-by: Arun Sharma <asharma@fb.com>
 
->  {
->  	ops->next = *list;
->  	/*
-> @@ -233,7 +267,7 @@ static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
->  	rcu_assign_pointer(*list, ops);
->  }
->  
-> -static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
-> +static int __remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
->  {
->  	struct ftrace_ops **p;
->  
-> @@ -257,6 +291,26 @@ static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
->  	return 0;
->  }
->  
-> +static void add_ftrace_ops(struct ftrace_ops **list,
-> +			   struct ftrace_ops *main_ops,
-> +			   struct ftrace_ops *ops)
+Need PERF_SAMPLE_PERIOD for the sleep profiling kernel patch I posted 
+earlier.
 
-Call this add_ftrace_list_ops or something (see below).
+  -Arun
 
-> +{
-> +	int first = *list == &ftrace_list_end;
-> +	__add_ftrace_ops(list, ops);
-> +	if (first)
-> +		__add_ftrace_ops(&ftrace_ops_list, main_ops);
-> +}
-> +
-> +static int remove_ftrace_ops(struct ftrace_ops **list,
-> +			      struct ftrace_ops *main_ops,
-> +			      struct ftrace_ops *ops)
-> +{
-> +	int ret = __remove_ftrace_ops(list, ops);
-> +	if (!ret && *list == &ftrace_list_end)
-> +		ret = __remove_ftrace_ops(&ftrace_ops_list, main_ops);
-> +	return ret;
-> +}
-> +
->  static int __register_ftrace_function(struct ftrace_ops *ops)
->  {
->  	if (ftrace_disabled)
-> @@ -268,17 +322,23 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
->  	if (WARN_ON(ops->flags & FTRACE_OPS_FL_ENABLED))
->  		return -EBUSY;
->  
-> +#define FL_GLOBAL_CONTROL (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTROL)
-> +	if ((ops->flags & FL_GLOBAL_CONTROL) == FL_GLOBAL_CONTROL)
-> +		return -EINVAL;
-> +#undef FL_GLOBAL_CONTROL
-
-The above is ugly. Just define a FL_GLOBAL_CONTROL near the top or
-something.
-
-> +
->  	if (!core_kernel_data((unsigned long)ops))
->  		ops->flags |= FTRACE_OPS_FL_DYNAMIC;
->  
->  	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
-> -		int first = ftrace_global_list == &ftrace_list_end;
-> -		add_ftrace_ops(&ftrace_global_list, ops);
-> +		add_ftrace_ops(&ftrace_global_list, &global_ops, ops);
->  		ops->flags |= FTRACE_OPS_FL_ENABLED;
-> -		if (first)
-> -			add_ftrace_ops(&ftrace_ops_list, &global_ops);
-> +	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-> +		if (control_ops_alloc(ops))
-> +			return -ENOMEM;
-> +		add_ftrace_ops(&ftrace_control_list, &control_ops, ops);
->  	} else
-> -		add_ftrace_ops(&ftrace_ops_list, ops);
-> +		__add_ftrace_ops(&ftrace_ops_list, ops);
-
-
-Don't use the name __add_ftrace_ops() and add_ftrace_ops() it's
-confusing and error prone. Keep the add_ftrace_ops() as the original,
-and make your new function "add_ftrace_list_ops()" or something.
-
-
->  
->  	if (ftrace_enabled)
->  		update_ftrace_function();
-> @@ -300,13 +360,16 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
->  		return -EINVAL;
->  
->  	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
-> -		ret = remove_ftrace_ops(&ftrace_global_list, ops);
-> -		if (!ret && ftrace_global_list == &ftrace_list_end)
-> -			ret = remove_ftrace_ops(&ftrace_ops_list, &global_ops);
-> +		ret = remove_ftrace_ops(&ftrace_global_list, &global_ops, ops);
->  		if (!ret)
->  			ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-> +	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-> +		ret = remove_ftrace_ops(&ftrace_control_list,
-> +					&control_ops, ops);
-> +		if (!ret)
-
-You need a synchronize_sched() here, otherwise you can have functions
-accessing the ops->per_cpu variables. A process on another CPU could be
-about to use the ops, and although you removed it from the list, it is
-still being used on another CPU. If you free now without a
-synchronize_sched(), the other CPU can be using the freed variable.
-
-> +			control_ops_free(ops);
->  	} else
-> -		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
-> +		ret = __remove_ftrace_ops(&ftrace_ops_list, ops);
-
-Same thing goes with the remove_ftrace_ops and __remove_ftrace_ops().
-
-
->  
->  	if (ret < 0)
->  		return ret;
-> @@ -3562,6 +3625,36 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
->  #endif /* CONFIG_DYNAMIC_FTRACE */
->  
->  static void
-> +ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
-> +{
-> +	struct ftrace_ops *op;
-> +
-> +	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
-> +		return;
-> +
-> +	/*
-> +	 * Some of the ops may be dynamically allocated,
-> +	 * they must be freed after a synchronize_sched().
-> +	 */
-> +	preempt_disable_notrace();
-> +	trace_recursion_set(TRACE_CONTROL_BIT);
-> +	op = rcu_dereference_raw(ftrace_control_list);
-> +	while (op != &ftrace_list_end) {
-> +		if (!control_ops_is_disabled(op) &&
-> +		    ftrace_ops_test(op, ip))
-> +			op->func(ip, parent_ip);
-> +
-> +		op = rcu_dereference_raw(op->next);
-> +	};
-> +	preempt_enable_notrace();
-> +	trace_recursion_clear(TRACE_CONTROL_BIT);
-
-Shouldn't the above be reversed to match the preempt_disable() and
-trace_recursion_set(). That is:
-
-	preempt_disable();
-	trace_recursion_set();
-	[...]
-	trace_recursion_clear();
-	preempt_enable();
-
-That would make in symmetric.
-
-
--- Steve
-
-> +}
-> +
-> +static struct ftrace_ops control_ops = {
-> +	.func = ftrace_ops_control_func,
-> +};
-> +
-> +static void
->  ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
->  {
->  	struct ftrace_ops *op;
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index f8ec229..da05926 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -288,6 +288,8 @@ struct tracer {
->  /* for function tracing recursion */
->  #define TRACE_INTERNAL_BIT		(1<<11)
->  #define TRACE_GLOBAL_BIT		(1<<12)
-> +#define TRACE_CONTROL_BIT		(1<<13)
-> +
->  /*
->   * Abuse of the trace_recursion.
->   * As we need a way to maintain state if we are tracing the function
-
-
+On 12/15/11 11:13 PM, Andrew Vagin wrote:
+> Hi Arnaldo,
+>
+> Could you review and commit this patch. It's quite common functionality,
+> which allow to get events more effectively and to avoid losing events.
+>
+> All other patches may be postponed, because Arun Sharma wants to suggest
+> your version of "Profiling sleep times".
+>
+> Thanks.
+>
+> On 12/07/2011 05:55 PM, Andrew Vagin wrote:
+>> Signed-off-by: Andrew Vagin<avagin@openvz.org>
+>> ---
+>> tools/perf/builtin-record.c | 1 +
+>> tools/perf/perf.h | 1 +
+>> tools/perf/util/evsel.c | 3 +++
+>> 3 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index 766fa0a..f8fd14f 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -700,6 +700,7 @@ const struct option record_options[] = {
+>> OPT_BOOLEAN('d', "data",&record.opts.sample_address,
+>> "Sample addresses"),
+>> OPT_BOOLEAN('T', "timestamp",&record.opts.sample_time, "Sample
+>> timestamps"),
+>> + OPT_BOOLEAN('P', "period",&record.opts.period, "Sample period"),
+>> OPT_BOOLEAN('n', "no-samples",&record.opts.no_samples,
+>> "don't sample"),
+>> OPT_BOOLEAN('N', "no-buildid-cache",&record.no_buildid_cache,
+>> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+>> index ea804f5..64f8bee 100644
+>> --- a/tools/perf/perf.h
+>> +++ b/tools/perf/perf.h
+>> @@ -200,6 +200,7 @@ struct perf_record_opts {
+>> bool sample_time;
+>> bool sample_id_all_avail;
+>> bool system_wide;
+>> + bool period;
+>> unsigned int freq;
+>> unsigned int mmap_pages;
+>> unsigned int user_freq;
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index e2d1b22..8550018 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -108,6 +108,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
+>> struct perf_record_opts *opts)
+>> if (opts->system_wide)
+>> attr->sample_type |= PERF_SAMPLE_CPU;
+>>
+>> + if (opts->period)
+>> + attr->sample_type |= PERF_SAMPLE_PERIOD;
+>> +
+>> if (opts->sample_id_all_avail&&
+>> (opts->sample_time || opts->system_wide ||
+>> !opts->no_inherit || opts->cpu_list))
+>
