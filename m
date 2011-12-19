@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1LSSaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 13:30:20 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16487 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab1LSSaR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 13:30:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 19 Dec 2011 10:30:13 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Date: Mon, 19 Dec 2011 10:29:52 -0800
-Subject: RE: [PATCH] pinctrl: rename U300 ans SIRF pin controllers
-Thread-Topic: [PATCH] pinctrl: rename U300 ans SIRF pin controllers
-Thread-Index: Acy91xAcSQFuSpBrRDuuRERKSI2O+gApNHRQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176BE92A8E@HQMAIL01.nvidia.com>
-References: <1324248425-26552-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1324248425-26552-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752683Ab1LSSeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 13:34:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52386 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab1LSSeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 13:34:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="88171434"
+Message-ID: <4EEF83AD.4010800@linux.intel.com>
+Date: Mon, 19 Dec 2011 10:34:21 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: holzheu@linux.vnet.ibm.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] panic: Don't print redundant backtraces on oops
+References: <1323304603-27895-1-git-send-email-andi@firstfloor.org>	 <20111216165207.cc75af5c.akpm@linux-foundation.org> <1324303755.2726.4.camel@br98xy6r>
+In-Reply-To: <1324303755.2726.4.camel@br98xy6r>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Sunday, December 18, 2011 3:47 PM:
-> For stringen order, rename the pinmux-* pin controllers to
 
-I'm not sure what "stringen order" is; perhaps "consistency"?
+it?
 
-> pinctrl-* and also rename the Kconfig symbols and in-kernel
-> users.
-> 
-> Cc: Rongjun Ying <Rongjun.Ying@csr.com>
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> I think the two problems are not related. My problem was that only one
+> CPU should execute panic. Andi's problem is that one (or more oops)
+> messages are scrolled away by a subsequent panic.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Yes it's just for making panic less chatty.
 
-Just one question though:
+> But I am not sure if Andi's patch solves all his problems. What e.g.
+> about panic_on_oom? Don't we have the same problem here?
 
-> diff --git a/drivers/pinctrl/pinmux-sirf.c b/drivers/pinctrl/pinctrl-sirf.c
-> similarity index 100%
-> rename from drivers/pinctrl/pinmux-sirf.c
-> rename to drivers/pinctrl/pinctrl-sirf.c
-> diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinctrl-u300.c
-> similarity index 100%
-> rename from drivers/pinctrl/pinmux-u300.c
-> rename to drivers/pinctrl/pinctrl-u300.c
+Yes, it only solves it for this specific -- but common -- case. Or at 
+least it was a case
+that annoyed me and prompted me to write the patch :)
 
-Do you want to change the DRIVER_NAME define in those two drivers and
-s/pinmux/pinctrl/ there? Perhaps that's not a good idea, but I thought
-I'd ask in case you meant to.
+I had a patch some time ago for a xpanic() where the caller could pass 
+in additional
+flags, including one to disable the backtrace. But that was a much 
+larger patch,
+this was a simpler alternative.
 
--- 
-nvpublic
+-Andi
 
