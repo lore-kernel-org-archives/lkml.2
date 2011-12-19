@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1LSO2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:28:11 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:39675 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752300Ab1LSO2I (ORCPT
+	id S1753288Ab1LSOch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:32:37 -0500
+Received: from mail.lippert-at.com ([62.80.22.186]:15707 "EHLO
+	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752868Ab1LSOcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:28:08 -0500
-Message-ID: <4EEF49EE.2080302@tao.ma>
-Date: Mon, 19 Dec 2011 22:27:58 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Mon, 19 Dec 2011 09:32:35 -0500
+Message-ID: <4EEF4B0D.1090009@LiPPERTEmbedded.de>
+Date: Mon, 19 Dec 2011 15:32:45 +0100
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
 MIME-Version: 1.0
-To: Andreas Dilger <adilger@whamcloud.com>
-CC: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "adilger@dilger.ca" <adilger@dilger.ca>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH V3 01/21] ext4: Move extra inode read to a new function.
-References: <4EEDF6B1.7050206@tao.ma> <1324218278-2460-1-git-send-email-tm@tao.ma> <BB5BC380-D840-4AD8-80CC-C320AF780FEF@whamcloud.com>
-In-Reply-To: <BB5BC380-D840-4AD8-80CC-C320AF780FEF@whamcloud.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: stable@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
+        linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org
+Subject: "clockevents: Set noop handler in clockevents_exchange_device()"
+ causes hang with cs5535-clockevt
+References: <4EE620A5.7080402@LiPPERTEmbedded.de> <20111212123131.502be350@queued.net> <4EE77416.8090907@LiPPERTEmbedded.de> <4EE8ECF3.6000900@LiPPERTEmbedded.de>
+In-Reply-To: <4EE8ECF3.6000900@LiPPERTEmbedded.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.245.225.112 authed with tm@tao.ma}
+X-OriginalArrivalTime: 19 Dec 2011 14:32:32.0655 (UTC) FILETIME=[0B39F1F0:01CCBE5B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 04:32 PM, Andreas Dilger wrote:
-> On 2011-12-18, at 15:24, Tao Ma <tm@tao.ma> wrote:
-> 
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> Currently, in ext4_iget we do a simple check to see whether
->> there does exist some information starting from the end
->> of i_extra_size. With inline data added, this procedure
->> is more complicated. So move it to a new function named
->> ext4_iget_extra_inode.
->>
->> +        } else
->> +            ext4_iget_extra_inode(inode, raw_inode, ei);
->>    } else
-> 
-> (style) if one half of an if-else uses braces then the other half should as well. 
-sure, I will change it in the next version. Thanks for the review.
+Hi Thomas,
 
-Thanks
-Tao
+I wrote (to Andres):
+> If I turn off SMP, cs5535-clockevt replaces the pit timer and the MFGPT IRQ
+> starts firing just as you said - at least on 3.0.9. 3.2-rc5 prefers to hang
+> instead, looks like no timer events get generated.
+
+Commit de28f25e8244c7353abed8de0c7792f5f883588c (Linus's tree) makes the
+kernel hang during boot if the cs5535-clockevt driver is used. The (silent)
+hang occurs shortly after the cs5535-clockevt becomes active. The keyboard
+(incl. SysRq) stays responsive but the kernel seems starved of timer events
+and does nothing on its own accord any more. Happens on 3.0.13, 3.1.5 and
+3.2-rc6. Commit went into 2.6.32.50, too, but haven't tested this.
+
+I don't know the code so I can't tell what's really going wrong or provide a
+fix. I played around with it a bit:
+Tried to change the order, putting "old->event_handler =" behind the
+list_add() doesn't help. Neither does adding "if (new)" immediately before
+"old->event_handler =". But "if (!new)" does.
+
+As you see, I'm aimlessly guessing around, sorry. Just tell me if you need
+anything tested.
+
+Thanks and best regards,
+Jens Rottmann
