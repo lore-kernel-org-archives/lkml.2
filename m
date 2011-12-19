@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1LST6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 14:58:36 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:49080 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752597Ab1LST6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 14:58:32 -0500
-Message-ID: <4EEF9752.1020404@fb.com>
-Date: Mon, 19 Dec 2011 11:58:10 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Arun Sharma <asharma@fb.com>
-CC: <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Andy Lutomirski <luto@MIT.EDU>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 2/2] Add a thread cpu time implementation to vDSO
-References: <1324324293-10390-1-git-send-email-asharma@fb.com> <1324324293-10390-3-git-send-email-asharma@fb.com>
-In-Reply-To: <1324324293-10390-3-git-send-email-asharma@fb.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-19_06:2011-12-19,2011-12-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	id S1752980Ab1LSUCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:02:12 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:23344 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772Ab1LSUCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 15:02:11 -0500
+From: Felipe Contreras <felipe.contreras@nokia.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>, stable@vger.kernel.org,
+        Hema HK <hemahk@ti.com>
+Subject: [PATCH v2] usb: musb: fix pm_runtime mismatch
+Date: Mon, 19 Dec 2011 22:01:54 +0200
+Message-Id: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
+X-Mailer: git-send-email 1.7.8
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/11 11:51 AM, Arun Sharma wrote:
+From: Felipe Contreras <felipe.contreras@gmail.com>
 
-> +/* Should be optimized away at compile time */
-> +static noinline int check_vvar_overflow(void)
-> +{
-> +	long vcpu_data_offset =  (long) vvaraddr_vcpu_data - VVAR_ADDRESS;
-> +	size_t size = (vcpu_data_offset + sizeof(vcpu_data)
-> +			+ sizeof(struct vpercpu_data) * CONFIG_NR_CPUS);
-> +	return (size>  VVAR_NUM_PAGES * PAGE_SIZE);
-> +}
+In musb_init_controller() there's a pm_runtime_put(), but there's no
+pm_runtime_get(), which creates a mismatch that causes the driver to
+sleep when it shouldn't.
 
-Forgot to drop the "noinline" part (which I had added for debug 
-purposes, so I could inspect the generated code). Fixed in my repo.
+This was introduced in 7acc619[1], but it wasn't triggered in my setup
+until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
+when PM is working as it was supposed to.
 
-  -Arun
+However, it seems most of the time this is used in a way that keeps the
+counter above 0, so nobody noticed. Also, it seems to depend on the
+configuration used in versions before 3.1, but not later (or in it).
+
+I found the problem by loading isp1704_charger before any usb gadgets:
+http://article.gmane.org/gmane.linux.kernel/1226122
+
+All versions after 2.6.39 are affected.
+
+[1] usb: musb: Idle path retention and offmode support for OMAP3
+[2] OMAP2+: musb: hwmod adaptation for musb registration
+[3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6
+
+Cc: stable@vger.kernel.org
+Cc: Hema HK <hemahk@ti.com>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
+ drivers/usb/musb/musb_core.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index b63ab15..920f04e 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	if (status < 0)
+ 		goto fail3;
+ 
+-	pm_runtime_put(musb->controller);
+-
+ 	status = musb_init_debugfs(musb);
+ 	if (status < 0)
+ 		goto fail4;
+-- 
+1.7.8
 
