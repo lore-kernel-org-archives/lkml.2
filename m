@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1LSKii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:38:38 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64152 "EHLO mga03.intel.com"
+	id S1752686Ab1LSKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:38:59 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6637 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab1LSKgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:36:33 -0500
+	id S1752145Ab1LSKgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 05:36:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87190445"
-Message-Id: <20111219102357.846551861@intel.com>
+   d="scan'208";a="87190443"
+Message-Id: <20111219102357.152049160@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 19 Dec 2011 18:23:18 +0800
+Date: Mon, 19 Dec 2011 18:23:13 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 cc: Andi Kleen <andi@firstfloor.org>, Jan Kara <jack@suse.cz>,
@@ -19,66 +19,63 @@ cc: Andi Kleen <andi@firstfloor.org>, Jan Kara <jack@suse.cz>,
 cc: Linux Memory Management List <linux-mm@kvack.org>,
         <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/10] readahead: snap readahead request to EOF
+Subject: [PATCH 05/10] readahead: tag metadata call sites
 References: <20111219102308.488847921@intel.com>
-Content-Disposition: inline; filename=readahead-eof
+Content-Disposition: inline; filename=readahead-for-metadata
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the file size is 20kb and readahead request is [0, 16kb),
-it's better to expand the readahead request to [0, 20kb), which will
-likely save one followup I/O for the ending [16kb, 20kb).
-
-If the readahead request already covers EOF, trimm it down to EOF.
-Also don't set the PG_readahead mark to avoid an unnecessary future
-invocation of the readahead code.
-
-This special handling looks worthwhile because small to medium sized
-files are pretty common.
+We may be doing more metadata readahead in future.
 
 Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/readahead.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ fs/ext3/dir.c      |    1 +
+ fs/ext4/dir.c      |    1 +
+ include/linux/fs.h |    1 +
+ mm/readahead.c     |    1 +
+ 4 files changed, 4 insertions(+)
 
---- linux-next.orig/mm/readahead.c	2011-12-19 16:09:45.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-12-19 16:10:04.000000000 +0800
-@@ -457,6 +457,25 @@ unsigned long max_sane_readahead(unsigne
- 		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
- }
+--- linux-next.orig/fs/ext3/dir.c	2011-12-16 19:36:05.000000000 +0800
++++ linux-next/fs/ext3/dir.c	2011-12-16 19:36:13.000000000 +0800
+@@ -136,6 +136,7 @@ static int ext3_readdir(struct file * fi
+ 			pgoff_t index = map_bh.b_blocknr >>
+ 					(PAGE_CACHE_SHIFT - inode->i_blkbits);
+ 			if (!ra_has_index(&filp->f_ra, index))
++				filp->f_ra.for_metadata = 1;
+ 				page_cache_sync_readahead(
+ 					sb->s_bdev->bd_inode->i_mapping,
+ 					&filp->f_ra, filp,
+--- linux-next.orig/fs/ext4/dir.c	2011-12-16 19:36:05.000000000 +0800
++++ linux-next/fs/ext4/dir.c	2011-12-16 19:36:13.000000000 +0800
+@@ -153,6 +153,7 @@ static int ext4_readdir(struct file *fil
+ 			pgoff_t index = map.m_pblk >>
+ 					(PAGE_CACHE_SHIFT - inode->i_blkbits);
+ 			if (!ra_has_index(&filp->f_ra, index))
++				filp->f_ra.for_metadata = 1;
+ 				page_cache_sync_readahead(
+ 					sb->s_bdev->bd_inode->i_mapping,
+ 					&filp->f_ra, filp,
+--- linux-next.orig/include/linux/fs.h	2011-12-16 19:36:12.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-12-16 19:36:13.000000000 +0800
+@@ -950,6 +950,7 @@ struct file_ra_state {
+ 	u16 mmap_miss;			/* Cache miss stat for mmap accesses */
+ 	u8 pattern;			/* one of RA_PATTERN_* */
+ 	unsigned int for_mmap:1;	/* readahead for mmap accesses */
++	unsigned int for_metadata:1;	/* readahead for meta data */
  
-+static void snap_to_eof(struct file_ra_state *ra, struct address_space *mapping)
-+{
-+	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
-+	pgoff_t start = ra->start;
-+	unsigned int size = ra->size;
-+
-+	/*
-+	 * skip backwards and random reads
-+	 */
-+	if (ra->pattern > RA_PATTERN_MMAP_AROUND)
-+		return;
-+
-+	size += min(size / 2, ra->ra_pages / 4);
-+	if (start + size > eof) {
-+		ra->size = eof - start;
-+		ra->async_size = 0;
-+	}
-+}
-+
- /*
-  * Submit IO for the read-ahead request in file_ra_state.
-  */
-@@ -468,6 +487,8 @@ unsigned long ra_submit(struct file_ra_s
- {
- 	int actual;
- 
-+	snap_to_eof(ra, mapping);
-+
- 	actual = __do_page_cache_readahead(mapping, filp,
+ 	loff_t prev_pos;		/* Cache last read() position */
+ };
+--- linux-next.orig/mm/readahead.c	2011-12-16 19:36:12.000000000 +0800
++++ linux-next/mm/readahead.c	2011-12-16 19:36:13.000000000 +0800
+@@ -260,6 +260,7 @@ unsigned long ra_submit(struct file_ra_s
  					ra->start, ra->size, ra->async_size);
+ 
+ 	ra->for_mmap = 0;
++	ra->for_metadata = 0;
+ 	return actual;
+ }
  
 
 
