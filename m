@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1LSC53 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 21:57:29 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60448 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1LSC52 (ORCPT
+	id S1752219Ab1LSDAb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 22:00:31 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:51651 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab1LSDA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 21:57:28 -0500
-Date: Mon, 19 Dec 2011 13:57:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonas Gorski <jonas.gorski@gmail.com>
-Subject: linux-next: manual merge of the l2-mtd tree with Linus' tree
-Message-Id: <20111219135716.f121c97ba912b6c17ec411a8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Sun, 18 Dec 2011 22:00:28 -0500
+Date: Mon, 19 Dec 2011 11:55:08 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        cgroups <cgroups@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -tip 0/3] sched: some fixes for vruntime calculation
+ related to cgroup movement(v2)
+Message-Id: <20111219115508.0d5bc98d.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20111215143506.335e443e.nishimura@mxp.nes.nec.co.jp>
+References: <20111213155710.5b453415.nishimura@mxp.nes.nec.co.jp>
+	<20111215143506.335e443e.nishimura@mxp.nes.nec.co.jp>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Dec_2011_13_57_16_+1100_VXTx2MJxJ8nZtT9O"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Dec_2011_13_57_16_+1100_VXTx2MJxJ8nZtT9O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Someone who have comments ?
+If there are some problems that prevent these patches from being accepted,
+I'll fix them.
 
-Hi Artem,
+Thanks,
+Daisuke Nishimura
 
-Today's linux-next merge of the l2-mtd tree got a conflict in
-drivers/mtd/maps/bcm963xx-flash.c between commit 4e549d6d4a32 ("MTD:
-MAPS: bcm963xx-flash.c: explicitly include module.h") from Linus' tree
-and commit 573052d2e4a4 ("mtd: maps: remove the now unused
-bcm963xx-flash") from the l2-mtd tree.
+On Thu, 15 Dec 2011 14:35:06 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-The latter removes the file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__19_Dec_2011_13_57_16_+1100_VXTx2MJxJ8nZtT9O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO7qgMAAoJEECxmPOUX5FELAMP/2DfMDfQfTvJDF+OmS5WjK3i
-U8J8HHHnD33uNAh8SuswkoeMR3VBVQZcGa3gLNXPLSGFmxLP8OvmDuqpUJnr6Cxo
-KVtfCc1gppZeDcAKuLutqp2Uxo/qgpOrK9XHS3bz46GyZPtPkitJAmlaBSiQ/ak0
-8Ze/WqmYYV4oCE65/DuJBaX6n2optvK+9vwWizGeogEIKxW27nRx3eYZK8cB+XHt
-n9nAtN9QEQcnLQ5HXx06bFTZfyhgYCzAGwr/6vHs7Mlr+18K+4yqEhtIJCRm/wW7
-3JNHKQSt/xKr3A4JOHZMk0xzs305ysmh9xf9nEbyvetWcVXK++2YQVDjIOix79TQ
-B2Q/8XmY/CL7CDzjjdy47J17mEHzOFWlIllyDJ06Qj9c0umLLulSFJcgZEdytoZK
-5HXlLriR+K/HrKxe7TPQqvG/ZR1B3vc68f9aOluAlRyZrzgx/6/uo3kzxDZlTTWK
-9jtH519TG6GSsPQnRCYhpbNMcOaWiBiZil1wCvUkG0fQ2q7SQKO8CSejBqxxtKKY
-9ecj+oDCxI9bXW6/p8no1xw9dKOWw0Woa0ct9YuBzONnGG495XZR6yIVxw0KBk/H
-xE3mNsw6OX7t9s7s+4excXV3e7xCsKxUluAXPhkL1iXShOj4UDNof6CagX6j9InT
-6oOjT3hs88RsMLDPcrcZ
-=HJ7X
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Dec_2011_13_57_16_+1100_VXTx2MJxJ8nZtT9O--
+> Hi, all.
+> 
+> This is an updated version based on comments and rebased onto the -tip tree.
+> 
+> These patches fix problems I could see in 3.2-rc2 when testing frequent cgroup movement
+> under very high load. Without these patches, some processes were not scheduled
+> (although they were queued into rq)for a very long time(minutes or hours!),
+> because vruntime of these processes were far bigger than min_vruntime.
+> 
+> Daisuke Nishimura (3):
+>   sched: fix cgroup movement of newly created process
+>   sched: fix cgroup movement of forking process
+>   sched: fix cgroup movement of waking process
+> 
+>  kernel/sched/fair.c |   22 ++++++++++++++++++++--
+>  1 files changed, 20 insertions(+), 2 deletions(-)
+> 
+> Thanks,
+> Daisuke Nishimura.
