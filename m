@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab1LSOHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:07:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43608 "EHLO
+	id S1752513Ab1LSOIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:08:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43620 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1LSOHa (ORCPT
+	with ESMTP id S1751096Ab1LSOIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:07:30 -0500
-Date: Mon, 19 Dec 2011 06:06:52 -0800
-From: tip-bot for Kusanagi Kouichi <slash@ac.auone-net.jp>
-Message-ID: <tip-b1b73d095084e754562961c443aa8f6587a55f8e@git.kernel.org>
+	Mon, 19 Dec 2011 09:08:05 -0500
+Date: Mon, 19 Dec 2011 06:07:39 -0800
+From: tip-bot for Kevin Winchester <kjwinchester@gmail.com>
+Message-ID: <tip-137a86eec24b508b1bc2e13e92a8abc80fe2b76d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, slash@ac.auone-net.jp, tglx@linutronix.de,
+        torvalds@linux-foundation.org, sp@numascale.com,
+        akpm@linux-foundation.org, kjwinchester@gmail.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        slash@ac.auone-net.jp, johnstul@us.ibm.com, tglx@linutronix.de,
+        torvalds@linux-foundation.org, sp@numascale.com,
+        akpm@linux-foundation.org, kjwinchester@gmail.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20111219091320.0D5AF6FC03D@msa105.auone-net.jp>
-References: <20111219091320.0D5AF6FC03D@msa105.auone-net.jp>
+In-Reply-To: <1324253530-4558-1-git-send-email-kjwinchester@gmail.com>
+References: <1324253530-4558-1-git-send-email-kjwinchester@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] time/clocksource: Fix kernel-doc warnings
-Git-Commit-ID: b1b73d095084e754562961c443aa8f6587a55f8e
+Subject: [tip:x86/apic] x86:
+  Simplify code by allowing more of struct cpuinfo_x86 for the !SMP case
+Git-Commit-ID: 137a86eec24b508b1bc2e13e92a8abc80fe2b76d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,154 +32,300 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 06:06:59 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 06:07:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b1b73d095084e754562961c443aa8f6587a55f8e
-Gitweb:     http://git.kernel.org/tip/b1b73d095084e754562961c443aa8f6587a55f8e
-Author:     Kusanagi Kouichi <slash@ac.auone-net.jp>
-AuthorDate: Mon, 19 Dec 2011 18:13:19 +0900
+Commit-ID:  137a86eec24b508b1bc2e13e92a8abc80fe2b76d
+Gitweb:     http://git.kernel.org/tip/137a86eec24b508b1bc2e13e92a8abc80fe2b76d
+Author:     Kevin Winchester <kjwinchester@gmail.com>
+AuthorDate: Sun, 18 Dec 2011 20:12:10 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 19 Dec 2011 11:41:40 +0100
+CommitDate: Mon, 19 Dec 2011 11:46:20 +0100
 
-time/clocksource: Fix kernel-doc warnings
+x86: Simplify code by allowing more of struct cpuinfo_x86 for the !SMP case
 
-Fix various KernelDoc build warnings.
+Several fields in struct cpuinfo_x86 were not defined for the
+!SMP case, likely to save space.  However, those fields still
+have some meaning for UP, and keeping them allows some #ifdef
+removal from other files.  The additional size of the UP kernel
+from this change is not significant enough to worry about
+keeping up the distinction:
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20111219091320.0D5AF6FC03D@msa105.auone-net.jp
+    text    data     bss     dec     hex filename
+ 4734483  510391  972040 6216914  5edcd2 vmlinux.o.before
+ 4734750  510391  972040 6217181  5edddd vmlinux.o.after
+
+for a difference of 267 bytes for an example UP config.
+
+If someone wants those 267 bytes back badly then it should
+be implemented in a cleaner way.
+
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Steffen Persvold <sp@numascale.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1324253530-4558-1-git-send-email-kjwinchester@gmail.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/clocksource.h |   11 ++++++++---
- kernel/time/clocksource.c   |   12 +++++++++---
- 2 files changed, 17 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/processor.h     |    2 --
+ arch/x86/kernel/amd_nb.c             |    8 ++------
+ arch/x86/kernel/cpu/amd.c            |    2 --
+ arch/x86/kernel/cpu/common.c         |    7 -------
+ arch/x86/kernel/cpu/intel.c          |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c     |    2 --
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    7 +------
+ arch/x86/kernel/cpu/proc.c           |    4 +---
+ drivers/edac/sb_edac.c               |    2 --
+ drivers/hwmon/coretemp.c             |    6 ------
+ 10 files changed, 4 insertions(+), 38 deletions(-)
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index c86c940..081147d 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -71,7 +71,7 @@ struct timecounter {
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b650435..aa9088c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
+ 	u16			apicid;
+ 	u16			initial_apicid;
+ 	u16			x86_clflush_size;
+-#ifdef CONFIG_SMP
+ 	/* number of cores as seen by the OS: */
+ 	u16			booted_cores;
+ 	/* Physical processor id: */
+@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
+ 	u8			compute_unit_id;
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+-#endif
+ 	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
  
- /**
-  * cyclecounter_cyc2ns - converts cycle counter cycles to nanoseconds
-- * @tc:		Pointer to cycle counter.
-+ * @cc:		Pointer to cycle counter.
-  * @cycles:	Cycles
-  *
-  * XXX - This could use some mult_lxl_ll() asm optimization. Same code
-@@ -114,7 +114,7 @@ extern u64 timecounter_read(struct timecounter *tc);
-  *                        time base as values returned by
-  *                        timecounter_read()
-  * @tc:		Pointer to time counter.
-- * @cycle:	a value returned by tc->cc->read()
-+ * @cycle_tstamp:	a value returned by tc->cc->read()
-  *
-  * Cycle counts that are converted correctly as long as they
-  * fall into the interval [-1/2 max cycle count, +1/2 max cycle count],
-@@ -156,11 +156,12 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
-  * @mult:		cycle to nanosecond multiplier
-  * @shift:		cycle to nanosecond divisor (power of two)
-  * @max_idle_ns:	max idle time permitted by the clocksource (nsecs)
-- * @maxadj		maximum adjustment value to mult (~11%)
-+ * @maxadj:		maximum adjustment value to mult (~11%)
-  * @flags:		flags describing special properties
-  * @archdata:		arch-specific data
-  * @suspend:		suspend function for the clocksource, if necessary
-  * @resume:		resume function for the clocksource, if necessary
-+ * @cycle_last:		most recent cycle counter value seen by ::read()
-  */
- struct clocksource {
- 	/*
-@@ -187,6 +188,7 @@ struct clocksource {
- 	void (*suspend)(struct clocksource *cs);
- 	void (*resume)(struct clocksource *cs);
- 
-+	/* private: */
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
- 	/* Watchdog related data, used by the framework */
- 	struct list_head wd_list;
-@@ -261,6 +263,9 @@ static inline u32 clocksource_hz2mult(u32 hz, u32 shift_constant)
- 
- /**
-  * clocksource_cyc2ns - converts clocksource cycles to nanoseconds
-+ * @cycles:	cycles
-+ * @mult:	cycle to nanosecond multiplier
-+ * @shift:	cycle to nanosecond divisor (power of two)
-  *
-  * Converts cycles to nanoseconds, using the given mult and shift.
-  *
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index da2f760..d3ad022 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -647,7 +647,7 @@ static void clocksource_enqueue(struct clocksource *cs)
- 
- /**
-  * __clocksource_updatefreq_scale - Used update clocksource with new freq
-- * @t:		clocksource to be registered
-+ * @cs:		clocksource to be registered
-  * @scale:	Scale factor multiplied against freq to get clocksource hz
-  * @freq:	clocksource frequency (cycles per second) divided by scale
-  *
-@@ -699,7 +699,7 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
- 
- /**
-  * __clocksource_register_scale - Used to install new clocksources
-- * @t:		clocksource to be registered
-+ * @cs:		clocksource to be registered
-  * @scale:	Scale factor multiplied against freq to get clocksource hz
-  * @freq:	clocksource frequency (cycles per second) divided by scale
-  *
-@@ -727,7 +727,7 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
- 
- /**
-  * clocksource_register - Used to install new clocksources
-- * @t:		clocksource to be registered
-+ * @cs:		clocksource to be registered
-  *
-  * Returns -EBUSY if registration fails, zero otherwise.
-  */
-@@ -761,6 +761,8 @@ static void __clocksource_change_rating(struct clocksource *cs, int rating)
- 
- /**
-  * clocksource_change_rating - Change the rating of a registered clocksource
-+ * @cs:		clocksource to be changed
-+ * @rating:	new rating
-  */
- void clocksource_change_rating(struct clocksource *cs, int rating)
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 4c39baa..013c181 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -123,16 +123,14 @@ int amd_get_subcaches(int cpu)
  {
-@@ -772,6 +774,7 @@ EXPORT_SYMBOL(clocksource_change_rating);
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+ 	unsigned int mask;
+-	int cuid = 0;
++	int cuid;
  
- /**
-  * clocksource_unregister - remove a registered clocksource
-+ * @cs:	clocksource to be unregistered
-  */
- void clocksource_unregister(struct clocksource *cs)
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return 0;
+ 
+ 	pci_read_config_dword(link, 0x1d4, &mask);
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+ 
+@@ -141,7 +139,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
+ 	unsigned int reg;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
+ 		return -EINVAL;
+@@ -159,9 +157,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
+ 	}
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	mask <<= 4 * cuid;
+ 	mask |= (0xf ^ (1 << cuid)) << 26;
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ef21bdc..f4773f4 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
  {
-@@ -787,6 +790,7 @@ EXPORT_SYMBOL(clocksource_unregister);
- /**
-  * sysfs_show_current_clocksources - sysfs interface for current clocksource
-  * @dev:	unused
-+ * @attr:	unused
-  * @buf:	char buffer to be filled with clocksource list
-  *
-  * Provides sysfs interface for listing current clocksource.
-@@ -807,6 +811,7 @@ sysfs_show_current_clocksources(struct sys_device *dev,
- /**
-  * sysfs_override_clocksource - interface for manually overriding clocksource
-  * @dev:	unused
-+ * @attr:	unused
-  * @buf:	name of override clocksource
-  * @count:	length of buffer
-  *
-@@ -842,6 +847,7 @@ static ssize_t sysfs_override_clocksource(struct sys_device *dev,
- /**
-  * sysfs_show_available_clocksources - sysfs interface for listing clocksource
-  * @dev:	unused
-+ * @attr:	unused
-  * @buf:	char buffer to be filled with clocksource list
-  *
-  * Provides sysfs interface for listing registered clocksources
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 
+ valid_k7:
+ 	;
+-#endif
+ }
+ 
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a70bd5b..850f296 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+ 
+-#ifdef CONFIG_SMP
+ 	c->cpu_index = 0;
+-#endif
+ 	filter_cpuid_features(c, false);
+ 
+ 	setup_smep(c);
+@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ 		c->apicid = c->initial_apicid;
+ # endif
+ #endif
+-
+-#ifdef CONFIG_X86_HT
+ 		c->phys_proc_id = c->initial_apicid;
+-#endif
+ 	}
+ 
+ 	setup_smep(c);
+@@ -1146,9 +1141,7 @@ static void dbg_restore_debug_regs(void)
+  */
+ void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-#ifdef CONFIG_NUMA
+ 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-#endif
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 5231312..3e6ff6c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
+ 
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
+ 				    "with B stepping processors.\n");
+ 	}
+-#endif
+ }
+ 
+ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2af127d..e9c9d0a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
+ 	m->time = get_seconds();
+ 	m->cpuvendor = boot_cpu_data.x86_vendor;
+ 	m->cpuid = cpuid_eax(1);
+-#ifdef CONFIG_SMP
+ 	m->socketid = cpu_data(m->extcpu).phys_proc_id;
+-#endif
+ 	m->apicid = cpu_data(m->extcpu).initial_apicid;
+ 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index f547421..1d76872 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -64,11 +64,9 @@ struct threshold_bank {
+ };
+ static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks);
+ 
+-#ifdef CONFIG_SMP
+ static unsigned char shared_bank[NR_BANKS] = {
+ 	0, 0, 0, 0, 1
+ };
+-#endif
+ 
+ static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on */
+ 
+@@ -202,10 +200,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 
+ 			if (!block)
+ 				per_cpu(bank_map, cpu) |= (1 << bank);
+-#ifdef CONFIG_SMP
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+-#endif
++
+ 			offset = setup_APIC_mce(offset,
+ 						(high & MASK_LVTOFF_HI) >> 20);
+ 
+@@ -531,7 +528,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 	sprintf(name, "threshold_bank%i", bank);
+ 
+-#ifdef CONFIG_SMP
+ 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+ 		i = cpumask_first(cpu_llc_shared_mask(cpu));
+ 
+@@ -558,7 +554,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 		goto out;
+ 	}
+-#endif
+ 
+ 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+ 	if (!b) {
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 14b2314..8022c66 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ static int show_cpuinfo(struct seq_file *m, void *v)
+ {
+ 	struct cpuinfo_x86 *c = v;
+-	unsigned int cpu = 0;
++	unsigned int cpu;
+ 	int i;
+ 
+-#ifdef CONFIG_SMP
+ 	cpu = c->cpu_index;
+-#endif
+ 	seq_printf(m, "processor\t: %u\n"
+ 		   "vendor_id\t: %s\n"
+ 		   "cpu family\t: %d\n"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 7a402bf..88df489 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_block *nb, unsigned long val,
+ 		mce->cpuvendor, mce->cpuid, mce->time,
+ 		mce->socketid, mce->apicid);
+ 
+-#ifdef CONFIG_SMP
+ 	/* Only handle if it is the right mc controller */
+ 	if (cpu_data(mce->cpu).phys_proc_id != pvt->sbridge_dev->mc)
+ 		return NOTIFY_DONE;
+-#endif
+ 
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 104b376..ae8f826 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -57,15 +57,9 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 
+-#ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+-#else
+-#define TO_PHYS_ID(cpu)		(cpu)
+-#define TO_CORE_ID(cpu)		(cpu)
+-#define for_each_sibling(i, cpu)	for (i = 0; false; )
+-#endif
+ #define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+ 
+ /*
