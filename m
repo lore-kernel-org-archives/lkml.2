@@ -1,113 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1LSVRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 16:17:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48219 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab1LSVQ7 (ORCPT
+	id S1752945Ab1LSVVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 16:21:22 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:46530 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1LSVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 16:16:59 -0500
-Date: Mon, 19 Dec 2011 13:16:44 -0800
-From: tip-bot for Clemens Ladisch <clemens@ladisch.de>
-Message-ID: <tip-13f541c10b30fc6529200d7f9a0073217709622f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, clemens@ladisch.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, clemens@ladisch.de
-In-Reply-To: <4EEFA7AE.9020407@ladisch.de>
-References: <4EEFA7AE.9020407@ladisch.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, dumpstack:
-  Fix code bytes breakage due to missing KERN_CONT
-Git-Commit-ID: 13f541c10b30fc6529200d7f9a0073217709622f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 19 Dec 2011 16:21:19 -0500
+Message-ID: <4EEFAA95.6070600@ah.jp.nec.com>
+Date: Mon, 19 Dec 2011 16:20:21 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Organization: NEC Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 13:16:50 -0800 (PST)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com> <4EEF8F85.9010408@gmail.com> <4EEF9E04.1040007@ah.jp.nec.com> <4EEFA308.2090608@gmail.com>
+In-Reply-To: <4EEFA308.2090608@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13f541c10b30fc6529200d7f9a0073217709622f
-Gitweb:     http://git.kernel.org/tip/13f541c10b30fc6529200d7f9a0073217709622f
-Author:     Clemens Ladisch <clemens@ladisch.de>
-AuthorDate: Mon, 19 Dec 2011 22:07:58 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 19 Dec 2011 13:09:56 -0800
+On Mon, Dec 19, 2011 at 03:48:08PM -0500, KOSAKI Motohiro wrote:
+> >> The detail of transparent hugepage are hidden by design. We hope it
+> >> keep 'transparent'.
+> >> Until any explain why we should expose KPF_THP, we don't agree it.
+> > 
+> > The reason why I want to know physical address of thp is testing.
+> > I'm working on memory error recovery and writing test code to confirm
+> > that memory recovery really works when an error occurs on thps.
+> > There I need to locate thps on the physical memory.
+> 
+> I'm sorry, I simply don't understand what you say. Why do you think
+> memory recovery and thp are related feature?
 
-x86, dumpstack: Fix code bytes breakage due to missing KERN_CONT
-
-When printing the code bytes in show_registers(), the markers around the
-byte at the fault address could make the printk() format string look
-like a valid log level and facility code.  This would prevent this byte
-from being printed and result in a spurious newline:
-
-[ 7555.765589] Code: 8b 32 e9 94 00 00 00 81 7d 00 ff 00 00 00 0f 87 96 00 00 00 48 8b 83 c0 00 00 00 44 89 e2 44 89 e6 48 89 df 48 8b 80 d8 02 00 00
-[ 7555.765683]  8b 48 28 48 89 d0 81 e2 ff 0f 00 00 48 c1 e8 0c 48 c1 e0 04
-
-Add KERN_CONT where needed, and elsewhere in show_registers() for
-consistency.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Link: http://lkml.kernel.org/r/4EEFA7AE.9020407@ladisch.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/dumpstack_32.c |    8 ++++----
- arch/x86/kernel/dumpstack_64.c |    8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 3b97a80..c99f9ed 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -116,16 +116,16 @@ void show_registers(struct pt_regs *regs)
- 		for (i = 0; i < code_len; i++, ip++) {
- 			if (ip < (u8 *)PAGE_OFFSET ||
- 					probe_kernel_address(ip, c)) {
--				printk(" Bad EIP value.");
-+				printk(KERN_CONT " Bad EIP value.");
- 				break;
- 			}
- 			if (ip == (u8 *)regs->ip)
--				printk("<%02x> ", c);
-+				printk(KERN_CONT "<%02x> ", c);
- 			else
--				printk("%02x ", c);
-+				printk(KERN_CONT "%02x ", c);
- 		}
- 	}
--	printk("\n");
-+	printk(KERN_CONT "\n");
- }
- 
- int is_valid_bugaddr(unsigned long ip)
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index 19853ad..6d728d9 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -284,16 +284,16 @@ void show_registers(struct pt_regs *regs)
- 		for (i = 0; i < code_len; i++, ip++) {
- 			if (ip < (u8 *)PAGE_OFFSET ||
- 					probe_kernel_address(ip, c)) {
--				printk(" Bad RIP value.");
-+				printk(KERN_CONT " Bad RIP value.");
- 				break;
- 			}
- 			if (ip == (u8 *)regs->ip)
--				printk("<%02x> ", c);
-+				printk(KERN_CONT "<%02x> ", c);
- 			else
--				printk("%02x ", c);
-+				printk(KERN_CONT "%02x ", c);
- 		}
- 	}
--	printk("\n");
-+	printk(KERN_CONT "\n");
- }
- 
- int is_valid_bugaddr(unsigned long ip)
+This is because memory error can occur on thp and then we should be
+able to handle them (otherwise we can use corrupted date) and
+verify that it works.
