@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1LSNkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:40:32 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:24372 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab1LSNk2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:40:28 -0500
-From: Nelson Elhage <nelhage@nelhage.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] perf: builtin-record: Be more helpful when running up against mlock limits.
-Date: Mon, 19 Dec 2011 08:39:29 -0500
-Message-Id: <1324301972-22740-1-git-send-email-nelhage@nelhage.com>
-X-Mailer: git-send-email 1.7.4.41.g50b8f
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4EEF3EA3.0092,ss=1,re=0.000,fgs=0
+	id S1752982Ab1LSNkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:40:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752326Ab1LSNkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 08:40:37 -0500
+Date: Mon, 19 Dec 2011 14:40:24 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [RFCv2] ftrace, perf: Adding support to use function trace
+Message-ID: <20111219134024.GB1606@m.brq.redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the current code, it's relatively easy to run up against the
-perf_event_mlock_kb limit if you try to attach to a multithreaded
-target with 'perf record -p', because perf will attempt to mmap 512k
-per target thread, and the default mlock limit is (512k + 1 page),
-total.
+hi,
+any feedback?
 
-Current, this results in a completely inscrutable
-  Fatal: failed to mmap with 22 (Invalid argument)
+thanks,
+jirka
 
-We should perhaps automatically detect a better choice of mmap_pages,
-but in the meanwhile, it's easy to improve the error to give users
-some guidance about what's going on, so that hopefully I can be the
-last person to have to source-dive to figure out what's going on.
-
+On Mon, Dec 05, 2011 at 06:22:46PM +0100, Jiri Olsa wrote:
+> hi,
+> here's another version of perf support for function trace
+> with filter. The changeset is working and hopefully is not
+> introducing more bugs.. ;) still testing though..
+> 
+> It's still marked RFC since I'm not sure there's better way to go
+> with patches 2 and 10. Also not sure if the condition fixed by
+> patch 7 was not intentional. The rest is fixed/updated version
+> of the v1 changes.
+> 
+> attached patches:
+>  01/10 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
+>  02/10 ftrace: Change mcount call replacement logic
+>  03/10 ftrace: Add enable/disable ftrace_ops control interface
+>  04/10 ftrace, perf: Add open/close tracepoint perf registration actions
+>  05/10 ftrace, perf: Add add/del tracepoint perf registration actions
+>  06/10 ftrace, perf: Add support to use function tracepoint in perf
+>  07/10 ftrace: Change filter/notrace set functions to return exit code
+>  08/10 ftrace, perf: Distinguish ftrace function event field type
+>  09/10 ftrace, perf: Add filter support for function trace event
+>  10/10 ftrace, graph: Add global_ops filter callback for graph tracing
+> 
+> v2 changes:
+>  01/10 - keeping the old fix instead of adding hash_has_contents func
+>          I'll send separating patchset for this
+>  02/10 - using different way to avoid the issue (3/9 in v1)
+>  03/10 - using the way proposed by Steven for controling ftrace_ops
+>          (4/9 in v1)
+>  06/10 - added check ensuring the ftrace:function event could be used by
+>          root only (7/9 in v1)
+>  08/10 - added more description (8/9 in v1)
+>  09/10 - changed '&&' operator to '||' which seems more suitable
+>          in this case (9/9 in v1)
+> 
+> thanks for comments,
+> jirka
+> ---
+>  include/linux/ftrace.h             |   18 +++-
+>  include/linux/ftrace_event.h       |    9 +-
+>  include/linux/perf_event.h         |    3 +
+>  kernel/trace/ftrace.c              |  202 +++++++++++++++++++++++++++++------
+>  kernel/trace/trace.h               |   11 ++-
+>  kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
+>  kernel/trace/trace_events.c        |   12 ++-
+>  kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
+>  kernel/trace/trace_export.c        |   53 ++++++++-
+>  kernel/trace/trace_kprobe.c        |    8 +-
+>  kernel/trace/trace_syscalls.c      |   18 +++-
+>  11 files changed, 562 insertions(+), 100 deletions(-)
