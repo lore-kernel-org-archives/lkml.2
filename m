@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab1LSRi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 12:38:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40257 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab1LSRiZ (ORCPT
+	id S1752683Ab1LSRjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 12:39:11 -0500
+Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:55702 "HELO
+	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751172Ab1LSRjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 12:38:25 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Mundt <lethal@linux-sh.org>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH] mm: Fix BUILD_BUG assertion in pmdp_clear_flush_young()
-Date: Mon, 19 Dec 2011 09:38:08 -0800
-Message-Id: <1324316288-2367-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20111217152253.1aedda0936cd5d1d98be5e76@canb.auug.org.au>
-References: <20111217152253.1aedda0936cd5d1d98be5e76@canb.auug.org.au>
+	Mon, 19 Dec 2011 12:39:09 -0500
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Mon, 19 Dec 2011 09:39:00 -0800
+Message-Id: <1324316340-29223-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Hi Linus,
 
-It has been reported that when building for sh:
+Please pull from
 
-    mm/pgtable-generic.c: In function 'pmdp_clear_flush_young':
-    mm/pgtable-generic.c:76: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-Adding some ugle #ifdeffery will probably fix this issue.
+This will get a few last fixes:
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
+ - Fix for crash on mlx4 module unload
+ - Fix for crash on too-long private data in RDMA CM
+ - Trivial fix for context counting bug in qib
 
-This is completely untested, but may be the best fix for this.  Linus
-and others have expressed a dislike for using BUG() to detect what
-should be dead code paths at runtime, but it seems to be the state of
-the art here.
+Thanks!
 
- mm/pgtable-generic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Mike Marciniszyn (1):
+      IB/qib: Correct sense on freectxts increment and decrement
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index eb663fb..73784c8 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -70,7 +70,7 @@ int pmdp_clear_flush_young(struct vm_area_struct *vma,
- 			   unsigned long address, pmd_t *pmdp)
- {
- 	int young;
--#ifndef CONFIG_TRANSPARENT_HUGEPAGE
-+#if !defined(CONFIG_HUGETLB_PAGE) || !defined(CONFIG_TRANSPARENT_HUGEPAGE)
- 	BUG();
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
--- 
-1.7.2.3
+Roland Dreier (2):
+      IB/mlx4: Fix shutdown crash accessing a non-existent bitmap
+      Merge branches 'cma', 'mlx4' and 'qib' into for-next
 
+Sean Hefty (1):
+      RDMA/cma: Verify private data length
+
+ drivers/infiniband/core/cma.c            |    6 ++++++
+ drivers/infiniband/hw/mlx4/main.c        |    6 ++++--
+ drivers/infiniband/hw/qib/qib_file_ops.c |    4 ++--
+ 3 files changed, 12 insertions(+), 4 deletions(-)
