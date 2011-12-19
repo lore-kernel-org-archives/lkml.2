@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab1LSPeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 10:34:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23113 "EHLO mga01.intel.com"
+	id S1753177Ab1LSPhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 10:37:47 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:47753 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab1LSPeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 10:34:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="97937146"
-Date: Mon, 19 Dec 2011 16:38:53 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Igor Grinberg <grinberg@compulab.co.il>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MFD: TWL: add power off functionality
-Message-ID: <20111219153853.GN11800@sortiz-mobl>
-References: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
- <4ED205F9.3070908@compulab.co.il>
- <4EE71FCA.8040000@compulab.co.il>
- <20111219113645.GI11800@sortiz-mobl>
- <20111219224519.05c81112@notabene.brown>
+	id S1752844Ab1LSPhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 10:37:45 -0500
+Date: Mon, 19 Dec 2011 16:37:38 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 3/4] memcg: clear pc->mem_cgorup if necessary.
+Message-ID: <20111219153738.GC1415@cmpxchg.org>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111214165124.4d2cf723.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111219224519.05c81112@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111214165124.4d2cf723.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil, Igor,
+On Wed, Dec 14, 2011 at 04:51:24PM +0900, KAMEZAWA Hiroyuki wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> This is a preparation before removing a flag PCG_ACCT_LRU in page_cgroup
+> and reducing atomic ops/complexity in memcg LRU handling.
+> 
+> In some cases, pages are added to lru before charge to memcg and pages
+> are not classfied to memory cgroup at lru addtion. Now, the lru where
+> the page should be added is determined a bit in page_cgroup->flags and
+> pc->mem_cgroup. I'd like to remove the check of flag.
+> 
+> To handle the case pc->mem_cgroup may contain stale pointers if pages are
+> added to LRU before classification. This patch resets pc->mem_cgroup to
+> root_mem_cgroup before lru additions.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-On Mon, Dec 19, 2011 at 10:45:19PM +1100, NeilBrown wrote:
-> On Mon, 19 Dec 2011 12:36:45 +0100 Samuel Ortiz <sameo@linux.intel.com> wrote:
-> 
-> > Hi Igor,
-> > 
-> > On Tue, Dec 13, 2011 at 11:50:02AM +0200, Igor Grinberg wrote:
-> > > Samuel,
-> > > 
-> > > Can we get this one into 3.3?
-> > Afaiu, af8db1508f2c9f3b6e633e2d2d906c6557c617f9 needs to be (partially)
-> > reverted for it to be working. Is the core PM fix queued for 3.3 as well ? 
-> > 
-> > Cheers,
-> > Samuel.
-> > 
-> 
-> 
-> Already fixed by
-> 
-> commit fe6b91f47080eb17d21cbf2a39311877d57f6938
-Good, I applied Igor's patch then.
+The followup compilation fixes aside, I agree.  But the sites where
+the owner is actually reset are really not too obvious.  How about the
+comment patch below?
 
-Cheers,
-Samuel.
+Otherwise,
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: memcg: clear pc->mem_cgorup if necessary fix
+
+Add comments to the clearing sites.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 5c2f0bd..f0ee5bf 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1571,6 +1571,15 @@ struct page *ksm_does_need_to_copy(struct page *page,
+ 
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+ 	if (new_page) {
++		/*
++		 * The memcg-specific accounting when moving
++		 * pages around the LRU lists relies on the
++		 * page's owner (memcg) to be valid.  Usually,
++		 * pages are assigned to a new owner before
++		 * being put on the LRU list, but since this
++		 * is not the case here, the stale owner from
++		 * a previous allocation cycle must be reset.
++		 */
+ 		mem_cgroup_reset_owner(new_page);
+ 		copy_user_highpage(new_page, page, address, vma);
+ 
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 730c4c7..44ccfd2 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -302,6 +302,15 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+ 			new_page = alloc_page_vma(gfp_mask, vma, addr);
+ 			if (!new_page)
+ 				break;		/* Out of memory */
++			/*
++			 * The memcg-specific accounting when moving
++			 * pages around the LRU lists relies on the
++			 * page's owner (memcg) to be valid.  Usually,
++			 * pages are assigned to a new owner before
++			 * being put on the LRU list, but since this
++			 * is not the case here, the stale owner from
++			 * a previous allocation cycle must be reset.
++			 */
+ 			mem_cgroup_reset_owner(new_page);
+ 		}
+ 
