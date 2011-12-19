@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1LSL7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 06:59:40 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63503 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab1LSL7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 06:59:37 -0500
-Message-ID: <1324295971.3350.6.camel@phoenix>
-Subject: [PATCH RESEND 3/3] mfd: tps6586x: Ensure setting bits if new value
- is different from the old value
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Rapoport <mike@compulab.co.il>, Eric Miao <eric.y.miao@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Mon, 19 Dec 2011 19:59:31 +0800
-In-Reply-To: <1324295757.3350.3.camel@phoenix>
-References: <1324295757.3350.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1752881Ab1LSL77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 06:59:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752706Ab1LSL74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 06:59:56 -0500
+Message-ID: <4EEF2729.6080501@redhat.com>
+Date: Mon, 19 Dec 2011 13:59:37 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <4EEF2382.4010605@redhat.com> <87hb0wbx0p.fsf@abhimanyu.in.ibm.com>
+In-Reply-To: <87hb0wbx0p.fsf@abhimanyu.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It does not make sense to write new value only when all the bit_mask
-bits are zero.
-We need to write new value if the bit mask fields of new value is
-not equal to old value.
+On 12/19/2011 01:50 PM, Nikunj A Dadhania wrote:
+> On Mon, 19 Dec 2011 13:44:02 +0200, Avi Kivity <avi@redhat.com> wrote:
+> > On 12/19/2011 01:23 PM, Ingo Molnar wrote:
+> > > What's behind this huge speedup? Does ebizzy use user-space 
+> > > spinlocks perhaps? Could we do something on the user-space side 
+> > > to get a similar speedup?
+> > 
+> > kvm tries to detect spinlocks (by trapping repeated executions of PAUSE)
+> > and yield to a related vcpu.  It's far from perfect however, and relies
+> > on the spinlock code using PAUSE.
+> > 
+> Avi, is this soft-PLE kind of thing?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps6586x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+No, hard PLE, see the calls to yield_to.
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index bba26d9..a5ddf31 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -197,7 +197,7 @@ int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask)
- 	if (ret)
- 		goto out;
- 
--	if ((reg_val & bit_mask) == 0) {
-+	if ((reg_val & bit_mask) != bit_mask) {
- 		reg_val |= bit_mask;
- 		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
- 	}
 -- 
-1.7.5.4
-
-
+error compiling committee.c: too many arguments to function
 
