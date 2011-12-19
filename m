@@ -1,157 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1LSUyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:54:53 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51157 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab1LSUyv (ORCPT
+	id S1753277Ab1LSU6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:58:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48776 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab1LSU6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:54:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: [PATCH v2] gpio: pl061: enable interrupts with DT style binding
-Date: Mon, 19 Dec 2011 14:54:38 -0600
-Message-Id: <1324328078-7310-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323876538-20406-9-git-send-email-robherring2@gmail.com>
-References: <1323876538-20406-9-git-send-email-robherring2@gmail.com>
+	Mon, 19 Dec 2011 15:58:42 -0500
+Date: Mon, 19 Dec 2011 18:58:29 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Andrew Vagin <avagin@gmail.com>
+Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 3/6] perf: add ability to record event period
+Message-ID: <20111219205829.GB28058@infradead.org>
+References: <1323266161-394927-1-git-send-email-avagin@openvz.org>
+ <1323266161-394927-4-git-send-email-avagin@openvz.org>
+ <4EEAEF83.3080100@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEAEF83.3080100@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+Em Fri, Dec 16, 2011 at 11:13:07AM +0400, Andrew Vagin escreveu:
+> Hi Arnaldo,
+> 
+> Could you review and commit this patch. It's quite common
+> functionality, which allow to get events more effectively and to
+> avoid losing events.
+> 
+> All other patches may be postponed, because Arun Sharma wants to
+> suggest your version of "Profiling sleep times".
 
-Enable DT interrupt binding support for pl061 gpio lines. If the gpio
-node has an interrupt-controller property, then it will be setup to
-handle interrupts on gpio lines.
+It would help if you provided a more detailed patch description, this
+one came with just a title :-\
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>
----
-v2:
-- use domain ptr from struct irq_chip_generic
-- Add comment on irq_base values.
+You started to ellaborate above when stating that "which allows to get
+events more effectively", could you please expand on that and mention
+that it will be used by the following patches that will implement
+feature X, etc?
 
- .../devicetree/bindings/gpio/pl061-gpio.txt        |   15 +++++++++
- drivers/gpio/gpio-pl061.c                          |   31 +++++++++++---------
- 2 files changed, 32 insertions(+), 14 deletions(-)
+I get that Arun is in agreement, everything seems OK, but we need to do
+a better job on describing why we add code, the context we have now from
+all these discussions will be mostly lost, say, 5 years from now when we
+try to figure out why something was done in some way,
 
-diff --git a/Documentation/devicetree/bindings/gpio/pl061-gpio.txt b/Documentation/devicetree/bindings/gpio/pl061-gpio.txt
-index a2c416b..9671d4e 100644
---- a/Documentation/devicetree/bindings/gpio/pl061-gpio.txt
-+++ b/Documentation/devicetree/bindings/gpio/pl061-gpio.txt
-@@ -8,3 +8,18 @@ Required properties:
- - gpio-controller : Marks the device node as a GPIO controller.
- - interrupts : Interrupt mapping for GPIO IRQ.
- 
-+Optional properties:
-+- interrupt-controller : Identifies the node as an interrupt controller. Must
-+  be present if using gpios lines for interrupts.
-+- #interrupt-cells : Specifies the number of cells needed to encode an
-+  interrupt source.  The type shall be a <u32> and the value shall be 2.
-+
-+  The 1st cell contains the interrupt number 0-7 corresponding to the gpio
-+  line.
-+
-+  The 2nd cell is the flags, encoding trigger type and level flags.
-+	1 = low-to-high edge triggered
-+	2 = high-to-low edge triggered
-+	4 = active high level-sensitive
-+	8 = active low level-sensitive
-+
-diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-index 96ff6b2..ea799c7 100644
---- a/drivers/gpio/gpio-pl061.c
-+++ b/drivers/gpio/gpio-pl061.c
-@@ -16,6 +16,8 @@
- #include <linux/io.h>
- #include <linux/ioport.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/of.h>
- #include <linux/bitops.h>
- #include <linux/workqueue.h>
- #include <linux/gpio.h>
-@@ -52,7 +54,6 @@ struct pl061_gpio {
- 	spinlock_t		lock;		/* GPIO registers */
- 
- 	void __iomem		*base;
--	int			irq_base;
- 	struct irq_chip_generic	*irq_gc;
- 	struct gpio_chip	gc;
- };
-@@ -118,18 +119,16 @@ static void pl061_set_value(struct gpio_chip *gc, unsigned offset, int value)
- static int pl061_to_irq(struct gpio_chip *gc, unsigned offset)
- {
- 	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
--
--	if (chip->irq_base <= 0)
--		return -EINVAL;
--
--	return chip->irq_base + offset;
-+	if (!chip->irq_gc)
-+		return -ENXIO;
-+	return irq_domain_to_irq(&chip->irq_gc->domain, offset);
- }
- 
- static int pl061_irq_type(struct irq_data *d, unsigned trigger)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
- 	struct pl061_gpio *chip = gc->private;
--	int offset = d->irq - chip->irq_base;
-+	int offset = d->hwirq;
- 	unsigned long flags;
- 	u8 gpiois, gpioibe, gpioiev;
- 
-@@ -219,7 +218,7 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
- 	struct pl061_platform_data *pdata;
- 	struct pl061_gpio *chip;
- 	struct list_head *chip_list;
--	int ret, irq, i;
-+	int ret, irq, i, irq_base;
- 	static DECLARE_BITMAP(init_irq, NR_IRQS);
- 
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-@@ -229,10 +228,13 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
- 	pdata = dev->dev.platform_data;
- 	if (pdata) {
- 		chip->gc.base = pdata->gpio_base;
--		chip->irq_base = pdata->irq_base;
-+		irq_base = pdata->irq_base;
- 	} else if (dev->dev.of_node) {
- 		chip->gc.base = -1;
--		chip->irq_base = 0;
-+		if (of_get_property(dev->dev.of_node, "interrupt-controller", NULL))
-+			irq_base = -1;
-+		else
-+			irq_base = 0;
- 	} else {
- 		ret = -ENODEV;
- 		goto free_mem;
-@@ -268,13 +270,14 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
- 		goto iounmap;
- 
- 	/*
--	 * irq_chip support
-+	 * irq_chip support. If irq_base is 0, then we don't support interrupts
-+	 * on gpio lines and just return now. Otherwise setup the interrupts.
- 	 */
--
--	if (chip->irq_base <= 0)
-+	if (!irq_base)
- 		return 0;
- 
--	pl061_init_gc(chip, chip->irq_base);
-+	pl061_init_gc(chip, irq_base);
-+	chip->irq_gc->domain.of_node = of_node_get(dev->dev.of_node);
- 
- 	writeb(0, chip->base + GPIOIE); /* disable irqs */
- 	irq = dev->irq[0];
--- 
-1.7.5.4
+Thanks,
 
+- Arnaldo
+ 
+> Thanks.
+> 
+> On 12/07/2011 05:55 PM, Andrew Vagin wrote:
+> >Signed-off-by: Andrew Vagin<avagin@openvz.org>
+> >---
+> >  tools/perf/builtin-record.c |    1 +
+> >  tools/perf/perf.h           |    1 +
+> >  tools/perf/util/evsel.c     |    3 +++
+> >  3 files changed, 5 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> >index 766fa0a..f8fd14f 100644
+> >--- a/tools/perf/builtin-record.c
+> >+++ b/tools/perf/builtin-record.c
+> >@@ -700,6 +700,7 @@ const struct option record_options[] = {
+> >  	OPT_BOOLEAN('d', "data",&record.opts.sample_address,
+> >  		    "Sample addresses"),
+> >  	OPT_BOOLEAN('T', "timestamp",&record.opts.sample_time, "Sample timestamps"),
+> >+	OPT_BOOLEAN('P', "period",&record.opts.period, "Sample period"),
+> >  	OPT_BOOLEAN('n', "no-samples",&record.opts.no_samples,
+> >  		    "don't sample"),
+> >  	OPT_BOOLEAN('N', "no-buildid-cache",&record.no_buildid_cache,
+> >diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> >index ea804f5..64f8bee 100644
+> >--- a/tools/perf/perf.h
+> >+++ b/tools/perf/perf.h
+> >@@ -200,6 +200,7 @@ struct perf_record_opts {
+> >  	bool	     sample_time;
+> >  	bool	     sample_id_all_avail;
+> >  	bool	     system_wide;
+> >+	bool	     period;
+> >  	unsigned int freq;
+> >  	unsigned int mmap_pages;
+> >  	unsigned int user_freq;
+> >diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> >index e2d1b22..8550018 100644
+> >--- a/tools/perf/util/evsel.c
+> >+++ b/tools/perf/util/evsel.c
+> >@@ -108,6 +108,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+> >  	if (opts->system_wide)
+> >  		attr->sample_type	|= PERF_SAMPLE_CPU;
+> >
+> >+	if (opts->period)
+> >+		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+> >+
+> >  	if (opts->sample_id_all_avail&&
+> >  	(opts->sample_time || opts->system_wide ||
+> >  	     !opts->no_inherit || opts->cpu_list))
