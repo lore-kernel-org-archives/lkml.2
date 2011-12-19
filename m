@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab1LSCGt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 21:06:49 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55060 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1LSCGs (ORCPT
+	id S1752270Ab1LSCG7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 21:06:59 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39390 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab1LSCGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 21:06:48 -0500
-Date: Mon, 19 Dec 2011 02:06:37 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
-Message-ID: <20111219020637.GA1653@ZenIV.linux.org.uk>
-References: <20111216112534.GA13147@dztty>
- <20111216125556.db2bf308.akpm@linux-foundation.org>
- <20111217214137.GY2203@ZenIV.linux.org.uk>
- <20111219014343.GK23662@dastard>
- <20111219020340.GG2203@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111219020340.GG2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Dec 2011 21:06:55 -0500
+Message-ID: <1324260407.3006.17.camel@ThinkPad-T61>
+Subject: [PATCH powerpc] fix unpaired __trace_hcall_entry and
+ __trace_hcall_exit
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
+        Anton Blanchard <anton@samba.org>
+Date: Mon, 19 Dec 2011 10:06:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11121816-5140-0000-0000-000000704181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 02:03:40AM +0000, Al Viro wrote:
+Unpaired calling of __trace_hcall_entry and __trace_hcall_exit could
+cause incorrect preempt count. And it might happen as the global
+variable hcall_tracepoint_refcount is checked separately before calling
+them. 
 
-> OK, I'm definitely missing something.  The very first thing
-> xfs_file_aio_write_checks() does is
->         xfs_rw_ilock(ip, XFS_ILOCK_EXCL);
-> which really makes me wonder how the hell does that manage to avoid an
-> instant deadlock in case of call via xfs_file_buffered_aio_write()
-> where we have:
->         struct address_space    *mapping = file->f_mapping;
->         struct inode            *inode = mapping->host;
->         struct xfs_inode        *ip = XFS_I(inode);
->         *iolock = XFS_IOLOCK_EXCL;
->         xfs_rw_ilock(ip, *iolock);
->         ret = xfs_file_aio_write_checks(file, &pos, &count, new_size, iolock);
-> which leads to
->         struct inode            *inode = file->f_mapping->host;
->         struct xfs_inode        *ip = XFS_I(inode);
-> (IOW, inode and ip are the same as in the caller) followed by
->         xfs_rw_ilock(ip, XFS_ILOCK_EXCL);
-> and with both xfs_rw_ilock() calls turning into
-> 	mutex_lock(&VFS_I(ip)->i_mutex);
->         xfs_ilock(ip, XFS_ILOCK_EXCL);
-> we ought to deadlock on that i_mutex.  What am I missing and how do we manage
-> to survive that?
+I don't know much about the powerpc arch. But the idea here is to store
+the hcall_tracepoint_refcount locally, so __trace_hcall_entry and
+__trace_hcall_exit will be called or not called in pair by checking the
+same value. 
 
-Arrrgh...  OK, I see...  What I missed is that XFS_IOLOCK_EXCL is not
-XFS_ILOCK_EXCL.  Nice naming, that...
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/hvCall.S |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/arch/powerpc/platforms/pseries/hvCall.S b/arch/powerpc/platforms/pseries/hvCall.S
+index fd05fde..1240bd2 100644
+--- a/arch/powerpc/platforms/pseries/hvCall.S
++++ b/arch/powerpc/platforms/pseries/hvCall.S
+@@ -14,6 +14,7 @@
+ #include <asm/ptrace.h>
+ 	
+ #define STK_PARM(i)     (48 + ((i)-3)*8)
++#define REG_SIZE        (2*8)
+ 
+ #ifdef CONFIG_TRACEPOINTS
+ 
+@@ -32,11 +33,12 @@ hcall_tracepoint_refcount:
+  * unconditional cpu feature.
+  */
+ #define HCALL_INST_PRECALL(FIRST_REG)				\
++	std	r31,-8(r1);					\
+ BEGIN_FTR_SECTION;						\
+ 	b	1f;						\
+ END_FTR_SECTION(0, 1);						\
+-	ld      r12,hcall_tracepoint_refcount@toc(r2);		\
+-	cmpdi	r12,0;						\
++	ld      r31,hcall_tracepoint_refcount@toc(r2);		\
++	cmpdi	r31,0;						\
+ 	beq+	1f;						\
+ 	mflr	r0;						\
+ 	std	r3,STK_PARM(r3)(r1);				\
+@@ -49,9 +51,9 @@ END_FTR_SECTION(0, 1);						\
+ 	std	r10,STK_PARM(r10)(r1);				\
+ 	std	r0,16(r1);					\
+ 	addi	r4,r1,STK_PARM(FIRST_REG);			\
+-	stdu	r1,-STACK_FRAME_OVERHEAD(r1);			\
++	stdu	r1,-STACK_FRAME_OVERHEAD-REG_SIZE(r1);		\
+ 	bl	.__trace_hcall_entry;				\
+-	addi	r1,r1,STACK_FRAME_OVERHEAD;			\
++	addi	r1,r1,STACK_FRAME_OVERHEAD+REG_SIZE;		\
+ 	ld	r0,16(r1);					\
+ 	ld	r3,STK_PARM(r3)(r1);				\
+ 	ld	r4,STK_PARM(r4)(r1);				\
+@@ -74,8 +76,7 @@ END_FTR_SECTION(0, 1);						\
+ BEGIN_FTR_SECTION;						\
+ 	b	1f;						\
+ END_FTR_SECTION(0, 1);						\
+-	ld      r12,hcall_tracepoint_refcount@toc(r2);		\
+-	cmpdi	r12,0;						\
++	cmpdi	r31,0;						\
+ 	beq+	1f;						\
+ 	mflr	r0;						\
+ 	ld	r6,STK_PARM(r3)(r1);				\
+@@ -83,13 +84,14 @@ END_FTR_SECTION(0, 1);						\
+ 	mr	r4,r3;						\
+ 	mr	r3,r6;						\
+ 	std	r0,16(r1);					\
+-	stdu	r1,-STACK_FRAME_OVERHEAD(r1);			\
++	stdu	r1,-STACK_FRAME_OVERHEAD-REG_SIZE(r1);		\
+ 	bl	.__trace_hcall_exit;				\
+-	addi	r1,r1,STACK_FRAME_OVERHEAD;			\
++	addi	r1,r1,STACK_FRAME_OVERHEAD+REG_SIZE;		\
+ 	ld	r0,16(r1);					\
+ 	ld	r3,STK_PARM(r3)(r1);				\
+ 	mtlr	r0;						\
+-1:
++1:								\
++	ld	r31,-8(r1);
+ 
+ #define HCALL_INST_POSTCALL_NORETS				\
+ 	li	r5,0;						\
+-- 
+1.7.5.4
+
