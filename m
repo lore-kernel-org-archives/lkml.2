@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab1LSKbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 05:31:18 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:54212 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752326Ab1LSKbK (ORCPT
+	id S1752553Ab1LSKbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 05:31:24 -0500
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:35419 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751568Ab1LSKbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 05:31:10 -0500
+	Mon, 19 Dec 2011 05:31:21 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Linux USB Mailing List <linux-usb@vger.kernel.org>
 Cc: Felipe Balbi <balbi@ti.com>,
@@ -18,9 +18,9 @@ Cc: Felipe Balbi <balbi@ti.com>,
         linux-omap@vger.kernel.org (open list:DESIGNWARE USB3 D...),
         linux-kernel@vger.kernel.org (open list),
         linux-geode@lists.infradead.org (open list:AMD GEODE CS5536...)
-Subject: [PATCH 2/9] usb: dwc3: gadget: use generic map/unmap routines
-Date: Mon, 19 Dec 2011 12:30:24 +0200
-Message-Id: <1324290632-23758-3-git-send-email-balbi@ti.com>
+Subject: [PATCH 5/9] usb: gadget: amd5536: use generic map/unmap routines
+Date: Mon, 19 Dec 2011 12:30:27 +0200
+Message-Id: <1324290632-23758-6-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.8.rc3
 In-Reply-To: <1324290632-23758-1-git-send-email-balbi@ti.com>
 References: <1324290632-23758-1-git-send-email-balbi@ti.com>
@@ -34,135 +34,60 @@ USB requests and it's better to use them.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/dwc3/gadget.c |   80 +++++++--------------------------------------
- 1 files changed, 12 insertions(+), 68 deletions(-)
+ drivers/usb/gadget/amd5536udc.c |   32 +++++---------------------------
+ 1 files changed, 5 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index d228188..50e955f 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -54,70 +54,6 @@
- #include "gadget.h"
- #include "io.h"
+diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
+index e9a2c5c..d3d0282 100644
+--- a/drivers/usb/gadget/amd5536udc.c
++++ b/drivers/usb/gadget/amd5536udc.c
+@@ -831,20 +831,7 @@ __acquires(ep->dev->lock)
  
--#define	DMA_ADDR_INVALID	(~(dma_addr_t)0)
--
--void dwc3_map_buffer_to_dma(struct dwc3_request *req)
--{
--	struct dwc3			*dwc = req->dep->dwc;
--
--	if (req->request.length == 0) {
--		/* req->request.dma = dwc->setup_buf_addr; */
--		return;
+ 	dev = ep->dev;
+ 	/* unmap DMA */
+-	if (req->dma_mapping) {
+-		if (ep->in)
+-			pci_unmap_single(dev->pdev,
+-					req->req.dma,
+-					req->req.length,
+-					PCI_DMA_TODEVICE);
+-		else
+-			pci_unmap_single(dev->pdev,
+-					req->req.dma,
+-					req->req.length,
+-					PCI_DMA_FROMDEVICE);
+-		req->dma_mapping = 0;
+-		req->req.dma = DMA_DONT_USE;
 -	}
--
--	if (req->request.num_sgs) {
--		int	mapped;
--
--		mapped = dma_map_sg(dwc->dev, req->request.sg,
--				req->request.num_sgs,
--				req->direction ? DMA_TO_DEVICE
--				: DMA_FROM_DEVICE);
--		if (mapped < 0) {
--			dev_err(dwc->dev, "failed to map SGs\n");
--			return;
--		}
--
--		req->request.num_mapped_sgs = mapped;
--		return;
--	}
--
--	if (req->request.dma == DMA_ADDR_INVALID) {
--		req->request.dma = dma_map_single(dwc->dev, req->request.buf,
--				req->request.length, req->direction
--				? DMA_TO_DEVICE : DMA_FROM_DEVICE);
--		req->mapped = true;
--	}
--}
--
--void dwc3_unmap_buffer_from_dma(struct dwc3_request *req)
--{
--	struct dwc3			*dwc = req->dep->dwc;
--
--	if (req->request.length == 0) {
--		req->request.dma = DMA_ADDR_INVALID;
--		return;
--	}
--
--	if (req->request.num_mapped_sgs) {
--		req->request.dma = DMA_ADDR_INVALID;
--		dma_unmap_sg(dwc->dev, req->request.sg,
--				req->request.num_sgs,
--				req->direction ? DMA_TO_DEVICE
--				: DMA_FROM_DEVICE);
--
--		req->request.num_mapped_sgs = 0;
--		return;
--	}
--
--	if (req->mapped) {
--		dma_unmap_single(dwc->dev, req->request.dma,
--				req->request.length, req->direction
--				? DMA_TO_DEVICE : DMA_FROM_DEVICE);
--		req->mapped = 0;
--		req->request.dma = DMA_ADDR_INVALID;
--	}
--}
--
- void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
- 		int status)
- {
-@@ -144,7 +80,8 @@ void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
- 	if (req->request.status == -EINPROGRESS)
- 		req->request.status = status;
++	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->in);
  
--	dwc3_unmap_buffer_from_dma(req);
-+	usb_gadget_unmap_request(&dwc->gadget, &req->request,
-+			req->direction);
+ 	halted = ep->halted;
+ 	ep->halted = 1;
+@@ -1095,20 +1082,11 @@ udc_queue(struct usb_ep *usbep, struct usb_request *usbreq, gfp_t gfp)
+ 		return -ESHUTDOWN;
  
- 	dev_dbg(dwc->dev, "request %p from %s completed %d/%d ===> %d\n",
- 			req, dep->name, req->request.actual,
-@@ -558,7 +495,6 @@ static struct usb_request *dwc3_gadget_ep_alloc_request(struct usb_ep *ep,
- 
- 	req->epnum	= dep->number;
- 	req->dep	= dep;
--	req->request.dma = DMA_ADDR_INVALID;
- 
- 	return &req->request;
- }
-@@ -817,7 +753,8 @@ static int __dwc3_gadget_kick_transfer(struct dwc3_ep *dep, u16 cmd_param,
- 		 * here and stop, unmap, free and del each of the linked
- 		 * requests instead of we do now.
- 		 */
--		dwc3_unmap_buffer_from_dma(req);
-+		usb_gadget_unmap_request(&dwc->gadget, &req->request,
-+				req->direction);
- 		list_del(&req->list);
- 		return ret;
+ 	/* map dma (usually done before) */
+-	if (ep->dma && usbreq->length != 0
+-			&& (usbreq->dma == DMA_DONT_USE || usbreq->dma == 0)) {
++	if (ep->dma) {
+ 		VDBG(dev, "DMA map req %p\n", req);
+-		if (ep->in)
+-			usbreq->dma = pci_map_single(dev->pdev,
+-						usbreq->buf,
+-						usbreq->length,
+-						PCI_DMA_TODEVICE);
+-		else
+-			usbreq->dma = pci_map_single(dev->pdev,
+-						usbreq->buf,
+-						usbreq->length,
+-						PCI_DMA_FROMDEVICE);
+-		req->dma_mapping = 1;
++		retval = usb_gadget_map_request(&udc->gadget, &req->req, ep->in);
++		if (retval)
++			return retval;
  	}
-@@ -832,6 +769,9 @@ static int __dwc3_gadget_kick_transfer(struct dwc3_ep *dep, u16 cmd_param,
  
- static int __dwc3_gadget_ep_queue(struct dwc3_ep *dep, struct dwc3_request *req)
- {
-+	struct dwc3		*dwc = dep->dwc;
-+	int			ret;
-+
- 	req->request.actual	= 0;
- 	req->request.status	= -EINPROGRESS;
- 	req->direction		= dep->direction;
-@@ -849,7 +789,11 @@ static int __dwc3_gadget_ep_queue(struct dwc3_ep *dep, struct dwc3_request *req)
- 	 * This will also avoid Host cancelling URBs due to too
- 	 * many NACKs.
- 	 */
--	dwc3_map_buffer_to_dma(req);
-+	ret = usb_gadget_map_request(&dwc->gadget, &req->request,
-+			dep->direction);
-+	if (ret)
-+		return ret;
-+
- 	list_add_tail(&req->list, &dep->request_list);
- 
- 	/*
+ 	VDBG(dev, "%s queue req %p, len %d req->td_data=%p buf %p\n",
 -- 
 1.7.8.rc3
 
