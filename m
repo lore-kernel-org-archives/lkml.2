@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1LSPOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 10:14:40 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38140 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab1LSPOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 10:14:39 -0500
-Date: Mon, 19 Dec 2011 16:14:31 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 2/4] memcg: simplify corner case handling of LRU.
-Message-ID: <20111219151431.GB1415@cmpxchg.org>
-References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
- <20111214165032.ae8416b2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752701Ab1LSPSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 10:18:18 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:58264 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751378Ab1LSPSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 10:18:16 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18LB5sMjWkLE56e5tZV1FTj5fjUjrV5mYsV2Vm6ZY
+	JQD+lHWPa8pA8s
+Message-ID: <4EEF55AC.6060107@gmx.de>
+Date: Mon, 19 Dec 2011 15:18:04 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111214165032.ae8416b2.kamezawa.hiroyu@jp.fujitsu.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Marek Vasut <marek.vasut@gmail.com>, linux-kernel@vger.kernel.org,
+        Wolfgang Denk <wd@denx.de>, Stefano Babic <sbabic@denx.de>,
+        Huang Shijie <b32955@freescale.com>, Axel Lin <axel.lin@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] MXSFB: Fix driver registration
+References: <1324169888-6687-1-git-send-email-marek.vasut@gmail.com> <CAAQ0ZWSJ0Yzr2Gk9MBQ0nvVCWxr0yWF_RFTy3isqc0pgEDdRxw@mail.gmail.com>
+In-Reply-To: <CAAQ0ZWSJ0Yzr2Gk9MBQ0nvVCWxr0yWF_RFTy3isqc0pgEDdRxw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 04:50:32PM +0900, KAMEZAWA Hiroyuki wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi Marek,
+
+can you please resend the patch to me and the fbdev mailing list, preferably
+with all Ack's you received until now included.
+
+On 12/19/2011 01:51 PM, Shawn Guo wrote:
+> Cc-ed Florian and linux-fbdev@vger.kernel.org, as I guess Florian is
+> the person who will take this patch.
+
+Thanks, I will. I guess you wanted to Ack this patch?
+
+
+Thanks,
+
+Florian Tobias Schandinat
+
 > 
-> This patch simplifies LRU handling of racy case (memcg+SwapCache).
-> At charging, SwapCache tend to be on LRU already. So, before
-> overwriting pc->mem_cgroup, the page must be removed from LRU and
-> added to LRU later.
+> -- Regards,Shawn
+> On 18 December 2011 08:58, Marek Vasut <marek.vasut@gmail.com> wrote:
+>> The driver should be registered with mxsfb_driver, not with mxsfb_devtype.
+>> This caused obvious null pointer dereference and crash.
+>>
+>> Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+>> Cc: Wolfgang Denk <wd@denx.de>
+>> Cc: Stefano Babic <sbabic@denx.de>
+>> Cc: Shawn Guo <shawn.guo@linaro.org>
+>> Cc: Huang Shijie <b32955@freescale.com>
+>> Cc: Axel Lin <axel.lin@gmail.com>
+>> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+>> ---
+>>  drivers/video/mxsfb.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+>> index 18742c2..d29c7c0 100644
+>> --- a/drivers/video/mxsfb.c
+>> +++ b/drivers/video/mxsfb.c
+>> @@ -902,7 +902,7 @@ static struct platform_driver mxsfb_driver = {
+>>        },
+>>  };
+>>
+>> -module_platform_driver(mxsfb_devtype);
+>> +module_platform_driver(mxsfb_driver);
+>>
+>>  MODULE_DESCRIPTION("Freescale mxs framebuffer driver");
+>>  MODULE_AUTHOR("Sascha Hauer, Pengutronix");
+>> --
+>> 1.7.6.4
+>>
 > 
-> This patch does
->         spin_lock(zone->lru_lock);
->         if (PageLRU(page))
->                 remove from LRU
->         overwrite pc->mem_cgroup
->         if (PageLRU(page))
->                 add to new LRU.
->         spin_unlock(zone->lru_lock);
 
-Not quite.  It also clears PageLRU in between.
-
-Since it doesn't release the lru lock until the page is back on the
-list, couldn't we just leave that bit alone like
-mem_cgroup_replace_page_cache() did?
-
-That said, thanks for removing this mind-boggling complexity, the code
-is much better off with this patch.
-
-Feel free to add my
-
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Relevant hunks for reference:
-
-> @@ -2695,14 +2615,27 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
->  					enum charge_type ctype)
->  {
->  	struct page_cgroup *pc = lookup_page_cgroup(page);
-> +	struct zone *zone = page_zone(page);
-> +	unsigned long flags;
-> +	bool removed = false;
-> +
->  	/*
->  	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
->  	 * is already on LRU. It means the page may on some other page_cgroup's
->  	 * LRU. Take care of it.
->  	 */
-> -	mem_cgroup_lru_del_before_commit(page);
-> +	spin_lock_irqsave(&zone->lru_lock, flags);
-> +	if (PageLRU(page)) {
-> +		del_page_from_lru_list(zone, page, page_lru(page));
-> +		ClearPageLRU(page);
-> +		removed = true;
-> +	}
->  	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
-> -	mem_cgroup_lru_add_after_commit(page);
-> +	if (removed) {
-> +		add_page_to_lru_list(zone, page, page_lru(page));
-> +		SetPageLRU(page);
-> +	}
-> +	spin_unlock_irqrestore(&zone->lru_lock, flags);
->  	return;
->  }
->  
-> @@ -3303,9 +3236,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
->  {
->  	struct mem_cgroup *memcg;
->  	struct page_cgroup *pc;
-> -	struct zone *zone;
->  	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> -	unsigned long flags;
->  
->  	pc = lookup_page_cgroup(oldpage);
->  	/* fix accounting on old pages */
-> @@ -3318,20 +3249,12 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
->  	if (PageSwapBacked(oldpage))
->  		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
->  
-> -	zone = page_zone(newpage);
-> -	pc = lookup_page_cgroup(newpage);
->  	/*
->  	 * Even if newpage->mapping was NULL before starting replacement,
->  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
->  	 * LRU while we overwrite pc->mem_cgroup.
->  	 */
-> -	spin_lock_irqsave(&zone->lru_lock, flags);
-> -	if (PageLRU(newpage))
-> -		del_page_from_lru_list(zone, newpage, page_lru(newpage));
-> -	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
-> -	if (PageLRU(newpage))
-> -		add_page_to_lru_list(zone, newpage, page_lru(newpage));
-> -	spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +	__mem_cgroup_commit_charge_lrucare(newpage, memcg, type);
->  }
->  
->  #ifdef CONFIG_DEBUG_VM
