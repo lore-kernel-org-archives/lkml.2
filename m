@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1LSUV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:21:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55566 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab1LSUVy convert rfc822-to-8bit (ORCPT
+	id S1753190Ab1LSUXB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:23:01 -0500
+Received: from lunge.queued.net ([173.255.254.236]:53435 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab1LSUXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:21:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1112152228030.22491-100000@netrider.rowland.org>
-References: <CAMP44s3eeTOBRiFwEL3FypDY_+-MReqYJJVO1URNrnFVFXzvDg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1112152228030.22491-100000@netrider.rowland.org>
-Date: Mon, 19 Dec 2011 22:21:53 +0200
-Message-ID: <CAMP44s08LPo5Fp+jjictn48bMLo9R0OyGryYw32Bup6TqmCxEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] usb: musb: fix pm_runtime mismatches
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Dec 2011 15:23:00 -0500
+Date: Mon, 19 Dec 2011 12:22:58 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: dcbw@redhat.com
+Cc: linville@tuxdriver.com, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dsd@laptop.org
+Subject: [PATCH] libertas: clean up scan thread handling
+Message-ID: <20111219122258.26988450@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 5:30 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 16 Dec 2011, Felipe Contreras wrote:
->> > Should these calls be pm_runtime_put_sync() instead of
->> > pm_runtime_put()?
->>
->> I don't see why... The thing failed, it's not going to be used any
->> more so better let PM deactivate the device.
->
-> It's not a big deal.  The difference is that pm_runtime_put_sync()
-> avoids an extra context switch when suspending the device.  A minor
-> optimization, that's all.
 
-Ok, I used what most of the code was using, but I've trusted you and
-updated the patches. It would probably make sense to do the same in
-other places.
+The libertas scan thread expects priv->scan_req to be non-NULL.  In theory,
+it should always be set.  In practice, we've seen the following oops:
 
+[ 8363.067444] Unable to handle kernel NULL pointer dereference at virtual address 00000004
+[ 8363.067490] pgd = c0004000
+[ 8363.078393] [00000004] *pgd=00000000
+[ 8363.086711] Internal error: Oops: 17 [#1] PREEMPT
+[ 8363.091375] Modules linked in: fuse libertas_sdio libertas psmouse mousedev ov7670 mmp_camera joydev videobuf2_core videobuf2_dma_sg videobuf2_memops [last unloaded: scsi_wait_scan]
+[ 8363.107490] CPU: 0    Not tainted  (3.0.0-gf7ccc69 #671)
+[ 8363.112799] PC is at lbs_scan_worker+0x108/0x5a4 [libertas]
+[ 8363.118326] LR is at 0x0
+[ 8363.120836] pc : [<bf03a854>]    lr : [<00000000>]    psr: 60000113
+[ 8363.120845] sp : ee66bf48  ip : 00000000  fp : 00000000
+[ 8363.120845] r10: ee2c2088  r9 : c04e2efc  r8 : eef97005
+[ 8363.132231] r7 : eee0716f  r6 : ee2c02c0  r5 : ee2c2088  r4 : eee07160
+[ 8363.137419] r3 : 00000000  r2 : a0000113  r1 : 00000001  r0 : eee07160
+[ 8363.143896] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[ 8363.157630] Control: 10c5387d  Table: 2e754019  DAC: 00000015
+[ 8363.163334] Process kworker/u:1 (pid: 25, stack limit = 0xee66a2f8)
+
+While I've not found a smoking gun, there are two places that raised red flags
+for me.  The first is in _internal_start_scan, when we queue up a scan; we
+first queue the worker, and then set priv->scan_req.  There's theoretically
+a 50mS delay which should be plenty, but doing things that way just seems
+racy (and not in the good way).
+
+The second is in the scan worker thread itself.  Depending on the state of
+priv->scan_channel, we cancel pending scan runs and then requeue a run in
+300mS.  We then send the scan command down to the hardware, sleep, and if
+we get scan results for all the desired channels, we set priv->scan_req to
+NULL.  However, it that's happened in less than 300mS, what happens with
+the pending scan run?
+
+This patch addresses both of those concerns.  With the patch applied, we
+have not seen the oops in the past two weeks.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+Cc: stable@kernel.org
+---
+ drivers/net/wireless/libertas/cfg.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+index a7f1ab2..db64ef1 100644
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -728,9 +728,11 @@ static void lbs_scan_worker(struct work_struct *work)
+ 		le16_to_cpu(scan_cmd->hdr.size),
+ 		lbs_ret_scan, 0);
+ 
+-	if (priv->scan_channel >= priv->scan_req->n_channels)
++	if (priv->scan_channel >= priv->scan_req->n_channels) {
+ 		/* Mark scan done */
++		cancel_delayed_work(&priv->scan_work);
+ 		lbs_scan_done(priv);
++	}
+ 
+ 	/* Restart network */
+ 	if (carrier)
+@@ -759,12 +761,12 @@ static void _internal_start_scan(struct lbs_private *priv, bool internal,
+ 		request->n_ssids, request->n_channels, request->ie_len);
+ 
+ 	priv->scan_channel = 0;
+-	queue_delayed_work(priv->work_thread, &priv->scan_work,
+-		msecs_to_jiffies(50));
+-
+ 	priv->scan_req = request;
+ 	priv->internal_scan = internal;
+ 
++	queue_delayed_work(priv->work_thread, &priv->scan_work,
++		msecs_to_jiffies(50));
++
+ 	lbs_deb_leave(LBS_DEB_CFG80211);
+ }
+ 
 -- 
-Felipe Contreras
+1.7.2.5
+
