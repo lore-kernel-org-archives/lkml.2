@@ -1,42 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab1LSPSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 10:18:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab1LSPSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 10:18:40 -0500
-Message-ID: <4EEF559E.2040709@redhat.com>
-Date: Mon, 19 Dec 2011 16:17:50 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752936Ab1LSPTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 10:19:49 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47218 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752597Ab1LSPTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 10:19:47 -0500
+Date: Mon, 19 Dec 2011 10:19:46 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        "open list:DESIGNWARE USB3 D..." <linux-omap@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:AMD GEODE CS5536..." <linux-geode@lists.infradead.org>
+Subject: Re: [PATCH 1/9] usb: gadget: add generic map/unmap request utilities
+In-Reply-To: <1324290632-23758-2-git-send-email-balbi@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1112191018320.1746-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: dgilbert@interlog.com
-CC: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [PATCH v3 1/2] virtio-scsi: first version
-References: <1324296188-3426-1-git-send-email-pbonzini@redhat.com> <1324296188-3426-2-git-send-email-pbonzini@redhat.com> <4EEF2C86.6010003@suse.de> <4EEF380E.6040101@redhat.com> <4EEF5192.50201@interlog.com>
-In-Reply-To: <4EEF5192.50201@interlog.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 04:00 PM, Douglas Gilbert wrote:
->>
->> This happens when you send an INQUIRY with a sglist of 255 bytes and an
->> ALLOCATION LENGTH of 300 bytes. The spec says "VIRTIO_SCSI_S_UNDERRUN [is
->> returned] if the content of the CDB requires transferring more data
->> than is
->> available in the data buffers".
->
-> Overrun! That is overrun.
+On Mon, 19 Dec 2011, Felipe Balbi wrote:
 
-We're still in time to fix the spec.  Thanks.
+> such utilities are currently duplicated on all UDC
+> drivers basically with the same structure. Let's group
+> all implementations into one generic implementation
+> and get rid of that duplication.
+> 
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/usb/gadget/udc-core.c |   53 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/usb/gadget.h    |   10 +++++++
+>  2 files changed, 63 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
+> index 0b0d12c..2031c11 100644
+> --- a/drivers/usb/gadget/udc-core.c
+> +++ b/drivers/usb/gadget/udc-core.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/device.h>
+>  #include <linux/list.h>
+>  #include <linux/err.h>
+> +#include <linux/dma-mapping.h>
+>  
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> @@ -49,6 +50,58 @@ static DEFINE_MUTEX(udc_lock);
+>  
+>  /* ------------------------------------------------------------------------- */
+>  
+> +int usb_gadget_map_request(struct usb_gadget *gadget,
+> +		struct usb_request *req, int direction)
+> +{
+> +	if (req->length == 0)
+> +		return 0;
+> +
+> +	if (req->num_sgs) {
+> +		int     mapped;
+> +
+> +		mapped = dma_map_sg(&gadget->dev, req->sg, req->num_sgs,
+> +				direction ? DMA_TO_DEVICE
+> +				: DMA_FROM_DEVICE);
+> +		if (mapped == 0) {
+> +			dev_err(&gadget->dev, "failed to map SGs\n");
+> +			return -EFAULT;
+> +		}
+> +
+> +		req->num_mapped_sgs = mapped;
+> +	} else {
+> +		req->dma = dma_map_single(&gadget->dev, req->buf, req->length,
+> +				direction ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+> +
+> +		if (dma_mapping_error(&gadget->dev, req->dma)) {
+> +			dev_err(&gadget->dev, "failed to map buffer\n");
+> +			return -EFAULT;
+> +		}
+> +	}
+> +
+> +	return 0;
 
-Paolo
+You forgot to set req->mapped.
+
+> +}
+> +EXPORT_SYMBOL_GPL(usb_gadget_map_request);
+> +
+> +void usb_gadget_unmap_request(struct usb_gadget *gadget,
+> +		struct usb_request *req, int direction)
+> +{
+> +	if (req->length == 0)
+> +		return;
+> +
+> +	if (req->num_mapped_sgs) {
+> +		dma_unmap_sg(&gadget->dev, req->sg, req->num_sgs,
+> +				direction ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+> +
+> +		req->num_mapped_sgs = 0;
+> +	} else {
+> +		dma_unmap_single(&gadget->dev, req->dma, req->length,
+> +				direction ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+> +	}
+
+You forgot to clear req->mapped.
+
+Alan Stern
+
