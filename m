@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1LSTWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 14:22:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61773 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1LSTWS (ORCPT
+	id S1752427Ab1LSTY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 14:24:56 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45813 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1LSTYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 14:22:18 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=tVazo0yrEIsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=KzvNuwGDsbWFFCAyzVcA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324322536.5916.37.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCHv2 07/10] ftrace: Change filter/notrace set functions to
- return exit code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Date: Mon, 19 Dec 2011 14:22:16 -0500
-In-Reply-To: <1323105776-26961-8-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-8-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
+	Mon, 19 Dec 2011 14:24:54 -0500
+Message-ID: <4EEF8F85.9010408@gmail.com>
+Date: Mon, 19 Dec 2011 14:24:53 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-05 at 18:22 +0100, Jiri Olsa wrote:
-> Currently the ftrace_set_filter and ftrace_set_notrace functions
-> do not return any return code. So there's no way for ftrace_ops
-> user to tell wether the filter was correctly applied.
+(12/19/11 1:38 PM), Naoya Horiguchi wrote:
+> This flag shows that a given pages is a subpage of transparent hugepage.
+> It does not care about whether it is a head page or a tail page, because
+> it's clear from pfn of the target page which you should know when you read
+> /proc/kpageflags.
 > 
-> The set_ftrace_filter interface returns error in case the filter
-> did not match:
-> 
->   # echo krava > set_ftrace_filter
->   bash: echo: write error: Invalid argument
-> 
-> Changing both ftrace_set_filter and ftrace_set_notrace functions
-> to return zero if the filter was applied correctly or -E* values
-> in case of error.
+> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
 
-This looks like a proper fix. Move this to the front of the patch set,
-as this and patch 1 can go into ftrace now as fixes.
+NAK.
 
--- Steve
-
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-
+The detail of transparent hugepage are hidden by design. We hope it
+keep 'transparent'.
+Until any explain why we should expose KPF_THP, we don't agree it.
 
