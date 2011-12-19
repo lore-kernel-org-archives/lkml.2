@@ -1,87 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab1LSEL6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 23:11:58 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:46886 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1LSEL4 (ORCPT
+	id S1752398Ab1LSEWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 23:22:46 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29338 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146Ab1LSEWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 23:11:56 -0500
-Date: Mon, 19 Dec 2011 15:11:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Eric Sandeen <sandeen@sandeen.net>,
-        Ben Myers <bpm@sgi.com>, David Chinner <david@fromorbit.com>,
-        xfs-masters@oss.sgi.com
-Subject: linux-next: manual merge of the pm tree with the xfs tree
-Message-Id: <20111219151145.dba82854f65671a877db8ed3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Dec_2011_15_11_45_+1100_6iI2M+Y0xIbf.Qx8"
+	Sun, 18 Dec 2011 23:22:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EABC77k55LOCn/2dsb2JhbABDq1qBBoFyAQEEAScTHCMFCwgDGC4UJQMhE4d6tnITi3EElH2JG4ko
+Date: Mon, 19 Dec 2011 15:22:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
+Message-ID: <20111219042240.GN23662@dastard>
+References: <20111216112534.GA13147@dztty>
+ <20111216125556.db2bf308.akpm@linux-foundation.org>
+ <20111217214137.GY2203@ZenIV.linux.org.uk>
+ <20111219014343.GK23662@dastard>
+ <20111219020340.GG2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111219020340.GG2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Dec_2011_15_11_45_+1100_6iI2M+Y0xIbf.Qx8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 19, 2011 at 02:03:40AM +0000, Al Viro wrote:
+> On Mon, Dec 19, 2011 at 12:43:43PM +1100, Dave Chinner wrote:
+> > > We have a shitload of deadlocks on very common paths with that patch.  What
+> > > of the paths that do lead to file_remove_suid() without i_mutex?
+> > > *	xfs_file_aio_write_checks(): we drop i_mutex (via xfs_rw_iunlock())
+> > > just before calling file_remove_suid().  Racy, the fix is obvious - move
+> > > file_remove_suid() call before unlocking.
+> > 
+> > Not exactly. xfs_rw_iunlock() is not doing what you think it's doing
+> > there.....
+> 
+> Huh?  It is called as 
+> 
+> > > -	xfs_rw_iunlock(ip, XFS_ILOCK_EXCL);
+> 
+> and thus in
+> static inline void
+> xfs_rw_iunlock(
+>         struct xfs_inode        *ip,
+>         int                     type)
+> {
+>         xfs_iunlock(ip, type);
+>         if (type & XFS_IOLOCK_EXCL)
+>                 mutex_unlock(&VFS_I(ip)->i_mutex);
+> }
+> we are guaranteed to hit i_mutex.  
 
-Hi Rafael,
+XFS_ILOCK_EXCL != XFS_IOLOCK_EXCL.
 
-Today's linux-next merge of the pm tree got a conflict in
-fs/xfs/xfs_buf.c between commit 687d1c5e8e26 ("xfs: remove unused
-XBT_FORCE_SLEEP bit") from the xfs tree and commit a0acae0e886d
-("freezer: unexport refrigerator() and update try_to_freeze() slightly")
-from the pm tree.
+There are 3 locks here, not 2 (outermost first):
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
+	VFS_I(ip)->i_mutex (mutex)
+	ip->i_iolock (rwsem)
+	ip->i_ilock (rwsem)
+
+xfs_ilock() maintains iolock vs ilock ordering for the entire of
+XFS, while xfs_rw_ilock() maintains i_mutex vs iolock vs ilock
+ordering for the IO path. it is all lockdep annotated, so if we make
+a mistake, we know about it pretty quickly....
+
+> > Wrong lock.  That's dropping the internal XFS inode metadata lock,
+> > but the VFS i_mutex is associated with the internal XFS inode IO
+> > lock, which is accessed via XFS_IOLOCK_*. Only if we take the iolock
+> > via XFS_IOLOCK_EXCL do we actually take the i_mutex.
+> 
+> > Now it gets complex. For buffered IO, we are guaranteed to already
+> > be holding the i_mutex because we do:
+> > 
+> >         *iolock = XFS_IOLOCK_EXCL;
+> >         xfs_rw_ilock(ip, *iolock);
+> > 
+> >         ret = xfs_file_aio_write_checks(file, &pos, &count, new_size, iolock);
+> > 
+> > So that is safe and non-racy right now.
+> 
+> No, it is not - we *drop* it before calling file_remove_suid().  Explicitly.
+
+We drop the innermost ip->i_ilock before calling file_remove_suid().
+We are still holding ip->i_iolock in EXCL mode and the
+VFS_I(ip)->i_mutex as well at this point.
+
+> Again, look at that xfs_rw_iunlock() call there - it does drop i_mutex
+> (which is to say, you'd better have taken it prior to that, or you have
+> far worse problems).
+
+> 
+> > For direct IO, however, we don't always take the IOLOCK exclusively.
+> > Indeed, we try really, really hard not to do this so we can do
+> > concurrent reads and writes to the inode, and that results
+> > in a bunch of lock juggling when we actually need the IOLOCK
+> > exclusive (like in xfs_file_aio_write_checks()). It sounds like we
+> > need to know if we are going to have to remove the SUID bit ahead of
+> > time so that we can  take the correct lock up front. I haven't
+> > looked at what is needed to do that yet.
+> 
+> OK, I'm definitely missing something.  The very first thing
+> xfs_file_aio_write_checks() does is
+>         xfs_rw_ilock(ip, XFS_ILOCK_EXCL);
+> which really makes me wonder how the hell does that manage to avoid an
+> instant deadlock in case of call via xfs_file_buffered_aio_write()
+> where we have:
+>         struct address_space    *mapping = file->f_mapping;
+>         struct inode            *inode = mapping->host;
+>         struct xfs_inode        *ip = XFS_I(inode);
+>         *iolock = XFS_IOLOCK_EXCL;
+>         xfs_rw_ilock(ip, *iolock);
+>         ret = xfs_file_aio_write_checks(file, &pos, &count, new_size, iolock);
+> which leads to
+>         struct inode            *inode = file->f_mapping->host;
+>         struct xfs_inode        *ip = XFS_I(inode);
+> (IOW, inode and ip are the same as in the caller) followed by
+>         xfs_rw_ilock(ip, XFS_ILOCK_EXCL);
+> and with both xfs_rw_ilock() calls turning into
+> 	mutex_lock(&VFS_I(ip)->i_mutex);
+>         xfs_ilock(ip, XFS_ILOCK_EXCL);
+
+> we ought to deadlock on that i_mutex.  What am I missing and how do we manage
+> to survive that?
+
+Translation of the buffered write IO path locking without wrappers:
+
+	mutex_lock(&VFS_I(ip)->i_mutex);
+	down_write_nested(&ip->i_iolock);
+	xfs_file_aio_write_checks() {
+		down_write_nested(&ip->i_ilock);
+		.....
+		up_write(&ip->i_ilock);
+		file_remove_suid();
+	}
+	generic_file_buffered_write()
+	up_write(&ip->i_iolock);
+	mutex_unlock(&ip->i_iolock);
+
+Locking is correctly ordered, and file_remove_suid() is called with
+the i_mutex held.
+
+The direct IO write fast path does this:
+
+	down_read_nested(&ip->i_iolock);
+	xfs_file_aio_write_checks() {
+		down_write_nested(&ip->i_ilock);
+		.....
+		up_write(&ip->i_ilock);
+		file_remove_suid();
+	}
+	generic_file_direct_write()
+	up_read(&ip->i_iolock);
+
+So isn't holding the i_mutex when file_remove_suid() is called. We
+do conditionally call xfs_file_aio_write_checks() with the correct
+locks held if we've had to flush the page cache, we are doing
+unaligned IO or extending the file, in which case the locks taken
+and the ordering is the same as for the buffered write IO path. We
+can do exactly the same relock dance if we know we have to remove
+the SUID bit before we actually do remove it...
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc fs/xfs/xfs_buf.c
-index f84777e,0188299..0000000
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@@ -1701,8 -1701,12 +1701,8 @@@ xfsbufd
-  		struct list_head tmp;
-  		struct blk_plug plug;
- =20
- -		if (unlikely(freezing(current))) {
- -			set_bit(XBT_FORCE_SLEEP, &target->bt_flags);
- +		if (unlikely(freezing(current)))
-- 			refrigerator();
-+ 			try_to_freeze();
- -		} else {
- -			clear_bit(XBT_FORCE_SLEEP, &target->bt_flags);
- -		}
- =20
-  		/* sleep for a long time if there is nothing to do. */
-  		if (list_empty(&target->bt_delwri_queue))
-
---Signature=_Mon__19_Dec_2011_15_11_45_+1100_6iI2M+Y0xIbf.Qx8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO7rmBAAoJEECxmPOUX5FE3hsP/iNa2Xb+aB972p+nubbarcY/
-n8vEBDU4K8DVJG00AxQFxDERiQB3HyCd2EBGZ68BnRzm/bcUIHs0MHca7F5a0s+H
-eV8c6eq38SjEir1/vGrNNK9fXG1/L7rKii/rW0dRKXs6UKHWh6CZlry8ZNfXXyhP
-La/bwBE+INK2KboasTNLYEOyD6nWl5A6ziZ0gLfevM4ujTpHowBrF2tmwzIj/1jY
-Csg6tSpNWewJquez86RqqBH1Z9EzHMJX67jVUOD2DpMj/DnMSSwAc4LqFhM+/znL
-k5W8YURgJChAA6VCoIhHDO4/XgRZbVMFMMr2mRNRojSxJb3lvqMXy78WuOMLDMit
-so9vydZSRGGaeiPLoRs+DQP67f/2Zj+1pPnwq1bIK1ajwcF9Ijy8oe2lEXNdm23q
-1jugNlocBrstsh1ErN0tQh/qR4afVoNAVZpn99nK2EKwInxgYTQrNHtQImolJw7D
-7xigl9RDzvMrOfnGoe99bVGn+ct1sVQKF3724Dy91lf4lHQPdxZwxgXWmOg5PNn/
-p8SCgcmplQLz4MjE+SsVbbAqfCiddcjBMu5K67CtdKsOyCZxzCfAfO3L54ZTz/P1
-07BMoQe4kpXTtQx+HETug5RCGO9QSkjwLdQ5SP12Ykn30EhLRm8j+scnVnJJbG9l
-NBI8nHdkMCQhV0LEsqBO
-=r0dB
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Dec_2011_15_11_45_+1100_6iI2M+Y0xIbf.Qx8--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
