@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab1LSWkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:40:52 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:52265 "EHLO mail.atlantis.sk"
+	id S1752329Ab1LSWnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:43:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:45548 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab1LSWkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:40:49 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH] s3fb: fix Virge/VX
-Date: Mon, 19 Dec 2011 23:39:47 +0100
-User-Agent: KMail/1.9.10
-Cc: Paul Mundt <lethal@linux-sh.org>, Ondrej Zajicek <santiago@crfreenet.org>,
-        linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	id S1751944Ab1LSWn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:43:27 -0500
+Date: Tue, 20 Dec 2011 09:31:20 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
+        benh@kernel.crashing.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com, rusty@rustcorp.com.au,
+        iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, joro@8bytes.org
+Subject: Re: [RFC] Device isolation infrastructure v2
+Message-ID: <20111219223120.GB5207@truffala.fritz.box>
+Mail-Followup-To: David Woodhouse <dwmw2@infradead.org>,
+	Joerg Roedel <joerg.roedel@amd.com>,
+	Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
+	benh@kernel.crashing.org, chrisw@redhat.com, agraf@suse.de,
+	scottwood@freescale.com, B08248@freescale.com,
+	rusty@rustcorp.com.au, iommu@lists.linux-foundation.org,
+	qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
+	joro@8bytes.org
+References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
+ <1323972307.2437.19.camel@x201.home>
+ <20111216145353.GA29877@amd.com>
+ <20111219001125.GA30390@truffala.fritz.box>
+ <1324309598.2132.12.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201112192339.52676.linux@rainbow-software.org>
+In-Reply-To: <1324309598.2132.12.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add memory size detection for Virge/VX and small delay in mode setting (same
-as in X.org driver) to fix blank screen problem.
+On Mon, Dec 19, 2011 at 03:46:38PM +0000, David Woodhouse wrote:
+> On Mon, 2011-12-19 at 11:11 +1100, David Gibson wrote:
+> >   They have no inbuilt concept
+> > of domains (though we could fake in software in some circumstances).
+> 
+> That sentence doesn't make much sense to me.
+> 
+> Either you're saying that every device behind a given IOMMU is in *one*
+> domain (i.e. there's one domain per PCI host bridge), or you're saying
+> that each device has its *own* domain (maximum isolation, but still
+> perhaps not really true if you end up with PCIe-to-PCI bridges or broken
+> hardware such as the ones we've been discovering, where multifunction
+> devices do their DMA from the wrong function).
+> 
+> Either way, you *do* have domains. You just might not have thought about
+> it before.
 
-Also adjust DTPC position to fix garbled screen in some modes (tested that
-this adjustment does not break other cards - at least Trio32, Trio64V+,
-Trio64V2/DX, Virge, Virge/DX).
+Right, sorry, what I mean is that there's no concept of runtime
+assignment of devices to domains.  The concept used in the
+documentation is a "Partitionable Endpoint" (PE) - which would
+correspond to the isolation groups I'm proposing.  These are generally
+assigned by firmware based on various hardware dependent isolation
+constraints.
 
-Tested on ELSA Winner 2000AVI/3D.
+When we're running paravirtualized under pHyp, it's impossible to
+merge multiple PEs into one domain per se.  We could fake it rather
+nastily by replicating all map/unmaps across mutiple PEs.  When
+running bare metal, we could do so a bit more nicely by assigning
+multiple PEs the same TCE pointer, but we have no mechanism to do so
+at present.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-
---- linux-3.1-orig/drivers/video/s3fb.c	2011-10-24 09:10:05.000000000 +0200
-+++ linux-3.1/drivers/video/s3fb.c	2011-12-19 23:28:34.000000000 +0100
-@@ -727,7 +727,7 @@
- 	if (par->chip == CHIP_988_VIRGE_VX) {
- 		vga_wcrt(par->state.vgabase, 0x50, 0x00);
- 		vga_wcrt(par->state.vgabase, 0x67, 0x50);
--
-+		msleep(10); /* screen remains blank sometimes without this */
- 		vga_wcrt(par->state.vgabase, 0x63, (mode <= 2) ? 0x90 : 0x09);
- 		vga_wcrt(par->state.vgabase, 0x66, 0x90);
- 	}
-@@ -901,7 +901,8 @@
- 
- 	/* Set Data Transfer Position */
- 	hsstart = ((info->var.xres + info->var.right_margin) * hmul) / 8;
--	value = clamp((htotal + hsstart + 1) / 2, hsstart + 4, htotal + 1);
-+	/* + 2 is needed for Virge/VX, does no harm on other cards */
-+	value = clamp((htotal + hsstart + 1) / 2 + 2, hsstart + 4, htotal + 1);
- 	svga_wcrt_multi(par->state.vgabase, s3_dtpc_regs, value);
- 
- 	memset_io(info->screen_base, 0x00, screen_size);
-@@ -1215,6 +1216,31 @@
- 			info->screen_size = 2 << 20;
- 			break;
- 		}
-+	} else if (par->chip == CHIP_988_VIRGE_VX) {
-+		switch ((regval & 0x60) >> 5) {
-+		case 0: /* 2MB */
-+			info->screen_size = 2 << 20;
-+			break;
-+		case 1: /* 4MB */
-+			info->screen_size = 4 << 20;
-+			break;
-+		case 2: /* 6MB */
-+			info->screen_size = 6 << 20;
-+			break;
-+		case 3: /* 8MB */
-+			info->screen_size = 8 << 20;
-+			break;
-+		}
-+		/* off-screen memory */
-+		regval = vga_rcrt(par->state.vgabase, 0x37);
-+		switch ((regval & 0x60) >> 5) {
-+		case 1: /* 4MB */
-+			info->screen_size -= 4 << 20;
-+			break;
-+		case 2: /* 2MB */
-+			info->screen_size -= 2 << 20;
-+			break;
-+		}
- 	} else
- 		info->screen_size = s3_memsizes[regval >> 5] << 10;
- 	info->fix.smem_len = info->screen_size;
-
+Older hardware usually does have just one PE per host bridge, but it
+also often has only one slot per host bridge, so in practice is often
+both one domain per host bridge _and_ one device per host bridge.
 
 -- 
-Ondrej Zary
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
