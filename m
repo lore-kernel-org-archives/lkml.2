@@ -1,104 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1LSUXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:23:01 -0500
-Received: from lunge.queued.net ([173.255.254.236]:53435 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1LSUXA (ORCPT
+	id S1753203Ab1LSUYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:24:14 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49819 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab1LSUYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:23:00 -0500
-Date: Mon, 19 Dec 2011 12:22:58 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: dcbw@redhat.com
-Cc: linville@tuxdriver.com, libertas-dev@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dsd@laptop.org
-Subject: [PATCH] libertas: clean up scan thread handling
-Message-ID: <20111219122258.26988450@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 19 Dec 2011 15:24:12 -0500
+Message-ID: <4EEF9D4E.1000008@linux.vnet.ibm.com>
+Date: Tue, 20 Dec 2011 01:53:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org> <4EEF1A13.4000801@linux.vnet.ibm.com> <20111219121100.GI2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111219121100.GI2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11121920-4790-0000-0000-0000007B7838
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/2011 05:41 PM, Al Viro wrote:
 
-The libertas scan thread expects priv->scan_req to be non-NULL.  In theory,
-it should always be set.  In practice, we've seen the following oops:
+> On Mon, Dec 19, 2011 at 04:33:47PM +0530, Srivatsa S. Bhat wrote:
+> 
+>> IMHO, we don't need to be concerned here because, {get,put}_online_cpus()
+>> implement a refcounting solution, and they don't really serialize stuff
+>> unnecessarily. The readers (those who prevent cpu hotplug, such as this lock-
+>> unlock code) are fast and can be concurrent, while the writers (the task that
+>> is doing the cpu hotplug) waits till all existing readers are gone/done with
+>> their work.
+>>
+>> So, since we are readers here, IMO, we don't have to worry about performance.
+>> (I know that we get serialized just for a moment while incrementing the
+>> refcount, but that should not be worrisome right?)
+>>
+>> Moreover, using for_each_online_cpu() without using {get,put}_online_cpus()
+>> around that, is plain wrong, because of the unhandled race with cpu hotplug.
+>> IOW, our primary concern here is functionality, isn't it?
+>>
+>> To summarize, in the current design of these VFS locks, using
+>> {get,put}_online_cpus() is *essential* to fix a functionality-related bug,
+>> (and not so bad performance-wise as well).
+>>
+>> The following patch (v2) incorporates your comments:
+> 
+> I really don't like that.  Amount of contention is not a big issue, but the
+> fact that now br_write_lock(vfsmount_lock) became blocking is really nasty.
+> Moreover, we suddenly get cpu_hotplug.lock nested inside namespace_sem...
+> BTW, it's seriously blocking - if nothing else, it waits for cpu_down()
+> in progress to complete.  Which can involve any number of interesting
+> locks taken by notifiers.
+> 
+> Dave's variant is also no good; consider this:
+> CPU1: br_write_lock(); spinlocks grabbed
+> CPU2: br_read_lock(); spinning on one of them
+> CPU3: try to take CPU2 down.  We *can't* proceed to the end, notifiers or no
+> notifiers, until CPU2 gets through the critical area.  Which can't happen
+> until the spinlock is unlocked, i.e. until CPU1 does br_write_unlock().
+> Notifier can't silently do spin_unlock() here or we'll get CPU2 free to go
+> into the critical area when it's really not safe there.
+> 
+> That got one hell of a deadlock potential ;-/  So far I'm more or less
+> in favor of doing get_online_cpus() explicitly in fs/namespace.c, outside
+> of namespace_sem.  But I still have not convinced myself that it's
+> really safe ;-/
+> 
 
-[ 8363.067444] Unable to handle kernel NULL pointer dereference at virtual address 00000004
-[ 8363.067490] pgd = c0004000
-[ 8363.078393] [00000004] *pgd=00000000
-[ 8363.086711] Internal error: Oops: 17 [#1] PREEMPT
-[ 8363.091375] Modules linked in: fuse libertas_sdio libertas psmouse mousedev ov7670 mmp_camera joydev videobuf2_core videobuf2_dma_sg videobuf2_memops [last unloaded: scsi_wait_scan]
-[ 8363.107490] CPU: 0    Not tainted  (3.0.0-gf7ccc69 #671)
-[ 8363.112799] PC is at lbs_scan_worker+0x108/0x5a4 [libertas]
-[ 8363.118326] LR is at 0x0
-[ 8363.120836] pc : [<bf03a854>]    lr : [<00000000>]    psr: 60000113
-[ 8363.120845] sp : ee66bf48  ip : 00000000  fp : 00000000
-[ 8363.120845] r10: ee2c2088  r9 : c04e2efc  r8 : eef97005
-[ 8363.132231] r7 : eee0716f  r6 : ee2c02c0  r5 : ee2c2088  r4 : eee07160
-[ 8363.137419] r3 : 00000000  r2 : a0000113  r1 : 00000001  r0 : eee07160
-[ 8363.143896] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[ 8363.157630] Control: 10c5387d  Table: 2e754019  DAC: 00000015
-[ 8363.163334] Process kworker/u:1 (pid: 25, stack limit = 0xee66a2f8)
 
-While I've not found a smoking gun, there are two places that raised red flags
-for me.  The first is in _internal_start_scan, when we queue up a scan; we
-first queue the worker, and then set priv->scan_req.  There's theoretically
-a 50mS delay which should be plenty, but doing things that way just seems
-racy (and not in the good way).
+Okay, clearly you want br_write_locks to remain non-blocking. And for reasons
+related to long-term code understandability/maintainability, I am not a fan of
+the idea of sprinkling {get,put}_online_cpus() in fs/namespace.c, away from the
+place where the race with CPU hotplug actually exists (though I understand that
+that would work just fine).
 
-The second is in the scan worker thread itself.  Depending on the state of
-priv->scan_channel, we cancel pending scan runs and then requeue a run in
-300mS.  We then send the scan command down to the hardware, sleep, and if
-we get scan results for all the desired channels, we set priv->scan_req to
-NULL.  However, it that's happened in less than 300mS, what happens with
-the pending scan run?
+So, considering the above two requirements, let me propose another approach
+(though it might sound a bit hacky) :
 
-This patch addresses both of those concerns.  With the patch applied, we
-have not seen the oops in the past two weeks.
+We note that we can simplify our requirement in *global_[un]lock_online() to:
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Cc: stable@kernel.org
+"lock and unlock must be invoked on the same set of CPUs, and that sequence
+must not get missed for any CPU, even if the CPU is offline. We only care about
+the correctness of lock-unlock operations, and not really about CPU Hotplug or
+'working with only online CPUs' or anything of that sort."
+
+If this new definition of our requirement is acceptable (correct me if I am
+wrong), then we can do something like the following patch, while still
+retaining br locks as non-blocking.
+
+We make a copy of the current cpu_online_mask, and lock the per-cpu locks of
+all those cpus. Then while unlocking, we unlock the per-cpu locks of these cpus
+(by using that temporary copy of cpu_online_mask we created earlier), without
+caring about the cpus actually online at that moment.
+IOW, we do lock-unlock on the same set of cpus, and that too, without missing
+the complete lock-unlock sequence in any of them. Guaranteed.
+
+[I will provide the changelog later, if people are OK with this approach].
+
+But it is to be noted that this doesn't actually synchronize with cpu hotplug,
+but tries to overcome the issue nevertheless. Comments/suggestions?
+
 ---
- drivers/net/wireless/libertas/cfg.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
-index a7f1ab2..db64ef1 100644
---- a/drivers/net/wireless/libertas/cfg.c
-+++ b/drivers/net/wireless/libertas/cfg.c
-@@ -728,9 +728,11 @@ static void lbs_scan_worker(struct work_struct *work)
- 		le16_to_cpu(scan_cmd->hdr.size),
- 		lbs_ret_scan, 0);
- 
--	if (priv->scan_channel >= priv->scan_req->n_channels)
-+	if (priv->scan_channel >= priv->scan_req->n_channels) {
- 		/* Mark scan done */
-+		cancel_delayed_work(&priv->scan_work);
- 		lbs_scan_done(priv);
-+	}
- 
- 	/* Restart network */
- 	if (carrier)
-@@ -759,12 +761,12 @@ static void _internal_start_scan(struct lbs_private *priv, bool internal,
- 		request->n_ssids, request->n_channels, request->ie_len);
- 
- 	priv->scan_channel = 0;
--	queue_delayed_work(priv->work_thread, &priv->scan_work,
--		msecs_to_jiffies(50));
--
- 	priv->scan_req = request;
- 	priv->internal_scan = internal;
- 
-+	queue_delayed_work(priv->work_thread, &priv->scan_work,
-+		msecs_to_jiffies(50));
-+
- 	lbs_deb_leave(LBS_DEB_CFG80211);
- }
- 
--- 
-1.7.2.5
+ include/linux/lglock.h |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+index f549056..6351ae3 100644
+--- a/include/linux/lglock.h
++++ b/include/linux/lglock.h
+@@ -122,11 +122,16 @@
+  }									\
+  EXPORT_SYMBOL(name##_local_unlock_cpu);				\
+ 									\
++static DECLARE_BITMAP(name##_locked_cpu_bits, CONFIG_NR_CPUS);		\
++static struct cpumask *name##_locked_cpu_mask =				\
++				to_cpumask(name##_locked_cpu_bits);	\
++									\
+  void name##_global_lock_online(void) {					\
+ 	int i;								\
+ 	preempt_disable();						\
+ 	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
+-	for_each_online_cpu(i) {					\
++	cpumask_copy(name##_locked_cpu_mask, cpu_online_mask);		\
++	for_each_cpu(i, name##_locked_cpu_mask) {			\
+ 		arch_spinlock_t *lock;					\
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		arch_spin_lock(lock);					\
+@@ -137,7 +142,7 @@
+  void name##_global_unlock_online(void) {				\
+ 	int i;								\
+ 	rwlock_release(&name##_lock_dep_map, 1, _RET_IP_);		\
+-	for_each_online_cpu(i) {					\
++	for_each_cpu(i, name##_locked_cpu_mask) {			\
+ 		arch_spinlock_t *lock;					\
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		arch_spin_unlock(lock);					\
+
 
