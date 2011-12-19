@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab1LSV1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 16:27:33 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48948 "EHLO
+	id S1753408Ab1LSV1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 16:27:44 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48950 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1LSV1a (ORCPT
+	with ESMTP id S1752684Ab1LSV1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 16:27:30 -0500
+	Mon, 19 Dec 2011 16:27:41 -0500
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 1/9] gma500: Initial support for our encoder and connector
- structs
+Subject: [PATCH 2/9] gma500: Remove psb_intel_output from ddc_probe and
+ ddc_get_modes
 To: airlied@linux.ie, linux-kernel@vger.kernel.org
-Date: Mon, 19 Dec 2011 21:39:53 +0000
-Message-ID: <20111219213950.32042.20984.stgit@bob.linux.org.uk>
+Date: Mon, 19 Dec 2011 21:40:05 +0000
+Message-ID: <20111219214004.32042.71173.stgit@bob.linux.org.uk>
+In-Reply-To: <20111219213950.32042.20984.stgit@bob.linux.org.uk>
+References: <20111219213950.32042.20984.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,99 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-First step towards adding i915 alike encoder and connector abstractions. This
-will make life easier when adding i915 output code into our driver. It also
-removes the old psb_intel_output struct.
-
 Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/gpu/drm/gma500/psb_intel_display.c |    7 +++++
- drivers/gpu/drm/gma500/psb_intel_drv.h     |   40 ++++++++++++++++++----------
- 2 files changed, 32 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/gma500/psb_intel_drv.h   |    5 +++--
+ drivers/gpu/drm/gma500/psb_intel_modes.c |   16 +++++++---------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
 
-diff --git a/drivers/gpu/drm/gma500/psb_intel_display.c b/drivers/gpu/drm/gma500/psb_intel_display.c
-index ab65076..43cc132 100644
---- a/drivers/gpu/drm/gma500/psb_intel_display.c
-+++ b/drivers/gpu/drm/gma500/psb_intel_display.c
-@@ -1429,3 +1429,10 @@ struct drm_encoder *psb_intel_best_encoder(struct drm_connector *connector)
- 	return &psb_intel_output->enc;
- }
- 
-+void psb_intel_connector_attach_encoder(struct psb_intel_connector *connector,
-+					struct psb_intel_encoder *encoder)
-+{
-+	connector->encoder = encoder;
-+	drm_mode_connector_attach_encoder(&connector->base,
-+					  &encoder->base);
-+}
 diff --git a/drivers/gpu/drm/gma500/psb_intel_drv.h b/drivers/gpu/drm/gma500/psb_intel_drv.h
-index ac953ca..a4435d8 100644
+index a4435d8..af34b24 100644
 --- a/drivers/gpu/drm/gma500/psb_intel_drv.h
 +++ b/drivers/gpu/drm/gma500/psb_intel_drv.h
-@@ -93,19 +93,19 @@ struct psb_intel_i2c_chan {
- 	u8 slave_addr;
- };
+@@ -166,8 +166,9 @@ struct psb_intel_crtc {
+ struct psb_intel_i2c_chan *psb_intel_i2c_create(struct drm_device *dev,
+ 					const u32 reg, const char *name);
+ void psb_intel_i2c_destroy(struct psb_intel_i2c_chan *chan);
+-int psb_intel_ddc_get_modes(struct psb_intel_output *psb_intel_output);
+-extern bool psb_intel_ddc_probe(struct psb_intel_output *psb_intel_output);
++int psb_intel_ddc_get_modes(struct drm_connector *connector,
++			    struct i2c_adapter *adapter);
++extern bool psb_intel_ddc_probe(struct i2c_adapter *adapter);
  
--struct psb_intel_output {
--	struct drm_connector base;
--
--	struct drm_encoder enc;
-+struct psb_intel_encoder {
-+	struct drm_encoder base;
- 	int type;
-+	bool needs_tv_clock;
-+	void (*hot_plug)(struct psb_intel_encoder *);
-+	int crtc_mask;
-+	int clone_mask;
-+	void *dev_priv; /* For sdvo_priv, lvds_priv, etc... */
-+};
+ extern void psb_intel_crtc_init(struct drm_device *dev, int pipe,
+ 			    struct psb_intel_mode_device *mode_dev);
+diff --git a/drivers/gpu/drm/gma500/psb_intel_modes.c b/drivers/gpu/drm/gma500/psb_intel_modes.c
+index bde1aff..4fca0d6 100644
+--- a/drivers/gpu/drm/gma500/psb_intel_modes.c
++++ b/drivers/gpu/drm/gma500/psb_intel_modes.c
+@@ -26,7 +26,7 @@
+  * psb_intel_ddc_probe
+  *
+  */
+-bool psb_intel_ddc_probe(struct psb_intel_output *psb_intel_output)
++bool psb_intel_ddc_probe(struct i2c_adapter *adapter)
+ {
+ 	u8 out_buf[] = { 0x0, 0x0 };
+ 	u8 buf[2];
+@@ -46,7 +46,7 @@ bool psb_intel_ddc_probe(struct psb_intel_output *psb_intel_output)
+ 		 }
+ 	};
  
--	struct psb_intel_i2c_chan *i2c_bus;	/* for control functions */
--	struct psb_intel_i2c_chan *ddc_bus;	/* for DDC only stuff */
--	bool load_detect_temp;
--	void *dev_priv;
--
--	struct psb_intel_mode_device *mode_dev;
--	struct i2c_adapter *hdmi_i2c_adapter;	/* for control functions */
-+struct psb_intel_connector {
-+	struct drm_connector base;
-+	struct psb_intel_encoder *encoder;
- };
+-	ret = i2c_transfer(&psb_intel_output->ddc_bus->adapter, msgs, 2);
++	ret = i2c_transfer(adapter, msgs, 2);
+ 	if (ret == 2)
+ 		return true;
  
- struct psb_intel_crtc_state {
-@@ -156,10 +156,10 @@ struct psb_intel_crtc {
+@@ -59,18 +59,16 @@ bool psb_intel_ddc_probe(struct psb_intel_output *psb_intel_output)
+  *
+  * Fetch the EDID information from @connector using the DDC bus.
+  */
+-int psb_intel_ddc_get_modes(struct psb_intel_output *psb_intel_output)
++int psb_intel_ddc_get_modes(struct drm_connector *connector,
++			    struct i2c_adapter *adapter)
+ {
+ 	struct edid *edid;
+ 	int ret = 0;
  
- #define to_psb_intel_crtc(x)	\
- 		container_of(x, struct psb_intel_crtc, base)
--#define to_psb_intel_output(x)	\
--		container_of(x, struct psb_intel_output, base)
--#define enc_to_psb_intel_output(x)	\
--		container_of(x, struct psb_intel_output, enc)
-+#define to_psb_intel_connector(x) \
-+		container_of(x, struct psb_intel_connector, base)
-+#define to_psb_intel_encoder(x)	\
-+		container_of(x, struct psb_intel_encoder, base)
- #define to_psb_intel_framebuffer(x)	\
- 		container_of(x, struct psb_intel_framebuffer, base)
- 
-@@ -190,6 +190,16 @@ extern void psb_intel_crtc_load_lut(struct drm_crtc *crtc);
- extern void psb_intel_encoder_prepare(struct drm_encoder *encoder);
- extern void psb_intel_encoder_commit(struct drm_encoder *encoder);
- 
-+static inline struct psb_intel_encoder *psb_intel_attached_encoder(
-+						struct drm_connector *connector)
-+{
-+	return to_psb_intel_connector(connector)->encoder;
-+}
-+
-+extern void psb_intel_connector_attach_encoder(
-+					struct psb_intel_connector *connector,
-+					struct psb_intel_encoder *encoder);
-+
- extern struct drm_encoder *psb_intel_best_encoder(struct drm_connector
- 					      *connector);
- 
+-	edid =
+-	    drm_get_edid(&psb_intel_output->base,
+-			 &psb_intel_output->ddc_bus->adapter);
++	edid = drm_get_edid(connector, adapter);
+ 	if (edid) {
+-		drm_mode_connector_update_edid_property(&psb_intel_output->
+-							base, edid);
+-		ret = drm_add_edid_modes(&psb_intel_output->base, edid);
++		drm_mode_connector_update_edid_property(connector, edid);
++		ret = drm_add_edid_modes(connector, edid);
+ 		kfree(edid);
+ 	}
+ 	return ret;
 
