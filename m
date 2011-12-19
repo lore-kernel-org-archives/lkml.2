@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1LSNIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:08:48 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35185 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab1LSNIq (ORCPT
+	id S1752846Ab1LSNI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:08:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62255 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab1LSNIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:08:46 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-In-Reply-To: <4EEF3317.6020304@redhat.com>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <4EEF2382.4010605@redhat.com> <87hb0wbx0p.fsf@abhimanyu.in.ibm.com> <4EEF2729.6080501@redhat.com> <87ehw0bw9v.fsf@abhimanyu.in.ibm.com> <4EEF3317.6020304@redhat.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 19 Dec 2011 18:39:58 +0530
-Message-ID: <878vm8btcp.fsf@abhimanyu.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11121913-2000-0000-0000-000005C1C116
+	Mon, 19 Dec 2011 08:08:53 -0500
+Subject: Re: [PATCH 4/15] vub300: fix module parameter.
+From: Tony Olech <tony.olech@elandigitalsystems.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org
+In-Reply-To: <1324062122.2302.5.camel@study-2>
+References: <871us6tu0d.fsf@rustcorp.com.au>
+	 <1324062122.2302.5.camel@study-2>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Dec 2011 13:08:40 +0000
+Message-ID: <1324300120.4283.6.camel@study-2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:EFkOPt1EP7SkozkrDdoBl5H0G70JdquizsblOee6+uE
+ kReTQaLrT6+RvrSep5YUk0OO07llzJQo4kMK6pAo1YXRj0scIW
+ VO83EQMypVmPaI3vN+4BmxxgWRvtSvu1O0iy00+lzXAplf1nAZ
+ jEO0LnRhM4Wh7HapsC0tfPWRx52LolZBSeVSyR2cNpw/AClvuQ
+ EDI+I2nPYT8pcb52hmXXcYt0+KjmbLHW4sl/UjdB3aut+3JvF5
+ ABzl2PPTB6papfODUivsJqhpjs94OnSFDzm5LvLu+g870oBozx
+ meGuC18+9HGTylZq5RtR1tmOoEz9SZOg10mgDdf+xIpPetS1wK
+ H0V/h9swidDBuKhr4qCAnWLQ/3zV/wIbQQ34q6wu8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011 14:50:31 +0200, Avi Kivity <avi@redhat.com> wrote:
-> On 12/19/2011 02:06 PM, Nikunj A Dadhania wrote:
-> > The above ebizzy result is from a non-PLE machine, will yield_to come
-> > in to picture here?
+On Thu, 2011-12-15 at 13:34 +1030, Rusty Russell wrote:
+> You didn't mean this to be a bool.
 > 
-> No.  I have a soft-PLE patchset but I don't think it's any good.
+> Cc: Tony Olech <tony.olech@elandigitalsystems.com>
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-usb@vger.kernel.org
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>  drivers/mmc/host/vub300.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-I had tried your soft-PLE patchset some time back, gang sched was doing
-pretty good compared to soft-PLE.
+> diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
+> --- a/drivers/mmc/host/vub300.c
+> +++ b/drivers/mmc/host/vub300.c
+> @@ -259,7 +259,7 @@ static int firmware_rom_wait_states = 0x
+>  static int firmware_rom_wait_states = 0x1C;
+>  #endif
+>  
+> -module_param(firmware_rom_wait_states, bool, 0644);
+> +module_param(firmware_rom_wait_states, int, 0644);
+>  MODULE_PARM_DESC(firmware_rom_wait_states,
+>  		 "ROM wait states byte=RRRIIEEE (Reserved Internal External)");
+>  
+> --
+You are right.
+I don't know how that slipped through
+Acked-by: Tony Olech <tony.olech@elandigitalsystems.com>
+Acked-by: Tony Olech <tony@olech.com>
 
-Regards,
-Nikunj
 
