@@ -1,60 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab1LSACg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 19:02:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55981 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab1LSACe (ORCPT
+	id S1752068Ab1LSAMb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Dec 2011 19:12:31 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42183 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab1LSAM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 19:02:34 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 19 Dec 2011 09:01:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 1/4] memcg: simplify page cache charging.
-Message-Id: <20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111216142814.dbb77209.akpm@linux-foundation.org>
-References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111216142814.dbb77209.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Dec 2011 19:12:28 -0500
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        Steffen Persvold <sp@numascale.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: Simplify code by allowing more of struct cpuinfo_x86 for the !SMP case
+Date: Sun, 18 Dec 2011 20:12:10 -0400
+Message-Id: <1324253530-4558-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <20111206055023.GB1580@elte.hu>
+References: <20111206055023.GB1580@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Dec 2011 14:28:14 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Several fields in struct cpuinfo_x86 were not defined for the !SMP
+case, likely to save space.  However, those fields still have some
+meaning for UP, and keeping them allows some #ifdef removal from
+other files.  The additional size of the UP kernel from this
+change is not significant enough to worry about keeping up the
+distinction:
 
-> On Wed, 14 Dec 2011 16:49:22 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
-> > of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
-> > called against FUSE's pages from splice.
-> 
-> Speaking of ef6a3c6311 ("mm: add replace_page_cache_page() function"),
-> may I pathetically remind people that it's rather inefficient?
-> 
-> http://lkml.indiana.edu/hypermail/linux/kernel/1109.1/00375.html
-> 
+  text    data     bss     dec     hex filename
+4734483  510391  972040 6216914  5edcd2 vmlinux.o.before
+4734750  510391  972040 6217181  5edddd vmlinux.o.after
 
-IIRC, people says inefficient because it uses memcg codes for page-migration
-for fixing up accounting. Now, We added replace-page-cache for memcg in
-memcg-add-mem_cgroup_replace_page_cache-to-fix-lru-issue.patch
+for a difference of 267 bytes for an example UP config.
 
-So, I think the problem originally mentioned is fixed.
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+---
+ arch/x86/include/asm/processor.h     |    2 --
+ arch/x86/kernel/amd_nb.c             |    8 ++------
+ arch/x86/kernel/cpu/amd.c            |    2 --
+ arch/x86/kernel/cpu/common.c         |    7 -------
+ arch/x86/kernel/cpu/intel.c          |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c     |    2 --
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    7 +------
+ arch/x86/kernel/cpu/proc.c           |    4 +---
+ drivers/edac/sb_edac.c               |    2 --
+ drivers/hwmon/coretemp.c             |    6 ------
+ 10 files changed, 4 insertions(+), 38 deletions(-)
 
-I'll reconsinder LRU handling optimization after things seems to be good.
-
-Thanks,
--Kame
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b650435..aa9088c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
+ 	u16			apicid;
+ 	u16			initial_apicid;
+ 	u16			x86_clflush_size;
+-#ifdef CONFIG_SMP
+ 	/* number of cores as seen by the OS: */
+ 	u16			booted_cores;
+ 	/* Physical processor id: */
+@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
+ 	u8			compute_unit_id;
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+-#endif
+ 	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 4c39baa..013c181 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -123,16 +123,14 @@ int amd_get_subcaches(int cpu)
+ {
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+ 	unsigned int mask;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return 0;
+ 
+ 	pci_read_config_dword(link, 0x1d4, &mask);
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+ 
+@@ -141,7 +139,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
+ 	unsigned int reg;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
+ 		return -EINVAL;
+@@ -159,9 +157,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
+ 	}
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	mask <<= 4 * cuid;
+ 	mask |= (0xf ^ (1 << cuid)) << 26;
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ef21bdc..f4773f4 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 
+ valid_k7:
+ 	;
+-#endif
+ }
+ 
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a70bd5b..850f296 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+ 
+-#ifdef CONFIG_SMP
+ 	c->cpu_index = 0;
+-#endif
+ 	filter_cpuid_features(c, false);
+ 
+ 	setup_smep(c);
+@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ 		c->apicid = c->initial_apicid;
+ # endif
+ #endif
+-
+-#ifdef CONFIG_X86_HT
+ 		c->phys_proc_id = c->initial_apicid;
+-#endif
+ 	}
+ 
+ 	setup_smep(c);
+@@ -1146,9 +1141,7 @@ static void dbg_restore_debug_regs(void)
+  */
+ void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-#ifdef CONFIG_NUMA
+ 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-#endif
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 5231312..3e6ff6c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
+ 
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
+ 				    "with B stepping processors.\n");
+ 	}
+-#endif
+ }
+ 
+ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2af127d..e9c9d0a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
+ 	m->time = get_seconds();
+ 	m->cpuvendor = boot_cpu_data.x86_vendor;
+ 	m->cpuid = cpuid_eax(1);
+-#ifdef CONFIG_SMP
+ 	m->socketid = cpu_data(m->extcpu).phys_proc_id;
+-#endif
+ 	m->apicid = cpu_data(m->extcpu).initial_apicid;
+ 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index f547421..1d76872 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -64,11 +64,9 @@ struct threshold_bank {
+ };
+ static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks);
+ 
+-#ifdef CONFIG_SMP
+ static unsigned char shared_bank[NR_BANKS] = {
+ 	0, 0, 0, 0, 1
+ };
+-#endif
+ 
+ static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on */
+ 
+@@ -202,10 +200,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 
+ 			if (!block)
+ 				per_cpu(bank_map, cpu) |= (1 << bank);
+-#ifdef CONFIG_SMP
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+-#endif
++
+ 			offset = setup_APIC_mce(offset,
+ 						(high & MASK_LVTOFF_HI) >> 20);
+ 
+@@ -531,7 +528,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 	sprintf(name, "threshold_bank%i", bank);
+ 
+-#ifdef CONFIG_SMP
+ 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+ 		i = cpumask_first(cpu_llc_shared_mask(cpu));
+ 
+@@ -558,7 +554,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 		goto out;
+ 	}
+-#endif
+ 
+ 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+ 	if (!b) {
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 14b2314..8022c66 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ static int show_cpuinfo(struct seq_file *m, void *v)
+ {
+ 	struct cpuinfo_x86 *c = v;
+-	unsigned int cpu = 0;
++	unsigned int cpu;
+ 	int i;
+ 
+-#ifdef CONFIG_SMP
+ 	cpu = c->cpu_index;
+-#endif
+ 	seq_printf(m, "processor\t: %u\n"
+ 		   "vendor_id\t: %s\n"
+ 		   "cpu family\t: %d\n"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 7a402bf..88df489 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_block *nb, unsigned long val,
+ 		mce->cpuvendor, mce->cpuid, mce->time,
+ 		mce->socketid, mce->apicid);
+ 
+-#ifdef CONFIG_SMP
+ 	/* Only handle if it is the right mc controller */
+ 	if (cpu_data(mce->cpu).phys_proc_id != pvt->sbridge_dev->mc)
+ 		return NOTIFY_DONE;
+-#endif
+ 
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 104b376..ae8f826 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -57,15 +57,9 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 
+-#ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+-#else
+-#define TO_PHYS_ID(cpu)		(cpu)
+-#define TO_CORE_ID(cpu)		(cpu)
+-#define for_each_sibling(i, cpu)	for (i = 0; false; )
+-#endif
+ #define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+ 
+ /*
+-- 
+1.7.8
 
