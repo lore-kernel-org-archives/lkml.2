@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab1LSPVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 10:21:40 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:47230 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752701Ab1LSPVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 10:21:37 -0500
-Date: Mon, 19 Dec 2011 10:21:36 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Thomas Dahlmann <dahlmann.thomas@arcor.de>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        "open list:DESIGNWARE USB3 D..." <linux-omap@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:AMD GEODE CS5536..." <linux-geode@lists.infradead.org>
-Subject: Re: [PATCH 8/9] usb: gadget: net2280: use generic map/unmap routines
-In-Reply-To: <1324290632-23758-9-git-send-email-balbi@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1112191019580.1746-100000@iolanthe.rowland.org>
+	id S1753125Ab1LSPWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 10:22:31 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59844 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858Ab1LSPW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 10:22:28 -0500
+Message-ID: <4EEF566B.6080703@ti.com>
+Date: Mon, 19 Dec 2011 16:21:15 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rob Herring <robherring2@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, Kevin Hilman <khilman@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/9] irq: check domain hwirq range for DT translate
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-3-git-send-email-robherring2@gmail.com> <4EEF3110.30203@ti.com> <4EEF48EE.1070800@gmail.com>
+In-Reply-To: <4EEF48EE.1070800@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011, Felipe Balbi wrote:
+On 12/19/2011 3:23 PM, Rob Herring wrote:
+> Benoit,
+>
+> On 12/19/2011 06:41 AM, Cousson, Benoit wrote:
+>> Hi Rob,
+>>
+>> While trying your series to take advantage of the generic-irq domain
+>> support for OMAP3 INTC, I realized that the following patch is breaking
+>> drivers that are using irq_domain_add_simple.
+>>
+>> The point is that irq_domain_add_simple does not populate hwirq_base or
+>> nr_irq, so that test will always fail if the domain is created by the
+>> irq_domain_add_simple API.
+>>
+>> Adding an extra parameter to provide the nr_irq should fix that.
+>>
+>> The long term fix should be to use the generic-irq for such driver, but
+>> this is not the same effort, so it might worth fixing that API for the
+>> moment.
+>>
+>> Regards,
+>> Benoit
+>>
+>> On 12/14/2011 4:28 PM, Rob Herring wrote:
+>>> From: Rob Herring<rob.herring@calxeda.com>
+>>>
+>>> A DT node may have more than 1 domain associated with it, so make sure
+>>> the hwirq number is within range when doing DT translation.
+>>>
+>>> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+>>> Cc: Thomas Gleixner<tglx@linutronix.de>
+>>> ---
+>>>    kernel/irq/irqdomain.c |    3 +++
+>>>    1 files changed, 3 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+>>> index 200ce83..ae6441e 100644
+>>> --- a/kernel/irq/irqdomain.c
+>>> +++ b/kernel/irq/irqdomain.c
+>>> @@ -135,6 +135,9 @@ int irq_domain_simple_dt_translate(struct
+>>> irq_domain *d,
+>>>            return -EINVAL;
+>>>        if (intsize<   1)
+>>>            return -EINVAL;
+>>> +    if ((intspec[0]<   d->hwirq_base) ||
+>>> +        (intspec[0]>= d->hwirq_base + d->nr_irq))
+>
+> I think this should work:
+>
+> if (d->nr_irq&&  ((intspec[0]<  d->hwirq_base) ||
+>      (intspec[0]>= d->hwirq_base + d->nr_irq)))
 
-> those routines have everything we need to map/unmap
-> USB requests and it's better to use them.
-> 
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/usb/gadget/net2280.c |   19 +++++++++----------
->  1 files changed, 9 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-> index cf1f364..59d4794 100644
-> --- a/drivers/usb/gadget/net2280.c
-> +++ b/drivers/usb/gadget/net2280.c
+Yes, indeed. It is even simpler that fixing the API.
 
-> @@ -857,10 +853,13 @@ net2280_queue (struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
->  		return -EOPNOTSUPP;
->  
->  	/* set up dma mapping in case the caller didn't */
-> -	if (ep->dma && _req->dma == DMA_ADDR_INVALID) {
-> -		_req->dma = pci_map_single (dev->pdev, _req->buf, _req->length,
-> -			ep->is_in ? PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
-> -		req->mapped = 1;
-> +	if (ep->dma) {
-> +		int ret;
-> +
-> +		ret = usb_gadget_map_request(&dev->gadget, &req->req,
-> +				ep->is_in);
+I can now repost the OMAP3/4 series based on this series.
 
-As mentioned for the goku patch, &req->req can be replaced by _req.
-
-Alan Stern
-
+Thanks,
+Benoit
