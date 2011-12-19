@@ -1,246 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab1LSWNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:13:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25884 "EHLO mx1.redhat.com"
+	id S1753364Ab1LSWNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:13:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62212 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab1LSWN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:13:27 -0500
-Date: Mon, 19 Dec 2011 17:13:21 -0500
+	id S1751667Ab1LSWM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:12:57 -0500
+Date: Mon, 19 Dec 2011 17:12:49 -0500
 From: Jason Baron <jbaron@redhat.com>
 To: greg@kroah.com
 Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org
-Message-Id: <08e1b4e30e83f13fa31880002eafbd0ce5592985.1324318997.git.jbaron@redhat.com>
+Message-Id: <01b746c156837251ab3977029d2252844c39d306.1324318997.git.jbaron@redhat.com>
 In-Reply-To: <cover.1324318997.git.jbaron@redhat.com>
 References: <cover.1324318997.git.jbaron@redhat.com>
-Subject: [PATCH 16/16] dynamic_debug: process multiple debug-queries on a line
+Subject: [PATCH 09/16] dynamic_debug: tighten up error checking on debug queries
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Insert ddebug_exec_queries() in place of ddebug_exec_query().  It
-splits the query string on [;\n], and calls ddebug_exec_query() on
-each.  All queries are processed independent of errors, allowing a
-query to fail, for example when a module is not installed.  Empty
-lines and comments are skipped.  Errors are counted, and the last
-error seen (negative) or the number of callsites found (0 or positive)
-is returned.  Return code checks are altered accordingly.
-
-With this, multiple queries can be given in ddebug_query, allowing
-more selective enabling of callsites.  As a side effect, a set of
-commands can be batched in:
-
-	cat cmd-file > $DBGMT/dynamic_debug/control
-
-We dont want a ddebug_query syntax error to kill the dynamic debug
-facility, so dynamic_debug_init() zeros ddebug_exec_queries()'s return
-code after logging the appropriate message, so that ddebug tables are
-preserved and $DBGMT/dynamic_debug/control file is created.  This
-would be appropriate even without accepting multiple queries.
-
-This patch also alters ddebug_change() to return number of callsites
-matched (which typically is the same as number of callsites changed).
-ddebug_exec_query() also returns the number found, or a negative value
-if theres a parse error on the query.
-
-Splitting on [;\n] prevents their use in format-specs, but selecting
-callsites on punctuation is brittle anyway, meaningful and selective
-substrings are more typical.
-
-Note: splitting queries on ';' before handling trailing #comments
-means that a ';' also terminates a comment, and text after the ';' is
-treated as another query.  This trailing query will almost certainly
-result in a parse error and thus have no effect other than the error
-message.  The double corner case with unexpected results is:
-
-     ddebug_query="func foo +p # enable foo ; +p"
+Issue error when a match-spec is given multiple times in a rule.
+Previous code kept last one, but was silent about it.  Docs imply only
+one is allowed by saying match-specs are ANDed together, given that
+module M cannot match both A and B.  Also error when last_line < 1st_line.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- Documentation/dynamic-debug-howto.txt |   23 ++++-------
- lib/dynamic_debug.c                   |   73 ++++++++++++++++++++++++++-------
- 2 files changed, 66 insertions(+), 30 deletions(-)
+ lib/dynamic_debug.c |   39 +++++++++++++++++++++++++++++++++------
+ 1 files changed, 33 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 378b5d1..74e6c77 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -12,7 +12,7 @@ dynamically enabled per-callsite.
- Dynamic debug has even more useful features:
- 
-  * Simple query language allows turning on and off debugging statements by
--   matching any combination of:
-+   matching any combination of 0 or 1 of:
- 
-    - source filename
-    - function name
-@@ -79,31 +79,24 @@ Command Language Reference
- ==========================
- 
- At the lexical level, a command comprises a sequence of words separated
--by whitespace characters.  Note that newlines are treated as word
--separators and do *not* end a command or allow multiple commands to
--be done together.  So these are all equivalent:
-+by spaces or tabs.  So these are all equivalent:
- 
- nullarbor:~ # echo -c 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
- nullarbor:~ # echo -c '  file   svcsock.c     line  1603 +p  ' >
- 				<debugfs>/dynamic_debug/control
--nullarbor:~ # echo -c 'file svcsock.c\nline 1603 +p' >
--				<debugfs>/dynamic_debug/control
- nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
- 
--Commands are bounded by a write() system call.  If you want to do
--multiple commands you need to do a separate "echo" for each, like:
-+Command submissions are bounded by a write() system call.
-+Multiple commands can be written together, separated by ';' or '\n'.
- 
--nullarbor:~ # echo 'file svcsock.c line 1603 +p' > /proc/dprintk ;\
--> echo 'file svcsock.c line 1563 +p' > /proc/dprintk
-+  ~# echo "func pnpacpi_get_resources +p; func pnp_assign_mem +p" \
-+     > <debugfs>/dynamic_debug/control
- 
--or even like:
-+If your query set is big, you can batch them too:
- 
--nullarbor:~ # (
--> echo 'file svcsock.c line 1603 +p' ;\
--> echo 'file svcsock.c line 1563 +p' ;\
--> ) > /proc/dprintk
-+  ~# cat query-batch-file > <debugfs>/dynamic_debug/control
- 
- At the syntactical level, a command comprises a sequence of match
- specifications, followed by a flags change specification.
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 93fc5d5..310c753 100644
+index cde4dfe..5a7bacc 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -124,13 +124,13 @@ do {									\
- } while (0)
- 
- /*
-- * Search the tables for _ddebug's which match the given
-- * `query' and apply the `flags' and `mask' to them.  Tells
-- * the user which ddebug's were changed, or whether none
-- * were matched.
-+ * Search the tables for _ddebug's which match the given `query' and
-+ * apply the `flags' and `mask' to them.  Returns number of matching
-+ * callsites, normally the same as number of changes.  If verbose,
-+ * logs the changes.  Takes ddebug_lock.
-  */
--static void ddebug_change(const struct ddebug_query *query,
--			   unsigned int flags, unsigned int mask)
-+static int ddebug_change(const struct ddebug_query *query,
-+			unsigned int flags, unsigned int mask)
- {
- 	int i;
- 	struct ddebug_table *dt;
-@@ -192,6 +192,8 @@ static void ddebug_change(const struct ddebug_query *query,
- 
- 	if (!nfound && verbose)
- 		pr_info("no matches for query\n");
-+
-+	return nfound;
+@@ -276,6 +276,19 @@ static char *unescape(char *str)
+ 	return str;
  }
  
- /*
-@@ -449,7 +451,7 @@ static int ddebug_exec_query(char *query_string)
- 	unsigned int flags = 0, mask = 0;
- 	struct ddebug_query query;
- #define MAXWORDS 9
--	int nwords;
-+	int nwords, nfound;
- 	char *words[MAXWORDS];
- 
- 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
-@@ -461,8 +463,47 @@ static int ddebug_exec_query(char *query_string)
- 		return -EINVAL;
- 
- 	/* actually go and implement the change */
--	ddebug_change(&query, flags, mask);
--	return 0;
-+	nfound = ddebug_change(&query, flags, mask);
-+	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
++static int check_set(const char **dest, char *src, char *name)
++{
++	int rc = 0;
 +
-+	return nfound;
++	if (*dest) {
++		rc = -EINVAL;
++		pr_err("match-spec:%s val:%s overridden by %s",
++			name, *dest, src);
++	}
++	*dest = src;
++	return rc;
 +}
 +
-+/* handle multiple queries in query string, continue on error, return
-+   last error or number of matching callsites.  Module name is either
-+   in param (for boot arg) or perhaps in query string.
-+*/
-+static int ddebug_exec_queries(char *query)
-+{
-+	char *split;
-+	int i, errs = 0, exitcode = 0, rc, nfound = 0;
-+
-+	for (i = 0; query; query = split) {
-+		split = strpbrk(query, ";\n");
-+		if (split)
-+			*split++ = '\0';
-+
-+		query = skip_spaces(query);
-+		if (!query || !*query || *query == '#')
-+			continue;
-+
-+		if (verbose)
-+			pr_info("query %d: \"%s\"\n", i, query);
-+
-+		rc = ddebug_exec_query(query);
-+		if (rc < 0) {
-+			errs++;
-+			exitcode = rc;
-+		} else
-+			nfound += rc;
-+		i++;
-+	}
-+	pr_info("processed %d queries, with %d matches, %d errs\n",
-+		 i, nfound, errs);
-+
-+	if (exitcode)
-+		return exitcode;
-+	return nfound;
- }
+ /*
+  * Parse words[] as a ddebug query specification, which is a series
+  * of (keyword, value) pairs chosen from these possibilities:
+@@ -287,11 +300,15 @@ static char *unescape(char *str)
+  * format <escaped-string-to-find-in-format>
+  * line <lineno>
+  * line <first-lineno>-<last-lineno> // where either may be empty
++ *
++ * Only 1 of each type is allowed.
++ * Returns 0 on success, <0 on error.
+  */
+ static int ddebug_parse_query(char *words[], int nwords,
+ 			       struct ddebug_query *query)
+ {
+ 	unsigned int i;
++	int rc;
  
- #define PREFIX_SIZE 64
-@@ -615,9 +656,9 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 	if (verbose)
- 		pr_info("read %d bytes from userspace\n", (int)len);
+ 	/* check we have an even number of words */
+ 	if (nwords % 2 != 0)
+@@ -300,24 +317,32 @@ static int ddebug_parse_query(char *words[], int nwords,
  
--	ret = ddebug_exec_query(tmpbuf);
-+	ret = ddebug_exec_queries(tmpbuf);
- 	kfree(tmpbuf);
--	if (ret)
-+	if (ret < 0)
- 		return ret;
- 
- 	*offp += len;
-@@ -927,13 +968,15 @@ static int __init dynamic_debug_init(void)
- 
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
--		ret = ddebug_exec_query(ddebug_setup_string);
--		if (ret)
-+		ret = ddebug_exec_queries(ddebug_setup_string);
-+		if (ret < 0)
- 			pr_warn("Invalid ddebug boot param %s",
- 				ddebug_setup_string);
- 		else
--			pr_info("ddebug initialized with string %s",
--				ddebug_setup_string);
-+			pr_info("%d changes by ddebug_query\n", ret);
-+
-+		/* keep tables even on ddebug_query parse error */
-+		ret = 0;
+ 	for (i = 0 ; i < nwords ; i += 2) {
+ 		if (!strcmp(words[i], "func"))
+-			query->function = words[i+1];
++			rc = check_set(&query->function, words[i+1], "func");
+ 		else if (!strcmp(words[i], "file"))
+-			query->filename = words[i+1];
++			rc = check_set(&query->filename, words[i+1], "file");
+ 		else if (!strcmp(words[i], "module"))
+-			query->module = words[i+1];
++			rc = check_set(&query->module, words[i+1], "module");
+ 		else if (!strcmp(words[i], "format"))
+-			query->format = unescape(words[i+1]);
++			rc = check_set(&query->format, unescape(words[i+1]),
++				"format");
+ 		else if (!strcmp(words[i], "line")) {
+ 			char *first = words[i+1];
+ 			char *last = strchr(first, '-');
++			if (query->first_lineno || query->last_lineno) {
++				pr_err("match-spec:line given 2 times\n");
++				return -EINVAL;
++			}
+ 			if (last)
+ 				*last++ = '\0';
+ 			if (parse_lineno(first, &query->first_lineno) < 0)
+ 				return -EINVAL;
+-			if (last != NULL) {
++			if (last) {
+ 				/* range <first>-<last> */
+-				if (parse_lineno(last, &query->last_lineno) < 0)
++				if (parse_lineno(last, &query->last_lineno)
++				    < query->first_lineno) {
++					pr_err("last-line < 1st-line\n");
+ 					return -EINVAL;
++				}
+ 			} else {
+ 				query->last_lineno = query->first_lineno;
+ 			}
+@@ -325,6 +350,8 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			pr_err("unknown keyword \"%s\"\n", words[i]);
+ 			return -EINVAL;
+ 		}
++		if (rc)
++			return rc;
  	}
  
- out_free:
+ 	if (verbose)
 -- 
 1.7.7.3
 
