@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1LSWt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 17:49:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21211 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610Ab1LSWrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 17:47:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="48753674"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, trenn@suse.de, kay.sievers@vrf.org,
-        Andi Kleen <ak@linux.intel.com>, lenb@kernel.org
-Subject: [PATCH 05/10] ACPI: Load acpi-cpufreq from processor driver automatically
-Date: Mon, 19 Dec 2011 14:47:41 -0800
-Message-Id: <1324334865-30459-6-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
+	id S1752383Ab1LSWyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 17:54:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45571 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab1LSWym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 17:54:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1324309079-10739-1-git-send-email-marek.vasut@gmail.com>
+References: <1324309079-10739-1-git-send-email-marek.vasut@gmail.com>
+Date: Tue, 20 Dec 2011 06:54:40 +0800
+Message-ID: <CAAQ0ZWRPZP7cPLLdxEsx3QwU0pnxL5jy9a5JjqsOPz_rDp_Oxw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] MXSFB: Fix driver registration
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        FlorianSchandinat@gmx.de, Wolfgang Denk <wd@denx.de>,
+        Stefano Babic <sbabic@denx.de>, Huang Shijie <b32955@freescale.com>,
+        Axel Lin <axel.lin@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 19 December 2011 23:37, Marek Vasut <marek.vasut@gmail.com> wrote:
+> The driver should be registered with mxsfb_driver, not with mxsfb_devtype.
+> This caused obvious null pointer dereference and crash.
+>
+> Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+> Cc: Wolfgang Denk <wd@denx.de>
+> Cc: Stefano Babic <sbabic@denx.de>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Huang Shijie <b32955@freescale.com>
+> Cc: Axel Lin <axel.lin@gmail.com>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Acked-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-The only left over hole in automatic cpufreq driver loading was the loading
-of ACPI cpufreq. This driver should be loaded when ACPI supports a _PDC
-method and the CPU vendor wants to use acpi cpufreq.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Simply add a request module call to the acpi processor core driver
-when this is true. This seems like the simplest solution for this.
-
-Cc: lenb@kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/acpi/processor_driver.c  |    1 +
- drivers/acpi/processor_perflib.c |   22 ++++++++++++++++++++++
- include/acpi/processor.h         |    1 +
- 3 files changed, 24 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 9d7bc9f..9e933ed 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -499,6 +499,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 
- #ifdef CONFIG_CPU_FREQ
- 	acpi_processor_ppc_has_changed(pr, 0);
-+	acpi_processor_load_module(pr);
- #endif
- 	acpi_processor_get_throttling_info(pr);
- 	acpi_processor_get_limit_info(pr);
-diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-index 85b3237..a533512 100644
---- a/drivers/acpi/processor_perflib.c
-+++ b/drivers/acpi/processor_perflib.c
-@@ -240,6 +240,28 @@ void acpi_processor_ppc_exit(void)
- 	acpi_processor_ppc_status &= ~PPC_REGISTERED;
- }
- 
-+/* 
-+ * Do a quick check if the systems looks like it should use ACPI 
-+ * cpufreq. We look at a _PCT method being available, but don't
-+ * do a whole lot of sanity checks. 
-+ */
-+void acpi_processor_load_module(struct acpi_processor *pr)
-+{
-+	static int requested;
-+	acpi_status status = 0;
-+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-+
-+	if (!arch_has_acpi_pdc() || requested)
-+		return;
-+	status = acpi_evaluate_object(pr->handle, "_PCT", NULL, &buffer);
-+	if (!ACPI_FAILURE(status)) {
-+		printk(KERN_INFO PREFIX "Requesting acpi_cpufreq\n");
-+		request_module_nowait("acpi_cpufreq");
-+		requested = 1;
-+	}
-+	kfree(buffer.pointer);
-+}
-+
- static int acpi_processor_get_performance_control(struct acpi_processor *pr)
- {
- 	int result = 0;
-diff --git a/include/acpi/processor.h b/include/acpi/processor.h
-index 610f6fb..da57fdc 100644
---- a/include/acpi/processor.h
-+++ b/include/acpi/processor.h
-@@ -224,6 +224,7 @@ struct acpi_processor_errata {
- 	} piix4;
- };
- 
-+extern void acpi_processor_load_module(struct acpi_processor *pr);
- extern int acpi_processor_preregister_performance(struct
- 						  acpi_processor_performance
- 						  __percpu *performance);
 -- 
-1.7.7.4
-
+Regards,
+Shawn
