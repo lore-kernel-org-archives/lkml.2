@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab1LSUpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:45:31 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:58657 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab1LSUpS (ORCPT
+	id S1752707Ab1LSUpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:45:47 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39620 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab1LSUpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:45:18 -0500
-Date: Mon, 19 Dec 2011 15:45:06 -0500 (EST)
-Message-Id: <20111219.154506.2139565455097091607.davem@davemloft.net>
-To: gallatin@myri.com
-Cc: vlee@vmware.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] myri10ge: Fix typo of 'VMware' in comment.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4EEF9CDC.1040100@myri.com>
-References: <1324325875-30907-1-git-send-email-vlee@vmware.com>
-	<4EEF9CDC.1040100@myri.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 19 Dec 2011 15:45:43 -0500
+Message-ID: <4EEFA278.7010200@gmail.com>
+Date: Mon, 19 Dec 2011 15:45:44 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com> <4EEF8F85.9010408@gmail.com> <4EEF9F3E.9000107@linux.vnet.ibm.com>
+In-Reply-To: <4EEF9F3E.9000107@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 19 Dec 2011 12:45:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Gallatin <gallatin@myri.com>
-Date: Mon, 19 Dec 2011 15:21:48 -0500
-
-> On 12/19/11 15:17, Vinson Lee wrote:
->> Signed-off-by: Vinson Lee<vlee@vmware.com>
+(12/19/11 3:31 PM), Dave Hansen wrote:
+> On 12/19/2011 11:24 AM, KOSAKI Motohiro wrote:
+>> (12/19/11 1:38 PM), Naoya Horiguchi wrote:
+>>> This flag shows that a given pages is a subpage of transparent hugepage.
+>>> It does not care about whether it is a head page or a tail page, because
+>>> it's clear from pfn of the target page which you should know when you read
+>>> /proc/kpageflags.
+>>>
+>>> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+>>
+>> NAK.
+>>
+>> The detail of transparent hugepage are hidden by design. We hope it
+>> keep 'transparent'.
+>> Until any explain why we should expose KPF_THP, we don't agree it.
 > 
+> Transparent shouldn't mean "undebuggable", though. :)
 > 
-> Acked by: Andrew Gallatin <gallatin@myri.com>
+> Let's say you profiled a application and the data shows you're missing
+> the TLB a bunch, but you're also using THP.  This might give you a shot
+> at figuring out which parts of your application are *TRULY* THP-backed
+> instead of just the areas you *think* are backed.
+> 
+> I'm not sure there's another way to figure it out at the moment.
 
-Applied to net-next.
+A snapshot status of THP doesn't help your purpose. I think you need
+perf or similar profiling subsystem enhancement.
+
+Because of, if you've seen KPF_THP at once, It has no guarantee to keep
+hugepages until applications run. Opposite, If you only need rough
+statistics, the best way is to add some new stat to
+/sys/kernel/mm/transparent_hugepage.
+
+I don't think your usecase and current proposal are matched.
+
