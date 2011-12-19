@@ -1,202 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab1LSOSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:18:23 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:39750 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1LSOSV (ORCPT
+	id S1753238Ab1LSOTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:19:38 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:58687 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab1LSOTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:18:21 -0500
-Date: Mon, 19 Dec 2011 10:17:21 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: "Tian, Kevin" <kevin.tian@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, "Yu, Ke" <ke.yu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "konrad@kernel.org" <konrad@kernel.org>,
-        "liang.tang@oracle.com" <liang.tang@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 1/8] ACPI: processor: export necessary interfaces
-Message-ID: <20111219141721.GA27772@andromeda.dapyr.net>
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com> <1322673664-14642-2-git-send-email-konrad.wilk@oracle.com> <20111216213345.GA9832@phenom.dumpdata.com> <625BA99ED14B2D499DC4E29D8138F1506E01AABC72@shsmsx502.ccr.corp.intel.com>
+	Mon, 19 Dec 2011 09:19:34 -0500
+Date: Mon, 19 Dec 2011 15:19:26 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+Message-ID: <20111219151926.53bede67@de.ibm.com>
+In-Reply-To: <4EEF3F7B.9080405@parallels.com>
+References: <20111219154010.c2044c038a6174dd8fb6f477@canb.auug.org.au>
+	<20111219080813.GB30432@elte.hu>
+	<20111219101134.3c2c0db5@de.ibm.com>
+	<20111219103513.GA17928@elte.hu>
+	<20111219133151.4d14af80@de.ibm.com>
+	<4EEF3F7B.9080405@parallels.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1506E01AABC72@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.9i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 11121914-0342-0000-0000-00000063D08C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 01:43:01PM +0800, Tian, Kevin wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > Sent: Saturday, December 17, 2011 5:34 AM
-> > 
-> > On Wed, Nov 30, 2011 at 12:20:57PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > From: Kevin Tian <kevin.tian@intel.com>
-> > >
-> > > This patch export some necessary functions which parse processor
-> > > power management information. The Xen ACPI processor driver uses them.
-> > 
-> > I was wondering if it could be done by moving a bunch of these
-> > functions in the processor_perflib.c, but there is a lot of code
-> > that would have to be moved. Way too much.
-> > 
-> > Perhaps another, and a nicer way would be to:
-> > 
-> >  1). Create a processor_driver_lib.c which would have the "generic" code
-> >  2). In the processor_driver just keep the essential notifications, andk
-> >      the hotplug code
-> >  3). The introduce the other user of the acpi_processor_[add|remove|notify]
-> >      calls as a seperate library?
-> > 
-> > Thoughts?
-> 
-> that's a cleaner approach in the long term view IMO, though it incurs more changes
-> into current code base. 
+On Mon, 19 Dec 2011 17:43:23 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Well, upstream kernels are focused on the long term view. So that sounds
-like agreement.
+> On 12/19/2011 04:31 PM, Martin Schwidefsky wrote:
+> > On Mon, 19 Dec 2011 11:35:13 +0100
+> > Ingo Molnar<mingo@elte.hu>  wrote:
+> >
+> >>
+> >> * Martin Schwidefsky<schwidefsky@de.ibm.com>  wrote:
+> >>
+> >>> On Mon, 19 Dec 2011 09:08:13 +0100
+> >>> Ingo Molnar<mingo@elte.hu>  wrote:
+> >>>
+> >>>>
+> >>>> * Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
+> >>>>
+> >>>>> Hi all,
+> >>>>>
+> >>>>> Today's linux-next merge of the tip tree got a conflict in
+> >>>>> fs/proc/uptime.c between commit c3e0ef9a298e ("[S390] fix cputime
+> >>>>> overflow in uptime_proc_show") from the cputime tree and commit
+> >>>>> 3292beb340c7 ("sched/accounting: Change cpustat fields to an array") from
+> >>>>> the tip tree.
+> >>>>>
+> >>>>> I fixed it up (I think - see below) and can carry the fix as necessary.
+> >>>>>
+> >>>>> Generally, you guys seem to be working a little at cross purposes ...
+> >>>>
+> >>>> Agreed.
+> >>>>
+> >>>> Martin, could you please send Peter and me a pull request of the
+> >>>> current cputime bits merged on top of tip:sched/core? Those bits
+> >>>> should go upstream via the scheduler tree.
+> >>>>
+> >>>
+> >>> All of it including "[S390] cputime: add sparse checking and
+> >>> cleanup" or just the fix for uptime ?
+> >>
+> >> I suspect we can take it all if it's all scheduling/time
+> >> related, and add new patches to sched/core to keep it all
+> >> concentrated in a single tree?
+> >
+> > Ok, will do. Just one question: are you sure that you want the cpustat array
+> > to be u64 instead of cputime64_t? The content of the cpustat array is defined
+> > by the architecture semantics of cputime64_t, for CONFIG_VIRT_CPU_ACCOUNTING=y
+> > this is not a jiffy counter. If the array is u64 we won't get the sparse
+> > checking when reading from cpustat.
+> >
 > 
-> Thanks
-> Kevin
+>  From where I stand, all I care about is for it to be an array. 
+> Otherwise the cgroup code get quite messy. At the time, and discussing 
+> this with peterz, it made sense to change it to u64.
 > 
-> > >
-> > > Signed-off-by: Yu Ke <ke.yu@intel.com>
-> > > Signed-off-by: Tian Kevin <kevin.tian@intel.com>
-> > > Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ---
-> > >  drivers/acpi/processor_driver.c  |   11 +++--------
-> > >  drivers/acpi/processor_perflib.c |    4 ++--
-> > >  include/acpi/processor.h         |   10 +++++++++-
-> > >  3 files changed, 14 insertions(+), 11 deletions(-)
-> > >
-> > > diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> > > index 9d7bc9f..211c078 100644
-> > > --- a/drivers/acpi/processor_driver.c
-> > > +++ b/drivers/acpi/processor_driver.c
-> > > @@ -79,9 +79,6 @@ MODULE_AUTHOR("Paul Diefenbaugh");
-> > >  MODULE_DESCRIPTION("ACPI Processor Driver");
-> > >  MODULE_LICENSE("GPL");
-> > >
-> > > -static int acpi_processor_add(struct acpi_device *device);
-> > > -static int acpi_processor_remove(struct acpi_device *device, int type);
-> > > -static void acpi_processor_notify(struct acpi_device *device, u32 event);
-> > >  static acpi_status acpi_processor_hotadd_init(acpi_handle handle, int
-> > *p_cpu);
-> > >  static int acpi_processor_handle_eject(struct acpi_processor *pr);
-> > >
-> > > @@ -378,7 +375,7 @@ static int acpi_processor_get_info(struct acpi_device
-> > *device)
-> > >
-> > >  static DEFINE_PER_CPU(void *, processor_device_array);
-> > >
-> > > -static void acpi_processor_notify(struct acpi_device *device, u32 event)
-> > > +void acpi_processor_notify(struct acpi_device *device, u32 event)
-> > >  {
-> > >  	struct acpi_processor *pr = acpi_driver_data(device);
-> > >  	int saved;
-> > > @@ -442,7 +439,7 @@ static struct notifier_block acpi_cpu_notifier =
-> > >  	    .notifier_call = acpi_cpu_soft_notify,
-> > >  };
-> > >
-> > > -static int __cpuinit acpi_processor_add(struct acpi_device *device)
-> > > +int __cpuinit acpi_processor_add(struct acpi_device *device)
-> > >  {
-> > >  	struct acpi_processor *pr = NULL;
-> > >  	int result = 0;
-> > > @@ -545,7 +542,7 @@ err_free_cpumask:
-> > >  	return result;
-> > >  }
-> > >
-> > > -static int acpi_processor_remove(struct acpi_device *device, int type)
-> > > +int acpi_processor_remove(struct acpi_device *device, int type)
-> > >  {
-> > >  	struct acpi_processor *pr = NULL;
-> > >
-> > > @@ -758,7 +755,6 @@ static int acpi_processor_handle_eject(struct
-> > acpi_processor *pr)
-> > >  }
-> > >  #endif
-> > >
-> > > -static
-> > >  void acpi_processor_install_hotplug_notify(void)
-> > >  {
-> > >  #ifdef CONFIG_ACPI_HOTPLUG_CPU
-> > > @@ -771,7 +767,6 @@ void acpi_processor_install_hotplug_notify(void)
-> > >  	register_hotcpu_notifier(&acpi_cpu_notifier);
-> > >  }
-> > >
-> > > -static
-> > >  void acpi_processor_uninstall_hotplug_notify(void)
-> > >  {
-> > >  #ifdef CONFIG_ACPI_HOTPLUG_CPU
-> > > diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-> > > index 85b3237..22c6195 100644
-> > > --- a/drivers/acpi/processor_perflib.c
-> > > +++ b/drivers/acpi/processor_perflib.c
-> > > @@ -386,7 +386,7 @@ static int
-> > acpi_processor_get_performance_states(struct acpi_processor *pr)
-> > >  	return result;
-> > >  }
-> > >
-> > > -static int acpi_processor_get_performance_info(struct acpi_processor *pr)
-> > > +int acpi_processor_get_performance_info(struct acpi_processor *pr)
-> > >  {
-> > >  	int result = 0;
-> > >  	acpi_status status = AE_OK;
-> > > @@ -492,7 +492,7 @@ int acpi_processor_notify_smm(struct module
-> > *calling_module)
-> > >
-> > >  EXPORT_SYMBOL(acpi_processor_notify_smm);
-> > >
-> > > -static int acpi_processor_get_psd(struct acpi_processor	*pr)
-> > > +int acpi_processor_get_psd(struct acpi_processor	*pr)
-> > >  {
-> > >  	int result = 0;
-> > >  	acpi_status status = AE_OK;
-> > > diff --git a/include/acpi/processor.h b/include/acpi/processor.h
-> > > index 610f6fb..12657bb 100644
-> > > --- a/include/acpi/processor.h
-> > > +++ b/include/acpi/processor.h
-> > > @@ -239,6 +239,12 @@ extern void
-> > acpi_processor_unregister_performance(struct
-> > >           if a _PPC object exists, rmmod is disallowed then */
-> > >  int acpi_processor_notify_smm(struct module *calling_module);
-> > >
-> > > +void acpi_processor_install_hotplug_notify(void);
-> > > +void acpi_processor_uninstall_hotplug_notify(void);
-> > > +
-> > > +int acpi_processor_add(struct acpi_device *device);
-> > > +int acpi_processor_remove(struct acpi_device *device, int type);
-> > > +void acpi_processor_notify(struct acpi_device *device, u32 event);
-> > >  /* for communication between multiple parts of the processor kernel
-> > module */
-> > >  DECLARE_PER_CPU(struct acpi_processor *, processors);
-> > >  extern struct acpi_processor_errata errata;
-> > > @@ -278,7 +284,9 @@ static inline void
-> > acpi_processor_ffh_cstate_enter(struct acpi_processor_cx
-> > >  void acpi_processor_ppc_init(void);
-> > >  void acpi_processor_ppc_exit(void);
-> > >  int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int
-> > event_flag);
-> > > -extern int acpi_processor_get_bios_limit(int cpu, unsigned int *limit);
-> > > +int acpi_processor_get_performance_info(struct acpi_processor *pr);
-> > > +int acpi_processor_get_psd(struct acpi_processor *pr);
-> > > +int acpi_processor_get_bios_limit(int cpu, unsigned int *limit);
-> > >  #else
-> > >  static inline void acpi_processor_ppc_init(void)
-> > >  {
-> > > --
-> > > 1.7.7.3
+> If my mind doesn't fail me, the main reason being it cputime64 is u64 
+> everywhere, and it was just preventing us from doing simple assignments,
+> like cpustat[idx] += tmp.
 > 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> But if for whatever reason you want to move it back to cputime64_t, and 
+> the maintainers agree so,I am fine with that, as long as you don't 
+> revert to the old scheme of having a struct filled with fields.
+
+Yes, I would like to have it converted back to cputime64_t. In fact cputime64_t
+is a u64 but with a little twist, it has __nocast attached to it. This came out
+of the discussion with Peter, he suggested to use sparse to warn about
+unannotated conversions between cputime and scalar types. I want to have an
+automated way to find these because for architectures with VIRT_CPU_ACCOUNTING
+the cputime values are not jiffies.
+
+I have implemented the sparse __nocast approach in the large patch on the
+cputime branch. Which now clashes with the conversion of cpustat to an array.
+Oh well.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
