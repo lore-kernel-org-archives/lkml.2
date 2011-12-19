@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1LSX31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 18:29:27 -0500
-Received: from vomta1.indiatimes.com ([223.165.24.78]:15984 "HELO
-	vomta1.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753127Ab1LSX3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 18:29:21 -0500
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=private; d=indiatimes.com;
-  b=abZxOXI9BT1LK7meY9SdqzT/xBX7uxJCTTCQbAnucD0U02Kr9OQUkjwHMRMeBkmt  ;
-X-Spam-Report: SA TESTS
-  0.0 FREEMAIL_FROM          Sender email is freemail (aminababy[at]indiatimes.com)
-  0.1 RDNS_NONE              Delivered to internal network by a host with no rDNS
-  0.0 HELO_NO_DOMAIN         Relay reports its domain incorrectly
-  2.5 FREEMAIL_REPLY         From and body contain different freemails
-  0.0 T_TO_NO_BRKTS_FREEMAIL T_TO_NO_BRKTS_FREEMAIL
-  0.1 TO_NO_BRKTS_DIRECT     To: misformatted and direct-to-MX
-  0.5 TO_NO_BRKTS_NOTLIST    To: misformatted and not a mailing list
-X-Indiatimes-Scanner-Mail-From: aminababy@indiatimes.com via vomta1.indiatimes.com
-X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.53):SA:0(3.2/4.9):. Processed in 0.201154 secs Process 2475)
-Date: Tue, 20 Dec 2011 04:06:55 +0530 (IST)
-From: amina baby <aminababy@indiatimes.com>
-Message-ID: <262097785.1480601324334215134.JavaMail.root@tilmb16.indiatimes.com>
-Subject: Hi dear
+	id S1753387Ab1LSXdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 18:33:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753138Ab1LSXc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 18:32:59 -0500
+Date: Mon, 19 Dec 2011 18:32:47 -0500
+From: Dave Jones <davej@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        trenn@suse.de, kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
+        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
+        ying.huang@intel.com
+Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading for
+ x86 crypto drivers
+Message-ID: <20111219233247.GC570@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-kernel@vger.kernel.org, trenn@suse.de, kay.sievers@vrf.org,
+	Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org,
+	axboe@kernel.dk, herbert@gondor.hengli.com.au, ying.huang@intel.com
+References: <1324334865-30459-1-git-send-email-andi@firstfloor.org>
+ <1324334865-30459-4-git-send-email-andi@firstfloor.org>
+ <20111219232246.GB570@redhat.com>
+ <4EEFC7D2.70803@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.82.110.58]
-X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EEFC7D2.70803@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 19, 2011 at 03:25:06PM -0800, H. Peter Anvin wrote:
 
-Hi dear i am miss amina, i saw your profile is too nice to me, it is my pleasure to have you as my friend. please contact me at my id aminababy14@yahoo.com so that i will send you my photo.
+ > >  > -	if (!cpu_has_phe) {
+ > >  > -		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
+ > >  > -		return -ENODEV;
+ > >  > -	}
+ > >  > -
+ > >  > -	if (!cpu_has_phe_enabled) {
+ > >  > -		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
+ > >  > +	if (!x86_match_cpu(padlock_sha_ids) || !cpu_has_phe_enabled)
+ > >  >  		return -ENODEV;
+ > >  > -	}
+ > > 
+ > > don't we want to keep the printk ?
+ > > 
+ > > Seems that if it's been disabled by the BIOS for some reason, it will now
+ > > silently fail instead of printing a nice warning.
+ > 
+ > The first printk is insanely annoying, because the end result is that we
+ > get a printk of all the crypto engines that are *not* enabled...
+ > arguably it would be somewhat nice to get a printk when a crypto engine
+ > *is* enabled.
+
+Sorry, I just meant the second printk, which should hopefully not get
+printed by default.
+
+	Dave
+
