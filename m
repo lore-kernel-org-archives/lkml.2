@@ -1,301 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab1LSN0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:26:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44981 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab1LSN0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:26:21 -0500
-Date: Mon, 19 Dec 2011 13:26:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
- own LRU
-Message-ID: <20111219132615.GL3487@suse.de>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
- <1323877293-15401-12-git-send-email-mgorman@suse.de>
- <20111217160822.GA10064@barrios-laptop.redhat.com>
+	id S1753077Ab1LSN0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:26:43 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:35230 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753006Ab1LSN0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 08:26:39 -0500
+Date: Mon, 19 Dec 2011 15:26:25 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        heikki.krogerus@linux.intel.com
+Subject: Re: linux-next: Tree for Dec 16 (usb/gadget/langwell)
+Message-ID: <20111219132623.GD3146@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20111216170042.650147ec79e792dce950f6e3@canb.auug.org.au>
+ <4EEB98E0.8080002@xenotime.net>
+ <20111216223505.GA14030@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/Q7FmPuhIbtiu4EM"
 Content-Disposition: inline
-In-Reply-To: <20111217160822.GA10064@barrios-laptop.redhat.com>
+In-Reply-To: <20111216223505.GA14030@legolas.emea.dhcp.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 01:08:22AM +0900, Minchan Kim wrote:
-> On Wed, Dec 14, 2011 at 03:41:33PM +0000, Mel Gorman wrote:
-> > It was observed that scan rates from direct reclaim during tests
-> > writing to both fast and slow storage were extraordinarily high. The
-> > problem was that while pages were being marked for immediate reclaim
-> > when writeback completed, the same pages were being encountered over
-> > and over again during LRU scanning.
-> > 
-> > This patch isolates file-backed pages that are to be reclaimed when
-> > clean on their own LRU list.
-> 
-> Please include your test result about reducing CPU usage.
-> It makes this separate LRU list how vaule is.
-> 
 
-It's in the leader. The writebackCPDevicevfat tests should that System
-CPU goes from 46.40 seconds to 4.44 seconds with this patch applied.
+--/Q7FmPuhIbtiu4EM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > <SNIP>
-> >
-> > diff --git a/mm/swap.c b/mm/swap.c
-> > index a91caf7..9973975 100644
-> > --- a/mm/swap.c
-> > +++ b/mm/swap.c
-> > @@ -39,6 +39,7 @@ int page_cluster;
-> >  
-> >  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
-> >  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
-> > +static DEFINE_PER_CPU(struct pagevec, lru_putback_immediate_pvecs);
-> >  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
-> >  
-> >  /*
-> > @@ -255,24 +256,80 @@ static void pagevec_move_tail(struct pagevec *pvec)
-> >  }
-> >  
-> >  /*
-> > + * Similar pair of functions to pagevec_move_tail except it is called when
-> > + * moving a page from the LRU_IMMEDIATE to one of the [in]active_[file|anon]
-> > + * lists
-> > + */
-> > +static void pagevec_putback_immediate_fn(struct page *page, void *arg)
-> > +{
-> > +	struct zone *zone = page_zone(page);
-> > +
-> > +	if (PageLRU(page)) {
-> > +		enum lru_list lru = page_lru(page);
-> > +		list_move(&page->lru, &zone->lru[lru].list);
-> > +	}
-> > +}
-> > +
-> > +static void pagevec_putback_immediate(struct pagevec *pvec)
-> > +{
-> > +	pagevec_lru_move_fn(pvec, pagevec_putback_immediate_fn, NULL);
-> > +}
-> > +
-> > +/*
-> >   * Writeback is about to end against a page which has been marked for immediate
-> >   * reclaim.  If it still appears to be reclaimable, move it to the tail of the
-> >   * inactive list.
-> >   */
-> >  void rotate_reclaimable_page(struct page *page)
-> >  {
-> > +	struct zone *zone = page_zone(page);
-> > +	struct list_head *page_list;
-> > +	struct pagevec *pvec;
-> > +	unsigned long flags;
-> > +
-> > +	page_cache_get(page);
-> > +	local_irq_save(flags);
-> > +	__mod_zone_page_state(zone, NR_IMMEDIATE, -1);
-> > +
-> 
-> I am not sure underflow never happen.
-> We do SetPageReclaim at several places but dont' increase NR_IMMEDIATE.
-> 
+Hi,
 
-In those cases, we do not move the page to the immedate list either.
-During one test I was recording /proc/vmstat every 10 seconds and never
-saw an underflow.
+On Sat, Dec 17, 2011 at 12:35:06AM +0200, Felipe Balbi wrote:
+> On Fri, Dec 16, 2011 at 11:15:44AM -0800, Randy Dunlap wrote:
+> > On 12/15/2011 10:00 PM, Stephen Rothwell wrote:
+> > > Hi all,
+> > >=20
+> > > Changes since 20111215:
+> >=20
+> >=20
+> > (not new today; I saw this last week but apparently did not
+> > get around to reporting it)
+> >=20
+> >=20
+> > drivers/usb/gadget/langwell_udc.c: In function 'handle_setup_packet':
+> > drivers/usb/gadget/langwell_udc.c:2321:19: error: 'struct langwell_otg'=
+ has no member named 'otg'
+> > drivers/usb/gadget/langwell_udc.c:2322:15: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c: In function 'handle_usb_reset':
+> > drivers/usb/gadget/langwell_udc.c:2757:16: error: 'struct langwell_otg'=
+ has no member named 'otg'
+> > drivers/usb/gadget/langwell_udc.c:2758:12: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c: In function 'handle_bus_suspend':
+> > drivers/usb/gadget/langwell_udc.c:2774:15: error: 'struct langwell_otg'=
+ has no member named 'otg'
+> > drivers/usb/gadget/langwell_udc.c:2775:16: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c:2776:13: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c:2779:5: error: implicit declaration o=
+f function 'langwell_update_transceiver'
+> > drivers/usb/gadget/langwell_udc.c:2783:12: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c:2785:17: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c:2786:13: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c: In function 'handle_bus_resume':
+> > drivers/usb/gadget/langwell_udc.c:2827:15: error: 'struct langwell_otg'=
+ has no member named 'otg'
+> > drivers/usb/gadget/langwell_udc.c:2828:12: error: 'struct langwell_otg'=
+ has no member named 'hsm'
+> > drivers/usb/gadget/langwell_udc.c: In function 'langwell_udc_probe':
+> > drivers/usb/gadget/langwell_udc.c:3119:2: error: implicit declaration o=
+f function 'otg_to_langwell'
+> > drivers/usb/gadget/langwell_udc.c:3119:12: warning: assignment makes po=
+inter from integer without a cast
+> > drivers/usb/gadget/langwell_udc.c:3120:18: error: 'struct langwell_otg'=
+ has no member named 'regs'
+> > drivers/usb/gadget/langwell_udc.c: In function 'init':
+> > drivers/usb/gadget/langwell_udc.c:3529:2: error: implicit declaration o=
+f function 'langwell_register_peripheral'
+> > drivers/usb/gadget/langwell_udc.c: In function 'cleanup':
+> > drivers/usb/gadget/langwell_udc.c:3540:2: error: implicit declaration o=
+f function 'langwell_unregister_peripheral'
+> > drivers/usb/gadget/langwell_udc.c:3540:2: warning: 'return' with a valu=
+e, in function returning void
+>=20
+> aparently this has never been compiled with CONFIG_USB_LANGWELL_OTG
+> before.
+>=20
+> Xiaochen, please fix that ASAP. Now that I look at it, that driver
+> should have been on staging. It's pretty messed up. Isn't it one of
+> those devices which is based on ChipIdea's core ? I wonder when that
+> consolidation work will get done.
+>=20
+> I expect to see this fixed still on 3.2 series. Also needs a backport to
+> fix older stable kernels. v2.6.31 is the first kernel with that driver
+> available.
+>=20
+> Thanks for the report Randy
 
-> >  	if (!PageLocked(page) && !PageDirty(page) && !PageActive(page) &&
-> >  	    !PageUnevictable(page) && PageLRU(page)) {
-> > -		struct pagevec *pvec;
-> > -		unsigned long flags;
-> >  
-> > -		page_cache_get(page);
-> > -		local_irq_save(flags);
-> >  		pvec = &__get_cpu_var(lru_rotate_pvecs);
-> >  		if (!pagevec_add(pvec, page))
-> >  			pagevec_move_tail(pvec);
-> > -		local_irq_restore(flags);
-> > +	} else {
-> > +		pvec = &__get_cpu_var(lru_putback_immediate_pvecs);
-> > +		if (!pagevec_add(pvec, page))
-> > +			pagevec_putback_immediate(pvec);
-> 
-> Nitpick about naming.
+Xiaochen Shen <xiaochen.shen@intel.com> doesn't exist anymore. Maybe
+Alex and/or Heikki can take a look at it
 
-Naming is important.
+--=20
+balbi
 
-> It doesn't say immediate is from or to. So I got confused
-> which is source. I know comment of function already say it
-> but good naming can reduce unnecessary comment.
-> How about pagevec_putback_from_immediate_list?
-> 
+--/Q7FmPuhIbtiu4EM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Sure. Done.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> > +	}
-> > +
-> > +	/*
-> > +	 * There is a potential race that if a page is set PageReclaim
-> > +	 * and moved to the LRU_IMMEDIATE list after writeback completed,
-> > +	 * it can be left on the LRU_IMMEDATE list with no way for
-> > +	 * reclaim to find it.
-> > +	 *
-> > +	 * This race should be very rare but count how often it happens.
-> > +	 * If it is a continual race, then it's very unsatisfactory as there
-> > +	 * is no guarantee that rotate_reclaimable_page() will be called
-> > +	 * to rescue these pages but finding them in page reclaim is also
-> > +	 * problematic due to the problem of deciding when the right time
-> > +	 * to scan this list is.
-> > +	 */
-> > +	page_list = &zone->lru[LRU_IMMEDIATE].list;
-> > +	if (!zone_page_state(zone, NR_IMMEDIATE) && !list_empty(page_list)) {
-> 
-> How about this
-> 
-> if (zone_page_state(zone, NR_IMMEDIATE)) {
-> 	page_list = &zone->lru[LRU_IMMEDIATE].list;
-> 	if (!list_empty(page_list))
-> ...
-> ...
-> }
-> 
-> It can reduce a unnecessary reference.
-> 
+iQIcBAEBAgAGBQJO7zt/AAoJEIaOsuA1yqREOJQP/15jIpWC7s9Iu0gQUoFAb4U2
+fxWZaqQidNAky1cJGckKHPU8qnwlfawhp9bXR32nUQO/jxW/npYwrw9OafMTc3Eq
+E2+nzCDsDR/WA4C+KTbMQCLkleLQJsIsglSGWd3k1eJKaxBtCXUPYlnN+rr0x/Mm
+nWA5HYASPgVCF0QuLEPm3DmTDrUMCnv2n1qubjh7C74SQOY0bY9ifoLehB84doWa
+NZYpoGtBzsK4UTk8Ss+jwA+B76o2nmrnjxneoZb71fMqX4u9o9ib62dRAF4/5KAl
+4LuRF8y3t4qeuKEPdLRH62YtueulNN372TOzZJm3UjVxEIxgqIddRkFjRNbluvt4
+DRE8hvSs0tqn3yF0QtMKD10eVc+UMl+zzsMQt2blMIrLGmdk0GCnqeI48ak+TjcD
+r0zpW5ehjIrhn+ynCs4iwmASYXECvPokgHRuC+Mg0GTTByA2S9koWXbFX/2/04wz
+PJAAWVj3ve551x2OdQ2R4DTiUt+vbopZvfiT7DswO3BlclQuthlxOJsNeGh9rVRS
+32aeCViLjhMuymFcPCSK2brVKxrxlMPoQMtImtHTFeYrZ+9sCwonk5dBXhpAPGGb
+4ajTm7JtJdjTWq7krj2TqDFFwPZUZ4h4RuDQ3OttZWD+mupFFTmO1X/lGW/4yZxj
+ATk9V+U3//O6YyW6+kSQ
+=fCSy
+-----END PGP SIGNATURE-----
 
-Ok, it mucks up the indentation a bit but with some renaming it looks
-reasonable.
-
-> > +		struct page *page;
-> > +
-> > +		spin_lock(&zone->lru_lock);
-> > +		while (!list_empty(page_list)) {
-> > +			page = list_entry(page_list->prev, struct page, lru);
-> > +			list_move(&page->lru, &zone->lru[page_lru(page)].list);
-> > +			__count_vm_event(PGRESCUED);
-> > +		}
-> > +		spin_unlock(&zone->lru_lock);
-> >  	}
-> > +
-> > +	local_irq_restore(flags);
-> >  }
-> >  
-> >  static void update_page_reclaim_stat(struct zone *zone, struct page *page,
-> > @@ -475,6 +532,13 @@ static void lru_deactivate_fn(struct page *page, void *arg)
-> >  		 * is _really_ small and  it's non-critical problem.
-> >  		 */
-> >  		SetPageReclaim(page);
-> > +
-> > +		/*
-> > +		 * Move to the LRU_IMMEDIATE list to avoid being scanned
-> > +		 * by page reclaim uselessly.
-> > +		 */
-> > +		list_move_tail(&page->lru, &zone->lru[LRU_IMMEDIATE].list);
-> > +		__mod_zone_page_state(zone, NR_IMMEDIATE, 1);
-> 
-> It mekes below count of PGDEACTIVATE wrong in lru_deactivate_fn.
-> Before this patch, all is from active to inacive so it was right.
-> But with this patch, it can be from acdtive to immediate.
-> 
-
-I do not quite understand. PGDEACTIVATE is incremented if the page was
-active and this is checked before the move to the immediate LRU. Whether
-it moves to the immediate LRU or the end of the inactive list, it is
-still a deactivation. What's wrong with incrementing the count if it
-moves from active to immediate?
-
-==== CUT HERE ====
-mm: Isolate pages for immediate reclaim on their own LRU fix
-
-Rename pagevec_putback_immediate_fn to pagevec_putback_from_immediate_fn
-for clarity and alter flow of rotate_reclaimable_page() slightly to
-avoid an unnecessary list reference.
-
-This is a fix to the patch
-mm-isolate-pages-for-immediate-reclaim-on-their-own-lru.patch in mmotm.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/swap.c |   32 ++++++++++++++++++--------------
- 1 files changed, 18 insertions(+), 14 deletions(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 9973975..dfe67eb 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -260,7 +260,7 @@ static void pagevec_move_tail(struct pagevec *pvec)
-  * moving a page from the LRU_IMMEDIATE to one of the [in]active_[file|anon]
-  * lists
-  */
--static void pagevec_putback_immediate_fn(struct page *page, void *arg)
-+static void pagevec_putback_from_immediate_fn(struct page *page, void *arg)
- {
- 	struct zone *zone = page_zone(page);
- 
-@@ -270,9 +270,9 @@ static void pagevec_putback_immediate_fn(struct page *page, void *arg)
- 	}
- }
- 
--static void pagevec_putback_immediate(struct pagevec *pvec)
-+static void pagevec_putback_from_immediate(struct pagevec *pvec)
- {
--	pagevec_lru_move_fn(pvec, pagevec_putback_immediate_fn, NULL);
-+	pagevec_lru_move_fn(pvec, pagevec_putback_from_immediate_fn, NULL);
- }
- 
- /*
-@@ -283,7 +283,7 @@ static void pagevec_putback_immediate(struct pagevec *pvec)
- void rotate_reclaimable_page(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
--	struct list_head *page_list;
-+	struct list_head *list;
- 	struct pagevec *pvec;
- 	unsigned long flags;
- 
-@@ -300,7 +300,7 @@ void rotate_reclaimable_page(struct page *page)
- 	} else {
- 		pvec = &__get_cpu_var(lru_putback_immediate_pvecs);
- 		if (!pagevec_add(pvec, page))
--			pagevec_putback_immediate(pvec);
-+			pagevec_putback_from_immediate(pvec);
- 	}
- 
- 	/*
-@@ -316,17 +316,21 @@ void rotate_reclaimable_page(struct page *page)
- 	 * problematic due to the problem of deciding when the right time
- 	 * to scan this list is.
- 	 */
--	page_list = &zone->lru[LRU_IMMEDIATE].list;
--	if (!zone_page_state(zone, NR_IMMEDIATE) && !list_empty(page_list)) {
-+	if (!zone_page_state(zone, NR_IMMEDIATE)) {
- 		struct page *page;
--
--		spin_lock(&zone->lru_lock);
--		while (!list_empty(page_list)) {
--			page = list_entry(page_list->prev, struct page, lru);
--			list_move(&page->lru, &zone->lru[page_lru(page)].list);
--			__count_vm_event(PGRESCUED);
-+		list = &zone->lru[LRU_IMMEDIATE].list;
-+		
-+		if (!list_empty(list)) {
-+			spin_lock(&zone->lru_lock);
-+			while (!list_empty(list)) {
-+				int lru;
-+				page = list_entry(list->prev, struct page, lru);
-+				lru = page_lru(page);
-+				list_move(&page->lru, &zone->lru[lru].list);
-+				__count_vm_event(PGRESCUED);
-+			}
-+			spin_unlock(&zone->lru_lock);
- 		}
--		spin_unlock(&zone->lru_lock);
- 	}
- 
- 	local_irq_restore(flags);
+--/Q7FmPuhIbtiu4EM--
