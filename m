@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1LSNkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 08:40:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326Ab1LSNkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 08:40:37 -0500
-Date: Mon, 19 Dec 2011 14:40:24 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [RFCv2] ftrace, perf: Adding support to use function trace
-Message-ID: <20111219134024.GB1606@m.brq.redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
- <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753024Ab1LSNk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 08:40:56 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19111 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab1LSNka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 08:40:30 -0500
+From: Nelson Elhage <nelhage@nelhage.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Nelson Elhage <nelhage@nelhage.com>
+Subject: [PATCH 1/3] perf: __perf_evlist__mmap: Fix errno value on failed map.
+Date: Mon, 19 Dec 2011 08:39:30 -0500
+Message-Id: <1324301972-22740-2-git-send-email-nelhage@nelhage.com>
+X-Mailer: git-send-email 1.7.4.41.g50b8f
+In-Reply-To: <1324301972-22740-1-git-send-email-nelhage@nelhage.com>
+References: <1324301972-22740-1-git-send-email-nelhage@nelhage.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EEF3EA5.011F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
+On failure, perf_evlist__mmap_per_{cpu,thread} will try to munmap()
+every map that doesn't have a NULL base. This will fail with EINVAL if
+one of them has base == MAP_FAILED, clobbering errno, so that
+perf_evlist__map will return EINVAL on any failure regardless of the
+root cause.
 
-thanks,
-jirka
+Fix this by resetting failed maps to a NULL base.
 
-On Mon, Dec 05, 2011 at 06:22:46PM +0100, Jiri Olsa wrote:
-> hi,
-> here's another version of perf support for function trace
-> with filter. The changeset is working and hopefully is not
-> introducing more bugs.. ;) still testing though..
-> 
-> It's still marked RFC since I'm not sure there's better way to go
-> with patches 2 and 10. Also not sure if the condition fixed by
-> patch 7 was not intentional. The rest is fixed/updated version
-> of the v1 changes.
-> 
-> attached patches:
->  01/10 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
->  02/10 ftrace: Change mcount call replacement logic
->  03/10 ftrace: Add enable/disable ftrace_ops control interface
->  04/10 ftrace, perf: Add open/close tracepoint perf registration actions
->  05/10 ftrace, perf: Add add/del tracepoint perf registration actions
->  06/10 ftrace, perf: Add support to use function tracepoint in perf
->  07/10 ftrace: Change filter/notrace set functions to return exit code
->  08/10 ftrace, perf: Distinguish ftrace function event field type
->  09/10 ftrace, perf: Add filter support for function trace event
->  10/10 ftrace, graph: Add global_ops filter callback for graph tracing
-> 
-> v2 changes:
->  01/10 - keeping the old fix instead of adding hash_has_contents func
->          I'll send separating patchset for this
->  02/10 - using different way to avoid the issue (3/9 in v1)
->  03/10 - using the way proposed by Steven for controling ftrace_ops
->          (4/9 in v1)
->  06/10 - added check ensuring the ftrace:function event could be used by
->          root only (7/9 in v1)
->  08/10 - added more description (8/9 in v1)
->  09/10 - changed '&&' operator to '||' which seems more suitable
->          in this case (9/9 in v1)
-> 
-> thanks for comments,
-> jirka
-> ---
->  include/linux/ftrace.h             |   18 +++-
->  include/linux/ftrace_event.h       |    9 +-
->  include/linux/perf_event.h         |    3 +
->  kernel/trace/ftrace.c              |  202 +++++++++++++++++++++++++++++------
->  kernel/trace/trace.h               |   11 ++-
->  kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
->  kernel/trace/trace_events.c        |   12 ++-
->  kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
->  kernel/trace/trace_export.c        |   53 ++++++++-
->  kernel/trace/trace_kprobe.c        |    8 +-
->  kernel/trace/trace_syscalls.c      |   18 +++-
->  11 files changed, 562 insertions(+), 100 deletions(-)
+Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
+---
+ tools/perf/util/evlist.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index fbb4b4a..271c849 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -298,8 +298,10 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ 	evlist->mmap[idx].mask = mask;
+ 	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
+ 				      MAP_SHARED, fd, 0);
+-	if (evlist->mmap[idx].base == MAP_FAILED)
++	if (evlist->mmap[idx].base == MAP_FAILED) {
++		evlist->mmap[idx].base = NULL;
+ 		return -1;
++	}
+ 
+ 	perf_evlist__add_pollfd(evlist, fd);
+ 	return 0;
+-- 
+1.7.4.41.g50b8f
+
