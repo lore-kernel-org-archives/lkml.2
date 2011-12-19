@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1LSOYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 09:24:01 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35082 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab1LSOX7 (ORCPT
+	id S1753246Ab1LSOYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 09:24:18 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:53538 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab1LSOYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 09:23:59 -0500
-Message-ID: <4EEF48EE.1070800@gmail.com>
-Date: Mon, 19 Dec 2011 08:23:42 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Kevin Hilman <khilman@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/9] irq: check domain hwirq range for DT translate
-References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-3-git-send-email-robherring2@gmail.com> <4EEF3110.30203@ti.com>
-In-Reply-To: <4EEF3110.30203@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Dec 2011 09:24:15 -0500
+Date: Mon, 19 Dec 2011 15:24:09 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Glauber Costa <glommer@parallels.com>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+Message-ID: <20111219152409.3a2c213e@de.ibm.com>
+In-Reply-To: <20111219112547.GA32375@elte.hu>
+References: <20111219154010.c2044c038a6174dd8fb6f477@canb.auug.org.au>
+	<20111219080813.GB30432@elte.hu>
+	<20111219101134.3c2c0db5@de.ibm.com>
+	<20111219103513.GA17928@elte.hu>
+	<20111219112547.GA32375@elte.hu>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+x-cbid: 11121914-6892-0000-0000-0000008163EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit,
+On Mon, 19 Dec 2011 12:25:47 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-On 12/19/2011 06:41 AM, Cousson, Benoit wrote:
-> Hi Rob,
 > 
-> While trying your series to take advantage of the generic-irq domain
-> support for OMAP3 INTC, I realized that the following patch is breaking
-> drivers that are using irq_domain_add_simple.
+> * Ingo Molnar <mingo@elte.hu> wrote:
 > 
-> The point is that irq_domain_add_simple does not populate hwirq_base or
-> nr_irq, so that test will always fail if the domain is created by the
-> irq_domain_add_simple API.
+> > > All of it including "[S390] cputime: add sparse checking and 
+> > > cleanup" or just the fix for uptime ?
+> > 
+> > I suspect we can take it all if it's all scheduling/time 
+> > related, and add new patches to sched/core to keep it all 
+> > concentrated in a single tree?
 > 
-> Adding an extra parameter to provide the nr_irq should fix that.
+> Btw., i'd suggest to keep your commits as-is and merge 
+> tip:sched/core into your tree - and send the result to me so 
+> that we can make that the new sched/core.
 > 
-> The long term fix should be to use the generic-irq for such driver, but
-> this is not the same effort, so it might worth fixing that API for the
-> moment.
-> 
-> Regards,
-> Benoit
-> 
-> On 12/14/2011 4:28 PM, Rob Herring wrote:
->> From: Rob Herring<rob.herring@calxeda.com>
->>
->> A DT node may have more than 1 domain associated with it, so make sure
->> the hwirq number is within range when doing DT translation.
->>
->> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
->> Cc: Thomas Gleixner<tglx@linutronix.de>
->> ---
->>   kernel/irq/irqdomain.c |    3 +++
->>   1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->> index 200ce83..ae6441e 100644
->> --- a/kernel/irq/irqdomain.c
->> +++ b/kernel/irq/irqdomain.c
->> @@ -135,6 +135,9 @@ int irq_domain_simple_dt_translate(struct
->> irq_domain *d,
->>           return -EINVAL;
->>       if (intsize<  1)
->>           return -EINVAL;
->> +    if ((intspec[0]<  d->hwirq_base) ||
->> +        (intspec[0]>= d->hwirq_base + d->nr_irq))
+> That way your commits are preserved and the conflicts are 
+> resolved.
 
-I think this should work:
+Just did that and pushed out the result on 
 
-if (d->nr_irq && ((intspec[0] < d->hwirq_base) ||
-    (intspec[0] >= d->hwirq_base + d->nr_irq)))
+ git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git cputime-tip
 
-Rob
+Pulling either the original tip sched/core branch or the cputime-tip branch
+to an up-to-date repository fails by the way, it gives a conflict in
+kernel/sched/fair.c.
+And then there is the thing with cpustat being u64. It really should be
+cputime64_t. How do you want that resolved, I assume an additional patch
+on top?
 
->> +        return -EINVAL;
->>
->>       *out_hwirq = intspec[0];
->>       *out_type = IRQ_TYPE_NONE;
-> 
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
