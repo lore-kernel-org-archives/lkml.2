@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab1LSIVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 03:21:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54190 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab1LSIVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 03:21:13 -0500
-Date: Mon, 19 Dec 2011 09:21:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Breeds <tony@bakeyournoodle.com>
-Subject: Re: linux-next: build failure after merge of the hid tree
-In-Reply-To: <20111219123432.f58b93575c90cdbf62a08fbc@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1112190919570.8727@pobox.suse.cz>
-References: <20111219123432.f58b93575c90cdbf62a08fbc@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752424Ab1LSIWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 03:22:45 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48318 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1LSIWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 03:22:43 -0500
+Date: Mon, 19 Dec 2011 08:22:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Wolfgang Denk <wd@denx.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Huang Shijie <b32955@freescale.com>,
+        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
+        Stefano Babic <sbabic@denx.de>
+Subject: Re: [PATCH] MXS: Convert mutexes in clock.c to spinlocks
+Message-ID: <20111219082225.GC14542@n2100.arm.linux.org.uk>
+References: <1324217174-6574-1-git-send-email-marek.vasut@gmail.com> <20111219032712.GB4962@S2100-06.ap.freescale.net> <201112190503.46668.marek.vasut@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112190503.46668.marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011, Stephen Rothwell wrote:
-
-> Hi Jiri,
+On Mon, Dec 19, 2011 at 05:03:45AM +0100, Marek Vasut wrote:
+> > On Sun, Dec 18, 2011 at 03:06:13PM +0100, Marek Vasut wrote:
+> > > The mutexes can't be safely used under certain circumstances. I noticed
+> > > this
+> > 
+> > > issue during some network instability at home:
+> > Yes, this is a known issue.  And there was some discussion[1] about
+> > why mutex is needed.
 > 
-> After merging the hid tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> Thanks for pointing this out, I was unaware of it.
 > 
-> drivers/hid/Kconfig:37: syntax error
-> drivers/hid/Kconfig:36: invalid option
+> > But I really have not thought about why we can
+> > not use spinlock only, since using mutex only leads to the issue we
+> > are seeing here, and using spinlock in enable/disable and mutex in
+> > rate/parent will not work, because the mxs clocks have enable/disable
+> > and rate/parent functions access the same register.  I know it's not
+> > good to hold spinlock in rate/parent functions for a long time, but
+> > do we have a way around rather than using spinlock for both sets of
+> > functions?
 > 
-> Caused by commit 7e69ba7caeb0 ("HID: introduce proper dependency of
-> HID_BATTERY on POWER_SUPPLY").
-> 
-> I am sure that this "==" v. "=" in Kconfig files was discussed last
-> week ... :-(
+> Yea, spinlock is not good either. On the other hand, is it really held for so 
+> long ?
 
-How pathetic I am ... it was initially me who noticed that this is not 
-going to work, just to do the very same mistake shortly afterwards.
+There is another solution to this, which I've pointed out before when
+this has come up:
 
-Sorry about that. I have now pushed fixed branch.
+1. Convert all your drivers to _also_ use clk_prepare()/clk_unprepare().
+   You need to do this anyway as it will become mandatory for the common
+   clk stuff.
 
--- 
-Jiri Kosina
-SUSE Labs
+2. Rename your existing clk_enable()/clk_disable() implementation to
+   clk_prepare()/clk_unprepare().  Ensure CONFIG_HAVE_CLK_PREPARE is
+   selected.
+
+3. Provide a new no-op clk_enable()/clk_disable() functions.
+
+This fixes the issue because clk_prepare()/clk_unprepare() must only be
+called from process contexts, whereas clk_enable()/clk_disable() may be
+called from atomic contexts as well.
