@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1LSUxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:53:07 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50368 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab1LSUxE (ORCPT
+	id S1753236Ab1LSUxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:53:20 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63454 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab1LSUxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:53:04 -0500
-Date: Mon, 19 Dec 2011 20:52:51 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111219205251.GK2203@ZenIV.linux.org.uk>
-References: <1324265775.25089.20.camel@mengcong>
- <4EEEE866.2000203@linux.vnet.ibm.com>
- <4EEF0003.3010800@codeaurora.org>
- <4EEF1A13.4000801@linux.vnet.ibm.com>
- <20111219121100.GI2203@ZenIV.linux.org.uk>
- <4EEF9D4E.1000008@linux.vnet.ibm.com>
+	Mon, 19 Dec 2011 15:53:17 -0500
+Date: Mon, 19 Dec 2011 12:53:13 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Ryota Ozaki <ozaki.ryota@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-mm@kvack.org,
+        stable@kernel.org
+Subject: Re: [PATCH][RESEND] mm: Fix off-by-one bug in print_nodes_state
+In-Reply-To: <4EEE6DC0.2030007@gmail.com>
+Message-ID: <alpine.DEB.2.00.1112191252130.28684@chino.kir.corp.google.com>
+References: <1324209529-15892-1-git-send-email-ozaki.ryota@gmail.com> <alpine.DEB.2.00.1112181439500.1364@chino.kir.corp.google.com> <4EEE6DC0.2030007@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEF9D4E.1000008@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-495150536-1324327973=:28684"
+Content-ID: <alpine.DEB.2.00.1112191253010.28684@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 01:53:42AM +0530, Srivatsa S. Bhat wrote:
-> If this new definition of our requirement is acceptable (correct me if I am
-> wrong), then we can do something like the following patch, while still
-> retaining br locks as non-blocking.
-> 
-> We make a copy of the current cpu_online_mask, and lock the per-cpu locks of
-> all those cpus. Then while unlocking, we unlock the per-cpu locks of these cpus
-> (by using that temporary copy of cpu_online_mask we created earlier), without
-> caring about the cpus actually online at that moment.
-> IOW, we do lock-unlock on the same set of cpus, and that too, without missing
-> the complete lock-unlock sequence in any of them. Guaranteed.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-	And what's to stop a process on a newly added CPU from _not_
-spinning in br_read_lock(), even though br_write_unlock() hadn't been
-done yet?
+--397155492-495150536-1324327973=:28684
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1112191253011.28684@chino.kir.corp.google.com>
+
+On Sun, 18 Dec 2011, KOSAKI Motohiro wrote:
+
+> Usually, /sys files don't output trailing '¥0'. And, '¥0' is not regular
+> io friendly. So I can imagine some careless programmer think it is garbage. Is
+> there any benefit to show trailing '¥0'?
+> 
+
+Nope, it could be removed since the buffer is allocated with 
+get_zeroed_page().
+--397155492-495150536-1324327973=:28684--
