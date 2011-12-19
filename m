@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1LSMkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 07:40:41 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:42421 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab1LSMki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 07:40:38 -0500
-Message-ID: <4EEF30C2.4040803@nod.at>
-Date: Mon, 19 Dec 2011 13:40:34 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1752716Ab1LSMm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 07:42:27 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36435 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab1LSMmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 07:42:24 -0500
+Message-ID: <4EEF3110.30203@ti.com>
+Date: Mon, 19 Dec 2011 13:41:52 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_dh: Fix return value of scsi_dh_attach()
-References: <1321572864-23628-1-git-send-email-richard@nod.at>  <4EEDFC16.90303@nod.at> <1324219540.3091.28.camel@dabdike.int.hansenpartnership.com> <4EEDFE4E.6090104@nod.at> <4EEF2714.1080402@suse.de>
-In-Reply-To: <4EEF2714.1080402@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Rob Herring <robherring2@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, Kevin Hilman <khilman@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/9] irq: check domain hwirq range for DT translate
+References: <1323876538-20406-1-git-send-email-robherring2@gmail.com> <1323876538-20406-3-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1323876538-20406-3-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hannes,
+Hi Rob,
 
-On 19.12.2011 12:59, Hannes Reinecke wrote:
-> Nack.
->
-> This patch is wrong.
->
-> scsi_dh_attach() (and, incidentally, scsi_dh_set_params()) should
-> return a standard error value. SCSI_DH_XXX are internal to
-> device_handler and should never see the light of day.
->
+While trying your series to take advantage of the generic-irq domain 
+support for OMAP3 INTC, I realized that the following patch is breaking 
+drivers that are using irq_domain_add_simple.
 
-Thanks for your feedback.
-Both scsi_dh_attach() and scsi_dh_set_params() should
-return -ENODEV, right?
+The point is that irq_domain_add_simple does not populate hwirq_base or 
+nr_irq, so that test will always fail if the domain is created by the 
+irq_domain_add_simple API.
 
-Thanks,
-//richard
+Adding an extra parameter to provide the nr_irq should fix that.
+
+The long term fix should be to use the generic-irq for such driver, but 
+this is not the same effort, so it might worth fixing that API for the 
+moment.
+
+Regards,
+Benoit
+
+On 12/14/2011 4:28 PM, Rob Herring wrote:
+> From: Rob Herring<rob.herring@calxeda.com>
+>
+> A DT node may have more than 1 domain associated with it, so make sure
+> the hwirq number is within range when doing DT translation.
+>
+> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
+> Cc: Thomas Gleixner<tglx@linutronix.de>
+> ---
+>   kernel/irq/irqdomain.c |    3 +++
+>   1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 200ce83..ae6441e 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -135,6 +135,9 @@ int irq_domain_simple_dt_translate(struct irq_domain *d,
+>   		return -EINVAL;
+>   	if (intsize<  1)
+>   		return -EINVAL;
+> +	if ((intspec[0]<  d->hwirq_base) ||
+> +	    (intspec[0]>= d->hwirq_base + d->nr_irq))
+> +		return -EINVAL;
+>
+>   	*out_hwirq = intspec[0];
+>   	*out_type = IRQ_TYPE_NONE;
+
