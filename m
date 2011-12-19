@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1LSThX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 14:37:23 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:41749 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab1LSThV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 14:37:21 -0500
-Date: Mon, 19 Dec 2011 11:32:56 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Mimi Zohar <zohar@us.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] security: update security_file_mmap() docs
-Message-ID: <20111219193256.GA9709@www.outflux.net>
+	id S1752901Ab1LSTiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 14:38:16 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:53699 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752364Ab1LSTiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 14:38:14 -0500
+Message-ID: <4EEFA0C4.5050107@xenotime.net>
+Date: Mon, 19 Dec 2011 12:38:28 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <greg@kroah.com>, Ross Cohen <rcohen@snurgle.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Dec 19 (staging/media/go7007)
+References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
+In-Reply-To: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This documents the fields added to security_file_mmap() that were
-introduced in ed0321895182ffb6ecf210e066d87911b270d587.
+On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20111216:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- include/linux/security.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 256befc..57f4bfe 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -590,6 +590,8 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@reqprot contains the protection requested by the application.
-  *	@prot contains the protection that will be applied by the kernel.
-  *	@flags contains the operational flags.
-+ *	@addr contains virtual address that will be used for the operation.
-+ *	@addr_only contains a boolean: 0 if file-backed VMA, otherwise 1.
-  *	Return 0 if permission is granted.
-  * @file_mprotect:
-  *	Check permissions before changing memory access permissions.
+WARNING: modpost: missing MODULE_LICENSE() in drivers/staging/media/go7007/go7007-usb.o
+see include/linux/module.h for more information
+
 -- 
-1.7.0.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
