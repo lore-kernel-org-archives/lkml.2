@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab1LSGIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 01:08:30 -0500
-Received: from ozlabs.org ([203.10.76.45]:41211 "EHLO ozlabs.org"
+	id S1752434Ab1LSGI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 01:08:26 -0500
+Received: from ozlabs.org ([203.10.76.45]:38499 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1LSGH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751804Ab1LSGH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Dec 2011 01:07:58 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [RFC] modpost: add option to allow external modules to avoid taint
-In-Reply-To: <1324010389.2825.265.camel@deadeye>
-References: <1323752547.2825.101.camel@deadeye> <1323879603-2961-1-git-send-email-linville@tuxdriver.com> <87mxatp3ty.fsf@rustcorp.com.au> <1324010389.2825.265.camel@deadeye>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 13/15] module_param: make bool parameters really bool (sound)
+In-Reply-To: <s5hiplim2tt.wl%tiwai@suse.de>
+References: <87boraserb.fsf@rustcorp.com.au> <s5hiplim2tt.wl%tiwai@suse.de>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 19 Dec 2011 16:15:45 +1030
-Message-ID: <87k45tnmgm.fsf@rustcorp.com.au>
+Date: Mon, 19 Dec 2011 12:25:40 +1030
+Message-ID: <8762hdpboj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Dec 2011 04:39:49 +0000, Ben Hutchings <ben@decadent.org.uk> wrote:
-Non-text part: multipart/signed
-> On Fri, 2011-12-16 at 14:26 +1030, Rusty Russell wrote:
-> > On Wed, 14 Dec 2011 11:20:03 -0500, "John W. Linville" <linville@tuxdriver.com> wrote:
-> > We really want to indicate "out-of-support" which is only a 1:1
-> > mapping to out-of-tree for upstream kernels.
+On Thu, 15 Dec 2011 13:33:50 +0100, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu, 15 Dec 2011 13:49:36 +1030,
+> Rusty Russell wrote:
+> > 
+> > module_param(bool) used to counter-intuitively take an int.  In
+> > fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
+> > trick.
+> > 
+> > It's time to remove the int/unsigned int option.  For this version
+> > it'll simply give a warning, but it'll break next kernel version.
+> > 
+> > Cc: Jaroslav Kysela <perex@perex.cz>
+> > Cc: Takashi Iwai <tiwai@suse.de>
+> > Cc: alsa-devel@alsa-project.org
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 > 
-> Who are 'we' in this instance?
-
-Whoever turns this flag on.  I was using friendly, inclusive language :)
-
-> > How does Debian handle this?
+> Acked-by: Takashi Iwai <tiwai@suse.de>
 > 
-> All the modules in Debian's kernel binary packages are built in-tree.
-> Backported modules are patched in as necessary.
+> (Maybe it'd be good to change with true and false instead of 1 and 0,
+>  too.  But it's subtle things and we don't have to mix up in a single
+>  patch.)
 > 
-> Debian includes many packages of OOT modules, but those are supported by
-> their respective maintainers and not the kernel team.  So for the kernel
-> team, the 'O' flag does not mean 'unsupported' but may indicate that
-> another maintainer should handle the bug (or it may also be irrelevant
-> to the bug).
+> Rusty, would you like to merge from your tree, or shall I merge
+> through sound tree?
 
-So, in your case, the kernel team want to know what's outside their
-support, so this flag works well for you.
+Please take it :)
 
-As John pointed out, it's a bit useless for them.  We could enable it
-with a config option, or they could ignore it, since they're going to
-module-signing route anyway.
+I'll take the bint one, since that's got other dependencies, but this
+one is pure cleanup.
 
-> > Perhaps it makes more sense to use the proposed module signing stuff in
-> > a simplified mode to mark built-with-kernel modules (eg. just put the
-> > sha of known modules inside the kernel).
-> 
-> Unlike commercial distributions, no-one is paying Debian for support
-> contracts and no-one can game the system by hiding OOT modules.  So it's
-> probably not worthwhile for us to use module signing at all.
-> 
-> However, supposing we did go down this route, I would guess that
-> checksums for ~3000 modules take up more space than the signature
-> checking code.  Instead, we could perhaps generate a key pair during
-> build, include the public key in the kernel and then discard the private
-> key.  (But getting entropy would likely be a problem for the key
-> generation.)
-
-Agreed, 60k is a bit expensive for this minor feature.  
-
-Thanks,
+Thanks!
 Rusty.
