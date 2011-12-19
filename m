@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab1LSEtr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Dec 2011 23:49:47 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:38627 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1LSEto (ORCPT
+	id S1751204Ab1LSFAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 00:00:45 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40804 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750713Ab1LSFAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Dec 2011 23:49:44 -0500
-Date: Mon, 19 Dec 2011 15:49:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: linux-next: manual merge of the tip tree with tLinus' tree
-Message-Id: <20111219154938.0375549c381b3d7bce466b50@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Dec_2011_15_49_38_+1100_eOxR310iFltIvumU"
+	Mon, 19 Dec 2011 00:00:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EABHC7k55LOCn/2dsb2JhbAA7CKtagQaBcgEBBTocIxAIAxguFCUDIROIArZdBBOIO4M2BJR9iRuJKA
+Date: Mon, 19 Dec 2011 16:00:38 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: mengcong <mc@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-ID: <20111219050037.GO23662@dastard>
+References: <1324265775.25089.20.camel@mengcong>
+ <20111219041142.GH2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111219041142.GH2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Dec_2011_15_49_38_+1100_eOxR310iFltIvumU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 19, 2011 at 04:11:42AM +0000, Al Viro wrote:
+> On Mon, Dec 19, 2011 at 11:36:15AM +0800, mengcong wrote:
+> > In a heavily loaded system, when frequently turning on and off CPUs, the
+> > kernel will detect soft-lockups on multiple CPUs. The detailed bug report
+> > is at https://lkml.org/lkml/2011/8/24/185.
+> > 
+> > The root cause is that brlock functions, i.e. br_write_lock() and
+> > br_write_unlock(), only locks/unlocks the per-CPU spinlock of CPUs that
+> > are online, which means, if one online CPU is locked and then goes
+> > offline, any later unlocking operation happens during its offline state
+> > will not touch it; and when it goes online again, it has the incorrect
+> > brlock state. This has been verified in current kernel.
+> > 
+> > I can reproduce this bug on the intact 3.1 kernel. After my patch applied, 
+> > I've ran an 8-hours long test(test script provided by the bug reporter), 
+> > and no soft lockup happened again.
+> 
+> Argh...  OK, that's seriously nasty.  I agree that this is broken, but
+> your patch makes br_write_lock() very costly on kernels build with
+> huge number of possible CPUs, even when it's run on a box with few
+> CPUs ;-/
 
-Hi all,
+I fixed this problem with the XFS per-cpu superblock counters
+(bit lock + counters in per-cpu structs) back in 2006. It basically
+uses a lglock-like local/global locking structure and iterates them
+using for_each_online_cpu().
 
-Today's linux-next merge of the tip tree got a conflict in
-kernel/sched/fair.c between commit ab2789213d22 ("sched: Fix
-select_idle_sibling() regression in selecting an idle SMT sibling") from
-Linus' tree (where this is kernel/sched_fair.c) and commit 77e81365e0b7
-("sched: Clean up domain traversal in select_idle_sibling()") from the
-tip tree.
+I fixed it simply by registering a hotplug notifier and
+draining/reinitialising counters on the appropriate event under a
+global lock context. i.e. make CPU hotplug serialise against
+concurrent lock operations. See commit e8234a68 ("[XFS] Add support
+for hotplug CPUs...")
 
-OK, I am not sure what to do about this, so I just used the tip tree
-version.
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__19_Dec_2011_15_49_38_+1100_eOxR310iFltIvumU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO7sJiAAoJEECxmPOUX5FEDEEP/jz4hqh+QinHHU2yjCpWhxuo
-J61V5IjcBIVMOLEdBtxJf31Fgt++IUfEhCRS/MNovtYZcsUCTrsAu6pdW9sXUMwU
-/dsCRRA6yYjRRZJ8pbzo/h2naRe7x7DmaK9Cdy972OxlTQbRcePgpOSGTtbpKpZ4
-p4vj2RmsKPyg2Z1HjzgsEZjLHqaQj5dpK6EBX9zpR9hfIDhsetd9nAs6jUFKaN/s
-bLW2NOJh8Jn9Ukod5eImfkX8karGSZY2OskZcCV+RdLRRqHFuv2JSWJH8Or26N+S
-YBuy+f2bNpGwlfRv964XSXobdGhDPRzoEZV8nq6haK0vqd3tXgBd3eX7t8GLV+Nw
-FGDiVQ7Y+k84UCKS0Lx4Fzc1V0+AJHQmecKMQ70iQOYlxSxOZV5U0c1Qz7y0gnMI
-tM0mF+CViOTHQUe8A94z+ozZnBjG0Kjz3nGQX/nmCwjcqx1PVwKmFM9yPqXXuaYV
-Qn/iSxwESOP8itG3g5iQkfzXTDuMgIpaZO/c/MLPENcWmXdsU246gFeJzcSVQAo8
-kmazl/pZdqWDujunzHJLbxeN5w1+baEY1LHUO7Kgv/REWBx4dK+F5U5CVpXaD+iS
-7rvA1ZBRIuYDPPkWgudw8papqKT0OCzDgieVX9JQOFbSrW4MUl1ezMfUWnfjhOle
-IIUwlHKldijmO7YCIfJm
-=2FZC
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Dec_2011_15_49_38_+1100_eOxR310iFltIvumU--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
