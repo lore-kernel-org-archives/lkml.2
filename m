@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab1LSUeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 15:34:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46916 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab1LSUeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 15:34:20 -0500
-Date: Mon, 19 Dec 2011 12:34:16 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Daney <ddaney.cavm@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] mm: Fix BUILD_BUG assertion in
- pmdp_clear_flush_young()
-In-Reply-To: <4EEF960F.1070909@gmail.com>
-Message-ID: <alpine.DEB.2.00.1112191230510.22060@chino.kir.corp.google.com>
-References: <20111217152253.1aedda0936cd5d1d98be5e76@canb.auug.org.au> <1324316288-2367-1-git-send-email-ddaney.cavm@gmail.com> <alpine.DEB.2.00.1112191125320.19949@chino.kir.corp.google.com> <4EEF960F.1070909@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752270Ab1LSUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 15:45:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab1LSUoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 15:44:55 -0500
+Date: Mon, 19 Dec 2011 15:50:47 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        jeremy.fitzhardinge@citrix.com, levinsasha928@gmail.com,
+        Jan Kiszka <jan.kiszka@siemens.com>, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5 V5] Avoid soft lockup message when KVM is stopped by
+ host
+Message-ID: <20111219175047.GA17347@amt.cnet>
+References: <1323116344-17911-1-git-send-email-emunson@mgebm.net>
+ <4EDF7B0D.4060001@redhat.com>
+ <20111214121622.GB18317@amt.cnet>
+ <4EE8B53C.6070502@redhat.com>
+ <20111214182101.GB21945@amt.cnet>
+ <4EE9CA1C.3010801@redhat.com>
+ <20111216093149.GA26982@amt.cnet>
+ <4EEF351E.8040002@redhat.com>
+ <20111219161108.GA15848@amt.cnet>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111219161108.GA15848@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011, David Daney wrote:
-
-> > The problem here is that HPAGE_PMD_MASK is being referenced without
-> > CONFIG_TRANSPARENT_HUGEPAGE.  pmdp_clear_flush_young() is only applicable
-> > with that config option enabled.  So rather than trying to minimize lines
-> > captured under an #ifdef by placing the BUG() directly in the function for
-> > asm-generic, you'll need to wrap pmd_clear_flush_young() with
-> > #ifdef CONFIG_TRANSPARENT_HUGEPAGE and define its equivalent for
-> > CONFIG_TRANSPARENT_HUGEPAGE=n that breaks the build if not enabled.
+On Mon, Dec 19, 2011 at 02:11:08PM -0200, Marcelo Tosatti wrote:
+> On Mon, Dec 19, 2011 at 02:59:10PM +0200, Avi Kivity wrote:
+> > On 12/16/2011 11:31 AM, Marcelo Tosatti wrote:
+> > > > >
+> > > > > Slow enough that progress of the watchdog thread is unable to keep up
+> > > > > with timer interrupt processing. This is considered a hang and
+> > > > > should be reported.
+> > > > 
+> > > > It's not a guest hang though!
+> > >
+> > > No, but your host system is in such a load state that for the sake of
+> > > system usability you better print out a warning message.
 > > 
+> > What's the point in printing it in the guest?  The guest can't observe
+> > host conditions.
+> >
+> > > I don't see the advantage of preempt notifiers over the simple, paravirt
+> > > solution proposed? Note kvmclock is already paravirt.
+> > 
+> > Right.
+> > 
+> > > What do you want to be done in preempt notifiers? Measure what to
+> > > consider setting this flag?
+> > 
+> > Preemption while TASK_RUNNING or TASK_UNINTERRUPTIBLE.
 > 
-> That does sound like a better option.
-> 
-> I still think having the BUILD_BUG defined as we do in Andrew Morton's tree is
-> the correct approach, and I don't want to see that reverted because of this
-> ugliness.
-> 
+> Maybe it is good (not sure), need to look into schedstats and think of
+> cases that would break legitimate guest hangs. And it probably also
+> affects the position of clearing the flag on the guest side as its 
+> currently done in Eric's patchset.
 
-Agreed, the problem here is that we have existing code, such as 
-pmdp_clear_flush_young() that is calling BUG() at runtime for 
-non-supported configurations.  So when BUILD_BUG_ON() for HPAGE_PMD_MASK 
-and friends was introduced, it detects improper use that needs to be fixed 
-and you've found one of those cases.
+Is the task going to be TASK_UNINTERRUPTIBLE with SIGSTOP? Don't think
+so. 
 
-> Really this is hackery that should be cleaned up as you suggest, instead of
-> being papered over with this BUG() thing.  I can't test SH things, otherwise I
-> might look at it.  The SH maintainers should probably take a look instead.
-> 
+Note "Preemption while TASK_RUNNING or TASK_UNINTERRUPTIBLE" is not
+functional for guest-paused-via-QEMU-monitor case.
 
-It's not only about sh, this will affect any architecture that uses the 
-generic version of pmdp_clear_flush_young(), which is everything except 
-x86.
