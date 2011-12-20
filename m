@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1LTXdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:33:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:53809 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab1LTXdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:33:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98548160"
-Subject: [PATCH] block: fix blk_queue_end_tag()
-To: axboe@kernel.dk
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Tao Ma <boyu.mt@taobao.com>, Meelis Roos <mroos@ut.ee>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Ed Nadolski <edmund.nadolski@intel.com>
-Date: Tue, 20 Dec 2011 15:33:49 -0800
-Message-ID: <20111220233117.17757.71139.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15-7-g9bfb-dirty
+	id S1753389Ab1LTXfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:35:11 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43667 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1LTXfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 18:35:08 -0500
+Date: Tue, 20 Dec 2011 15:35:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 5/5] cgroup: separate out cgroup_attach_proc error
+ handling code
+Message-ID: <20111220233502.GN10752@google.com>
+References: <1324422873-31001-1-git-send-email-msb@chromium.org>
+ <1324422873-31001-6-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324422873-31001-6-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5e081591 "block: warn if tag is greater than real_max_depth"
-cleaned up blk_queue_end_tag() to warn when the tag is truly invalid
-(greater than real_max_depth).  However, it changed behavior in the tag
-< max_depth case to not end the request.  Leading to triggering of
-BUG_ON(blk_queued_rq(rq)) in the request completion path:
+Hello,
 
-  http://marc.info/?l=linux-kernel&m=132204370518629&w=2
+On Tue, Dec 20, 2011 at 03:14:33PM -0800, Mandeep Singh Baines wrote:
+> @@ -2067,9 +2067,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  	read_unlock(&tasklist_lock);
+>  
+>  	/* methods shouldn't be called if no task is actually migrating */
+> -	retval = 0;
+> -	if (!group_size)
+> +	if (!group_size) {
+> +		retval = 0;
+>  		goto out_free_group_list;
+> +	}
 
-In order to allow blk_queue_resize_tags() to shrink the tag space
-blk_queue_end_tag() must always complete tags with a value less than
-real_max_depth regardless of the current max_depth.
+Eh... I don't think this is an improvement.  It's just different.
 
-Cc: Tao Ma <boyu.mt@taobao.com>
-Reported-by: Meelis Roos <mroos@ut.ee>
-Reported-by: Ed Nadolski <edmund.nadolski@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
-Functionally the same as Tao Ma's fix [1], but just moves the warn into the
-if() directly.
+> @@ -2126,20 +2127,20 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  	 */
+>  	synchronize_rcu();
+>  	cgroup_wakeup_rmdir_waiter(cgrp);
+> -	retval = 0;
+> +	flex_array_free(group);
+> +	return 0;
 
-[1]: http://marc.info/?l=linux-scsi&m=132439698602441&w=2
+Hmm... maybe goto out_free_group_list?  Duplicating cleanup on success
+and failure paths can lead future updaters forget one of them.  The
+exit path in this function isn't pretty but I don't think the proposed
+patch improves it either.
 
---
-Dan
+Thanks.
 
- block/blk-tag.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index e74d6d1..6e61262 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -286,12 +286,13 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
- 
- 	BUG_ON(tag == -1);
- 
--	if (unlikely(tag >= bqt->max_depth)) {
-+	if (WARN_ONCE(tag >= bqt->real_max_depth,
-+		      "%s: tag %d greater than tag map size: %d\n",
-+		      __func__, tag, bqt->real_max_depth)) {
- 		/*
- 		 * This can happen after tag depth has been reduced.
- 		 * But tag shouldn't be larger than real_max_depth.
- 		 */
--		WARN_ON(tag >= bqt->real_max_depth);
- 		return;
- 	}
- 
-
+-- 
+tejun
