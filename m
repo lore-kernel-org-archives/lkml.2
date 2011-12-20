@@ -1,121 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1LTPcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:32:21 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:32875 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab1LTPcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:32:14 -0500
-Date: Tue, 20 Dec 2011 11:31:45 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: "Tian, Kevin" <kevin.tian@intel.com>
-Cc: "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
+	id S1752807Ab1LTPdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:33:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59400 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414Ab1LTPdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 10:33:40 -0500
+Date: Tue, 20 Dec 2011 16:33:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "liang.tang@oracle.com" <liang.tang@oracle.com>,
-        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/8] ACPI: processor: add __acpi_processor_[un]register_driver helpers.
-Message-ID: <20111220153145.GB13253@andromeda.dapyr.net>
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com> <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com> <20111216220342.GC9832@phenom.dumpdata.com> <625BA99ED14B2D499DC4E29D8138F1506E01AABC7A@shsmsx502.ccr.corp.intel.com> <20111219142626.GB27772@andromeda.dapyr.net> <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
-Mime-Version: 1.0
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/4] memcg: simplify page cache charging.
+Message-ID: <20111220153337.GO10565@tiehlicka.suse.cz>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.9i
+In-Reply-To: <20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 10:29:12AM +0800, Tian, Kevin wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
-> > Sent: Monday, December 19, 2011 10:26 PM
-> > 
-> > On Mon, Dec 19, 2011 at 01:48:01PM +0800, Tian, Kevin wrote:
-> > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > > > Sent: Saturday, December 17, 2011 6:04 AM
-> > > >
-> > > > On Wed, Nov 30, 2011 at 12:20:59PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > > > From: Tang Liang <liang.tang@oracle.com>
-> > > > >
-> > > > > This patch implement __acpi_processor_[un]register_driver helper,
-> > > > > so we can registry override processor driver function. Specifically
-> > > > > the Xen processor driver.
-> > > >
-> > > > Liang,
-> > > >
-> > > > Is the reason we are doing this b/c we need to call acpi_bus_register_driver
-> > > > and inhibit the registration of 'acpi_processor_driver' ?
-> > > >
-> > > > And the reason we don't want 'acpi_processor_driver' to run is b/c of what?
-> > > > If the cpuidle is disabled what is the harm of running the
-> > > > 'acpi_processor_driver'
-> > > > driver?
-> > >
-> > > IIRC, the reason why we want a Xen specific driver is because current driver
-> > > is integrated with OS logic too tightly, e.g. the various checks on VCPU related
-> > > structures. Long time ago the 1st version in Xen was to use same driver, by
-> > > adding various tweaking lines inside which makes it completely messed. Then
-> > > later it's found that it's clearer to create a Xen specific wrapping driver, by
-> > > invoking some exported functions from existing one.
-> > 
-> > What I am asking is does it matter "if the current driver is integrated
-> > with OS logic to tighly" - as it is not running anyhow (b/c cpuidle is
-> > disabled).
-> > 
-> > And if Xen specific driver can run along-side the generic one - since
-> > the generic one is not doing any work (b/c cpuidle is disabled).
-> > 
-> > That is what I am trying to figure out - since this patch purpose is to
-> > thwart the generic driver from running and allowing the xen one to run.
+On Wed 14-12-11 16:49:22, KAMEZAWA Hiroyuki wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> It's a separate issue from cpuidle case. Here we're talking about acpi processor
-> driver, not the acpi cpuidle driver. ACPI processor driver is responsible for 
-> discovering ACPI processor projects, and then enumerate various methods 
-> such as _PPC, _CST, etc. under those objects. So far this driver depends on 
-> VCPU presence in various places, which causes trouble when dom0 is configured
-> with less VCPU number than physical present one.
+> This patch is a clean up. No functional/logical changes.
 > 
-> One example you can see from acpi_processor_add:
+> Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
+> of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
+> called against FUSE's pages from splice.
 > 
->         result = acpi_processor_get_info(device); // call acpi_get_cpuid
->         if (result) {
->                 /* Processor is physically not present */
->                 return 0;
->         }
-> 
-> #ifdef CONFIG_SMP
->         if (pr->id >= setup_max_cpus && pr->id != 0)
->                 return 0;
-> #endif 
-> 
->         BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
-> 
-> The binding between ACPI processor objects and VCPU presence would only parse
-> partial objects to Xen. And there're various places within driver validating pr->id
-> making it messy to workaround for Xen within same driver.
-> 
-> That's the major reason for coming up a Xen specific driver, which always parses
-> all present objects regardless of VCPU presence. :-)
+> So, Now, mem_cgroup_cache_charge() doesn't receive a page on LRU
+> unless it's not SwapCache.
 
-OK. Lets put the # VCPU != PCPU aside. Say dom0 will boot with all
-CPUs and then later on the admin starts unplugging them.
+too many negations makes it hard to read. What about:
 
-With that in mind, could we use a slim driver (like the one in: "ACPI:
- add processor driver for Xen virtual CPUs.") that would just
-take the _Pxx, Cxx data and shove them to the hypervisor (handwaving
-aside the checking for quirks and such). And lets assume that we use the
-unmodified acpi_processor_[add|remove|notify] code that is present in
-processor_driver.c.
+mem_cgroup_cache_charge gets pages that are not on LRU with exception of
+PageSwapCache pages.
 
-Oh, and the processor-driver.c did try to load (with the understanding
-that it would load, but won't do much since cpuidle is turned off).
+> For checking, WARN_ON_ONCE(PageLRU(page)) is added.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Would that still get the Pxx, Cxx data to the hypervisor?
+Makes sense.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c |   31 +++++++++----------------------
+>  1 files changed, 9 insertions(+), 22 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a9e92a6..947c62c 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2710,6 +2710,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  				gfp_t gfp_mask)
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+> +	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	int ret;
+>  
+>  	if (mem_cgroup_disabled())
+> @@ -2719,31 +2720,17 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  
+>  	if (unlikely(!mm))
+>  		mm = &init_mm;
+> +	if (!page_is_file_cache(page))
+> +		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+>  
+> -	if (page_is_file_cache(page)) {
+> -		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
+> -		if (ret || !memcg)
+> -			return ret;
+> -
+> -		/*
+> -		 * FUSE reuses pages without going through the final
+> -		 * put that would remove them from the LRU list, make
+> -		 * sure that they get relinked properly.
+> -		 */
+> -		__mem_cgroup_commit_charge_lrucare(page, memcg,
+> -					MEM_CGROUP_CHARGE_TYPE_CACHE);
+> -		return ret;
+> -	}
+> -	/* shmem */
+> -	if (PageSwapCache(page)) {
+> +	if (!PageSwapCache(page)) {
+> +		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+> +		WARN_ON_ONCE(PageLRU(page));
+> +	} else { /* page is swapcache/shmem */
+>  		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+>  		if (!ret)
+> -			__mem_cgroup_commit_charge_swapin(page, memcg,
+> -					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+> -	} else
+> -		ret = mem_cgroup_charge_common(page, mm, gfp_mask,
+> -					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+> -
+> +			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+> +	}
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.4.1
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
