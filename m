@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab1LTFkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 00:40:25 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34813 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1LTFkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 00:40:20 -0500
-Date: Tue, 20 Dec 2011 09:36:59 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [kernel-hardening] [PATCH 2/2] security: Yama LSM
-Message-ID: <20111220053659.GC2537@albatros>
-References: <1324017197-3292-1-git-send-email-keescook@chromium.org>
- <1324017197-3292-3-git-send-email-keescook@chromium.org>
- <alpine.LRH.2.00.1112191130530.22702@tundra.namei.org>
- <20111219194136.GG12321@outflux.net>
- <alpine.LRH.2.00.1112200751260.30800@tundra.namei.org>
- <20111220053541.GB2537@albatros>
+	id S1752168Ab1LTFqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 00:46:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34043 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742Ab1LTFqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 00:46:08 -0500
+From: NeilBrown <neilb@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 20 Dec 2011 16:44:41 +1100
+Subject: [PATCH 0/2] Two fixes for leds-tca6507 - Version 2
+User-Agent: StGIT/0.14.3
+Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Message-ID: <20111220054233.7043.3561.stgit@notabene.brown>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220053541.GB2537@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, dropped James from cc.
+The driver didn't compile on arches which did not define GPIOLIB.
+  Fix this by excluding gpio support on those archs.
+  [Fix for the 'remove' function too]
+  Reported by: Randy Dunlap <rdunlap@xenotime.net> and
+     Stephen Rothwell <sfr@canb.auug.org.au>
 
-On Tue, Dec 20, 2011 at 09:35 +0400, Vasiliy Kulikov wrote:
-> Hi,
-> 
-> On Tue, Dec 20, 2011 at 07:52 +1100, James Morris wrote:
-> > On Mon, 19 Dec 2011, Kees Cook wrote:
-> > > On Mon, Dec 19, 2011 at 11:33:10AM +1100, James Morris wrote:
-> > > > On Thu, 15 Dec 2011, Kees Cook wrote:
-> > > > > +#ifdef CONFIG_SECURITY_YAMA
-> > > > > +	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
-> > > > > +#endif
-> > > > > +
-> > > > 
-> > > > I'd like to see this implemented as an LSM hook, something like 
-> > > > security_ptrace_set_scope().
-> > > 
-> > > I must be dense, but I fail to understand the purpose of this. The "ptrace
-> > > scope" implemented by Yama is a sysctl, not an system interface. I don't
-> > > understand why (or where) other LSMs would want to catch changing this.
-> > > Can you explain what you're looking for in more detail?
-> > > 
-> > 
-> > We should not see YAMA-specific code in the core kernel.  However you do 
-> > it, the above should happen in LSM.
-> 
-> Probably this should be security_pid_namespace_create() instead of
-> security_ptrace_set_scope()?  (Or even use create an analog of
-> register_pernet_subsys() for pid_ns.)
-> 
-> Then have ->ptrace_scope and similar things as per-LSM private variables
-> like in task_struct->cred->security.  ns->security should be dynamically
-> allocated.
-> 
-> Thanks,
-> 
-> -- 
-> Vasiliy
+off-by-one error in choose_times
+  Reported by: Dan Carpenter <dan.carpenter@oracle.com>
+
+Thanks,
+NeilBrown
+
+---
+
+NeilBrown (2):
+      leds-tca6507 - fix off by one error.
+      leds-tca6507: allow driver to compile when GPIOLIB is not available.
+
+
+ drivers/leds/leds-tca6507.c  |  100 +++++++++++++++++++++++++++++-------------
+ include/linux/leds-tca6507.h |    3 +
+ 2 files changed, 71 insertions(+), 32 deletions(-)
+
+-- 
+Signature
+
