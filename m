@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab1LTJXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:23:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40702 "EHLO mx1.redhat.com"
+	id S1753169Ab1LTJYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:24:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60233 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414Ab1LTJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:23:11 -0500
-Message-ID: <4EF053FA.2020009@redhat.com>
-Date: Tue, 20 Dec 2011 11:23:06 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH 0/2] kvm: Lock down device assignment
-References: <20111220030826.11829.9141.stgit@bling.home>
-In-Reply-To: <20111220030826.11829.9141.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
+	id S1753144Ab1LTJYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 04:24:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98258718"
+Subject: Re: [PATCH 0/4] Fix the left DMA_NONE from dma_transfer_direction
+ migration
+From: Vinod Koul <vinod.koul@intel.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>, Artem Bityutskiy <artem.bityutskiy@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Huang Shijie <b32955@freescale.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
+In-Reply-To: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
+References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Dec 2011 14:54:04 +0530
+Message-ID: <1324373044.1641.10096.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 05:19 AM, Alex Williamson wrote:
-> Two patches to try to better secure the device assignment ioctl.
-> This firt patch makes KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory
-> option when assigning a device.  I don't believe we have any
-> users of this option, so I think we can skip any deprecation
-> period, especially since it's existence is rather dangerous.
->
-> The second patch introduces some file permission checking that Avi
-> suggested.  If a user has been granted read/write permission to
-> the PCI sysfs BAR resource files, this is a good indication that
-> they have access to the device.  We can't call sys_faccessat
-> directly (not exported), but the important bits are self contained
-> enough to include directly.  This still works with sudo and libvirt
-> usage, the latter already grants qemu permission to these files.
-> Thanks,
->
->
+On Tue, 2011-12-13 at 23:48 +0800, Shawn Guo wrote:
+> I have been working on -rc recently, and have not noticed the failure
+> until I ran next tree today.  The mxs-mmc driver is broken on next
+> tree because the DMA_NONE was left over from the dma_transfer_direction
+> migration for mxs-dma and its client drivers.
+> 
+For DMA transfer, the NONE direction makes no sense?
 
-Looks good, but please update the API documentation.
+In your conetext, what are you trying to achieve?
+
 
 -- 
-error compiling committee.c: too many arguments to function
+~Vinod
 
