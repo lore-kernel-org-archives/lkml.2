@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab1LTOST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 09:18:19 -0500
-Received: from [219.140.195.219] ([219.140.195.219]:3698 "EHLO
-	www.ghsgroup.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab1LTOSM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 09:18:12 -0500
-X-Greylist: delayed 1003 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 09:18:11 EST
-From: Western Union Financial Services <done@done.eu>
-To: linux-kernel@vger.kernel.org
-Subject: Message: Security Warning !
-Date: 20 Dec 2011 18:00:27 +0400
-Message-ID: <20111220180027.530DBC754AC47384@done.eu>
-MIME-Version: 1.0
-X-MIMETrack: Itemize by SMTP Server on OASRV/GHS(Release 8.0|August 02, 2007) at 2011-12-20
- 22:00:23,
-	Serialize by Router on OASRV/GHS(Release 8.0|August 02, 2007) at 2011-12-20
- 22:17:56
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752403Ab1LTO3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 09:29:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694Ab1LTO25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 09:28:57 -0500
+Message-ID: <1324391334.2568.9.camel@bling.home>
+Subject: Re: [PATCH 1/2] kvm: Remove ability to assign a device without
+ iommu support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, "avi@redhat.com" <avi@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Dec 2011 07:28:54 -0700
+In-Reply-To: <1324372128.22797.6.camel@lappy>
+References: <20111220030826.11829.9141.stgit@bling.home>
+	 <20111220031947.11829.66292.stgit@bling.home>
+	 <1324370959.22797.3.camel@lappy> <4EF04F54.9010500@siemens.com>
+	 <1324372128.22797.6.camel@lappy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Customers,
+On Tue, 2011-12-20 at 11:08 +0200, Sasha Levin wrote:
+> On Tue, 2011-12-20 at 10:03 +0100, Jan Kiszka wrote:
+> > On 2011-12-20 09:49, Sasha Levin wrote:
+> > > On Mon, 2011-12-19 at 20:19 -0700, Alex Williamson wrote:
+> > >> This option has no users and it exposes a security hole that we
+> > >> can allow devices to be assigned without iommu protection.  Make
+> > >> KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory option.
+> > >>
+> > >> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > >> ---
+> > >>
+> > >>  virt/kvm/assigned-dev.c |   18 +++++++++---------
+> > >>  1 files changed, 9 insertions(+), 9 deletions(-)
+> > >>
+> > >> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> > >> index 3ad0925..a251a28 100644
+> > >> --- a/virt/kvm/assigned-dev.c
+> > >> +++ b/virt/kvm/assigned-dev.c
+> > >> @@ -487,6 +487,9 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+> > >>  	struct kvm_assigned_dev_kernel *match;
+> > >>  	struct pci_dev *dev;
+> > >>  
+> > >> +	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
+> > >> +		return -EINVAL;
+> > > 
+> > > Could we just drop KVM_DEV_ASSIGN_ENABLE_IOMMU and do it by default?
+> > > calling KVM_ASSIGN_PCI_DEVICE without that flag set it pretty
+> > > meaningless.
+> > 
+> > There is that thing called "backward compatibility". :)
+> 
+> Well, Alex suggested skipping deprecation period because there are
+> currently no users of KVM_ASSIGN_PCI_DEVICE without
+> KVM_DEV_ASSIGN_ENABLE_IOMMU, so it should be fine to just make it the
+> default behavior, no?
+> 
+> We can leave KVM_DEV_ASSIGN_ENABLE_IOMMU itself so userspace won't
+> break, but theres no reason to enforce it being set in the kernel code.
 
-NOTICE: Western Union issued a security warning on your account 
-due to a login
-attempt failure.
+As Jan said, the option does have historical meaning.  Ignoring the flag
+adds ambiguity to the API, so I think it's best to make it clear which
+path is no longer supported.  Either way, we don't get to take the flag
+back, so it might as well serve as a sanity check.  Thanks,
 
-Unfortunately there are some issues with your
-account and we need your fast response to resolve problem.
+Alex 
 
-To get started, Please click on the link below:
-
-http://butterflywisdom4you.com/www.wumt.westernunion.com/WUCOMWEB/wumtseu.htm
-
-
-2001-2011 Western Union Holdings, Inc., All Rights Reserved. 
