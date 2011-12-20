@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab1LTKhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:37:50 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36825 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab1LTKhU convert rfc822-to-8bit (ORCPT
+	id S1753352Ab1LTKk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:40:58 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53037 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab1LTKkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:37:20 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build warning after merge of the fbdev tree
-Date: Tue, 20 Dec 2011 11:37:05 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au>
-In-Reply-To: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au>
+	Tue, 20 Dec 2011 05:40:51 -0500
+Date: Tue, 20 Dec 2011 10:40:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 1/3 v5] sound/soc/codecs: add LAPIS Semiconductor ML26124
+Message-ID: <20111220104047.GE2866@opensource.wolfsonmicro.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201112201137.12003.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+X-Cookie: You enjoy the company of other people.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Tue, Dec 20, 2011 at 11:45:42AM +0900, Tomoya MORINAGA wrote:
 
-On Tuesday 20 December 2011 06:32:14 Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the fbdev tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
-> 
-> drivers/video/matrox/matroxfb_base.c:150:2: warning: braces around scalar
-> initializer [enabled by default]
-> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near initialization
-> for 'vesafb_defined.colorspace') [enabled by default]
-> drivers/video/matrox/matroxfb_base.c:150:2: warning: excess elements in
-> scalar initializer [enabled by default]
-> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near initialization
-> for 'vesafb_defined.colorspace') [enabled by default]
-> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: braces around scalar
-> initializer [enabled by default]
-> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near initialization
-> for 'matroxfb_dh_defined.colorspace') [enabled by default]
-> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: excess elements in
-> scalar initializer [enabled by default]
-> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near initialization
-> for 'matroxfb_dh_defined.colorspace') [enabled by default]
-> 
-> Introduced by commit fb21c2f42879 ("fbdev: Add FOURCC-based format
-> configuration API").
+> +	switch (level) {
+> +	case SND_SOC_BIAS_ON:
+> +		/* VMID ON */
+> +		snd_soc_update_bits(codec, ML26124_PW_REF_PW_MNG,
+> +				    ML26124_VMID, ML26124_VMID);
+> +		msleep(500);
+> +	case SND_SOC_BIAS_PREPARE:
 
-The following patch should fix the issue. Florian, are you fine with it, or
-would you rather modify the initializers to be name-based ?
+You're missing a break here.
 
->From 078987fc14dba806fc1bc628e3e5c371db3cf1b8 Mon Sep 17 00:00:00 2001
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Date: Tue, 20 Dec 2011 11:30:53 +0100
-Subject: [PATCH] fbdev: matroxfb: Fix compilation after fb_var_screeninfo change
+> +static int ml26124_pcm_trigger(struct snd_pcm_substream *substream,
+> +			      int cmd, struct snd_soc_dai *codec_dai)
+> +{
+> +	struct snd_soc_codec *codec = codec_dai->codec;
+> +
+> +	if (cmd == SNDRV_PCM_TRIGGER_STOP) {
+> +		snd_soc_update_bits(codec, ML26124_REC_PLYBAK_RUN, 0x3, 0);
+> +		return 0;
+> +	} else if (cmd == SNDRV_PCM_TRIGGER_START) {
+> +		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 
-Commit fb21c2f42879 ("fbdev: Add FOURCC-based format configuration API")
-modified the layout of the fb_var_screeninfo structure. Update the
-static initializers in the matroxfb driver accordingly.
+Use switch statements, though frankly I'd be astonished if this code
+actually runs as the trigger() callback is called in atomic context and
+the register I/O functionality needs interrupts.  How have you tested
+this code?
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/video/matrox/matroxfb_base.c  |    2 +-
- drivers/video/matrox/matroxfb_crtc2.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> +	.reg_cache_size = ML26134_CACHESIZE,
+> +	.reg_word_size = sizeof(u8),
+> +	.reg_cache_default = ml26124_reg,
 
-diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
-index 44bf8d4..f98aad5 100644
---- a/drivers/video/matrox/matroxfb_base.c
-+++ b/drivers/video/matrox/matroxfb_base.c
-@@ -147,7 +147,7 @@ static struct fb_var_screeninfo vesafb_defined = {
- 	39721L,48L,16L,33L,10L,
- 	96L,2L,~0,	/* No sync info */
- 	FB_VMODE_NONINTERLACED,
--	0, {0,0,0,0,0}
-+	0, 0, {0,0,0,0}
- };
- 
- 
-diff --git a/drivers/video/matrox/matroxfb_crtc2.c b/drivers/video/matrox/matroxfb_crtc2.c
-index d7112c3..d0c1abc 100644
---- a/drivers/video/matrox/matroxfb_crtc2.c
-+++ b/drivers/video/matrox/matroxfb_crtc2.c
-@@ -593,7 +593,7 @@ static struct fb_var_screeninfo matroxfb_dh_defined = {
- 		39721L,48L,16L,33L,10L,
- 		96L,2,0,	/* no sync info */
- 		FB_VMODE_NONINTERLACED,
--		0, {0,0,0,0,0}
-+		0, 0, {0,0,0,0}
- };
- 
- static int matroxfb_dh_regit(const struct matrox_fb_info *minfo,
--- 
-Regards,
-
-Laurent Pinchart
+New drivers really should use regmap rather than the ASoC cache code.
