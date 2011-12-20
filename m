@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab1LTSgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 13:36:37 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:60336 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab1LTSgc (ORCPT
+	id S1752455Ab1LTSmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 13:42:16 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54682 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab1LTSmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 13:36:32 -0500
-Date: Tue, 20 Dec 2011 13:35:24 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: sandr8@gmail.com, stefan.bader@canonical.com, Ian.Campbell@citrix.com,
-        Olaf Hering <olaf@aepfle.de>
-Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.2 for 3.2-rc6 (a revert)
-Message-ID: <20111220183523.GA8534@phenom.dumpdata.com>
+	Tue, 20 Dec 2011 13:42:08 -0500
+Message-ID: <4EF0D6FD.8070406@gmail.com>
+Date: Tue, 20 Dec 2011 12:42:05 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4EF0D5AA.0046,ss=1,re=0.000,fgs=0
+To: Dong Aisheng <b29396@freescale.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        shawn.guo@freescale.com
+Subject: Re: [PATCH 1/1] dt: fix some code indent issue in of.h
+References: <1324404609-3999-1-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324404609-3999-1-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/20/2011 12:10 PM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Checkpatch script will report some warnings for the old coding style:
+> WARNING: suspect code indent for conditional statements (8, 0)
+>         for (child = of_get_next_child(parent, NULL); child != NULL; \
+> [...]
+> +static inline int of_get_child_count(const struct device_node *np)
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  include/linux/of.h |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index f1a490c..95dee0a 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -163,22 +163,22 @@ extern struct device_node *of_find_node_by_name(struct device_node *from,
+>  	const char *name);
+>  #define for_each_node_by_name(dn, name) \
+>  	for (dn = of_find_node_by_name(NULL, name); dn; \
+> -	     dn = of_find_node_by_name(dn, name))
+> +		dn = of_find_node_by_name(dn, name))
+>  extern struct device_node *of_find_node_by_type(struct device_node *from,
+>  	const char *type);
+>  #define for_each_node_by_type(dn, type) \
+>  	for (dn = of_find_node_by_type(NULL, type); dn; \
+> -	     dn = of_find_node_by_type(dn, type))
+> +		dn = of_find_node_by_type(dn, type))
+>  extern struct device_node *of_find_compatible_node(struct device_node *from,
+>  	const char *type, const char *compat);
+>  #define for_each_compatible_node(dn, type, compatible) \
+>  	for (dn = of_find_compatible_node(NULL, type, compatible); dn; \
+> -	     dn = of_find_compatible_node(dn, type, compatible))
+> +		dn = of_find_compatible_node(dn, type, compatible))
+>  extern struct device_node *of_find_matching_node(struct device_node *from,
+>  	const struct of_device_id *matches);
+>  #define for_each_matching_node(dn, matches) \
+>  	for (dn = of_find_matching_node(NULL, matches); dn; \
+> -	     dn = of_find_matching_node(dn, matches))
+> +		dn = of_find_matching_node(dn, matches))
+>  extern struct device_node *of_find_node_by_path(const char *path);
+>  extern struct device_node *of_find_node_by_phandle(phandle handle);
+>  extern struct device_node *of_get_parent(const struct device_node *node);
+> @@ -187,13 +187,13 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
+>  					     struct device_node *prev);
+>  #define for_each_child_of_node(parent, child) \
+>  	for (child = of_get_next_child(parent, NULL); child != NULL; \
+> -	     child = of_get_next_child(parent, child))
+> +		child = of_get_next_child(parent, child))
+>  
+>  extern struct device_node *of_find_node_with_property(
+>  	struct device_node *from, const char *prop_name);
+>  #define for_each_node_with_property(dn, prop_name) \
+>  	for (dn = of_find_node_with_property(NULL, prop_name); dn; \
+> -	     dn = of_find_node_with_property(dn, prop_name))
+> +		dn = of_find_node_with_property(dn, prop_name))
+>  
+>  extern struct property *of_find_property(const struct device_node *np,
+>  					 const char *name,
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The old way looks fine to me and indenting like this is commonly used in
+the kernel.
 
-Hey Linus,
-
-Please git pull this branch:
-
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-fixes-3.2
-
-which has a revert for a kexec feature (where a guest could now properly
-kexec as an HVM guest) that causes the Linux kernel to not boot under
-Amazon EC2 anymore. The runway is quite short and with the holidays we
-won't be able to fix this so reverting the feature is the only way.
-
-Thanks!
-
- drivers/xen/xenbus/xenbus_xs.c     |   13 -------------
- include/xen/interface/io/xs_wire.h |    3 +--
- 2 files changed, 1 insertions(+), 15 deletions(-)
-
-Konrad Rzeszutek Wilk (1):
-      Revert "xen/pv-on-hvm kexec: add xs_reset_watches to shutdown watches from old kernel"
-
-
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJO8NVmAAoJEFjIrFwIi8fJ5xsIAM0BXHCKBoATUGXrHXFnsm39
-HMk/9JldjKdFLF/tEG1ffxvbmgxmDmv1mqcI02SP9sfZK2ECw921oiuJApiHkM/2
-7tlknh477Oyh65/D+W3LoMTvuqNIy5RaI919xwDdPbLAwwp8tsGjWKv+gJd1x0Wo
-/Sz1QmyirKaE2Noa6lTdPY6nBzKbUv8aG3hFBwrKwkratp/VwiCdcsJQV0qSh2Q3
-oWkl16HNcnEAc5mJIJllU7Hv8IeENEH9gvtmZ6Wqh7FkOlm4uxAiNhno/+n08N4N
-oBLqPd/lyGy7dONUUEEhpEwRnTReP8lqKxTVgGxjD3KIkV0xr0H8z0veIMX0xto=
-=R/hO
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
+Rob
