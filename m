@@ -1,163 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1LTTs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:48:27 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:54954
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751422Ab1LTTsT (ORCPT
+	id S1752661Ab1LTTst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:48:49 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38120 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab1LTTsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:48:19 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4EF0E67B.5080002@freescale.com>
-Date: Tue, 20 Dec 2011 13:48:11 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Tue, 20 Dec 2011 14:48:42 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux mappings
+Date: Tue, 20 Dec 2011 20:48:38 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        w.sang@pengutronix.de, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kernel@pengutronix.de, cjb@laptop.org,
+        devicetree-discuss@lists.ozlabs.org, shawn.guo@freescale.com
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com> <1324402840-32451-3-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324402840-32451-3-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-To: Li Yang <leoli@freescale.com>
-CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
-        LiuShuo <b35362@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <shuo.liu@freescale.com>, <linux-mtd@lists.infradead.org>,
-        <akpm@linux-foundation.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <4EDEAEB9.6020703@freescale.com> <1323724195.2297.11.camel@koala> <4EE66EFE.1050608@freescale.com> <1323724784.2297.20.camel@koala> <4EE6725C.3050706@freescale.com> <4EE6BC9B.4000602@freescale.com> <4EE8612C.9050104@freescale.com> <4EE903CE.1010903@freescale.com> <4EEAB076.30000@freescale.com> <4EEB8704.8030201@freescale.com> <CADRPPNT-akj5KBQKdRaFrA2XpLU6-xtuRduzDYEWjv_dzVmTAA@mail.gmail.com> <4EEF6AAA.3030806@freescale.com> <CADRPPNQtuuh5yR1WVNccoFhnQZnMenaFkFnHmFKWicSBoj35JQ@mail.gmail.com>
-In-Reply-To: <CADRPPNQtuuh5yR1WVNccoFhnQZnMenaFkFnHmFKWicSBoj35JQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Message-Id: <201112202048.39012.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 03:08 AM, Li Yang wrote:
-> On Tue, Dec 20, 2011 at 12:47 AM, Scott Wood <scottwood@freescale.com> wrote:
->> On 12/19/2011 05:05 AM, Li Yang wrote:
->>> On Sat, Dec 17, 2011 at 1:59 AM, Scott Wood <scottwood@freescale.com> wrote:
->>>> On 12/15/2011 08:44 PM, LiuShuo wrote:
->>>>> hi Artem,
->>>>> Could this patch be applied now and we make a independent patch for  bad
->>>>> block information
->>>>> migration later?
->>>>
->>>> This patch is not safe to use without migration.
->>>
->>> Hi Scott,
->>>
->>> We agree it's not entirely safe without migrating the bad block flag.
->>> But let's consider two sides of the situation.
->>>
->>> Firstly, it's only unsafe when there is a need to re-built the Bad
->>> Block Table from scratch(old BBT broken).
->>
->> No, it's unsafe in the presence of bad blocks.
->>
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> Instead of migrating the factory bad block markers I proposed to
-> modify the code of building BBT to make it different for 4K page, so
-> that the default BBT can correctly covers the factory bad blocks.  It
-> is the easiest way with nearly no harm to the functionality.
-
-Even if we were to agree to that (I disagree with "nearly no harm"),
-this patch doesn't implement that.  As is, this patch simply ignores the
-issue.
-
-Note that besides possibly tossing away bad block information during
-development, the BBT-only approach will not work for booting from NAND,
-as we don't use the BBT in that case (need to keep the code minimal to
-fit the 4k boot block).  Yes, this ignores blocks that were marked bad
-by software, but that's usually OK since that part of the chip isn't
-managed by a software layer such as jffs2 that will mark blocks as bad.
-
->> The BBT erasure issue relates to how me mark the flash as migrated, not
->> whether we migrate in the first place.
+> This patch provies a common API for driver to use to register pinmux
+> mappings from dts file. It is needed for dt support.
 > 
-> It is connected to whether we do the migration at all.  I mentioned in
-> earlier mail that if we are doing the migration, we need to make sure
-> the migration only happens once.  And it need to be done before the
-> flash is used for the first time and before BBT is created.  If we
-> can't guarantee these condition, we are marking good blocks as bad by
-> doing the migration.  Even worse than doing nothing.
-
-You also can't do the special BBT scan once the flash has been written
-to with normal data.  This patch does not implement the special BBT scan.
-
->>>  But currently there is no
->>> easy way to do that(re-build BBT on demand),
->>
->> You scrub the blocks with U-Boot.  It's not supposed to be *easy*, it's
->> a developer recovery mechanism.
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  .../devicetree/bindings/pinctrl/pinctrl.txt        |   33 +++++++
+>  drivers/pinctrl/pinmux.c                           |  101
+> ++++++++++++++++++++ include/linux/pinctrl/machine.h                    | 
+>   6 +
+>  3 files changed, 140 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl.txt
 > 
-> Scrub clears the factory bad block markers also.  
-
-Only if you scrub bad blocks.  I was talking about scrubbing the BBT
-specifically, not the entire chip.
-
->>> Secondly, even if the previous said problem happens(BBT broken).  We
->>> can still recover all the data if we overrule the bad block flag.
->>
->> How so?  The bad block markers -- including ones legitimately written to
->> the BBT after the fact -- are used for block skipping with certain types
->> of writes.  Without the knowledge of which blocks were marked bad, how
->> do we know which blocks were skipped?
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl.txt
+> b/Documentation/devicetree/bindings/pinctrl/pinctrl.txt new file mode
+> 100644
+> index 0000000..a27a7ce
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl.txt
+> @@ -0,0 +1,33 @@
+> +The pin control subsystem
+> +
+> +The pin control subsystem provides a common API to support parsing pinmux
+> +mappings data from device tree. Each board dts file should provide a
+> device +node of which all the child nodes are the corresponding pinmux
+> mappings. +
+> +The required properties for pinmux mapping are:
+> +- map-name: the name of this specific map entry
+> +- clk-dev-name: the name of the device controlling this specific mapping
+> +- funcion: a function in the driver to use for this mapping
+> +
+> +Optional properties:
+> +- group: a certain specific pin group to activate for the function
+> +- dev-name: the name of the device using this specific mapping
+> +- hog-on-boot: indicate wether hog the mappings(do not need to specify
+> value) +
+> +Examples:
+> +
+> +pinmux: imx6q-sabreauto-map {
+> +	map-sd4 {
+> +		map-name = "usdhc4";
+> +		ctrl-dev-name = "20e0000.iomuxc";
+> +		function = "sd4";
+> +		dev-name = "219c000.usdhc";
+> +	};
+> +	...
+> +};
+> +
+> +Then calling pinmux_of_register_mappings() with the device node of
+> +imx6q-sabreauto-map as parameter to register pinmux mappings from dts.
+> +
+> +Usually user can get this device node via a phandle in driver then call
+> +the function to register maps. Please refer to pinctrl-imx.txt for
+> example. diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 432feb6..3ac3098 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/err.h>
+>  #include <linux/list.h>
+>  #include <linux/mutex.h>
+> +#include <linux/of_device.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/string.h>
+>  #include <linux/sysfs.h>
+> @@ -410,6 +411,106 @@ int __init pinmux_register_mappings(struct pinmux_map
+> const *maps, return 0;
+>  }
 > 
-> This is not supposed to be *easy*.  We might get more information in
-> the file system level.  Or we check the content of the blocks.
+> +static int __devinit pinmux_of_parse_mapping(struct device_node *np,
+> +					struct pinmux_map *maps, unsigned id)
+> +{
+> +	struct pinmux_map *map = &maps[id];
+> +	int ret = 0;
+> +
+> +	pr_debug("parse pinmux map %d\n", id + 1);
+> +
+> +	if (of_find_property(np, "map-name", NULL)) {
+> +		ret = of_property_read_string(np, "map-name", &map->name);
+> +		if (ret) {
+> +			pr_err("failed to get map-name");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (of_find_property(np, "ctrl-dev-name", NULL)) {
+> +		ret = of_property_read_string(np, "ctrl-dev-name",
+> +						&map->ctrl_dev_name);
+> +		if (ret) {
+> +			pr_err("failed to get ctrl-dev-name");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (of_find_property(np, "function", NULL)) {
+> +		ret = of_property_read_string(np, "function", &map->function);
+> +		if (ret) {
+> +			pr_err("failed to get function");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (of_find_property(np, "group", NULL)) {
+> +		ret = of_property_read_string(np, "group", &map->group);
+> +		if (ret) {
+> +			pr_err("failed to get group");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (of_find_property(np, "dev-name", NULL)) {
+> +		ret = of_property_read_string(np, "dev-name", &map->dev_name);
+> +		if (ret) {
+> +			pr_err("failed to get dev-name");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (of_find_property(np, "hog-on-boot", NULL))
+> +		map->hog_on_boot = true;
+> +
+> +	pr_debug("map-name: %s ctrl-dev-name: %s function: %s group: %s dev-
+name:
+> %s hog-on-boot: %d\n", +			map->name, map->ctrl_dev_name, 
+map->function,
+> +			map->group, map->dev_name, map->hog_on_boot);
 
-If you need to take special, non-automatic steps to recover the data,
-that counts as data loss.
+Line too long maybe?
 
->>> however, it can be used
->>> if we take the risk of losing data from errors that ECC can't
->>> notice(low possibility too).
->>
->> Can you quantify "low possibility" here?
->>
->> Note that any block that *was* marked bad will have a multi-bit error
->> from the marker itself, since it will be embedded in the main data area.
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pinmux_of_register_mappings() - parse and register pinmux mappings from
+> dt + * &np: a device node containing pinmux map properties
+> + *
+> + * Like pinmux_register_mappings(), the memory of pinmux maps are owned by
+> + * pinctrl core and can not be freed.
+> + */
+> +int __devinit pinmux_of_register_mappings(struct device_node *np)
+> +{
+> +	struct pinmux_map *maps;
+> +	struct device_node *child = NULL;
+> +	int count, i;
+> +	int ret;
+> +
+> +	pr_debug("parse pinmux maps from device node %s\n", np->name);
+> +
+> +	if (!np)
+> +		return -EINVAL;
+> +
+> +	count = of_get_child_count(np);
+> +	if (!count) {
+> +		pr_err("no available pinmux maps found\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	maps = kzalloc(count * sizeof(struct pinmux_map), GFP_KERNEL);
+> +	if (!maps)
+> +		return -ENOMEM;
+> +
+> +	i = 0;
+> +	for_each_child_of_node(np, child) {
+> +		ret = pinmux_of_parse_mapping(child, maps, i++);
+> +		if (ret) {
+> +			pr_err("failed to parse pinmux map\n");
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return pinmux_register_mappings(maps, count);
+> +}
+> +
+>  /**
+>   * acquire_pins() - acquire all the pins for a certain funcion on a pinmux
+>   * @pctldev: the device to take the pins on
+> diff --git a/include/linux/pinctrl/machine.h
+> b/include/linux/pinctrl/machine.h index ad430e0..74a695d 100644
+> --- a/include/linux/pinctrl/machine.h
+> +++ b/include/linux/pinctrl/machine.h
+> @@ -78,6 +78,7 @@ struct pinmux_map {
+>  extern int pinmux_register_mappings(struct pinmux_map const *map,
+>  				unsigned num_maps);
 > 
-> I found the definition of bad block from one NAND chip manual: Bad
-> Blocks are blocks that contain one or more invalid bits whose
-> reliability is not guaranteed.
+> +extern int pinmux_of_register_mappings(struct device_node *np);
+>  #else
 > 
-> There is no mentioning that the bad block has to have multi-bit error.
-
-"It's not guaranteed to fail" is rather different from "low possibility
-of failure".
-
->  Although the factory bad blocks might have worse error than wear-off
-> bad blocks, it's not what I can tell.
-
-Why would they have such a mechanism to mark blocks bad, if it's not needed?
-
->> Why is it so critical that it be merged now, and not in a few weeks (or
->> next merge window) when I have a chance to do the migration code
->> (assuming nobody else does it first) and add a suitable check for the
->> migration marker in the Linux driver?
+>  static inline int pinmux_register_mappings(struct pinmux_map const *map,
+> @@ -86,5 +87,10 @@ static inline int pinmux_register_mappings(struct
+> pinmux_map const *map, return 0;
+>  }
 > 
-> A few weeks might be ok.  But I feared that the merge can be further
-> delayed and might finally goes no where.
-
-And I fear that the bad block handling will be forgotten about if enough
-gets merged for this to sort-of work.
-
-> And as I argued above, I'm not sure if migrating is necessary in the first place.
-> 
-> In general.  We are not trying to get unqualified code merged.  But I
-> also don't agree we need to perfect all things before any of the code
-> can be merged.
-
-I'm not asking for it to be perfect -- this just seems like a difficult
-thing to fix once people start using the feature (similar to getting a
-userspace API merged, we want to get it right first), and I'm not
-comfortable with the risks of people using it without bad block handling.
-
-> My understanding is that even if certain code is not
-> complete in feature or have certain drawbacks, if the current chunk
-> provided some useful features and the drawbacks are acceptable,
-
-Whether "the drawbacks are acceptable" is the issue.
-
--Scott
-
+> +static inline int pinmux_of_register_mappings(struct device_node *np)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif /* !CONFIG_PINMUX */
+>  #endif
