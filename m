@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1LTJJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:09:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58533 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab1LTJIz (ORCPT
+	id S1752682Ab1LTJLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:11:31 -0500
+Received: from mail.de.keymile.com ([195.8.104.1]:52336 "HELO
+	mail.de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751510Ab1LTJL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:08:55 -0500
-Message-ID: <1324372128.22797.6.camel@lappy>
-Subject: Re: [PATCH 1/2] kvm: Remove ability to assign a device without
- iommu support
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Dec 2011 11:08:48 +0200
-In-Reply-To: <4EF04F54.9010500@siemens.com>
-References: <20111220030826.11829.9141.stgit@bling.home>
-	  <20111220031947.11829.66292.stgit@bling.home>
-	 <1324370959.22797.3.camel@lappy> <4EF04F54.9010500@siemens.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 20 Dec 2011 04:11:28 -0500
+X-Greylist: delayed 667 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 04:11:27 EST
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Micha Nelissen <micha@neli.hopto.org>,
+        Holger Brunck <holger.brunck@keymile.com>,
+        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
+	[IPv4/...),
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru> (maintainer:NETWORKING
+	[IPv4/...),
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi> (maintainer:NETWORKING
+	[IPv4/...),
+        James Morris <jmorris@namei.org> (maintainer:NETWORKING [IPv4/...),
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org> (maintainer:NETWORKING
+	[IPv4/...),
+        Patrick McHardy <kaber@trash.net> (maintainer:NETWORKING [IPv4/...),
+        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] net: have ipconfig not wait if no dev is available
+Date: Tue, 20 Dec 2011 09:58:04 +0100
+Message-Id: <1324371484-24082-1-git-send-email-gerlando.falauto@keymile.com>
+X-Mailer: git-send-email 1.7.1
+X-ESAFE-STATUS: [srvhellgate.de.keymile.net] Mail clean
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 10:03 +0100, Jan Kiszka wrote:
-> On 2011-12-20 09:49, Sasha Levin wrote:
-> > On Mon, 2011-12-19 at 20:19 -0700, Alex Williamson wrote:
-> >> This option has no users and it exposes a security hole that we
-> >> can allow devices to be assigned without iommu protection.  Make
-> >> KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory option.
-> >>
-> >> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> >> ---
-> >>
-> >>  virt/kvm/assigned-dev.c |   18 +++++++++---------
-> >>  1 files changed, 9 insertions(+), 9 deletions(-)
-> >>
-> >> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> >> index 3ad0925..a251a28 100644
-> >> --- a/virt/kvm/assigned-dev.c
-> >> +++ b/virt/kvm/assigned-dev.c
-> >> @@ -487,6 +487,9 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
-> >>  	struct kvm_assigned_dev_kernel *match;
-> >>  	struct pci_dev *dev;
-> >>  
-> >> +	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
-> >> +		return -EINVAL;
-> > 
-> > Could we just drop KVM_DEV_ASSIGN_ENABLE_IOMMU and do it by default?
-> > calling KVM_ASSIGN_PCI_DEVICE without that flag set it pretty
-> > meaningless.
-> 
-> There is that thing called "backward compatibility". :)
+previous commit 3fb72f1e6e6165c5f495e8dc11c5bbd14c73385c
+makes IP-Config wait for carrier on at least one network device.
 
-Well, Alex suggested skipping deprecation period because there are
-currently no users of KVM_ASSIGN_PCI_DEVICE without
-KVM_DEV_ASSIGN_ENABLE_IOMMU, so it should be fine to just make it the
-default behavior, no?
+Before waiting (predefined value 120s), check that at least one device
+was successfully brought up. Otherwise (e.g. buggy bootloader
+which does not set the MAC address) there is no point in waiting
+for carrier.
 
-We can leave KVM_DEV_ASSIGN_ENABLE_IOMMU itself so userspace won't
-break, but theres no reason to enforce it being set in the kernel code.
+Cc: Micha Nelissen <micha@neli.hopto.org>
+Cc: Holger Brunck <holger.brunck@keymile.com>
+Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+---
+ net/ipv4/ipconfig.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
+index ab7e554..7fbcaba 100644
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -252,6 +252,10 @@ static int __init ic_open_devs(void)
+ 		}
+ 	}
+ 
++	/* no point in waiting if we could not bring up at least one device */
++	if (!ic_first_dev)
++		goto have_carrier;
++
+ 	/* wait for a carrier on at least one device */
+ 	start = jiffies;
+ 	while (jiffies - start < msecs_to_jiffies(CONF_CARRIER_TIMEOUT)) {
 -- 
-
-Sasha.
+1.7.1
 
