@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1LTTOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:14:12 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:40709 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752408Ab1LTTOF (ORCPT
+	id S1752670Ab1LTTO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:14:56 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44190 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751531Ab1LTTOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:14:05 -0500
-Message-ID: <4EF0EC94.9050107@xenotime.net>
-Date: Tue, 20 Dec 2011 12:14:12 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 20 Dec 2011 14:14:49 -0500
+Date: Tue, 20 Dec 2011 11:14:43 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 1/2] cgroup: Remove unnecessary task_lock before
+ fetching css_set on migration
+Message-ID: <20111220191443.GE10752@google.com>
+References: <1324320274-18485-1-git-send-email-msb@chromium.org>
+ <1324407673-18975-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <samuel@sortiz.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 19 (nfc)
-References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>	 <4EEFA21B.5010305@xenotime.net> <1324399181.5354.0.camel@sortiz-mobl>
-In-Reply-To: <1324399181.5354.0.camel@sortiz-mobl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324407673-18975-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
-> Hi Randy,
-> 
-> On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
->> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20111216:
->>
->>
->> (not new today, just not reported earlier)
-> John applied my fix for this one. It should be fixed now.
+Hello, Frederic.
 
-Thanks for the info.
-The build still fails in linux-next 20111220 (today).
-Maybe it's fixed for tomorrow...
+On Tue, Dec 20, 2011 at 08:01:12PM +0100, Frederic Weisbecker wrote:
+> When we fetch the css_set of the tasks on cgroup migration, we don't need
+> anymore to synchronize against cgroup_exit() that could swap the old one
+> with init_css_set. Now that we are using threadgroup_lock() during
+> the migrations, we don't need to worry about it anymore.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Containers <containers@lists.linux-foundation.org>
+> Cc: Cgroups <cgroups@vger.kernel.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> Cc: Mandeep Singh Baines <msb@chromium.org>
+
+I like this but it doesn't apply on top of cgroup/for-3.3.  It
+collides with Mandeep's patch.  Can you please rebase?
+
+Li, can you please ack?
+
+Thanks.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+tejun
