@@ -1,157 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1LTI6D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 03:58:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52302 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab1LTI5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 03:57:51 -0500
-Date: Tue, 20 Dec 2011 00:57:11 -0800
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-913050b91eb94f194392dd797b1ff3779f606ac0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stable@vger.kernel.org, robert.richter@amd.com,
-        oprofile-list@lists.sourceforge.net, akpm@linux-foundation.org,
-        tglx@linutronix.de, mikew@google.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, robert.richter@amd.com,
-        oprofile-list@lists.sourceforge.net, akpm@linux-foundation.org,
-        mikew@google.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111219153830.GH16765@erda.amd.com>
-References: <20111219153830.GH16765@erda.amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] oprofile:
-  Fix uninitialized memory access when writing to writing to oprofilefs
-Git-Commit-ID: 913050b91eb94f194392dd797b1ff3779f606ac0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752870Ab1LTI6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 03:58:17 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47731 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab1LTI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 03:58:07 -0500
+Date: Tue, 20 Dec 2011 09:56:14 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Benjamin <bebl@mageta.org>
+Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111220085613.GA3091@elte.hu>
+References: <1324051943-21112-4-git-send-email-hans.rosenfeld@amd.com>
+ <20111218080443.GB4144@elte.hu>
+ <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de>
+ <20111218234309.GA12958@elte.hu>
+ <20111219090923.GB16765@erda.amd.com>
+ <20111219105429.GC19861@elte.hu>
+ <4EEF1C3B.3010307@redhat.com>
+ <20111219114023.GB29855@elte.hu>
+ <4EEF26F0.1050709@redhat.com>
+ <4EEF7EC2.5060900@mageta.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 20 Dec 2011 00:57:18 -0800 (PST)
+In-Reply-To: <4EEF7EC2.5060900@mageta.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  913050b91eb94f194392dd797b1ff3779f606ac0
-Gitweb:     http://git.kernel.org/tip/913050b91eb94f194392dd797b1ff3779f606ac0
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Mon, 19 Dec 2011 16:38:30 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 19 Dec 2011 17:18:43 +0100
 
-oprofile: Fix uninitialized memory access when writing to writing to oprofilefs
+* Benjamin <bebl@mageta.org> wrote:
 
-If oprofilefs_ulong_from_user() is called with count equals
-zero, *val remains unchanged. Depending on the implementation it
-might be uninitialized.
+> LWP is highly limited in its ability's to support more than 
+> one "LWP-Instance" being active for a thread, IOW it is not 
+> possible.
 
-Change oprofilefs_ulong_from_user()'s interface to return count
-on success. Thus, we are able to return early if count equals
-zero which avoids using *val uninitialized. Fixing all users of
-oprofilefs_ulong_ from_user().
+That's OK, we can deal with various PMU constraints just fine.
 
-This follows write syscall implementation when count is zero:
-"If count is zero ... [and if] no errors are detected, 0 will be
-returned without causing any other effect." (man 2 write)
+> You can't activate LWP from a threads context and 
+> simultaneously activate lwp-system-wide-profiling in the way 
+> you suggested it, Ingo. Either do the first xor do the last,
 
-Reported-By: Mike Waychison <mikew@google.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org>
-Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
-Link: http://lkml.kernel.org/r/20111219153830.GH16765@erda.amd.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/s390/oprofile/init.c         |    2 +-
- drivers/oprofile/oprofile_files.c |    7 ++++---
- drivers/oprofile/oprofilefs.c     |   11 +++++++++--
- 3 files changed, 14 insertions(+), 6 deletions(-)
+We have other PMU resources that are exclusive in that sense.
 
-diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
-index 6efc18b..bd58b72 100644
---- a/arch/s390/oprofile/init.c
-+++ b/arch/s390/oprofile/init.c
-@@ -88,7 +88,7 @@ static ssize_t hwsampler_write(struct file *file, char const __user *buf,
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	if (oprofile_started)
-diff --git a/drivers/oprofile/oprofile_files.c b/drivers/oprofile/oprofile_files.c
-index 89f6345..84a208d 100644
---- a/drivers/oprofile/oprofile_files.c
-+++ b/drivers/oprofile/oprofile_files.c
-@@ -45,7 +45,7 @@ static ssize_t timeout_write(struct file *file, char const __user *buf,
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_timeout(val);
-@@ -84,7 +84,7 @@ static ssize_t depth_write(struct file *file, char const __user *buf, size_t cou
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
-@@ -141,9 +141,10 @@ static ssize_t enable_write(struct file *file, char const __user *buf, size_t co
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
-+	retval = 0;
- 	if (val)
- 		retval = oprofile_start();
- 	else
-diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
-index d0de6cc..2f0aa0f 100644
---- a/drivers/oprofile/oprofilefs.c
-+++ b/drivers/oprofile/oprofilefs.c
-@@ -60,6 +60,13 @@ ssize_t oprofilefs_ulong_to_user(unsigned long val, char __user *buf, size_t cou
- }
- 
- 
-+/*
-+ * Note: If oprofilefs_ulong_from_user() returns 0, then *val remains
-+ * unchanged and might be uninitialized. This follows write syscall
-+ * implementation when count is zero: "If count is zero ... [and if]
-+ * no errors are detected, 0 will be returned without causing any
-+ * other effect." (man 2 write)
-+ */
- int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_t count)
- {
- 	char tmpbuf[TMPBUFSIZE];
-@@ -79,7 +86,7 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
- 	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
- 	*val = simple_strtoul(tmpbuf, NULL, 0);
- 	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
--	return 0;
-+	return count;
- }
- 
- 
-@@ -99,7 +106,7 @@ static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&value, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_ulong(file->private_data, value);
+> because you only have one xsave-area/msr/lwpcb that is read by 
+> the hardware and only one LWP-Buffer that is written by the 
+> hw.
+
+That's similar to PEBS (which we already support), there's only 
+one Debug Store per CPU, obviously.
+
+> So, if one thread is running LWP, because he wants to 
+> (selfmonitoring and stuff [like for what lwp was designed]) 
+> and a su or u would activate this system-wide-monitoring, both 
+> would frequently interfere with the each other. I don't think 
+> you want this to be possible at all.
+
+THe LWPCB is designed to allow multiple events, and the LWP 
+ring-buffer is shared between these events.
+
+If the kernel properly manages the lwpcb then no such 
+'interference' happens during normal use - both outside and 
+self-installed events can be activated at once, up to the event 
+limit - similar to how we handle regular PMU events.
+
+[ This is why the threshold IRQ support i requested is key: it 
+  is needed for the flow of events and for the kernel 
+  event-demultiplexer to work transparently. ]
+
+> Frankly, it was already a pain to get LWP running from 
+> in-kernel, like it is done now. I would expect a much higher 
+> pain, if you would want to do this with a transparent buffer, 
+> that gets passed around each scheduling (and this would 
+> permanently eliminate the "lightweight" in "LWP").
+
+There's no heavyweight 'passing around' of a buffer needed at 
+context switch time. The buffer context has to be flipped - part 
+of the job of context switching.
+
+So no, i don't think any of your objections have any merit.
+
+Thanks,
+
+	Ingo
