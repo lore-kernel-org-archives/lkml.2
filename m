@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1LTKQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:16:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:11472 "EHLO mga09.intel.com"
+	id S1753369Ab1LTKQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:16:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42720 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab1LTKQW convert rfc822-to-8bit (ORCPT
+	id S1752047Ab1LTKQv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:16:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="89453348"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Date: Tue, 20 Dec 2011 18:15:42 +0800
-Subject: RE: [PATCH] PCI: Enable ATS at the device state restore 
-Thread-Topic: [PATCH] PCI: Enable ATS at the device state restore 
-Thread-Index: Acy8vYBdrOPLkdxfSSiIqKHdDEFTLQCQnXuA
-Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E28904877DA@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 05:16:51 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
+Date: Tue, 20 Dec 2011 11:18:24 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
+        olofj@chromium.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <201112151001.52761.oneukum@suse.de> <CAGS+omCLU6FAxmT3+TgYf0b8YvgfbH9CL9M6WpZ0yNS01O5Hrw@mail.gmail.com>
+In-Reply-To: <CAGS+omCLU6FAxmT3+TgYf0b8YvgfbH9CL9M6WpZ0yNS01O5Hrw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201112201118.24342.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jesse
-Do you have any comments for this fix patch?
+Am Dienstag, 20. Dezember 2011, 11:12:37 schrieb Daniel Kurtz:
+> > > Could you please be more specific about what this patch breaks and
+> > > perhaps give some guidance on how to fix it?
+> >
+> > It breaks nothing. It just continues a bug and I assumed it was not present.
+> > Basically the work queue must do nothing after pre_reset() and post_reset()
+> > ought to rerun the work in case some request came down during that time.
+> 
+> So, is this an Ack for this patchset?
+> Can we fix any existing races in later patches?
 
-Thanks,
--Xudong
+Very well. You are fixing a bad bug and not making matters worse.
 
-> -----Original Message-----
-> From: Hao, Xudong
-> Sent: Saturday, December 17, 2011 9:25 PM
-> To: 'jbarnes@virtuousgeek.org'; 'linux-pci@vger.kernel.org'
-> Cc: linux-kernel@vger.kernel.org; kvm@vger.kernel.org; Zhang, Xiantao
-> Subject: [PATCH] PCI: Enable ATS at the device state restore
-> 
-> When system go to S3 or S4 sleep and then return, some register of PCI device
-> does not be restored correctly, such as ATS capability. The same problem
-> happen on pci reset function.
-> 
-> This patch enables ATS at the device state restore if PCI device has ATS
-> capability.
-> 
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
-> ---
->  drivers/pci/ats.c |   17 +++++++++++++++++
->  drivers/pci/pci.c |    1 +
->  drivers/pci/pci.h |    8 ++++++++
->  3 files changed, 26 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c index 7ec56fb..a6c2b35 100644
-> --- a/drivers/pci/ats.c
-> +++ b/drivers/pci/ats.c
-> @@ -127,6 +127,23 @@ void pci_disable_ats(struct pci_dev *dev)  }
-> EXPORT_SYMBOL_GPL(pci_disable_ats);
-> 
-> +void pci_restore_ats_state(struct pci_dev *dev) {
-> +	u16 ctrl;
-> +
-> +	if (!pci_ats_enabled(dev))
-> +		return;
-> +	if (!pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS))
-> +		BUG();
-> +
-> +	ctrl = PCI_ATS_CTRL_ENABLE;
-> +	if (!dev->is_virtfn)
-> +		ctrl |= PCI_ATS_CTRL_STU(dev->ats->stu - PCI_ATS_MIN_STU);
-> +
-> +	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl); }
-> +EXPORT_SYMBOL_GPL(pci_restore_ats_state);
-> +
->  /**
->   * pci_ats_queue_depth - query the ATS Invalidate Queue Depth
->   * @dev: the PCI device
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c index 6f45a73..6dafc1d 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -956,6 +956,7 @@ void pci_restore_state(struct pci_dev *dev)
-> 
->  	/* PCI Express register must be restored first */
->  	pci_restore_pcie_state(dev);
-> +	pci_restore_ats_state(dev);
-> 
->  	/*
->  	 * The Base Address register should be programmed before the command
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h index b74084e..a4f3140 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -249,6 +249,14 @@ struct pci_sriov {
->  	u8 __iomem *mstate;	/* VF Migration State Array */
->  };
-> 
-> +#ifdef CONFIG_PCI_ATS
-> +extern void pci_restore_ats_state(struct pci_dev *dev); #else static
-> +inline void pci_restore_ats_state(struct pci_dev *dev) { } #endif /*
-> +CONFIG_PCI_ATS */
-> +
->  #ifdef CONFIG_PCI_IOV
->  extern int pci_iov_init(struct pci_dev *dev);  extern void
-> pci_iov_release(struct pci_dev *dev);
+Acked-by: Oliver Neukum <oneukum@suse.de>
+
+	Regards
+		Oliver
+-- 
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
