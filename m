@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab1LTLbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 06:31:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56274 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab1LTLbC convert rfc822-to-8bit (ORCPT
+	id S1751348Ab1LTLii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 06:38:38 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:33051 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750755Ab1LTLid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 06:31:02 -0500
-Message-ID: <1324380648.24621.49.camel@twins>
-Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Date: Tue, 20 Dec 2011 12:30:48 +0100
-In-Reply-To: <1324378070.24621.32.camel@twins>
-References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
-	 <1323963039-7602-2-git-send-email-jolsa@redhat.com>
-	 <1324044159.18942.104.camel@twins> <1324044196.18942.105.camel@twins>
-	 <20111220103154.GA1861@m.brq.redhat.com> <1324378070.24621.32.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 20 Dec 2011 06:38:33 -0500
+Date: Tue, 20 Dec 2011 13:38:25 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>, stable@vger.kernel.org,
+        Hema HK <hemahk@ti.com>
+Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
+Message-ID: <20111220113823.GJ31842@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9aCKuHbn5v2q3RVc"
+Content-Disposition: inline
+In-Reply-To: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 11:47 +0100, Peter Zijlstra wrote:
 
-> > any idea/details/specifics how they might look like? ;)
-> 
-> The current idea is that they'd live in a place like:
-> 
->   /sys/bus/event_source/devices/$pmu/events/$event
-> 
-> and when you read them they contain a full event_raw style string so you
-> could do things like:
-> 
->   perf record -e `cat $sysfsfile` or so
-> 
-> (or maybe without the 'r' prefix).
-> 
-> The idea was to have some $pmu:$event like syntax, but seeing that ':'
-> is already used quite a lot, there's maybe a more suitable separator.
-> Maybe '/' would do, yielding things like cpu/instructions.
-> 
-> Then again, it might make sense to restructure the syntax without
-> considerations for the status quo and see if we can come up with
-> something a little more consistent, the above event_* things are quite a
-> hodge podge, syntax wise.
-> 
-> While I appreciate that they are the result of organic growth, it
-> doesn't mean we shouldn't try and restructure stuff once in a while when
-> it makes sense.
+--9aCKuHbn5v2q3RVc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There's also the raw event format idea, where
+On Mon, Dec 19, 2011 at 10:01:54PM +0200, Felipe Contreras wrote:
+> From: Felipe Contreras <felipe.contreras@gmail.com>
+>=20
+> In musb_init_controller() there's a pm_runtime_put(), but there's no
+> pm_runtime_get(), which creates a mismatch that causes the driver to
+> sleep when it shouldn't.
+>=20
+> This was introduced in 7acc619[1], but it wasn't triggered in my setup
+> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
+> when PM is working as it was supposed to.
+>=20
+> However, it seems most of the time this is used in a way that keeps the
+> counter above 0, so nobody noticed. Also, it seems to depend on the
+> configuration used in versions before 3.1, but not later (or in it).
+>=20
+> I found the problem by loading isp1704_charger before any usb gadgets:
+> http://article.gmane.org/gmane.linux.kernel/1226122
+>=20
+> All versions after 2.6.39 are affected.
+>=20
+> [1] usb: musb: Idle path retention and offmode support for OMAP3
+> [2] OMAP2+: musb: hwmod adaptation for musb registration
+> [3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/k=
+ernel/git/tmlind/linux-omap-2.6
+>=20
+> Cc: stable@vger.kernel.org
+> Cc: Hema HK <hemahk@ti.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 
- /sys/bus/event_source/devices/$pmu/format
+applied, thanks
 
-contains a syntax description on how to construct raw events, for intel
-(!p4) it would be something as simple as a bitfield definition:
+--=20
+balbi
 
-event	config-0:7
-umask	config-8:15
-usr	config-16
-os	config-17
-edge	config-18
-any	config-21
-inv	config-23
-cmask	config-24:31
+--9aCKuHbn5v2q3RVc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-nhm-dmnd_data_rd	config1-0
-nhm-dmnd_rfo		config1-1
-nhm-dmnd_ifetch		config1-2
-...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-(the real syntax will likely be a little more complex in order to be
-able to express the various other architectures their raw input format).
+iQIcBAEBAgAGBQJO8HOvAAoJEIaOsuA1yqRERB4P/08Mx+ZByh3INWPzHPztXiLM
+3FSz3inIRYde+VZqB0DUDp50JxpgT1hvvpl1kuxHBXHv9glfsUX9G2cdHXXSl9VM
+KlOwcb/7dFo6Xq18PK5+ff5Vwy5eIXSxRg4DnK/iWpHVo/KT2S4zeEpma3dwxlmI
+I39ANSwvJUGwhQA6uoEEtJsG4TJFOPf5fYvyw9FCOnV2M8m+tKh5kcJBEnYB/yhG
+FQo6ZMFitvqXD7xAjpa633KvHFoTqhG8jAyMo7iV7owcs5VA2hhmwB8P+cowbT5K
+8qIOhE3z7dT20DYRdIB1Bf9v/zgEc8jr53Po5PJ4Dl04aOOfGXr3QTZRBOULPTWt
+Wjc5uEHLxg58rJyJ73SQMsAS0643iRaE1CVanirT80PQOV05y1VNKMvuKzjzVMyN
+VpfnAxkyxpBj93C7/A3SUpm5PQ93BKIukmO0SoZFSFQJIJ/1off2ZjmfMyDCdpRo
+PmAWe+8NV+k3LnNw+8f1jK2Jk6iMer7Sw8XmZIRaB9c/zp2PIupF+S3MNN2F5EbH
+eUU4xgSpPj39xh/BJMf7a04MMZf4w/K01KtH8a6ufdBHlcY98bdCxqKUuKuyDF3K
+Ih6o9lZxZ5UCZWAWGeYT/B/rg/Ovogo3/7UVv+YyhXG7gzD016UrX3jr7UwLadVg
+FRSN89jmHYKWW8JEhAF9
+=X3Ra
+-----END PGP SIGNATURE-----
 
-This would allow us to write things like:
-
- perf record -e cpu/event=0x34,umask=0x01,inv,cmask=2
-
-or to give an offcore example:
-
- perf record -e
-cpu/offcore,nhm-dmnd_data_rd,nhm-non_dram,nhm-remote_dram,nhm-local_dram
-
-Where cpu/events/offcore would contain: 0x01b7 to fill out config.
-
-We should also extend this to allow per event setting of the period by
-adding a ,period=10000 or so.
-
- perf record -e cpu/cycles,period=100000
-
-should then give us a cycle counter with a fixed period of .1M cycles.
-
-I think there's currently means to provide this period, but I don't
-actually know the syntax for it.
-
-But note, the above again uses ',' as separator, which will be much
-confused with the group idea you already proposed. So we need some
-consideration on how we all want to express this.
-
-
-
+--9aCKuHbn5v2q3RVc--
