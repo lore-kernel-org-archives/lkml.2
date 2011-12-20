@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab1LTQBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 11:01:16 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38265 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752675Ab1LTQBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 11:01:08 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, dan.j.williams@intel.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: warn the wrong tag only if it is greater than real_max_depth.
-Date: Tue, 20 Dec 2011 23:58:47 +0800
-Message-Id: <1324396727-2840-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <4EF0940D.7070304@kernel.dk>
-References: <4EF0940D.7070304@kernel.dk>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.131 authed with tm@tao.ma}
+	id S1753138Ab1LTQEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 11:04:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab1LTQE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 11:04:26 -0500
+Message-ID: <4EF0B1FA.20209@redhat.com>
+Date: Tue, 20 Dec 2011 11:04:10 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] consider swap space when we decide compaction goes or
+ not
+References: <1324363653-18220-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1324363653-18220-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On 12/20/2011 01:47 AM, Minchan Kim wrote:
+> It's pointless to go reclaiming when we have no swap space
+> and lots of anon pages in inactive list.
+>
+> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman<mgorman@suse.de>
+> Cc: Rik van Riel<riel@redhat.com>
+> Cc: Johannes Weiner<jweiner@redhat.com>
+> Cc: Andrea Arcangeli<aarcange@redhat.com>
+> Signed-off-by: Minchan Kim<minchan@kernel.org>
 
-In queue depth decreases, we could meet with a tag greater than max_depth,
-but it should never be greater than real_max_depth. So only WARN if
-it is greater than real_max_depth and let it complets if it is greater
-than max_depth.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Reported-by: Dan Williams <dan.j.williams@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- block/blk-tag.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index e74d6d1..1c50d34 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -286,12 +286,12 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
- 
- 	BUG_ON(tag == -1);
- 
--	if (unlikely(tag >= bqt->max_depth)) {
-+	if (unlikely(tag >= bqt->real_max_depth)) {
- 		/*
--		 * This can happen after tag depth has been reduced.
--		 * But tag shouldn't be larger than real_max_depth.
-+		 * tag shouldn't be larger than real_max_depth.
- 		 */
--		WARN_ON(tag >= bqt->real_max_depth);
-+		WARN(1, "tag %d, bqt->real_max_depth %d\n",
-+		     tag, bqt->real_max_depth);
- 		return;
- 	}
- 
 -- 
-1.7.4.1
-
+All rights reversed
