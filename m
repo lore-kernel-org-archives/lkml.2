@@ -1,46 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab1LUAjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 19:39:55 -0500
-Received: from ozlabs.org ([203.10.76.45]:45705 "EHLO ozlabs.org"
+	id S1753576Ab1LUAkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 19:40:07 -0500
+Received: from ozlabs.org ([203.10.76.45]:52223 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753383Ab1LUAjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 19:39:52 -0500
+	id S1753399Ab1LUAjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 19:39:53 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
+To: "Michael S. Tsirkin" <mst@redhat.com>, Tejun Heo <tj@kernel.org>
+Cc: Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio_blk: fix config handler race
-In-Reply-To: <20111207153901.GA23820@redhat.com>
-References: <20111207153901.GA23820@redhat.com>
+Subject: Re: [PATCH RFC] virtio_net: fix refill related races
+In-Reply-To: <20111220194518.GB26692@redhat.com>
+References: <20111207152120.GA23417@redhat.com> <8739cvisqe.fsf@rustcorp.com.au> <20111211144428.GB14381@redhat.com> <878vmioh10.fsf@rustcorp.com.au> <20111212115405.GB7946@redhat.com> <87iplltd0g.fsf@rustcorp.com.au> <20111220190908.GC25689@redhat.com> <20111220190946.GD10752@google.com> <20111220193055.GA26392@redhat.com> <20111220193154.GG10752@google.com> <20111220194518.GB26692@redhat.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 21 Dec 2011 11:03:31 +1030
-Message-ID: <877h1qdaqs.fsf@rustcorp.com.au>
+Date: Wed, 21 Dec 2011 10:13:18 +1030
+Message-ID: <87hb0udd2h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011 17:39:02 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Fix a theoretical race related to config work
-> handler: a config interrupt might happen
-> after we flush config work but before we
-> reset the device. It will then cause the
-> config work to run during or after reset.
+On Tue, 20 Dec 2011 21:45:19 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Tue, Dec 20, 2011 at 11:31:54AM -0800, Tejun Heo wrote:
+> > On Tue, Dec 20, 2011 at 09:30:55PM +0200, Michael S. Tsirkin wrote:
+> > > Hmm, in that case it looks like a nasty race could get
+> > > triggered, with try_fill_recv run on multiple CPUs in parallel,
+> > > corrupting the linked list within the vq.
+> > > 
+> > > Using the mutex as my patch did will fix that naturally, as well.
+> > 
+> > Don't know the code but just use nrt wq.  There's even a system one
+> > called system_nrq_wq.
+> > 
+> > Thanks.
+> 
+> We can, but we need the mutex for other reasons, anyway.
 
-Thanks for the reminder.  Apologies that this slipped through :(
+Well, here's the alternate approach.  What do you think?
 
-> As a solution
-> 1. flush after reset when we know there will be no more interrupts
-> 2. add a flag to disable config access before reset
+Finding two wq issues makes you justifiably cautious, but it almost
+feels like giving up to simply wrap it in a lock.  The APIs are designed
+to let us do it without a lock; I was just using them wrong.
 
-It's crude, but it works.  Applied.
+Two patches in one mail.  It's gauche, but it's an RFC only (untested).
 
-If this happens again, do we want a "__virtio_device_disable" which
-stops any interrupts from being delivered?  That would make this neater,
-though the implementation might be a bit nasty.
-
-Thanks,
+Cheers,
 Rusty.
+
+virtio_net: set/cancel work on ndo_open/ndo_stop
+
+Michael S. Tsirkin noticed that we could run the refill work after
+ndo_close, which can re-enable napi - we don't disable it until
+virtnet_remove.  This is clearly wrong, so move the workqueue control
+to ndo_open and ndo_stop (aka. virtnet_open and virtnet_close).
+
+One subtle point: virtnet_probe() could simply fail if it couldn't
+allocate a receive buffer, but that's less polite in virtnet_open() so
+we schedule a refill as we do in the normal receive path if we run out
+of memory.
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -719,6 +719,10 @@ static int virtnet_open(struct net_devic
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	/* Make sure we have some buffersl if oom use wq. */
++	if (!try_fill_recv(vi, GFP_KERNEL))
++		schedule_delayed_work(&vi->refill, 0);
++
+ 	virtnet_napi_enable(vi);
+ 	return 0;
+ }
+@@ -772,6 +776,8 @@ static int virtnet_close(struct net_devi
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	/* Make sure refill_work doesn't re-enable napi! */
++	cancel_delayed_work_sync(&vi->refill);
+ 	napi_disable(&vi->napi);
+ 
+ 	return 0;
+@@ -1082,7 +1088,6 @@ static int virtnet_probe(struct virtio_d
+ 
+ unregister:
+ 	unregister_netdev(dev);
+-	cancel_delayed_work_sync(&vi->refill);
+ free_vqs:
+ 	vdev->config->del_vqs(vdev);
+ free_stats:
+@@ -1121,9 +1126,7 @@ static void __devexit virtnet_remove(str
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-
+ 	unregister_netdev(vi->dev);
+-	cancel_delayed_work_sync(&vi->refill);
+ 
+ 	/* Free unused buffers in both send and recv, if any. */
+ 	free_unused_bufs(vi);
+
+
+virtio_net: use non-reentrant workqueue.
+
+Michael S. Tsirkin also noticed that we could run the refill work
+multiple CPUs: if we kick off a refill on one CPU and then on another,
+they would both manipulate the queue at the same time (they use
+napi_disable to avoid racing against the receive handler itself).
+
+Tejun points out that this is what the WQ_NON_REENTRANT flag is for,
+and that there is a convenient system kthread we can use.
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -501,7 +501,7 @@ static void refill_work(struct work_stru
+ 	/* In theory, this can happen: if we don't get any buffers in
+ 	 * we will *never* try to fill again. */
+ 	if (still_empty)
+-		schedule_delayed_work(&vi->refill, HZ/2);
++		queue_delayed_work(system_nrt_wq, &vi->refill, HZ/2);
+ }
+ 
+ static int virtnet_poll(struct napi_struct *napi, int budget)
+@@ -520,7 +520,7 @@ again:
+ 
+ 	if (vi->num < vi->max / 2) {
+ 		if (!try_fill_recv(vi, GFP_ATOMIC))
+-			schedule_delayed_work(&vi->refill, 0);
++			queue_delayed_work(system_nrt_wq, &vi->refill, 0);
+ 	}
+ 
+ 	/* Out of packets? */
+@@ -721,7 +721,7 @@ static int virtnet_open(struct net_devic
+ 
+ 	/* Make sure we have some buffersl if oom use wq. */
+ 	if (!try_fill_recv(vi, GFP_KERNEL))
+-		schedule_delayed_work(&vi->refill, 0);
++		queue_delayed_work(&system_nrt_wq, &vi->refill, 0);
+ 
+ 	virtnet_napi_enable(vi);
+ 	return 0;
