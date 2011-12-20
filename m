@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1LTCER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:04:17 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36986 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab1LTCEP convert rfc822-to-8bit (ORCPT
+	id S1754205Ab1LTCGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:06:06 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7801 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1LTCGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:04:15 -0500
+	Mon, 19 Dec 2011 21:06:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 19 Dec 2011 18:05:50 -0800
+Date: Mon, 19 Dec 2011 18:05:49 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sumit Semwal <sumit.semwal@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jesse.barker@linaro.org" <jesse.barker@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "daniel@ffwll.ch" <daniel@ffwll.ch>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
+ sharing mechanism
+Message-ID: <20111220020549.GQ6559@morell.nvidia.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+ <4EE33EC2.6050508@redhat.com>
+ <20111212224408.GD4355@morell.nvidia.com>
+ <201112131510.02785.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20111220015316.GW2860@opensource.wolfsonmicro.com>
-References: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
-	<1324343717-7292-4-git-send-email-felipe.contreras@gmail.com>
-	<20111220011923.GS2860@opensource.wolfsonmicro.com>
-	<CAMP44s1XFo0_O-pGMNO7m=weXuCpXzS8oH6m6PaPNzLGRQpDgA@mail.gmail.com>
-	<20111220015316.GW2860@opensource.wolfsonmicro.com>
-Date: Tue, 20 Dec 2011 04:04:14 +0200
-Message-ID: <CAMP44s3iSVEbghx9nGU-w9N+Bsdw040=UQtiw6RRyq021ssBxw@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] regulator: simplify twl4030 config
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
-        Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112131510.02785.arnd@arndb.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 3:53 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Dec 20, 2011 at 03:36:59AM +0200, Felipe Contreras wrote:
->> On Tue, Dec 20, 2011 at 3:19 AM, Mark Brown
->
->> > No, this is the wrong way to go about this - why are you making this
->> > change for this one driver only?
->
->> Because that's the only one I care about. I can try to do the same for
->> all the others if you wish.
->
-> Yes, of course.  Half the point in having subsystems and standard ways
-> of doing things is so that when we look at things we've got a reasonable
-> idea as to what they're supposed to be doing and people looking at the
-> code can figure out what's going on.   We don't want people to have to
-> play guessing games about this stuff.
+On Tue, Dec 13, 2011 at 07:10:02AM -0800, Arnd Bergmann wrote:
+> On Monday 12 December 2011, Robert Morell wrote:
+> > > 
+> > > Doing a buffer sharing with something that is not GPL is not fun, as, if any
+> > > issue rises there, it would be impossible to discover if the problem is either
+> > > at the closed-source driver or at the open source one. At the time I was using
+> > > the Nvidia proprietary driver, it was very common to have unexplained issues
+> > > caused likely by bad code there at the buffer management code, causing X
+> > > applications and extensions (like xv) to break.
+> > >
+> > > We should really make this EXPORT_SYMBOL_GPL(), in order to be able to latter
+> > > debug future share buffer issues, when needed.
+> > 
+> > Sorry, I don't buy this argument.  Making these exports GPL-only is not
+> > likely to cause anybody to open-source their driver, but will rather
+> > just cause them to use yet more closed-source code that is even less
+> > debuggable than this would be, to those without access to the source.
+> 
+> But at least the broken module then won't be interacting with other modules
+> because it cannot share any buffers.
 
-Of course... *ideally*, but we are not there right now.
+One of the goals of this project is to unify the fragmented space of the
+ARM SoC memory managers so that each vendor doesn't implement their own,
+and they can all be closer to mainline.
 
->> > Exactly the same argument would apply
->> > to all the other MFD regulators and to all the other MFD subdrivers in
->> > the various subsystems.
->
->> Yes, the ones that closely related to certain architectures or chips.
->
-> Obviously all MFDs are closely releated to chips...
->
->> And this is already done:
->>
->> REGULATOR_AB3100:
->>       depends on AB3100_CORE
->>       default y if AB3100_CORE
->
->> (if AB3100_CORE is redundant BTW)
->
->> REGULATOR_TPS6105X:
->>       depends on TPS6105X
->>       default y if TPS6105X
->
-> So it's done by a small proportion of drivers...
+I fear that restricting the use of this buffer sharing mechanism to GPL
+drivers only will prevent that goal from being achieved, if an SoC
+driver has to interact with modules that use a non-GPL license.
 
-Yes, so the only question is; is this desirable or not? Personally, I
-don't see why a normal person would want to enable REGULATOR and
-TWL4030_CORE but not REGULATOR_TWL4030; what's the point of enabling
-REGULATOR if it's not going to do anything? Anyway, these people can
-still choose REGULATOR_TWL4030=n, but it *certainly* doesn't seem to
-be the normal use-case. And that's the whole point of 'default y' to
-begin with; to enable by default what most people should say 'y' to.
+As a hypothetical example, consider laptops that have multiple GPUs.
+Today, these ship with onboard graphics (integrated to the CPU or
+chipset) along with a discrete GPU, where in many cases only the onboard
+graphics can actually display to the screen.  In order for anything
+rendered by the discrete GPU to be displayed, it has to be copied to
+memory available for the smaller onboard graphics to texture from or
+display directly.  Obviously, that's best done by sharing dma buffers
+rather than bouncing them through the GPU.  It's not much of a stretch
+to imagine that we'll see such systems with a Tegra CPU/GPU plus a
+discrete GPU in the future; in that case, we'd want to be able to share
+memory between the discrete GPU and the Tegra system.  In that scenario,
+if this interface is GPL-only, we'd be unable to adopt the dma_buffer
+sharing mechanism for Tegra.
 
--- 
-Felipe Contreras
+(This isn't too pie-in-the-sky, either; people are already combining
+Tegra with discrete GPUs:
+http://blogs.nvidia.com/2011/11/world%e2%80%99s-first-arm-based-supercomputer-to-launch-in-barcelona/
+)
+
+Thanks,
+Robert
