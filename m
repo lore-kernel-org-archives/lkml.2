@@ -1,142 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1LTWJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 17:09:24 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:52446 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab1LTWJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 17:09:21 -0500
-Date: Tue, 20 Dec 2011 17:09:01 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
-Message-ID: <20111220220901.GA1770@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
-	Minchan Kim <minchan.kim@gmail.com>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Neil Brown <neilb@suse.de>,
-	Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-	Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org
-References: <20111216112534.GA13147@dztty>
- <20111216125556.db2bf308.akpm@linux-foundation.org>
- <20111217214137.GY2203@ZenIV.linux.org.uk>
- <20111217221028.GZ2203@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111217221028.GZ2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753171Ab1LTWL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 17:11:27 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:49980 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752478Ab1LTWLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 17:11:25 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [PATCH] input: serio: ams-delta: toggle keyboard power over GPIO
+Date: Tue, 20 Dec 2011 23:10:34 +0100
+Message-Id: <1324419034-31024-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl>
+References: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 17, 2011 at 10:10:28PM +0000, Al Viro wrote:
-> 
-> Oh, for fsck sake...  People, this is *obviously* broken - if nothing else,
-> removing suid after modifying the file contents is too late.  Moreover,
-> this mext_inode_double_lock() thing is asking for trouble; it's deadlock-free
-> only because nothing else takes i_mutex on more than one non-directory inode
-> and does that as the innermost lock.
+Don't use Amstrad Delta custom I/O functions once GPIO interface is
+available for the underlying hardware.
 
-Well, we need to define *some* kind of lock ordering for i_mutex
-belonging to regular files within a single file system, and ordering
-them by inode number seemed to make the most amount of sense.  If it
-turns out some other routine needs to do i_mutex locking of regular
-files with some other lock ordering, we're certainly open to using
-something else.
+While requesting and initializing GPIO pins used, also take care of one
+extra pin KEYBRD_DATAOUT which, even if not used by the driver, belongs
+to the device and affects its functioning.
 
-> BTW, is ordering really needed in
-> double_down_write_data_sem()?  IOW, can we get contention between several
-> callers of that thing?
->
-> From my reading of that code, all call chains leading to this sucker
-> are guaranteed to already hold i_mutex on both inodes.  If that is true,
-> we don't need any ordering in double_down_write_data_sem() at all...
+Once done, move the driver initialization back to the device_initcall
+level, reverting the temporary chane introduced with patch 1/7 "ARM:
+OMAP1: ams-delta: register latch dependent devices later".  That change
+is no longer required once the driver takes care of registering used
+GPIO pins, and it's better to initialize the device before others using
+the latch2 based GPIO pins, otherwise a garbage is reported on boot,
+perhaps due to random data already captured by the FIQ handler while the
+keyboard related latch bits are written with random values during
+initialization of those other latch2 dependent devices.
 
-Yes, you're right, the ordering in double_down_write_data_sem() can go
-away; it's harmless, and doesn't cost much, but it's strictly speaking
-not necessary.
+Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
+basic_mmio_gpio"
 
-> AFAICS, the minimal fix is to move file_remove_suid() call into
-> ext4_move_extents(), just after we have acquired i_mutex in there.
-> Moreover, I think it should be done to *both* files, since both have
-> contents modified.  And I see no point in making that conditional...
-
-Actually, we're not modifying the contents of the file that is being
-defragged, only the donor file, so there shouldn't be any need to nuke
-the suid flag for the target file, just the donor.  But yes, we should
-move the call into ext4_move_extents(), and since the donor file
-should never have the suid flag on it anyway (unless someone is trying
-to play tricks on us), the conditional shouldn't be necessary.  
-
-				- Ted
-
-P.S.  Maybe it would be a good idea to add a mention of the fact that
-file_remove_suid() needs i_mutex, either in mm/filemap.c as a comment,
-or in Documentation/filesystems/vfs.txt, or both?
-
-
->From 5e8af306ef8025a4c98bcc51b6b2ed63e1df31c4 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Tue, 20 Dec 2011 17:06:08 -0500
-Subject: [PATCH] ext4: fix potential deadlock with setuid files and EXT4_IOC_MOVE_EXT
-
-file_remove_suid() must be called with i_mutex down, since it calls
-notify_change().  In addition, we really want to remove the suid file
-*before* we modify the donor file, to avoid someone from trying to
-exploit a race.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: stable@vger.kernel.org
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 ---
- fs/ext4/ioctl.c       |    2 --
- fs/ext4/move_extent.c |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Hi,
+I'm submitting only this one refreshed on top of updated 1/7. All others
+(2/7-6/7) don't require any refresh, can be rebased smoothly.
 
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index a567968..ff1aab7 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -247,8 +247,6 @@ setversion_out:
- 		err = ext4_move_extents(filp, donor_filp, me.orig_start,
- 					me.donor_start, me.len, &me.moved_len);
- 		mnt_drop_write(filp->f_path.mnt);
--		if (me.moved_len > 0)
--			file_remove_suid(donor_filp);
+Thanks,
+Janusz
+
+
+Changes against version 2:
+* refreshed on top of updated patch 1/7 v2,
+* changelog: corrected patch 1/7 summary (was inaccurate).
+
+Changes against initial version:
+* was 9/10,
+* rebased on top of v2 of patch 2/7, just in case,
+* moved AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT pin handling from the board
+  code to the driver,
+* reverted a temporary change to the driver initcall level, introduced
+  by the new solution provided with patch 1/7.
+
+
+ arch/arm/mach-omap1/board-ams-delta.c             |   10 ----
+ arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
+ drivers/input/serio/ams_delta_serio.c             |   53 ++++++++++++--------
+:x 3 files changed, 32 insertions(+), 33 deletions(-)
+
+diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
+index 3aba8f9..673cf21 100644
+--- a/arch/arm/mach-omap1/board-ams-delta.c
++++ b/arch/arm/mach-omap1/board-ams-delta.c
+@@ -227,16 +227,6 @@ static struct gpio latch_gpios[] __initconst = {
+ 		.label	= "dockit2",
+ 	},
+ 	{
+-		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
+-		.flags	= GPIOF_OUT_INIT_LOW,
+-		.label	= "keybrd_pwr",
+-	},
+-	{
+-		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
+-		.flags	= GPIOF_OUT_INIT_LOW,
+-		.label	= "keybrd_dataout",
+-	},
+-	{
+ 		.gpio	= AMS_DELTA_GPIO_PIN_SCARD_RSTIN,
+ 		.flags	= GPIOF_OUT_INIT_LOW,
+ 		.label	= "scard_rstin",
+diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
+index e9ad673..027e79e 100644
+--- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
++++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
+@@ -28,8 +28,6 @@
  
- 		if (copy_to_user((struct move_extent __user *)arg,
- 				 &me, sizeof(me)))
-diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-index c5826c6..7403e1b 100644
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -1222,6 +1222,8 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
- 	if (ret1)
- 		goto out;
+ #if defined (CONFIG_MACH_AMS_DELTA)
  
-+	file_remove_suid(d_filp);
+-#define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
+-#define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
+ #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
+ #define AMD_DELTA_LATCH2_SCARD_CMDVCC	0x0800
+ #define AMS_DELTA_LATCH2_MODEM_NRESET	0x1000
+diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
+index 835d37a..ef1ec40 100644
+--- a/drivers/input/serio/ams_delta_serio.c
++++ b/drivers/input/serio/ams_delta_serio.c
+@@ -92,8 +92,7 @@ static irqreturn_t ams_delta_serio_interrupt(int irq, void *dev_id)
+ static int ams_delta_serio_open(struct serio *serio)
+ {
+ 	/* enable keyboard */
+-	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR,
+-			AMD_DELTA_LATCH2_KEYBRD_PWR);
++	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 1);
+ 
+ 	return 0;
+ }
+@@ -101,9 +100,32 @@ static int ams_delta_serio_open(struct serio *serio)
+ static void ams_delta_serio_close(struct serio *serio)
+ {
+ 	/* disable keyboard */
+-	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR, 0);
++	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 0);
+ }
+ 
++static struct gpio _gpios[] __initconst_or_module = {
++	{
++		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATA,
++		.flags	= GPIOF_DIR_IN,
++		.label	= "serio-data",
++	},
++	{
++		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_CLK,
++		.flags	= GPIOF_DIR_IN,
++		.label	= "serio-clock",
++	},
++	{
++		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
++		.flags	= GPIOF_OUT_INIT_LOW,
++		.label	= "serio-power",
++	},
++	{
++		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
++		.flags	= GPIOF_OUT_INIT_LOW,
++		.label	= "serio-dataout",
++	},
++};
 +
- 	file_end = (i_size_read(orig_inode) - 1) >> orig_inode->i_blkbits;
- 	block_end = block_start + len - 1;
- 	if (file_end < block_end)
+ static int __init ams_delta_serio_init(void)
+ {
+ 	int err;
+@@ -123,19 +145,11 @@ static int __init ams_delta_serio_init(void)
+ 	strlcpy(ams_delta_serio->phys, "GPIO/serio0",
+ 			sizeof(ams_delta_serio->phys));
+ 
+-	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_DATA, "serio-data");
++	err = gpio_request_array(_gpios, ARRAY_SIZE(_gpios));
+ 	if (err) {
+-		pr_err("ams_delta_serio: Couldn't request gpio pin for data\n");
++		pr_err("ams_delta_serio: Couldn't request gpio pins\n");
+ 		goto serio;
+ 	}
+-	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
+-
+-	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_CLK, "serio-clock");
+-	if (err) {
+-		pr_err("ams_delta_serio: couldn't request gpio pin for clock\n");
+-		goto gpio_data;
+-	}
+-	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
+ 
+ 	err = request_irq(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK),
+ 			ams_delta_serio_interrupt, IRQ_TYPE_EDGE_RISING,
+@@ -143,7 +157,7 @@ static int __init ams_delta_serio_init(void)
+ 	if (err < 0) {
+ 		pr_err("ams_delta_serio: couldn't request gpio interrupt %d\n",
+ 				gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
+-		goto gpio_clk;
++		goto gpio;
+ 	}
+ 	/*
+ 	 * Since GPIO register handling for keyboard clock pin is performed
+@@ -157,21 +171,18 @@ static int __init ams_delta_serio_init(void)
+ 	dev_info(&ams_delta_serio->dev, "%s\n", ams_delta_serio->name);
+ 
+ 	return 0;
+-gpio_clk:
+-	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
+-gpio_data:
+-	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
++gpio:
++	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
+ serio:
+ 	kfree(ams_delta_serio);
+ 	return err;
+ }
+-late_initcall(ams_delta_serio_init);
++module_init(ams_delta_serio_init);
+ 
+ static void __exit ams_delta_serio_exit(void)
+ {
+ 	serio_unregister_port(ams_delta_serio);
+ 	free_irq(OMAP_GPIO_IRQ(AMS_DELTA_GPIO_PIN_KEYBRD_CLK), 0);
+-	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
+-	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
++	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
+ }
+ module_exit(ams_delta_serio_exit);
 -- 
-1.7.8.11.gefc1f.dirty
+1.7.3.4
 
