@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1LTEyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 23:54:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50788 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704Ab1LTEyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 23:54:46 -0500
-Message-ID: <4EF014FE.4050101@zytor.com>
-Date: Mon, 19 Dec 2011 20:54:22 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753095Ab1LTE4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 23:56:32 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:34858 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1LTE4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 23:56:25 -0500
+Message-ID: <4EF01565.2000700@linux.vnet.ibm.com>
+Date: Tue, 20 Dec 2011 10:26:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org, trenn@suse.de,
-        kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
-        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
-        ying.huang@intel.com
-Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading
- for x86 crypto drivers
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org> <1324334865-30459-4-git-send-email-andi@firstfloor.org> <20111219232246.GB570@redhat.com> <4EEFC7D2.70803@zytor.com> <20111220040829.GD5637@one.firstfloor.org>
-In-Reply-To: <20111220040829.GD5637@one.firstfloor.org>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org> <4EEF1A13.4000801@linux.vnet.ibm.com> <20111219121100.GI2203@ZenIV.linux.org.uk> <4EEF9D4E.1000008@linux.vnet.ibm.com> <20111219205251.GK2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111219205251.GK2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11121918-6102-0000-0000-00000071E34A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 08:08 PM, Andi Kleen wrote:
->> The first printk is insanely annoying, because the end result is that we
->> get a printk of all the crypto engines that are *not* enabled...
->> arguably it would be somewhat nice to get a printk when a crypto engine
->> *is* enabled.
+On 12/20/2011 02:22 AM, Al Viro wrote:
+
+> On Tue, Dec 20, 2011 at 01:53:42AM +0530, Srivatsa S. Bhat wrote:
+>> If this new definition of our requirement is acceptable (correct me if I am
+>> wrong), then we can do something like the following patch, while still
+>> retaining br locks as non-blocking.
+>>
+>> We make a copy of the current cpu_online_mask, and lock the per-cpu locks of
+>> all those cpus. Then while unlocking, we unlock the per-cpu locks of these cpus
+>> (by using that temporary copy of cpu_online_mask we created earlier), without
+>> caring about the cpus actually online at that moment.
+>> IOW, we do lock-unlock on the same set of cpus, and that too, without missing
+>> the complete lock-unlock sequence in any of them. Guaranteed.
 > 
-> Yes that was my rationale. I have some Intel system complaining that
-> some VIA crypto is not available. That's very annoying and just has
-> to go.
-
-What is really bad is that it doesn't tell you anywhere what it *is* using.
-
-	-hpa
+> 	And what's to stop a process on a newly added CPU from _not_
+> spinning in br_read_lock(), even though br_write_unlock() hadn't been
+> done yet?
+> 
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Oh, right, that has to be handled as well...
+
+Hmmm... How about registering a CPU hotplug notifier callback during lock init
+time, and then for every cpu that gets onlined (after we took a copy of the
+cpu_online_mask to work with), we see if that cpu is different from the ones
+we have already locked, and if it is, we lock it in the callback handler and
+update the locked_cpu_mask appropriately (so that we release the locks properly
+during the unlock operation).
+
+Handling the newly introduced race between the callback handler and lock-unlock
+code must not be difficult, I believe..
+
+Any loopholes in this approach? Or is the additional complexity just not worth
+it here?
+
+Regards,
+Srivatsa S. Bhat
 
