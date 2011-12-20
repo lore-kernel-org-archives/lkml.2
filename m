@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1LTJTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:19:32 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59222 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab1LTJTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:19:25 -0500
-Message-ID: <4EF05316.5050803@monstr.eu>
-Date: Tue, 20 Dec 2011 10:19:18 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Simek <monstr@monstr.eu>, Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: memblock and bootmem problems if start + size = 4GB
-References: <4EEF42F5.7040002@monstr.eu> <20111219162835.GA24519@google.com>
-In-Reply-To: <20111219162835.GA24519@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753114Ab1LTJWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:22:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28428 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab1LTJVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 04:21:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98258164"
+Subject: Re: dmaengine/Query: What about scatter/gather for mem to mem
+ transfers.
+From: Vinod Koul <vinod.koul@intel.com>
+To: Pratyush Anand <pratyush.anand@st.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Viresh KUMAR <viresh.kumar@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+In-Reply-To: <4EE99A15.8010608@st.com>
+References: <4EE038BD.7010705@st.com>
+	 <1323329870.1641.27.camel@vkoul-udesk3> <4EE06C3C.8080003@st.com>
+	 <4EE8469B.8050201@st.com> <4EE97E77.8060703@st.com>
+	 <8D3F6266AEB6384E807C6FFC6FE195E327F2B0@BGSMSX101.gar.corp.intel.com>
+	 <4EE98478.5070209@st.com>  <4EE99A15.8010608@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Dec 2011 14:51:35 +0530
+Message-ID: <1324372895.1641.10087.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Thu, 2011-12-15 at 12:26 +0530, Pratyush Anand wrote:
+> >> That way existing mechanism would work well for you.
+> >> You need to split the chunks properly, which is what dma would do
+> anyway
+> >>
+> >
+> > Yes, they can be split like this, but then splitting onus will go on
+> dma
+> > user driver, and so there would be replication of similar logic at
+> > several places. Therefore, I was thinking to make device_prep_dma_sg
+> as
+> > generic by adding these flags.
+Well I am not sure how adding flags handles this?
+There are few things you should consider
+1) do you have h/w support for these, if yes then we can talk about
+dmaengine APIs doing such a thing
+2) if objective is to support such transfers from dma driver POV, then I
+wouldn't agree, as these can be split easily to standard dma sg list.
+>From the code POV, it wouldn't hurt to create a wrapper which take in
+these non standard sg list list and converts then to uniform list
 
-> On Mon, Dec 19, 2011 at 02:58:13PM +0100, Michal Simek wrote:
->> I have reached some problems with memblock and bootmem code for some configurations.
->> We can completely setup the whole system and all addresses in it.
->> The problem happens if we place main memory to the end of address space when
->> mem_start + size reach 4GB limit.
->>
->> For example:
->> mem_start      0xF000 0000
->> mem_size       0x1000 0000 (or better lowmem size)
->> mem_end        0xFFFF FFFF
->> start + size 0x1 0000 0000 (u32 limit reached).
->>
->> I have done some patches which completely remove start + size values from architecture specific
->> code but I have found some problem in generic code too.
->>
->> For example in bootmem code where are three places where physaddr + size is used.
->> I would prefer to retype it to u64 because baseaddr and size don't need to be 2^n.
->>
->> Is it correct solution? If yes, I will create proper patch.
+Most important question:
+in which practical scenario would src and dstn lengths be different?
+
 > 
-> Yeah, that's an inherent problem in using [) ranges but I think
-> chopping off the last page probably is simpler and more robust
-> solution.  Currently, memblock_add_region() would simply ignore if
-> address range overflows but making it just ignore the last page is
-> several lines of addition.  Wouldn't that be effective enough while
-> staying very simple?
+> I see one more issue in using device_prep_interleaved_dma.
+> 
+> Src and Dst address has been allocated in user space.
+> Now a kernel module extracts physical addresses from these pages and
+> prepares a sg list, which it submits to DMA.
+> These addresses would be virtually contiguous and incrementing. But,
+> I 
+> am not sure if they are always physically incrementing too. If they
+> are 
+> not guaranteed to be incrementing, then I see issue.
+> 
+> Otherwise also, a situation can arise when scattered memory is not 
+> always incrementing or decrementing in the same sg list.
+What _exactly_ are you trying to do?
 
-The main problem is with PFN_DOWN/UP macros and it is in __init section.
-The result will be definitely u32 type (for 32bit archs) anyway and seems to me
-better solution than ignoring the last page.
-
-Is there any internal kernel test code to test all pages - try to allocate/use/test it?
-It will be especially good to do so on the last page to see if there is any problem or not.
-
-That two conditions in memblock should be ok.
-
-Thanks,
-Michal
+DMA would need buffers which are physically contagious. Also the user
+pages can be swapped out, you would need to pin these pages.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+~Vinod
+
