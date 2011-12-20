@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1LTFBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 00:01:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61100 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab1LTFAv (ORCPT
+	id S1751518Ab1LTFLh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 00:11:37 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60792 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab1LTFLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 00:00:51 -0500
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH 2/2] gpio-pch: Add the irq_disable/irq_enable hooks for pch irq chip
-Date: Tue, 20 Dec 2011 13:58:53 +0900
-Message-Id: <1324357133-16086-2-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1324357133-16086-1-git-send-email-tomoya.rohm@gmail.com>
-References: <1324357133-16086-1-git-send-email-tomoya.rohm@gmail.com>
+	Tue, 20 Dec 2011 00:11:30 -0500
+Date: Tue, 20 Dec 2011 16:11:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the cputime tree with the powerpc tree
+Message-Id: <20111220161113.3724f901fae728fb26f90407@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__20_Dec_2011_16_11_13_+1100_/89oeNuyWBR0m+qb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also need the following patch for gpio-pch
+--Signature=_Tue__20_Dec_2011_16_11_13_+1100_/89oeNuyWBR0m+qb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-commit f9ea14efa5277c47efec341dee2c408b6b80f854
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Tue Dec 13 23:53:49 2011 +0800
+Hi Martin,
 
-    gpio-ml-ioh: fix a bug in the interrupt handler
+Today's linux-next merge of the cputime tree got a conflict in
+arch/powerpc/include/asm/cputime.h between commit 9f5072d4f63f ("powerpc:
+Fix wrong divisor in usecs_to_cputime") from the powerpc tree and commit
+648616343cdb ("[S390] cputime: add sparse checking and cleanup") from the
+cputime tree.
 
-    GPIO's irq action's dev_id is set to the first struct ioh_gpio chip,
-    so when loop checking the 8 chips, the "chip" should be changed
-    according.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-    Signed-off-by: Feng Tang <feng.tang@intel.com>
-    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+diff --cc arch/powerpc/include/asm/cputime.h
+index 33a3580,e94935c..0000000
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@@ -130,7 -114,7 +114,7 @@@ extern u64 __cputime_usec_factor
+ =20
+  static inline unsigned long cputime_to_usecs(const cputime_t ct)
+  {
+- 	return mulhdu(ct, __cputime_usec_factor);
+ -	return mulhdu((__force u64) ct, __cputime_msec_factor) * USEC_PER_MSEC;
+++	return mulhdu((__force u64) ct, __cputime_usec_factor);
+  }
+ =20
+  static inline cputime_t usecs_to_cputime(const unsigned long us)
 
-Reported-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/gpio/gpio-pch.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+--Signature=_Tue__20_Dec_2011_16_11_13_+1100_/89oeNuyWBR0m+qb
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
-index 01bd405..e80eedb 100644
---- a/drivers/gpio/gpio-pch.c
-+++ b/drivers/gpio/gpio-pch.c
-@@ -313,6 +313,34 @@ static void pch_irq_mask(struct irq_data *d)
- 	iowrite32(1 << (d->irq - chip->irq_base), &chip->reg->imask);
- }
- 
-+static void pch_irq_disable(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+	unsigned long flags;
-+	u32 ien;
-+
-+	spin_lock_irqsave(&chip->spinlock, flags);
-+	ien = ioread32(&chip->reg->ien);
-+	ien &= ~(1 << (d->irq - chip->irq_base));
-+	iowrite32(ien, &chip->reg->ien);
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
-+}
-+
-+static void pch_irq_enable(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+	unsigned long flags;
-+	u32 ien;
-+
-+	spin_lock_irqsave(&chip->spinlock, flags);
-+	ien = ioread32(&chip->reg->ien);
-+	ien |= 1 << (d->irq - chip->irq_base);
-+	iowrite32(ien, &chip->reg->ien);
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
-+}
-+
- static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
- {
- 	struct pch_gpio *chip = dev_id;
-@@ -346,6 +374,8 @@ static __devinit void pch_gpio_alloc_generic_chip(struct pch_gpio *chip,
- 	ct->chip.irq_mask = pch_irq_mask;
- 	ct->chip.irq_unmask = pch_irq_unmask;
- 	ct->chip.irq_set_type = pch_irq_type;
-+	ct->chip.irq_disable = pch_irq_disable;
-+	ct->chip.irq_enable = pch_irq_enable;
- 
- 	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
- 			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
--- 
-1.7.4.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJO8BjxAAoJEECxmPOUX5FEVCQQAJJtD3EOXNIzf2H3Ma3OnCHs
+tGsBsCiKP8a7nhuFel87pGf6bKsJa/0Zjwe29FLoS1VHIci91qniEyopEmX/MOjo
+l+YDaoSnwUpspixmOLd/MEaIil5VuQnfyoRfUpc5Vh3hTa//xDdKGsmTn7ZEIx6f
+iiB7DYrcoOEJLP1I8GDAjOZTe4UYpJAVwokRfaUCgDXNwAAZliKxI+UBjYFpAWPd
+zMtzQA9wbY0eWG96pfbIQkYQDmqE8hyGxRl16DV8uIo0+udpZ8qC+agAPZZt65IX
+xAwJvXP3ihiQus3Z+aeAgur75n1ByScI1G3PKVW1TnG/xzprJtmB/15RIu4scGA2
+uYugXq1l9BWv5etvdiXBG4CfcxUswQaYNgCP3qaNKw9HmzUhpEjdHew+/mKcZ2xB
+XSSvCZcX4WVp+jdZL5vusftP2sGzD3oCrn3gQoUKBbJekXDw9zBeJIC8tSuHxLl2
+l+dF5lYy5tYsogX/SHWvHAQ5ZtoP+QirhT70i7wJXalWD8BkWg7ykQnPvbJfsTf+
+elMjFGUMvMbOEStr8zTC0zX5zAlNAwKZ7f6LxnYxzFkbYbXL6P5VparLAh9XhA77
+Ed3tZo0FS8b+zncWDFNOrUj5Y694kywwhe9kviuL35Ewn0kC78T+MsrZusZKfWRc
+6hJwOOTUVKvtmbFduS0c
+=cdFm
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__20_Dec_2011_16_11_13_+1100_/89oeNuyWBR0m+qb--
