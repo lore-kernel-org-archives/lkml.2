@@ -1,74 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab1LTLI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 06:08:26 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57795 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1LTLIU (ORCPT
+	id S1752096Ab1LTLId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 06:08:33 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35531 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab1LTLIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 06:08:20 -0500
-Message-ID: <4EF06C64.8000708@mvista.com>
-Date: Tue, 20 Dec 2011 15:07:16 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Tue, 20 Dec 2011 06:08:22 -0500
+Message-ID: <4EF06C9B.4010703@linux.vnet.ibm.com>
+Date: Tue, 20 Dec 2011 16:38:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>, ajay.gupta@ti.com
-CC: davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] davinci: DA850 EVM: OHCI platform code
-References: <1324363005-11320-1-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1324363005-11320-1-git-send-email-prakash.pm@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: mc@linux.vnet.ibm.com
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org> <4EEF1A13.4000801@linux.vnet.ibm.com> <20111219121100.GI2203@ZenIV.linux.org.uk> <4EEF9D4E.1000008@linux.vnet.ibm.com> <20111219205251.GK2203@ZenIV.linux.org.uk> <4EF01565.2000700@linux.vnet.ibm.com> <20111220062710.GC23916@ZenIV.linux.org.uk> <4EF03915.60902@linux.vnet.ibm.com> <1324373854.21588.16.camel@mengcong> <4EF0654B.4060904@linux.vnet.ibm.com>
+In-Reply-To: <4EF0654B.4060904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 11122011-5564-0000-0000-00000094416A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 12/20/2011 04:06 PM, Srivatsa S. Bhat wrote:
 
-On 20.12.2011 10:36, Manjunathappa, Prakash wrote:
+> On 12/20/2011 03:07 PM, mengcong wrote:
+> 
+>> On Tue, 2011-12-20 at 12:58 +0530, Srivatsa S. Bhat wrote:
+>>> On 12/20/2011 11:57 AM, Al Viro wrote:
+>>>
+>>>> On Tue, Dec 20, 2011 at 10:26:05AM +0530, Srivatsa S. Bhat wrote:
+>>>>> Oh, right, that has to be handled as well...
+>>>>>
+>>>>> Hmmm... How about registering a CPU hotplug notifier callback during lock init
+>>>>> time, and then for every cpu that gets onlined (after we took a copy of the
+>>>>> cpu_online_mask to work with), we see if that cpu is different from the ones
+>>>>> we have already locked, and if it is, we lock it in the callback handler and
+>>>>> update the locked_cpu_mask appropriately (so that we release the locks properly
+>>>>> during the unlock operation).
+>>>>>
+>>>>> Handling the newly introduced race between the callback handler and lock-unlock
+>>>>> code must not be difficult, I believe..
+>>>>>
+>>>>> Any loopholes in this approach? Or is the additional complexity just not worth
+>>>>> it here?
+>>>>
+>>>> To summarize the modified variant of that approach hashed out on IRC:
+>>>>
+>>>> 	* lglock grows three extra things: spinlock, cpu bitmap and cpu hotplug
+>>>> notifier.
+>>>> 	* foo_global_lock_online starts with grabbing that spinlock and
+>>>> loops over the cpus in that bitmap.
+>>>> 	* foo_global_unlock_online loops over the same bitmap and then drops
+>>>> that spinlock
+>>>> 	* callback of the notifier is going to do all bitmap updates.  Under
+>>>> that spinlock.  Events that need handling definitely include the things like
+>>>> "was going up but failed", since we need the bitmap to contain all online CPUs
+>>>> at all time, preferably without too much junk beyond that.  IOW, we need to add
+>>>> it there _before_ low-level __cpu_up() calls set_cpu_online().  Which means
+>>>> that we want to clean up on failed attempt to up it.  Taking a CPU down is
+>>>> probably less PITA; just clear bit on the final "the sucker's dead" event.
+>>>> 	* bitmap is initialized once, at the same time we set the notifier
+>>>> up.  Just grab the spinlock and do
+>>>> 	for_each_online_cpu(N)
+>>>> 		add N to bitmap
+>>>> then release the spinlock and let the callbacks handle all updates.
+>>>>
+>>>> I think that'll work with relatively little pain, but I'm not familiar enough
+>>>> with the cpuhotplug notifiers, so I'd rather have the folks familiar with those
+>>>> to supply the set of events to watch for...
+>>>>
+>>>
+>>>
+>>> We need not watch out for "up failed" events. It is enough if we handle
+>>> CPU_ONLINE and CPU_DEAD events. Because, these 2 events are triggered only
+>>> upon successful online or offline operation, and these notifications are
+>>> more than enough for our purpose (to update our bitmaps). Also, those cpus
+>>> which came online wont start running until these "success notifications"
+>>> are all done, which is where we do our stuff in the callback (ie., try
+>>> grabbing the spinlock..).
+>>>
+>>> Of course, by doing this (only looking out for CPU_ONLINE and CPU_DEAD
+>>> events), our bitmap will probably be one step behind cpu_online_mask
+>>> (which means, we'll still have to take the snapshot of cpu_online_mask and
+>>> work with it instead of using for_each_online_cpu()).
+>>> But that doesn't matter, as long as:
+>>>   * we don't allow the newly onlined CPU to start executing code (this
+>>>     is achieved by taking the spinlock in the callback)
+>>
+>> I think cpu notifier callback doesn't always run on the UPing cpu.
+>> Actually, it rarely runs on the UPing cpu.
+>> If I was wrong about the above thought, there is still a chance that lg-lock
+>> operations are scheduled on the UPing cpu before calling the callback.
+>>
+> 
+> 
+> I wasn't actually banking on that, but you have raised a very good point.
+> The scheduler uses its own set of cpu hotplug callback handlers to start
+> using the newly added cpu (see the set of callbacks in kernel/sched.c)
+> 
+> So, now we have a race between our callback and the scheduler's callbacks.
+> ("Placing" our callback appropriately in a safe position using priority
+> for notifiers doesn't appeal to me that much, since it looks like too much
+> hackery. It should probably be our last resort).
+> 
 
-> From: Ajay Kumar Gupta <ajay.gupta@ti.com>
 
-    It's a good practice to CC the original author of the patch -- which I'm 
-doing now...
+Hey, actually there is a simple solution: just nip it (or rather delay it)
+in the bud ;) That is, we watch out for CPU_UP_PREPARE event and lock it
+up there itself using our spinlock.. that way, that cpu will not come up
+until we are done executing br_write_unlock(). In fact, we can even fail
+the onlining of that cpu by returning appropriate value from our callback,
+but that would be too harsh.. so we can settle for delaying the cpu online
+operation :)
 
-> On this board the OHCI port's power control and over-current signals from
-> TPS2065 power switch are connected via GPIO1[15] and GPIO2[1] respectively,
+And we do the same thing for CPU_DOWN_PREPARE event. And we can forget about
+taking snapshot of cpu_online_mask, since cpu_online_mask is guaranteed to
+be unmodified until we are done with br_write_unlock().
 
-    Ajay, your description seems to be copied unchganged from the analogous 
-DA830 EVM patch, and thus doesn't match your patch: GPIO2[4] and GPIO6[13] are 
-used apparently. Be more attentive to detail next time please.
+Regards,
+Srivatsa S. Bhat
 
-> so we can implement the DA8xx OHCI glue layer's hooks for overriding the
-> root hub port's power and over-current status bits.
-
-> We also have to properly set up the clocking mode in the CFGCHIP2 register,
-> so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB) PHY and
-> its output is used to clock the USB 1.1 (OHCI) PHY...
-
-> Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
-> ---
->   arch/arm/mach-davinci/board-da850-evm.c |  126 +++++++++++++++++++++++++++++++
->   1 files changed, 126 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index 6659a90..df74ba5 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-[...]
-> @@ -734,6 +736,127 @@ static struct davinci_i2c_platform_data da850_evm_i2c_0_pdata = {
-[...]
-> +static int da850_evm_usb_ocic_notify(da8xx_ocic_handler_t handler)
-> +{
-> +	int irq		= gpio_to_irq(ON_BD_USB_OVC);
-> +	int error	= 0;
-> +
-> +	if (handler != NULL) {
-> +		da850_evm_usb_ocic_handler = handler;
-> +
-> +		error = request_irq(irq, da850_evm_usb_ocic_irq, IRQF_DISABLED |
-
-    IRQF_DISABLED is a nop now -- just remove it.
-
-WBR, Sergei
