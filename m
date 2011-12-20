@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab1LTVzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 16:55:18 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:48166 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab1LTVzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 16:55:17 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-input@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: [PATCH v2 1/7 v2] ARM: OMAP1: ams-delta: register latch dependent devices later
-Date: Tue, 20 Dec 2011 22:54:18 +0100
-Message-Id: <1324418058-30905-1-git-send-email-jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <201112200028.32947.jkrzyszt@tis.icnet.pl>
-References: <201112200028.32947.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1753162Ab1LTV6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 16:58:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39436 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab1LTV6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 16:58:19 -0500
+Date: Tue, 20 Dec 2011 13:58:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/4] memcg: simplify page cache charging.
+Message-Id: <20111220135817.5ba7ab05.akpm@linux-foundation.org>
+In-Reply-To: <20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111216142814.dbb77209.akpm@linux-foundation.org>
+	<20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation to converting Amstrad Delta on-board latches to
-basic_mmio_gpio devices, registration of platform devices which depend
-on latches and will require initialization of their GPIO pins first,
-should be moved out of .machine_init down to late_initcall level, as the
-gpio-generic driver is not available until device_initcall time.  The
-latch reset operation, which will be replaced with GPIO initialization,
-must also be moved to late_initcall for the same reason.
+On Mon, 19 Dec 2011 09:01:22 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Since there was already another, separate arch_initcall function for
-setting up one of those latch dependent devices, the on-board modem
-device, reuse that function, i.e., rename it to a name that matches the
-new purpose, extend with other device setup relocated from
-.machine_init, and move down to the late_initcall level.
+> On Fri, 16 Dec 2011 14:28:14 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Wed, 14 Dec 2011 16:49:22 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
+> > > of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
+> > > called against FUSE's pages from splice.
+> > 
+> > Speaking of ef6a3c6311 ("mm: add replace_page_cache_page() function"),
+> > may I pathetically remind people that it's rather inefficient?
+> > 
+> > http://lkml.indiana.edu/hypermail/linux/kernel/1109.1/00375.html
+> > 
+> 
+> IIRC, people says inefficient because it uses memcg codes for page-migration
+> for fixing up accounting. Now, We added replace-page-cache for memcg in
+> memcg-add-mem_cgroup_replace_page_cache-to-fix-lru-issue.patch
+> 
+> So, I think the problem originally mentioned is fixed.
+> 
 
-While being at it, add missing gpio_free() in case the modem platform
-device registration fails.
+No, the inefficiency in replace_page_cache_page() is still there.  Two
+identical walks down the radix tree, a pointless decrement then
+increment of mapping->nrpages, two writes to page->mapping, an often
+pointless decrement then increment of NR_FILE_PAGES, and probably other things.
 
-Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
-instead of shifting up the gpio-generic driver initialization.
-
-In addition, defer registration of the Amstrad Delta ASoC and serio
-devices, done from their device driver files, until late_initcall time,
-as those drivers will depend on their GPIO pins already requested from
-the board late_init() function until updated to register their GPIO pins
-themselves.
-
-Created and tested against linux-3.2-rc6.
-
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
----
-Changes since the initial version of this patch:
-* use late_initcall() unconditionally in modules, requested by Russell
-  King (thanks!); an updated patch 7/7 will follow,
-* in the changelog message, move credits to Tony up a bit, since the
-  person responsible for other changes (he might not necessarily like)
-  is me, not him ;).
-
-Comments copied from this patch initial submission:
-This patch was not present in the initial submission, it replaces the
-old patch 1/10, providing an alternative solution not touching the
-gpio-generic driver.
-
- arch/arm/mach-omap1/board-ams-delta.c |   28 ++++++++++++++++++++--------
- drivers/input/serio/ams_delta_serio.c |    2 +-
- sound/soc/omap/ams-delta.c            |    2 +-
- 3 files changed, 22 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-index b0f15d2..50987c9 100644
---- a/arch/arm/mach-omap1/board-ams-delta.c
-+++ b/arch/arm/mach-omap1/board-ams-delta.c
-@@ -275,11 +275,14 @@ static struct omap1_cam_platform_data ams_delta_camera_platform_data = {
- };
- 
- static struct platform_device *ams_delta_devices[] __initdata = {
--	&ams_delta_nand_device,
- 	&ams_delta_kp_device,
-+	&ams_delta_camera_device,
-+};
-+
-+static struct platform_device *late_devices[] __initdata = {
-+	&ams_delta_nand_device,
- 	&ams_delta_lcd_device,
- 	&ams_delta_led_device,
--	&ams_delta_camera_device,
- };
- 
- static void __init ams_delta_init(void)
-@@ -307,9 +310,6 @@ static void __init ams_delta_init(void)
- 	omap_serial_init();
- 	omap_register_i2c_bus(1, 100, NULL, 0);
- 
--	/* Clear latch2 (NAND, LCD, modem enable) */
--	ams_delta_latch2_write(~0, 0);
--
- 	omap1_usb_init(&ams_delta_usb_config);
- 	omap1_set_camera_info(&ams_delta_camera_platform_data);
- #ifdef CONFIG_LEDS_TRIGGERS
-@@ -345,13 +345,18 @@ static struct platform_device ams_delta_modem_device = {
- 	},
- };
- 
--static int __init ams_delta_modem_init(void)
-+static int __init late_init(void)
- {
- 	int err;
- 
- 	if (!machine_is_ams_delta())
- 		return -ENODEV;
- 
-+	/* Clear latch2 (NAND, LCD, modem enable) */
-+	ams_delta_latch2_write(~0, 0);
-+
-+	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
-+
- 	omap_cfg_reg(M14_1510_GPIO2);
- 	ams_delta_modem_ports[0].irq =
- 			gpio_to_irq(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
-@@ -367,9 +372,16 @@ static int __init ams_delta_modem_init(void)
- 		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC,
- 		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC);
- 
--	return platform_device_register(&ams_delta_modem_device);
-+	err = platform_device_register(&ams_delta_modem_device);
-+	if (err)
-+		goto gpio_free;
-+	return 0;
-+
-+gpio_free:
-+	gpio_free(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
-+	return err;
- }
--arch_initcall(ams_delta_modem_init);
-+late_initcall(late_init);
- 
- static void __init ams_delta_map_io(void)
- {
-diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
-index d4d08bd..835d37a 100644
---- a/drivers/input/serio/ams_delta_serio.c
-+++ b/drivers/input/serio/ams_delta_serio.c
-@@ -165,7 +165,7 @@ serio:
- 	kfree(ams_delta_serio);
- 	return err;
- }
--module_init(ams_delta_serio_init);
-+late_initcall(ams_delta_serio_init);
- 
- static void __exit ams_delta_serio_exit(void)
- {
-diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
-index ccb8a6a..be81bc7 100644
---- a/sound/soc/omap/ams-delta.c
-+++ b/sound/soc/omap/ams-delta.c
-@@ -636,7 +636,7 @@ err:
- 	platform_device_put(ams_delta_audio_platform_device);
- 	return ret;
- }
--module_init(ams_delta_module_init);
-+late_initcall(ams_delta_module_init);
- 
- static void __exit ams_delta_module_exit(void)
- {
--- 
-1.7.3.4
 
