@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab1LTAat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 19:30:49 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54795 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab1LTAas convert rfc822-to-8bit (ORCPT
+	id S1753616Ab1LTAbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 19:31:24 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:42471 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab1LTAbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 19:30:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EEF6240.9020107@gmail.com>
-References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
-	<4EEF6240.9020107@gmail.com>
-Date: Tue, 20 Dec 2011 09:30:46 +0900
-Message-ID: <CABEgKgrnTN6YbtPbuifyEvgUi7MB47VriVhn8EAAds1k2O83XA@mail.gmail.com>
-Subject: Re: Android low memory killer vs. memory pressure notifications
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Dec 2011 19:31:22 -0500
+Date: Tue, 20 Dec 2011 11:31:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the vfs tree
+Message-Id: <20111220113112.7db5cb344aa1f7fc33734cc8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__20_Dec_2011_11_31_12_+1100_nD=0XLQ1PYwJ2XkW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/20 KOSAKI Motohiro <kosaki.motohiro@gmail.com>:
->> - Use memory controller cgroup (CGROUP_MEM_RES_CTLR) notifications from
->>   the kernel side, plus userland "manager" that would kill applications.
->>
->>   The main downside of this approach is that mem_cg needs 20 bytes per
->>   page (on a 32 bit machine). So on a 32 bit machine with 4K pages
->>   that's approx. 0.5% of RAM, or, in other words, 5MB on a 1GB machine.
->>
->>   0.5% doesn't sound too bad, but 5MB does, quite a little bit. So,
->>   mem_cg feels like an overkill for this simple task (see the driver at
->>   the very bottom).
->
->
-> Kamezawa-san, Is 20bytes/page still correct now? If I remember correctly,
-> you improved space efficiency of memcg.
->
-Johannes removed 4 bytes. It's in upstream.
-Johannes removed 8bytes. It's now in linux-next.
-I'm preparing a patch to remove more 4 bytes.
+--Signature=_Tue__20_Dec_2011_11_31_12_+1100_nD=0XLQ1PYwJ2XkW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
--Kame
+Hi Al,
+
+After merging the vfs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+In file included from ipc/util.c:28:0:
+include/linux/security.h: In function 'security_real_capable':
+include/linux/security.h:1885:2: error: implicit declaration of function '_=
+_task_cred' [-Werror=3Dimplicit-function-declaration]
+include/linux/security.h:1885:2: warning: passing argument 2 of 'cap_capabl=
+e' makes pointer from integer without a cast [enabled by default]
+include/linux/security.h:69:12: note: expected 'const struct cred *' but ar=
+gument is of type 'int'
+include/linux/security.h: In function 'security_real_capable_noaudit':
+include/linux/security.h:1897:11: warning: passing argument 2 of 'cap_capab=
+le' makes pointer from integer without a cast [enabled by default]
+include/linux/security.h:69:12: note: expected 'const struct cred *' but ar=
+gument is of type 'int'
+In file included from kernel/groups.c:7:0:
+
+So security.h needs to include linux/cred.h ...
+
+include/linux/security.h: In function 'security_real_capable':
+include/linux/security.h:1885:25: error: dereferencing pointer to incomplet=
+e type
+include/linux/security.h:1885:25: error: dereferencing pointer to incomplet=
+e type
+include/linux/security.h:1885:25: error: dereferencing pointer to incomplet=
+e type
+include/linux/security.h:1885:25: error: dereferencing pointer to incomplet=
+e type
+include/linux/security.h:1885:25: error: dereferencing pointer to incomplet=
+e type
+
+And linux/cred.h needs to include linux/sched.h :-(
+
+Caused by commit ae1a442f9d95 ("trim security.h").
+
+I have used the vfs tree form next-20111216 again today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__20_Dec_2011_11_31_12_+1100_nD=0XLQ1PYwJ2XkW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO79dQAAoJEECxmPOUX5FECy8P/2DU1Koku2Iet7DXxjdDsUP0
+r8Vuu95CXCahj2iFC9SmKEIUHkFOFSL0wAhIB4PMzs7ZKkLkE9lDNN8v04i7Rkqf
+0A5ms3lShf/UxLZmaiaeJvTcbl3w8aSAWvBgfcojXzpee7dqfZtrSok3Iey5b6cT
+4BMGCOU2+40T8SWe3/nZpOzdxyyPsWQFPDzxSDKUdzSQs/hc7Xl/937/gJinUwXw
+JJsEmtPlcXj7eb7s7UvgIF85698avJwfnl8B6uhp/1gi/1imdkx1olkRqclIr6sp
+fFLrwTqfZBuJrdVwIY0JGu1JKaoxLpclHUWXpXJhES4BuJ4g1bijiEMVa6BKOMnY
+AwVfBxg9u2wwztqfNIj8lLwMAcLelgQXzvsPJyzzAoNJg9f1tkUp1TGruGye0GUv
+zzSCCUiZX8h2eeHvgDFLoXChbJbsEybo9Oi41jdP7ndEvAdsUIESTIg0Zv5AJDBd
+3F1/yoiVRiXWXC7A8GYnifQe9tUow1FT3+eWEmsjKXNOE850JRJygeMv1Bve7jOI
+KjcVjhEGCRrXKQPxooknEB1Q0qxnizT7MF5R1mA1uhFqT2PySSermbfj9Exg7/Py
+zLTwlX3Z+W12BlumfWP4+AKA7gio9V/VJ65Ly0Nx7YOpmepEjMhBuCTKCdwqFF/8
+HYX0Jt9aM/danBjpdVgB
+=JpmC
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__20_Dec_2011_11_31_12_+1100_nD=0XLQ1PYwJ2XkW--
