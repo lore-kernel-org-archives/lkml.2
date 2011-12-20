@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab1LTTnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:43:55 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55986 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab1LTTnr (ORCPT
+	id S1752880Ab1LTTrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:47:19 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36564 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1LTTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:43:47 -0500
+	Tue, 20 Dec 2011 14:47:13 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
+Date: Tue, 20 Dec 2011 20:47:10 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        w.sang@pengutronix.de, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kernel@pengutronix.de, cjb@laptop.org,
+        devicetree-discuss@lists.ozlabs.org, shawn.guo@freescale.com
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com> <1324402840-32451-2-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324402840-32451-2-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20111220111935.GE31842@legolas.emea.dhcp.ti.com>
-References: <1323990310-11905-1-git-send-email-felipe.contreras@gmail.com>
-	<1323990310-11905-2-git-send-email-felipe.contreras@gmail.com>
-	<20111219081137.GF3146@legolas.emea.dhcp.ti.com>
-	<CAMP44s2pbLRHB2ko9t-zQEpTFw=TaCS9b_qRmvAobgxeJ9WrCw@mail.gmail.com>
-	<20111220111935.GE31842@legolas.emea.dhcp.ti.com>
-Date: Tue, 20 Dec 2011 21:43:45 +0200
-Message-ID: <CAMP44s1m9oXpiw506kE6JJn5xO+oCRL8B0UixUf4X=Ew00=wHA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] usb: musb: fix pm_runtime mismatches
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112202047.10308.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 1:19 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Dec 19, 2011 at 10:20:09PM +0200, Felipe Contreras wrote:
->> On Mon, Dec 19, 2011 at 10:11 AM, Felipe Balbi <balbi@ti.com> wrote:
->> > On Fri, Dec 16, 2011 at 01:05:08AM +0200, Felipe Contreras wrote:
->> >> Properly call pm_runtime_put() afer pm_runttime_get() on errors.
->> >>
->> >> Untested.
->> >
->> > sorry, but I'm not applying untested patches. I need someone to give a
->> > Tested-by.
->>
->> I'm pretty sure most people don't test the exit paths, but fine, don't
->> apply them. Who needs power management anyway.
->
-> if it wasn't tested you can't claim $SUBJECT makes PM magically work.
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Currently most code to get child count in kernel are almost same,
+> add a helper to implement this function for dt to use.
+> 
+> ---
+> Changes v1->v2:
+>  * change the name from of_get_child_number to of_get_child_count
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  include/linux/of.h |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 4948552..d0d91a1 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -189,6 +189,17 @@ extern struct device_node *of_get_next_child(const
+> struct device_node *node, for (child = of_get_next_child(parent, NULL);
+> child != NULL; \
+>  	     child = of_get_next_child(parent, child))
+> 
+> +static inline int of_get_child_count(const struct device_node *np)
+> +{
+> +	struct device_node *child = NULL;
+> +	int num = 0;
+> +
+> +	while ((child = of_get_next_child(np, child)))
 
-It's clear from the code, no need to test to see that pm_runtime_get()
-is called but not pm_runtime_put(), thus the device remains active,
-thus PM would not work after that.
+The assignment in this condition really looks eerie, maybe just rewrite it to do  
+{ } while () ? Also, aren't the parenthesis unnecessary?
 
--- 
-Felipe Contreras
+M
+> +		num++;
+> +
+> +	return num;
+> +}
+> +
+>  extern struct device_node *of_find_node_with_property(
+>  	struct device_node *from, const char *prop_name);
+>  #define for_each_node_with_property(dn, prop_name) \
+> @@ -262,6 +273,11 @@ static inline bool of_have_populated_dt(void)
+>  #define for_each_child_of_node(parent, child) \
+>  	while (0)
+> 
+> +static inline int of_get_child_count(const struct device_node *np)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>  static inline int of_device_is_compatible(const struct device_node
+> *device, const char *name)
+>  {
