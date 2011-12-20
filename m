@@ -1,37 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1LTDvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 22:51:42 -0500
-Received: from mga14.intel.com ([143.182.124.37]:32705 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1LTDvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 22:51:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87506865"
-Date: Tue, 20 Dec 2011 11:41:35 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/3] pagemap: document KPF_THP and show make
- page-types aware of it
-Message-ID: <20111220034135.GB14270@localhost>
-References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1324319919-31720-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754136Ab1LTDzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 22:55:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36018 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab1LTDzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 22:55:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324319919-31720-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Mon, 19 Dec 2011 19:55:28 -0800
+X-Google-Sender-Auth: HOnBMFbEGXqDI8jl9fSumXu34uw
+Message-ID: <CAB=NE6WfBDqQzqxNaZm5mMhjyP2t7M-5t=+RA-A2JAKUKjmJzw@mail.gmail.com>
+Subject: [ANN] compat-wireless for 3.2-rc6
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless <linux-wireless@vger.kernel.org>, netdev@vger.kernel.org,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+You all know what this is, only difference is we have a few
+pending-stable patches not yet merged into Linus' tree but that are on
+linux-next.git so we suck those in and provide an "-s" release. Below
+are the statistics of both releases. We have an "-s" release [1] and a
+vanilla release [2]. I'll note that I expect a few set of patches are
+desirable to cherry pick from linux-next.git for a type of stable
+release that we will support but for now I have yet to hear back which
+patches those are. Feel free to reply here with the sha1sums you want
+but please be specific of the linux-next.git tag you used.
 
-Thanks!
+For the -s release:
+
+Updated from local tree: /home/mcgrof/linux-stable
+Origin remote URL:
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+compat-wireless code metrics
+
+    814570 - Total upstream lines of code being pulled
+      2488 - backport code changes
+      2143 - backport code additions
+       345 - backport code deletions
+      8670 - backport from compat module
+     11158 - total backport code
+    1.3698 - % of code consists of backport work
+        57 - Code changes brought in from pending-stable
+        44 - Code additions brought in from pending-stable
+        13 - Code deletions brought in from pending-stable
+    0.0070 - % of code being cherry picked from pending-stable
+
+Base tree: linux-stable.git
+Base tree version: v3.2-rc6
+compat-wireless release: compat-wireless-v3.2-rc6-3-s
+
+For the vanilla release:
+
+Updated from local tree: /home/mcgrof/linux-stable
+Origin remote URL:
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+compat-wireless code metrics
+
+    814570 - Total upstream lines of code being pulled
+      2488 - backport code changes
+      2143 - backport code additions
+       345 - backport code deletions
+      8670 - backport from compat module
+     11158 - total backport code
+    1.3698 - % of code consists of backport work
+
+Base tree: linux-stable.git
+Base tree version: v3.2-rc6
+compat-wireless release: compat-wireless-v3.2-rc6-3
+
+[1] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.2/compat-wireless-3.2-rc6-3-s.tar.bz2
+[2] http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.2/compat-wireless-3.2-rc1-1.tar.bz2
