@@ -1,38 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab1LTEIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 23:08:34 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:38006 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab1LTEId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 23:08:33 -0500
-Date: Tue, 20 Dec 2011 05:08:29 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, trenn@suse.de, kay.sievers@vrf.org,
-        Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org, axboe@kernel.dk,
-        herbert@gondor.hengli.com.au, ying.huang@intel.com
-Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading for x86 crypto drivers
-Message-ID: <20111220040829.GD5637@one.firstfloor.org>
-References: <1324334865-30459-1-git-send-email-andi@firstfloor.org> <1324334865-30459-4-git-send-email-andi@firstfloor.org> <20111219232246.GB570@redhat.com> <4EEFC7D2.70803@zytor.com>
-Mime-Version: 1.0
+	id S1753486Ab1LTEUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 23:20:55 -0500
+Received: from ozlabs.org ([203.10.76.45]:49961 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751977Ab1LTEUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 23:20:51 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the rr tree
+In-Reply-To: <20111220133927.f74f564f566166253bcef211@canb.auug.org.au>
+References: <20111220133927.f74f564f566166253bcef211@canb.auug.org.au>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 20 Dec 2011 14:24:10 +1030
+Message-ID: <87y5u7dhjx.fsf@rustcorp.com.au>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEFC7D2.70803@zytor.com>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The first printk is insanely annoying, because the end result is that we
-> get a printk of all the crypto engines that are *not* enabled...
-> arguably it would be somewhat nice to get a printk when a crypto engine
-> *is* enabled.
+On Tue, 20 Dec 2011 13:39:27 +1100, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Non-text part: multipart/signed
+> Hi Rusty,
+> 
+> After merging the rr tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 
-Yes that was my rationale. I have some Intel system complaining that
-some VIA crypto is not available. That's very annoying and just has
-to go.
+Thanks, I missed the header declaration.  Fixed.
 
--Andi
+Cheers,
+Rusty.
