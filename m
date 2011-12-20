@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1LTTUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:20:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40038 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab1LTTT6 (ORCPT
+	id S1752837Ab1LTTUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:20:31 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33887 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab1LTTSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:19:58 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=-kHMGH7muIIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=tDg02Hdxs7GPy_NaAjoA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324408795.5916.73.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/2] tracing, sched: Add a new tracepoint for sleeptime
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Date: Tue, 20 Dec 2011 14:19:55 -0500
-In-Reply-To: <4EF0D262.5000405@fb.com>
-References: <1324404558-353-1-git-send-email-asharma@fb.com>
-	  <1324404558-353-3-git-send-email-asharma@fb.com>
-	 <1324404995.5916.66.camel@gandalf.stny.rr.com> <4EF0D262.5000405@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 20 Dec 2011 14:18:31 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
+        Johannes Schindelin <Johannes.Schindelin@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/10] perf tools: Remove stale git headlines from top comment
+Date: Tue, 20 Dec 2011 17:18:09 -0200
+Message-Id: <1324408691-28296-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
+In-Reply-To: <1324408691-28296-1-git-send-email-acme@infradead.org>
+References: <1324408691-28296-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 10:22 -0800, Arun Sharma wrote:
-> On 12/20/11 10:16 AM, Steven Rostedt wrote:
-> 
-> >> +#ifdef CREATE_TRACE_POINTS
-> >
-> > Why the #ifdef? a static inline is fine to keep in the open. If nothing
-> > uses it, then it just wont be used or defined.
-> >
-> 
-> Without the ifdef I get:
-> 
-> In file included from include/trace/define_trace.h:80,
->                   from include/trace/events/sched.h:445,
->                   from kernel/sched/core.c:86:
-> include/trace/events/sched.h:366: error: redefinition of 
-> ‘trace_get_sleeptime’
-> include/trace/events/sched.h:366: note: previous definition of 
-> ‘trace_get_sleeptime’ was here
-> 
-> So I shamelessly copied what the other static inline function in the 
-> file does.
+From: Namhyung Kim <namhyung@gmail.com>
 
-Ah, OK, it's because of the duplicate includes. Still ugly though. But
-we can clean that up later.
+These files are part of PERF not GIT although they're come from there :)
 
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Johannes Schindelin <Johannes.Schindelin@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1323784323-2150-1-git-send-email-namhyung@gmail.com
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/config.c |    5 ++++-
+ tools/perf/util/usage.c  |    5 ++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-> 
-> I also noticed that sched_stat_sleeptime() is very similar to 
-> sched_stat_sleep(). The latter covers sleeps but not iowait and doesn't 
-> include the scheduler latency. Let me know if you think this is a show 
-> stopper that needs a rename.
-
-what about sched_stat_iowait() too. As for latency, I don't know. That's
-more Peter's decision.
-
--- Steve
-
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 80d9598..0deac6a 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -1,5 +1,8 @@
+ /*
+- * GIT - The information manager from hell
++ * config.c
++ *
++ * Helper functions for parsing config items.
++ * Originally copied from GIT source.
+  *
+  * Copyright (C) Linus Torvalds, 2005
+  * Copyright (C) Johannes Schindelin, 2005
+diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+index e16bf9a..d76d1c0 100644
+--- a/tools/perf/util/usage.c
++++ b/tools/perf/util/usage.c
+@@ -1,5 +1,8 @@
+ /*
+- * GIT - The information manager from hell
++ * usage.c
++ *
++ * Various reporting routines.
++ * Originally copied from GIT source.
+  *
+  * Copyright (C) Linus Torvalds, 2005
+  */
+-- 
+1.7.8.rc0.35.gee6df
 
