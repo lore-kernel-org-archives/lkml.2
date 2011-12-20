@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab1LTDa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 22:30:56 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36899 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab1LTDax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 22:30:53 -0500
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zefir.kurtisi@neratec.com,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] ath9k: fix roadkill due to Joe's patch on ath_dbg() changes
-Date: Mon, 19 Dec 2011 19:30:43 -0800
-Message-Id: <1324351843-4115-1-git-send-email-rodrigue@qca.qualcomm.com>
-X-Mailer: git-send-email 1.7.4.15.g7811d
+	id S1753481Ab1LTDpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 22:45:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13814 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab1LTDpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 22:45:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="87505641"
+Date: Tue, 20 Dec 2011 11:35:37 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 2/3] pagemap: export KPF_THP
+Message-ID: <20111220033537.GA14270@localhost>
+References: <1324319919-31720-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324319919-31720-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+On Tue, Dec 20, 2011 at 02:38:38AM +0800, Naoya Horiguchi wrote:
+> This flag shows that a given pages is a subpage of transparent hugepage.
+> It does not care about whether it is a head page or a tail page, because
+> it's clear from pfn of the target page which you should know when you read
+> /proc/kpageflags.
 
-Joe changed ath_dbg() to simpify code but while his patch was
-being merged dfs.c was born and as such did not get the change
-Joe envisioned. This fixes that. Test compiled with:
+OK, this is aligning with KPF_HUGE. For those who only care about
+head/tail pages, will the KPF_COMPOUND_HEAD/KPF_COMPOUND_TAIL flags be
+set automatically for thp? Which may be more convenient to test/filter
+than the page address.
 
- make allmodconfig
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Cc: Joe Perches <joe@perches.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: John W. Linville <linville@tuxdriver.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
----
- drivers/net/wireless/ath/ath9k/dfs.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 
-diff --git a/drivers/net/wireless/ath/ath9k/dfs.c b/drivers/net/wireless/ath/ath9k/dfs.c
-index e4e84a9..f4f56af 100644
---- a/drivers/net/wireless/ath/ath9k/dfs.c
-+++ b/drivers/net/wireless/ath/ath9k/dfs.c
-@@ -66,7 +66,7 @@ ath9k_postprocess_radar_event(struct ath_softc *sc,
- 	u8 rssi;
- 	u16 dur;
- 
--	ath_dbg(ath9k_hw_common(sc->sc_ah), ATH_DBG_DFS,
-+	ath_dbg(ath9k_hw_common(sc->sc_ah), DFS,
- 		"pulse_bw_info=0x%x, pri,ext len/rssi=(%u/%u, %u/%u)\n",
- 		are->pulse_bw_info,
- 		are->pulse_length_pri, are->rssi,
-@@ -161,7 +161,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
- 
- 	if ((!(rs->rs_phyerr != ATH9K_PHYERR_RADAR)) &&
- 	    (!(rs->rs_phyerr != ATH9K_PHYERR_FALSE_RADAR_EXT))) {
--		ath_dbg(common, ATH_DBG_DFS,
-+		ath_dbg(common, DFS,
- 			"Error: rs_phyer=0x%x not a radar error\n",
- 			rs->rs_phyerr);
- 		return;
-@@ -190,7 +190,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
- 	ard.pulse_length_ext = vdata_end[-2];
- 	ard.pulse_length_pri = vdata_end[-3];
- 
--	ath_dbg(common, ATH_DBG_DFS,
-+	ath_dbg(common, DFS,
- 		"bw_info=%d, length_pri=%d, length_ext=%d, "
- 		"rssi_pri=%d, rssi_ext=%d\n",
- 		ard.pulse_bw_info, ard.pulse_length_pri, ard.pulse_length_ext,
-@@ -200,7 +200,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
- 	drp.ts = mactime;
- 	if (ath9k_postprocess_radar_event(sc, &ard, &drp)) {
- 		static u64 last_ts;
--		ath_dbg(common, ATH_DBG_DFS,
-+		ath_dbg(common, DFS,
- 			"ath9k_dfs_process_phyerr: channel=%d, ts=%llu, "
- 			"width=%d, rssi=%d, delta_ts=%llu\n",
- 			drp.freq, drp.ts, drp.width, drp.rssi, drp.ts-last_ts);
--- 
-1.7.4.15.g7811d
+As you already discussed, the below #ifdef should be removed.
+In fact, kernel-page-flags.h is intended for direct inclusion by
+user space tools, so must not have any conditional defines.
 
+> --- 3.2-rc5.orig/include/linux/kernel-page-flags.h
+> +++ 3.2-rc5/include/linux/kernel-page-flags.h
+> @@ -31,6 +31,10 @@
+>  
+>  #define KPF_KSM			21
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +#define KPF_THP			22
+> +#endif
+> +
+>  /* kernel hacking assistances
+>   * WARNING: subject to change, never rely on them!
+>   */
+> -- 
+> 1.7.7.3
