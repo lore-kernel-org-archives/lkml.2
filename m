@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1LTE4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 23:56:32 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:34858 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab1LTE4Z (ORCPT
+	id S1751747Ab1LTFAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 00:00:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61100 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab1LTFAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 23:56:25 -0500
-Message-ID: <4EF01565.2000700@linux.vnet.ibm.com>
-Date: Tue, 20 Dec 2011 10:26:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org> <4EEF1A13.4000801@linux.vnet.ibm.com> <20111219121100.GI2203@ZenIV.linux.org.uk> <4EEF9D4E.1000008@linux.vnet.ibm.com> <20111219205251.GK2203@ZenIV.linux.org.uk>
-In-Reply-To: <20111219205251.GK2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11121918-6102-0000-0000-00000071E34A
+	Tue, 20 Dec 2011 00:00:47 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 1/2] gpio-pch: fix a bug in the interrupt handler
+Date: Tue, 20 Dec 2011 13:58:52 +0900
+Message-Id: <1324357133-16086-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 02:22 AM, Al Viro wrote:
+Also need the following patch for gpio-pch
 
-> On Tue, Dec 20, 2011 at 01:53:42AM +0530, Srivatsa S. Bhat wrote:
->> If this new definition of our requirement is acceptable (correct me if I am
->> wrong), then we can do something like the following patch, while still
->> retaining br locks as non-blocking.
->>
->> We make a copy of the current cpu_online_mask, and lock the per-cpu locks of
->> all those cpus. Then while unlocking, we unlock the per-cpu locks of these cpus
->> (by using that temporary copy of cpu_online_mask we created earlier), without
->> caring about the cpus actually online at that moment.
->> IOW, we do lock-unlock on the same set of cpus, and that too, without missing
->> the complete lock-unlock sequence in any of them. Guaranteed.
-> 
-> 	And what's to stop a process on a newly added CPU from _not_
-> spinning in br_read_lock(), even though br_write_unlock() hadn't been
-> done yet?
-> 
+commit 4d052213ff8f71a4a70fc4eed71b773cfde51fcf
+Author: Feng Tang <feng.tang@intel.com>
+Date:   Tue Dec 13 23:53:50 2011 +0800
 
+    gpio-ml-ioh: Add the irq_disable/irq_enable hooks for ml-ioh irq chip
 
-Oh, right, that has to be handled as well...
+    These hooks will be needed by the general disabl/enable_irq();
 
-Hmmm... How about registering a CPU hotplug notifier callback during lock init
-time, and then for every cpu that gets onlined (after we took a copy of the
-cpu_online_mask to work with), we see if that cpu is different from the ones
-we have already locked, and if it is, we lock it in the callback handler and
-update the locked_cpu_mask appropriately (so that we release the locks properly
-during the unlock operation).
+    Signed-off-by: Feng Tang <feng.tang@intel.com>
+    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
-Handling the newly introduced race between the callback handler and lock-unlock
-code must not be difficult, I believe..
+Reported-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/gpio/gpio-pch.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Any loopholes in this approach? Or is the additional complexity just not worth
-it here?
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+index f060329..01bd405 100644
+--- a/drivers/gpio/gpio-pch.c
++++ b/drivers/gpio/gpio-pch.c
+@@ -320,7 +320,7 @@ static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
+ 	int i;
+ 	int ret = IRQ_NONE;
+ 
+-	for (i = 0; i < gpio_pins[chip->ioh]; i++) {
++	for (i = 0; i < gpio_pins[chip->ioh]; i++, chip++) {
+ 		if (reg_val & BIT(i)) {
+ 			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
+ 				__func__, i, irq, reg_val);
+-- 
+1.7.4.4
 
