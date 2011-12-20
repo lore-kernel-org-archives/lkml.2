@@ -1,199 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1LTGot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 01:44:49 -0500
-Received: from 206-223-182-18.beanfield.net ([206.223.182.18]:38089 "EHLO
-	dev.gridcentric.ca" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1LTGoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 01:44:16 -0500
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 01:44:16 EST
-From: Adin Scannell <adin@scannell.ca>
-To: xen-devel@lists.xensource.com
-Cc: konrad@darnok.org, andres@gridcentric.ca, adin@gridcentric.com,
-        olaf@aepfle.de, JBeulich@suse.com, linux-kernel@vger.kernel.org,
-        Adin Scannell <adin@scannell.ca>
-Subject: [PATCH 3/3] Port of mmap_batch_v2 to support paging in Xen
-Date: Tue, 20 Dec 2011 01:36:53 -0500
-Message-Id: <1324363013-11031-4-git-send-email-adin@scannell.ca>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1324363013-11031-1-git-send-email-adin@scannell.ca>
-References: <1324363013-11031-1-git-send-email-adin@scannell.ca>
+	id S1752562Ab1LTGp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 01:45:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47825 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab1LTGpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 01:45:50 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <davinci-linux-open-source@linux.davincidsp.com>
+CC: <nsekhar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        Ajay Kumar Gupta <ajay.gupta@ti.com>
+Subject: [PATCH] davinci: DA850 EVM: OHCI platform code
+Date: Tue, 20 Dec 2011 12:06:45 +0530
+Message-ID: <1324363005-11320-1-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This wasn't ported from any patch, but was rewritten based on the XCP 2.6.32
-tree.  The code structure is significantly different and this patch mirrors the
-existing Linux code.
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
 
-An important reason to add the V2 interface is to support foreign mappings
-(i.e.  qemu-dm) of paged-out pages.  The kernel generally has to do nothing
-beyond implementing this ioctl in order to provide this support.  The V2
-interface is needed only to pass back full error codes from the mmu_update()'s.
-Xen and libxc have a mutual understanding that when you receive an ENOENT error
-code, you back off and try again. The libxc code will already retry mappings
-when an ENOENT is returned.
+On this board the OHCI port's power control and over-current signals from
+TPS2065 power switch are connected via GPIO1[15] and GPIO2[1] respectively,
+so we can implement the DA8xx OHCI glue layer's hooks for overriding the
+root hub port's power and over-current status bits.
 
-The only exception to the above case is backend drivers using grant operations.
-To support paging, these drivers must appropriately retry grant operations when
-they receive an EAGAIN error code.  This is implemented in a separate patch.
+We also have to properly set up the clocking mode in the CFGCHIP2 register,
+so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB) PHY and
+its output is used to clock the USB 1.1 (OHCI) PHY...
 
-Signed-off-by: Adin Scannell <adin@scannell.ca>
+Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
 ---
- drivers/xen/privcmd.c |   90 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/xen/privcmd.h |   10 +++++
- 2 files changed, 100 insertions(+), 0 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |  126 +++++++++++++++++++++++++++++++
+ 1 files changed, 126 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index 161681f..dd77d5c 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -251,6 +251,15 @@ struct mmap_batch_state {
- 	xen_pfn_t __user *user;
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 6659a90..df74ba5 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -22,6 +22,7 @@
+ #include <linux/gpio.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/platform_device.h>
++#include <linux/interrupt.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
+@@ -42,6 +43,7 @@
+ #include <mach/nand.h>
+ #include <mach/mux.h>
+ #include <mach/aemif.h>
++#include <mach/usb.h>
+ #include <mach/spi.h>
+ 
+ #define DA850_EVM_PHY_ID		"0:00"
+@@ -734,6 +736,127 @@ static struct davinci_i2c_platform_data da850_evm_i2c_0_pdata = {
+ 	.bus_delay	= 0,	/* usec */
  };
  
-+struct mmap_batch_v2_state {
-+	domid_t domain;
-+	unsigned long va;
-+	struct vm_area_struct *vma;
-+	unsigned long paged_out;
++/*
++ * USB1 VBUS is controlled by GPIO2[4], over-current is reported on GPIO6[13].
++ */
++#define ON_BD_USB_DRV	GPIO_TO_PIN(2, 4)
++#define ON_BD_USB_OVC	GPIO_TO_PIN(6, 13)
 +
-+	int __user *err;
++static const short da850_evm_usb11_pins[] = {
++	DA850_GPIO2_4, DA850_GPIO6_13,
++	-1
 +};
 +
- static int mmap_batch_fn(void *data, void *state)
- {
- 	xen_pfn_t *mfnp = data;
-@@ -268,6 +277,22 @@ static int mmap_batch_fn(void *data, void *state)
- 	return 0;
- }
- 
-+static int mmap_batch_v2_fn(void *data, void *state)
++static da8xx_ocic_handler_t da850_evm_usb_ocic_handler;
++
++static int da850_evm_usb_set_power(unsigned port, int on)
 +{
-+	xen_pfn_t *mfnp = data;
-+	struct mmap_batch_v2_state *st = state;
-+
-+	BUG_ON(st == NULL || st->vma == NULL);
-+
-+	int rc = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp,
-+				       1, st->vma->vm_page_prot, st->domain);
-+	if (rc == -ENOENT)
-+		st->paged_out++;
-+	st->va += PAGE_SIZE;
-+
-+	return put_user(rc, st->err++);
++	gpio_set_value(ON_BD_USB_DRV, on);
++	return 0;
 +}
 +
- static int mmap_return_errors(void *data, void *state)
- {
- 	xen_pfn_t *mfnp = data;
-@@ -340,6 +365,67 @@ out:
- 	return ret;
- }
- 
-+static long privcmd_ioctl_mmap_batch_v2(void __user *udata)
++static int da850_evm_usb_get_power(unsigned port)
 +{
++	return gpio_get_value(ON_BD_USB_DRV);
++}
++
++static int da850_evm_usb_get_oci(unsigned port)
++{
++	return !gpio_get_value(ON_BD_USB_OVC);
++}
++
++static irqreturn_t da850_evm_usb_ocic_irq(int, void *);
++
++static int da850_evm_usb_ocic_notify(da8xx_ocic_handler_t handler)
++{
++	int irq		= gpio_to_irq(ON_BD_USB_OVC);
++	int error	= 0;
++
++	if (handler != NULL) {
++		da850_evm_usb_ocic_handler = handler;
++
++		error = request_irq(irq, da850_evm_usb_ocic_irq, IRQF_DISABLED |
++				    IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				    "OHCI over-current indicator", NULL);
++		if (error)
++			printk(KERN_ERR "%s: could not request IRQ to watch "
++			       "over-current indicator changes\n", __func__);
++	} else
++		free_irq(irq, NULL);
++
++	return error;
++}
++
++static struct da8xx_ohci_root_hub da850_evm_usb11_pdata = {
++	.set_power	= da850_evm_usb_set_power,
++	.get_power	= da850_evm_usb_get_power,
++	.get_oci	= da850_evm_usb_get_oci,
++	.ocic_notify	= da850_evm_usb_ocic_notify,
++
++	/* TPS2065 switch @ 5V */
++	.potpgt		= (3 + 1) / 2,	/* 3 ms max */
++};
++
++static irqreturn_t da850_evm_usb_ocic_irq(int irq, void *dev_id)
++{
++	da850_evm_usb_ocic_handler(&da850_evm_usb11_pdata, 1);
++	return IRQ_HANDLED;
++}
++
++static __init void da850_evm_usb_init(void)
++{
++	u32 cfgchip2;
 +	int ret;
-+	struct privcmd_mmapbatch_v2 m;
-+	struct mm_struct *mm = current->mm;
-+	struct vm_area_struct *vma = NULL;
-+	unsigned long nr_pages;
-+	LIST_HEAD(pagelist);
-+	struct mmap_batch_v2_state state;
 +
-+	if (!xen_initial_domain())
-+		return -EPERM;
++	/*
++	 * Set up USB clock/mode in the CFGCHIP2 register.
++	 * FYI:  CFGCHIP2 is 0x0000ef00 initially.
++	 */
++	cfgchip2 = __raw_readl(DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP2_REG));
 +
-+	if (copy_from_user(&m, udata, sizeof(m)))
-+		return -EFAULT;
++	/* USB2.0 PHY reference clock is 24 MHz */
++	cfgchip2 &= ~CFGCHIP2_REFFREQ;
++	cfgchip2 |=  CFGCHIP2_REFFREQ_24MHZ;
 +
-+	nr_pages = m.num;
-+	if ((m.num <= 0) || (nr_pages > (ULONG_MAX >> PAGE_SHIFT)))
-+		return -EINVAL;
++	/*
++	 * Select internal reference clock for USB 2.0 PHY
++	 * and use it as a clock source for USB 1.1 PHY
++	 * (this is the default setting anyway).
++	 */
++	cfgchip2 &= ~CFGCHIP2_USB1PHYCLKMUX;
++	cfgchip2 |=  CFGCHIP2_USB2PHYCLKMUX;
 +
-+	ret = gather_array(&pagelist, m.num, sizeof(xen_pfn_t),
-+			   m.arr);
++	__raw_writel(cfgchip2, DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP2_REG));
 +
-+	if (ret || list_empty(&pagelist))
-+		goto out;
-+
-+	down_write(&mm->mmap_sem);
-+
-+	vma = find_vma(mm, m.addr);
-+	ret = -EINVAL;
-+	/* We allow multiple shots here, because this interface
-+	 * is used by libxc and mappings for specific pages will
-+	 * be retried when pages are paged-out (ENOENT). */
-+	if (!vma ||
-+	    vma->vm_ops != &privcmd_vm_ops ||
-+	    (m.addr < vma->vm_start) ||
-+	    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end)) {
-+		up_write(&mm->mmap_sem);
-+		goto out;
++	ret = davinci_cfg_reg_list(da850_evm_usb11_pins);
++	if (ret) {
++		pr_warning("%s: USB 1.1 PinMux setup failed: %d\n",
++			   __func__, ret);
++		return;
 +	}
 +
-+	state.domain = m.dom;
-+	state.vma = vma;
-+	state.va = m.addr;
-+	state.err = m.err;
-+	state.paged_out = 0;
++	ret = gpio_request(ON_BD_USB_DRV, "ON_BD_USB_DRV");
++	if (ret) {
++		printk(KERN_ERR "%s: failed to request GPIO for USB 1.1 port "
++		       "power control: %d\n", __func__, ret);
++		return;
++	}
++	gpio_direction_output(ON_BD_USB_DRV, 0);
 +
-+	up_write(&mm->mmap_sem);
++	ret = gpio_request(ON_BD_USB_OVC, "ON_BD_USB_OVC");
++	if (ret) {
++		printk(KERN_ERR "%s: failed to request GPIO for USB 1.1 port "
++		       "over-current indicator: %d\n", __func__, ret);
++		return;
++	}
++	gpio_direction_input(ON_BD_USB_OVC);
 +
-+	ret = traverse_pages(m.num, sizeof(xen_pfn_t),
-+			     &pagelist, mmap_batch_v2_fn, &state);
-+
-+out:
-+	free_page_list(&pagelist);
-+
-+	if ((ret == 0) && (state.paged_out > 0))
-+		return -ENOENT;
-+	else
-+		return ret;
++	ret = da8xx_register_usb11(&da850_evm_usb11_pdata);
++	if (ret)
++		pr_warning("%s: USB 1.1 registration failed: %d\n",
++			   __func__, ret);
 +}
 +
- static long privcmd_ioctl(struct file *file,
- 			  unsigned int cmd, unsigned long data)
- {
-@@ -359,6 +445,10 @@ static long privcmd_ioctl(struct file *file,
- 		ret = privcmd_ioctl_mmap_batch(udata);
- 		break;
- 
-+	case IOCTL_PRIVCMD_MMAPBATCH_V2:
-+		ret = privcmd_ioctl_mmap_batch_v2(udata);
-+		break;
-+
- 	default:
- 		ret = -EINVAL;
- 		break;
-diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
-index 17857fb..39b92b1 100644
---- a/include/xen/privcmd.h
-+++ b/include/xen/privcmd.h
-@@ -62,6 +62,14 @@ struct privcmd_mmapbatch {
- 	xen_pfn_t __user *arr; /* array of mfns - top nibble set on err */
+ static struct davinci_uart_config da850_evm_uart_config __initdata = {
+ 	.enabled_uarts = 0x7,
  };
+@@ -1386,6 +1509,9 @@ static __init void da850_evm_init(void)
+ 				ret);
  
-+struct privcmd_mmapbatch_v2 {
-+	int num;          /* number of pages to populate */
-+	domid_t dom;      /* target domain */
-+	__u64 addr;       /* virtual address */
-+	const xen_pfn_t __user *arr; /* array of mfns */
-+	int __user *err;  /* array of error codes */
-+};
+ 	da850_evm_setup_mac_addr();
 +
- /*
-  * @cmd: IOCTL_PRIVCMD_HYPERCALL
-  * @arg: &privcmd_hypercall_t
-@@ -73,5 +81,7 @@ struct privcmd_mmapbatch {
- 	_IOC(_IOC_NONE, 'P', 2, sizeof(struct privcmd_mmap))
- #define IOCTL_PRIVCMD_MMAPBATCH					\
- 	_IOC(_IOC_NONE, 'P', 3, sizeof(struct privcmd_mmapbatch))
-+#define IOCTL_PRIVCMD_MMAPBATCH_V2				\
-+	_IOC(_IOC_NONE, 'P', 4, sizeof(struct privcmd_mmapbatch_v2))
++	/* initilaize usb module */
++	da850_evm_usb_init();
+ }
  
- #endif /* __LINUX_PUBLIC_PRIVCMD_H__ */
+ #ifdef CONFIG_SERIAL_8250_CONSOLE
 -- 
-1.6.2.5
+1.7.1
 
