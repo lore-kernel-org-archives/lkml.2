@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab1LTIRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 03:17:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38496 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab1LTIRO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 03:17:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
-References: <cover.1324318997.git.jbaron@redhat.com>
-	<d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
-Date: Tue, 20 Dec 2011 08:17:13 +0000
-X-Google-Sender-Auth: VIYoJoAa4pGKb-9sDt7Fd_ePqTM
-Message-ID: <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
-Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of ddebug_parse_query
-From: Bart Van Assche <bvanassche@acm.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: greg@kroah.com, jim.cromie@gmail.com, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752447Ab1LTIY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 03:24:27 -0500
+Received: from linux-sh.org ([111.68.239.195]:46782 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab1LTIYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 03:24:21 -0500
+Date: Tue, 20 Dec 2011 17:24:16 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] rmobile fixes for 3.2-rc7
+Message-ID: <20111220082416.GA21727@linux-sh.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
-> From: Jim Cromie <jim.cromie@gmail.com>
->
-> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
-> for reuse later.  Also change the printed labels: file, func to agree
-> with the query-spec keywords accepted in the control file.  Pass ""
-> when string is null, to avoid "(null)" output from sprintf.  For
-> format print, use precision to skip last char, assuming its '\n', no
-> great harm if not, its a debug msg.
+Please pull from:
 
-pr_info_dq() or vpr_info_dq() ?
+        git://github.com/pmundt/linux-sh.git rmobile-fixes-for-linus
 
-Bart.
+Which contains:
+
+Magnus Damm (5):
+      ARM: mach-shmobile: Kota2 PINT fix
+      ARM: mach-shmobile: Kota2 GIC Sparse IRQ fix
+      ARM: mach-shmobile: Kota2 TPU LED platform data
+      ARM: mach-shmobile: AG5EVM GIC Sparse IRQ fix
+      ARM: mach-shmobile: SH73A0 external Ethernet fix
+
+ arch/arm/mach-shmobile/board-ag5evm.c |    1 +
+ arch/arm/mach-shmobile/board-kota2.c  |  139 ++++++++++++++++++++++++++++----
+ arch/arm/mach-shmobile/clock-sh73a0.c |   18 ++++-
+ 3 files changed, 139 insertions(+), 19 deletions(-)
