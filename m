@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab1LTJbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:31:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40438 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab1LTJba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:31:30 -0500
-Date: Tue, 20 Dec 2011 09:31:25 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] consider swap space when we decide compaction goes or not
-Message-ID: <20111220093125.GO3487@suse.de>
-References: <1324363653-18220-1-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1324363653-18220-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752824Ab1LTJiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:38:06 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54056 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1LTJh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 04:37:58 -0500
+Message-ID: <1324373854.21588.16.camel@mengcong>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+From: mengcong <mc@linux.vnet.ibm.com>
+Reply-To: mc@linux.vnet.ibm.com
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Date: Tue, 20 Dec 2011 17:37:34 +0800
+In-Reply-To: <4EF03915.60902@linux.vnet.ibm.com>
+References: <1324265775.25089.20.camel@mengcong>
+	 <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org>
+	 <4EEF1A13.4000801@linux.vnet.ibm.com>
+	 <20111219121100.GI2203@ZenIV.linux.org.uk>
+	 <4EEF9D4E.1000008@linux.vnet.ibm.com>
+	 <20111219205251.GK2203@ZenIV.linux.org.uk>
+	 <4EF01565.2000700@linux.vnet.ibm.com>
+	 <20111220062710.GC23916@ZenIV.linux.org.uk>
+	 <4EF03915.60902@linux.vnet.ibm.com>
+Organization: LTC, IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11122009-5816-0000-0000-00000085233D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 03:47:33PM +0900, Minchan Kim wrote:
-> It's pointless to go reclaiming when we have no swap space
-> and lots of anon pages in inactive list.
+On Tue, 2011-12-20 at 12:58 +0530, Srivatsa S. Bhat wrote:
+> On 12/20/2011 11:57 AM, Al Viro wrote:
 > 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <jweiner@redhat.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/vmscan.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
+> > On Tue, Dec 20, 2011 at 10:26:05AM +0530, Srivatsa S. Bhat wrote:
+> >> Oh, right, that has to be handled as well...
+> >>
+> >> Hmmm... How about registering a CPU hotplug notifier callback during lock init
+> >> time, and then for every cpu that gets onlined (after we took a copy of the
+> >> cpu_online_mask to work with), we see if that cpu is different from the ones
+> >> we have already locked, and if it is, we lock it in the callback handler and
+> >> update the locked_cpu_mask appropriately (so that we release the locks properly
+> >> during the unlock operation).
+> >>
+> >> Handling the newly introduced race between the callback handler and lock-unlock
+> >> code must not be difficult, I believe..
+> >>
+> >> Any loopholes in this approach? Or is the additional complexity just not worth
+> >> it here?
+> > 
+> > To summarize the modified variant of that approach hashed out on IRC:
+> > 
+> > 	* lglock grows three extra things: spinlock, cpu bitmap and cpu hotplug
+> > notifier.
+> > 	* foo_global_lock_online starts with grabbing that spinlock and
+> > loops over the cpus in that bitmap.
+> > 	* foo_global_unlock_online loops over the same bitmap and then drops
+> > that spinlock
+> > 	* callback of the notifier is going to do all bitmap updates.  Under
+> > that spinlock.  Events that need handling definitely include the things like
+> > "was going up but failed", since we need the bitmap to contain all online CPUs
+> > at all time, preferably without too much junk beyond that.  IOW, we need to add
+> > it there _before_ low-level __cpu_up() calls set_cpu_online().  Which means
+> > that we want to clean up on failed attempt to up it.  Taking a CPU down is
+> > probably less PITA; just clear bit on the final "the sucker's dead" event.
+> > 	* bitmap is initialized once, at the same time we set the notifier
+> > up.  Just grab the spinlock and do
+> > 	for_each_online_cpu(N)
+> > 		add N to bitmap
+> > then release the spinlock and let the callbacks handle all updates.
+> > 
+> > I think that'll work with relatively little pain, but I'm not familiar enough
+> > with the cpuhotplug notifiers, so I'd rather have the folks familiar with those
+> > to supply the set of events to watch for...
+> > 
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 23256e8..cd5400c 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2015,8 +2015,9 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  	 * inactive lists are large enough, continue reclaiming
->  	 */
->  	pages_for_compaction = (2UL << sc->order);
-> -	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
-> -				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-> +	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-> +	if (nr_swap_pages > 0)
-> +		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
->  	if (sc->nr_reclaimed < pages_for_compaction &&
->  			inactive_lru_pages > pages_for_compaction)
->  		return true;
+> 
+> We need not watch out for "up failed" events. It is enough if we handle
+> CPU_ONLINE and CPU_DEAD events. Because, these 2 events are triggered only
+> upon successful online or offline operation, and these notifications are
+> more than enough for our purpose (to update our bitmaps). Also, those cpus
+> which came online wont start running until these "success notifications"
+> are all done, which is where we do our stuff in the callback (ie., try
+> grabbing the spinlock..).
+> 
+> Of course, by doing this (only looking out for CPU_ONLINE and CPU_DEAD
+> events), our bitmap will probably be one step behind cpu_online_mask
+> (which means, we'll still have to take the snapshot of cpu_online_mask and
+> work with it instead of using for_each_online_cpu()).
+> But that doesn't matter, as long as:
+>   * we don't allow the newly onlined CPU to start executing code (this
+>     is achieved by taking the spinlock in the callback)
 
-The changelog does not win a prize for detail but it makes sense.
-Without this patch, it is possible when swap is disabled to continue
-trying to reclaim when there are only anonymous page in the system
-even though that will not make any progress.
+I think cpu notifier callback doesn't always run on the UPing cpu.
+Actually, it rarely runs on the UPing cpu.
+If I was wrong about the above thought, there is still a chance that lg-lock
+operations are scheduled on the UPing cpu before calling the callback.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+>   * we stick to our bitmap while taking and releasing the spinlocks.
+> 
+> Both of these have been handled in the design proposed above. So we are good
+> to go I guess.
+> 
+> I am working on translating all these to working code.. Will post the patch
+> as soon as I'm done.
+> 
+> Regards,
+> Srivatsa S. Bhat
 
--- 
-Mel Gorman
-SUSE Labs
+
