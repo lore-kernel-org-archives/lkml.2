@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1LTKsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:48:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16254 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753156Ab1LTKsB convert rfc822-to-8bit (ORCPT
+	id S1753484Ab1LTKsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:48:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44046 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab1LTKsC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:48:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="88442874"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Date: Tue, 20 Dec 2011 18:47:22 +0800
-Subject: RE: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Topic: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Index: Acy8u746aXLTiGjsR8aCXu7ZvAWHAACRJ11Q
-Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E28904877E3@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 20 Dec 2011 05:48:02 -0500
+Message-ID: <1324378070.24621.32.camel@twins>
+Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Date: Tue, 20 Dec 2011 11:47:50 +0100
+In-Reply-To: <20111220103154.GA1861@m.brq.redhat.com>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+	 <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+	 <1324044159.18942.104.camel@twins> <1324044196.18942.105.camel@twins>
+	 <20111220103154.GA1861@m.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David
+On Tue, 2011-12-20 at 11:31 +0100, Jiri Olsa wrote:
+> On Fri, Dec 16, 2011 at 03:03:16PM +0100, Peter Zijlstra wrote:
+> > On Fri, 2011-12-16 at 15:02 +0100, Peter Zijlstra wrote:
+> > > > event_tracepoint:       PE_NAME_TP ':' PE_NAME_TP modifier
+> > > > event_raw:              PE_SEP_RAW PE_VALUE modifier
+> > > > event_numeric:          PE_VALUE ':' PE_VALUE modifier
+> > > > event_symbolic:         PE_NAME_SYM modifier
+> > > > event_generic_hw:       PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT modifier |
+> > > >                         PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT modifier |
+> > > >                         PE_NAME_CACHE_TYPE modifier
+> > > > event_breakpoint:       PE_SEP_BP ':' PE_VALUE event_breakpoint_type modifier
+> > > > event_breakpoint_type:  PE_MODIFIER_BPTYPE | empty
+> > > > modifier:               PE_MODIFIER_EVENT | empty
+> > > 
+> > > This isn't complete, we need means of specifying
+> > > perf_event_attr::config[12] when specifying a raw event. 
+> > 
+> > Also, it might make sense to think about how to specify sysfs events
+> > (which don't exist yet).
+> 
+> any idea/details/specifics how they might look like? ;)
 
-Do you have any comments for this patch?
+The current idea is that they'd live in a place like:
 
-Thanks,
--Xudong
+  /sys/bus/event_source/devices/$pmu/events/$event
 
+and when you read them they contain a full event_raw style string so you
+could do things like:
 
-> -----Original Message-----
-> From: Hao, Xudong
-> Sent: Saturday, December 17, 2011 9:07 PM
-> To: 'iommu@lists.linux-foundation.org'; 'dwmw2@infradead.org'
-> Cc: 'linux-kernel@vger.kernel.org'; 'kvm@vger.kernel.org'; Zhang, Xiantao
-> Subject: [PATCH] intel-iommu: Add device info into list before doing context
-> mapping
-> 
-> This patch add device info into list before do context mapping. Because device
-> info will be used by iommu_enable_dev_iotlb function, in this function,
-> pci_enable_ats would not be called without this patch, so ATS did not enable
-> while a PCI device which has ATS capability is assigned to a guest.
-> 
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
-> ---
->  drivers/iommu/intel-iommu.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c index
-> c0c7820..f0b5d38 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -2264,12 +2264,6 @@ static int domain_add_dev_info(struct
-> dmar_domain *domain,
->  	if (!info)
->  		return -ENOMEM;
-> 
-> -	ret = domain_context_mapping(domain, pdev, translation);
-> -	if (ret) {
-> -		free_devinfo_mem(info);
-> -		return ret;
-> -	}
-> -
->  	info->segment = pci_domain_nr(pdev->bus);
->  	info->bus = pdev->bus->number;
->  	info->devfn = pdev->devfn;
-> @@ -2282,6 +2276,14 @@ static int domain_add_dev_info(struct
-> dmar_domain *domain,
->  	pdev->dev.archdata.iommu = info;
->  	spin_unlock_irqrestore(&device_domain_lock, flags);
-> 
-> +	ret = domain_context_mapping(domain, pdev, translation);
-> +	if (ret) {
-> +		list_del(&info->link);
-> +		list_del(&info->global);
-> +		free_devinfo_mem(info);
-> +		return ret;
-> +	}
-> +
->  	return 0;
->  }
+  perf record -e `cat $sysfsfile` or so
+
+(or maybe without the 'r' prefix).
+
+The idea was to have some $pmu:$event like syntax, but seeing that ':'
+is already used quite a lot, there's maybe a more suitable separator.
+Maybe '/' would do, yielding things like cpu/instructions.
+
+Then again, it might make sense to restructure the syntax without
+considerations for the status quo and see if we can come up with
+something a little more consistent, the above event_* things are quite a
+hodge podge, syntax wise.
+
+While I appreciate that they are the result of organic growth, it
+doesn't mean we shouldn't try and restructure stuff once in a while when
+it makes sense.
