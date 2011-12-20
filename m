@@ -1,146 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab1LTOak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 09:30:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7914 "EHLO mx1.redhat.com"
+	id S1752525Ab1LTOcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 09:32:47 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:36912 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab1LTOac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 09:30:32 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 2/2] kvm: Device assignment permission checks
-To: avi@redhat.com, kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        levinsasha928@gmail.com
-Date: Tue, 20 Dec 2011 07:30:25 -0700
-Message-ID: <20111220143025.30073.36120.stgit@bling.home>
-In-Reply-To: <20111220142907.30073.63730.stgit@bling.home>
-References: <20111220142907.30073.63730.stgit@bling.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752040Ab1LTOck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 09:32:40 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu, asharma@fb.com, avagin@openvz.org, devel@openvz.org,
+        dsahern@gmail.com, linux-perf-users@vger.kernel.org
+Subject: [PATCH] perf: add ability to record event period
+Date: Tue, 20 Dec 2011 17:32:45 +0300
+Message-Id: <1324391565-1369947-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only allow KVM device assignment to attach to devices which:
+The problem is that when SAMPLE_PERIOD is not set, kernel generates a
+number of samples in proportion to an event's period. Number of these
+samples may be too big and a kernel throttles all samples above a
+defined limit.
 
- - Are not bridges
- - Have BAR resources (assume others are special devices)
- - The user has permissions to use
+E.g.: I want to trace when a process sleeps. I created a process, which
+sleeps for 1ms and for 4ms.  perf got 100 events in both cases.
 
-Assigning a bridge is a configuration error, it's not supported, and
-typically doesn't result in the behavior the user is expecting anyway.
-Devices without BAR resources are typically chipset components that
-also don't have host drivers.  We don't want users to hold such devices
-captive or cause system problems by fencing them off into an iommu
-domain.  We determine "permission to use" by testing whether the user
-has access to the PCI sysfs resource files.  By default a normal user
-will not have access to these files, so it provides a good indication
-that an administration agent has granted the user access to the device.
+swapper 0 [000] 1141.371830: sched_stat_sleep: comm=foo pid=1801 delay=1386750 [ns]
+swapper 0 [000] 1141.369444: sched_stat_sleep: comm=foo pid=1801 delay=4499585 [ns]
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+In the first case a kernel want to send 4499585 events and
+in the second case it wants to send 1386750 events.
+perf-reports shows that process sleeps in both places equal time.
+
+Instead of this we can get only one sample with an attribute period. As
+result we have less data transferring between kernel and user-space and
+we avoid throttling of samples.
+
+The patch "events: Don't divide events if it has field period" added a
+kernel part of this functionality.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Acked-by: Arun Sharma <asharma@fb.com>
 ---
+ tools/perf/builtin-record.c |    1 +
+ tools/perf/perf.h           |    1 +
+ tools/perf/util/evsel.c     |    3 +++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
 
- Documentation/virtual/kvm/api.txt |    4 +++
- virt/kvm/assigned-dev.c           |   55 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 58 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index ee2c96b..4df9af4 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1154,6 +1154,10 @@ following flags are specified:
- The KVM_DEV_ASSIGN_ENABLE_IOMMU flag is a mandatory option to ensure
- isolation of the device.  Usages not specifying this flag are deprecated.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 766fa0a..f8fd14f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -700,6 +700,7 @@ const struct option record_options[] = {
+ 	OPT_BOOLEAN('d', "data", &record.opts.sample_address,
+ 		    "Sample addresses"),
+ 	OPT_BOOLEAN('T', "timestamp", &record.opts.sample_time, "Sample timestamps"),
++	OPT_BOOLEAN('P', "period", &record.opts.period, "Sample period"),
+ 	OPT_BOOLEAN('n', "no-samples", &record.opts.no_samples,
+ 		    "don't sample"),
+ 	OPT_BOOLEAN('N', "no-buildid-cache", &record.no_buildid_cache,
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index ea804f5..64f8bee 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -200,6 +200,7 @@ struct perf_record_opts {
+ 	bool	     sample_time;
+ 	bool	     sample_id_all_avail;
+ 	bool	     system_wide;
++	bool	     period;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 4a8c8b0..60ad028 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -108,6 +108,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 	if (opts->system_wide)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
  
-+Only PCI header type 0 devices with PCI BAR resources are supported by
-+device assignment.  The user requesting this ioctl must have read/write
-+access to the PCI sysfs resource files associated with the device.
++	if (opts->period)
++		attr->sample_type	|= PERF_SAMPLE_PERIOD;
 +
- 4.49 KVM_DEASSIGN_PCI_DEVICE
- 
- Capability: KVM_CAP_DEVICE_DEASSIGNMENT
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index a251a28..faec641 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -17,6 +17,7 @@
- #include <linux/pci.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/namei.h>
- #include "irq.h"
- 
- static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
-@@ -483,9 +484,11 @@ out:
- static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 				      struct kvm_assigned_pci_dev *assigned_dev)
- {
--	int r = 0, idx;
-+	int r = 0, idx, i;
- 	struct kvm_assigned_dev_kernel *match;
- 	struct pci_dev *dev;
-+	u8 header_type;
-+	bool bar_found = false;
- 
- 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
- 		return -EINVAL;
-@@ -516,6 +519,56 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 		r = -EINVAL;
- 		goto out_free;
- 	}
-+
-+	/* Don't allow bridges to be assigned */
-+	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
-+	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
-+		r = -EPERM;
-+		goto out_put;
-+	}
-+
-+	/* We want to test whether the caller has been granted permissions to
-+	 * use this device.  To be able to configure and control the device,
-+	 * the user needs access to PCI configuration space and BAR resources.
-+	 * These are accessed through PCI sysfs.  PCI config space is often
-+	 * passed to the process calling this ioctl via file descriptor, so we
-+	 * can't rely on access to that file.  We can check for permissions
-+	 * on each of the BAR resource files, which is a pretty clear
-+	 * indicator that the user has been granted access to the device. */
-+	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
-+		char buf[64];
-+		struct path path;
-+		struct inode *inode;
-+
-+		if (!pci_resource_len(dev, i))
-+			continue;
-+
-+		/* Per sysfs-rules, sysfs is always at /sys */
-+		snprintf(buf, sizeof(buf), "/sys/bus/pci/devices/%04x:%02x:"
-+			 "%02x.%d/resource%d", pci_domain_nr(dev->bus),
-+			 dev->bus->number, PCI_SLOT(dev->devfn),
-+			 PCI_FUNC(dev->devfn), i);
-+
-+		r = kern_path(buf, LOOKUP_FOLLOW, &path);
-+		if (r)
-+			goto out_put;
-+
-+		inode = path.dentry->d_inode;
-+
-+		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
-+		path_put(&path);
-+		if (r)
-+			goto out_put;
-+
-+		bar_found = true;
-+	}
-+
-+	/* If no resources, probably something special */
-+	if (!bar_found) {
-+		r = -EPERM;
-+		goto out_put;
-+	}
-+
- 	if (pci_enable_device(dev)) {
- 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
- 		r = -EBUSY;
+ 	if (opts->sample_id_all_avail &&
+ 	    (opts->sample_time || opts->system_wide ||
+ 	     !opts->no_inherit || opts->cpu_list))
+-- 
+1.7.1
 
