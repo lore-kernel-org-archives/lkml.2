@@ -1,137 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab1LTPtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:49:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42294 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab1LTPsy convert rfc822-to-8bit (ORCPT
+	id S1753030Ab1LTPuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:50:01 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64484 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab1LTPtz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:48:54 -0500
+	Tue, 20 Dec 2011 10:49:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <201112201642.15822.laurent.pinchart@ideasonboard.com>
-References: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au>
-	<201112201619.43001.laurent.pinchart@ideasonboard.com>
-	<CAMuHMdVx+T8X3tkP+OVM-sxKLeJdsuz=0jBSxuNte_5JK4vTBQ@mail.gmail.com>
-	<201112201642.15822.laurent.pinchart@ideasonboard.com>
-Date: Tue, 20 Dec 2011 16:48:52 +0100
-X-Google-Sender-Auth: co2HQFd1fb8mP2BRn0qlUeCi-6o
-Message-ID: <CAMuHMdVWsYAJkcrMd5yWBHMFhzAqgUyyFfrsi7RYx2hjquB=gA@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the fbdev tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org,
+In-Reply-To: <CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
+References: <cover.1324318997.git.jbaron@redhat.com>
+	<d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
+	<CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
+	<CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
+Date: Tue, 20 Dec 2011 15:49:54 +0000
+X-Google-Sender-Auth: XZobVmm5vWk2PqWP76LUIrArc7g
+Message-ID: <CAO+b5-qMoL-BJupLAsstHDgfNwQTQXmDNUNjSn0ivxmD_j+ENQ@mail.gmail.com>
+Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of ddebug_parse_query
+From: Bart Van Assche <bvanassche@acm.org>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: Jason Baron <jbaron@redhat.com>, greg@kroah.com, joe@perches.com,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On Tue, Dec 20, 2011 at 16:42, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Tuesday 20 December 2011 16:24:30 Geert Uytterhoeven wrote:
->> On Tue, Dec 20, 2011 at 16:19, Laurent Pinchart wrote:
->> > On Tuesday 20 December 2011 14:48:33 Geert Uytterhoeven wrote:
->> >> On Tue, Dec 20, 2011 at 11:37, Laurent Pinchart wrote:
->> >> > On Tuesday 20 December 2011 06:32:14 Stephen Rothwell wrote:
->> >> >> After merging the fbdev tree, today's linux-next build (powerpc
->> >> >> ppc64_defconfig) produced this warning:
->> >> >>
->> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: braces around
->> >> >> scalar initializer [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
->> >> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: excess elements
->> >> >> in scalar initializer [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
->> >> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: braces around
->> >> >> scalar initializer [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
->> >> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
->> >> >> default]
->> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: excess elements
->> >> >> in scalar initializer [enabled by default]
->> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
->> >> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
->> >> >> default]
->> >> >>
->> >> >> Introduced by commit fb21c2f42879 ("fbdev: Add FOURCC-based format
->> >> >> configuration API").
->> >> >
->> >> > The following patch should fix the issue. Florian, are you fine with
->> >> > it, or would you rather modify the initializers to be name-based ?
->> >> >
->> >> > From 078987fc14dba806fc1bc628e3e5c371db3cf1b8 Mon Sep 17 00:00:00 2001
->> >> > From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> >> > Date: Tue, 20 Dec 2011 11:30:53 +0100
->> >> > Subject: [PATCH] fbdev: matroxfb: Fix compilation after
->> >> > fb_var_screeninfo change
->> >> >
->> >> > Commit fb21c2f42879 ("fbdev: Add FOURCC-based format configuration
->> >> > API") modified the layout of the fb_var_screeninfo structure. Update
->> >> > the static initializers in the matroxfb driver accordingly.
->> >> >
->> >> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> >> > ---
->> >> >  drivers/video/matrox/matroxfb_base.c  |    2 +-
->> >> >  drivers/video/matrox/matroxfb_crtc2.c |    2 +-
->> >> >  2 files changed, 2 insertions(+), 2 deletions(-)
->> >> >
->> >> > diff --git a/drivers/video/matrox/matroxfb_base.c
->> >> > b/drivers/video/matrox/matroxfb_base.c index 44bf8d4..f98aad5 100644
->> >> > --- a/drivers/video/matrox/matroxfb_base.c
->> >> > +++ b/drivers/video/matrox/matroxfb_base.c
->> >> > @@ -147,7 +147,7 @@ static struct fb_var_screeninfo vesafb_defined = {
->> >> >        39721L,48L,16L,33L,10L,
->> >> >        96L,2L,~0,      /* No sync info */
->> >> >        FB_VMODE_NONINTERLACED,
->> >> > -       0, {0,0,0,0,0}
->> >> > +       0, 0, {0,0,0,0}
->> >>
->> >> All these zeroes should not be specified, the compiler will do the
->> >> right thing for
->> >> static variables anyway.
->> >>
->> >> Else they have to be updated manually everytime one of the reserved
->> >> fields is consumed for a new feature.
->> >
->> > I agree. Should I just remove them, or switch the structures to named
->> > initializers while I'm at it ?
->>
->> I would just remove them. What do they buy you?
->>
->> Even with named initializers
->>
->>     .reserved = { 0, 0, 0, 0 }
->>
->> will break once we consume one more reserved field, unless you write
->>
->>     .reserved = { 0, }
->>
->> to let the compiler handle it, but then you could just not specify the
->> field at all.
+On Tue, Dec 20, 2011 at 3:47 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> On Tue, Dec 20, 2011 at 1:17 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> > On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
+> >> From: Jim Cromie <jim.cromie@gmail.com>
+> >>
+> >> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
+> >> for reuse later. �Also change the printed labels: file, func to agree
+> >> with the query-spec keywords accepted in the control file. �Pass ""
+> >> when string is null, to avoid "(null)" output from sprintf. �For
+> >> format print, use precision to skip last char, assuming its '\n', no
+> >> great harm if not, its a debug msg.
+> >
+> > pr_info_dq() or vpr_info_dq() ?
 >
-> Sure. In both cases I would remove them, but I was wondering if I should
-> switch the whole structure to named initializers in addition to removing them.
-> I don't know if the common practice to solve issues in the -next tree is to
-> apply patches that are as little intrusive as possible, or if bigger patches
-> are allowed.
+> I chose vpr_info_dq, with leading v to hint at the "if (verbose)" part
 
-I'd fix the build error first.
-The conversion to named initializers can be separate cleanup patch.
+In case my reply was a little too terse: isn't there a letter "v"
+missing in the commit message ?
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Bart.
