@@ -1,155 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1LTUfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 15:35:43 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:38257 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688Ab1LTUff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 15:35:35 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 1/7][RESEND] ARM: OMAP1: ams-delta: register latch dependent devices later
-Date: Tue, 20 Dec 2011 21:34:36 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: alsa-devel@alsa-project.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl> <201112200028.32947.jkrzyszt@tis.icnet.pl> <20111220180610.GB24444@atomide.com>
-In-Reply-To: <20111220180610.GB24444@atomide.com>
+	id S1752943Ab1LTUgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 15:36:17 -0500
+Received: from forward15.mail.yandex.net ([95.108.130.119]:35097 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1LTUgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 15:36:11 -0500
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 15:36:11 EST
+X-Yandex-Spam: 1
+From: Tkhai Kirill <tkhai@yandex.ru>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <20111220174433.GA2018@redhat.com>
+References: <1322774765.8386.2.camel@hp> <20111220174433.GA2018@redhat.com>
+Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112202134.36802.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Message-Id: <203221324412916@web157.yandex.ru>
+Date: Wed, 21 Dec 2011 00:28:36 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 of December 2011 at 19:06:11, Tony Lindgren wrote:
-> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 14:57]:
-> > Resending because of a typo in the Cc: list, sorry.
-> > 
-> > 8<--------------------------
-> > 
-> > In preparation to converting Amstrad Delta on-board latches to
-> > basic_mmio_gpio devices, registration of platform devices which depend
-> > on latches and will require initialization of their GPIO pins first,
-> > should be moved out of .machine_init down to late_initcall level, as the
-> > gpio-generic driver is not available until device_initcall time.  The
-> > latch reset operation, which will be replaced with GPIO initialization,
-> > must also be moved to late_initcall for the same reason.
-> > 
-> > Since there was already another, separate arch_initcall function for
-> > setting up one of those latch dependent devices, the on-board modem
-> > device, reuse that function, i.e., rename it to a name that matches the
-> > new purpose, extend with other device setup relocated from
-> > .machine_init, and move down to the late_initcall level.
-> > 
-> > While being at it, add missing gpio_free() in case the modem platform
-> > device registration fails.
-> > 
-> > In addition, defer registration of the Amstrad Delta ASoC and serio
-> > devices, done from their device driver files, until late_initcall time,
-> > as those drivers will depend on their GPIO pins already requested from
-> > the board late_init() function until updated to register their GPIO pins
-> > themselves.
-> > 
-> > Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
-> > instead of shifting up the gpio-generic driver initialization.
-> ...
->  
-> > --- a/drivers/input/serio/ams_delta_serio.c
-> > +++ b/drivers/input/serio/ams_delta_serio.c
-> > @@ -165,6 +165,9 @@ serio:
-> >  	kfree(ams_delta_serio);
-> >  	return err;
-> >  }
-> > +#ifndef MODULE
-> > +late_initcall(ams_delta_serio_init);
-> > +#else
-> >  module_init(ams_delta_serio_init);
-> >  
-> >  static void __exit ams_delta_serio_exit(void)
-> > @@ -175,3 +178,4 @@ static void __exit ams_delta_serio_exit(void)
-> >  	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> >  }
-> >  module_exit(ams_delta_serio_exit);
-> > +#endif
-> > diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
-> > index ccb8a6a..1764a3b 100644
-> > --- a/sound/soc/omap/ams-delta.c
-> > +++ b/sound/soc/omap/ams-delta.c
-> > @@ -636,6 +636,9 @@ err:
-> >  	platform_device_put(ams_delta_audio_platform_device);
-> >  	return ret;
-> >  }
-> > +#ifndef MODULE
-> > +late_initcall(ams_delta_module_init);
-> > +#else
-> >  module_init(ams_delta_module_init);
-> >  
-> >  static void __exit ams_delta_module_exit(void)
-> > @@ -657,6 +660,7 @@ static void __exit ams_delta_module_exit(void)
-> >  	platform_device_unregister(ams_delta_audio_platform_device);
-> >  }
-> >  module_exit(ams_delta_module_exit);
-> > +#endif
-> >  
-> >  MODULE_AUTHOR("Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>");
-> >  MODULE_DESCRIPTION("ALSA SoC driver for Amstrad E3 (Delta) videophone");
-> 
-> This looks a bit odd.. I think these drivers should be converted to
-> a proper platform_driver so you can get rid of the machine_is_ams_delta
-> check in the init. Then you can rely on the probe to match the
-> device.
+20.12.2011, 21:44, "Oleg Nesterov" <oleg@redhat.com>:
+> On 12/02, Kirill Tkhai wrote:
+>
+>> šMigration status depends on a difference of weight from 0 and 1. If
+>> šweight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes pushable
+>> š(not pushable). We are not insterested in exact values of it, is it 3 or
+>> š4, for example.
+>>
+>> šNow if we are changing affinity from a set of 3 cpus to a set of 4, the
+>> štask will be dequeued and enqueued sequentially without important
+>> šdifference in comparison with initial state. The only difference is in
+>> šinternal representation of plist queue of pushable tasks and the fact
+>> šthat the task may won't be the first in a sequence of the same priority
+>> štasks. But it seems to me it gives nothing.
+>
+> Looks reasonable, although I can't say I really understand this code.
+> Add Gregory.
+>
+>> šSigned-off-by: Tkhai Kirill <tkhai@yandex.ru>
+>>
+>> š--- kernel/sched_rt.c.orig 2011-12-02 00:29:11.970243145 +0400
+>> š+++ kernel/sched_rt.c 2011-12-02 00:37:43.622846606 +0400
+>
+> please use -p1
+>
 
-Mostly true, but first of all, I don't pretend to solve all problems 
-with all Amstrad Delta specific drivers in this patch series. I'm 
-concentrating on converting latches to GPIO pins, and updating those 
-drivers to access those pins with gpiolib API instead of accessing the 
-latches with the board specific API. Nothing more.
+Sorry, this time I'm sending "git diffed" output.
 
-Now, regarding the serio driver, you are absolutely right, the device 
-registration could be better moved out of the driver file to the board 
-file. I'll probably do this some time in the future, once I'm ready with 
-the latches related stuff, i.e. the ams_delta_latch_write() is finally 
-removed from the board file as no longer used by any driver, and find 
-some spare time again. For now, I'm moving that serio device/driver 
-initialization to late_initcall with patch 2/7, and back to 
-device_initcall once converted to gpiolib (patch 7/7). Is this 
-acceptable? If not, let's drop those forward and back moves, and the 
-driver will get broken with 2/7, but get repaired with 7/7, OK?
+>> š@@ -1572,43 +1572,37 @@ static void set_cpus_allowed_rt(struct t
+>> ššššššššššššššššššššššššššššššššššconst struct cpumask *new_mask)
+>> šš{
+>> ššššššššššint weight = cpumask_weight(new_mask);
+>> š+ struct rq *rq;
+>>
+>> ššššššššššBUG_ON(!rt_task(p));
+>>
+>> šššššššššš/*
+>> š- * Update the migration status of the RQ if we have an RT task
+>> š- * which is running AND changing its weight value.
+>> š+ * Just exit if it's not necessary to change migration status
+>> ššššššššššš*/
+>> š- if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
+>> š- struct rq *rq = task_rq(p);
+>> š+ if ((p->rt.nr_cpus_allowed <= 1 && weight <= 1)
+>> š+ || (p->rt.nr_cpus_allowed > 1 && weight > 1))
+>> š+ return;
+>
+> Subjective, but may be
+>
+> ššššššššif ((p->rt.nr_cpus_allowed > 1) != (weight > 1))
+> ššššššššššššššššreturn;
+>
+> looks more understandable?
 
-Regarding the sound card: the sound/soc/omap/ams-delta.c file is not a 
-device driver per se, but rather a piece of code which sets up a 
-platform device representing the sound card, i.e., provides platform 
-device description and platform data, including device specific 
-callbacks, to be used by the generic 'soc-audio' driver. There is no 
-single platform_driver_register() called from that file, only 
-platform_device_register() or alike. That code seems to belong logically 
-to the board setup, but was always maintained, among 12 others, and for 
-reasons not known to me with my relatively short experience as a kernel 
-developer, inside the sound/soc/omap/ subtree, not under arch/arm/mach-
-omap1/. Like all those 12 others, including sdp4430 which is quite 
-recent I guess, it makes use of the machine_is_* function as if it was a 
-part of a board files set. Then, the only way I can see to defer the 
-device initialization until late_initcall time, with the soc-audio 
-driver already loaded at the device_initcall level, is to move with that 
-sound card platform device setup code, found in sound/soc/omap/ams-
-delta.c, to the late_initcall. Am I missing something?
+Yes, thanks.
 
-> To deal with the init order issues, you can pass a set_power
-> function pointer in platform_data that the driver can use. Or
-> set up a fixed regulator for it.
+---
 
-I'm already working on the follow up patch series mentioned in the cover 
-letter, and yes, I'm using the fixed regulator. Be patient, please, as 
-my resources are somehow limited.
-
-Thanks,
-Janusz
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 3640ebb..4467f4d 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1774,43 +1774,36 @@ static void set_cpus_allowed_rt(struct task_struct *p,
+ 				const struct cpumask *new_mask)
+ {
+ 	int weight = cpumask_weight(new_mask);
++	struct rq *rq;
+ 
+ 	BUG_ON(!rt_task(p));
+ 
+ 	/*
+-	 * Update the migration status of the RQ if we have an RT task
+-	 * which is running AND changing its weight value.
++	 * Just exit if it's not necessary to change migration status
+ 	 */
+-	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
+-		struct rq *rq = task_rq(p);
+-
+-		if (!task_current(rq, p)) {
+-			/*
+-			 * Make sure we dequeue this task from the pushable list
+-			 * before going further.  It will either remain off of
+-			 * the list because we are no longer pushable, or it
+-			 * will be requeued.
+-			 */
+-			if (p->rt.nr_cpus_allowed > 1)
+-				dequeue_pushable_task(rq, p);
+-
+-			/*
+-			 * Requeue if our weight is changing and still > 1
+-			 */
+-			if (weight > 1)
+-				enqueue_pushable_task(rq, p);
++	if ((p->rt.nr_cpus_allowed > 1) != (weight > 1))
++		return;
+ 
+-		}
++	if (!p->on_rq)
++		return;
+ 
+-		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
+-			rq->rt.rt_nr_migratory++;
+-		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
+-			BUG_ON(!rq->rt.rt_nr_migratory);
+-			rq->rt.rt_nr_migratory--;
+-		}
++	rq = task_rq(p);
+ 
+-		update_rt_migration(&rq->rt);
++	/*
++	 * Several cpus were allowed but now it's not so OR vice versa
++	 */
++	if (weight <= 1) {
++		if (!task_current(rq, p))
++			dequeue_pushable_task(rq, p);
++		BUG_ON(!rq->rt.rt_nr_migratory);
++		rq->rt.rt_nr_migratory--;
++	} else {
++		if (!task_current(rq, p))
++			enqueue_pushable_task(rq, p);
++		rq->rt.rt_nr_migratory++;
+ 	}
++
++	update_rt_migration(&rq->rt);
+ }
+ 
+ /* Assumes rq->lock is held */
