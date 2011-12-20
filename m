@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab1LTQl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 11:41:56 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46350 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1LTQlq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 11:41:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112201541.17904.arnd@arndb.de>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
-	<201112121648.52126.arnd@arndb.de>
-	<CAB2ybb_dU7BzJmPo6vA92pe1YCNerCLc+bv7Qi_EfkfGaik6bQ@mail.gmail.com>
-	<201112201541.17904.arnd@arndb.de>
-Date: Tue, 20 Dec 2011 10:41:45 -0600
-Message-ID: <CAF6AEGtOjO6Z6yfHz-ZGz3+NuEMH2M-8=20U6+-xt-gv9XtzaQ@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-From: Rob Clark <robdclark@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Semwal, Sumit" <sumit.semwal@ti.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751981Ab1LTQpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 11:45:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285Ab1LTQpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 11:45:36 -0500
+Subject: Re: trace: multiple ring buffers
+From: Steven Rostedt <srostedt@redhat.com>
+To: Hiraku TOYOOKA <hiraku.toyooka.gu@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        yrl.pp-manager.tt@hitachi.com, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <4EF054B4.7050308@hitachi.com>
+References: <4EF054B4.7050308@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Tue, 20 Dec 2011 11:45:29 -0500
+Message-ID: <1324399529.2926.14.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 9:41 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 19 December 2011, Semwal, Sumit wrote:
->> I didn't see a consensus on whether dma_buf should enforce some form
->> of serialization within the API - so atleast for v1 of dma-buf, I
->> propose to 'not' impose a restriction, and we can tackle it (add new
->> ops or enforce as design?) whenever we see the first need of it - will
->> that be ok? [I am bending towards the thought that it is a problem to
->> solve at a bigger platform than dma_buf.]
->
-> The problem is generally understood for streaming mappings with a
-> single device using it: if you have a long-running mapping, you have
-> to use dma_sync_*. This obviously falls apart if you have multiple
-> devices and no serialization between the accesses.
->
-> If you don't want serialization, that implies that we cannot have
-> use the  dma_sync_* API on the buffer, which in turn implies that
-> we cannot have streaming mappings. I think that's ok, but then
-> you have to bring back the mmap API on the buffer if you want to
-> allow any driver to provide an mmap function for a shared buffer.
+Hi Hiraku,
 
-I'm thinking for a first version, we can get enough mileage out of it by saying:
-1) only exporter can mmap to userspace
-2) only importers that do not need CPU access to buffer..
+Note, it is usually best to contact me at rostedt@goodmis.org (Cc'd) as
+I don't always check this email. I especially don't check it when
+traveling, and on holidays (like next week).
 
-This way we can get dmabuf into the kernel, maybe even for 3.3.  I
-know there are a lot of interesting potential uses where this stripped
-down version is good enough.  It probably isn't the final version,
-maybe more features are added over time to deal with importers that
-need CPU access to buffer, sync object, etc.  But we have to start
-somewhere.
+On Tue, 2011-12-20 at 18:26 +0900, Hiraku TOYOOKA wrote:
+> Hello, Steven,
+> I'm researching RAS features for real-time systems.
+> 
+> I'm interested in the multiple ring buffer support on ftrace because of
+> following reasons.
 
-BR,
--R
+Yep, that has been requested before.
 
->        Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> * To preserve particular events such as error or fault over a long time. These
+> events are useful for failure analysis. But these events could be lost when
+> other trace events are generated in large quantities in one buffer. If there is
+> only one buffer, we have to prepare one big buffer so that the particular events
+> are not overwritten by other events. It wastes memory as a result.
+> 
+> * To use the same trace events for different purposes. For example, I'd like to
+> collect trace events and detect performance degradation (using sched_switch
+> event, etc.), while running flight recorder for failure analysis.
+> 
+> Multiple buffer support makes these really easy. I'm sure that other users wish
+> to use it. Of course, it will introduce some complexities to ftrace code.
+
+Not really. I've always Nack'd the making of the global_ops non-static
+for this very reason. The events may need some work, but nothing too
+hard.
+
+> 
+> So, I'd like to implement following the features on ftrace.
+> 
+> * A mechanism to increase buffers on demand
+> * A mechanism to change destination buffer(s) of each trace event via debugfs
+> 
+> I have heard from Masami that you have some ideas of multiple buffers. If so,
+> could you tell me the ideas? I'd like to cooperate with you to develop multiple
+> buffers.
+
+Yeah, basically I figured we create another directory inside the
+debugfs/tracing directory. Maybe call it sub_buffers or something.
+Inside this directory we could have:
+
+create_buffer - a file that you echo a name into to create a new buffer,
+then a directory with that name will appear in this directory.
+
+echo foobar > debugfs/tracing/sub_buffers/create
+
+ls debugfs/tracing/sub_buffers/foobar
+
+buffer_size_kb current_tracer events set_ftrace_filter ...
+
+basically the new directory foobar will be a copy of the debugfs/tracing
+directory with a few things possibly missing. Then each of these will be
+agnostic to the main tracer.
+
+This was my idea, and I can think of a few issues that will come up, but
+nothing that would be a show-stopper.
+
+-- Steve
+
+
