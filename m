@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1LTOj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 09:39:29 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56001 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab1LTOjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 09:39:21 -0500
-Message-ID: <4EF09D34.1060607@linux.vnet.ibm.com>
-Date: Tue, 20 Dec 2011 20:05:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752622Ab1LTOnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 09:43:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab1LTOnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 09:43:33 -0500
+Date: Tue, 20 Dec 2011 15:43:18 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        users@rt2x00.serialmonkey.com,
+        Andreas Hartmann <andihartmann@01019freenet.de>
+Subject: Re: [rt2x00-users] Poor performance and lockup with rt2800usb and
+ Asus USB-N13 adapter
+Message-ID: <20111220144317.GA6027@redhat.com>
+References: <4ED43A5C.9000102@gmail.com>
+ <20111129114603.GB7299@redhat.com>
+ <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-References: <20111219121100.GI2203@ZenIV.linux.org.uk> <4EEF9D4E.1000008@linux.vnet.ibm.com> <20111219205251.GK2203@ZenIV.linux.org.uk> <4EF01565.2000700@linux.vnet.ibm.com> <20111220062710.GC23916@ZenIV.linux.org.uk> <4EF03915.60902@linux.vnet.ibm.com> <1324373854.21588.16.camel@mengcong> <4EF0654B.4060904@linux.vnet.ibm.com> <4EF06C9B.4010703@linux.vnet.ibm.com> <4EF084A4.3000106@linux.vnet.ibm.com> <20111220140628.GD23916@ZenIV.linux.org.uk>
-In-Reply-To: <20111220140628.GD23916@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11122014-2674-0000-0000-000002B2F72D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 07:36 PM, Al Viro wrote:
-
-> On Tue, Dec 20, 2011 at 06:20:44PM +0530, Srivatsa S. Bhat wrote:
+On Wed, Nov 30, 2011 at 08:21:49PM -0600, Robert Hancock wrote:
+> On Tue, Nov 29, 2011 at 5:46 AM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> > On Mon, Nov 28, 2011 at 07:50:20PM -0600, Robert Hancock wrote:
+> >> I recently got an Asus USB-N13 USB Wireless-N adapter which
+> >> apparently uses a Ralink RT3072 chip. I'm using it with an Asus
+> >> RT-N16 access point running TomatoUSB. When running Windows the
+> >> performance is reasonable (about 80 Mbps in both directions).
+> >> However under Fedora 16 (currently kernel 3.1.2) the performance is
+> >> abysmal (10 Mbps or less with lots of packet loss). I'll post some
+> >> debug information below.
+> > rt2800usb needs fixing. I'm able to reproduce these performance
+> > problems locally. They are quite hard to debug, and need some
+> > experiments. But I hope I will provide patches soon or leter.
 > 
->>> Hey, actually there is a simple solution: just nip it (or rather delay it)
->>> in the bud ;) That is, we watch out for CPU_UP_PREPARE event and lock it
->>> up there itself using our spinlock.. that way, that cpu will not come up
->>> until we are done executing br_write_unlock(). In fact, we can even fail
->>> the onlining of that cpu by returning appropriate value from our callback,
->>> but that would be too harsh.. so we can settle for delaying the cpu online
+> Do you have any leads on what is going wrong? I'm not sure if the
+> issue is with the higher MCS rates not working as well as they should,
+> or with the rate control trying to use them even though they're not
+> working well.
+
+I just discovered that at least some problems are related with power
+save. After "iwconfig wlanX power off" I have pretty short ping times
+and good throughput, both comparable with vendor driver. But I did not
+check that on all adapters that I have yet.
+
+Looking a bit more at that seem we stop and wake queues several times
+between sending each frame. Looks like that thing need to be optimized
+in mac80211, or some parameters have to be setup properly by rt2x00 ...
+
+Also rt2800 PCI and SOC have PS disabled by default ...
+ 
+> I tried with the Fedora kernel-debug kernel and didn't see much
+> additional output. The stack trace might have a bit more detail:
 > 
-> Eeeek...  Are you serious about leaving a spinlock grabbed by notifier
-> callback and not released until another callback call?  That would be one
-> hell of a constraint on what these notifiers can do - _nothing_ between
-> these calls (including other notifier callbacks, etc.) would be allowed
-> to block.
+> rt2x00queue_index_inc
+> rt2x00lib_dmadone
+> rt2x00usb_kick_rx_entry
+> rt2x00usb_clear_entry
+> rt2x00lib_rxdone
+> rt2x00usb_work_rxdone
+> process_one_work
+> worker_thread
+> kthread
+> kernel_thread_helper
 > 
-> That sounds extremely brittle...
-> 
+> Seems like something that happens on rmmod with the device connected
+> causes these rxdone/txdone functions to go into a tight loop somehow.
 
+I'm not able to reproduce this, perhaps this is related with debugfs
+or sysfs files you ware opening?
 
-Sorry but I didn't quite get your point...
-No two cpu hotplug operations can race because of the cpu_hotplug lock they
-use. Hence, if a cpu online operation begins, it has to succeed or fail
-eventually. No other cpu hotplug operation can intervene. Ditto for cpu offline
-operations.
-
-Hence a CPU_UP_PREPARE event *will* be followed by a corresponding
-CPU_UP_CANCELED or CPU_ONLINE event for the same cpu. (And we ignore the
-CPU_STARTING event that comes in between, on purpose, so as to avoid the race
-with cpu_online_mask). Similar is the story for offline operation.
-
-And if the notifier grabs the spinlock and keeps it locked between these 2
-points of a cpu hotplug operation, it ensures that our br locks will spin,
-instead of block till the cpu hotplug operation is complete. Isn't this what
-we desired all along? "A non-blocking way to sync br locks with cpu hotplug"?
-
-Or am I missing something?
-
-Regards,
-Srivatsa S. Bhat
-
+Thanks
+Stanislaw
