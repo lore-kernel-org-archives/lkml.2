@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1LTCQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:16:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55157 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab1LTCQw (ORCPT
+	id S1754001Ab1LTCR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:17:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56644 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752253Ab1LTCR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:16:52 -0500
-Date: Tue, 20 Dec 2011 06:16:47 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: Android low memory killer vs. memory pressure notifications
-Message-ID: <20111220021647.GB4531@oksana.dev.rtsoft.ru>
-References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
- <20111219121255.GA2086@tiehlicka.suse.cz>
+	Mon, 19 Dec 2011 21:17:27 -0500
+Date: Tue, 20 Dec 2011 02:17:23 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v4 3/4] regulator: simplify twl4030 config
+Message-ID: <20111220021722.GA8257@opensource.wolfsonmicro.com>
+References: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
+ <1324343717-7292-4-git-send-email-felipe.contreras@gmail.com>
+ <20111220011923.GS2860@opensource.wolfsonmicro.com>
+ <CAMP44s1XFo0_O-pGMNO7m=weXuCpXzS8oH6m6PaPNzLGRQpDgA@mail.gmail.com>
+ <20111220015316.GW2860@opensource.wolfsonmicro.com>
+ <CAMP44s3iSVEbghx9nGU-w9N+Bsdw040=UQtiw6RRyq021ssBxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111219121255.GA2086@tiehlicka.suse.cz>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP44s3iSVEbghx9nGU-w9N+Bsdw040=UQtiw6RRyq021ssBxw@mail.gmail.com>
+X-Cookie: Is this really happening?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 01:12:55PM +0100, Michal Hocko wrote:
-> [Didn't get to the patch yet but a comment on memcg]
-> 
-> On Mon 19-12-11 06:53:28, Anton Vorontsov wrote:
-> [...]
-> > - Use memory controller cgroup (CGROUP_MEM_RES_CTLR) notifications from
-> >   the kernel side, plus userland "manager" that would kill applications.
-> > 
-> >   The main downside of this approach is that mem_cg needs 20 bytes per
-> >   page (on a 32 bit machine). So on a 32 bit machine with 4K pages
-> >   that's approx. 0.5% of RAM, or, in other words, 5MB on a 1GB machine.
-> 
-> page_cgroup is 16B per page and with the current Johannes' memcg
-> naturalization work (in the mmotm tree) we are down to 8B per page (we
-> got rid of lru). Kamezawa has some patches to get rid of the flags so we
-> will be down to 4B per page on 32b. Is this still too much?
-> I would be really careful about a yet another lowmem notification
-> mechanism.
+On Tue, Dec 20, 2011 at 04:04:14AM +0200, Felipe Contreras wrote:
+> On Tue, Dec 20, 2011 at 3:53 AM, Mark Brown
 
-4 bytes (1MB wastage on a 1GB machine) sounds much better. If there are no
-other downsides of using cgroups-based low memory killer, then maybe it's
-not worth doing yet another low memory notification stuff.
+> > Yes, of course.  Half the point in having subsystems and standard ways
+> > of doing things is so that when we look at things we've got a reasonable
+> > idea as to what they're supposed to be doing and people looking at the
+> > code can figure out what's going on.   We don't want people to have to
+> > play guessing games about this stuff.
 
-> >   0.5% doesn't sound too bad, but 5MB does, quite a little bit. So,
-> >   mem_cg feels like an overkill for this simple task (see the driver at
-> >   the very bottom).
-> 
-> Why is it an overkill? I think that having 2 groups (active and
-> inactive) and move tasks between then sounds quite elegant.
+> Of course... *ideally*, but we are not there right now.
 
-Yep, that was the original idea. But back then mem_cg was way too costly,
-so nobody seriously considered this as a solution.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+We pretty much were, but this patch has changelog which says "I've got a
+cool new way of doing things for this one driver!" which clearly applies
+to other drivers.  I wouldn't mind a patch which does this for all MFDs
+(though I really do think it should be applied to most subsystems) but
+doing it for one driver isn't great.
