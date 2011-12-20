@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab1LTLa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 06:30:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42988 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab1LTLaT (ORCPT
+	id S1751466Ab1LTLbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 06:31:10 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56274 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab1LTLbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 06:30:19 -0500
-From: zengzm.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, Zeng Zhaoming <zengzm.kernel@gmail.com>
-Subject: [PATCH] tty: Fix memory leak in virtual console when enable unicode translation
-Date: Tue, 20 Dec 2011 19:30:05 +0800
-Message-Id: <1324380605-16611-1-git-send-email-zengzm.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.1.385.gb7fcd0
+	Tue, 20 Dec 2011 06:31:02 -0500
+Message-ID: <1324380648.24621.49.camel@twins>
+Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Date: Tue, 20 Dec 2011 12:30:48 +0100
+In-Reply-To: <1324378070.24621.32.camel@twins>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+	 <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+	 <1324044159.18942.104.camel@twins> <1324044196.18942.105.camel@twins>
+	 <20111220103154.GA1861@m.brq.redhat.com> <1324378070.24621.32.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zeng Zhaoming <zengzm.kernel@gmail.com>
+On Tue, 2011-12-20 at 11:47 +0100, Peter Zijlstra wrote:
 
-Virtual console unicode translation map leaks with following
-message when enable kmemleak:
+> > any idea/details/specifics how they might look like? ;)
+> 
+> The current idea is that they'd live in a place like:
+> 
+>   /sys/bus/event_source/devices/$pmu/events/$event
+> 
+> and when you read them they contain a full event_raw style string so you
+> could do things like:
+> 
+>   perf record -e `cat $sysfsfile` or so
+> 
+> (or maybe without the 'r' prefix).
+> 
+> The idea was to have some $pmu:$event like syntax, but seeing that ':'
+> is already used quite a lot, there's maybe a more suitable separator.
+> Maybe '/' would do, yielding things like cpu/instructions.
+> 
+> Then again, it might make sense to restructure the syntax without
+> considerations for the status quo and see if we can come up with
+> something a little more consistent, the above event_* things are quite a
+> hodge podge, syntax wise.
+> 
+> While I appreciate that they are the result of organic growth, it
+> doesn't mean we shouldn't try and restructure stuff once in a while when
+> it makes sense.
 
-unreferenced object 0xeb5ec450 (size 192):
-  comm "setfont", pid 665, jiffies 4294899028 (age 3696.220s)
-  hex dump (first 32 bytes):
-    e0 5b 9d eb 00 00 00 00 00 00 00 00 80 b9 ea eb  .[..............
-    b0 5a 9d eb 00 00 00 00 00 00 00 00 00 00 00 00  .Z..............
-  backtrace:
-    [<c1533f8c>] kmemleak_alloc+0x3c/0xa0
-    [<c114acc2>] kmem_cache_alloc_trace+0xe2/0x250
-    [<c13498e8>] con_clear_unimap+0x78/0xd0
-    [<c1345552>] vt_ioctl+0x1562/0x1d00
-    [<c133aa00>] tty_ioctl+0x230/0x7c0
-    [<c1171519>] do_vfs_ioctl+0x79/0x2d0
-    [<c11717df>] sys_ioctl+0x6f/0x80
-    [<c156601f>] sysenter_do_call+0x12/0x38
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xeb9d5be0 (size 128):
-  comm "setfont", pid 660, jiffies 4294899030 (age 3696.212s)
-  hex dump (first 32 bytes):
-    60 c2 a6 eb 50 c8 a6 eb c0 54 9d eb 80 59 9d eb  `...P....T...Y..
-    90 53 9d eb 60 52 9d eb 60 92 9b eb 00 00 00 00  .S..`R..`.......
-  backtrace:
-    [<c1533f8c>] kmemleak_alloc+0x3c/0xa0
-    [<c114acc2>] kmem_cache_alloc_trace+0xe2/0x250
-    [<c134938c>] con_insert_unipair+0x7c/0x150
-    [<c1349f8c>] con_set_unimap+0x15c/0x1f0
-    [<c13456fb>] vt_ioctl+0x170b/0x1d00
-    [<c133aa00>] tty_ioctl+0x230/0x7c0
-    [<c1171519>] do_vfs_ioctl+0x79/0x2d0
-    [<c11717df>] sys_ioctl+0x6f/0x80
-    [<c156601f>] sysenter_do_call+0x12/0x38
-    [<ffffffff>] 0xffffffff
+There's also the raw event format idea, where
 
-The leak caused by con_set_default_unimap() not correct free the old map.
+ /sys/bus/event_source/devices/$pmu/format
 
-Signed-off-by: Zeng Zhaoming <zengzm.kernel@gmail.com>
----
- drivers/tty/vt/consolemap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+contains a syntax description on how to construct raw events, for intel
+(!p4) it would be something as simple as a bitfield definition:
 
-diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
-index 45d3e80..a0f3d6c 100644
---- a/drivers/tty/vt/consolemap.c
-+++ b/drivers/tty/vt/consolemap.c
-@@ -584,7 +584,7 @@ int con_set_default_unimap(struct vc_data *vc)
- 			return 0;
- 		dflt->refcount++;
- 		*vc->vc_uni_pagedir_loc = (unsigned long)dflt;
--		if (p && --p->refcount) {
-+		if (p && !--p->refcount) {
- 			con_release_unimap(p);
- 			kfree(p);
- 		}
--- 
-1.7.6.1.385.gb7fcd0
+event	config-0:7
+umask	config-8:15
+usr	config-16
+os	config-17
+edge	config-18
+any	config-21
+inv	config-23
+cmask	config-24:31
+
+nhm-dmnd_data_rd	config1-0
+nhm-dmnd_rfo		config1-1
+nhm-dmnd_ifetch		config1-2
+...
+
+(the real syntax will likely be a little more complex in order to be
+able to express the various other architectures their raw input format).
+
+This would allow us to write things like:
+
+ perf record -e cpu/event=0x34,umask=0x01,inv,cmask=2
+
+or to give an offcore example:
+
+ perf record -e
+cpu/offcore,nhm-dmnd_data_rd,nhm-non_dram,nhm-remote_dram,nhm-local_dram
+
+Where cpu/events/offcore would contain: 0x01b7 to fill out config.
+
+We should also extend this to allow per event setting of the period by
+adding a ,period=10000 or so.
+
+ perf record -e cpu/cycles,period=100000
+
+should then give us a cycle counter with a fixed period of .1M cycles.
+
+I think there's currently means to provide this period, but I don't
+actually know the syntax for it.
+
+But note, the above again uses ',' as separator, which will be much
+confused with the group idea you already proposed. So we need some
+consideration on how we all want to express this.
+
+
 
