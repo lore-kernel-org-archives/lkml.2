@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab1LTUzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 15:55:15 -0500
-Received: from uucp.gnuu.de ([83.246.114.63]:4540 "EHLO uucp.gnuu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab1LTUzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 15:55:10 -0500
-Date: Tue, 20 Dec 2011 21:27:12 +0100
-From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-To: Alexander Graf <agraf@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Message-ID: <20111220202711.GD6830@alea.gnuu.de>
-References: <20111107194838.GA23558@alea.gnuu.de>
+	id S1752982Ab1LTU5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 15:57:23 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53848 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751514Ab1LTU5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 15:57:14 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/aRPR4amUF95Kd8ICqG4x4
+Date: Tue, 20 Dec 2011 12:57:06 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>
+Subject: Re: [PATCH v2 1/7][RESEND] ARM: OMAP1: ams-delta: register latch
+ dependent devices later
+Message-ID: <20111220205706.GH17267@atomide.com>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
+ <201112200028.32947.jkrzyszt@tis.icnet.pl>
+ <20111220180610.GB24444@atomide.com>
+ <201112202134.36802.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p2kqVDKq5asng8Dg"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111107194838.GA23558@alea.gnuu.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201112202134.36802.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111220 12:03]:
+> On Tuesday 20 of December 2011 at 19:06:11, Tony Lindgren wrote:
+> 
+> > To deal with the init order issues, you can pass a set_power
+> > function pointer in platform_data that the driver can use. Or
+> > set up a fixed regulator for it.
+> 
+> I'm already working on the follow up patch series mentioned in the cover 
+> letter, and yes, I'm using the fixed regulator. Be patient, please, as 
+> my resources are somehow limited.
 
---p2kqVDKq5asng8Dg
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I understand. For this patch I'm fine with the late_initcall
+changes Russell suggested, then the rest can be done in separate
+patches later on.
 
-Hello Alexander,
+Regards,
 
-J=C3=B6rg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
->   CHK     include/linux/version.h
->   HOSTCC  scripts/mod/modpost.o
->   CHK     include/generated/utsrelease.h
->   UPD     include/generated/utsrelease.h
->   HOSTLD  scripts/mod/modpost
->   GEN     include/generated/bounds.h
->   CC      arch/powerpc/kernel/asm-offsets.s
-> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function =
-=E2=80=98compute_tlbie_rb=E2=80=99:
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error=
-: =E2=80=98HPTE_V_SECONDARY=E2=80=99 undeclared (first use in this function)
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note:=
- each undeclared identifier is reported only once for each function it appe=
-ars in
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error=
-: =E2=80=98HPTE_V_1TB_SEG=E2=80=99 undeclared (first use in this function)
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error=
-: =E2=80=98HPTE_V_LARGE=E2=80=99 undeclared (first use in this function)
-> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warnin=
-g: right shift count >=3D width of type [enabled by default]
-> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
-> make[2]: *** [prepare0] Fehler 2
-> make[1]: *** [deb-pkg] Fehler 2
-> make: *** [deb-pkg] Fehler 2
-
-I'm so sorry to have to report a new bug in one of your patches. It was
-covered by the one above. I've picked the commit for it from your git
-repository and now, the kernel build fails with this error:
-
-  BOOTCC  arch/powerpc/boot/fdt_strerror.o
-  BOOTAR  arch/powerpc/boot/wrapper.a
-  WRAP    arch/powerpc/boot/zImage.pmac
-  WRAP    arch/powerpc/boot/zImage.coff
-ERROR: "kvmppc_h_pr" [arch/powerpc/kvm/kvm.ko] undefined!
-make[3]: *** [__modpost] Fehler 1
-make[2]: *** [modules] Fehler 2
-make[2]: *** Warte auf noch nicht beendete Prozesse...
-  WRAP    arch/powerpc/boot/zImage.miboot
-make[1]: *** [deb-pkg] Fehler 2
-make: *** [deb-pkg] Fehler 2
-
-The bug was introduced by this commit
-
-HEAD is now at aacf9aa KVM: PPC: Stub emulate CFAR and PURR SPRs
-a668f2bd3f14ce7f92e119f4b5d9b50cdc59e855 is the first bad commit
-commit a668f2bd3f14ce7f92e119f4b5d9b50cdc59e855
-Author: Alexander Graf <agraf@suse.de>
-Date:   Mon Aug 8 17:26:24 2011 +0200
-
-    KVM: PPC: Support SC1 hypercalls for PAPR in PR mode
-   =20
-    PAPR defines hypercalls as SC1 instructions. Using these, the guest mod=
-ifies
-    page tables and does other privileged operations that it wouldn't be al=
-lowed
-    to do in supervisor mode.
-   =20
-    This patch adds support for PR KVM to trap these instructions and route=
- them
-    through the same PAPR hypercall interface that we already use for HV st=
-yle
-    KVM.
-   =20
-    Signed-off-by: Alexander Graf <agraf@suse.de>
-
-Bye, J=C3=B6rg.
---=20
-=E2=80=9CPerl=E2=80=94the only language that looks the same
- before and after RSA encryption.=E2=80=9D           (Keith Bostic)
-
---p2kqVDKq5asng8Dg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7w758ACgkQwe0mZwH1VIBYegCZAd1r6ElQEfZwjgTv2l72r1Vi
-jK0An1+I7MfAMGHTdNfcVNhM3ibXqK53
-=05eO
------END PGP SIGNATURE-----
-
---p2kqVDKq5asng8Dg--
+Tony
