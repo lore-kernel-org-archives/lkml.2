@@ -1,58 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1LTPlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:41:39 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64835 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab1LTPlb (ORCPT
+	id S1752878Ab1LTPmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:42:23 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:45071 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab1LTPmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:41:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Semwal, Sumit" <sumit.semwal@ti.com>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-Date: Tue, 20 Dec 2011 15:41:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Vetter <daniel@ffwll.ch>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <201112121648.52126.arnd@arndb.de> <CAB2ybb_dU7BzJmPo6vA92pe1YCNerCLc+bv7Qi_EfkfGaik6bQ@mail.gmail.com>
-In-Reply-To: <CAB2ybb_dU7BzJmPo6vA92pe1YCNerCLc+bv7Qi_EfkfGaik6bQ@mail.gmail.com>
+	Tue, 20 Dec 2011 10:42:15 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: build warning after merge of the fbdev tree
+Date: Tue, 20 Dec 2011 16:42:15 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au> <201112201619.43001.laurent.pinchart@ideasonboard.com> <CAMuHMdVx+T8X3tkP+OVM-sxKLeJdsuz=0jBSxuNte_5JK4vTBQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdVx+T8X3tkP+OVM-sxKLeJdsuz=0jBSxuNte_5JK4vTBQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112201541.17904.arnd@arndb.de>
-X-Provags-ID: V02:K0:DTsJ1hihYpVmXaK0ytOYJQdHd0D/e4Ju8oQQ9NhAE/E
- 68qNgnldlhwXnINw71sT5Hfy4MXy96Ms+xz3xV5BRJi44Reb7a
- oUeXS80S3YVId1rg++oeUCTObynv+/gUvKTdTfaJ8tPtkEGchi
- cXs0e121u4iBrKQXTP+Mhwx6j/mOtJiXTDNlLIUv3YmZP5wCTG
- XK/fCCZVrB3GKTQoY8yNrzR2WtbO1He521YixGj5RuWkWxjZdg
- ne+MuzjCoStoCHLj5062ruxt+XwDc04PKs8Cc5q/fAXeRSHykJ
- t4e+ZRWzdVTOu3Xr1Cwh+7OvhAl185qvok6Fo2zsa1CYMfSTke
- ajGcfFNltOEg0xM8IuBg=
+Message-Id: <201112201642.15822.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 December 2011, Semwal, Sumit wrote:
-> I didn't see a consensus on whether dma_buf should enforce some form
-> of serialization within the API - so atleast for v1 of dma-buf, I
-> propose to 'not' impose a restriction, and we can tackle it (add new
-> ops or enforce as design?) whenever we see the first need of it - will
-> that be ok? [I am bending towards the thought that it is a problem to
-> solve at a bigger platform than dma_buf.]
+Hi Geert,
 
-The problem is generally understood for streaming mappings with a 
-single device using it: if you have a long-running mapping, you have
-to use dma_sync_*. This obviously falls apart if you have multiple
-devices and no serialization between the accesses.
+On Tuesday 20 December 2011 16:24:30 Geert Uytterhoeven wrote:
+> On Tue, Dec 20, 2011 at 16:19, Laurent Pinchart wrote:
+> > On Tuesday 20 December 2011 14:48:33 Geert Uytterhoeven wrote:
+> >> On Tue, Dec 20, 2011 at 11:37, Laurent Pinchart wrote:
+> >> > On Tuesday 20 December 2011 06:32:14 Stephen Rothwell wrote:
+> >> >> After merging the fbdev tree, today's linux-next build (powerpc
+> >> >> ppc64_defconfig) produced this warning:
+> >> >> 
+> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: braces around
+> >> >> scalar initializer [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
+> >> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: excess elements
+> >> >> in scalar initializer [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
+> >> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: braces around
+> >> >> scalar initializer [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
+> >> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
+> >> >> default]
+> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: excess elements
+> >> >> in scalar initializer [enabled by default]
+> >> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
+> >> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
+> >> >> default]
+> >> >> 
+> >> >> Introduced by commit fb21c2f42879 ("fbdev: Add FOURCC-based format
+> >> >> configuration API").
+> >> > 
+> >> > The following patch should fix the issue. Florian, are you fine with
+> >> > it, or would you rather modify the initializers to be name-based ?
+> >> > 
+> >> > From 078987fc14dba806fc1bc628e3e5c371db3cf1b8 Mon Sep 17 00:00:00 2001
+> >> > From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> >> > Date: Tue, 20 Dec 2011 11:30:53 +0100
+> >> > Subject: [PATCH] fbdev: matroxfb: Fix compilation after
+> >> > fb_var_screeninfo change
+> >> > 
+> >> > Commit fb21c2f42879 ("fbdev: Add FOURCC-based format configuration
+> >> > API") modified the layout of the fb_var_screeninfo structure. Update
+> >> > the static initializers in the matroxfb driver accordingly.
+> >> > 
+> >> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> >> > ---
+> >> >  drivers/video/matrox/matroxfb_base.c  |    2 +-
+> >> >  drivers/video/matrox/matroxfb_crtc2.c |    2 +-
+> >> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> >> > 
+> >> > diff --git a/drivers/video/matrox/matroxfb_base.c
+> >> > b/drivers/video/matrox/matroxfb_base.c index 44bf8d4..f98aad5 100644
+> >> > --- a/drivers/video/matrox/matroxfb_base.c
+> >> > +++ b/drivers/video/matrox/matroxfb_base.c
+> >> > @@ -147,7 +147,7 @@ static struct fb_var_screeninfo vesafb_defined = {
+> >> >        39721L,48L,16L,33L,10L,
+> >> >        96L,2L,~0,      /* No sync info */
+> >> >        FB_VMODE_NONINTERLACED,
+> >> > -       0, {0,0,0,0,0}
+> >> > +       0, 0, {0,0,0,0}
+> >> 
+> >> All these zeroes should not be specified, the compiler will do the
+> >> right thing for
+> >> static variables anyway.
+> >> 
+> >> Else they have to be updated manually everytime one of the reserved
+> >> fields is consumed for a new feature.
+> > 
+> > I agree. Should I just remove them, or switch the structures to named
+> > initializers while I'm at it ?
+> 
+> I would just remove them. What do they buy you?
+> 
+> Even with named initializers
+> 
+>     .reserved = { 0, 0, 0, 0 }
+> 
+> will break once we consume one more reserved field, unless you write
+> 
+>     .reserved = { 0, }
+> 
+> to let the compiler handle it, but then you could just not specify the
+> field at all.
 
-If you don't want serialization, that implies that we cannot have
-use the  dma_sync_* API on the buffer, which in turn implies that
-we cannot have streaming mappings. I think that's ok, but then
-you have to bring back the mmap API on the buffer if you want to
-allow any driver to provide an mmap function for a shared buffer.
+Sure. In both cases I would remove them, but I was wondering if I should 
+switch the whole structure to named initializers in addition to removing them. 
+I don't know if the common practice to solve issues in the -next tree is to 
+apply patches that are as little intrusive as possible, or if bigger patches 
+are allowed.
 
-	Arnd
+-- 
+Regards,
+
+Laurent Pinchart
