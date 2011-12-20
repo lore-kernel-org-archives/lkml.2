@@ -1,216 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1LTWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 17:11:27 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:49980 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab1LTWLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 17:11:25 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: [PATCH] input: serio: ams-delta: toggle keyboard power over GPIO
-Date: Tue, 20 Dec 2011 23:10:34 +0100
-Message-Id: <1324419034-31024-1-git-send-email-jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl>
-References: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1753149Ab1LTWSZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 17:18:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36267 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab1LTWSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 17:18:23 -0500
+Date: Tue, 20 Dec 2011 14:18:18 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH for-3.3] mempool: clean up and document synchronization and
+ memory barrier usage
+Message-ID: <20111220221818.GJ10752@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use Amstrad Delta custom I/O functions once GPIO interface is
-available for the underlying hardware.
+mempool_alloc/free() use undocumented smp_mb()'s.  While the code is
+not necessarily incorrect, the usage is not minimal and misleading.
 
-While requesting and initializing GPIO pins used, also take care of one
-extra pin KEYBRD_DATAOUT which, even if not used by the driver, belongs
-to the device and affects its functioning.
+The lockless part is in mempool_free().  It wants to determine whether
+the item being freed needs to be returned to the pool or backing
+allocator without grabbing pool->lock.  Two things need to be
+guaranteed for correct operation.
 
-Once done, move the driver initialization back to the device_initcall
-level, reverting the temporary chane introduced with patch 1/7 "ARM:
-OMAP1: ams-delta: register latch dependent devices later".  That change
-is no longer required once the driver takes care of registering used
-GPIO pins, and it's better to initialize the device before others using
-the latch2 based GPIO pins, otherwise a garbage is reported on boot,
-perhaps due to random data already captured by the FIQ handler while the
-keyboard related latch bits are written with random values during
-initialization of those other latch2 dependent devices.
+1. pool->curr_nr + #allocated should never dip below pool->min_nr.
+2. Waiters shouldn't be left dangling.
 
-Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
-basic_mmio_gpio"
+For #1, The only necessary condition is that curr_nr visible at free
+is from after the allocation of the element being freed (details in
+the comment).  For most cases, this is true without any barrier but
+there can be fringe cases where the allocated pointer is passed to the
+freeing task without going through memory barriers.  To cover this
+case, wmb is necessary before returning from allocation and rmb is
+necessary before reading curr_nr.  IOW,
 
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+	ALLOCATING TASK			FREEING TASK
+
+	update pool state after alloc;
+	wmb();
+	pass pointer to freeing task;
+					read pointer;
+					rmb();
+					read pool state to free;
+
+The wmb can be the implied one from unlocking pool->lock and smp_mb()
+in mempool_free() can be replaced with smp_rmb().
+
+For #2, the waiter needs to add itself to waitqueue and then check the
+wait condition and the waker needs to update the wait condition and
+then wake up.  Because waitqueue operations always go through full
+spinlock synchronization, there is no need for extra memory barriers.
+
+Furthermore, mempool_alloc() is already holding pool->lock when it
+decides that it needs to wait.  There is no reason to do unlock - add
+waitqueue - test condition again.  It can simply add itself to
+waitqueue while holding pool->lock and then unlock and sleep.
+
+This patch converts smp_mb() in mempool_free() with smp_rmb(), drops
+superflous smp_mb() from mempool_alloc() and extend pool->lock over
+waitqueue addition.  More importantly, it explains what memory
+barriers do and how the lockless testing is correct.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
-Hi,
-I'm submitting only this one refreshed on top of updated 1/7. All others
-(2/7-6/7) don't require any refresh, can be rebased smoothly.
+I was trying to make mempool useable for percpu and the undocumented
+smp_mb()'s confused me.  I tried to chop it down to the minimum and
+explain what's going on.  The previous code wasn't incorrect so this
+isn't a fix per-se but it's always good to be explicit about barriers
+and lockless tricks.
 
-Thanks,
-Janusz
+There probably is better way to word why the lockless testing is
+correct.  It's a lot clearer ot me when drawn as stepping graph on a
+piece of paper.  If somebody can think of better wording, please don't
+be shy.
 
+Oleg, I *think* this is correct but it would be great if you can go
+over it.
 
-Changes against version 2:
-* refreshed on top of updated patch 1/7 v2,
-* changelog: corrected patch 1/7 summary (was inaccurate).
+Thank you.
 
-Changes against initial version:
-* was 9/10,
-* rebased on top of v2 of patch 2/7, just in case,
-* moved AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT pin handling from the board
-  code to the driver,
-* reverted a temporary change to the driver initcall level, introduced
-  by the new solution provided with patch 1/7.
+ mm/mempool.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 47 insertions(+), 13 deletions(-)
 
-
- arch/arm/mach-omap1/board-ams-delta.c             |   10 ----
- arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
- drivers/input/serio/ams_delta_serio.c             |   53 ++++++++++++--------
-:x 3 files changed, 32 insertions(+), 33 deletions(-)
-
-diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-index 3aba8f9..673cf21 100644
---- a/arch/arm/mach-omap1/board-ams-delta.c
-+++ b/arch/arm/mach-omap1/board-ams-delta.c
-@@ -227,16 +227,6 @@ static struct gpio latch_gpios[] __initconst = {
- 		.label	= "dockit2",
- 	},
- 	{
--		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "keybrd_pwr",
--	},
--	{
--		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
--		.flags	= GPIOF_OUT_INIT_LOW,
--		.label	= "keybrd_dataout",
--	},
--	{
- 		.gpio	= AMS_DELTA_GPIO_PIN_SCARD_RSTIN,
- 		.flags	= GPIOF_OUT_INIT_LOW,
- 		.label	= "scard_rstin",
-diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-index e9ad673..027e79e 100644
---- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-+++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-@@ -28,8 +28,6 @@
- 
- #if defined (CONFIG_MACH_AMS_DELTA)
- 
--#define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
--#define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
- #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
- #define AMD_DELTA_LATCH2_SCARD_CMDVCC	0x0800
- #define AMS_DELTA_LATCH2_MODEM_NRESET	0x1000
-diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
-index 835d37a..ef1ec40 100644
---- a/drivers/input/serio/ams_delta_serio.c
-+++ b/drivers/input/serio/ams_delta_serio.c
-@@ -92,8 +92,7 @@ static irqreturn_t ams_delta_serio_interrupt(int irq, void *dev_id)
- static int ams_delta_serio_open(struct serio *serio)
- {
- 	/* enable keyboard */
--	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR,
--			AMD_DELTA_LATCH2_KEYBRD_PWR);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 1);
- 
- 	return 0;
- }
-@@ -101,9 +100,32 @@ static int ams_delta_serio_open(struct serio *serio)
- static void ams_delta_serio_close(struct serio *serio)
- {
- 	/* disable keyboard */
--	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR, 0);
-+	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 0);
- }
- 
-+static struct gpio _gpios[] __initconst_or_module = {
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATA,
-+		.flags	= GPIOF_DIR_IN,
-+		.label	= "serio-data",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_CLK,
-+		.flags	= GPIOF_DIR_IN,
-+		.label	= "serio-clock",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "serio-power",
-+	},
-+	{
-+		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
-+		.flags	= GPIOF_OUT_INIT_LOW,
-+		.label	= "serio-dataout",
-+	},
-+};
-+
- static int __init ams_delta_serio_init(void)
- {
- 	int err;
-@@ -123,19 +145,11 @@ static int __init ams_delta_serio_init(void)
- 	strlcpy(ams_delta_serio->phys, "GPIO/serio0",
- 			sizeof(ams_delta_serio->phys));
- 
--	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_DATA, "serio-data");
-+	err = gpio_request_array(_gpios, ARRAY_SIZE(_gpios));
- 	if (err) {
--		pr_err("ams_delta_serio: Couldn't request gpio pin for data\n");
-+		pr_err("ams_delta_serio: Couldn't request gpio pins\n");
- 		goto serio;
+Index: work/mm/mempool.c
+===================================================================
+--- work.orig/mm/mempool.c
++++ work/mm/mempool.c
+@@ -223,29 +223,31 @@ repeat_alloc:
+ 	spin_lock_irqsave(&pool->lock, flags);
+ 	if (likely(pool->curr_nr)) {
+ 		element = remove_element(pool);
++		/* implied wmb in unlock is faired with rmb in mempool_free() */
+ 		spin_unlock_irqrestore(&pool->lock, flags);
+ 		return element;
  	}
--	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
--
--	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_CLK, "serio-clock");
--	if (err) {
--		pr_err("ams_delta_serio: couldn't request gpio pin for clock\n");
--		goto gpio_data;
+-	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+ 	/* We must not sleep in the GFP_ATOMIC case */
+-	if (!(gfp_mask & __GFP_WAIT))
++	if (!(gfp_mask & __GFP_WAIT)) {
++		spin_unlock_irqrestore(&pool->lock, flags);
+ 		return NULL;
++	}
+ 
+-	/* Now start performing page reclaim */
++	/* Let's wait for someone else to return an element to @pool */
+ 	gfp_temp = gfp_mask;
+ 	init_wait(&wait);
+ 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
+-	smp_mb();
+-	if (!pool->curr_nr) {
+-		/*
+-		 * FIXME: this should be io_schedule().  The timeout is there
+-		 * as a workaround for some DM problems in 2.6.18.
+-		 */
+-		io_schedule_timeout(5*HZ);
 -	}
--	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
+-	finish_wait(&pool->wait, &wait);
  
- 	err = request_irq(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK),
- 			ams_delta_serio_interrupt, IRQ_TYPE_EDGE_RISING,
-@@ -143,7 +157,7 @@ static int __init ams_delta_serio_init(void)
- 	if (err < 0) {
- 		pr_err("ams_delta_serio: couldn't request gpio interrupt %d\n",
- 				gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
--		goto gpio_clk;
-+		goto gpio;
- 	}
- 	/*
- 	 * Since GPIO register handling for keyboard clock pin is performed
-@@ -157,21 +171,18 @@ static int __init ams_delta_serio_init(void)
- 	dev_info(&ams_delta_serio->dev, "%s\n", ams_delta_serio->name);
- 
- 	return 0;
--gpio_clk:
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
--gpio_data:
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-+gpio:
-+	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
- serio:
- 	kfree(ams_delta_serio);
- 	return err;
++	spin_unlock_irqrestore(&pool->lock, flags);
++
++	/*
++	 * FIXME: this should be io_schedule().  The timeout is there as a
++	 * workaround for some DM problems in 2.6.18.
++	 */
++	io_schedule_timeout(5*HZ);
++
++	finish_wait(&pool->wait, &wait);
+ 	goto repeat_alloc;
  }
--late_initcall(ams_delta_serio_init);
-+module_init(ams_delta_serio_init);
+ EXPORT_SYMBOL(mempool_alloc);
+@@ -265,7 +267,39 @@ void mempool_free(void *element, mempool
+ 	if (unlikely(element == NULL))
+ 		return;
  
- static void __exit ams_delta_serio_exit(void)
- {
- 	serio_unregister_port(ams_delta_serio);
- 	free_irq(OMAP_GPIO_IRQ(AMS_DELTA_GPIO_PIN_KEYBRD_CLK), 0);
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
--	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-+	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
- }
- module_exit(ams_delta_serio_exit);
--- 
-1.7.3.4
-
+-	smp_mb();
++	/*
++	 * Paired with implied wmb of @pool->lock in mempool_alloc().  The
++	 * preceding read is for @element and the following @pool->curr_nr.
++	 * This ensures that the visible value of @pool->curr_nr is from
++	 * after the allocation of @element.  This is necessary for fringe
++	 * cases where @element was passed to this task without going
++	 * through barriers.
++	 *
++	 * For example, assume @p is %NULL at the beginning and one task
++	 * performs "p = mempool_alloc(...);" while another task is doing
++	 * "while (!p) cpu_relax(); mempool_free(p, ...);".  This function
++	 * may end up using curr_nr value which is from before allocation
++	 * of @p without the following rmb.
++	 */
++	smp_rmb();
++
++	/*
++	 * For correctness, we need a test which is guaranteed to trigger
++	 * if curr_nr + #allocated == min_nr.  Testing curr_nr < min_nr
++	 * without locking achieves that and refilling as soon as possible
++	 * is desirable.
++	 *
++	 * Because curr_nr visible here is always a value after the
++	 * allocation of @element, any task which decremented curr_nr below
++	 * min_nr is guaranteed to see curr_nr < min_nr unless curr_nr gets
++	 * incremented to min_nr afterwards.  If curr_nr gets incremented
++	 * to min_nr after the allocation of @element, the elements
++	 * allocated after that are subject to the same guarantee.
++	 *
++	 * Waiters happen iff curr_nr is 0 and the above guarantee also
++	 * ensures that there will be frees which return elements to the
++	 * pool waking up the waiters.
++	 */
+ 	if (pool->curr_nr < pool->min_nr) {
+ 		spin_lock_irqsave(&pool->lock, flags);
+ 		if (pool->curr_nr < pool->min_nr) {
