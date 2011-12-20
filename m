@@ -1,130 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1LTLId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 06:08:33 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35531 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab1LTLIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 06:08:22 -0500
-Message-ID: <4EF06C9B.4010703@linux.vnet.ibm.com>
-Date: Tue, 20 Dec 2011 16:38:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752727Ab1LTLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 06:10:29 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52480 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751900Ab1LTLKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 06:10:24 -0500
+Date: Tue, 20 Dec 2011 12:08:13 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        lttng-dev@lists.lttng.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <20111220110813.GA19105@elte.hu>
+References: <1322776568.4699.52.camel@twins>
+ <20111201221404.GC3365@kroah.com>
+ <1322780830.4699.62.camel@twins>
+ <20111201231751.GA4961@kroah.com>
+ <20111205141749.GC28866@elte.hu>
+ <20111206214446.GD1247@kroah.com>
+ <20111208052354.GC9485@elte.hu>
+ <20111208232709.GA19820@kroah.com>
+ <20111219104915.GA19861@elte.hu>
+ <20111219153053.GA21548@Krystal>
 MIME-Version: 1.0
-To: mc@linux.vnet.ibm.com
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-References: <1324265775.25089.20.camel@mengcong> <4EEEE866.2000203@linux.vnet.ibm.com> <4EEF0003.3010800@codeaurora.org> <4EEF1A13.4000801@linux.vnet.ibm.com> <20111219121100.GI2203@ZenIV.linux.org.uk> <4EEF9D4E.1000008@linux.vnet.ibm.com> <20111219205251.GK2203@ZenIV.linux.org.uk> <4EF01565.2000700@linux.vnet.ibm.com> <20111220062710.GC23916@ZenIV.linux.org.uk> <4EF03915.60902@linux.vnet.ibm.com> <1324373854.21588.16.camel@mengcong> <4EF0654B.4060904@linux.vnet.ibm.com>
-In-Reply-To: <4EF0654B.4060904@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11122011-5564-0000-0000-00000094416A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111219153053.GA21548@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 04:06 PM, Srivatsa S. Bhat wrote:
 
-> On 12/20/2011 03:07 PM, mengcong wrote:
+(Cc:-ing Arnaldo on this as well.)
+
+* Mathieu Desnoyers <compudj@krystal.dyndns.org> wrote:
+
+> > Mathieu, any update on this? I don't want the LTTNG goodies 
+> > to drop on the floor - we just have to integrate them 
+> > properly.
+> > 
+> > If you 100% disagree with how specific things are done 
+> > upstream right now then don't hold back: just replace 
+> > existing mechanisms - that gives a starting point to discuss 
+> > what the best way is forward.
 > 
->> On Tue, 2011-12-20 at 12:58 +0530, Srivatsa S. Bhat wrote:
->>> On 12/20/2011 11:57 AM, Al Viro wrote:
->>>
->>>> On Tue, Dec 20, 2011 at 10:26:05AM +0530, Srivatsa S. Bhat wrote:
->>>>> Oh, right, that has to be handled as well...
->>>>>
->>>>> Hmmm... How about registering a CPU hotplug notifier callback during lock init
->>>>> time, and then for every cpu that gets onlined (after we took a copy of the
->>>>> cpu_online_mask to work with), we see if that cpu is different from the ones
->>>>> we have already locked, and if it is, we lock it in the callback handler and
->>>>> update the locked_cpu_mask appropriately (so that we release the locks properly
->>>>> during the unlock operation).
->>>>>
->>>>> Handling the newly introduced race between the callback handler and lock-unlock
->>>>> code must not be difficult, I believe..
->>>>>
->>>>> Any loopholes in this approach? Or is the additional complexity just not worth
->>>>> it here?
->>>>
->>>> To summarize the modified variant of that approach hashed out on IRC:
->>>>
->>>> 	* lglock grows three extra things: spinlock, cpu bitmap and cpu hotplug
->>>> notifier.
->>>> 	* foo_global_lock_online starts with grabbing that spinlock and
->>>> loops over the cpus in that bitmap.
->>>> 	* foo_global_unlock_online loops over the same bitmap and then drops
->>>> that spinlock
->>>> 	* callback of the notifier is going to do all bitmap updates.  Under
->>>> that spinlock.  Events that need handling definitely include the things like
->>>> "was going up but failed", since we need the bitmap to contain all online CPUs
->>>> at all time, preferably without too much junk beyond that.  IOW, we need to add
->>>> it there _before_ low-level __cpu_up() calls set_cpu_online().  Which means
->>>> that we want to clean up on failed attempt to up it.  Taking a CPU down is
->>>> probably less PITA; just clear bit on the final "the sucker's dead" event.
->>>> 	* bitmap is initialized once, at the same time we set the notifier
->>>> up.  Just grab the spinlock and do
->>>> 	for_each_online_cpu(N)
->>>> 		add N to bitmap
->>>> then release the spinlock and let the callbacks handle all updates.
->>>>
->>>> I think that'll work with relatively little pain, but I'm not familiar enough
->>>> with the cpuhotplug notifiers, so I'd rather have the folks familiar with those
->>>> to supply the set of events to watch for...
->>>>
->>>
->>>
->>> We need not watch out for "up failed" events. It is enough if we handle
->>> CPU_ONLINE and CPU_DEAD events. Because, these 2 events are triggered only
->>> upon successful online or offline operation, and these notifications are
->>> more than enough for our purpose (to update our bitmaps). Also, those cpus
->>> which came online wont start running until these "success notifications"
->>> are all done, which is where we do our stuff in the callback (ie., try
->>> grabbing the spinlock..).
->>>
->>> Of course, by doing this (only looking out for CPU_ONLINE and CPU_DEAD
->>> events), our bitmap will probably be one step behind cpu_online_mask
->>> (which means, we'll still have to take the snapshot of cpu_online_mask and
->>> work with it instead of using for_each_online_cpu()).
->>> But that doesn't matter, as long as:
->>>   * we don't allow the newly onlined CPU to start executing code (this
->>>     is achieved by taking the spinlock in the callback)
->>
->> I think cpu notifier callback doesn't always run on the UPing cpu.
->> Actually, it rarely runs on the UPing cpu.
->> If I was wrong about the above thought, there is still a chance that lg-lock
->> operations are scheduled on the UPing cpu before calling the callback.
->>
+> I'm bringing a though question then: what should we do if I 
+> strongly think that the current ABIs should be replaced ?  To 
+> support this, let's note that the current perf ABI:
 > 
-> 
-> I wasn't actually banking on that, but you have raised a very good point.
-> The scheduler uses its own set of cpu hotplug callback handlers to start
-> using the newly added cpu (see the set of callbacks in kernel/sched.c)
-> 
-> So, now we have a race between our callback and the scheduler's callbacks.
-> ("Placing" our callback appropriately in a safe position using priority
-> for notifiers doesn't appeal to me that much, since it looks like too much
-> hackery. It should probably be our last resort).
-> 
+>  - lacks versioning information to handle change. [...]
+
+That's not actually true on *any* level: we are changing, 
+evolving and extending the perf ABIs all the time.
+
+There's two main API/ABI components:
+
+1) the perf syscall which is part of the Linux syscall ABI.
+
+Individual versions of the ABI have (monotonically increasing) 
+sizes for "struct perf_event_attr" - you can consider these 
+natural ABI versioning.
+
+So the 'versioning' is not done via some inflexible and ugly, 
+Windows-alike 'explicit ABI version' field, but done via 
+structure sizes and -ENOSYS.
+
+We've iterated and versioned it numerous times in the past 10 
+kernel releases, in a backwards compatible manner.
+
+2) the perf.data file
+
+The versioning there is capability bitmask based - modelled 
+after ext2/ext3/ext4 capability bitmasks. It's extensible as 
+well.
+
+I think your concentration on ABIs is missing a very fundamental 
+property of instrumentation:
+
+  the life-time and persistence of instrumentation data is 
+  typically very short ('days' is already an exception - typical 
+  is minutes, at most hours), and for that reason we havent been 
+  getting much pressure from users to maintain a perf.data ABI - 
+  but we are doing it nevertheless.
+
+Instrumentation is fundamentally about the 'here and now' and so 
+it fundamentally differs from things like backup formats and 
+database formats. An ABI does not hurt and we are maintaining 
+it, but you are overrating its importance significantly.
 
 
-Hey, actually there is a simple solution: just nip it (or rather delay it)
-in the bud ;) That is, we watch out for CPU_UP_PREPARE event and lock it
-up there itself using our spinlock.. that way, that cpu will not come up
-until we are done executing br_write_unlock(). In fact, we can even fail
-the onlining of that cpu by returning appropriate value from our callback,
-but that would be too harsh.. so we can settle for delaying the cpu online
-operation :)
+>    [...] I think shipping the tracer tools within the Linux 
+>    tools/ directory made sense for an initial phase that made 
+>    tracer solutions more popular for kernel developers (and it 
+>    did a great job a that), but if we want to move on to build 
+>    tools that target a wider audience, we should leave the 
+>    tools/ sandbox and create separate projects, with clearly 
+>    defined ABIs, using ABI versioning to manage changes. At 
+>    this point, I think that perf tool shipped within tools/ is 
+>    more than anything a pain for non-kernel-developer users, 
+>    and favors design of sloppy ABIs.
 
-And we do the same thing for CPU_DOWN_PREPARE event. And we can forget about
-taking snapshot of cpu_online_mask, since cpu_online_mask is guaranteed to
-be unmodified until we are done with br_write_unlock().
+I think you've thoroughly misunderstood the upstream ABI 
+versioning status quo, which makes your argument out of this 
+world.
 
-Regards,
-Srivatsa S. Bhat
+The perf ABIs are well-defined and well-maintained. See an 
+ad-hoc ABI and tool compatibility experiment i made here:
 
+   [F.A.Q.] perf ABI backwards and forwards compatibility
+   https://lkml.org/lkml/2011/11/8/77
+
+>  - makes it impossible to move to CTF (Common Trace Format) 
+>    and benefit from the added features it allows,
+
+"CTF" was mainly written by yourself, right?
+
+If there's any tool worth caring about that wants to deal in CTF 
+then it can be converted just fine. I don't think it matters 
+nearly as much as you seem to imply, see my reply further below.
+
+>  - makes it needlessly hard, if not impossible, for perf to
+>    move to something that would have the benefits brought by 
+>    the fast unified ring buffer code I created 2 years ago,
+
+The current upstream code actually has a fast unified 
+ring-buffer, mmap()-ed to user-space, so you'd have to be a bit 
+more specific about that point.
+
+>  - makes it impossible to benefit from the LTTng fast trace 
+>  clocks.
+
+We have various trace clocks upstream as well - so you'd have to 
+outline it specifically why it's "impossible".
+
+> Also, it should be noted that I am finding that the way perf 
+> evolved into a large monolithic binary blob that needs to be 
+> all enabled or all disabled makes it quite hard to extend and 
+> re-use. [...]
+
+There's a (very) healthy in-flux of features - it's one of the 
+most active kernel and userpace projects we have.
+
+So *others* don't find it hard to work with. If you have 
+specific observations i'm sure Arnaldo will appreciate them.
+
+[ I snipped the rest of your reply - you seem to have deep 
+  rooted misconceptions about what the current upstream 
+  principles and practices are in this area: you are banging on 
+  open doors! ]
+
+Anyway, my prior request+offer stands: please split LTTNG up 
+into individual feature blocks done to extend or replace 
+existing instrumentation features and offer them as changes to 
+existing upstream instrumentation code. We want every 
+conceivable useful feature, but we *really* don't want 
+schizophrenic duplication in this area.
+
+Thanks,
+
+	Ingo
