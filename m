@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1LTXoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:44:08 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44557 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab1LTXoG (ORCPT
+	id S1753511Ab1LTXqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:46:11 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50069 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab1LTXqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:44:06 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 21 Dec 2011 00:43:52 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Carl Karsten <carl@personnelware.com>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] firewire: do not expose globally unique IDs in the
- kernel log
-Message-ID: <20111221004352.39dbb43a@stein>
-In-Reply-To: <20111221001031.539ef397@stein>
-References: <20111220213017.75ff380c@stein>
-	<20111220213120.5e275f10@stein>
-	<CADmzSSjfFgrAroh8jZfC-q0dNuDgsyoNcUfTik6gBx75zrngFw@mail.gmail.com>
-	<20111221001031.539ef397@stein>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Dec 2011 18:46:08 -0500
+Date: Tue, 20 Dec 2011 15:46:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 1/5 V3] cgroup: remove redundate get/put of old css_set
+ from migrate
+Message-ID: <20111220234602.GP10752@google.com>
+References: <1324422873-31001-1-git-send-email-msb@chromium.org>
+ <1324422873-31001-2-git-send-email-msb@chromium.org>
+ <20111220231823.GK10752@google.com>
+ <20111220234131.GV13529@google.com>
+ <20111220234259.GO10752@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111220234259.GO10752@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 21 Stefan Richter wrote:
-> Or you run "grep . /sys/bus/firewire/devices/*/guid | sed s/\\/guid:/\\t/"
-> before dvgrab, and you get a list of GUIDs from which you can copy and
-> paste.
+On Tue, Dec 20, 2011 at 03:42:59PM -0800, Tejun Heo wrote:
+> > But I can stop using scissors if that is what you prefer.
+> 
+> Heh, that's cute.  If git-am is happy, I'm happy too.  Thanks for
+> letting me know.
 
-Or
-	(cd /sys/bus/firewire/devices; grep . $(ls -c */guid)) | sed s/\\/guid:/\\t/
+Hmm... on the second thought, it's not enabled by default and I
+suspect git-quiltimport would cut it out.  Let's stick to below --- or
+in the commit message.
 
-for a list in reverse-chronological order of discovery.
-Same but narrowed down to AV/C devices:
+Thank you.
 
-	(cd /sys/bus/firewire/devices; for fw in $(grep 0x00a02d:0x010001 $(ls -c */units) | cut -f1 -d/); do printf $fw\\t; cat $fw/guid; done)
 -- 
-Stefan Richter
--=====-==-== ==-- =-=-=
-http://arcgraph.de/sr/
+tejun
