@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1LTNvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 08:51:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49407 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795Ab1LTNv1 convert rfc822-to-8bit (ORCPT
+	id S1752262Ab1LTN4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 08:56:39 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57823 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab1LTN4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 08:51:27 -0500
-From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] davinci: DA850 EVM: OHCI platform code
-Thread-Topic: [PATCH] davinci: DA850 EVM: OHCI platform code
-Thread-Index: AQHMvweySyTHtm9kN0+l7odViuYyipXkvdLg
-Date: Tue, 20 Dec 2011 13:51:10 +0000
-Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA90659DC@DBDE01.ent.ti.com>
-References: <1324363005-11320-1-git-send-email-prakash.pm@ti.com>
- <4EF06C64.8000708@mvista.com>
-In-Reply-To: <4EF06C64.8000708@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 08:56:34 -0500
+Message-ID: <4EF0940D.7070304@kernel.dk>
+Date: Tue, 20 Dec 2011 14:56:29 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "edmund.nadolski" <edmund.nadolski@intel.com>, mroos@ut.ee
+Subject: Re: [PATCH RESEND] block: warn if tag is greater than real_max_depth.
+References: <1315984992-5158-1-git-send-email-tm@tao.ma> <4EA57E40.2020301@tao.ma> <4EA670F9.8030601@kernel.dk> <CAA9_cmeV7uW8Rq_Rsn156SgtT4bBHV3Zip2=NS3kq+JrLm3AEQ@mail.gmail.com> <4EEFE0AE.7040201@tao.ma> <CAA9_cmfRXgwsamx2Q+Wccyfqnz3ePt60Z950pPippJuOnooJLA@mail.gmail.com>
+In-Reply-To: <CAA9_cmfRXgwsamx2Q+Wccyfqnz3ePt60Z950pPippJuOnooJLA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-> Hello.
+On 2011-12-20 02:45, Dan Williams wrote:
+> On Mon, Dec 19, 2011 at 5:11 PM, Tao Ma <tm@tao.ma> wrote:
+>>>> Looks good, better than what we had. Applied.
+>>>
+>>> This appears to interact badly with scsi_adjust_queue_depth() when the
+>>> tag space shrinks.  I can reproduce a similar crash as reported in
+>>> "3.2-rc2+git: kernel BUG at block/blk-core.c:1000!
+>>> (__scsi_queue_insert)" [1].
+>>>
+>>> I can hit "kernel BUG at block/blk-core.c:2268!" which is the same
+>>> BUG_ON(blk_queued_rq(rq)) check reliably with:
+>>> # for i in $(seq 0 10); do dd if=/dev/zero of=/dev/sdX & done
+>>> # echo 4 > /sys/class/block/sdX/device/queue_depth
+>>>
+>>> The following fixes it for me, if this looks ok (versus reverting
+>>> commit 5e081591) I'll roll it into a formal patch with Ed and Meelis'
+>>> Reported-by.
+>> Interesting. If I read the code correctly, real_max_depth is the maximum
+>> queue depth we ever have and max_depth is the current depth.
+>>
+>> In your fix, we never resize the tag size to be smaller than max_depth.
+>> So I think this patch does expose some problem, but not lead to the BUG.
 > 
-> On 20.12.2011 10:36, Manjunathappa, Prakash wrote:
+> Yes, if we keep the "if (unlikely(tag >= bqt->max_depth))" check in
+> blk_queue_end_tag() then the side effect is that we can never shrink
+> the tag depth, which I don't think was intended.
 > 
-> > From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+>> And in your new comment, you mentioned that "request between new_depth
+>> and max_depth can be in-flight", but max_depth <= real_max_depth, so
+>> what's wrong with the comment? Sorry, but am I missing something here?
 > 
->     It's a good practice to CC the original author of the patch -- which
-> I'm
-> doing now...
-> 
-> > On this board the OHCI port's power control and over-current signals
-> from
-> > TPS2065 power switch are connected via GPIO1[15] and GPIO2[1]
-> respectively,
-> 
->     Ajay, your description seems to be copied unchganged from the
-> analogous
-> DA830 EVM patch, and thus doesn't match your patch: GPIO2[4] and
-> GPIO6[13] are
-> used apparently. Be more attentive to detail next time please.
+> Prior to the change blk_queue_end_tag() would continue to complete
+> requests with a tag > max_depth, now it silently drops them on the
+> floor leaving BUG_ON(blk_queued_rq(rq)) to trigger when we try to end
+> the request
 
-Well, this patch was created long back for internal release work and
-couldn't review this before it is sent out.
+Yeah, that's just wrong. Tao Ma, which bug was the original fix intended
+to fix?
 
-Prakash, Please correct the patch description as suggested.
+The reason we have these two ceilings is exactly for shrinking depth
+situations. It's quite legal to have an inflight request with a tag
+inbetween max_depth and real_max_depth.
 
-Regards,
-Ajay
-> .
-> > so we can implement the DA8xx OHCI glue layer's hooks for overriding
-> the
-> > root hub port's power and over-current status bits.
-> 
-> > We also have to properly set up the clocking mode in the CFGCHIP2
-> register,
-> > so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB)
-> PHY and
-> > its output is used to clock the USB 1.1 (OHCI) PHY...
-> 
-> > Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
-> > ---
-> >   arch/arm/mach-davinci/board-da850-evm.c |  126
-> +++++++++++++++++++++++++++++++
-> >   1 files changed, 126 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-
-> davinci/board-da850-evm.c
-> > index 6659a90..df74ba5 100644
-> > --- a/arch/arm/mach-davinci/board-da850-evm.c
-> > +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> [...]
-> > @@ -734,6 +736,127 @@ static struct davinci_i2c_platform_data
-> da850_evm_i2c_0_pdata = {
-> [...]
-> > +static int da850_evm_usb_ocic_notify(da8xx_ocic_handler_t handler)
-> > +{
-> > +	int irq		= gpio_to_irq(ON_BD_USB_OVC);
-> > +	int error	= 0;
-> > +
-> > +	if (handler != NULL) {
-> > +		da850_evm_usb_ocic_handler = handler;
-> > +
-> > +		error = request_irq(irq, da850_evm_usb_ocic_irq,
-> IRQF_DISABLED |
-> 
->     IRQF_DISABLED is a nop now -- just remove it.
-> 
-> WBR, Sergei
+-- 
+Jens Axboe
+
