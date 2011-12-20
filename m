@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1LTGrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 01:47:55 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:39207 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1LTGrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 01:47:49 -0500
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH] consider swap space when we decide compaction goes or not
-Date: Tue, 20 Dec 2011 15:47:33 +0900
-Message-Id: <1324363653-18220-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.6.4
+	id S1752649Ab1LTGsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 01:48:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51391 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987Ab1LTGsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 01:48:33 -0500
+Message-ID: <4EF02FA7.2010209@zytor.com>
+Date: Mon, 19 Dec 2011 22:48:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, trenn@suse.de, kay.sievers@vrf.org,
+        Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org, axboe@kernel.dk,
+        ying.huang@intel.com
+Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading
+ for x86 crypto drivers
+References: <1324334865-30459-1-git-send-email-andi@firstfloor.org> <1324334865-30459-4-git-send-email-andi@firstfloor.org> <20111219232246.GB570@redhat.com> <4EEFC7D2.70803@zytor.com> <20111220040829.GD5637@one.firstfloor.org> <4EF014FE.4050101@zytor.com> <20111220053059.GA3108@gondor.apana.org.au> <4EF01E89.5000007@zytor.com> <20111220053826.GA3184@gondor.apana.org.au>
+In-Reply-To: <20111220053826.GA3184@gondor.apana.org.au>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's pointless to go reclaiming when we have no swap space
-and lots of anon pages in inactive list.
+On 12/19/2011 09:38 PM, Herbert Xu wrote:
+>>
+>> Yes, but it's ridiculous for it to list all the things I'm *not* using,
+>> but not what I *am* using...
+> 
+> If your system doesn't have the VIA Padlock it won't even show
+> up in /proc/crypto since it'll fail to register.
+> 
 
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/vmscan.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Wow.  /proc/crypto is hard to read.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 23256e8..cd5400c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2015,8 +2015,9 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	 * inactive lists are large enough, continue reclaiming
- 	 */
- 	pages_for_compaction = (2UL << sc->order);
--	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
--				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	if (nr_swap_pages > 0)
-+		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
- 	if (sc->nr_reclaimed < pages_for_compaction &&
- 			inactive_lru_pages > pages_for_compaction)
- 		return true;
+	-hpa
+
+
 -- 
-1.7.6.4
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
