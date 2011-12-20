@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1LTX2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:28:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58348 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753025Ab1LTX2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:28:03 -0500
-Date: Wed, 21 Dec 2011 00:28:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ignaz Forster <ignaz.forster@gmx.de>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable HID_QUIRK_MULTI_INPUT for Trio Linker Plus II
-In-Reply-To: <4EEC8839.1010801@gmx.de>
-Message-ID: <alpine.LNX.2.00.1112210027550.8727@pobox.suse.cz>
-References: <4EEC8839.1010801@gmx.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753324Ab1LTXa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:30:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42339 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1LTXaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 18:30:55 -0500
+Date: Tue, 20 Dec 2011 15:30:50 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 4/5] cgroup: remove extra calls to find_existing_css_set
+Message-ID: <20111220233050.GM10752@google.com>
+References: <1324422873-31001-1-git-send-email-msb@chromium.org>
+ <1324422873-31001-5-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324422873-31001-5-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Dec 2011, Ignaz Forster wrote:
+Hello,
 
-> Add quirk for the Trio Linker Plus II - the adapter supports several controllers simultaneously, generating a new HID entry for each connected device.
-> 
-> Signed-off-by: Ignaz Forster <ignaz.forster@gmx.de>
-> ---
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 5028d60..4d256a7 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -47,6 +47,7 @@ static const struct hid_blacklist {
+On Tue, Dec 20, 2011 at 03:14:32PM -0800, Mandeep Singh Baines wrote:
+> @@ -1942,9 +1917,17 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>  		}
+>  	}
 >  
->  	{ USB_VENDOR_ID_AFATECH, USB_DEVICE_ID_AFATECH_AF9016, HID_QUIRK_FULLSPEED_INTERVAL },
->  
-> +	{ USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II, HID_QUIRK_MULTI_INPUT },
->  	{ USB_VENDOR_ID_ETURBOTOUCH, USB_DEVICE_ID_ETURBOTOUCH, HID_QUIRK_MULTI_INPUT },
->  	{ USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD, HID_QUIRK_MULTI_INPUT },
->  	{ USB_VENDOR_ID_PANTHERLORD, USB_DEVICE_ID_PANTHERLORD_TWIN_USB_JOYSTICK, HID_QUIRK_MULTI_INPUT | HID_QUIRK_SKIP_OUTPUT_REPORTS },
+> -	retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, false);
+> -	if (retval)
+> +	task_lock(tsk);
+> +	oldcg = tsk->cgroups;
+> +	task_unlock(tsk);
 
-Applied, thanks.
+Probably this is patch order issue w/ Frederic's patch but we don't
+need task_lock here, right?
+
+> @@ -2171,17 +2088,18 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  	 * step 2: make sure css_sets exist for all threads to be migrated.
+>  	 * we use find_css_set, which allocates a new one if necessary.
+>  	 */
+> -	INIT_LIST_HEAD(&newcg_list);
+>  	for (i = 0; i < group_size; i++) {
+>  		tc = flex_array_get(group, i);
+>  		/* get old css_set pointer */
+>  		task_lock(tc->task);
+>  		oldcg = tc->task->cgroups;
+>  		task_unlock(tc->task);
+> -		/* if we don't already have it in the list get a new one */
+> -		if (!css_set_fetched(cgrp, tc->task, oldcg, &newcg_list))
+> -			if (retval = css_set_prefetch(cgrp, oldcg, &newcg_list))
+> -				goto out_list_teardown;
+> +		tc->cg = find_css_set(oldcg, cgrp);
+> +		if (!tc->cg) {
+> +			retval = -ENOMEM;
+> +			css_set_refs = i + 1;
+> +			goto out_list_teardown;
+> +		}
+
+Nice cleanup, but can't the above be merged into the loop which builds
+the flex array?
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+tejun
