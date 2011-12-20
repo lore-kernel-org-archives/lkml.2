@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab1LTCrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:47:53 -0500
+	id S1754242Ab1LTCsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:48:06 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:43515 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab1LTCrv (ORCPT
+	with ESMTP id S1751491Ab1LTCr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:47:51 -0500
+	Mon, 19 Dec 2011 21:47:56 -0500
 From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 To: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -17,78 +17,89 @@ To: Liam Girdwood <lrg@ti.com>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH 1/3 v5] sound/soc/codecs: add LAPIS Semiconductor ML26124
-Date: Tue, 20 Dec 2011 11:45:42 +0900
-Message-Id: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+Subject: [PATCH 2/3 v4] sound/soc/lapis: add machine driver for ML7213 Carrier Board
+Date: Tue, 20 Dec 2011 11:45:43 +0900
+Message-Id: <1324349144-12784-2-git-send-email-tomoya.rohm@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ML26124-01HB/ML26124-02GD is 16bit monaural audio CODEC which has high
-resistance to voltage noise. On chip regulator realizes power supply rejection
-ratio be over 90dB so more than 50dB is improved than ever. ML26124-01HB/
-ML26124-02GD can deliver stable audio performance without being affected by noise
-from the power supply circuit and peripheral components. The chip also includes
-a composite video signal output, which can be applied to various portable device
- requirements. The ML26124 is realized these functions into very small package
-the size is only 2.56mm x 2.46mm therefore can be construct high quality sound
-system easily.
-ML26124-01HB is 25pin WCSP package; ML26124-02GD is 32pin WQFN package.
+This driver is for LAPIS Semiconductor ML7213 Carrier Board.
+This driver controls ML26124 CODEC and ML7213 IOH I2S.
 
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 ---
-V5: Add clock setting processing
+V4
+ - Add MCLKFS / BCLKFS processing
+ - Delete ml7213_ioh_init
 ---
- sound/soc/codecs/Kconfig   |    4 +
- sound/soc/codecs/Makefile  |    1 +
- sound/soc/codecs/ml26124.c |  594 ++++++++++++++++++++++++++++++++++++++++++++
- sound/soc/codecs/ml26124.h |  129 ++++++++++
- 4 files changed, 728 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/codecs/ml26124.c
- create mode 100644 sound/soc/codecs/ml26124.h
+ sound/soc/Kconfig                   |    1 +
+ sound/soc/Makefile                  |    1 +
+ sound/soc/lapis/Kconfig             |    5 +
+ sound/soc/lapis/Makefile            |    4 +
+ sound/soc/lapis/ml7213ioh-machine.c |  214 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 225 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/lapis/Kconfig
+ create mode 100644 sound/soc/lapis/Makefile
+ create mode 100644 sound/soc/lapis/ml7213ioh-machine.c
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 7c205e7..2b4435f 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -41,6 +41,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_MAX98095 if I2C
- 	select SND_SOC_MAX9850 if I2C
- 	select SND_SOC_MAX9877 if I2C
-+	select SND_SOC_ML26124 if I2C
- 	select SND_SOC_PCM3008
- 	select SND_SOC_RT5631 if I2C
- 	select SND_SOC_SGTL5000 if I2C
-@@ -224,6 +225,9 @@ config SND_SOC_MAX98095
- config SND_SOC_MAX9850
- 	tristate
- 
-+config SND_SOC_ML26124
-+	tristate
-+
- config SND_SOC_PCM3008
-        tristate
- 
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 9aa6e66..22adcbd 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -28,6 +28,7 @@ snd-soc-lm4857-objs := lm4857.o
- snd-soc-max98088-objs := max98088.o
- snd-soc-max98095-objs := max98095.o
- snd-soc-max9850-objs := max9850.o
-+snd-soc-ml26124-objs := ml26124.o
- snd-soc-pcm3008-objs := pcm3008.o
- snd-soc-rt5631-objs := rt5631.o
- snd-soc-sgtl5000-objs := sgtl5000.o
-diff --git a/sound/soc/codecs/ml26124.c b/sound/soc/codecs/ml26124.c
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index 35e662d..63f8582 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -34,6 +34,7 @@ source "sound/soc/ep93xx/Kconfig"
+ source "sound/soc/fsl/Kconfig"
+ source "sound/soc/imx/Kconfig"
+ source "sound/soc/jz4740/Kconfig"
++source "sound/soc/lapis/Kconfig"
+ source "sound/soc/nuc900/Kconfig"
+ source "sound/soc/omap/Kconfig"
+ source "sound/soc/kirkwood/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 9ea8ac8..002951f 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_SND_SOC)	+= ep93xx/
+ obj-$(CONFIG_SND_SOC)	+= fsl/
+ obj-$(CONFIG_SND_SOC)   += imx/
+ obj-$(CONFIG_SND_SOC)	+= jz4740/
++obj-$(CONFIG_SND_SOC)   += lapis/
+ obj-$(CONFIG_SND_SOC)	+= mid-x86/
+ obj-$(CONFIG_SND_SOC)	+= mxs/
+ obj-$(CONFIG_SND_SOC)	+= nuc900/
+diff --git a/sound/soc/lapis/Kconfig b/sound/soc/lapis/Kconfig
 new file mode 100644
-index 0000000..fe2dc26
+index 0000000..f6c2fe5
 --- /dev/null
-+++ b/sound/soc/codecs/ml26124.c
-@@ -0,0 +1,594 @@
++++ b/sound/soc/lapis/Kconfig
+@@ -0,0 +1,5 @@
++config SND_SOC_ML7213_MACHINE
++	tristate "ML7213 IOH ASoC machine driver"
++	select SND_SOC_ML7213_PLATFORM
++	help
++	  This is ASoC machine driver for ML7213 IOH
+diff --git a/sound/soc/lapis/Makefile b/sound/soc/lapis/Makefile
+new file mode 100644
+index 0000000..cdb196a
+--- /dev/null
++++ b/sound/soc/lapis/Makefile
+@@ -0,0 +1,4 @@
++# Platform
++snd-soc-ml7213-machine-objs := ml7213ioh-machine.o
++
++obj-$(CONFIG_SND_SOC_ML7213_MACHINE) += snd-soc-ml7213-machine.o
+diff --git a/sound/soc/lapis/ml7213ioh-machine.c b/sound/soc/lapis/ml7213ioh-machine.c
+new file mode 100644
+index 0000000..4787793
+--- /dev/null
++++ b/sound/soc/lapis/ml7213ioh-machine.c
+@@ -0,0 +1,214 @@
 +/*
++ * ml7213ioh-machine.c -- SoC Audio for LAPIS Semiconductor ML7213 IOH CRB
++ *
 + * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -104,719 +115,202 @@ index 0000000..fe2dc26
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
 + */
-+
 +#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/pm.h>
-+#include <linux/i2c.h>
-+#include <linux/slab.h>
 +#include <linux/platform_device.h>
 +#include <sound/core.h>
 +#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
 +#include <sound/soc.h>
-+#include <sound/tlv.h>
-+#include "ml26124.h"
++#include <sound/pcm_params.h>
++#include <linux/i2c.h>
++#include "../codecs/ml26124.h"
++#include "ioh_i2s.h"
 +
-+struct ml26124_priv {
-+	u32 mclk;
-+	u32 channels;
++static const struct snd_soc_dapm_widget ml7213_dapm_widgets[] = {
++	SND_SOC_DAPM_SPK("Speaker", NULL),
++	SND_SOC_DAPM_LINE("LINEOUT", NULL),
++	SND_SOC_DAPM_LINE("LINEIN", NULL),
++	SND_SOC_DAPM_MIC("AnalogMIC", NULL),
++	SND_SOC_DAPM_MIC("DigitalMIC", NULL),
 +};
 +
-+/* ML26124 configuration */
-+static const DECLARE_TLV_DB_SCALE(digital_tlv, -7150, 50, 0);
-+static const DECLARE_TLV_DB_SCALE(alclvl, -2250, 150, 0);
-+static const DECLARE_TLV_DB_SCALE(mingain, -1200, 600, 0);
-+static const DECLARE_TLV_DB_SCALE(maxgain, -675, 600, 0);
-+static const DECLARE_TLV_DB_SCALE(boost_vol, -1200, 75, 0);
-+static const DECLARE_TLV_DB_SCALE(ngth, -7650, 150, 0);
-+
-+static const char * const ml26124_companding[] = {"16bit PCM", "u-law",
-+						  "A-law"};
-+static const struct soc_enum ml26124_adc_companding_enum
-+	= SOC_ENUM_SINGLE(ML26124_SAI_TRANS_CTL, 6, 3, ml26124_companding);
-+static const struct soc_enum ml26124_dac_companding_enum
-+	= SOC_ENUM_SINGLE(ML26124_SAI_RCV_CTL, 6, 3, ml26124_companding);
-+
-+static const struct snd_kcontrol_new ml26124_snd_controls[] = {
-+	SOC_SINGLE_TLV("Capture Digital Volume", ML26124_RECORD_DIG_VOL, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("Playback Digital Volume", ML26124_PLBAK_DIG_VOL, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("Digital Boost Volume", ML26124_DIGI_BOOST_VOL, 0,
-+			0x3f, 0, boost_vol),
-+	SOC_SINGLE_TLV("EQ Band0 Volume", ML26124_EQ_GAIN_BRAND0, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("EQ Band1 Volume", ML26124_EQ_GAIN_BRAND1, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("EQ Band2 Volume", ML26124_EQ_GAIN_BRAND2, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("EQ Band3 Volume", ML26124_EQ_GAIN_BRAND3, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("EQ Band4 Volume", ML26124_EQ_GAIN_BRAND4, 0,
-+			0xff, 1, digital_tlv),
-+	SOC_SINGLE_TLV("ALC Target Level", ML26124_ALC_TARGET_LEV, 0,
-+			0xf, 1, alclvl),
-+	SOC_SINGLE_TLV("ALC Min Input Volume", ML26124_ALC_MAXMIN_GAIN, 0,
-+			7, 0, mingain),
-+	SOC_SINGLE_TLV("ALC Max Input Volume", ML26124_ALC_MAXMIN_GAIN, 4,
-+			7, 1, maxgain),
-+	SOC_SINGLE_TLV("Playback Limitter Min Input Volume",
-+			ML26124_PL_MAXMIN_GAIN, 0, 7, 0, mingain),
-+	SOC_SINGLE_TLV("Playback Limitter Max Input Volume",
-+			ML26124_PL_MAXMIN_GAIN, 4, 7, 1, maxgain),
-+	SOC_SINGLE_TLV("Playback Boost Volume", ML26124_PLYBAK_BOST_VOL, 0,
-+			0x3f, 0, boost_vol),
-+	SOC_SINGLE("DC High Pass Filter Switch", ML26124_FILTER_EN, 0, 1, 0),
-+	SOC_SINGLE("Noise High Pass Filter Switch", ML26124_FILTER_EN, 1, 1, 0),
-+	SOC_SINGLE("Zero Cross Comparator Switch", ML26124_PW_ZCCMP_PW_MNG, 1,
-+		    1, 0),
-+	SOC_SINGLE("EQ Band0 Switch", ML26124_FILTER_EN, 2, 1, 0),
-+	SOC_SINGLE("EQ Band1 Switch", ML26124_FILTER_EN, 3, 1, 0),
-+	SOC_SINGLE("EQ Band2 Switch", ML26124_FILTER_EN, 4, 1, 0),
-+	SOC_SINGLE("EQ Band3 Switch", ML26124_FILTER_EN, 5, 1, 0),
-+	SOC_SINGLE("EQ Band4 Switch", ML26124_FILTER_EN, 6, 1, 0),
-+	SOC_SINGLE("Play Limitter", ML26124_DVOL_CTL, 0, 1, 0),
-+	SOC_SINGLE("Capture Limitter", ML26124_DVOL_CTL, 1, 1, 0),
-+	SOC_SINGLE("Digital Volume Fade Switch", ML26124_DVOL_CTL, 3, 1, 0),
-+	SOC_SINGLE("Digital Switch", ML26124_DVOL_CTL, 4, 1, 0),
-+	SOC_ENUM("DAC Companding", ml26124_dac_companding_enum),
-+	SOC_ENUM("ADC Companding", ml26124_adc_companding_enum),
++static const struct snd_soc_dapm_route ml7213_routes[] = {
++	{"Speaker", NULL, "SPOUT"},
++	{"LINEOUT", NULL, "LOUT"},
++	{"MIN", NULL, "AnalogMIC"},
++	{"MDIN", NULL, "DigitalMIC"},
++	{"MIN", NULL, "LINEIN"},
 +};
 +
-+static const struct snd_kcontrol_new ml26124_output_mixer_controls[] = {
-+	SOC_DAPM_SINGLE("DAC Switch", ML26124_SPK_AMP_OUT, 1, 1, 0),
-+	SOC_DAPM_SINGLE("Line in Switch", ML26124_SPK_AMP_OUT, 3, 1, 0),
-+	SOC_DAPM_SINGLE("PGA Switch", ML26124_SPK_AMP_OUT, 5, 1, 0),
-+};
-+
-+/* Input mux */
-+static const char * const ml26124_input_select[] = {"Analog MIC SingleEnded in",
-+						"Analog MIC Differential in",
-+						"Digital MIC in"};
-+
-+static const struct soc_enum ml26124_insel_enum =
-+	SOC_ENUM_SINGLE(ML26124_MIC_IF_CTL, 0, 2, ml26124_input_select);
-+
-+static const struct snd_kcontrol_new ml26124_input_mux_controls =
-+	SOC_DAPM_ENUM("Input Select", ml26124_insel_enum);
-+
-+static const struct snd_kcontrol_new ml26124_line_control =
-+	SOC_DAPM_SINGLE("Switch", ML26124_PW_LOUT_PW_MNG, 1, 1, 0);
-+
-+static const struct snd_soc_dapm_widget ml26124_dapm_widgets[] = {
-+	SND_SOC_DAPM_SUPPLY("MCLK", ML26124_CLK_EN, 0, 0, NULL, 0),
-+	SND_SOC_DAPM_SUPPLY("PLL", ML26124_CLK_EN, 1, 0, NULL, 0),
-+	SND_SOC_DAPM_MICBIAS("MICBIAS", ML26124_PW_REF_PW_MNG, 0, 0),
-+	SND_SOC_DAPM_MIXER("Output Mixer", ML26124_PW_SPAMP_PW_MNG, 0, 0,
-+			   &ml26124_output_mixer_controls[0],
-+			   ARRAY_SIZE(ml26124_output_mixer_controls)),
-+	SND_SOC_DAPM_DAC("DAC", "Playback", ML26124_PW_DAC_PW_MNG, 1, 0),
-+	SND_SOC_DAPM_ADC("ADC", "Capture", ML26124_PW_IN_PW_MNG, 1, 0),
-+	SND_SOC_DAPM_PGA("PGA", ML26124_PW_IN_PW_MNG, 3, 0, NULL, 0),
-+	SND_SOC_DAPM_MUX("Input Mux", SND_SOC_NOPM, 0, 0,
-+			  &ml26124_input_mux_controls),
-+	SND_SOC_DAPM_SWITCH("Line Out Enable", SND_SOC_NOPM, 0, 0,
-+			     &ml26124_line_control),
-+	SND_SOC_DAPM_INPUT("MDIN"),
-+	SND_SOC_DAPM_INPUT("MIN"),
-+	SND_SOC_DAPM_INPUT("LIN"),
-+	SND_SOC_DAPM_OUTPUT("SPOUT"),
-+	SND_SOC_DAPM_OUTPUT("LOUT"),
-+};
-+
-+static const struct snd_soc_dapm_route ml26124_intercon[] = {
-+	/* Supply */
-+	{"DAC", NULL, "MCLK"},
-+	{"ADC", NULL, "MCLK"},
-+	{"DAC", NULL, "PLL"},
-+	{"ADC", NULL, "PLL"},
-+
-+	/* output mixer */
-+	{"Output Mixer", "PGA Switch", "PGA"},
-+	{"Output Mixer", "DAC Switch", "DAC"},
-+	{"Output Mixer", "Line in Switch", "LIN"},
-+
-+	/* outputs */
-+	{"LOUT", NULL, "Output Mixer"},
-+	{"SPOUT", NULL, "Output Mixer"},
-+
-+	/* input */
-+	{"Input Mux", "Analog MIC SingleEnded in", "MIN"},
-+	{"Input Mux", "Analog MIC Differential in", "MIN"},
-+	{"ADC", NULL, "Input Mux"},
-+};
-+
-+struct clk_coeff {
-+	u32 mclk;
-+	u32 rate;
-+	u8 pllnl;
-+	u8 pllnh;
-+	u8 pllml;
-+	u8 pllmh;
-+	u8 plldiv;
-+};
-+
-+/* PLLOutputFreq(Hz) = InputMclkFreq(Hz) * PLLM / (PLLN * PLLDIV) */
-+static const struct clk_coeff coeff_div[] = {
-+	{12288800, 16000, 0xc, 0x0, 0x20, 0x0, 0x4},
-+	{12288800, 32000, 0xc, 0x0, 0x20, 0x0, 0x4},
-+	{12288800, 48000, 0xc, 0x0, 0x30, 0x0, 0x4},
-+};
-+
-+/* Get sampling rate value of sampling rate setting register (0x0) */
-+static inline int get_srate(int rate)
++static int ml7213_hw_params(struct snd_pcm_substream *substream,
++			    struct snd_pcm_hw_params *hw_params)
 +{
-+	int srate;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *codec_dai = rtd->codec_dai;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++
++	unsigned int clk = 0;
++	int ret = 0;
++	int bclkfs;
++	int mclkfs;
++	int rate = params_rate(hw_params);
 +
 +	switch (rate) {
 +	case 16000:
-+		srate = 3;
-+		break;
 +	case 32000:
-+		srate = 6;
-+		break;
 +	case 48000:
-+		srate = 8;
++		clk = 12288000;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
-+	return srate;
-+}
 +
-+static inline int get_coeff(int mclk, int rate)
-+{
-+	int i;
++	mclkfs = clk / rate;
 +
-+	for (i = 0; i < ARRAY_SIZE(coeff_div); i++) {
-+		if (coeff_div[i].rate == rate && coeff_div[i].mclk == mclk)
-+			return i;
-+	}
-+	return -EINVAL;
-+}
-+
-+static int ml26124_hw_params(struct snd_pcm_substream *substream,
-+			    struct snd_pcm_hw_params *hw_params,
-+			    struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct ml26124_priv *priv = snd_soc_codec_get_drvdata(codec);
-+	int i = get_coeff(priv->mclk, params_rate(hw_params));
-+
-+	priv->channels = params_channels(hw_params);
-+
-+	switch (params_rate(hw_params)) {
-+	case 16000:
-+		snd_soc_update_bits(codec, ML26124_SMPLING_RATE, 0xf,
-+				    get_srate(coeff_div[i].rate));
-+		snd_soc_update_bits(codec, ML26124_PLLNL, 0xff,
-+				    coeff_div[i].pllnl);
-+		snd_soc_update_bits(codec, ML26124_PLLNH, 0x1,
-+				    coeff_div[i].pllnh);
-+		snd_soc_update_bits(codec, ML26124_PLLML, 0xff,
-+				    coeff_div[i].pllml);
-+		snd_soc_update_bits(codec, ML26124_PLLMH, 0x3f,
-+				    coeff_div[i].pllmh);
-+		snd_soc_update_bits(codec, ML26124_PLLDIV, 0x1f,
-+				    coeff_div[i].plldiv);
++	switch (params_format(hw_params)) {
++	case SNDRV_PCM_FORMAT_U8:
++	case SNDRV_PCM_FORMAT_S16_LE:
++		bclkfs = 32;
 +		break;
-+	case 32000:
-+		snd_soc_update_bits(codec, ML26124_SMPLING_RATE, 0xf,
-+				    get_srate(coeff_div[i].rate));
-+		snd_soc_update_bits(codec, ML26124_PLLNL, 0xff,
-+				    coeff_div[i].pllnl);
-+		snd_soc_update_bits(codec, ML26124_PLLNH, 0x1,
-+				    coeff_div[i].pllnh);
-+		snd_soc_update_bits(codec, ML26124_PLLML, 0xff,
-+				    coeff_div[i].pllml);
-+		snd_soc_update_bits(codec, ML26124_PLLMH, 0x3f,
-+				    coeff_div[i].pllmh);
-+		snd_soc_update_bits(codec, ML26124_PLLDIV, 0x1f,
-+				    coeff_div[i].plldiv);
-+		break;
-+	case 48000:
-+		snd_soc_update_bits(codec, ML26124_SMPLING_RATE, 0xf,
-+				    get_srate(coeff_div[i].rate));
-+		snd_soc_update_bits(codec, ML26124_PLLNL, 0xff,
-+				    coeff_div[i].pllnl);
-+		snd_soc_update_bits(codec, ML26124_PLLNH, 0x1,
-+				    coeff_div[i].pllnh);
-+		snd_soc_update_bits(codec, ML26124_PLLML, 0xff,
-+				    coeff_div[i].pllml);
-+		snd_soc_update_bits(codec, ML26124_PLLMH, 0x3f,
-+				    coeff_div[i].pllmh);
-+		snd_soc_update_bits(codec, ML26124_PLLDIV, 0x1f,
-+				    coeff_div[i].plldiv);
++	case SNDRV_PCM_FORMAT_S32_LE:
++		bclkfs = 64;
 +		break;
 +	default:
-+		pr_err("%s:this rate is no support for ml26124\n", __func__);
-+		return -EINVAL;
++		pr_err("%s: Failed not support format\n", __func__);
++		return -1;
++		break;
 +	}
++
++	/* set the codec system clock for DAC and ADC */
++	ret = snd_soc_dai_set_sysclk(codec_dai, ML26124_USE_PLL, clk,
++				     SND_SOC_CLOCK_IN);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS0, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS1, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS2, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS3, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS4, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_BCLKFS5, bclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS0, mclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS1, mclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS2, mclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS3, mclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS4, mclkfs);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, ML7213IOH_MCLKFS5, mclkfs);
++	if (ret < 0)
++		return ret;
 +
 +	return 0;
 +}
 +
-+#define DVOL_CTL_DVMUTE_ON		BIT(4)	/* Digital volume MUTE On */
-+#define DVOL_CTL_DVMUTE_OFF		0	/* Digital volume MUTE Off */
-+
-+static int ml26124_mute(struct snd_soc_dai *dai, int mute)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	if (mute)
-+		snd_soc_update_bits(codec, ML26124_DVOL_CTL, BIT(4),
-+				    DVOL_CTL_DVMUTE_ON);
-+	else
-+		snd_soc_update_bits(codec, ML26124_DVOL_CTL, BIT(4),
-+				    DVOL_CTL_DVMUTE_OFF);
-+	return 0;
-+}
-+
-+#define ML26124_SAI_NO_DELAY	BIT(1)
-+#define ML26124_SAI_FRAME_SYNC	(BIT(5) | BIT(0)) /* For mono (Telecodec) */
-+
-+static int ml26124_set_dai_fmt(struct snd_soc_dai *codec_dai,
-+		unsigned int fmt)
-+{
-+	unsigned char mode;
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct ml26124_priv *priv = snd_soc_codec_get_drvdata(codec);
-+	unsigned char mask = ML26124_SAI_NO_DELAY | ML26124_SAI_FRAME_SYNC;
-+
-+	/* set master/slave audio interface */
-+	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-+	case SND_SOC_DAIFMT_CBM_CFM:
-+		mode = 1;
-+		break;
-+	case SND_SOC_DAIFMT_CBS_CFS:
-+		mode = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	snd_soc_update_bits(codec, ML26124_SAI_MODE_SEL, BIT(0), mode);
-+
-+	/* interface format */
-+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_I2S:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* clock inversion */
-+	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
-+	case SND_SOC_DAIFMT_NB_NF:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* SAI configuration */
-+	if (priv->channels == 1) {
-+		snd_soc_update_bits(codec, ML26124_SAI_TRANS_CTL, mask,
-+				ML26124_SAI_NO_DELAY | ML26124_SAI_FRAME_SYNC);
-+		snd_soc_update_bits(codec, ML26124_SAI_RCV_CTL, mask,
-+				ML26124_SAI_NO_DELAY | ML26124_SAI_FRAME_SYNC);
-+	} else {
-+		snd_soc_update_bits(codec, ML26124_SAI_TRANS_CTL, mask,
-+				    ML26124_SAI_NO_DELAY);
-+		snd_soc_update_bits(codec, ML26124_SAI_RCV_CTL, mask,
-+				    ML26124_SAI_NO_DELAY);
-+	}
-+
-+	return 0;
-+}
-+
-+static int ml26124_set_dai_sysclk(struct snd_soc_dai *codec_dai,
-+		int clk_id, unsigned int freq, int dir)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct ml26124_priv *priv = snd_soc_codec_get_drvdata(codec);
-+
-+	switch (clk_id) {
-+	case ML26124_USE_PLL:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	switch (freq) {
-+	case 12288000:
-+		priv->mclk = freq;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+#define ML26134_CACHESIZE 79
-+static const u16 ml26124_reg[ML26134_CACHESIZE] = {
-+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-+	0x0, 0x0, 0x0,				/* System Control */
-+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,	/* Power Management */
-+	0x4,					/* Analog Reference Control */
-+	0x10, 0x0, 0x33, 0x0, 0x0,	/* Input/Output Amplifier Control */
-+	0x0, 0x0, 0x1,				/* Analog Path Contorl */
-+	0x0, 0x0, 0x0,				/* Audio Interface Control */
-+	0x1, 0x0, 0x0, 0xff, 0xff, 0x10,	/* DSP Control */
-+	0x7, 0x7, 0x7, 0x7, 0x7,		/* DSP Control */
-+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,	/* DSP Control */
-+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,	/* DSP Control */
-+	0x0, 0x0, 0x0,					/* DSP Control */
-+	0x0, 0x2, 0x3, 0x0, 0xb, 0x70, 0x0, 0x0,	/* ALC Control */
-+	0x4, 0x5, 0xd, 0x70, 0x10, 0x0,		/* Playback Limiter Control */
-+	0x1, 0x1, 0x1				/* Video Amplifer Control */
++static struct snd_soc_ops ml7213_ops = {
++	.hw_params = ml7213_hw_params,
 +};
 +
-+#define ML26124_VMID	BIT(0)
-+
-+static void ml26124_sync_cache(struct snd_soc_codec *codec)
-+{
-+	u8 *reg_cache = codec->reg_cache;
-+	int i;
-+
-+	if (!codec->cache_sync)
-+		return;
-+
-+	codec->cache_only = 0;
-+
-+	for (i = 0; i < codec->driver->reg_cache_size; i++) {
-+		if (reg_cache[i] == ml26124_reg[i])
-+			continue;
-+
-+		snd_soc_write(codec, i, reg_cache[i]);
-+	}
-+
-+	codec->cache_sync = 0;
-+}
-+
-+static int ml26124_set_bias_level(struct snd_soc_codec *codec,
-+		enum snd_soc_bias_level level)
-+{
-+	switch (level) {
-+	case SND_SOC_BIAS_ON:
-+		/* VMID ON */
-+		snd_soc_update_bits(codec, ML26124_PW_REF_PW_MNG,
-+				    ML26124_VMID, ML26124_VMID);
-+		msleep(500);
-+	case SND_SOC_BIAS_PREPARE:
-+	case SND_SOC_BIAS_STANDBY:
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF)
-+			ml26124_sync_cache(codec);
-+		break;
-+	case SND_SOC_BIAS_OFF:
-+		/* VMID OFF */
-+		snd_soc_update_bits(codec, ML26124_PW_REF_PW_MNG,
-+				    ML26124_VMID, 0);
-+		break;
-+	}
-+	codec->dapm.bias_level = level;
-+	return 0;
-+}
-+
-+static int ml26124_pcm_trigger(struct snd_pcm_substream *substream,
-+			      int cmd, struct snd_soc_dai *codec_dai)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+
-+	if (cmd == SNDRV_PCM_TRIGGER_STOP) {
-+		snd_soc_update_bits(codec, ML26124_REC_PLYBAK_RUN, 0x3, 0);
-+		return 0;
-+	} else if (cmd == SNDRV_PCM_TRIGGER_START) {
-+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-+			snd_soc_update_bits(codec, ML26124_REC_PLYBAK_RUN, 0x3,
-+					    1);
-+		else
-+			snd_soc_update_bits(codec, ML26124_REC_PLYBAK_RUN, 0x3,
-+					    2);
-+	}
-+
-+	return 0;
-+}
-+
-+#define ML26124_RATES (SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_32000 |\
-+		       SNDRV_PCM_RATE_48000)
-+#define ML26124_FORMATS SNDRV_PCM_FMTBIT_S16_LE
-+
-+static const struct snd_soc_dai_ops ml26124_dai_ops = {
-+	.hw_params	= ml26124_hw_params,
-+	.digital_mute	= ml26124_mute,
-+	.set_fmt	= ml26124_set_dai_fmt,
-+	.set_sysclk	= ml26124_set_dai_sysclk,
-+	.trigger	= ml26124_pcm_trigger,
++static struct snd_soc_dai_link ioh_i2s_dai = {
++	.name = "ML7213",
++	.stream_name = "I2S HiFi",
++	.cpu_dai_name = "ml7213-i2s",
++	.codec_dai_name = "ml26124-hifi",
++	.platform_name	= "ml7213-i2s-pcm-audio",
++	.codec_name	= "ml26124-00GD",
++	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
++					SND_SOC_DAIFMT_CBS_CFS,
++	.ops = &ml7213_ops,
 +};
 +
-+static struct snd_soc_dai_driver ml26124_dai = {
-+	.name = "ml26124-hifi",
-+	.playback = {
-+		.stream_name = "Playback",
-+		.channels_min = 1,
-+		.channels_max = 2,
-+		.rates = ML26124_RATES,
-+		.formats = ML26124_FORMATS,},
-+	.capture = {
-+		.stream_name = "Capture",
-+		.channels_min = 1,
-+		.channels_max = 2,
-+		.rates = ML26124_RATES,
-+		.formats = ML26124_FORMATS,},
-+	.ops = &ml26124_dai_ops,
-+	.symmetric_rates = 1,
++static struct snd_soc_card ioh_i2s_card = {
++	.name		= "ml7213",
++	.dai_link	= &ioh_i2s_dai,
++	.num_links	= 1,
++	.dapm_widgets	= ml7213_dapm_widgets,
++	.num_dapm_widgets	= ARRAY_SIZE(ml7213_dapm_widgets),
++	.dapm_routes	= ml7213_routes,
++	.num_dapm_routes	= ARRAY_SIZE(ml7213_routes),
 +};
 +
-+#ifdef CONFIG_PM
-+static int ml26124_suspend(struct snd_soc_codec *codec, pm_message_t state)
++static int __init ioh_i2s_probe(struct platform_device *pdev)
 +{
-+	ml26124_set_bias_level(codec, SND_SOC_BIAS_OFF);
++	ioh_i2s_card.dev = &pdev->dev;
++	snd_soc_register_card(&ioh_i2s_card);
 +
 +	return 0;
 +}
 +
-+static int ml26124_resume(struct snd_soc_codec *codec)
++static int __exit ioh_i2s_remove(struct platform_device *pdev)
 +{
-+	ml26124_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
++	int ret = snd_soc_unregister_card(&ioh_i2s_card);
 +
-+	return 0;
-+}
-+#else
-+#define ml26124_suspend NULL
-+#define ml26124_resume NULL
-+#endif
-+
-+static int ml26124_probe(struct snd_soc_codec *codec)
-+{
-+	int ret;
-+
-+	ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_I2C);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
++	if (ret) {
++		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
++		ioh_i2s_card.dev = NULL;
 +		return ret;
 +	}
 +
-+	/* Software Reset */
-+	snd_soc_update_bits(codec, ML26124_SW_RST, 0x01, 1);
-+	snd_soc_update_bits(codec, ML26124_SW_RST, 0x01, 0);
-+
-+	ml26124_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-+
 +	return 0;
 +}
 +
-+/* power down chip */
-+static struct snd_soc_codec_driver soc_codec_dev_ml26124 = {
-+	.probe =	ml26124_probe,
-+	.suspend =	ml26124_suspend,
-+	.resume =	ml26124_resume,
-+	.set_bias_level = ml26124_set_bias_level,
-+	.reg_cache_size = ML26134_CACHESIZE,
-+	.reg_word_size = sizeof(u8),
-+	.reg_cache_default = ml26124_reg,
-+	.dapm_widgets = ml26124_dapm_widgets,
-+	.num_dapm_widgets = ARRAY_SIZE(ml26124_dapm_widgets),
-+	.dapm_routes = ml26124_intercon,
-+	.num_dapm_routes = ARRAY_SIZE(ml26124_intercon),
-+	.controls = ml26124_snd_controls,
-+	.num_controls = ARRAY_SIZE(ml26124_snd_controls),
-+};
-+
-+static __devinit int ml26124_i2c_probe(struct i2c_client *i2c,
-+				      const struct i2c_device_id *id)
-+{
-+	struct ml26124_priv *priv;
-+
-+	priv = devm_kzalloc(&i2c->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, priv);
-+
-+	return snd_soc_register_codec(&i2c->dev,
-+			&soc_codec_dev_ml26124, &ml26124_dai, 1);
-+}
-+
-+static __devexit int ml26124_i2c_remove(struct i2c_client *client)
-+{
-+	snd_soc_unregister_codec(&client->dev);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id ml26124_i2c_id[] = {
-+	{ "ml26124", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, ml26124_i2c_id);
-+
-+static struct i2c_driver ml26124_i2c_driver = {
++static struct platform_driver ioh_i2s_driver = {
++	.remove = ioh_i2s_remove,
 +	.driver = {
-+		.name = "ml26124",
++		.name = "ml7213ioh-i2s",
 +		.owner = THIS_MODULE,
 +	},
-+	.probe = ml26124_i2c_probe,
-+	.remove = __devexit_p(ml26124_i2c_remove),
-+	.id_table = ml26124_i2c_id,
++	.probe	= ioh_i2s_probe,
++	.remove	= __devexit_p(ioh_i2s_remove),
 +};
 +
-+static int __init ml26124_modinit(void)
++static int __init ioh_i2s_init(void)
 +{
-+	int ret = 0;
-+
-+	ret = i2c_add_driver(&ml26124_i2c_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register ML26124 I2C driver: %d\n", ret);
-+
-+	return ret;
++	return platform_driver_register(&ioh_i2s_driver);
 +}
-+module_init(ml26124_modinit);
 +
-+static void __exit ml26124_exit(void)
++static void __exit ioh_i2s_exit(void)
 +{
-+	i2c_del_driver(&ml26124_i2c_driver);
++	return platform_driver_unregister(&ioh_i2s_driver);
 +}
-+module_exit(ml26124_exit);
++
++module_init(ioh_i2s_init);
++module_exit(ioh_i2s_exit);
 +
 +MODULE_AUTHOR("Tomoya MORINAGA <tomoya.rohm@gmail.com>");
-+MODULE_DESCRIPTION("LAPIS Semiconductor ML26124 ALSA SoC codec driver");
++MODULE_DESCRIPTION("LAPIS Semiconductor ML7213 IOH ALSA SoC machine driver");
 +MODULE_LICENSE("GPL");
-diff --git a/sound/soc/codecs/ml26124.h b/sound/soc/codecs/ml26124.h
-new file mode 100644
-index 0000000..4fe7337
---- /dev/null
-+++ b/sound/soc/codecs/ml26124.h
-@@ -0,0 +1,129 @@
-+/*
-+ * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+
-+#ifndef ML26124_H
-+#define ML26124_H
-+
-+/* Clock Control Register */
-+#define ML26124_SMPLING_RATE		0x00
-+#define ML26124_PLLNL			0x02
-+#define ML26124_PLLNH			0x04
-+#define ML26124_PLLML			0x06
-+#define ML26124_PLLMH			0x08
-+#define ML26124_PLLDIV			0x0a
-+#define ML26124_CLK_EN			0x0c
-+#define ML26124_CLK_CTL			0x0e
-+
-+/* System Control Register */
-+#define ML26124_SW_RST			0x10
-+#define ML26124_REC_PLYBAK_RUN		0x12
-+#define ML26124_MIC_TIM			0x14
-+
-+/* Power Mnagement Register */
-+#define ML26124_PW_REF_PW_MNG		0x20
-+#define ML26124_PW_IN_PW_MNG		0x22
-+#define ML26124_PW_DAC_PW_MNG		0x24
-+#define ML26124_PW_SPAMP_PW_MNG		0x26
-+#define ML26124_PW_LOUT_PW_MNG		0x28
-+#define ML26124_PW_VOUT_PW_MNG		0x2a
-+#define ML26124_PW_ZCCMP_PW_MNG		0x2e
-+
-+/* Analog Reference Control Register */
-+#define ML26124_PW_MICBIAS_VOL		0x30
-+
-+/* Input/Output Amplifier Control Register */
-+#define ML26124_PW_MIC_IN_VOL		0x32
-+#define ML26124_PW_MIC_BOST_VOL		0x38
-+#define ML26124_PW_SPK_AMP_VOL		0x3a
-+#define ML26124_PW_AMP_VOL_FUNC		0x48
-+#define ML26124_PW_AMP_VOL_FADE		0x4a
-+
-+/* Analog Path Control Register */
-+#define ML26124_SPK_AMP_OUT		0x54
-+#define ML26124_MIC_IF_CTL		0x5a
-+#define ML26124_MIC_SELECT		0xe8
-+
-+/* Audio Interface Control Register */
-+#define ML26124_SAI_TRANS_CTL		0x60
-+#define ML26124_SAI_RCV_CTL		0x62
-+#define ML26124_SAI_MODE_SEL		0x64
-+
-+/* DSP Control Register */
-+#define ML26124_FILTER_EN		0x66
-+#define ML26124_DVOL_CTL		0x68
-+#define ML26124_MIXER_VOL_CTL		0x6a
-+#define ML26124_RECORD_DIG_VOL		0x6c
-+#define ML26124_PLBAK_DIG_VOL		0x70
-+#define ML26124_DIGI_BOOST_VOL		0x72
-+#define ML26124_EQ_GAIN_BRAND0		0x74
-+#define ML26124_EQ_GAIN_BRAND1		0x76
-+#define ML26124_EQ_GAIN_BRAND2		0x78
-+#define ML26124_EQ_GAIN_BRAND3		0x7a
-+#define ML26124_EQ_GAIN_BRAND4		0x7c
-+#define ML26124_HPF2_CUTOFF		0x7e
-+#define ML26124_EQBRAND0_F0L		0x80
-+#define ML26124_EQBRAND0_F0H		0x82
-+#define ML26124_EQBRAND0_F1L		0x84
-+#define ML26124_EQBRAND0_F1H		0x86
-+#define ML26124_EQBRAND1_F0L		0x88
-+#define ML26124_EQBRAND1_F0H		0x8a
-+#define ML26124_EQBRAND1_F1L		0x8c
-+#define ML26124_EQBRAND1_F1H		0x8e
-+#define ML26124_EQBRAND2_F0L		0x90
-+#define ML26124_EQBRAND2_F0H		0x92
-+#define ML26124_EQBRAND2_F1L		0x94
-+#define ML26124_EQBRAND2_F1H		0x96
-+#define ML26124_EQBRAND3_F0L		0x98
-+#define ML26124_EQBRAND3_F0H		0x9a
-+#define ML26124_EQBRAND3_F1L		0x9c
-+#define ML26124_EQBRAND3_F1H		0x9e
-+#define ML26124_EQBRAND4_F0L		0xa0
-+#define ML26124_EQBRAND4_F0H		0xa2
-+#define ML26124_EQBRAND4_F1L		0xa4
-+#define ML26124_EQBRAND4_F1H		0xa6
-+
-+/* ALC Control Register */
-+#define ML26124_ALC_MODE		0xb0
-+#define ML26124_ALC_ATTACK_TIM		0xb2
-+#define ML26124_ALC_DECAY_TIM		0xb4
-+#define ML26124_ALC_HOLD_TIM		0xb6
-+#define ML26124_ALC_TARGET_LEV		0xb8
-+#define ML26124_ALC_MAXMIN_GAIN		0xba
-+#define ML26124_NOIS_GATE_THRSH		0xbc
-+#define ML26124_ALC_ZERO_TIMOUT		0xbe
-+
-+/* Playback Limiter Control Register */
-+#define ML26124_PL_ATTACKTIME		0xc0
-+#define ML26124_PL_DECAYTIME		0xc2
-+#define ML26124_PL_TARGETTIME		0xc4
-+#define ML26124_PL_MAXMIN_GAIN		0xc6
-+#define ML26124_PLYBAK_BOST_VOL		0xc8
-+#define ML26124_PL_0CROSS_TIMOUT	0xca
-+
-+/* Video Amplifer Control Register */
-+#define ML26124_VIDEO_AMP_GAIN_CTL	0xd0
-+#define ML26124_VIDEO_AMP_SETUP1	0xd2
-+#define ML26124_VIDEO_AMP_CTL2		0xd4
-+
-+/* Clock select for machine driver */
-+#define ML26124_USE_PLL			0
-+#define ML26124_USE_MCLKI_256FS		1
-+#define ML26124_USE_MCLKI_512FS		2
-+#define ML26124_USE_MCLKI_1024FS	3
-+
-+
-+#endif
++MODULE_ALIAS("platform:ml7213ioh-i2s");
 -- 
 1.7.4.4
 
