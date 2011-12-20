@@ -1,119 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab1LTUUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 15:20:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35965 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1LTUU3 convert rfc822-to-8bit (ORCPT
+	id S1752462Ab1LTUW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 15:22:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37218 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab1LTUWx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 15:20:29 -0500
+	Tue, 20 Dec 2011 15:22:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111220193117.GD3883@phenom.ffwll.local>
-References: <1324283611-18344-1-git-send-email-sumit.semwal@ti.com>
-	<20111220193117.GD3883@phenom.ffwll.local>
-Date: Tue, 20 Dec 2011 20:20:28 +0000
-Message-ID: <CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v3 0/2] Introduce DMA buffer sharing mechanism
-From: Dave Airlie <airlied@gmail.com>
-To: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
-        t.stanislaws@samsung.com, patches@linaro.org
-Cc: daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E2890487874@shsmsx502.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048786F@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DGfhJBA6C6bzrnfVBxdyCM8a6J48dxb1DZfBwoFygtQvw@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E2890487874@shsmsx502.ccr.corp.intel.com>
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Date: Tue, 20 Dec 2011 22:22:31 +0200
+Message-ID: <CAB9v_DFhLTFi7sVRehhNYSd7Nq_v-Wzd09BJ+JSiTVwbEpMTYw@mail.gmail.com>
+Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
+ KVM: emulate lapic tsc deadline timer for guest"
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 20, 2011 at 22:19, Liu, Jinsong <jinsong.liu@intel.com> wrote:
+> Alexey Zaytsev wrote:
+>> On Tue, Dec 20, 2011 at 21:21, Liu, Jinsong <jinsong.liu@intel.com>
+>> wrote:
+>>> Linus Torvalds wrote:
+>>>> On Tue, Dec 20, 2011 at 1:51 AM, Alexey Zaytsev
+>>>> <alexey.zaytsev@gmail.com> wrote:
+>>>>>
+>>>>> Let me clarify the situation.
+>>>>>
+>>>>> Before this commit, the tsc was advertised in cpuid, and it was
+>>>>> handled, if I understand things correctly, by qemu.
+>>>>> After this commit, the tsc is advertised in cpuid, and is handled
+>>>>> in the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If
+>>>>> it does not issue the ioctl, the kernel just discards any wrmsrs
+>>>>> done to the tsc. This does not look like an Illumos problem to me.
+>>>>> Linux guests kind of work here, because they are Â prepared to work
+>>>>> on utterly broken hardware. Good for you, but please don't break
+>>>>> less-prepared guests.
+>>>>
+>>>> Yes. This is a regression, and needs to be fixed.
+>>>>
+>>>> Liu, if you don't have time to debug it, we'll just revert the
+>>>> commit. It's that easy. Regressions are not allowed. There are no
+>>>> excuses.
+>>>>
+>>>> In particular, saying "just wait for qemu-kvm" is not an acceptable
+>>>> answer, because the point is that things *used* to work, and they
+>>>> broke. No "change it to work with the new kernel" allowed, except
+>>>> for some *very* rare critical circumstances (usually "major
+>>>> security-bug that we had to fix, and people who relied on it are
+>>>> thus out of luck").
+>>>>
+>>>> Commit a3e06bbe8445 still seems to revert cleanly, so that is the
+>>>> easy option.
+>>>>
+>>>> That said, it sounds like maybe another solution is to start with
+>>>> the TSC_DEADLINE timer bit in cpuid cleared, and only setting it
+>>>> after the KVM_CREATE_IRQCHIP ioctl.
+>>>>
+>>>> In fact, the patch is clearly buggy, in that it apparently doesn't
+>>>> emulate TSC_DEADLINE correctly and natively on its own.
+>>>>
+>>>> Jan, Marcelo, Avi - is there a quick fix, or should I just revert?
+>>>>
+>>>> And please don't *EVER* tell people that they should just work
+>>>> around regressions. Regressions are absolutely unacceptable. Kernel
+>>>> people need to understand that.
+>>>>
+>>>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Linus
+>>>
+>>> Yes, my fault to say 'walk around' before knowing Alex's issue
+>>> clearly.
+>>>
+>>> After Alex send his last email to clarify the situation, I have
+>>> checked the bug.
+>>> Basically it caused from
+>>> 1. qemu didn't issue KVM_CREATE_IRQCHIP, hence
+>>> irqchip_in_kernel(kvm) fail when setup vcpu lapic logic at
+>>> kvm_arch_vcpu_init();
+>>> 2. tsc deadline work based on vcpu lapic, hence break illumos;
+>>>
+>>> A fix is to update cpuid, as you said, setting it after
+>>> KVM_CREATE_IRQCHIP. I just wonder is there any better solution? so I
+>>> ask Alex his environment to setup at my side to do more test. If you
+>>> think kvm tsc deadline timer patch itself not clean, please tell me.
 >>
->> This is RFC v3 for DMA buffer sharing mechanism - changes from v2 are in the
->> changelog below.
+>> [Removed Linus from CC]
 >>
->> Various subsystems - V4L2, GPU-accessors, DRI to name a few - have felt the
->> need to have a common mechanism to share memory buffers across different
->> devices - ARM, video hardware, GPU.
->>
->> This need comes forth from a variety of use cases including cameras, image
->> processing, video recorders, sound processing, DMA engines, GPU and display
->> buffers, and others.
->>
->> This RFC is an attempt to define such a buffer sharing mechanism- it is the
->> result of discussions from a couple of memory-management mini-summits held by
->> Linaro to understand and address common needs around memory management. [1]
->>
->> A new dma_buf buffer object is added, with operations and API to allow easy
->> sharing of this buffer object across devices.
->>
->> The framework allows:
->> - a new buffer-object to be created with fixed size.
->> - different devices to 'attach' themselves to this buffer, to facilitate
->>   backing storage negotiation, using dma_buf_attach() API.
->> - association of a file pointer with each user-buffer and associated
->>    allocator-defined operations on that buffer. This operation is called the
->>    'export' operation.
->> - this exported buffer-object to be shared with the other entity by asking for
->>    its 'file-descriptor (fd)', and sharing the fd across.
->> - a received fd to get the buffer object back, where it can be accessed using
->>    the associated exporter-defined operations.
->> - the exporter and user to share the scatterlist using map_dma_buf and
->>    unmap_dma_buf operations.
->>
->> Documentation present in the patch-set gives more details.
->>
->> This is based on design suggestions from many people at the mini-summits,
->> most notably from Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
->> Daniel Vetter <daniel@ffwll.ch>.
->>
->> The implementation is inspired from proof-of-concept patch-set from
->> Tomasz Stanislawski <t.stanislaws@samsung.com>, who demonstrated buffer sharing
->> between two v4l2 devices. [2]
->>
->> References:
->> [1]: https://wiki.linaro.org/OfficeofCTO/MemoryManagement
->> [2]: http://lwn.net/Articles/454389
->>
->> Patchset based on top of 3.2-rc3, the current version can be found at
->>
->> http://git.linaro.org/gitweb?p=people/sumitsemwal/linux-3.x.git
->> Branch: dma-buf-upstr-v2
->>
->> Earlier versions:
->> v2 at: https://lkml.org/lkml/2011/12/2/53
->> v1 at: https://lkml.org/lkml/2011/10/11/92
->>
->> Best regards,
->> ~Sumit Semwal
+>> If your internet connection is good enough, I could just pass you the
+>> disk image. It should be around 5g when compressed. Otherwise, you can
+>> download an openindiana disk image from http://openindiana.org. You
+>> probably want the text-only "server" one. The TSC code has changed
+>> since that release, but the old one does not work as well.
 >
-> I think this is a really good v1 version of dma_buf. It contains all the
-> required bits (with well-specified semantics in the doc patch) to
-> implement some basic use-cases and start fleshing out the integration with
-> various subsystem (like drm and v4l). All the things still under
-> discussion like
-> - userspace mmap support
-> - more advanced (and more strictly specified) coherency models
-> - and shared infrastructure for implementing exporters
-> are imo much clearer once we have a few example drivers at hand and a
-> better understanding of some of the insane corner cases we need to be able
-> to handle.
+> I mean I will build environment at my side with your qemu version (where do you pull from? commit number?) --> just to verify whether we can solve it at qemu side, or, solve it by cpuid at kvm side.
+> I will present a patch to fix it and you can test at your environment.
 >
-> And I think any risk that the resulting clarifications will break a basic
-> use-case is really minimal, so I think it'd be great if this could go into
-> 3.3 (maybe as some kind of staging/experimental infrastructure).
+>>
+>> Do I get it right that Linux does not use the tsc deadline timer? I've
+>> added printks to the
+>> kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr functions,
+>> and I swear I've seen them trigger a few times with the Linux guest.
+>> But I can't find the code that is issuing the msr reads/writes in the
+>> Linux kernel.
 >
-> Hence for both patches:
-> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> I will check it tomorrow, too late now.
+> and would you please tell me, does illumos use tsc deadline timer? I lack this basic information.
 
-Yeah I'm with Daniel, I like this one, I can definitely build the drm
-buffer sharing layer on top of this.
+It does, if available. Please check
+https://github.com/illumos/illumos-gate/blob/master/usr/src/uts/i86pc/io/pcplusmp/apic_timer.c#L290
 
-How do we see this getting merged? I'm quite happy to push it to Linus
-if we don't have an identified path, though it could go via a Linaro
-tree as well.
 
-so feel free to add:
-Reviewed-by: Dave Airlie <airlied@redhat.com>
-
-Dave.
+>
+> Thanks,
+> Jinsong
