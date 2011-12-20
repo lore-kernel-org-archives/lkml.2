@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab1LTEnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 23:43:46 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37355 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab1LTEni convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 23:43:38 -0500
+	id S1754237Ab1LTEyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 23:54:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50788 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704Ab1LTEyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 23:54:46 -0500
+Message-ID: <4EF014FE.4050101@zytor.com>
+Date: Mon, 19 Dec 2011 20:54:22 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112181439500.1364@chino.kir.corp.google.com>
-References: <1324209529-15892-1-git-send-email-ozaki.ryota@gmail.com> <alpine.DEB.2.00.1112181439500.1364@chino.kir.corp.google.com>
-From: Ryota Ozaki <ozaki.ryota@gmail.com>
-Date: Tue, 20 Dec 2011 13:43:17 +0900
-Message-ID: <CAKrYomhWahW+Oxf6f5ZMvrgQEqLSHUn5D_MkLmcgXhJXq0j4dA@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] mm: Fix off-by-one bug in print_nodes_state
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-mm@kvack.org, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andi Kleen <andi@firstfloor.org>
+CC: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org, trenn@suse.de,
+        kay.sievers@vrf.org, Andi Kleen <ak@linux.intel.com>,
+        kay.sievers@vrfy.org, axboe@kernel.dk, herbert@gondor.hengli.com.au,
+        ying.huang@intel.com
+Subject: Re: [PATCH 03/10] crypto: Add support for x86 cpuid auto loading
+ for x86 crypto drivers
+References: <1324334865-30459-1-git-send-email-andi@firstfloor.org> <1324334865-30459-4-git-send-email-andi@firstfloor.org> <20111219232246.GB570@redhat.com> <4EEFC7D2.70803@zytor.com> <20111220040829.GD5637@one.firstfloor.org>
+In-Reply-To: <20111220040829.GD5637@one.firstfloor.org>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 12/19/2011 08:08 PM, Andi Kleen wrote:
+>> The first printk is insanely annoying, because the end result is that we
+>> get a printk of all the crypto engines that are *not* enabled...
+>> arguably it would be somewhat nice to get a printk when a crypto engine
+>> *is* enabled.
+> 
+> Yes that was my rationale. I have some Intel system complaining that
+> some VIA crypto is not available. That's very annoying and just has
+> to go.
 
-I'm so sorry for my late reply.
+What is really bad is that it doesn't tell you anywhere what it *is* using.
 
-On Mon, Dec 19, 2011 at 7:44 AM, David Rientjes <rientjes@google.com> wrote:
-> On Sun, 18 Dec 2011, Ryota Ozaki wrote:
->
->> /sys/devices/system/node/{online,possible} involve a garbage byte
->> because print_nodes_state returns content size + 1. To fix the bug,
->> the patch changes the use of cpuset_sprintf_cpulist to follow the
->> use at other places, which is clearer and safer.
->>
->
-> It's not a garbage byte, sysdev files use a buffer created with
-> get_zeroed_page(), so extra byte is guaranteed to be zero since
-> nodelist_scnprintf() won't write to it.  So the issue here is that
-> print_nodes_state() returns a size that is off by one according to
+	-hpa
 
-I see. It's certainly not a garbage but just a zero-cleared byte.
 
-> ISO C99 although it won't cause a problem in practice.
->
->> This bug was introduced since v2.6.24.
->>
->
-> It's not a bug, the result of a 4-node system would be "0-3\n\0" and
-> returns 5 correctly.  You can verify this very simply with strace.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Of course I confirmed the trailing '\0'. I'm sure it's not critical issue
-but it actually influences my script; I have to change from rstrip("\n")
-to rstrip("\n\0") in python. Yes, it's pretty trivial but enough to get
-rid of the extra for me :-)
-
-Anyway the subject and the comment of my patch need to be fixed. I'll
-send a revised one later.
-
-Thanks.
-  ozaki-r
