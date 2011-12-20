@@ -1,64 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1LTV6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 16:58:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39436 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab1LTV6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 16:58:19 -0500
-Date: Tue, 20 Dec 2011 13:58:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 1/4] memcg: simplify page cache charging.
-Message-Id: <20111220135817.5ba7ab05.akpm@linux-foundation.org>
-In-Reply-To: <20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111216142814.dbb77209.akpm@linux-foundation.org>
-	<20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753152Ab1LTWJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 17:09:24 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:52446 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab1LTWJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 17:09:21 -0500
+Date: Tue, 20 Dec 2011 17:09:01 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] mm: add missing mutex lock arround notify_change
+Message-ID: <20111220220901.GA1770@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Djalal Harouni <tixxdz@opendz.org>, Hugh Dickins <hughd@google.com>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Neil Brown <neilb@suse.de>,
+	Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+	Christoph Hellwig <hch@infradead.org>, linux-ext4@vger.kernel.org
+References: <20111216112534.GA13147@dztty>
+ <20111216125556.db2bf308.akpm@linux-foundation.org>
+ <20111217214137.GY2203@ZenIV.linux.org.uk>
+ <20111217221028.GZ2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111217221028.GZ2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Dec 2011 09:01:22 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Sat, Dec 17, 2011 at 10:10:28PM +0000, Al Viro wrote:
+> 
+> Oh, for fsck sake...  People, this is *obviously* broken - if nothing else,
+> removing suid after modifying the file contents is too late.  Moreover,
+> this mext_inode_double_lock() thing is asking for trouble; it's deadlock-free
+> only because nothing else takes i_mutex on more than one non-directory inode
+> and does that as the innermost lock.
 
-> On Fri, 16 Dec 2011 14:28:14 -0800
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Wed, 14 Dec 2011 16:49:22 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
-> > > of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
-> > > called against FUSE's pages from splice.
-> > 
-> > Speaking of ef6a3c6311 ("mm: add replace_page_cache_page() function"),
-> > may I pathetically remind people that it's rather inefficient?
-> > 
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1109.1/00375.html
-> > 
-> 
-> IIRC, people says inefficient because it uses memcg codes for page-migration
-> for fixing up accounting. Now, We added replace-page-cache for memcg in
-> memcg-add-mem_cgroup_replace_page_cache-to-fix-lru-issue.patch
-> 
-> So, I think the problem originally mentioned is fixed.
-> 
+Well, we need to define *some* kind of lock ordering for i_mutex
+belonging to regular files within a single file system, and ordering
+them by inode number seemed to make the most amount of sense.  If it
+turns out some other routine needs to do i_mutex locking of regular
+files with some other lock ordering, we're certainly open to using
+something else.
 
-No, the inefficiency in replace_page_cache_page() is still there.  Two
-identical walks down the radix tree, a pointless decrement then
-increment of mapping->nrpages, two writes to page->mapping, an often
-pointless decrement then increment of NR_FILE_PAGES, and probably other things.
+> BTW, is ordering really needed in
+> double_down_write_data_sem()?  IOW, can we get contention between several
+> callers of that thing?
+>
+> From my reading of that code, all call chains leading to this sucker
+> are guaranteed to already hold i_mutex on both inodes.  If that is true,
+> we don't need any ordering in double_down_write_data_sem() at all...
 
+Yes, you're right, the ordering in double_down_write_data_sem() can go
+away; it's harmless, and doesn't cost much, but it's strictly speaking
+not necessary.
+
+> AFAICS, the minimal fix is to move file_remove_suid() call into
+> ext4_move_extents(), just after we have acquired i_mutex in there.
+> Moreover, I think it should be done to *both* files, since both have
+> contents modified.  And I see no point in making that conditional...
+
+Actually, we're not modifying the contents of the file that is being
+defragged, only the donor file, so there shouldn't be any need to nuke
+the suid flag for the target file, just the donor.  But yes, we should
+move the call into ext4_move_extents(), and since the donor file
+should never have the suid flag on it anyway (unless someone is trying
+to play tricks on us), the conditional shouldn't be necessary.  
+
+				- Ted
+
+P.S.  Maybe it would be a good idea to add a mention of the fact that
+file_remove_suid() needs i_mutex, either in mm/filemap.c as a comment,
+or in Documentation/filesystems/vfs.txt, or both?
+
+
+>From 5e8af306ef8025a4c98bcc51b6b2ed63e1df31c4 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Tue, 20 Dec 2011 17:06:08 -0500
+Subject: [PATCH] ext4: fix potential deadlock with setuid files and EXT4_IOC_MOVE_EXT
+
+file_remove_suid() must be called with i_mutex down, since it calls
+notify_change().  In addition, we really want to remove the suid file
+*before* we modify the donor file, to avoid someone from trying to
+exploit a race.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: stable@vger.kernel.org
+---
+ fs/ext4/ioctl.c       |    2 --
+ fs/ext4/move_extent.c |    2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index a567968..ff1aab7 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -247,8 +247,6 @@ setversion_out:
+ 		err = ext4_move_extents(filp, donor_filp, me.orig_start,
+ 					me.donor_start, me.len, &me.moved_len);
+ 		mnt_drop_write(filp->f_path.mnt);
+-		if (me.moved_len > 0)
+-			file_remove_suid(donor_filp);
+ 
+ 		if (copy_to_user((struct move_extent __user *)arg,
+ 				 &me, sizeof(me)))
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index c5826c6..7403e1b 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1222,6 +1222,8 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
+ 	if (ret1)
+ 		goto out;
+ 
++	file_remove_suid(d_filp);
++
+ 	file_end = (i_size_read(orig_inode) - 1) >> orig_inode->i_blkbits;
+ 	block_end = block_start + len - 1;
+ 	if (file_end < block_end)
+-- 
+1.7.8.11.gefc1f.dirty
 
