@@ -1,156 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1LTUgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 15:36:17 -0500
-Received: from forward15.mail.yandex.net ([95.108.130.119]:35097 "EHLO
-	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1LTUgL (ORCPT
+	id S1753011Ab1LTUgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 15:36:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60126 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1LTUgm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 15:36:11 -0500
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 15:36:11 EST
-X-Yandex-Spam: 1
-From: Tkhai Kirill <tkhai@yandex.ru>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Gregory Haskins <ghaskins@novell.com>
-In-Reply-To: <20111220174433.GA2018@redhat.com>
-References: <1322774765.8386.2.camel@hp> <20111220174433.GA2018@redhat.com>
-Subject: Re: [PATCH]sched_rt.c: Avoid unnecessary dequeue and enqueue of pushable tasks in set_cpus_allowed_rt()
+	Tue, 20 Dec 2011 15:36:42 -0500
 MIME-Version: 1.0
-Message-Id: <203221324412916@web157.yandex.ru>
-Date: Wed, 21 Dec 2011 00:28:36 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E2890487875@shsmsx502.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048786F@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DGfhJBA6C6bzrnfVBxdyCM8a6J48dxb1DZfBwoFygtQvw@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E2890487874@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFhLTFi7sVRehhNYSd7Nq_v-Wzd09BJ+JSiTVwbEpMTYw@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E2890487875@shsmsx502.ccr.corp.intel.com>
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Date: Tue, 20 Dec 2011 22:36:20 +0200
+Message-ID: <CAB9v_DHQ0UmfXQLOrxMqkc8bkUfUkEZKXr0hVTZCM37veRux=g@mail.gmail.com>
+Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
+ KVM: emulate lapic tsc deadline timer for guest"
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.12.2011, 21:44, "Oleg Nesterov" <oleg@redhat.com>:
-> On 12/02, Kirill Tkhai wrote:
->
->> šMigration status depends on a difference of weight from 0 and 1. If
->> šweight > 1 (<= 1) and old weight <= 1 (> 1) then task becomes pushable
->> š(not pushable). We are not insterested in exact values of it, is it 3 or
->> š4, for example.
+On Tue, Dec 20, 2011 at 22:26, Liu, Jinsong <jinsong.liu@intel.com> wrote:
+> Alexey Zaytsev wrote:
+>> On Tue, Dec 20, 2011 at 22:19, Liu, Jinsong <jinsong.liu@intel.com>
+>> wrote:
+>>> Alexey Zaytsev wrote:
+>>>> On Tue, Dec 20, 2011 at 21:21, Liu, Jinsong <jinsong.liu@intel.com>
+>>>> wrote:
+>>>>> Linus Torvalds wrote:
+>>>>>> On Tue, Dec 20, 2011 at 1:51 AM, Alexey Zaytsev
+>>>>>> <alexey.zaytsev@gmail.com> wrote:
+>>>>>>>
+>>>>>>> Let me clarify the situation.
+>>>>>>>
+>>>>>>> Before this commit, the tsc was advertised in cpuid, and it was
+>>>>>>> handled, if I understand things correctly, by qemu.
+>>>>>>> After this commit, the tsc is advertised in cpuid, and is handled
+>>>>>>> in the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If
+>>>>>>> it does not issue the ioctl, the kernel just discards any wrmsrs
+>>>>>>> done to the tsc. This does not look like an Illumos problem to
+>>>>>>> me. Linux guests kind of work here, because they are Â prepared
+>>>>>>> to work on utterly broken hardware. Good for you, but please
+>>>>>>> don't break less-prepared guests.
+>>>>>>
+>>>>>> Yes. This is a regression, and needs to be fixed.
+>>>>>>
+>>>>>> Liu, if you don't have time to debug it, we'll just revert the
+>>>>>> commit. It's that easy. Regressions are not allowed. There are no
+>>>>>> excuses.
+>>>>>>
+>>>>>> In particular, saying "just wait for qemu-kvm" is not an
+>>>>>> acceptable answer, because the point is that things *used* to
+>>>>>> work, and they broke. No "change it to work with the new kernel"
+>>>>>> allowed, except for some *very* rare critical circumstances
+>>>>>> (usually "major security-bug that we had to fix, and people who
+>>>>>> relied on it are thus out of luck").
+>>>>>>
+>>>>>> Commit a3e06bbe8445 still seems to revert cleanly, so that is the
+>>>>>> easy option.
+>>>>>>
+>>>>>> That said, it sounds like maybe another solution is to start with
+>>>>>> the TSC_DEADLINE timer bit in cpuid cleared, and only setting it
+>>>>>> after the KVM_CREATE_IRQCHIP ioctl.
+>>>>>>
+>>>>>> In fact, the patch is clearly buggy, in that it apparently doesn't
+>>>>>> emulate TSC_DEADLINE correctly and natively on its own.
+>>>>>>
+>>>>>> Jan, Marcelo, Avi - is there a quick fix, or should I just revert?
+>>>>>>
+>>>>>> And please don't *EVER* tell people that they should just work
+>>>>>> around regressions. Regressions are absolutely unacceptable.
+>>>>>> Kernel people need to understand that.
+>>>>>>
+>>>>>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Linus
+>>>>>
+>>>>> Yes, my fault to say 'walk around' before knowing Alex's issue
+>>>>> clearly.
+>>>>>
+>>>>> After Alex send his last email to clarify the situation, I have
+>>>>> checked the bug. Basically it caused from
+>>>>> 1. qemu didn't issue KVM_CREATE_IRQCHIP, hence
+>>>>> irqchip_in_kernel(kvm) fail when setup vcpu lapic logic at
+>>>>> kvm_arch_vcpu_init();
+>>>>> 2. tsc deadline work based on vcpu lapic, hence break illumos;
+>>>>>
+>>>>> A fix is to update cpuid, as you said, setting it after
+>>>>> KVM_CREATE_IRQCHIP. I just wonder is there any better solution? so
+>>>>> I ask Alex his environment to setup at my side to do more test. If
+>>>>> you think kvm tsc deadline timer patch itself not clean, please
+>>>>> tell me.
+>>>>
+>>>> [Removed Linus from CC]
+>>>>
+>>>> If your internet connection is good enough, I could just pass you
+>>>> the disk image. It should be around 5g when compressed. Otherwise,
+>>>> you can download an openindiana disk image from
+>>>> http://openindiana.org. You probably want the text-only "server"
+>>>> one. The TSC code has changed since that release, but the old one
+>>>> does not work as well.
+>>>
+>>> I mean I will build environment at my side with your qemu version
+>>> (where do you pull from? commit number?) --> just to verify whether
+>>> we can solve it at qemu side, or, solve it by cpuid at kvm side. I
+>>> will present a patch to fix it and you can test at your environment.
+>>>
+>>>>
+>>>> Do I get it right that Linux does not use the tsc deadline timer?
+>>>> I've added printks to the
+>>>> kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr
+>>>> functions, and I swear I've seen them trigger a few times with the
+>>>> Linux guest. But I can't find the code that is issuing the msr
+>>>> reads/writes in the Linux kernel.
+>>>
+>>> I will check it tomorrow, too late now.
+>>> and would you please tell me, does illumos use tsc deadline timer? I
+>>> lack this basic information.
 >>
->> šNow if we are changing affinity from a set of 3 cpus to a set of 4, the
->> štask will be dequeued and enqueued sequentially without important
->> šdifference in comparison with initial state. The only difference is in
->> šinternal representation of plist queue of pushable tasks and the fact
->> šthat the task may won't be the first in a sequence of the same priority
->> štasks. But it seems to me it gives nothing.
->
-> Looks reasonable, although I can't say I really understand this code.
-> Add Gregory.
->
->> šSigned-off-by: Tkhai Kirill <tkhai@yandex.ru>
+>> It does, if available. Please check
+>> https://github.com/illumos/illumos-gate/blob/master/usr/src/uts/i86pc/io/pcplusmp/apic_timer.c#L290
 >>
->> š--- kernel/sched_rt.c.orig 2011-12-02 00:29:11.970243145 +0400
->> š+++ kernel/sched_rt.c 2011-12-02 00:37:43.622846606 +0400
 >
-> please use -p1
+> and where do you pull qemu? and commit number? I usually use Avi's qemu-kvm.
+
+>From git://git.qemu.org/qemu.git, commit
+62ba9f3662c5481f31160daf25474c8f22d6b3d2
+Qemu 0.15.92 exhibited the same behavior.
+
+
 >
-
-Sorry, this time I'm sending "git diffed" output.
-
->> š@@ -1572,43 +1572,37 @@ static void set_cpus_allowed_rt(struct t
->> ššššššššššššššššššššššššššššššššššconst struct cpumask *new_mask)
->> šš{
->> ššššššššššint weight = cpumask_weight(new_mask);
->> š+ struct rq *rq;
->>
->> ššššššššššBUG_ON(!rt_task(p));
->>
->> šššššššššš/*
->> š- * Update the migration status of the RQ if we have an RT task
->> š- * which is running AND changing its weight value.
->> š+ * Just exit if it's not necessary to change migration status
->> ššššššššššš*/
->> š- if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
->> š- struct rq *rq = task_rq(p);
->> š+ if ((p->rt.nr_cpus_allowed <= 1 && weight <= 1)
->> š+ || (p->rt.nr_cpus_allowed > 1 && weight > 1))
->> š+ return;
->
-> Subjective, but may be
->
-> ššššššššif ((p->rt.nr_cpus_allowed > 1) != (weight > 1))
-> ššššššššššššššššreturn;
->
-> looks more understandable?
-
-Yes, thanks.
-
----
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 3640ebb..4467f4d 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1774,43 +1774,36 @@ static void set_cpus_allowed_rt(struct task_struct *p,
- 				const struct cpumask *new_mask)
- {
- 	int weight = cpumask_weight(new_mask);
-+	struct rq *rq;
- 
- 	BUG_ON(!rt_task(p));
- 
- 	/*
--	 * Update the migration status of the RQ if we have an RT task
--	 * which is running AND changing its weight value.
-+	 * Just exit if it's not necessary to change migration status
- 	 */
--	if (p->on_rq && (weight != p->rt.nr_cpus_allowed)) {
--		struct rq *rq = task_rq(p);
--
--		if (!task_current(rq, p)) {
--			/*
--			 * Make sure we dequeue this task from the pushable list
--			 * before going further.  It will either remain off of
--			 * the list because we are no longer pushable, or it
--			 * will be requeued.
--			 */
--			if (p->rt.nr_cpus_allowed > 1)
--				dequeue_pushable_task(rq, p);
--
--			/*
--			 * Requeue if our weight is changing and still > 1
--			 */
--			if (weight > 1)
--				enqueue_pushable_task(rq, p);
-+	if ((p->rt.nr_cpus_allowed > 1) != (weight > 1))
-+		return;
- 
--		}
-+	if (!p->on_rq)
-+		return;
- 
--		if ((p->rt.nr_cpus_allowed <= 1) && (weight > 1)) {
--			rq->rt.rt_nr_migratory++;
--		} else if ((p->rt.nr_cpus_allowed > 1) && (weight <= 1)) {
--			BUG_ON(!rq->rt.rt_nr_migratory);
--			rq->rt.rt_nr_migratory--;
--		}
-+	rq = task_rq(p);
- 
--		update_rt_migration(&rq->rt);
-+	/*
-+	 * Several cpus were allowed but now it's not so OR vice versa
-+	 */
-+	if (weight <= 1) {
-+		if (!task_current(rq, p))
-+			dequeue_pushable_task(rq, p);
-+		BUG_ON(!rq->rt.rt_nr_migratory);
-+		rq->rt.rt_nr_migratory--;
-+	} else {
-+		if (!task_current(rq, p))
-+			enqueue_pushable_task(rq, p);
-+		rq->rt.rt_nr_migratory++;
- 	}
-+
-+	update_rt_migration(&rq->rt);
- }
- 
- /* Assumes rq->lock is held */
+> Thanks,
+> Jinsong
