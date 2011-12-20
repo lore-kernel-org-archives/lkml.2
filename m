@@ -1,105 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1LTR76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 12:59:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51190 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab1LTR7v (ORCPT
+	id S1752169Ab1LTSGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 13:06:22 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39703 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751514Ab1LTSGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 12:59:51 -0500
-Date: Tue, 20 Dec 2011 17:59:19 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111220175919.GE23916@ZenIV.linux.org.uk>
-References: <20111219205251.GK2203@ZenIV.linux.org.uk>
- <4EF01565.2000700@linux.vnet.ibm.com>
- <20111220062710.GC23916@ZenIV.linux.org.uk>
- <4EF03915.60902@linux.vnet.ibm.com>
- <1324373854.21588.16.camel@mengcong>
- <4EF0654B.4060904@linux.vnet.ibm.com>
- <4EF06C9B.4010703@linux.vnet.ibm.com>
- <4EF084A4.3000106@linux.vnet.ibm.com>
- <20111220140628.GD23916@ZenIV.linux.org.uk>
- <4EF09D34.1060607@linux.vnet.ibm.com>
+	Tue, 20 Dec 2011 13:06:18 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX199bECePigb4uAPZcGJUZm9
+Date: Tue, 20 Dec 2011 10:06:11 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 1/7][RESEND] ARM: OMAP1: ams-delta: register latch
+ dependent devices later
+Message-ID: <20111220180610.GB24444@atomide.com>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
+ <83e934adfc691b347534edb7788a67ab2e6bd7e1.1324331816.git.jkrzyszt@tis.icnet.pl>
+ <201112200028.32947.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EF09D34.1060607@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201112200028.32947.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 08:05:32PM +0530, Srivatsa S. Bhat wrote:
-
-> Sorry but I didn't quite get your point...
-> No two cpu hotplug operations can race because of the cpu_hotplug lock they
-> use. Hence, if a cpu online operation begins, it has to succeed or fail
-> eventually. No other cpu hotplug operation can intervene. Ditto for cpu offline
-> operations.
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 14:57]:
+> Resending because of a typo in the Cc: list, sorry.
 > 
-> Hence a CPU_UP_PREPARE event *will* be followed by a corresponding
-> CPU_UP_CANCELED or CPU_ONLINE event for the same cpu. (And we ignore the
-> CPU_STARTING event that comes in between, on purpose, so as to avoid the race
-> with cpu_online_mask). Similar is the story for offline operation.
+> 8<--------------------------
 > 
-> And if the notifier grabs the spinlock and keeps it locked between these 2
-> points of a cpu hotplug operation, it ensures that our br locks will spin,
-> instead of block till the cpu hotplug operation is complete. Isn't this what
-> we desired all along? "A non-blocking way to sync br locks with cpu hotplug"?
+> In preparation to converting Amstrad Delta on-board latches to
+> basic_mmio_gpio devices, registration of platform devices which depend
+> on latches and will require initialization of their GPIO pins first,
+> should be moved out of .machine_init down to late_initcall level, as the
+> gpio-generic driver is not available until device_initcall time.  The
+> latch reset operation, which will be replaced with GPIO initialization,
+> must also be moved to late_initcall for the same reason.
 > 
-> Or am I missing something?
+> Since there was already another, separate arch_initcall function for
+> setting up one of those latch dependent devices, the on-board modem
+> device, reuse that function, i.e., rename it to a name that matches the
+> new purpose, extend with other device setup relocated from
+> .machine_init, and move down to the late_initcall level.
+> 
+> While being at it, add missing gpio_free() in case the modem platform
+> device registration fails.
+> 
+> In addition, defer registration of the Amstrad Delta ASoC and serio
+> devices, done from their device driver files, until late_initcall time,
+> as those drivers will depend on their GPIO pins already requested from
+> the board late_init() function until updated to register their GPIO pins
+> themselves.
+> 
+> Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
+> instead of shifting up the gpio-generic driver initialization.
+...
+ 
+> --- a/drivers/input/serio/ams_delta_serio.c
+> +++ b/drivers/input/serio/ams_delta_serio.c
+> @@ -165,6 +165,9 @@ serio:
+>  	kfree(ams_delta_serio);
+>  	return err;
+>  }
+> +#ifndef MODULE
+> +late_initcall(ams_delta_serio_init);
+> +#else
+>  module_init(ams_delta_serio_init);
+>  
+>  static void __exit ams_delta_serio_exit(void)
+> @@ -175,3 +178,4 @@ static void __exit ams_delta_serio_exit(void)
+>  	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
+>  }
+>  module_exit(ams_delta_serio_exit);
+> +#endif
+> diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
+> index ccb8a6a..1764a3b 100644
+> --- a/sound/soc/omap/ams-delta.c
+> +++ b/sound/soc/omap/ams-delta.c
+> @@ -636,6 +636,9 @@ err:
+>  	platform_device_put(ams_delta_audio_platform_device);
+>  	return ret;
+>  }
+> +#ifndef MODULE
+> +late_initcall(ams_delta_module_init);
+> +#else
+>  module_init(ams_delta_module_init);
+>  
+>  static void __exit ams_delta_module_exit(void)
+> @@ -657,6 +660,7 @@ static void __exit ams_delta_module_exit(void)
+>  	platform_device_unregister(ams_delta_audio_platform_device);
+>  }
+>  module_exit(ams_delta_module_exit);
+> +#endif
+>  
+>  MODULE_AUTHOR("Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>");
+>  MODULE_DESCRIPTION("ALSA SoC driver for Amstrad E3 (Delta) videophone");
 
-The standard reason why losing the timeslice while holding a spinlock means
-deadlocks?
-CPU1: grabs spinlock
-CPU[2..n]: tries to grab the same spinlock, spins
-CPU1: does something blocking, process loses timeslice
-CPU1: whatever got scheduled there happens to to try and grab the same
-spinlock and you are stuck.  At that point *all* CPUs are spinning on
-that spinlock and your code that would eventually unlock it has no chance
-to get any CPU to run on.
+This looks a bit odd.. I think these drivers should be converted to
+a proper platform_driver so you can get rid of the machine_is_ams_delta
+check in the init. Then you can rely on the probe to match the
+device. To deal with the init order issues, you can pass a set_power
+function pointer in platform_data that the driver can use. Or
+set up a fixed regulator for it.
 
-Having the callback grab and release a spinlock is fine (as long as you
-don't do anything blocking between these spin_lock/spin_unlock).  Having
-it leave with spinlock held, though, means that the area where you can't
-block has expanded a whole lot.  As I said, brittle...
+Regards,
 
-A quick grep through the actual callbacks immediately shows e.g.
-del_timer_sync() done on CPU_DOWN_PREPARE.  And sysfs_remove_group(),
-which leads to outright mutex_lock().  And sysfs_remove_link() (ditto).
-And via_cputemp_device_remove() (again, mutex_lock()).  And free_irq().
-And perf_event_exit_cpu() (mutex_lock()).  And...
-
-IOW, there are shitloads of deadlocks right there.  If your callback's
-position in the chain is earlier than any of those, you are screwed.
-
-No, what I had in mind was different - use the callbacks to maintain a
-bitmap that would contain
-	a) all CPUs that were online at the moment
-	b) ... and not too much else
-Updates protected by spinlock; in all cases it gets dropped before the
-callback returns.  br_write_lock() grabs that spinlock and iterates over
-the set; it *does* leave the spinlock grabbed - that's OK, since all
-code between br_write_lock() and br_write_unlock() must be non-blocking
-anyway.  br_write_unlock() iterates over the same bitmap (unchanged since
-br_write_lock()) and finally drops the spinlock.
-
-AFAICS, what we want in callback is
-	CPU_DEAD, CPU_DEAD_FROZEN, CPU_UP_CANCELLED, CPU_UP_CANCELLED_FROZEN:
-		grab spinlock
-		remove cpu from bitmap
-		drop spinlock
-	CPU_UP_PREPARE, CPU_UP_PREPARE_FROZEN
-		grab spinlock
-		add cpu to bitmap
-		drop spinlock
-That ought to keep bitmap close to cpu_online_mask, which is enough for
-our purposes.
+Tony
