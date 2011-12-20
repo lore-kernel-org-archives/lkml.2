@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1LTXfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:35:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43667 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1LTXfI (ORCPT
+	id S1753407Ab1LTXiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:38:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41629 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab1LTXh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:35:08 -0500
-Date: Tue, 20 Dec 2011 15:35:02 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 5/5] cgroup: separate out cgroup_attach_proc error
- handling code
-Message-ID: <20111220233502.GN10752@google.com>
-References: <1324422873-31001-1-git-send-email-msb@chromium.org>
- <1324422873-31001-6-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324422873-31001-6-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Dec 2011 18:37:59 -0500
+Date: Tue, 20 Dec 2011 15:37:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: kosaki.motohiro@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Caspar Zhang <caspar@casparzhang.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] [v2] mempolicy: refix mbind_range() vma issue
+Message-Id: <20111220153757.8d80af1e.akpm@linux-foundation.org>
+In-Reply-To: <20111220192850.GB3870@cmpxchg.org>
+References: <20111212112000.GB18789@cmpxchg.org>
+	<1324405032-22281-1-git-send-email-kosaki.motohiro@gmail.com>
+	<20111220192850.GB3870@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 20 Dec 2011 20:28:50 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-On Tue, Dec 20, 2011 at 03:14:33PM -0800, Mandeep Singh Baines wrote:
-> @@ -2067,9 +2067,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  	read_unlock(&tasklist_lock);
->  
->  	/* methods shouldn't be called if no task is actually migrating */
-> -	retval = 0;
-> -	if (!group_size)
-> +	if (!group_size) {
-> +		retval = 0;
->  		goto out_free_group_list;
-> +	}
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Minchan Kim <minchan.kim@gmail.com>
+> > CC: Caspar Zhang <caspar@casparzhang.com>
+> 
+> Looks good to me now, thanks.
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Since this can corrupt virtual mappings and was released with 3.2, I
+> think we also want this:
+> 
+> Cc: stable@kernel.org [3.2.x]
 
-Eh... I don't think this is an improvement.  It's just different.
-
-> @@ -2126,20 +2127,20 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  	 */
->  	synchronize_rcu();
->  	cgroup_wakeup_rmdir_waiter(cgrp);
-> -	retval = 0;
-> +	flex_array_free(group);
-> +	return 0;
-
-Hmm... maybe goto out_free_group_list?  Duplicating cleanup on success
-and failure paths can lead future updaters forget one of them.  The
-exit path in this function isn't pretty but I don't think the proposed
-patch improves it either.
-
-Thanks.
-
--- 
-tejun
+I assume you meant 3.1.x  And into mainline for 3.2?
