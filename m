@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1LTPsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:48:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52792 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab1LTPrx (ORCPT
+	id S1752970Ab1LTPsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:48:35 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33615 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab1LTPsa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:47:53 -0500
-Date: Tue, 20 Dec 2011 07:47:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] devres: Fix a typo in devm_kfree comment
-Message-ID: <20111220154748.GB10752@google.com>
-References: <1324365465.9836.1.camel@phoenix>
+	Tue, 20 Dec 2011 10:48:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324365465.9836.1.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
+References: <cover.1324318997.git.jbaron@redhat.com> <d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
+ <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 20 Dec 2011 08:47:58 -0700
+Message-ID: <CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
+Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of ddebug_parse_query
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jason Baron <jbaron@redhat.com>, greg@kroah.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Jiri, hi!)
+On Tue, Dec 20, 2011 at 1:17 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
+>> From: Jim Cromie <jim.cromie@gmail.com>
+>>
+>> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
+>> for reuse later.  Also change the printed labels: file, func to agree
+>> with the query-spec keywords accepted in the control file.  Pass ""
+>> when string is null, to avoid "(null)" output from sprintf.  For
+>> format print, use precision to skip last char, assuming its '\n', no
+>> great harm if not, its a debug msg.
+>
+> pr_info_dq() or vpr_info_dq() ?
+>
+> Bart.
 
-On Tue, Dec 20, 2011 at 03:17:45PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/base/devres.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-> index 65cd748..524bf96 100644
-> --- a/drivers/base/devres.c
-> +++ b/drivers/base/devres.c
-> @@ -639,7 +639,7 @@ EXPORT_SYMBOL_GPL(devm_kzalloc);
->   * @dev: Device this memory belongs to
->   * @p: Memory to free
->   *
-> - * Free memory allocated with dev_kzalloc().
-> + * Free memory allocated with devm_kzalloc().
->   */
->  void devm_kfree(struct device *dev, void *p)
->  {
-> -- 
-> 1.7.5.4
-
-Yeap, looks good to me.  Jiri, can you please route this through the
-trivial tree?  The original message can be read from
-
- http://article.gmane.org/gmane.linux.kernel/1231296/raw  
-
-Thanks a lot.
-
--- 
-tejun
+I chose vpr_info_dq, with leading v to hint at the "if (verbose)" part
