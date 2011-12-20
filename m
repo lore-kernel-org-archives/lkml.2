@@ -1,128 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1LTUKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 15:10:08 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:39763
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751466Ab1LTUKA (ORCPT
+	id S1751991Ab1LTUT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 15:19:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16481 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755Ab1LTUTV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 15:10:00 -0500
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2dI1432N98dKzz1202hzz8275bhz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EF0EB76.7060101@am.sony.com>
-Date: Tue, 20 Dec 2011 12:09:26 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Tue, 20 Dec 2011 15:19:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104362535"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+CC: Kernel development list <linux-kernel@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>
+Date: Wed, 21 Dec 2011 04:19:12 +0800
+Subject: RE: [Regression, bisected]
+ a3e06bbe8445f57eb949e6474c5a9b30f24d2057: KVM: emulate lapic tsc deadline
+ timer for guest"
+Thread-Topic: [Regression, bisected]
+ a3e06bbe8445f57eb949e6474c5a9b30f24d2057: KVM: emulate lapic tsc deadline
+ timer for guest"
+Thread-Index: Acy/UEhSIWxt/q22QgWpK2CsACucEAAAgf1A
+Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E2890487874@shsmsx502.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048786F@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DGfhJBA6C6bzrnfVBxdyCM8a6J48dxb1DZfBwoFygtQvw@mail.gmail.com>
+In-Reply-To: <CAB9v_DGfhJBA6C6bzrnfVBxdyCM8a6J48dxb1DZfBwoFygtQvw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-Subject: Re: [PATCH] PREEMPT_RT_FULL: ARM context switch needs IRQs enabled
-References: <4EEAB90D.3050504@am.sony.com>	<20111216110100.GA6342@arm.com>	<4EEBD2F2.5040203@am.sony.com>	<20111219100217.GA29889@arm.com>	<4EEFE9A0.9090206@am.sony.com> <CAHkRjk5AbCGzPtb5qeWL4CpK=KrBzL_QgD55tzS36dGRjn-rQA@mail.gmail.com>
-In-Reply-To: <CAHkRjk5AbCGzPtb5qeWL4CpK=KrBzL_QgD55tzS36dGRjn-rQA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/11 03:54, Catalin Marinas wrote:
-> On Tuesday, 20 December 2011, Frank Rowand <frank.rowand@am.sony.com> wrote:
->> On 12/19/11 02:02, Catalin Marinas wrote:
->>> On Fri, Dec 16, 2011 at 11:23:30PM +0000, frank.rowand@am.sony.com<mailto:frank.rowand@am.sony.com> wrote:
->>>> On 12/16/11 03:01, Catalin Marinas wrote:
->>>>> On Fri, Dec 16, 2011 at 03:20:45AM +0000, Frank Rowand wrote:
->>>>>> ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
->>>>>> (application specific ID). The number of ASIDs is limited to 256 and
->>>>>> the allocation algorithm requires IPIs when all the ASIDs have been
->>>>>> used.  The IPIs require interrupts enabled during context switch for
->>>>>> deadlock avoidance.
->>>>>>
->>>>>> The RT patch mm-protect-activate-switch-mm.patch disables irqs around
->>>>>> activate_mm() and switch_mm(), which are the portion of the ARMv6
->>>>>> context switch that require interrupts enabled.
->>>>>>
->>>>>> The solution for the ARMv6 processors could be to _not_ disable irqs.
->>>>>> A more conservative solution is to provide the same environment that
->>>>>> the scheduler provides, that is preempt_disable().  This is more
->>>>>> resilient for possible future changes to the ARM context switch code
->>>>>> that is not aware of the RT patches.
->>>>>>
->>>>>> This patch will conflict slightly with Catalin's patch set to remove
->>>>>> __ARCH_WANT_INTERRUPTS_ON_CTXSW, when that is accepted:
->>>>>>
->>>>>>    http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01893.html
->>>>>>
->>>>>> When Catalin's patch set is accepted, this RT patch will need to reverse
->>>>>> the change in patch 6 to arch/arm/include/asm/system.h:
->>>>>>
->>>>>>    -#ifndef CONFIG_CPU_HAS_ASID
->>>>>>    -#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
->>>>>>    -#endif
->>>>>>
->>>>>> Signed-off-by: Frank Rowand <frank.rowand@am.sony.com<mailto:frank.rowand@am.sony.com>>
->>>>>
->>>>> The whole point of my patches was to no longer define
->>>>> __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM, so bringing it back in is not
->>>>> feasible.
->>>>
->>>> Looking over Catalin's patches again, it looks like my hacky RT patch
->>>> will no longer be needed after Catalin's patch set is in place.  The
->>>> problem my patch deals with is that with the RT patches applied, use_mm()
->>>> calls switch_mm() with IRQs disabled.  The current ARM switch_mm() can
->>>> not be called with IRQs disabled.  But with Catalin's patch 4
->>>> (http://lkml.indiana.edu/hypermail/linux/kernel/1111.3/01898.html)
->>>> applied, switch_mm() can be called with IRQs enabled, because
->>>> switch_mm() no longer calls check_context() which calls __new_context()
->>>> which calls smp_call_function() which requires IRQs to be enabled....
->>>
->>> I don't think much has changed with my patches. The switch_mm() itself
->>> can be called with IRQs disabled but it wouldn't even do the pgd switch
->>> unless it is followed by a finish_arch_post_lock_switch() call (hook
->>> introduced by my patch, but only available in sched.c).
->>>
->>> I think you need a solution for the RT series without considering my
->>> context switch changes. As I understand, the RT code currently calls
->>> switch_mm() with interrupts disabled which is not supported on ARM. So
->>> we have two solutions:
->>>
->>> 1. Change the RT patches to call switch_mm() with interrupts enabled
->>>    (and I can modify the ARM code to cope with this scenario and do the
->>>    pgd switch in one go).
->>> 2. Call switch_mm() with interrupts disabled but invoke an arch hook
->>>    once the interrupts have been enabled to complete the pgd switch.
->>
->> I think I'm in agreement with you.
->>
->> Solution 1 works for the RT patch set with the current mainline (and my
->> short term modification to the RT patch set that calls switch_mm() with
->> interrupts enabled from use_mm()).  I don't think there is any need to
->> modify the ARM code for this to work.  I'm assuming that when you say
->> "do the pgd switch" that you are talking about the
->> "cpu_switch_mm(next->pgd, next)" that is currently in switch_mm().
+Alexey Zaytsev wrote:
+> On Tue, Dec 20, 2011 at 21:21, Liu, Jinsong <jinsong.liu@intel.com>
+> wrote: 
+>> Linus Torvalds wrote:
+>>> On Tue, Dec 20, 2011 at 1:51 AM, Alexey Zaytsev
+>>> <alexey.zaytsev@gmail.com> wrote:
+>>>> 
+>>>> Let me clarify the situation.
+>>>> 
+>>>> Before this commit, the tsc was advertised in cpuid, and it was
+>>>> handled, if I understand things correctly, by qemu.
+>>>> After this commit, the tsc is advertised in cpuid, and is handled
+>>>> in the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If
+>>>> it does not issue the ioctl, the kernel just discards any wrmsrs
+>>>> done to the tsc. This does not look like an Illumos problem to me.
+>>>> Linux guests kind of work here, because they are  prepared to work
+>>>> on utterly broken hardware. Good for you, but please don't break
+>>>> less-prepared guests.
+>>> 
+>>> Yes. This is a regression, and needs to be fixed.
+>>> 
+>>> Liu, if you don't have time to debug it, we'll just revert the
+>>> commit. It's that easy. Regressions are not allowed. There are no
+>>> excuses. 
+>>> 
+>>> In particular, saying "just wait for qemu-kvm" is not an acceptable
+>>> answer, because the point is that things *used* to work, and they
+>>> broke. No "change it to work with the new kernel" allowed, except
+>>> for some *very* rare critical circumstances (usually "major
+>>> security-bug that we had to fix, and people who relied on it are
+>>> thus out of luck"). 
+>>> 
+>>> Commit a3e06bbe8445 still seems to revert cleanly, so that is the
+>>> easy option. 
+>>> 
+>>> That said, it sounds like maybe another solution is to start with
+>>> the TSC_DEADLINE timer bit in cpuid cleared, and only setting it
+>>> after the KVM_CREATE_IRQCHIP ioctl. 
+>>> 
+>>> In fact, the patch is clearly buggy, in that it apparently doesn't
+>>> emulate TSC_DEADLINE correctly and natively on its own.
+>>> 
+>>> Jan, Marcelo, Avi - is there a quick fix, or should I just revert?
+>>> 
+>>> And please don't *EVER* tell people that they should just work
+>>> around regressions. Regressions are absolutely unacceptable. Kernel
+>>> people need to understand that. 
+>>> 
+>>>                    Linus
+>> 
+>> Yes, my fault to say 'walk around' before knowing Alex's issue
+>> clearly. 
+>> 
+>> After Alex send his last email to clarify the situation, I have
+>> checked the bug. 
+>> Basically it caused from
+>> 1. qemu didn't issue KVM_CREATE_IRQCHIP, hence
+>> irqchip_in_kernel(kvm) fail when setup vcpu lapic logic at
+>> kvm_arch_vcpu_init();  
+>> 2. tsc deadline work based on vcpu lapic, hence break illumos;
+>> 
+>> A fix is to update cpuid, as you said, setting it after
+>> KVM_CREATE_IRQCHIP. I just wonder is there any better solution? so I
+>> ask Alex his environment to setup at my side to do more test. If you
+>> think kvm tsc deadline timer patch itself not clean, please tell me.
 > 
-> Yes.
+> [Removed Linus from CC]
 > 
->> Solution 2 will work after version 2 of your patches in "Remove the
->> __ARCH_WANT_INTERRUPTS_ON_CTXSW definition" is applied.  In this
->> case my short term modification to the RT patch set for solution 1
->> would be removed, and instead the RT patch set would call
->> finish_arch_post_lock_switch() after re-enabling IRQs in use_mm().
+> If your internet connection is good enough, I could just pass you the
+> disk image. It should be around 5g when compressed. Otherwise, you can
+> download an openindiana disk image from http://openindiana.org. You
+> probably want the text-only "server" one. The TSC code has changed
+> since that release, but the old one does not work as well.
+
+I mean I will build environment at my side with your qemu version (where do you pull from? commit number?) --> just to verify whether we can solve it at qemu side, or, solve it by cpuid at kvm side.
+I will present a patch to fix it and you can test at your environment.
+
 > 
-> Isn't solution 1 enough with both current ARM code and the latest context switch patches?
+> Do I get it right that Linux does not use the tsc deadline timer? I've
+> added printks to the
+> kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr functions,
+> and I swear I've seen them trigger a few times with the Linux guest.
+> But I can't find the code that is issuing the msr reads/writes in the
+> Linux kernel.
 
-Yes, solution 1 would also work with the latest context switch patches
-_if_ the RT patch called switch_mm() from use_mm() with interrupts
-enabled.  But the RT patch wants interrupts disabled for all other
-architectures, so the RT patch would have to leave interrupts enabled
-for ARM.
+I will check it tomorrow, too late now.
+and would you please tell me, does illumos use tsc deadline timer? I lack this basic information.
 
--Frank
-
+Thanks,
+Jinsong
