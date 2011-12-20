@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab1LTBmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 20:42:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51731 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab1LTBmt (ORCPT
+	id S1754066Ab1LTBnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 20:43:19 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64734 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab1LTBnQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 20:42:49 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH] recordmcount: Fix handling of elf64 big-endian objects.
-Date: Mon, 19 Dec 2011 17:42:42 -0800
-Message-Id: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 19 Dec 2011 20:43:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111220012516.GT2860@opensource.wolfsonmicro.com>
+References: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
+	<1324343717-7292-4-git-send-email-felipe.contreras@gmail.com>
+	<20111220012516.GT2860@opensource.wolfsonmicro.com>
+Date: Tue, 20 Dec 2011 03:43:13 +0200
+Message-ID: <CAMP44s2_a0PaBrXirWZ+GchALfp80yyr=ufQDCFNd3ZJiYWj=w@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] regulator: simplify twl4030 config
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
+        Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Tue, Dec 20, 2011 at 3:25 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Dec 20, 2011 at 03:15:16AM +0200, Felipe Contreras wrote:
+>> If we have TWL4030_CORE and REGULATOR, we *obviously* want
+>> REGULATOR_TWL4030 by default. But can be disabled if somebody wants for
+>> some strange reason.
+>
+> Oh, and I just noticed that this is v4 of some 4 part series I've never
+> heard of before of which I only seem to have patch 3.  Seems like
+> something's going wrong here...
 
-In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
-erroneously treating it as a 32-bit wide field.  For little endian
-objects this works because the flags of interest (SHF_EXECINSTR)
-reside in the lower 32 bits of the word, and you get the same result
-with either a 32-bit or 64-bit read.  Big endian objects on the
-other hand do not work at all with this error.
+You have commented on v3:
+http://thread.gmane.org/gmane.linux.usb.general/38230
 
-The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
+I just used 'git send-email' with --cc-cmd
+./scripts/get_maintainer.pl, so blame git send-email. Anyway, I don't
+think you are interested in other parts of the patch series, but if
+you are, they are in LKML.
 
-The symptom I observed was that my
-__start_mcount_loc..__stop_mcount_loc was empty even though ftrace
-function tracing was enabled.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- scripts/recordmcount.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index f40a6af6..54e35c1 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
- 		succeed_file();
- 	}
- 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
--	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
-+	    !(_w(txthdr->sh_flags) & SHF_EXECINSTR))
- 		return NULL;
- 	return txtname;
- }
 -- 
-1.7.2.3
-
+Felipe Contreras
