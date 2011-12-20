@@ -1,146 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab1LTGQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 01:16:07 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:26684 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab1LTGQA convert rfc822-to-8bit (ORCPT
+	id S1752521Ab1LTG1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 01:27:33 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:32982 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1LTG1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 01:16:00 -0500
-X-IronPort-AV: E=Sophos;i="4.71,380,1320652800"; 
-   d="scan'208";a="608961681"
-Message-ID: <1324361759.2694.14.camel@lade.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Dec 2011 07:15:59 +0100
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 20 Dec 2011 06:15:58.0662 (UTC) FILETIME=[D7092660:01CCBEDE]
+	Tue, 20 Dec 2011 01:27:24 -0500
+Date: Tue, 20 Dec 2011 06:27:10 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, mc@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-ID: <20111220062710.GC23916@ZenIV.linux.org.uk>
+References: <1324265775.25089.20.camel@mengcong>
+ <4EEEE866.2000203@linux.vnet.ibm.com>
+ <4EEF0003.3010800@codeaurora.org>
+ <4EEF1A13.4000801@linux.vnet.ibm.com>
+ <20111219121100.GI2203@ZenIV.linux.org.uk>
+ <4EEF9D4E.1000008@linux.vnet.ibm.com>
+ <20111219205251.GK2203@ZenIV.linux.org.uk>
+ <4EF01565.2000700@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF01565.2000700@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Dec 20, 2011 at 10:26:05AM +0530, Srivatsa S. Bhat wrote:
+> Oh, right, that has to be handled as well...
+> 
+> Hmmm... How about registering a CPU hotplug notifier callback during lock init
+> time, and then for every cpu that gets onlined (after we took a copy of the
+> cpu_online_mask to work with), we see if that cpu is different from the ones
+> we have already locked, and if it is, we lock it in the callback handler and
+> update the locked_cpu_mask appropriately (so that we release the locks properly
+> during the unlock operation).
+> 
+> Handling the newly introduced race between the callback handler and lock-unlock
+> code must not be difficult, I believe..
+> 
+> Any loopholes in this approach? Or is the additional complexity just not worth
+> it here?
 
-Please pull from the "bugfixes" branch of the repository at
+To summarize the modified variant of that approach hashed out on IRC:
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git bugfixes
+	* lglock grows three extra things: spinlock, cpu bitmap and cpu hotplug
+notifier.
+	* foo_global_lock_online starts with grabbing that spinlock and
+loops over the cpus in that bitmap.
+	* foo_global_unlock_online loops over the same bitmap and then drops
+that spinlock
+	* callback of the notifier is going to do all bitmap updates.  Under
+that spinlock.  Events that need handling definitely include the things like
+"was going up but failed", since we need the bitmap to contain all online CPUs
+at all time, preferably without too much junk beyond that.  IOW, we need to add
+it there _before_ low-level __cpu_up() calls set_cpu_online().  Which means
+that we want to clean up on failed attempt to up it.  Taking a CPU down is
+probably less PITA; just clear bit on the final "the sucker's dead" event.
+	* bitmap is initialized once, at the same time we set the notifier
+up.  Just grab the spinlock and do
+	for_each_online_cpu(N)
+		add N to bitmap
+then release the spinlock and let the callbacks handle all updates.
 
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/file.c      |    2 +-
- fs/nfs/nfs4proc.c  |   24 ++++++++++++++++--------
- fs/nfs/nfs4state.c |   33 +++++++++++++++++++++------------
- net/sunrpc/sched.c |   30 +++++++++++++++++++++++-------
- net/sunrpc/xprt.c  |   10 ++++------
- 5 files changed, 65 insertions(+), 34 deletions(-)
-
-commit 6c52961743f38747401b47127b82159ab6d8a7a4
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Dec 15 18:38:10 2011 -0500
-
-    NFS: Fix a regression in nfs_file_llseek()
-    
-    After commit 06222e491e663dac939f04b125c9dc52126a75c4 (fs: handle
-    SEEK_HOLE/SEEK_DATA properly in all fs's that define their own llseek)
-    the behaviour of llseek() was changed so that it always revalidates
-    the file size. The bug appears to be due to a logic error in the
-    afore-mentioned commit, which always evaluates to 'true'.
-    
-    Reported-by: Roel Kluin <roel.kluin@gmail.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@vger.kernel.org [>=3.1]
-
-commit 652f89f64fabcdae9143ee2b4253cfa838fb0279
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Dec 9 19:05:58 2011 -0500
-
-    NFSv4: Do not accept delegated opens when a delegation recall is in effect
-    
-    ...and report the servers that try to return a delegation when the client
-    is using the CLAIM_DELEG_CUR open mode. That behaviour is explicitly
-    forbidden in RFC3530.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 4b44b40e04a758e2242ff4a3f7c15982801ec8bc
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Dec 9 16:31:52 2011 -0500
-
-    NFSv4: Ensure correct locking when accessing the 'lock_states' list
-    
-    There are currently 2 places in the state recovery code, where we do not
-    take sufficient precautions before accessing the state->lock_states. In
-    both cases, we should be holding the state->state_lock.
-    
-    Reported-by: Pascal Bouchareine <pascal@gandi.net>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 111d489f0fb431f4ae85d96851fbf8d3248c09d8
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Dec 1 16:37:42 2011 -0500
-
-    NFSv4.1: Ensure that we handle _all_ SEQUENCE status bits.
-    
-    Currently, the code assumes that the SEQUENCE status bits are mutually
-    exclusive. They are not...
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@vger.kernel.org [>= 2.6.34]
-
-commit 4f38e4aadcca319650c0de31edf7193d7c384de2
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Dec 1 16:31:34 2011 -0500
-
-    NFSv4: Don't error if we handled it in nfs4_recovery_handle_error
-    
-    If we handled an error condition, then nfs4_recovery_handle_error should
-    return '0' so that the state recovery thread can continue.
-    Also ensure that nfs4_check_lease() continues to abort if we haven't got
-    any credentials by having it return ENOKEY (which is not handled).
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit c25573b5134294c0be82bfaecc6d08136835b271
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Dec 1 14:16:17 2011 -0500
-
-    SUNRPC: Ensure we always bump the backlog queue in xprt_free_slot
-    
-    Whenever we free a slot, we know that the resulting xprt->num_reqs will
-    be less than xprt->max_reqs, so we know that we can release at least one
-    backlogged rpc_task.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@vger.kernel.org [>=3.1]
-
-commit 7fdcf13b292e8b2e38e42de24be2503e37b2cf97
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Dec 1 14:00:15 2011 -0500
-
-    SUNRPC: Fix the execution time statistics in the face of RPC restarts
-    
-    If the rpc_task gets restarted, then we want to ensure that we don't
-    double-count the execution time statistics, timeout data, etc.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+I think that'll work with relatively little pain, but I'm not familiar enough
+with the cpuhotplug notifiers, so I'd rather have the folks familiar with those
+to supply the set of events to watch for...
