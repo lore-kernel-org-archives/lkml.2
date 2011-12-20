@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab1LTGkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 01:40:00 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:59180 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab1LTGjy (ORCPT
+	id S1752140Ab1LTGoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 01:44:24 -0500
+Received: from 206-223-182-18.beanfield.net ([206.223.182.18]:38088 "EHLO
+	dev.gridcentric.ca" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1LTGoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 01:39:54 -0500
-Date: Tue, 20 Dec 2011 17:39:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 19
-Message-Id: <20111220173945.8744055611309f8aa79cb7b1@canb.auug.org.au>
-In-Reply-To: <20111220142048.eeccb51ed290d8223ba2c580@canb.auug.org.au>
-References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
-	<20111220015235.GB8290@sirena.org.uk>
-	<20111220142048.eeccb51ed290d8223ba2c580@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__20_Dec_2011_17_39_45_+1100_.ENXpofIHJ0f3hxt"
+	Tue, 20 Dec 2011 01:44:16 -0500
+From: Adin Scannell <adin@scannell.ca>
+To: xen-devel@lists.xensource.com
+Cc: konrad@darnok.org, andres@gridcentric.ca, adin@gridcentric.com,
+        olaf@aepfle.de, JBeulich@suse.com, linux-kernel@vger.kernel.org,
+        Adin Scannell <adin@scannell.ca>
+Subject: [PATCH 2/3] Small fix-ups for the xen/privcmd ioctls
+Date: Tue, 20 Dec 2011 01:36:52 -0500
+Message-Id: <1324363013-11031-3-git-send-email-adin@scannell.ca>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1324363013-11031-1-git-send-email-adin@scannell.ca>
+References: <1324363013-11031-1-git-send-email-adin@scannell.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__20_Dec_2011_17_39_45_+1100_.ENXpofIHJ0f3hxt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In implementing the mmap_batch_v2 ioctl, some of the feedback included small
+fixups that were also relevant to the existing mmap_batch ioctl. Prior to the
+mmap_batch_v2 patch, this adds those small fixups to the existing code.
 
-Hi Mark,
+The const addition for gather_array is necessary for the implementation of
+mmap_batch_v2 and does not affect correctness.
 
-On Tue, 20 Dec 2011 14:20:48 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Which I reported to you on Dec 15 (along with another build error in the
-> regulator tree that you have fixed).  You even created a patch to fix it
-> (Subject: [PATCH] mfd: Declare da9052_regmap_config for the bus drivers)
-> but that has not appeared in your tree yet.
+Signed-off-by: Adin Scannell <adin@scannell.ca>
+---
+ drivers/xen/privcmd.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-I have applied that patch to linux-next today and will drop it when it
-appears in your tree.
+diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+index ccee0f1..161681f 100644
+--- a/drivers/xen/privcmd.c
++++ b/drivers/xen/privcmd.c
+@@ -76,7 +76,7 @@ static void free_page_list(struct list_head *pages)
+  */
+ static int gather_array(struct list_head *pagelist,
+ 			unsigned nelem, size_t size,
+-			void __user *data)
++			const void __user *data)
+ {
+ 	unsigned pageidx;
+ 	void *pagedata;
+@@ -246,7 +246,7 @@ struct mmap_batch_state {
+ 	domid_t domain;
+ 	unsigned long va;
+ 	struct vm_area_struct *vma;
+-	int err;
++	unsigned long err;
+ 
+ 	xen_pfn_t __user *user;
+ };
+@@ -256,6 +256,8 @@ static int mmap_batch_fn(void *data, void *state)
+ 	xen_pfn_t *mfnp = data;
+ 	struct mmap_batch_state *st = state;
+ 
++	BUG_ON(st == NULL || st->vma == NULL);
++
+ 	if (xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
+ 				       st->vma->vm_page_prot, st->domain) < 0) {
+ 		*mfnp |= 0xf0000000U;
+-- 
+1.6.2.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__20_Dec_2011_17_39_45_+1100_.ENXpofIHJ0f3hxt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO8C2xAAoJEECxmPOUX5FEJMcP/jdbm8rThaVXHvX7Mzj1uZ6P
-eNwlWCrm2SbfxTNYZMz1IpmrHGWzfGzAiSv3youokSkqecz6kzQVyaH2hKOkC+bf
-Bf1lJIZM29Wwg71P61GR6kN6w/hZCuL1h0/YV/esVwVEg+V2VhjgC7LyaFtejFGZ
-QuXozqjpCLR8pH3eJYHyHfuO7y2MvEMvH0ax/Plu/EG31tuws4+3R11l2qcxBhCX
-/QP4FbOp+lruUvZqmXwnBUuHyW1jkzvVDcwYz38VO+EgGGxInd2J5tp4LQZr+7iy
-c58IZy9KDxSMbaahCjV63bdYRWoJaognOF8cMlLe+0rXpgLHPWFcs3cNbl0YqnEZ
-N0mwJoLqO6mowz7k9R6GkycJYhQkblE59Sh8wNnsHhVi+B4dSM0wEEyxaVqIaL+Q
-R5clLOoOyrQFGZ5pv0CkBCfjwnqEdtqVrMuUI2GdSIEx+AOYolCYq5nanZRJ0+Bz
-nkgoBRZ2QdT+6EKJ8Mz0afkOCMrHI/mykWC+rs/kE3LdtzfyaVv/z9H1jJ/C/jZo
-ohk5u/7xzzs9xmIim+uoGmZVbGD3PIhgUmceC/vo+jRtQif2KJRzNmPlAHH+ABWA
-r1PKF8rPTt25+hv6xvZ+bfQdK7+DaDakNrmxlBBNn5z7BUrkl6Ridni49DEkVItb
-enwvY38RzkjAiLtKyyNb
-=0yxe
------END PGP SIGNATURE-----
-
---Signature=_Tue__20_Dec_2011_17_39_45_+1100_.ENXpofIHJ0f3hxt--
