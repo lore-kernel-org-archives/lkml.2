@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1LTTrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:47:19 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36564 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab1LTTrN (ORCPT
+	id S1752903Ab1LTTsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:48:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57069 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab1LTTr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:47:13 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
-Date: Tue, 20 Dec 2011 20:47:10 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
-        w.sang@pengutronix.de, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kernel@pengutronix.de, cjb@laptop.org,
-        devicetree-discuss@lists.ozlabs.org, shawn.guo@freescale.com
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com> <1324402840-32451-2-git-send-email-b29396@freescale.com>
-In-Reply-To: <1324402840-32451-2-git-send-email-b29396@freescale.com>
+	Tue, 20 Dec 2011 14:47:59 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112202047.10308.marek.vasut@gmail.com>
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E289048786F@shsmsx502.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048786F@shsmsx502.ccr.corp.intel.com>
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Date: Tue, 20 Dec 2011 21:47:37 +0200
+Message-ID: <CAB9v_DGfhJBA6C6bzrnfVBxdyCM8a6J48dxb1DZfBwoFygtQvw@mail.gmail.com>
+Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
+ KVM: emulate lapic tsc deadline timer for guest"
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> Currently most code to get child count in kernel are almost same,
-> add a helper to implement this function for dt to use.
-> 
-> ---
-> Changes v1->v2:
->  * change the name from of_get_child_number to of_get_child_count
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> ---
->  include/linux/of.h |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 4948552..d0d91a1 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -189,6 +189,17 @@ extern struct device_node *of_get_next_child(const
-> struct device_node *node, for (child = of_get_next_child(parent, NULL);
-> child != NULL; \
->  	     child = of_get_next_child(parent, child))
-> 
-> +static inline int of_get_child_count(const struct device_node *np)
-> +{
-> +	struct device_node *child = NULL;
-> +	int num = 0;
-> +
-> +	while ((child = of_get_next_child(np, child)))
+On Tue, Dec 20, 2011 at 21:21, Liu, Jinsong <jinsong.liu@intel.com> wrote:
+> Linus Torvalds wrote:
+>> On Tue, Dec 20, 2011 at 1:51 AM, Alexey Zaytsev
+>> <alexey.zaytsev@gmail.com> wrote:
+>>>
+>>> Let me clarify the situation.
+>>>
+>>> Before this commit, the tsc was advertised in cpuid, and it was
+>>> handled, if I understand things correctly, by qemu.
+>>> After this commit, the tsc is advertised in cpuid, and is handled in
+>>> the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If it does
+>>> not issue the ioctl, the kernel just discards any wrmsrs done to the
+>>> tsc. This does not look like an Illumos problem to me. Linux guests
+>>> kind of work here, because they are  prepared to work on utterly
+>>> broken hardware. Good for you, but please don't break less-prepared
+>>> guests.
+>>
+>> Yes. This is a regression, and needs to be fixed.
+>>
+>> Liu, if you don't have time to debug it, we'll just revert the commit.
+>> It's that easy. Regressions are not allowed. There are no excuses.
+>>
+>> In particular, saying "just wait for qemu-kvm" is not an acceptable
+>> answer, because the point is that things *used* to work, and they
+>> broke. No "change it to work with the new kernel" allowed, except for
+>> some *very* rare critical circumstances (usually "major security-bug
+>> that we had to fix, and people who relied on it are thus out of
+>> luck").
+>>
+>> Commit a3e06bbe8445 still seems to revert cleanly, so that is the
+>> easy option.
+>>
+>> That said, it sounds like maybe another solution is to start with the
+>> TSC_DEADLINE timer bit in cpuid cleared, and only setting it after the
+>> KVM_CREATE_IRQCHIP ioctl.
+>>
+>> In fact, the patch is clearly buggy, in that it apparently doesn't
+>> emulate TSC_DEADLINE correctly and natively on its own.
+>>
+>> Jan, Marcelo, Avi - is there a quick fix, or should I just revert?
+>>
+>> And please don't *EVER* tell people that they should just work around
+>> regressions. Regressions are absolutely unacceptable. Kernel people
+>> need to understand that.
+>>
+>>                    Linus
+>
+> Yes, my fault to say 'walk around' before knowing Alex's issue clearly.
+>
+> After Alex send his last email to clarify the situation, I have checked the bug.
+> Basically it caused from
+> 1. qemu didn't issue KVM_CREATE_IRQCHIP, hence irqchip_in_kernel(kvm) fail when setup vcpu lapic logic at kvm_arch_vcpu_init();
+> 2. tsc deadline work based on vcpu lapic, hence break illumos;
+>
+> A fix is to update cpuid, as you said, setting it after KVM_CREATE_IRQCHIP. I just wonder is there any better solution? so I ask Alex his environment to setup at my side to do more test.
+> If you think kvm tsc deadline timer patch itself not clean, please tell me.
 
-The assignment in this condition really looks eerie, maybe just rewrite it to do  
-{ } while () ? Also, aren't the parenthesis unnecessary?
+[Removed Linus from CC]
 
-M
-> +		num++;
-> +
-> +	return num;
-> +}
-> +
->  extern struct device_node *of_find_node_with_property(
->  	struct device_node *from, const char *prop_name);
->  #define for_each_node_with_property(dn, prop_name) \
-> @@ -262,6 +273,11 @@ static inline bool of_have_populated_dt(void)
->  #define for_each_child_of_node(parent, child) \
->  	while (0)
-> 
-> +static inline int of_get_child_count(const struct device_node *np)
-> +{
-> +	return -ENOSYS;
-> +}
-> +
->  static inline int of_device_is_compatible(const struct device_node
-> *device, const char *name)
->  {
+If your internet connection is good enough, I could just pass you the
+disk image. It should be around 5g when compressed. Otherwise, you can
+download an openindiana disk image from http://openindiana.org. You
+probably want the text-only "server" one. The TSC code has changed
+since that release, but the old one does not work as well.
+
+Do I get it right that Linux does not use the tsc deadline timer? I've
+added printks to the
+kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr functions,
+and I swear I've seen them trigger a few times with the Linux guest.
+But I can't find the code that is issuing the msr reads/writes in the
+Linux kernel.
