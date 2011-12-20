@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1LTJMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:12:25 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:22404 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab1LTJMW (ORCPT
+	id S1752913Ab1LTJNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:13:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33704 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1LTJNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:12:22 -0500
-Message-ID: <4EF0516F.2030102@siemens.com>
-Date: Tue, 20 Dec 2011 10:12:15 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kvm: Remove ability to assign a device without iommu
- support
-References: <20111220030826.11829.9141.stgit@bling.home>   <20111220031947.11829.66292.stgit@bling.home>  <1324370959.22797.3.camel@lappy> <4EF04F54.9010500@siemens.com> <1324372128.22797.6.camel@lappy>
-In-Reply-To: <1324372128.22797.6.camel@lappy>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Dec 2011 04:13:38 -0500
+Subject: Re: [PATCH 3/3] dmaengine: intel_mid_dma: remove legacy pm
+ interface
+From: Vinod Koul <vkoul@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: vinod.koul@intel.com, Dan Williams <dan.j.williams@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kristen Carlson Accardi <kristen@linux.intel.com>
+In-Reply-To: <1324026100-3124-4-git-send-email-adrian.hunter@intel.com>
+References: <1324026100-3124-1-git-send-email-adrian.hunter@intel.com>
+	 <1324026100-3124-4-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Dec 2011 14:43:16 +0530
+Message-ID: <1324372396.1641.10064.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-20 10:08, Sasha Levin wrote:
-> On Tue, 2011-12-20 at 10:03 +0100, Jan Kiszka wrote:
->> On 2011-12-20 09:49, Sasha Levin wrote:
->>> On Mon, 2011-12-19 at 20:19 -0700, Alex Williamson wrote:
->>>> This option has no users and it exposes a security hole that we
->>>> can allow devices to be assigned without iommu protection.  Make
->>>> KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory option.
->>>>
->>>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->>>> ---
->>>>
->>>>  virt/kvm/assigned-dev.c |   18 +++++++++---------
->>>>  1 files changed, 9 insertions(+), 9 deletions(-)
->>>>
->>>> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
->>>> index 3ad0925..a251a28 100644
->>>> --- a/virt/kvm/assigned-dev.c
->>>> +++ b/virt/kvm/assigned-dev.c
->>>> @@ -487,6 +487,9 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
->>>>  	struct kvm_assigned_dev_kernel *match;
->>>>  	struct pci_dev *dev;
->>>>  
->>>> +	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
->>>> +		return -EINVAL;
->>>
->>> Could we just drop KVM_DEV_ASSIGN_ENABLE_IOMMU and do it by default?
->>> calling KVM_ASSIGN_PCI_DEVICE without that flag set it pretty
->>> meaningless.
->>
->> There is that thing called "backward compatibility". :)
+On Fri, 2011-12-16 at 11:01 +0200, Adrian Hunter wrote:
+> From: Kristen Carlson Accardi <kristen@linux.intel.com>
 > 
-> Well, Alex suggested skipping deprecation period because there are
-> currently no users of KVM_ASSIGN_PCI_DEVICE without
-> KVM_DEV_ASSIGN_ENABLE_IOMMU, so it should be fine to just make it the
-> default behavior, no?
+> Drivers should not support both legacy pm and new framework.
+> 
+> Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
+There seems to be a similar patch from Kristen sent by Alan??
 
-This iommu-less mode used to "work" for older qemu-kvm version, and I
-think it should still do. Though it makes no sense, I fully agree.
+> ---
+>  drivers/dma/intel_mid_dma.c      |   12 +++++++-----
+>  drivers/dma/intel_mid_dma_regs.h |    2 +-
+>  2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+> index bbcd470..74f70aa 100644
+> --- a/drivers/dma/intel_mid_dma.c
+> +++ b/drivers/dma/intel_mid_dma.c
+> @@ -873,7 +873,7 @@ static int intel_mid_dma_alloc_chan_resources(struct dma_chan *chan)
+>  	pm_runtime_get_sync(&mid->pdev->dev);
+>  
+>  	if (mid->state == SUSPENDED) {
+> -		if (dma_resume(mid->pdev)) {
+> +		if (dma_resume(&mid->pdev->dev)) {
+>  			pr_err("ERR_MDMA: resume failed");
+>  			return -EFAULT;
+>  		}
+> @@ -1346,8 +1346,9 @@ static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
+>  *
+>  * This function is called by OS when a power event occurs
+>  */
+> -int dma_suspend(struct pci_dev *pci, pm_message_t state)
+> +static int dma_suspend(struct device *dev)
+>  {
+> +	struct pci_dev *pci = to_pci_dev(dev);
+>  	int i;
+>  	struct middma_device *device = pci_get_drvdata(pci);
+>  	pr_debug("MDMA: dma_suspend called\n");
+> @@ -1371,8 +1372,9 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
+>  *
+>  * This function is called by OS when a power event occurs
+>  */
+> -int dma_resume(struct pci_dev *pci)
+> +int dma_resume(struct device *dev)
+>  {
+> +	struct pci_dev *pci = to_pci_dev(dev);
+>  	int ret;
+>  	struct middma_device *device = pci_get_drvdata(pci);
+>  
+> @@ -1438,6 +1440,8 @@ static const struct dev_pm_ops intel_mid_dma_pm = {
+>  	.runtime_suspend = dma_runtime_suspend,
+>  	.runtime_resume = dma_runtime_resume,
+>  	.runtime_idle = dma_runtime_idle,
+> +	.suspend = dma_suspend,
+> +	.resume = dma_resume,
+>  };
+>  
+>  static struct pci_driver intel_mid_dma_pci_driver = {
+> @@ -1446,8 +1450,6 @@ static struct pci_driver intel_mid_dma_pci_driver = {
+>  	.probe		=	intel_mid_dma_probe,
+>  	.remove		=	__devexit_p(intel_mid_dma_remove),
+>  #ifdef CONFIG_PM
+> -	.suspend = dma_suspend,
+> -	.resume = dma_resume,
+>  	.driver = {
+>  		.pm = &intel_mid_dma_pm,
+>  	},
+> diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+> index c6de919..c83d35b 100644
+> --- a/drivers/dma/intel_mid_dma_regs.h
+> +++ b/drivers/dma/intel_mid_dma_regs.h
+> @@ -296,6 +296,6 @@ static inline struct intel_mid_dma_slave *to_intel_mid_dma_slave
+>  }
+>  
+> 
+> -int dma_resume(struct pci_dev *pci);
+> +int dma_resume(struct device *dev);
+>  
+>  #endif /*__INTEL_MID_DMAC_REGS_H__*/
 
-Jan
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+
