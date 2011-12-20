@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab1LTQEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 11:04:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10963 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab1LTQE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 11:04:26 -0500
-Message-ID: <4EF0B1FA.20209@redhat.com>
-Date: Tue, 20 Dec 2011 11:04:10 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753154Ab1LTQIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 11:08:01 -0500
+Received: from sous-sol.org ([216.99.217.87]:60849 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751832Ab1LTQHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 11:07:54 -0500
+Date: Tue, 20 Dec 2011 08:07:30 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: "Hao, Xudong" <xudong.hao@intel.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH] intel-iommu: Add device info into list before doing
+ context mapping
+Message-ID: <20111220160730.GD30205@sequoia.sous-sol.org>
+References: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <jweiner@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] consider swap space when we decide compaction goes or
- not
-References: <1324363653-18220-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1324363653-18220-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 01:47 AM, Minchan Kim wrote:
-> It's pointless to go reclaiming when we have no swap space
-> and lots of anon pages in inactive list.
->
-> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman<mgorman@suse.de>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: Johannes Weiner<jweiner@redhat.com>
-> Cc: Andrea Arcangeli<aarcange@redhat.com>
-> Signed-off-by: Minchan Kim<minchan@kernel.org>
+* Hao, Xudong (xudong.hao@intel.com) wrote:
+> @@ -2282,6 +2276,14 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+>  	pdev->dev.archdata.iommu = info;
+>  	spin_unlock_irqrestore(&device_domain_lock, flags);
+>  
+> +	ret = domain_context_mapping(domain, pdev, translation);
+> +	if (ret) {
+> +		list_del(&info->link);
+> +		list_del(&info->global);
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+At the very least, this is not correct locking.
 
--- 
-All rights reversed
+> +		free_devinfo_mem(info);
+> +		return ret;
+> +	}
+> +
