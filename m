@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab1LTXrh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:47:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40611 "EHLO
+	id S1753298Ab1LTXu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:50:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63877 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab1LTXrg (ORCPT
+	with ESMTP id S1752230Ab1LTXuZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:47:36 -0500
-Date: Tue, 20 Dec 2011 15:47:22 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 4/5] cgroup: remove extra calls to find_existing_css_set
-Message-ID: <20111220234722.GW13529@google.com>
-References: <1324422873-31001-1-git-send-email-msb@chromium.org>
- <1324422873-31001-5-git-send-email-msb@chromium.org>
- <20111220233050.GM10752@google.com>
+	Tue, 20 Dec 2011 18:50:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220233050.GM10752@google.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111221004352.39dbb43a@stein>
+References: <20111220213017.75ff380c@stein> <20111220213120.5e275f10@stein>
+ <CADmzSSjfFgrAroh8jZfC-q0dNuDgsyoNcUfTik6gBx75zrngFw@mail.gmail.com>
+ <20111221001031.539ef397@stein> <20111221004352.39dbb43a@stein>
+From: Carl Karsten <carl@personnelware.com>
+Date: Tue, 20 Dec 2011 17:50:02 -0600
+X-Google-Sender-Auth: QanArOc7tOFUfVKIePWVsXhyhiQ
+Message-ID: <CADmzSShVE9PNc+imVakhDfp-+nfga59kbKczAgKomiu94ayn8g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] firewire: do not expose globally unique IDs in the
+ kernel log
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo (tj@kernel.org) wrote:
-> Hello,
-> 
-> On Tue, Dec 20, 2011 at 03:14:32PM -0800, Mandeep Singh Baines wrote:
-> > @@ -1942,9 +1917,17 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> >  		}
-> >  	}
-> >  
-> > -	retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, false);
-> > -	if (retval)
-> > +	task_lock(tsk);
-> > +	oldcg = tsk->cgroups;
-> > +	task_unlock(tsk);
-> 
-> Probably this is patch order issue w/ Frederic's patch but we don't
-> need task_lock here, right?
-> 
+On Tue, Dec 20, 2011 at 5:43 PM, Stefan Richter
+<stefanr@s5r6.in-berlin.de> wrote:
+> On Dec 21 Stefan Richter wrote:
+>> Or you run "grep . /sys/bus/firewire/devices/*/guid | sed s/\\/guid:/\\t/"
+>> before dvgrab, and you get a list of GUIDs from which you can copy and
+>> paste.
+>
+> Or
+>        (cd /sys/bus/firewire/devices; grep . $(ls -c */guid)) | sed s/\\/guid:/\\t/
+>
+> for a list in reverse-chronological order of discovery.
+> Same but narrowed down to AV/C devices:
+>
+>        (cd /sys/bus/firewire/devices; for fw in $(grep 0x00a02d:0x010001 $(ls -c */units) | cut -f1 -d/); do printf $fw\\t; cat $fw/guid; done)
 
-Yeah, avoided removing the locks because Frederic's patch already did that.
-Once his changes get in, I'll rebase and resend.
+To further describe my pain: I am going to run dmesg anyway to see if
+the device is being detected and or any errors.  Once I see that it is
+connected, it is really nice having the guid right there.
 
-> > @@ -2171,17 +2088,18 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
-> >  	 * step 2: make sure css_sets exist for all threads to be migrated.
-> >  	 * we use find_css_set, which allocates a new one if necessary.
-> >  	 */
-> > -	INIT_LIST_HEAD(&newcg_list);
-> >  	for (i = 0; i < group_size; i++) {
-> >  		tc = flex_array_get(group, i);
-> >  		/* get old css_set pointer */
-> >  		task_lock(tc->task);
-> >  		oldcg = tc->task->cgroups;
-> >  		task_unlock(tc->task);
-> > -		/* if we don't already have it in the list get a new one */
-> > -		if (!css_set_fetched(cgrp, tc->task, oldcg, &newcg_list))
-> > -			if (retval = css_set_prefetch(cgrp, oldcg, &newcg_list))
-> > -				goto out_list_teardown;
-> > +		tc->cg = find_css_set(oldcg, cgrp);
-> > +		if (!tc->cg) {
-> > +			retval = -ENOMEM;
-> > +			css_set_refs = i + 1;
-> > +			goto out_list_teardown;
-> > +		}
-> 
-> Nice cleanup, but can't the above be merged into the loop which builds
-> the flex array?
-> 
+I am really bummed I didn't invite you to PyCon in Leipzig so you
+could see what I do first hand.    Maybe next time.
 
-Good idea. That would remove a for loop. Will fix in next version.
-
-> Thanks.
-> 
-> -- 
-> tejun
+-- 
+Carl K
