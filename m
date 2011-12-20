@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab1LTJvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:51:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56780 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1LTJvi convert rfc822-to-8bit (ORCPT
+	id S1753191Ab1LTJwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:52:20 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52042 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab1LTJwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:51:38 -0500
+	Tue, 20 Dec 2011 04:52:12 -0500
+Message-ID: <4EF05AC8.8040707@monstr.eu>
+Date: Tue, 20 Dec 2011 10:52:08 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
-References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
- <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
- <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
- <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
- <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
- <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
-From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-Date: Tue, 20 Dec 2011 11:51:17 +0200
-Message-ID: <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
-Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
- KVM: emulate lapic tsc deadline timer for guest"
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "Garrett D'Amore" <garrett@nexenta.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ryan Mallon <rmallon@gmail.com>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2] microblaze: Change NO_IRQ to 0
+References: <1324304394-5655-1-git-send-email-monstr@monstr.eu> <4EEFC38C.4010201@gmail.com>
+In-Reply-To: <4EEFC38C.4010201@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 11:26, Liu, Jinsong <jinsong.liu@intel.com> wrote:
-> Alexey Zaytsev wrote:
->> On Tue, Dec 20, 2011 at 10:53, Liu, Jinsong <jinsong.liu@intel.com>
->> wrote:
->>> Alexey Zaytsev wrote:
->>>> On Wed, Dec 14, 2011 at 11:37, Alexey Zaytsev
->>>> <alexey.zaytsev@nexenta.com> wrote:
->>>>> On Mon, Dec 12, 2011 at 10:13, Liu, Jinsong <jinsong.liu@intel.com>
->>>>> wrote:
->>>>>> Alexey Zaytsev wrote:
->>>>>>> Hi.
->>>>>>>
->>>>>>> After a recent change, qemu --enable-kvm (both 0.15.92 and 1.0)
->>>>>>> fails to boot illumos. The OS gets stuck pretty late in the boot
->>>>>>> process, without any hints from the guest. MDB (the illumos
->>>>>>> kenrnel debugger) failed to clarify the situation at once, the
->>>>>>> kernel seems to be stuck idling. I've bisected the problem to
->>>>>>> commit a3e06bbe8445f57eb949e6474c5a9b30f24d2057. Please let me
->>>>>>> know if you need me to collect any debug information or test any
->>>>>>> patches.
->>>>>>
->>>>>> Alexey,
->>>>>>
->>>>>> Does illumos use tsc deadline timer? and do you run it at Intel
->>>>>> platform?
->>>>>>
->>>>>> If yes, would you please help me to collect debug information by
->>>>>> add some printk points at kvm tsc deadline timer logic? currently
->>>>>> I totally have no clue to figure out what the issue root from :)
->>>>>> and, would you please check illumos tsc deadline timer logic by
->>>>>> confirm whether illumos 1). Enumerate tsc deadline timer
->>>>>> capability by CPUID; 2). Enable tsc deadline timer mode by lapic
->>>>>> MMIO; 3). Start tsc deadline timer by WRMSR;
->>>>>
->>>>> I think, here's what's going on. We get into
->>>>> kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr, but
->>>>> qemu does not use the KVM_CREATE_IRQCHIP ioctl, so we are running
->>>>> without vcpu->arch.apic and the functions do nothing. And the
->>>>> Linux guest just handles broken tsc a lot  better, so it survives.
->>>>> Both guests seem to work fine with qemu-kvm, which uses the ioctl.
->>>>>
->>>>
->>>> Hi. Do you need any more info on thins?
->>>
->>> Seems illumos works fine w/ qemu-kvm, that's enough. Maybe you need
->>> to wait qemu-kvm sync into qemu?
->>>
+>> As has been discussed many times[1], Using NO_IRQ set to anything other
+>> than 0 is bug waiting to happen since many drivers follow the pattern
+>> "if (!irq)" for testing whether or not an irq has been set.
 >>
->> Qemu-kvm is fine for me, but this is a regression and should be fixed.
->
-> Sorry, I haven't your environment to debug illumos regression.
-> I don't think it directly related to kvm tsc deadline timer, and I think it's no value to do it now, since
-> for linux guest it works fine w/ both qemu & qemu-kvm,
-> for illumos guest you just need wait qemu-kvm sync into qemu.
->
+>> This patch changes the Microblaze NO_IRQ setting from -1 to 0 to bring
+>> it in line with most of the rest of the kernel.  It also prepares for
+>> Microblaze eventually supporting multiple interrupt controllers by
+>> breaking the assumption that hwirq# == Linux IRQ#.  The Linux IRQ
+>> number is just a cookie with no guarantee of a direct relationship
+>> with the hardware irq arrangement.
+>>
+>> At this point, Microblaze interrupt handling only supports only one
+>> instance of one kind of interrupt controller (xilinx_intc).  This change
+>> shouldn't affect any architecture code outside of the interrupt
+>> controller driver and the irq_of mapping.
+>>
+>> Updated to 3.2 and to use irq_data.hwirq by Rob Herring.
+>> Tested and fixed by Michal Simek.
+>>
+>> [1] http://lkml.org/lkml/2005/11/21/221
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> 
+> <snip>
+> 
+>>  extern unsigned int nr_irq;
+>>  
+>> -#define NO_IRQ (-1)
+>> +#define NO_IRQ 0
+> 
+> IIUC, NO_IRQ should actually be removed in favour of testing against
+> zero explictly. On Linus' latest tree there are three appearances of
+> NO_IRQ in arch/microblaze: this definition and two uses and
+> arch/microblaze/pci/pci-common.c. The latter should be removed by this
+> patch. I assume there are still uses of NO_IRQ in drivers used by
+> microblaze which prevent removal of NO_IRQ completely?
 
-Let me clarify the situation.
+yeah, there are some drivers which we share with ppc.
+I will look at/fix them and then remove NO_IRQ from arch.
 
-Before this commit, the tsc was advertised in cpuid, and it was
-handled, if I understand things correctly, by qemu.
-After this commit, the tsc is advertised in cpuid, and is handled in
-the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If it does
-not issue the ioctl, the kernel just discards any wrmsrs done to the
-tsc. This does not look like an Illumos problem to me. Linux guests
-kind of work here, because they are  prepared to work on utterly
-broken hardware. Good for you, but please don't break less-prepared
-guests.
+drivers/net/ethernet/xilinx/xilinx_emaclite.c:1132:     if (rc == NO_IRQ) {
+drivers/net/ethernet/xilinx/ll_temac_main.c:1080:       if ((lp->rx_irq == NO_IRQ) || (lp->tx_irq == NO_IRQ)) {
+drivers/input/serio/xilinx_ps2.c:256:   if (of_irq_to_resource(ofdev->dev.of_node, 0, &r_irq) == NO_IRQ) {
+drivers/block/xsysace.c:459:    if (ace->irq == NO_IRQ)
+drivers/block/xsysace.c:1037:   if (ace->irq != NO_IRQ) {
+drivers/block/xsysace.c:1042:                   ace->irq = NO_IRQ;
+drivers/block/xsysace.c:1089:   if (ace->irq != NO_IRQ)
+drivers/block/xsysace.c:1159:   int irq = NO_IRQ;
 
-You can just run a Linux guest in qemu, and see what happens in
-kvm_get_lapic_tscdeadline_msr and kvm_set_lapic_tscdeadline_msr.
+Thanks,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
