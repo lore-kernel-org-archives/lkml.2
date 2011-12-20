@@ -1,115 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1LTRae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 12:30:34 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:33132
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751569Ab1LTR3n (ORCPT
+	id S1751570Ab1LTRbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 12:31:42 -0500
+Received: from mga10.intel.com ([192.55.52.92]:9424 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751258Ab1LTRbg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 12:29:43 -0500
-X-SpamScore: 4
-X-BigFish: VS4(zzzz1202h1082kzz8275dhz2dh2a8h668h839hb79i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
-        <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <cjb@laptop.org>, <w.sang@pengutronix.de>
-Subject: [RFC PATCH v3 5/5] mmc: sdhci-esdhc-imx: using pinmux subsystem
-Date: Wed, 21 Dec 2011 01:40:40 +0800
-Message-ID: <1324402840-32451-6-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1324402840-32451-1-git-send-email-b29396@freescale.com>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+	Tue, 20 Dec 2011 12:31:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1324396727-2840-1-git-send-email-tm@tao.ma>
+References: <4EF0940D.7070304@kernel.dk>
+	<1324396727-2840-1-git-send-email-tm@tao.ma>
+Date: Tue, 20 Dec 2011 09:31:33 -0800
+Message-ID: <CABE8wwtEn6D8HoW75iapv0BzfhepjQeTiW-5eMipPs-qrGu81w@mail.gmail.com>
+Subject: Re: [PATCH] block: warn the wrong tag only if it is greater than real_max_depth.
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        Meelis Roos <mroos@ut.ee>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+[ adding original bug reporters ]
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
----
- drivers/mmc/host/sdhci-esdhc-imx.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+On Tue, Dec 20, 2011 at 7:58 AM, Tao Ma <tm@tao.ma> wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
+>
+> In queue depth decreases, we could meet with a tag greater than max_depth,
+> but it should never be greater than real_max_depth. So only WARN if
+> it is greater than real_max_depth and let it complets if it is greater
+> than max_depth.
+>
+> Reported-by: Dan Williams <dan.j.williams@intel.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> ---
+>  block/blk-tag.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/block/blk-tag.c b/block/blk-tag.c
+> index e74d6d1..1c50d34 100644
+> --- a/block/blk-tag.c
+> +++ b/block/blk-tag.c
+> @@ -286,12 +286,12 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
+>
+>        BUG_ON(tag == -1);
+>
+> -       if (unlikely(tag >= bqt->max_depth)) {
+> +       if (unlikely(tag >= bqt->real_max_depth)) {
+>                /*
+> -                * This can happen after tag depth has been reduced.
+> -                * But tag shouldn't be larger than real_max_depth.
+> +                * tag shouldn't be larger than real_max_depth.
+>                 */
+> -               WARN_ON(tag >= bqt->real_max_depth);
+> +               WARN(1, "tag %d, bqt->real_max_depth %d\n",
+> +                    tag, bqt->real_max_depth);
+>                return;
+>        }
 
-diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-index 4b976f0..4504136 100644
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -24,6 +24,7 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
-+#include <linux/pinctrl/pinmux.h>
- #include <mach/esdhc.h>
- #include "sdhci-pltfm.h"
- #include "sdhci-esdhc.h"
-@@ -68,6 +69,7 @@ struct pltfm_imx_data {
- 	int flags;
- 	u32 scratchpad;
- 	enum imx_esdhc_type devtype;
-+	struct pinmux *pmx;
- 	struct esdhc_platform_data boarddata;
- };
- 
-@@ -439,6 +441,7 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
- 	struct clk *clk;
- 	int err;
- 	struct pltfm_imx_data *imx_data;
-+	struct pinmux *pmx;
- 
- 	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_imx_pdata);
- 	if (IS_ERR(host))
-@@ -466,6 +469,16 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
- 	clk_enable(clk);
- 	pltfm_host->clk = clk;
- 
-+	pmx = pinmux_get(&pdev->dev, NULL);
-+	if (IS_ERR(pmx)) {
-+		err = PTR_ERR(pmx);
-+		goto err_pmx_get;
-+	}
-+	err = pinmux_enable(pmx);
-+	if (err)
-+		goto err_pmx_enable;
-+	imx_data->pmx = pmx;
-+
- 	if (!is_imx25_esdhc(imx_data))
- 		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
- 
-@@ -558,6 +571,10 @@ no_card_detect_irq:
- 		gpio_free(boarddata->wp_gpio);
- no_card_detect_pin:
- no_board_data:
-+	pinmux_disable(imx_data->pmx);
-+err_pmx_enable:
-+	pinmux_put(imx_data->pmx);
-+err_pmx_get:
- 	clk_disable(pltfm_host->clk);
- 	clk_put(pltfm_host->clk);
- err_clk_get:
-@@ -585,6 +602,9 @@ static int __devexit sdhci_esdhc_imx_remove(struct platform_device *pdev)
- 		gpio_free(boarddata->cd_gpio);
- 	}
- 
-+	pinmux_disable(imx_data->pmx);
-+	pinmux_put(imx_data->pmx);
-+
- 	clk_disable(pltfm_host->clk);
- 	clk_put(pltfm_host->clk);
- 	kfree(imx_data);
--- 
-1.7.0.4
+You can use the WARN macro in the if() statement, and maybe it should
+only trigger once??
 
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index 918d82c..19cdde4 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -291,12 +291,13 @@ void blk_queue_end_tag(struct request_queue *q,
+struct request *rq)
 
+        BUG_ON(tag == -1);
+
+-       if (unlikely(tag >= bqt->max_depth)) {
++       if (WARN_ONCE(tag >= bqt->real_max_depth,
++                     "%s: tag %d greater than tag map size: %d\n",
++                     __func__, tag, bqt->real_max_depth)) {
+                /*
+                 * This can happen after tag depth has been reduced.
+                 * But tag shouldn't be larger than real_max_depth.
+                 */
+-               WARN_ON(tag >= bqt->real_max_depth);
+                return;
+        }
