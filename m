@@ -1,223 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab1LTMwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 07:52:18 -0500
-Received: from exprod5og111.obsmtp.com ([64.18.0.22]:35933 "HELO
-	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751868Ab1LTMwE (ORCPT
+	id S1751819Ab1LTNAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 08:00:45 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45042 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab1LTNAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 07:52:04 -0500
-From: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Josh Boyer <jwboyer@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anton Blanchard <anton@samba.org>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Rob Herring <rob.herring@calxeda.com>, Jiri Kosina <jkosina@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Ayman El-Khashab <ayman@elkhashab.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-Subject: [PATCH 2/3] powerpc/44x: Add additional support for APM821xx SoC and Bluestone board
-Date: Tue, 20 Dec 2011 19:44:02 +0700
-Message-Id: <1324385042-30781-1-git-send-email-vhtnguyen@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 20 Dec 2011 08:00:38 -0500
+Subject: [PATCH] staging: asus_oled: Fixed checkpatch.pl warnings in
+ asus_oled.c
+From: Toon Schoenmakers <nighteyes1993@gmail.com>
+To: sjakub@gmail.com, gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 Dec 2011 14:00:33 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1324386035.27425.2.camel@RainbowDash>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the dts file for bluestone board with support:
-- UART1
-- L2 cache
-- NAND with NDFC
-- PCI-E
+>From ac6a96cdf890714ec7b8f0e6597f82a49cfbe232 Mon Sep 17 00:00:00 2001
+From: Toon Schoenmakers <nighteyes1993@gmail.com>
+Date: Tue, 20 Dec 2011 13:52:41 +0100
+Subject: [PATCH] staging: asus_oled: Fixed checkpatch.pl warnings in
+asus_oled.c
 
-Signed-off-by: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
+Signed-off-by: Toon Schoenmakers <nighteyes1993@gmail.com>
 ---
- arch/powerpc/boot/dts/bluestone.dts |  127 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 125 insertions(+), 2 deletions(-)
+drivers/staging/asus_oled/asus_oled.c |    4 ++--
+1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/boot/dts/bluestone.dts b/arch/powerpc/boot/dts/bluestone.dts
-index 2a56a0d..cfa23bf 100644
---- a/arch/powerpc/boot/dts/bluestone.dts
-+++ b/arch/powerpc/boot/dts/bluestone.dts
-@@ -33,7 +33,7 @@
- 	aliases {
- 		ethernet0 = &EMAC0;
- 		serial0 = &UART0;
--		//serial1 = &UART1; --gcl missing UART1 label
-+		serial1 = &UART1;
- 	};
- 
- 	cpus {
-@@ -52,7 +52,7 @@
- 			d-cache-size = <32768>;
- 			dcr-controller;
- 			dcr-access-method = "native";
--			//next-level-cache = <&L2C0>; --gcl missing L2C0 label
-+			next-level-cache = <&L2C0>;
- 		};
- 	};
- 
-@@ -117,6 +117,16 @@
- 		dcr-reg = <0x00c 0x002>;
- 	};
- 
-+	L2C0: l2c {
-+		compatible = "ibm,l2-cache-apm82181", "ibm,l2-cache";
-+		dcr-reg = <0x020 0x008
-+			   0x030 0x008>;
-+		cache-line-size = <32>;
-+		cache-size = <262144>;
-+		interrupt-parent = <&UIC1>;
-+		interrupts = <11 1>;
-+	};
-+
- 	plb {
- 		compatible = "ibm,plb4";
- 		#address-cells = <2>;
-@@ -182,6 +192,53 @@
- 						reg = <0x001a0000 0x00060000>;
- 					};
- 				};
-+
-+				ndfc@1,0 {
-+					compatible = "ibm,ndfc";
-+					reg = <0x00000003 0x00000000 0x00002000>;
-+					ccr = <0x00001000>;
-+					bank-settings = <0x80002222>;
-+					#address-cells = <1>;
-+					#size-cells = <1>;
-+					/* 2Gb Nand Flash */
-+					nand {
-+						#address-cells = <1>;
-+						#size-cells = <1>;
-+
-+						partition@0 {
-+							label = "firmware";
-+							reg   = <0x00000000 0x00C00000>;
-+						};
-+						partition@c00000 {
-+							label = "environment";
-+							reg   = <0x00C00000 0x00B00000>;
-+						};
-+						partition@1700000 {
-+							label = "kernel";
-+							reg   = <0x01700000 0x00E00000>;
-+						};
-+						partition@2500000 {
-+							label = "root";
-+							reg   = <0x02500000 0x08200000>;
-+						};
-+						partition@a700000 {
-+							label = "device-tree";
-+							reg   = <0x0A700000 0x00B00000>;
-+						};
-+						partition@b200000 {
-+							label = "config";
-+							reg   = <0x0B200000 0x00D00000>;
-+						};
-+						partition@bf00000 {
-+							label = "diag";
-+							reg   = <0x0BF00000 0x00C00000>;
-+						};
-+						partition@cb00000 {
-+							label = "vendor";
-+							reg   = <0x0CB00000 0x3500000>;
-+						};
-+					};
-+				};
- 			};
- 
- 			UART0: serial@ef600300 {
-@@ -195,11 +252,36 @@
- 				interrupts = <0x1 0x4>;
- 			};
- 
-+			UART1: serial@ef600400 {
-+				device_type = "serial";
-+				compatible = "ns16550";
-+				reg = <0xef600400 0x00000008>;
-+				virtual-reg = <0xef600400>;
-+				clock-frequency = <0>; /* Filled in by U-Boot */
-+				current-speed = <0>; /* Filled in by U-Boot */
-+				interrupt-parent = <&UIC0>;
-+				interrupts = <0x1 0x4>;
-+			};
-+
- 			IIC0: i2c@ef600700 {
- 				compatible = "ibm,iic";
- 				reg = <0xef600700 0x00000014>;
- 				interrupt-parent = <&UIC0>;
- 				interrupts = <0x2 0x4>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				rtc@68 {
-+					compatible = "stm,m41t80";
-+					reg = <0x68>;
-+					interrupt-parent = <&UIC0>;
-+					interrupts = <0x9 0x8>;
-+				};
-+				sttm@4C {
-+					compatible = "adm,adm1032";
-+					reg = <0x4C>;
-+					interrupt-parent = <&UIC1>;
-+					interrupts = <0x1E 0x8>; /* CPU_THERNAL_L */
-+				};
- 			};
- 
- 			IIC1: i2c@ef600800 {
-@@ -250,5 +332,46 @@
- 			};
- 		};
- 
-+		PCIE0: pciex@d00000000 {
-+			device_type = "pci";
-+			#interrupt-cells = <1>;
-+			#size-cells = <2>;
-+			#address-cells = <3>;
-+			compatible = "ibm,plb-pciex-apm821xx", "ibm,plb-pciex";
-+			primary;
-+			port = <0x0>; /* port number */
-+			reg = <0x0000000d 0x00000000 0x20000000	/* Config space access */
-+			       0x0000000c 0x08010000 0x00001000>;	/* Registers */
-+			dcr-reg = <0x100 0x020>;
-+			sdr-base = <0x300>;
-+
-+			/* Outbound ranges, one memory and one IO,
-+			 * later cannot be changed
-+			 */
-+			ranges = <0x02000000 0x00000000 0x80000000 0x0000000e 0x00000000 0x00000000 0x80000000
-+				  0x02000000 0x00000000 0x00000000 0x0000000f 0x00000000 0x00000000 0x00100000
-+				  0x01000000 0x00000000 0x00000000 0x0000000f 0x80000000 0x00000000 0x00010000>;
-+
-+			/* Inbound 2GB range starting at 0 */
-+			dma-ranges = <0x42000000 0x0 0x0 0x0 0x0 0x0 0x80000000>;
-+
-+			/* This drives busses 40 to 0x7f */
-+			bus-range = <0x40 0x7f>;
-+
-+			/* Legacy interrupts (note the weird polarity, the bridge seems
-+			 * to invert PCIe legacy interrupts).
-+			 * We are de-swizzling here because the numbers are actually for
-+			 * port of the root complex virtual P2P bridge. But I want
-+			 * to avoid putting a node for it in the tree, so the numbers
-+			 * below are basically de-swizzled numbers.
-+			 * The real slot is on idsel 0, so the swizzling is 1:1
-+			 */
-+			interrupt-map-mask = <0x0 0x0 0x0 0x7>;
-+			interrupt-map = <
-+				0x0 0x0 0x0 0x1 &UIC3 0xc 0x4 /* swizzled int A */
-+				0x0 0x0 0x0 0x2 &UIC3 0xd 0x4 /* swizzled int B */
-+				0x0 0x0 0x0 0x3 &UIC3 0xe 0x4 /* swizzled int C */
-+				0x0 0x0 0x0 0x4 &UIC3 0xf 0x4 /* swizzled int D */>;
-+		};
- 	};
- };
+diff --git a/drivers/staging/asus_oled/asus_oled.c
+b/drivers/staging/asus_oled/asus_oled.c
+index 7bb7da7..e77e4e0 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -201,7 +201,7 @@ static ssize_t set_enabled(struct device *dev,
+struct device_attribute *attr,
+struct usb_interface *intf = to_usb_interface(dev);
+struct asus_oled_dev *odev = usb_get_intfdata(intf);
+unsigned long value;
+- if (strict_strtoul(buf, 10, &value))
++ if (kstrtoul(buf, 10, &value))
+return -EINVAL;
+
+enable_oled(odev, value);
+@@ -217,7 +217,7 @@ static ssize_t class_set_enabled(struct device
+*device,
+(struct asus_oled_dev *) dev_get_drvdata(device);
+unsigned long value;
+
+- if (strict_strtoul(buf, 10, &value))
++ if (kstrtoul(buf, 10, &value))
+return -EINVAL;
+
+enable_oled(odev, value);
 -- 
-1.7.2.5
+1.7.6.4
+
+
 
