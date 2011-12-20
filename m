@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab1LTXlu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:41:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50894 "EHLO
+	id S1753475Ab1LTXnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:43:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58299 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab1LTXls (ORCPT
+	with ESMTP id S1753139Ab1LTXnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:41:48 -0500
-Date: Tue, 20 Dec 2011 15:41:31 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+	Tue, 20 Dec 2011 18:43:04 -0500
+Date: Tue, 20 Dec 2011 15:42:59 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -20,97 +19,60 @@ Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
         Paul Menage <paul@paulmenage.org>
 Subject: Re: [PATCH 1/5 V3] cgroup: remove redundate get/put of old css_set
  from migrate
-Message-ID: <20111220234131.GV13529@google.com>
+Message-ID: <20111220234259.GO10752@google.com>
 References: <1324422873-31001-1-git-send-email-msb@chromium.org>
  <1324422873-31001-2-git-send-email-msb@chromium.org>
  <20111220231823.GK10752@google.com>
+ <20111220234131.GV13529@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111220231823.GK10752@google.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+In-Reply-To: <20111220234131.GV13529@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo (tj@kernel.org) wrote:
-> Hello,
-> 
-> s/redundate/redundant/ in $SUBJ, right?
-> 
-> On Tue, Dec 20, 2011 at 03:14:29PM -0800, Mandeep Singh Baines wrote:
-> > Changes in V3:
-> > * Fixed to put error in retval (thanks Frederic Weisbecker)
-> >   * https://lkml.org/lkml/2011/12/20/255
-> > Changes in V2:
-> > * Updated commit message as per Tejun's feedback:
-> >   * https://lkml.org/lkml/2011/12/19/289
+Hello,
+
+On Tue, Dec 20, 2011 at 03:41:31PM -0800, Mandeep Singh Baines wrote:
+> > Either put this as part of patch description or if you don't want it
+> > to be part of commit message, put it between --- and diffstat.
+> > Unfortunately, no tool understands "-- >8 --".
 > > 
-> > -- >8 -- (snip)
 > 
-> Either put this as part of patch description or if you don't want it
-> to be part of commit message, put it between --- and diffstat.
-> Unfortunately, no tool understands "-- >8 --".
+> git-am should. From "man git-am":
 > 
-
-git-am should. From "man git-am":
-
-       -c, --scissors
-           Remove everything in body before a scissors line (see git-
-           mailinfo(1)).
-
->From "man git-mailinfo":
-
-       --scissors
-           Remove everything in body before a scissors line. A line that
-           mainly consists of scissors (either ">8" or "8<") and perforation
-           (dash "-") marks is called a scissors line, and is used to request
-           the reader to cut the message at that line. If such a line appears
-           in the body of the message before the patch, everything before it
-           (including the scissors line itself) is ignored when this option is
-           used.
-
-           This is useful if you want to begin your message in a discussion
-           thread with comments and suggestions on the message you are
-           responding to, and to conclude it with a patch submission,
-           separating the discussion and the beginning of the proposed commit
-           log message with a scissors line.
-
-           This can enabled by default with the configuration option
-           mailinfo.scissors.
-
-But I can stop using scissors if that is what you prefer.
-
-> > We can now assume that the css_set reference held by the task
-> > will not go away for an exiting task. PF_EXITING state can be
-> > trusted throughout migration by checking it after locking
-> > threadgroup.
-> > 
-> > While at it, renamed css_set_check_fetched to css_set_fetched.
-> > !css_set_fetched() seems to read better than
-> > !css_set_check_fetched().
+>        -c, --scissors
+>            Remove everything in body before a scissors line (see git-
+>            mailinfo(1)).
 > 
-> I don't feel too hot about the renaming.  Can you please drop it for
-> now?
+> From "man git-mailinfo":
 > 
+>        --scissors
+>            Remove everything in body before a scissors line. A line that
+>            mainly consists of scissors (either ">8" or "8<") and perforation
+>            (dash "-") marks is called a scissors line, and is used to request
+>            the reader to cut the message at that line. If such a line appears
+>            in the body of the message before the patch, everything before it
+>            (including the scissors line itself) is ignored when this option is
+>            used.
+> 
+>            This is useful if you want to begin your message in a discussion
+>            thread with comments and suggestions on the message you are
+>            responding to, and to conclude it with a patch submission,
+>            separating the discussion and the beginning of the proposed commit
+>            log message with a scissors line.
+> 
+>            This can enabled by default with the configuration option
+>            mailinfo.scissors.
+> 
+> But I can stop using scissors if that is what you prefer.
 
-Sure. No problem.
+Heh, that's cute.  If git-am is happy, I'm happy too.  Thanks for
+letting me know.
 
-> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: containers@lists.linux-foundation.org
-> > Cc: cgroups@vger.kernel.org
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Paul Menage <paul@paulmenage.org>
-> 
-> Other than that, looks good to me.  I'll commit this once Li acks it.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+Thanks.
+
+-- 
+tejun
