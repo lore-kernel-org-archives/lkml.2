@@ -1,199 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1LTTTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:19:44 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33898 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab1LTTSh (ORCPT
+	id S1752842Ab1LTTTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:19:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50645 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab1LTTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:18:37 -0500
+	Tue, 20 Dec 2011 14:18:35 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andrew Vagin <avagin@openvz.org>, Arun Sharma <asharma@fb.com>,
+        cjashfor@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>,
+        devel@openvz.org, Jiri Olsa <jolsa@redhat.com>,
+        Johannes Schindelin <Johannes.Schindelin@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>, Nelson Elhage <nelhage@nelhage.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, cjashfor@linux.vnet.ibm.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/10] perf test: Add more automated tests for event parsing
-Date: Tue, 20 Dec 2011 17:18:11 -0200
-Message-Id: <1324408691-28296-11-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>, arnaldo.melo@gmail.com
+Subject: [GIT PULL 00/10] perf/core improvements and fixes
+Date: Tue, 20 Dec 2011 17:18:01 -0200
+Message-Id: <1324408691-28296-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
-In-Reply-To: <1324408691-28296-1-git-send-email-acme@infradead.org>
-References: <1324408691-28296-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Hi Ingo,
 
-Adding automated tests for event parsing to include testing for modifier
-and ',' operator.
+        Please consider pulling from:
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: cjashfor@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/1323963039-7602-4-git-send-email-jolsa@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-[ committer note: Remove some tests that need group_leader & bison patchkits ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-test.c |  127 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 126 insertions(+), 1 deletions(-)
+git://github.com/acmel/linux.git perf/core
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 6173f78..2b9a7f4 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -603,7 +603,7 @@ out_free_threads:
- 
- #define TEST_ASSERT_VAL(text, cond) \
- do { \
--	if (!cond) { \
-+	if (!(cond)) { \
- 		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
- 		return -1; \
- 	} \
-@@ -759,6 +759,103 @@ static int test__checkevent_breakpoint_w(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+static int test__checkevent_tracepoint_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_tracepoint(evlist);
-+}
-+
-+static int
-+test__checkevent_tracepoint_multi_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", evlist->nr_entries > 1);
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		TEST_ASSERT_VAL("wrong exclude_user",
-+				!evsel->attr.exclude_user);
-+		TEST_ASSERT_VAL("wrong exclude_kernel",
-+				evsel->attr.exclude_kernel);
-+		TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+		TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	}
-+
-+	return test__checkevent_tracepoint_multi(evlist);
-+}
-+
-+static int test__checkevent_raw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_raw(evlist);
-+}
-+
-+static int test__checkevent_numeric_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_numeric(evlist);
-+}
-+
-+static int test__checkevent_symbolic_name_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_symbolic_name(evlist);
-+}
-+
-+static int test__checkevent_symbolic_alias_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_symbolic_alias(evlist);
-+}
-+
-+static int test__checkevent_genhw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_genhw(evlist);
-+}
-+
- static struct test__event_st {
- 	const char *name;
- 	__u32 type;
-@@ -808,6 +905,34 @@ static struct test__event_st {
- 		.name  = "mem:0:w",
- 		.check = test__checkevent_breakpoint_w,
- 	},
-+	{
-+		.name  = "syscalls:sys_enter_open:k",
-+		.check = test__checkevent_tracepoint_modifier,
-+	},
-+	{
-+		.name  = "syscalls:*:u",
-+		.check = test__checkevent_tracepoint_multi_modifier,
-+	},
-+	{
-+		.name  = "r1:kp",
-+		.check = test__checkevent_raw_modifier,
-+	},
-+	{
-+		.name  = "1:1:hp",
-+		.check = test__checkevent_numeric_modifier,
-+	},
-+	{
-+		.name  = "instructions:h",
-+		.check = test__checkevent_symbolic_name_modifier,
-+	},
-+	{
-+		.name  = "faults:u",
-+		.check = test__checkevent_symbolic_alias_modifier,
-+	},
-+	{
-+		.name  = "L1-dcache-load-miss:kp",
-+		.check = test__checkevent_genhw_modifier,
-+	},
- };
- 
- #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
+	There are still patchkits I need to merge/review, thanks everybody, the
+more, the better!
+
+	I'll continue processing them tomorrow,
+
+Regards,
+
+- Arnaldo
+
+Andrew Vagin (1):
+  perf record: Add ability to record event period
+
+Jiri Olsa (1):
+  perf test: Add more automated tests for event parsing
+
+Namhyung Kim (6):
+  perf report: Document '--call-graph' for optional print_limit argument
+  perf symbols: Get rid of duplicated snprintf()
+  perf symbols: Fix error path on symbol__init()
+  perf tools: Fix a memory leak on perf_read_values_destroy
+  perf tools: Remove stale git headlines from top comment
+  perf events: Tidy up perf_event__preprocess_sample
+
+Nelson Elhage (1):
+  perf evlist: Fix errno value reporting on failed mmap
+
+Robert Richter (1):
+  perf evsel: Fix uninitialized memory access to struct perf_sample
+
+ tools/perf/Documentation/perf-report.txt |    5 +-
+ tools/perf/builtin-record.c              |    1 +
+ tools/perf/builtin-report.c              |    6 +-
+ tools/perf/builtin-test.c                |  127 +++++++++++++++++++++++++++++-
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/config.c                 |    5 +-
+ tools/perf/util/event.c                  |   13 ++--
+ tools/perf/util/evlist.c                 |    4 +-
+ tools/perf/util/evsel.c                  |    5 +-
+ tools/perf/util/symbol.c                 |   11 +--
+ tools/perf/util/usage.c                  |    5 +-
+ tools/perf/util/values.c                 |    1 +
+ 12 files changed, 160 insertions(+), 24 deletions(-)
+
 -- 
 1.7.8.rc0.35.gee6df
 
