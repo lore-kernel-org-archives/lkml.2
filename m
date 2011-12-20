@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab1LTOGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 09:06:46 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36016 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab1LTOGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 09:06:40 -0500
-Date: Tue, 20 Dec 2011 14:06:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111220140628.GD23916@ZenIV.linux.org.uk>
-References: <20111219121100.GI2203@ZenIV.linux.org.uk>
- <4EEF9D4E.1000008@linux.vnet.ibm.com>
- <20111219205251.GK2203@ZenIV.linux.org.uk>
- <4EF01565.2000700@linux.vnet.ibm.com>
- <20111220062710.GC23916@ZenIV.linux.org.uk>
- <4EF03915.60902@linux.vnet.ibm.com>
- <1324373854.21588.16.camel@mengcong>
- <4EF0654B.4060904@linux.vnet.ibm.com>
- <4EF06C9B.4010703@linux.vnet.ibm.com>
- <4EF084A4.3000106@linux.vnet.ibm.com>
+	id S1752222Ab1LTOOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 09:14:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55378 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab1LTOOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 09:14:40 -0500
+Date: Tue, 20 Dec 2011 15:14:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] mm: hugetlb: fix pgoff computation when unmapping page
+ from vma
+Message-ID: <20111220141437.GJ10565@tiehlicka.suse.cz>
+References: <CAJd=RBDC9hxAFbbTvSWVa=t1kuyBH8=UoTYxRDtDm6iXLGkQWg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EF084A4.3000106@linux.vnet.ibm.com>
+In-Reply-To: <CAJd=RBDC9hxAFbbTvSWVa=t1kuyBH8=UoTYxRDtDm6iXLGkQWg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 06:20:44PM +0530, Srivatsa S. Bhat wrote:
+[CCing Mel]
 
-> > Hey, actually there is a simple solution: just nip it (or rather delay it)
-> > in the bud ;) That is, we watch out for CPU_UP_PREPARE event and lock it
-> > up there itself using our spinlock.. that way, that cpu will not come up
-> > until we are done executing br_write_unlock(). In fact, we can even fail
-> > the onlining of that cpu by returning appropriate value from our callback,
-> > but that would be too harsh.. so we can settle for delaying the cpu online
+On Tue 20-12-11 21:45:51, Hillf Danton wrote:
+> The computation for pgoff is incorrect, at least with
+> 
+> 	(vma->vm_pgoff >> PAGE_SHIFT)
+> 
+> involved. It is fixed with the available method if HPAGE_SIZE is concerned in
+> page cache lookup.
 
-Eeeek...  Are you serious about leaving a spinlock grabbed by notifier
-callback and not released until another callback call?  That would be one
-hell of a constraint on what these notifiers can do - _nothing_ between
-these calls (including other notifier callbacks, etc.) would be allowed
-to block.
+Have you seen this as a real issue? I guess nobody noticed as it is
+quite rare error case.
+Anyways, yes, looks good. 
 
-That sounds extremely brittle...
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+> 
+> --- a/mm/hugetlb.c	Tue Dec 20 21:26:30 2011
+> +++ b/mm/hugetlb.c	Tue Dec 20 21:40:44 2011
+> @@ -2315,8 +2315,7 @@ static int unmap_ref_private(struct mm_s
+>  	 * from page cache lookup which is in HPAGE_SIZE units.
+>  	 */
+>  	address = address & huge_page_mask(h);
+> -	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT)
+> -		+ (vma->vm_pgoff >> PAGE_SHIFT);
+> +	pgoff = linear_hugepage_index(vma, address);
+
+You have hstate so you can use vma_hugecache_offset directly
+
+>  	mapping = (struct address_space *)page_private(page);
+> 
+>  	/*
+> 
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
