@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1LTBbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 20:31:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49826 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab1LTBbT (ORCPT
+	id S1753901Ab1LTBhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 20:37:04 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53223 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab1LTBhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 20:31:19 -0500
-Date: Mon, 19 Dec 2011 17:31:10 -0800
-From: tip-bot for Andi Kleen <ak@linux.intel.com>
-Message-ID: <tip-13529caa10734c46e3ab049cc1a441f332646b0c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1324338394-4670-9-git-send-email-andi@firstfloor.org>
-References: <1324338394-4670-9-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/autoprobe] x86:
-  Autoload microcode driver on Intel and AMD systems
-Git-Commit-ID: 13529caa10734c46e3ab049cc1a441f332646b0c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 19 Dec 2011 20:37:01 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111220011923.GS2860@opensource.wolfsonmicro.com>
+References: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
+	<1324343717-7292-4-git-send-email-felipe.contreras@gmail.com>
+	<20111220011923.GS2860@opensource.wolfsonmicro.com>
+Date: Tue, 20 Dec 2011 03:36:59 +0200
+Message-ID: <CAMP44s1XFo0_O-pGMNO7m=weXuCpXzS8oH6m6PaPNzLGRQpDgA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] regulator: simplify twl4030 config
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
+        Liam Girdwood <lrg@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 17:31:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13529caa10734c46e3ab049cc1a441f332646b0c
-Gitweb:     http://git.kernel.org/tip/13529caa10734c46e3ab049cc1a441f332646b0c
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 19 Dec 2011 15:46:34 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 19 Dec 2011 15:50:08 -0800
+On Tue, Dec 20, 2011 at 3:19 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Dec 20, 2011 at 03:15:16AM +0200, Felipe Contreras wrote:
+>> If we have TWL4030_CORE and REGULATOR, we *obviously* want
+>> REGULATOR_TWL4030 by default. But can be disabled if somebody wants for
+>> some strange reason.
+>
+> No, this is the wrong way to go about this - why are you making this
+> change for this one driver only?
 
-x86: Autoload microcode driver on Intel and AMD systems
+Because that's the only one I care about. I can try to do the same for
+all the others if you wish.
 
-Don't try to describe the actual models for now.
+> Exactly the same argument would apply
+> to all the other MFD regulators and to all the other MFD subdrivers in
+> the various subsystems.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1324338394-4670-9-git-send-email-andi@firstfloor.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/microcode_core.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+Yes, the ones that closely related to certain architectures or chips.
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 9d46f5e..6911a41 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -86,6 +86,7 @@
- 
- #include <asm/microcode.h>
- #include <asm/processor.h>
-+#include <asm/cpu_device_id.h>
- 
- MODULE_DESCRIPTION("Microcode Update Driver");
- MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
-@@ -502,6 +503,20 @@ static struct notifier_block __refdata mc_cpu_notifier = {
- 	.notifier_call	= mc_cpu_callback,
- };
- 
-+#ifdef MODULE
-+/* Autoload on Intel and AMD systems */
-+static const struct x86_cpu_id microcode_id[] = {
-+#ifdef CONFIG_MICROCODE_INTEL
-+       { X86_VENDOR_INTEL, X86_VENDOR_ANY, X86_MODEL_ANY, },
-+#endif
-+#ifdef CONFIG_MICROCODE_AMD
-+       { X86_VENDOR_AMD, X86_VENDOR_ANY, X86_MODEL_ANY, },
-+#endif
-+       {}
-+};
-+MODULE_DEVICE_TABLE(x86cpu, microcode_id);
-+#endif
-+
- static int __init microcode_init(void)
- {
- 	struct cpuinfo_x86 *c = &cpu_data(0);
+And this is already done:
+
+REGULATOR_AB3100:
+	depends on AB3100_CORE
+	default y if AB3100_CORE
+
+(if AB3100_CORE is redundant BTW)
+
+REGULATOR_TPS6105X:
+	depends on TPS6105X
+	default y if TPS6105X
+
+ditto
+
+And in mfd:
+
+config TPS65010
+	default y if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_OSK
+
+config ABX500_CORE
+	default y if ARCH_U300 || ARCH_U8500
+
+config AB3100_CORE
+	default y if ARCH_U300
+
+config AB3100_OTP
+	default y if AB3100_CORE
+
+These 3 seem to be linked, but the same logic applies; most people
+should say 'y', so make it the default.
+
+-- 
+Felipe Contreras
