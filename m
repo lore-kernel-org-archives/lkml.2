@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1LTXPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:15:54 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:65169 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab1LTXOn (ORCPT
+	id S1753188Ab1LTXSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:18:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64111 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab1LTXS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:14:43 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Tue, 20 Dec 2011 18:18:29 -0500
+Date: Tue, 20 Dec 2011 15:18:23 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Paul Menage <paul@paulmenage.org>
-Subject: [PATCH 5/5] cgroup: separate out cgroup_attach_proc error handling code
-Date: Tue, 20 Dec 2011 15:14:33 -0800
-Message-Id: <1324422873-31001-6-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1324422873-31001-1-git-send-email-msb@chromium.org>
+Subject: Re: [PATCH 1/5 V3] cgroup: remove redundate get/put of old css_set
+ from migrate
+Message-ID: <20111220231823.GK10752@google.com>
 References: <1324422873-31001-1-git-send-email-msb@chromium.org>
+ <1324422873-31001-2-git-send-email-msb@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324422873-31001-2-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes it easier to read the non-error path.
+Hello,
 
-While at it, move the retval=0 assignment inside the !group_size
-check. This way the comment describe this check is directly
-above it(we also avoid an extra assignment not needed in the
-normal path). Also return 0 directly instead of using retval.
+s/redundate/redundant/ in $SUBJ, right?
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Menage <paul@paulmenage.org>
----
- kernel/cgroup.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+On Tue, Dec 20, 2011 at 03:14:29PM -0800, Mandeep Singh Baines wrote:
+> Changes in V3:
+> * Fixed to put error in retval (thanks Frederic Weisbecker)
+>   * https://lkml.org/lkml/2011/12/20/255
+> Changes in V2:
+> * Updated commit message as per Tejun's feedback:
+>   * https://lkml.org/lkml/2011/12/19/289
+> 
+> -- >8 -- (snip)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2ac9eee..9ce0872 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2067,9 +2067,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	read_unlock(&tasklist_lock);
- 
- 	/* methods shouldn't be called if no task is actually migrating */
--	retval = 0;
--	if (!group_size)
-+	if (!group_size) {
-+		retval = 0;
- 		goto out_free_group_list;
-+	}
- 
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
-@@ -2126,20 +2127,20 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	synchronize_rcu();
- 	cgroup_wakeup_rmdir_waiter(cgrp);
--	retval = 0;
-+	flex_array_free(group);
-+	return 0;
-+
- out_list_teardown:
- 	for (i = 0; i < css_set_refs; i++) {
- 		tc = flex_array_get(group, i);
- 		put_css_set(tc->cg);
- 	}
- out_cancel_attach:
--	if (retval) {
--		for_each_subsys(root, ss) {
--			if (ss == failed_ss)
--				break;
--			if (ss->cancel_attach)
--				ss->cancel_attach(ss, cgrp, &tset);
--		}
-+	for_each_subsys(root, ss) {
-+		if (ss == failed_ss)
-+			break;
-+		if (ss->cancel_attach)
-+			ss->cancel_attach(ss, cgrp, &tset);
- 	}
- out_free_group_list:
- 	flex_array_free(group);
+Either put this as part of patch description or if you don't want it
+to be part of commit message, put it between --- and diffstat.
+Unfortunately, no tool understands "-- >8 --".
+
+> We can now assume that the css_set reference held by the task
+> will not go away for an exiting task. PF_EXITING state can be
+> trusted throughout migration by checking it after locking
+> threadgroup.
+> 
+> While at it, renamed css_set_check_fetched to css_set_fetched.
+> !css_set_fetched() seems to read better than
+> !css_set_check_fetched().
+
+I don't feel too hot about the renaming.  Can you please drop it for
+now?
+
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+
+Other than that, looks good to me.  I'll commit this once Li acks it.
+
+Thanks.
+
 -- 
-1.7.3.1
-
+tejun
