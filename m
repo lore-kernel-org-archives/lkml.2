@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1LTOnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 09:43:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23097 "EHLO mx1.redhat.com"
+	id S1752554Ab1LTOug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 09:50:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62413 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab1LTOnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 09:43:33 -0500
-Date: Tue, 20 Dec 2011 15:43:18 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        users@rt2x00.serialmonkey.com,
-        Andreas Hartmann <andihartmann@01019freenet.de>
-Subject: Re: [rt2x00-users] Poor performance and lockup with rt2800usb and
- Asus USB-N13 adapter
-Message-ID: <20111220144317.GA6027@redhat.com>
-References: <4ED43A5C.9000102@gmail.com>
- <20111129114603.GB7299@redhat.com>
- <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com>
+	id S1751977Ab1LTOub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 09:50:31 -0500
+Date: Tue, 20 Dec 2011 09:50:24 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Nate Custer <nate@cpanel.net>, Jens Axboe <axboe@kernel.dk>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH] blkio: alloc per cpu data from worker thread
+ context( Re: kvm deadlock)
+Message-ID: <20111220145024.GA16946@redhat.com>
+References: <4EE8A7ED.7060703@redhat.com>
+ <4EE8C8EA.9070207@kernel.dk>
+ <20111215194712.GA11194@redhat.com>
+ <E73DB38E-AFC5-445D-9E76-DE599B36A814@cpanel.net>
+ <20111216202907.GH7586@redhat.com>
+ <C1FB7932-7722-4160-8206-765B08EA5911@cpanel.net>
+ <20111219172717.GB7175@redhat.com>
+ <20111219173519.GL24519@google.com>
+ <20111219182717.GC7175@redhat.com>
+ <20111219225635.GC6256@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20111219225635.GC6256@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 08:21:49PM -0600, Robert Hancock wrote:
-> On Tue, Nov 29, 2011 at 5:46 AM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
-> > On Mon, Nov 28, 2011 at 07:50:20PM -0600, Robert Hancock wrote:
-> >> I recently got an Asus USB-N13 USB Wireless-N adapter which
-> >> apparently uses a Ralink RT3072 chip. I'm using it with an Asus
-> >> RT-N16 access point running TomatoUSB. When running Windows the
-> >> performance is reasonable (about 80 Mbps in both directions).
-> >> However under Fedora 16 (currently kernel 3.1.2) the performance is
-> >> abysmal (10 Mbps or less with lots of packet loss). I'll post some
-> >> debug information below.
-> > rt2800usb needs fixing. I'm able to reproduce these performance
-> > problems locally. They are quite hard to debug, and need some
-> > experiments. But I hope I will provide patches soon or leter.
+On Mon, Dec 19, 2011 at 02:56:35PM -0800, Tejun Heo wrote:
+> Hello, Vivek.
 > 
-> Do you have any leads on what is going wrong? I'm not sure if the
-> issue is with the higher MCS rates not working as well as they should,
-> or with the rate control trying to use them even though they're not
-> working well.
-
-I just discovered that at least some problems are related with power
-save. After "iwconfig wlanX power off" I have pretty short ping times
-and good throughput, both comparable with vendor driver. But I did not
-check that on all adapters that I have yet.
-
-Looking a bit more at that seem we stop and wake queues several times
-between sending each frame. Looks like that thing need to be optimized
-in mac80211, or some parameters have to be setup properly by rt2x00 ...
-
-Also rt2800 PCI and SOC have PS disabled by default ...
- 
-> I tried with the Fedora kernel-debug kernel and didn't see much
-> additional output. The stack trace might have a bit more detail:
+> On Mon, Dec 19, 2011 at 01:27:17PM -0500, Vivek Goyal wrote:
+> > Ok, that's good to know. If per cpu allocator can support this use case,
+> > it will be good for 3.3 onwards. This seems to be right way to go to fix
+> > the problem.
 > 
-> rt2x00queue_index_inc
-> rt2x00lib_dmadone
-> rt2x00usb_kick_rx_entry
-> rt2x00usb_clear_entry
-> rt2x00lib_rxdone
-> rt2x00usb_work_rxdone
-> process_one_work
-> worker_thread
-> kthread
-> kernel_thread_helper
-> 
-> Seems like something that happens on rmmod with the device connected
-> causes these rxdone/txdone functions to go into a tight loop somehow.
+> Ummm... if we're gonna make percpu usable w/ GFP_NOIO, the right
+> interim solution would be making a simplistic mempool so that later
+> when percpu can do it, it can be swapped easily.  I really can't see
+> much benefit of adding refcnting on top of everything just for this.
 
-I'm not able to reproduce this, perhaps this is related with debugfs
-or sysfs files you ware opening?
+Ok. So are you suggesting that I should write a simple mempool kind of
+implementation of my own for group and per cpu data allocation. Keep
+certain number of elements in the cache and trigger a worker thread to
+allocate more elements once minimum number of elements go below
+threshold. If pool has run out of pre-allocated elements then allocation
+will fail and IO will be accounted to root group?
+
+I am looking at the mempool implementation (mempool_create()) and looks
+like that is not suitable for my use case. mempool_alloc() will call into
+alloc function provided by me and pass the flags. I can't implement an
+alloc function and honor that flag as per cpu alloc does not take any
+flags.
+
+So IIUC, existing mempool implementation is not directly usable for my
+requirement and I need to write some code of my own for the caching
+layer which always allocates objects from reserve and fills in the
+pool asynchronously with the help of a worker thread.
 
 Thanks
-Stanislaw
+Vivek
