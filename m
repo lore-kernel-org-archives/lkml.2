@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1LTCGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:06:06 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7801 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab1LTCGE (ORCPT
+	id S1754021Ab1LTCNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:13:37 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16896 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752253Ab1LTCNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:06:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 19 Dec 2011 18:05:50 -0800
-Date: Mon, 19 Dec 2011 18:05:49 -0800
-From: Robert Morell <rmorell@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sumit Semwal <sumit.semwal@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jesse.barker@linaro.org" <jesse.barker@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "daniel@ffwll.ch" <daniel@ffwll.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-Message-ID: <20111220020549.GQ6559@morell.nvidia.com>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
- <4EE33EC2.6050508@redhat.com>
- <20111212224408.GD4355@morell.nvidia.com>
- <201112131510.02785.arnd@arndb.de>
+	Mon, 19 Dec 2011 21:13:34 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/5NgMooJ7qiZM3k9w0yVrZ
+Date: Mon, 19 Dec 2011 18:13:31 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 2/7] ARM: OMAP1: ams-delta: convert latches to
+ basic_mmio_gpio
+Message-ID: <20111220021331.GB6464@atomide.com>
+References: <cover.1324331816.git.jkrzyszt@tis.icnet.pl>
+ <201112200159.36558.jkrzyszt@tis.icnet.pl>
+ <20111220010446.GA6464@atomide.com>
+ <201112200218.03283.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201112131510.02785.arnd@arndb.de>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201112200218.03283.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 07:10:02AM -0800, Arnd Bergmann wrote:
-> On Monday 12 December 2011, Robert Morell wrote:
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 16:46]:
+> On Tuesday 20 of December 2011 at 02:04:46, Tony Lindgren wrote:
+> > * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 16:28]:
+> > > On Tuesday 20 of December 2011 at 01:06:00, Tony Lindgren wrote:
+> > > > 
+> > > > This part especially looks like it really should be just a regular
+> > > > device driver under drivers/ somewhere. 
 > > > 
-> > > Doing a buffer sharing with something that is not GPL is not fun, as, if any
-> > > issue rises there, it would be impossible to discover if the problem is either
-> > > at the closed-source driver or at the open source one. At the time I was using
-> > > the Nvidia proprietary driver, it was very common to have unexplained issues
-> > > caused likely by bad code there at the buffer management code, causing X
-> > > applications and extensions (like xv) to break.
-> > >
-> > > We should really make this EXPORT_SYMBOL_GPL(), in order to be able to latter
-> > > debug future share buffer issues, when needed.
+> > > I really don't understand what kind of a driver you might mean here.
+> > > 
+> > > The latch_gpios[] table is initially filled with all latch1 and latch2 
+> > > GPIO pins in order to register and initialize them from the board file 
+> > > until they are handled by respective existing device drivers (leds, 
+> > > nand, lcd, serio, serial8250, asoc) instead of those drivers accessing 
+> > > the latches with those old ams_delta_latch[12]_write() functions. That 
+> > > table will get almost empty after the transision process is completed, 
+> > > holding only pins not used by any drivers / connected to unsued devices, 
+> > > in order to initialize them from the board file for power saving 
+> > > purposes. A separate driver for the purpose of initializing a few GPIO 
+> > > pins seems an overkill.
 > > 
-> > Sorry, I don't buy this argument.  Making these exports GPL-only is not
-> > likely to cause anybody to open-source their driver, but will rather
-> > just cause them to use yet more closed-source code that is even less
-> > debuggable than this would be, to those without access to the source.
+> > OK maybe update the comments a bit to describe how that table will
+> > mostly disappear? It's not obvious from glancing over this patch
+> > series :)
 > 
-> But at least the broken module then won't be interacting with other modules
-> because it cannot share any buffers.
+> To be sure, do you mean in-line comments? Or the changelog message?
 
-One of the goals of this project is to unify the fragmented space of the
-ARM SoC memory managers so that each vendor doesn't implement their own,
-and they can all be closer to mainline.
+Just the changelog.
 
-I fear that restricting the use of this buffer sharing mechanism to GPL
-drivers only will prevent that goal from being achieved, if an SoC
-driver has to interact with modules that use a non-GPL license.
-
-As a hypothetical example, consider laptops that have multiple GPUs.
-Today, these ship with onboard graphics (integrated to the CPU or
-chipset) along with a discrete GPU, where in many cases only the onboard
-graphics can actually display to the screen.  In order for anything
-rendered by the discrete GPU to be displayed, it has to be copied to
-memory available for the smaller onboard graphics to texture from or
-display directly.  Obviously, that's best done by sharing dma buffers
-rather than bouncing them through the GPU.  It's not much of a stretch
-to imagine that we'll see such systems with a Tegra CPU/GPU plus a
-discrete GPU in the future; in that case, we'd want to be able to share
-memory between the discrete GPU and the Tegra system.  In that scenario,
-if this interface is GPL-only, we'd be unable to adopt the dma_buffer
-sharing mechanism for Tegra.
-
-(This isn't too pie-in-the-sky, either; people are already combining
-Tegra with discrete GPUs:
-http://blogs.nvidia.com/2011/11/world%e2%80%99s-first-arm-based-supercomputer-to-launch-in-barcelona/
-)
-
-Thanks,
-Robert
+Tony
