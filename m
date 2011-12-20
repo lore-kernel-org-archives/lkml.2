@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab1LTPYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:24:38 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40658 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1LTPYc convert rfc822-to-8bit (ORCPT
+	id S1752730Ab1LTP0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:26:03 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51503 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab1LTPZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:24:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112201619.43001.laurent.pinchart@ideasonboard.com>
-References: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au>
-	<201112201137.12003.laurent.pinchart@ideasonboard.com>
-	<CAMuHMdU5iRf4HUS5i_ibJxvHGcszdF+ZXmwMCWsXvr4k8DjPHQ@mail.gmail.com>
-	<201112201619.43001.laurent.pinchart@ideasonboard.com>
-Date: Tue, 20 Dec 2011 16:24:30 +0100
-X-Google-Sender-Auth: 7n-ZfCUKYqa_Ttp5n9ZByqJ60ho
-Message-ID: <CAMuHMdVx+T8X3tkP+OVM-sxKLeJdsuz=0jBSxuNte_5JK4vTBQ@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the fbdev tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 10:25:56 -0500
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wmh8ChsIkccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=4S1qW6wH7CvvL9JZye0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324394753.5916.53.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCHv2 03/10] ftrace: Add enable/disable ftrace_ops control
+ interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Christoph Lameter <christoph@lameter.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 20 Dec 2011 10:25:53 -0500
+In-Reply-To: <20111220145727.GB4393@m.brq.redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+	 <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+	 <1323105776-26961-4-git-send-email-jolsa@redhat.com>
+	 <1324323335.5916.46.camel@gandalf.stny.rr.com>
+	 <20111220145727.GB4393@m.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Tue, 2011-12-20 at 15:57 +0100, Jiri Olsa wrote:
 
-On Tue, Dec 20, 2011 at 16:19, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Tuesday 20 December 2011 14:48:33 Geert Uytterhoeven wrote:
->> On Tue, Dec 20, 2011 at 11:37, Laurent Pinchart wrote:
->> > On Tuesday 20 December 2011 06:32:14 Stephen Rothwell wrote:
->> >> After merging the fbdev tree, today's linux-next build (powerpc
->> >> ppc64_defconfig) produced this warning:
->> >>
->> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: braces around
->> >> scalar initializer [enabled by default]
->> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
->> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
->> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: excess elements in
->> >> scalar initializer [enabled by default]
->> >> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near
->> >> initialization for 'vesafb_defined.colorspace') [enabled by default]
->> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: braces around
->> >> scalar initializer [enabled by default]
->> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
->> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
->> >> default]
->> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: excess elements in
->> >> scalar initializer [enabled by default]
->> >> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near
->> >> initialization for 'matroxfb_dh_defined.colorspace') [enabled by
->> >> default]
->> >>
->> >> Introduced by commit fb21c2f42879 ("fbdev: Add FOURCC-based format
->> >> configuration API").
->> >
->> > The following patch should fix the issue. Florian, are you fine with it,
->> > or would you rather modify the initializers to be name-based ?
->> >
->> > From 078987fc14dba806fc1bc628e3e5c371db3cf1b8 Mon Sep 17 00:00:00 2001
->> > From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> > Date: Tue, 20 Dec 2011 11:30:53 +0100
->> > Subject: [PATCH] fbdev: matroxfb: Fix compilation after fb_var_screeninfo
->> > change
->> >
->> > Commit fb21c2f42879 ("fbdev: Add FOURCC-based format configuration API")
->> > modified the layout of the fb_var_screeninfo structure. Update the
->> > static initializers in the matroxfb driver accordingly.
->> >
->> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> > ---
->> >  drivers/video/matrox/matroxfb_base.c  |    2 +-
->> >  drivers/video/matrox/matroxfb_crtc2.c |    2 +-
->> >  2 files changed, 2 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/video/matrox/matroxfb_base.c
->> > b/drivers/video/matrox/matroxfb_base.c index 44bf8d4..f98aad5 100644
->> > --- a/drivers/video/matrox/matroxfb_base.c
->> > +++ b/drivers/video/matrox/matroxfb_base.c
->> > @@ -147,7 +147,7 @@ static struct fb_var_screeninfo vesafb_defined = {
->> >        39721L,48L,16L,33L,10L,
->> >        96L,2L,~0,      /* No sync info */
->> >        FB_VMODE_NONINTERLACED,
->> > -       0, {0,0,0,0,0}
->> > +       0, 0, {0,0,0,0}
->>
->> All these zeroes should not be specified, the compiler will do the
->> right thing for
->> static variables anyway.
->>
->> Else they have to be updated manually everytime one of the reserved fields
->> is consumed for a new feature.
->
-> I agree. Should I just remove them, or switch the structures to named
-> initializers while I'm at it ?
+> > 
+> > If the above is called with preemption enabled, it will not do what is
+> > expected. We could disable function tracing on one CPU and then
+> > re-enable it for another CPU even though it is already enabled.
+> 
+> It is only called inside perf reg callback within the
+> schedule function where the preemption is disabled.
+> 
+> The ftrace_function_enable is called when task is scheduled in
+> on respective cpu. Likewise the ftrace_function_disable is called 
+> when task is scheduled out on respective cpu.
 
-I would just remove them. What do they buy you?
+Yes I know how you use it, but this is an open API. It may be currently
+only used by perf today, but that doesn't mean that it wont be used by
+others. There's no documentation on how to use it. I don't look at this
+and say, "oh this is used by perf, we only need to worry about how perf
+uses it". That doesn't scale. It needs to be documented on how to use
+it, and if it requires preemption disabled when calling it, it should
+definitely be stated that fact and it may need a
+WARN_ON(preempt_count()) or something.
 
-Even with named initializers
+-- Steve
 
-    .reserved = { 0, 0, 0, 0 }
 
-will break once we consume one more reserved field, unless you write
-
-    .reserved = { 0, }
-
-to let the compiler handle it, but then you could just not specify the
-field at all.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
