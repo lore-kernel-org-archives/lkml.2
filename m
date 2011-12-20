@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1LTB0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 20:26:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49755 "EHLO
+	id S1753931Ab1LTB0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 20:26:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49763 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab1LTB0H (ORCPT
+	with ESMTP id S1753309Ab1LTB0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 20:26:07 -0500
-Date: Mon, 19 Dec 2011 17:25:45 -0800
+	Mon, 19 Dec 2011 20:26:42 -0500
+Date: Mon, 19 Dec 2011 17:26:31 -0800
 From: tip-bot for Andi Kleen <ak@linux.intel.com>
-Message-ID: <tip-faea229b398eac478e065c0726402e7d959b4e4c@git.kernel.org>
+Message-ID: <tip-5c60702817b4b1376e633ee23acdd536cda75308@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1324338394-4670-2-git-send-email-andi@firstfloor.org>
-References: <1324338394-4670-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1324338394-4670-3-git-send-email-andi@firstfloor.org>
+References: <1324338394-4670-3-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/autoprobe] x86: Add driver auto probing for x86 features
-Git-Commit-ID: faea229b398eac478e065c0726402e7d959b4e4c
+Subject: [tip:x86/autoprobe] x86, crypto:
+  Add support for x86 cpuid auto loading for x86 crypto drivers
+Git-Commit-ID: 5c60702817b4b1376e633ee23acdd536cda75308
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,67 +28,33 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 17:25:52 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 19 Dec 2011 17:26:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  faea229b398eac478e065c0726402e7d959b4e4c
-Gitweb:     http://git.kernel.org/tip/faea229b398eac478e065c0726402e7d959b4e4c
+Commit-ID:  5c60702817b4b1376e633ee23acdd536cda75308
+Gitweb:     http://git.kernel.org/tip/5c60702817b4b1376e633ee23acdd536cda75308
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 19 Dec 2011 15:46:27 -0800
+AuthorDate: Mon, 19 Dec 2011 15:46:28 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 19 Dec 2011 15:49:25 -0800
+CommitDate: Mon, 19 Dec 2011 15:49:32 -0800
 
-x86: Add driver auto probing for x86 features
+x86, crypto: Add support for x86 cpuid auto loading for x86 crypto drivers
 
-Old patchkit, resurrect due to popular demand.
+Add support for auto-loading of crypto drivers based on cpuid features.
+This enables auto-loading of the VIA and Intel specific drivers
+for AES, hashing and CRCs.
 
-There's a growing number of drivers that support a specific x86 feature
-or CPU.  Currently loading these drivers currently on a generic
-distribution requires various driver specific hacks and it often
-doesn't work.
+Requires the earlier infrastructure patch to add x86 modinfo.
+I kept it all in a single patch for now.
 
-This patch adds auto probing for drivers based on the x86 cpuid
-information, in particular based on vendor/family/model number
-and also based on CPUID feature bits.
+I dropped the printks when the driver cpuid doesn't match (imho
+drivers never should print anything in such a case)
 
-For example a common issue is not loading the SSE 4.2 accelerated
-CRC module: this can significantly lower the performance of BTRFS
-which relies on fast CRC.
-
-Another issue is loading the right CPUFREQ driver for the current CPU.
-Currently distributions often try all all possible driver until
-one sticks, which is not really a good way to do this.
-
-It works with existing udev without any changes. The code
-exports the x86 information as a generic string in sysfs
-that can be matched by udev's pattern matching.
-
-This scheme does not support numeric ranges, so if you want to
-handle e.g. ranges of model numbers they have to be encoded
-in ASCII or simply all models or families listed. Fixing
-that would require changing udev.
-
-Another issue is that udev will happily load all drivers that match,
-there is currently no nice way to stop a specific driver from
-being loaded if it's not needed (e.g. if you don't need fast CRC)
-But there are not that many cpu specific drivers around and they're
-all not that bloated, so this isn't a particularly serious issue.
-
-Originally this patch added the modalias to the normal cpu
-sysdevs. However sysdevs don't have all the infrastructure
-needed for udev, so it couldn't really autoload drivers.
-This patch instead adds the CPU modaliases to the cpuid devices,
-which are real devices with full support for udev. This implies
-that the cpuid driver has to be loaded to use this.
-
-This patch just adds infrastructure, some driver conversions
-in followups.
-
-Thanks to Kay for helping with some sysfs magic.
-
-v2: Constifcation, some updates
+One drawback is that udev doesn't know if the drivers are used or not,
+so they will be unconditionally loaded at boot up. That's better
+than not loading them at all, like it often happens.
 
 Cc: davej@redhat.com
 Cc: trenn@suse.de
@@ -96,271 +63,191 @@ Cc: axboe@kernel.dk
 Cc: hpa@zytor.com
 Cc: herbert@gondor.apana.org.au
 Cc: ying.huang@intel.com
-Cc: lenb@kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1324338394-4670-2-git-send-email-andi@firstfloor.org
+Link: http://lkml.kernel.org/r/1324338394-4670-3-git-send-email-andi@firstfloor.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/cpu_device_id.h |   13 +++++++
- arch/x86/kernel/cpu/Makefile         |    1 +
- arch/x86/kernel/cpu/match.c          |   48 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpuid.c              |   58 +++++++++++++++++++++++++++++++++-
- include/linux/mod_devicetable.h      |   20 ++++++++++++
- scripts/mod/file2alias.c             |   27 ++++++++++++++++
- 6 files changed, 166 insertions(+), 1 deletions(-)
+ arch/x86/crypto/aesni-intel_glue.c         |   12 +++++++++---
+ arch/x86/crypto/crc32c-intel.c             |   11 ++++++++---
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   12 ++++++++----
+ drivers/crypto/padlock-aes.c               |    9 ++++++++-
+ drivers/crypto/padlock-sha.c               |   16 ++++++++--------
+ 5 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpu_device_id.h b/arch/x86/include/asm/cpu_device_id.h
-new file mode 100755
-index 0000000..ff501e5
---- /dev/null
-+++ b/arch/x86/include/asm/cpu_device_id.h
-@@ -0,0 +1,13 @@
-+#ifndef _CPU_DEVICE_ID
-+#define _CPU_DEVICE_ID 1
-+
-+/*
-+ * Declare drivers belonging to specific x86 CPUs
-+ * Similar in spirit to pci_device_id and related PCI functions
-+ */
-+
-+#include <linux/mod_devicetable.h>
-+
-+extern const struct x86_cpu_id *x86_match_cpu(const struct x86_cpu_id *match);
-+
-+#endif
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 25f24dc..6ab6aa2 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -16,6 +16,7 @@ obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
- obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
- obj-y			+= rdrand.o
-+obj-y			+= match.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
-diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
-new file mode 100644
-index 0000000..7acc961
---- /dev/null
-+++ b/arch/x86/kernel/cpu/match.c
-@@ -0,0 +1,48 @@
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index 545d0ce..b3350bd 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -28,6 +28,7 @@
+ #include <crypto/aes.h>
+ #include <crypto/cryptd.h>
+ #include <crypto/ctr.h>
 +#include <asm/cpu_device_id.h>
-+#include <asm/processor.h>
-+#include <linux/cpu.h>
-+#include <linux/module.h>
-+
-+/**
-+ * x86_match_cpu - match current CPU again an array of x86_cpu_ids
-+ * @match: Pointer to array of x86_cpu_ids. Last entry terminated with
-+ *         {}.
-+ *
-+ * Return the entry if the current CPU matches the entries in the
-+ * passed x86_cpu_id match table. Otherwise NULL.  The match table
-+ * contains vendor (X86_VENDOR_*), family, model and feature bits or
-+ * respective wildcard entries.
-+ *
-+ * A typical table entry would be to match a specific CPU
-+ * { X86_VENDOR_INTEL, 6, 0x12 }
-+ * or to match a specific CPU feature
-+ * { X86_FEATURE_MATCH(X86_FEATURE_FOOBAR) }
-+ *
-+ * Fields can be wildcarded with %X86_VENDOR_ANY, %X86_FAMILY_ANY,
-+ * %X86_MODEL_ANY, %X86_FEATURE_ANY or 0 (except for vendor)
-+ *
-+ * Arrays used to match for this should also be declared using
-+ * MODULE_DEVICE_TABLE(x86_cpu, ...)
-+ *
-+ * This always matches against the boot cpu, assuming models and features are
-+ * consistent over all CPUs.
-+ */
-+const struct x86_cpu_id *x86_match_cpu(const struct x86_cpu_id *match)
-+{
-+	const struct x86_cpu_id *m;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
-+
-+	for (m = match; m->vendor | m->family | m->model | m->feature; m++) {
-+		if (m->vendor != X86_VENDOR_ANY && c->x86_vendor != m->vendor)
-+			continue;
-+		if (m->family != X86_FAMILY_ANY && c->x86 != m->family)
-+			continue;
-+		if (m->model != X86_MODEL_ANY && c->x86_model != m->model)
-+			continue;
-+		if (m->feature != X86_FEATURE_ANY && !cpu_has(c, m->feature))
-+			continue;
-+		return m;
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL(x86_match_cpu);
-diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
-index 212a6a4..f39e91d 100644
---- a/arch/x86/kernel/cpuid.c
-+++ b/arch/x86/kernel/cpuid.c
-@@ -40,6 +40,7 @@
- #include <linux/notifier.h>
- #include <linux/uaccess.h>
- #include <linux/gfp.h>
-+#include <linux/slab.h>
- 
- #include <asm/processor.h>
- #include <asm/msr.h>
-@@ -138,13 +139,56 @@ static const struct file_operations cpuid_fops = {
- 	.open = cpuid_open,
+ #include <asm/i387.h>
+ #include <asm/aes.h>
+ #include <crypto/scatterwalk.h>
+@@ -1253,14 +1254,19 @@ static struct crypto_alg __rfc4106_alg = {
  };
+ #endif
  
-+static ssize_t print_cpu_modalias(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *bufptr)
-+{
-+	int size = PAGE_SIZE;
-+	int i, n;
-+	char *buf = bufptr;
 +
-+	n = snprintf(buf, size, "x86cpu:vendor:%04x:family:%04x:model:%04x:feature:",
-+		boot_cpu_data.x86_vendor,
-+		boot_cpu_data.x86,
-+		boot_cpu_data.x86_model);
-+	size -= n;
-+	buf += n;
-+	size -= 2;
-+	for (i = 0; i < NCAPINTS*32; i++) {
-+		if (boot_cpu_has(i)) {
-+			n = snprintf(buf, size, ",%04x", i);
-+			if (n < 0) {
-+				WARN(1, "x86 features overflow page\n");
-+				break;
-+			}
-+			size -= n;
-+			buf += n;
-+		}
-+	}
-+	*buf++ = ',';
-+	*buf++ = '\n';
-+	return buf - bufptr;
-+}
-+
-+static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
-+
- static __cpuinit int cpuid_device_create(int cpu)
- {
- 	struct device *dev;
-+	int err;
- 
- 	dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
- 			    "cpu%d", cpu);
--	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
-+	if (IS_ERR(dev))
-+		return PTR_ERR(dev);
-+
-+	err = device_create_file(dev, &dev_attr_modalias);
-+	if (err) {
-+		/* keep device around on error. attribute is optional. */
-+		err = 0;
-+	}
-+
-+	return 0;
- }
- 
- static void cpuid_device_destroy(int cpu)
-@@ -182,6 +226,17 @@ static char *cpuid_devnode(struct device *dev, mode_t *mode)
- 	return kasprintf(GFP_KERNEL, "cpu/%u/cpuid", MINOR(dev->devt));
- }
- 
-+static int cpuid_dev_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (buf) {
-+		print_cpu_modalias(NULL, NULL, buf);
-+		add_uevent_var(env, "MODALIAS=%s", buf);
-+		kfree(buf);
-+	}
-+	return 0;
-+}
-+
- static int __init cpuid_init(void)
- {
- 	int i, err = 0;
-@@ -200,6 +255,7 @@ static int __init cpuid_init(void)
- 		goto out_chrdev;
- 	}
- 	cpuid_class->devnode = cpuid_devnode;
-+	cpuid_class->dev_uevent = cpuid_dev_uevent;
- 	for_each_online_cpu(i) {
- 		err = cpuid_device_create(i);
- 		if (err != 0)
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 468819c..b1725cb 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -542,4 +542,24 @@ struct isapnp_device_id {
- 	kernel_ulong_t driver_data;	/* data private to the driver */
- };
- 
-+/*
-+ * Match x86 CPUs for CPU specific drivers.
-+ * See documentation of "x86_match_cpu" for details.
-+ */
-+
-+struct x86_cpu_id {
-+	__u16 vendor;
-+	__u16 family;
-+	__u16 model;
-+	__u16 feature;	/* bit index */
-+	kernel_ulong_t driver_data;
++static const struct x86_cpu_id aesni_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_AES),
++	{}
 +};
++MODULE_DEVICE_TABLE(x86cpu, aesni_cpu_id);
 +
-+#define X86_FEATURE_MATCH(x) { X86_VENDOR_ANY, X86_FAMILY_ANY, X86_MODEL_ANY, x }
-+
-+#define X86_VENDOR_ANY 0xffff
-+#define X86_FAMILY_ANY 0
-+#define X86_MODEL_ANY  0
-+#define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
-+
- #endif /* LINUX_MOD_DEVICETABLE_H */
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index f936d1f..f157b22 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -880,6 +880,29 @@ static int do_isapnp_entry(const char *filename,
- 	return 1;
- }
- 
-+/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
-+ * All fields are numbers. It would be nicer to use strings for vendor
-+ * and feature, but getting those out of the build system here is too
-+ * complicated.
-+ */
-+
-+static int do_x86cpu_entry(const char *filename, struct x86_cpu_id *id,
-+			   char *alias)
-+{
-+	id->feature = TO_NATIVE(id->feature);
-+	id->family = TO_NATIVE(id->family);
-+	id->model = TO_NATIVE(id->model);
-+	id->vendor = TO_NATIVE(id->vendor);
-+
-+	strcpy(alias, "x86cpu:");
-+	ADD(alias, "vendor:",  id->vendor != X86_VENDOR_ANY, id->vendor);
-+	ADD(alias, ":family:", id->family != X86_FAMILY_ANY, id->family);
-+	ADD(alias, ":model:",  id->model  != X86_MODEL_ANY,  id->model);
-+	ADD(alias, ":feature:*,", id->feature != X86_FEATURE_ANY, id->feature);
-+	strcat(alias, ",*");
-+	return 1;
-+}
-+
- /* Ignore any prefix, eg. some architectures prepend _ */
- static inline int sym_is(const char *symbol, const char *name)
+ static int __init aesni_init(void)
  {
-@@ -1047,6 +1070,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		do_table(symval, sym->st_size,
- 			sizeof(struct isapnp_device_id), "isa",
- 			do_isapnp_entry, mod);
-+	else if (sym_is(symname, "__mod_x86cpu_device_table"))
-+		do_table(symval, sym->st_size,
-+			 sizeof(struct x86_cpu_id), "x86cpu",
-+			 do_x86cpu_entry, mod);
- 	free(zeros);
+ 	int err;
+ 
+-	if (!cpu_has_aes) {
+-		printk(KERN_INFO "Intel AES-NI instructions are not detected.\n");
++	if (!x86_match_cpu(aesni_cpu_id))
+ 		return -ENODEV;
+-	}
+ 
+ 	if ((err = crypto_fpu_init()))
+ 		goto fpu_err;
+diff --git a/arch/x86/crypto/crc32c-intel.c b/arch/x86/crypto/crc32c-intel.c
+index b9d0026..493f959 100644
+--- a/arch/x86/crypto/crc32c-intel.c
++++ b/arch/x86/crypto/crc32c-intel.c
+@@ -31,6 +31,7 @@
+ #include <crypto/internal/hash.h>
+ 
+ #include <asm/cpufeature.h>
++#include <asm/cpu_device_id.h>
+ 
+ #define CHKSUM_BLOCK_SIZE	1
+ #define CHKSUM_DIGEST_SIZE	4
+@@ -173,13 +174,17 @@ static struct shash_alg alg = {
+ 	}
+ };
+ 
++static const struct x86_cpu_id crc32c_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_XMM4_2),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, crc32c_cpu_id);
+ 
+ static int __init crc32c_intel_mod_init(void)
+ {
+-	if (cpu_has_xmm4_2)
+-		return crypto_register_shash(&alg);
+-	else
++	if (!x86_match_cpu(crc32c_cpu_id))
+ 		return -ENODEV;
++	return crypto_register_shash(&alg);
  }
  
+ static void __exit crc32c_intel_mod_fini(void)
+diff --git a/arch/x86/crypto/ghash-clmulni-intel_glue.c b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+index 976aa64..b4bf0a6 100644
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -20,6 +20,7 @@
+ #include <crypto/gf128mul.h>
+ #include <crypto/internal/hash.h>
+ #include <asm/i387.h>
++#include <asm/cpu_device_id.h>
+ 
+ #define GHASH_BLOCK_SIZE	16
+ #define GHASH_DIGEST_SIZE	16
+@@ -294,15 +295,18 @@ static struct ahash_alg ghash_async_alg = {
+ 	},
+ };
+ 
++static const struct x86_cpu_id pcmul_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ), /* Pickle-Mickle-Duck */
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, pcmul_cpu_id);
++
+ static int __init ghash_pclmulqdqni_mod_init(void)
+ {
+ 	int err;
+ 
+-	if (!cpu_has_pclmulqdq) {
+-		printk(KERN_INFO "Intel PCLMULQDQ-NI instructions are not"
+-		       " detected.\n");
++	if (!x86_match_cpu(pcmul_cpu_id))
+ 		return -ENODEV;
+-	}
+ 
+ 	err = crypto_register_shash(&ghash_alg);
+ 	if (err)
+diff --git a/drivers/crypto/padlock-aes.c b/drivers/crypto/padlock-aes.c
+index 29b9469..37b2e94 100644
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -19,6 +19,7 @@
+ #include <linux/percpu.h>
+ #include <linux/smp.h>
+ #include <linux/slab.h>
++#include <asm/cpu_device_id.h>
+ #include <asm/byteorder.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+@@ -503,12 +504,18 @@ static struct crypto_alg cbc_aes_alg = {
+ 	}
+ };
+ 
++static struct x86_cpu_id padlock_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_XCRYPT),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, padlock_cpu_id);
++
+ static int __init padlock_init(void)
+ {
+ 	int ret;
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 
+-	if (!cpu_has_xcrypt)
++	if (!x86_match_cpu(padlock_cpu_id))
+ 		return -ENODEV;
+ 
+ 	if (!cpu_has_xcrypt_enabled) {
+diff --git a/drivers/crypto/padlock-sha.c b/drivers/crypto/padlock-sha.c
+index 06bdb4b..9266c0e 100644
+--- a/drivers/crypto/padlock-sha.c
++++ b/drivers/crypto/padlock-sha.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/scatterlist.h>
++#include <asm/cpu_device_id.h>
+ #include <asm/i387.h>
+ 
+ struct padlock_sha_desc {
+@@ -526,6 +527,12 @@ static struct shash_alg sha256_alg_nano = {
+ 	}
+ };
+ 
++static struct x86_cpu_id padlock_sha_ids[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_PHE),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, padlock_sha_ids);
++
+ static int __init padlock_init(void)
+ {
+ 	int rc = -ENODEV;
+@@ -533,15 +540,8 @@ static int __init padlock_init(void)
+ 	struct shash_alg *sha1;
+ 	struct shash_alg *sha256;
+ 
+-	if (!cpu_has_phe) {
+-		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
+-		return -ENODEV;
+-	}
+-
+-	if (!cpu_has_phe_enabled) {
+-		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
++	if (!x86_match_cpu(padlock_sha_ids) || !cpu_has_phe_enabled)
+ 		return -ENODEV;
+-	}
+ 
+ 	/* Register the newly added algorithm module if on *
+ 	* VIA Nano processor, or else just do as before */
