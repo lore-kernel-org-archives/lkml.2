@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1LTTnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:43:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752493Ab1LTTnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:43:25 -0500
-Date: Tue, 20 Dec 2011 21:45:19 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Amit Shah <amit.shah@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio_net: fix refill related races
-Message-ID: <20111220194518.GB26692@redhat.com>
-References: <20111207152120.GA23417@redhat.com>
- <8739cvisqe.fsf@rustcorp.com.au>
- <20111211144428.GB14381@redhat.com>
- <878vmioh10.fsf@rustcorp.com.au>
- <20111212115405.GB7946@redhat.com>
- <87iplltd0g.fsf@rustcorp.com.au>
- <20111220190908.GC25689@redhat.com>
- <20111220190946.GD10752@google.com>
- <20111220193055.GA26392@redhat.com>
- <20111220193154.GG10752@google.com>
+	id S1752866Ab1LTTnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:43:55 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55986 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab1LTTnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 14:43:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220193154.GG10752@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111220111935.GE31842@legolas.emea.dhcp.ti.com>
+References: <1323990310-11905-1-git-send-email-felipe.contreras@gmail.com>
+	<1323990310-11905-2-git-send-email-felipe.contreras@gmail.com>
+	<20111219081137.GF3146@legolas.emea.dhcp.ti.com>
+	<CAMP44s2pbLRHB2ko9t-zQEpTFw=TaCS9b_qRmvAobgxeJ9WrCw@mail.gmail.com>
+	<20111220111935.GE31842@legolas.emea.dhcp.ti.com>
+Date: Tue, 20 Dec 2011 21:43:45 +0200
+Message-ID: <CAMP44s1m9oXpiw506kE6JJn5xO+oCRL8B0UixUf4X=Ew00=wHA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] usb: musb: fix pm_runtime mismatches
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 11:31:54AM -0800, Tejun Heo wrote:
-> On Tue, Dec 20, 2011 at 09:30:55PM +0200, Michael S. Tsirkin wrote:
-> > Hmm, in that case it looks like a nasty race could get
-> > triggered, with try_fill_recv run on multiple CPUs in parallel,
-> > corrupting the linked list within the vq.
-> > 
-> > Using the mutex as my patch did will fix that naturally, as well.
-> 
-> Don't know the code but just use nrt wq.  There's even a system one
-> called system_nrq_wq.
-> 
-> Thanks.
+On Tue, Dec 20, 2011 at 1:19 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Mon, Dec 19, 2011 at 10:20:09PM +0200, Felipe Contreras wrote:
+>> On Mon, Dec 19, 2011 at 10:11 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> > On Fri, Dec 16, 2011 at 01:05:08AM +0200, Felipe Contreras wrote:
+>> >> Properly call pm_runtime_put() afer pm_runttime_get() on errors.
+>> >>
+>> >> Untested.
+>> >
+>> > sorry, but I'm not applying untested patches. I need someone to give a
+>> > Tested-by.
+>>
+>> I'm pretty sure most people don't test the exit paths, but fine, don't
+>> apply them. Who needs power management anyway.
+>
+> if it wasn't tested you can't claim $SUBJECT makes PM magically work.
 
-We can, but we need the mutex for other reasons, anyway.
+It's clear from the code, no need to test to see that pm_runtime_get()
+is called but not pm_runtime_put(), thus the device remains active,
+thus PM would not work after that.
 
-> -- 
-> tejun
+-- 
+Felipe Contreras
