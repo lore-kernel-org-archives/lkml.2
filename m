@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1LTJkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:40:46 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:29482
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752454Ab1LTJkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:40:43 -0500
-X-SpamScore: 4
-X-BigFish: VS4(zzzz1202h1082kzz8275dhz2dh2a8h668h839hb79i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>
-Subject: [PATCH 1/1] pinctrl: some typo fixes
-Date: Tue, 20 Dec 2011 17:51:59 +0800
-Message-ID: <1324374719-5654-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753052Ab1LTJmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:42:20 -0500
+Received: from mail.neratec.ch ([80.75.119.105]:37662 "EHLO mail.neratec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752454Ab1LTJmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 04:42:13 -0500
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Dec 2011 04:42:12 EST
+Message-ID: <4EF056B6.4050204@neratec.com>
+Date: Tue, 20 Dec 2011 10:34:46 +0100
+From: Zefir Kurtisi <zefir.kurtisi@neratec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+CC: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Joe Perches <joe@perches.com>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] ath9k: fix roadkill due to Joe's patch on ath_dbg() changes
+References: <1324351843-4115-1-git-send-email-rodrigue@qca.qualcomm.com>
+In-Reply-To: <1324351843-4115-1-git-send-email-rodrigue@qca.qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+Luis,
 
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
----
- Documentation/pinctrl.txt |   10 +++++-----
- drivers/pinctrl/pinmux.c  |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+thank you for fixing this that fast. And sorry for the follow-up work after you helped me so much to get the DFS patches upstreamable.
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index f080643..1021be9 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -217,7 +217,7 @@ changing pin configuration in the pin controller ops like this:
- #include <linux/pinctrl/pinconf.h>
- #include "platform_x_pindefs.h"
- 
--int foo_pin_config_get(struct pinctrl_dev *pctldev,
-+static int foo_pin_config_get(struct pinctrl_dev *pctldev,
- 		    unsigned offset,
- 		    unsigned long *config)
- {
-@@ -228,7 +228,7 @@ int foo_pin_config_get(struct pinctrl_dev *pctldev,
- 	*config = (unsigned long) conf;
- }
- 
--int foo_pin_config_set(struct pinctrl_dev *pctldev,
-+static int foo_pin_config_set(struct pinctrl_dev *pctldev,
- 		    unsigned offset,
- 		    unsigned long config)
- {
-@@ -241,14 +241,14 @@ int foo_pin_config_set(struct pinctrl_dev *pctldev,
- 	}
- }
- 
--int foo_pin_config_group_get (struct pinctrl_dev *pctldev,
-+static int foo_pin_config_group_get (struct pinctrl_dev *pctldev,
- 		    unsigned selector,
- 		    unsigned long *config)
- {
- 	...
- }
- 
--int foo_pin_config_group_set (struct pinctrl_dev *pctldev,
-+static int foo_pin_config_group_set (struct pinctrl_dev *pctldev,
- 		    unsigned selector,
- 		    unsigned long config)
- {
-@@ -819,7 +819,7 @@ it even more compact which assumes you want to use pinctrl-foo and position
- 0 for mapping, for example:
- 
- static struct pinmux_map __initdata pmx_mapping[] = {
--       PINMUX_MAP_PRIMARY("I2CMAP", "i2c0", "foo-i2c.0"),
-+       PINMUX_MAP("I2CMAP", "pinctrl-foo", "i2c0", "foo-i2c.0"),
- };
- 
- 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 432feb6..0916222 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -342,7 +342,7 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
-  * Only call this once during initialization of your machine, the function is
-  * tagged as __init and won't be callable after init has completed. The map
-  * passed into this function will be owned by the pinmux core and cannot be
-- * free:d.
-+ * freed.
-  */
- int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 				    unsigned num_maps)
-@@ -1006,7 +1006,7 @@ int pinmux_hog_maps(struct pinctrl_dev *pctldev)
- }
- 
- /**
-- * pinmux_hog_maps() - unhog specific map entries on controller device
-+ * pinmux_unhog_maps() - unhog specific map entries on controller device
-  * @pctldev: the pin control device to unhog entries on
-  */
- void pinmux_unhog_maps(struct pinctrl_dev *pctldev)
--- 
-1.7.0.4
 
+Thanks again,
+Zefir
+
+On 12/20/2011 04:30 AM, Luis R. Rodriguez wrote:
+> From: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+> 
+> Joe changed ath_dbg() to simpify code but while his patch was
+> being merged dfs.c was born and as such did not get the change
+> Joe envisioned. This fixes that. Test compiled with:
+> 
+>  make allmodconfig
+> 
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: John W. Linville <linville@tuxdriver.com>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+> ---
+>  drivers/net/wireless/ath/ath9k/dfs.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath9k/dfs.c b/drivers/net/wireless/ath/ath9k/dfs.c
+> index e4e84a9..f4f56af 100644
+> --- a/drivers/net/wireless/ath/ath9k/dfs.c
+> +++ b/drivers/net/wireless/ath/ath9k/dfs.c
+> @@ -66,7 +66,7 @@ ath9k_postprocess_radar_event(struct ath_softc *sc,
+>  	u8 rssi;
+>  	u16 dur;
+>  
+> -	ath_dbg(ath9k_hw_common(sc->sc_ah), ATH_DBG_DFS,
+> +	ath_dbg(ath9k_hw_common(sc->sc_ah), DFS,
+>  		"pulse_bw_info=0x%x, pri,ext len/rssi=(%u/%u, %u/%u)\n",
+>  		are->pulse_bw_info,
+>  		are->pulse_length_pri, are->rssi,
+> @@ -161,7 +161,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
+>  
+>  	if ((!(rs->rs_phyerr != ATH9K_PHYERR_RADAR)) &&
+>  	    (!(rs->rs_phyerr != ATH9K_PHYERR_FALSE_RADAR_EXT))) {
+> -		ath_dbg(common, ATH_DBG_DFS,
+> +		ath_dbg(common, DFS,
+>  			"Error: rs_phyer=0x%x not a radar error\n",
+>  			rs->rs_phyerr);
+>  		return;
+> @@ -190,7 +190,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
+>  	ard.pulse_length_ext = vdata_end[-2];
+>  	ard.pulse_length_pri = vdata_end[-3];
+>  
+> -	ath_dbg(common, ATH_DBG_DFS,
+> +	ath_dbg(common, DFS,
+>  		"bw_info=%d, length_pri=%d, length_ext=%d, "
+>  		"rssi_pri=%d, rssi_ext=%d\n",
+>  		ard.pulse_bw_info, ard.pulse_length_pri, ard.pulse_length_ext,
+> @@ -200,7 +200,7 @@ void ath9k_dfs_process_phyerr(struct ath_softc *sc, void *data,
+>  	drp.ts = mactime;
+>  	if (ath9k_postprocess_radar_event(sc, &ard, &drp)) {
+>  		static u64 last_ts;
+> -		ath_dbg(common, ATH_DBG_DFS,
+> +		ath_dbg(common, DFS,
+>  			"ath9k_dfs_process_phyerr: channel=%d, ts=%llu, "
+>  			"width=%d, rssi=%d, delta_ts=%llu\n",
+>  			drp.freq, drp.ts, drp.width, drp.rssi, drp.ts-last_ts);
 
