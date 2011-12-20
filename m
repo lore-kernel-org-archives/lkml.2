@@ -1,126 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab1LTF7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 00:59:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34245 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab1LTF7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 00:59:12 -0500
-Date: Tue, 20 Dec 2011 16:58:51 +1100
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>, MyungJoo Ham <myungjoo.ham@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>
-Subject: Re: [PATCH v2 0/3] introduce External Connector Class (extcon)
-Message-ID: <20111220165851.1ee09b28@notabene.brown>
-In-Reply-To: <20111220010109.GO2860@opensource.wolfsonmicro.com>
-References: <1323858508-27198-1-git-send-email-myungjoo.ham@samsung.com>
-	<20111215133229.20e7f0f2@notabene.brown>
-	<20111215065154.GA24248@opensource.wolfsonmicro.com>
-	<20111218181550.3fd35f6c@notabene.brown>
-	<20111220010109.GO2860@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1752368Ab1LTGKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 01:10:10 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54780 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab1LTGKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 01:10:09 -0500
+Date: Tue, 20 Dec 2011 17:10:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: linux-next: manual merge of the cgroup tree with the block tree
+Message-Id: <20111220171000.e38cee0ea6b9bafc2851ad4b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Xv=S20keqTxAPEWh76K8AgS"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__20_Dec_2011_17_10_00_+1100_.ZvkFtMcCGAKD/D2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Xv=S20keqTxAPEWh76K8AgS
+--Signature=_Tue__20_Dec_2011_17_10_00_+1100_.ZvkFtMcCGAKD/D2
 Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 20 Dec 2011 01:01:09 +0000 Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+Hi Tejun,
 
-> On Sun, Dec 18, 2011 at 06:15:50PM +1100, NeilBrown wrote:
-> > On Thu, 15 Dec 2011 14:51:55 +0800 Mark Brown
->=20
-> > > Grant has a proposal for this which revolves around devices trying to
-> > > acquire their resources and returning a "please retry" error code if
-> > > they don't have all their dependencies.  Half the problem here is that
->=20
-> > A possibility I have been thinking about is to multithread do_initcalls=
-() and
-> > have the various request functions (gpio_request, regulator_get, reques=
-t_irq,
-> > etc) optionally block if the resource isn't available.
->=20
-> That seems to be logically the same in terms of what it actually does
-> but introduces concurrency which wasn't there before which means that
-> things could get reordered for random reasons.  That seems like it'd not
-> be great for robustness.
+Today's linux-next merge of the cgroup tree got a conflict in
+block/blk-cgroup.c between commit 6e736be7f282 ("block: make ioc get/put
+interface more conventional and fix race on alloction") from the block
+tree and commit bb9d97b6dffa ("cgroup: don't use subsys->can_attach_task
+() or ->attach_task()") from the cgroup tree.
 
-Logically similar..
+I guessed about fixing it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-One important difference is that (if I understand it correctly), the "please
-retry" error need to be propagated up a lot further than it currently is so
-that would be quite intrusive.
+diff --cc block/blk-cgroup.c
+index 2788693,b8c143d..0000000
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@@ -1641,15 -1648,18 +1648,19 @@@ static int blkiocg_can_attach(struct cg
+  	return ret;
+  }
+ =20
+- static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *=
+tsk)
++ static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++ 			   struct cgroup_taskset *tset)
+  {
++ 	struct task_struct *task;
+  	struct io_context *ioc;
+ =20
+- 	/* we don't lose anything even if ioc allocation fails */
+- 	ioc =3D get_task_io_context(tsk, GFP_ATOMIC, NUMA_NO_NODE);
+- 	if (ioc) {
+- 		ioc_cgroup_changed(ioc);
+- 		put_io_context(ioc, NULL);
++ 	cgroup_taskset_for_each(task, cgrp, tset) {
+ -		task_lock(task);
+ -		ioc =3D task->io_context;
+ -		if (ioc)
+ -			ioc->cgroup_changed =3D 1;
+ -		task_unlock(task);
+++		/* we don't lose anything even if ioc allocation fails */
+++		ioc =3D get_task_io_context(task, GFP_ATOMIC, NUMA_NO_NODE);
+++		if (ioc) {
+++			ioc_cgroup_changed(ioc);
+++			put_io_context(ioc, NULL);
+++		}
+  	}
+  }
+ =20
 
-While my approach does introduce concurrency which wasn't there before, any
-driver that can be built as a module must allow for concurrency in the init
-function so I suspect (or hope) people normally make that code thread-safe.
-
-I have some code that almost works (will post when it does work).  The only
-real issue I have found (apart from personal incompetence) is that we really
-need to know up-front what resources are going to be available so we know
-whether to wait or to fail (waiting until 'everything is finished' won't wo=
-rk
-as there could be several things still waiting at the end and we don't know=
- if
-one is waiting for another, of if they are waiting for things that won't
-appear).
-
-I imagine that ultimately we can depend on a device-tree file to list every
-resource (gpio, irq, regulator) that is relevant here and can write the code
-to wait-or-fail accordingly.
-
->=20
-> > Do we need to talk about devices that haven't been enumerated yet? or w=
-as
-> > that just if we wanted to create an explicit dependency graph?
->=20
-> You need to know about devices that aren't enumerated yet.
-
-I'm still not quite sure what you mean.  In my (limited) experience you need
-to know about resources, not devices, and they have names.
-And there is some precedent in regulator supply lists for naming devices
-before they are enumerated.  So I'm not seeing the problem that you are
-seeing.
-
-Thanks,
-NeilBrown
-
-
---Sig_/Xv=S20keqTxAPEWh76K8AgS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--Signature=_Tue__20_Dec_2011_17_10_00_+1100_.ZvkFtMcCGAKD/D2
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUBTvAkGznsnt1WYoG5AQIE6RAAiiCoETgWeUTEGapLQsju1jXHP87HAwYn
-Pd9h4WxJO4u3kZr5oYFjxvrtVtJx06p1/Vhp7QfRQf3SPtHzFJrqaVvXkJwKexH6
-YDh3mXPONiJc34xFoyw7E5wn1WZJB/f02l/lexHwGKPtNxyXOXV+FczCXnExay+E
-BvZyJCRcMTe3lwaUs920hnQZR+MstzvTCztsBOne/gVflJjZrRf/JlMrGaXNUlBN
-ZHtVfXfw9CXpF1BCJRRKX4MdXDj/dXZLhhwznoyD7KtmQQmvSefWET+qexmEps+o
-iRwh2eA4qTgZLtj7CKbfeEk0l+3Y1LREjG8zAagfF+DLrIZgZRvLI0MYXygPlsde
-SPOH1h1YcHtjc21szuOZfzWvWOxc6kt7Z2xQLKedzWrPrEkcIBH2ziAgf6UjAGIE
-QaJ2vI4rk5WFg6siG0Z+SCRd4Lc84kY27bdMeZ72lBBMa1OmCRWos5PwQMLKy9rx
-RbevSa14TvJHxDfteP30/u/1WnPH0kNXuTSupJquKf1GHdY1/21xHOso1UdRSAFN
-u3/PRciQQvSFMdMu3xhod9dPVtU5VKlbJVXzVgTz0ImYEyJgj5jx0kz78QIAeEzg
-rX7/mYitRGDR0NjS+C2j1RnwRfFstbrPBFc0fxo8yv/CEwQN9ojoIXsegSmMGoEs
-qDS9Yul+kH4=
-=ZIUb
+iQIcBAEBCAAGBQJO8Ca4AAoJEECxmPOUX5FEg34P/R2cF/IrUyyk9YNpEDzj543a
+JXsw3mTT1TTwfT8GSkl2uoZ8q9pqFPPrB8N5vRvIbffavIJUMQvK3qKZpHIrDVv6
+ecQDh/hpIH2pzOd056f1tY9WKTAgPLCloMEpjUa8rs4m0beesVEMYeUxseZ5+MVg
+8oHjpOLeS0ClJ5Q4+YUtHGlX3yieLs4GEF5Y9HOMxzm3Flozxtk5O5eoVn6UGtk2
+PHsOVldI6ZBsuAtIQmHB+p5PBhc8Pk3BP99c5/d7oS/EXvTFq3mBQ4ucuUyFmalR
+dKAXIIhjEvXXvvOu9qYHX3Fz/9pbBnOZQ8iAjO4Ychu/vDbfnr0JynhUtZiNndes
+y+8bv+2GPsQ8167DeFb6jc7Ksxa0QsuDy9bU8GDTiLMXCDhi1eFUdyHztrxBFKRY
+can5qehQcRDpOiypOH90c5i+8SlJpLULzMO4t1nrgnz/BiTDJatEc3+tfxVMPedx
+8ZyOn7UxDW2GYQKzCTSQ4vPrgqOu4QkMfbmQoJCJPfioZyx2QwNpCFKjXEXzCyYF
+w44i+Y23bX626bxdjds0hED4n8rP4445UVllXjVvub20fGUZgWiA2DZMC4+8CCOo
+zsvJ60Ftmc+TWb/VCnkplv2KQ0QepfHrQJGnfXcz8hHSXFn7Kc8GrtIvh3Zy8LKA
+YwcOAQJw4d+nEgwABMNd
+=T1LV
 -----END PGP SIGNATURE-----
 
---Sig_/Xv=S20keqTxAPEWh76K8AgS--
+--Signature=_Tue__20_Dec_2011_17_10_00_+1100_.ZvkFtMcCGAKD/D2--
