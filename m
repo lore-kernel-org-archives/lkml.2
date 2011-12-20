@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1LTKbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:31:24 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13427 "EHLO relay.sw.ru"
+	id S1753406Ab1LTKcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:32:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab1LTKbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:31:20 -0500
-Message-ID: <4EF063EB.6030104@parallels.com>
-Date: Tue, 20 Dec 2011 14:31:07 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1752209Ab1LTKcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 05:32:18 -0500
+Date: Tue, 20 Dec 2011 11:31:54 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
+Message-ID: <20111220103154.GA1861@m.brq.redhat.com>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+ <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+ <1324044159.18942.104.camel@twins>
+ <1324044196.18942.105.camel@twins>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [Devel] [PATCH] SUNRPC: search for service transports in network
- namespace context
-References: <20111220101419.5673.21926.stgit@localhost6.localdomain6> <4EF062B1.3030401@parallels.com>
-In-Reply-To: <4EF062B1.3030401@parallels.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324044196.18942.105.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.12.2011 14:25, Glauber Costa пишет:
-> On 12/20/2011 03:14 PM, Stanislav Kinsbursky wrote:
->> Service transports are parametrized by network namespace. And thus lookup of
->> transport instance have to take network namespace into account.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>    fs/lockd/svc.c                  |    2 +-
->>    fs/nfsd/nfsctl.c                |    4 ++--
->>    include/linux/sunrpc/svc_xprt.h |    3 ++-
->>    net/sunrpc/svc_xprt.c           |    6 +++++-
->>    4 files changed, 10 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
->> index c061b9a..ff379ff 100644
->> --- a/fs/lockd/svc.c
->> +++ b/fs/lockd/svc.c
->> @@ -193,7 +193,7 @@ static int create_lockd_listener(struct svc_serv *serv, const char *name,
->>    {
->>    	struct svc_xprt *xprt;
->>
->> -	xprt = svc_find_xprt(serv, name, family, 0);
->> +	xprt = svc_find_xprt(serv, name,&init_net, family, 0);
->>    	if (xprt == NULL)
->>    		return svc_create_xprt(serv, name,&init_net, family, port,
->>    						SVC_SOCK_DEFAULTS);
->
-> I might be missing something, but isn't it (at least part of it) already
-> merged in commit fc5d00b04a3a58cac8620403dfe9f43f72578ec1 ?
->
+On Fri, Dec 16, 2011 at 03:03:16PM +0100, Peter Zijlstra wrote:
+> On Fri, 2011-12-16 at 15:02 +0100, Peter Zijlstra wrote:
+> > > event_tracepoint:       PE_NAME_TP ':' PE_NAME_TP modifier
+> > > event_raw:              PE_SEP_RAW PE_VALUE modifier
+> > > event_numeric:          PE_VALUE ':' PE_VALUE modifier
+> > > event_symbolic:         PE_NAME_SYM modifier
+> > > event_generic_hw:       PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT modifier |
+> > >                         PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT modifier |
+> > >                         PE_NAME_CACHE_TYPE modifier
+> > > event_breakpoint:       PE_SEP_BP ':' PE_VALUE event_breakpoint_type modifier
+> > > event_breakpoint_type:  PE_MODIFIER_BPTYPE | empty
+> > > modifier:               PE_MODIFIER_EVENT | empty
+> > 
+> > This isn't complete, we need means of specifying
+> > perf_event_attr::config[12] when specifying a raw event. 
+> 
+> Also, it might make sense to think about how to specify sysfs events
+> (which don't exist yet).
 
-Nope, those one was parameterizing transport creation by network namespace.
-This one is parameterizing search in poll of existent service transports by 
-network namespace.
+any idea/details/specifics how they might look like? ;)
 
--- 
-Best regards,
-Stanislav Kinsbursky
+jirka
