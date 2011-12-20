@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab1LTJTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:19:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638Ab1LTJTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:19:16 -0500
-Message-ID: <4EF0530F.3050309@redhat.com>
-Date: Tue, 20 Dec 2011 11:19:11 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753091Ab1LTJTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 04:19:32 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59222 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab1LTJTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 04:19:25 -0500
+Message-ID: <4EF05316.5050803@monstr.eu>
+Date: Tue, 20 Dec 2011 10:19:18 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH 1/2] kvm: Remove ability to assign a device without iommu
- support
-References: <20111220030826.11829.9141.stgit@bling.home> <20111220031947.11829.66292.stgit@bling.home>
-In-Reply-To: <20111220031947.11829.66292.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Simek <monstr@monstr.eu>, Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: memblock and bootmem problems if start + size = 4GB
+References: <4EEF42F5.7040002@monstr.eu> <20111219162835.GA24519@google.com>
+In-Reply-To: <20111219162835.GA24519@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 05:19 AM, Alex Williamson wrote:
-> This option has no users and it exposes a security hole that we
-> can allow devices to be assigned without iommu protection.  Make
-> KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory option.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->
->  virt/kvm/assigned-dev.c |   18 +++++++++---------
->
-Documentation/virtual/kvm/api.txt +++
+Hi Tejun,
+
+> On Mon, Dec 19, 2011 at 02:58:13PM +0100, Michal Simek wrote:
+>> I have reached some problems with memblock and bootmem code for some configurations.
+>> We can completely setup the whole system and all addresses in it.
+>> The problem happens if we place main memory to the end of address space when
+>> mem_start + size reach 4GB limit.
+>>
+>> For example:
+>> mem_start      0xF000 0000
+>> mem_size       0x1000 0000 (or better lowmem size)
+>> mem_end        0xFFFF FFFF
+>> start + size 0x1 0000 0000 (u32 limit reached).
+>>
+>> I have done some patches which completely remove start + size values from architecture specific
+>> code but I have found some problem in generic code too.
+>>
+>> For example in bootmem code where are three places where physaddr + size is used.
+>> I would prefer to retype it to u64 because baseaddr and size don't need to be 2^n.
+>>
+>> Is it correct solution? If yes, I will create proper patch.
+> 
+> Yeah, that's an inherent problem in using [) ranges but I think
+> chopping off the last page probably is simpler and more robust
+> solution.  Currently, memblock_add_region() would simply ignore if
+> address range overflows but making it just ignore the last page is
+> several lines of addition.  Wouldn't that be effective enough while
+> staying very simple?
+
+The main problem is with PFN_DOWN/UP macros and it is in __init section.
+The result will be definitely u32 type (for 32bit archs) anyway and seems to me
+better solution than ignoring the last page.
+
+Is there any internal kernel test code to test all pages - try to allocate/use/test it?
+It will be especially good to do so on the last page to see if there is any problem or not.
+
+That two conditions in memblock should be ok.
+
+Thanks,
+Michal
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
