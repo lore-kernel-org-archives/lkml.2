@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab1LTSGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 13:06:22 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39703 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751514Ab1LTSGS (ORCPT
+	id S1752143Ab1LTSJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 13:09:31 -0500
+Received: from outmail008.snc4.facebook.com ([66.220.144.142]:45171 "EHLO
+	intmgw002.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751390Ab1LTSJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 13:06:18 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX199bECePigb4uAPZcGJUZm9
-Date: Tue, 20 Dec 2011 10:06:11 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 1/7][RESEND] ARM: OMAP1: ams-delta: register latch
- dependent devices later
-Message-ID: <20111220180610.GB24444@atomide.com>
-References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
- <83e934adfc691b347534edb7788a67ab2e6bd7e1.1324331816.git.jkrzyszt@tis.icnet.pl>
- <201112200028.32947.jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112200028.32947.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Dec 2011 13:09:23 -0500
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 2/2] tracing, sched: Add a new tracepoint for sleeptime
+Date: Tue, 20 Dec 2011 10:09:18 -0800
+Message-Id: <1324404558-353-3-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1324404558-353-1-git-send-email-asharma@fb.com>
+References: <1324404558-353-1-git-send-email-asharma@fb.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 14:57]:
-> Resending because of a typo in the Cc: list, sorry.
-> 
-> 8<--------------------------
-> 
-> In preparation to converting Amstrad Delta on-board latches to
-> basic_mmio_gpio devices, registration of platform devices which depend
-> on latches and will require initialization of their GPIO pins first,
-> should be moved out of .machine_init down to late_initcall level, as the
-> gpio-generic driver is not available until device_initcall time.  The
-> latch reset operation, which will be replaced with GPIO initialization,
-> must also be moved to late_initcall for the same reason.
-> 
-> Since there was already another, separate arch_initcall function for
-> setting up one of those latch dependent devices, the on-board modem
-> device, reuse that function, i.e., rename it to a name that matches the
-> new purpose, extend with other device setup relocated from
-> .machine_init, and move down to the late_initcall level.
-> 
-> While being at it, add missing gpio_free() in case the modem platform
-> device registration fails.
-> 
-> In addition, defer registration of the Amstrad Delta ASoC and serio
-> devices, done from their device driver files, until late_initcall time,
-> as those drivers will depend on their GPIO pins already requested from
-> the board late_init() function until updated to register their GPIO pins
-> themselves.
-> 
-> Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
-> instead of shifting up the gpio-generic driver initialization.
-...
+If CONFIG_SCHEDSTATS is defined, the kernel maintains
+information about how long the task was sleeping or
+in the case of iowait, blocking in the kernel before
+getting woken up.
+
+Note: this information is only provided for sched_fair.
+Other scheduling classes may choose to provide this in
+the future.
+
+Note: the delay includes the time spent on the runqueue
+as well.
+
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+---
+ include/trace/events/sched.h |   48 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c          |    1 +
+ 2 files changed, 49 insertions(+), 0 deletions(-)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 959ff18..5189220 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -363,6 +363,54 @@ TRACE_EVENT(sched_stat_runtime,
+ 			(unsigned long long)__entry->vruntime)
+ );
  
-> --- a/drivers/input/serio/ams_delta_serio.c
-> +++ b/drivers/input/serio/ams_delta_serio.c
-> @@ -165,6 +165,9 @@ serio:
->  	kfree(ams_delta_serio);
->  	return err;
->  }
-> +#ifndef MODULE
-> +late_initcall(ams_delta_serio_init);
-> +#else
->  module_init(ams_delta_serio_init);
->  
->  static void __exit ams_delta_serio_exit(void)
-> @@ -175,3 +178,4 @@ static void __exit ams_delta_serio_exit(void)
->  	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
->  }
->  module_exit(ams_delta_serio_exit);
-> +#endif
-> diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
-> index ccb8a6a..1764a3b 100644
-> --- a/sound/soc/omap/ams-delta.c
-> +++ b/sound/soc/omap/ams-delta.c
-> @@ -636,6 +636,9 @@ err:
->  	platform_device_put(ams_delta_audio_platform_device);
->  	return ret;
->  }
-> +#ifndef MODULE
-> +late_initcall(ams_delta_module_init);
-> +#else
->  module_init(ams_delta_module_init);
->  
->  static void __exit ams_delta_module_exit(void)
-> @@ -657,6 +660,7 @@ static void __exit ams_delta_module_exit(void)
->  	platform_device_unregister(ams_delta_audio_platform_device);
->  }
->  module_exit(ams_delta_module_exit);
-> +#endif
->  
->  MODULE_AUTHOR("Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>");
->  MODULE_DESCRIPTION("ALSA SoC driver for Amstrad E3 (Delta) videophone");
++#ifdef CREATE_TRACE_POINTS
++static inline u64 trace_get_sleeptime(struct task_struct *tsk) 
++{
++#ifdef CONFIG_SCHEDSTATS
++	u64 block, sleep;
++
++	block = tsk->se.statistics.block_start;
++	sleep = tsk->se.statistics.sleep_start;
++
++	return block ? block : sleep ? sleep : 0;
++#else
++	return 0;
++#endif
++}
++#endif
++
++/*
++ * Tracepoint for accounting sleeptime (time the task is sleeping 
++ * or waiting for I/O).
++ */
++TRACE_EVENT(sched_stat_sleeptime,
++
++	TP_PROTO(struct task_struct *tsk, u64 now),
++
++	TP_ARGS(tsk, now),
++
++	TP_STRUCT__entry(
++		__array( char,	comm,	TASK_COMM_LEN	)
++		__field( pid_t,	pid			)
++		__field( u64,	sleeptime		)
++	),
++
++	TP_fast_assign(
++		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
++		__entry->pid		= tsk->pid;
++		__entry->sleeptime = trace_get_sleeptime(tsk);
++		__entry->sleeptime = __entry->sleeptime ? 
++				now - __entry->sleeptime : 0;
++	)
++	TP_perf_assign(
++		__perf_count(__entry->sleeptime);
++	),
++
++	TP_printk("comm=%s pid=%d sleeptime=%Lu [ns]",
++			__entry->comm, __entry->pid,
++			(unsigned long long)__entry->sleeptime)
++);
++
+ /*
+  * Tracepoint for showing priority inheritance modifying a tasks
+  * priority.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ca8fd44..172e6ee 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1899,6 +1899,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	local_irq_enable();
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ 	finish_lock_switch(rq, prev);
++	trace_sched_stat_sleeptime(current, rq->clock);
+ 
+ 	fire_sched_in_preempt_notifiers(current);
+ 	if (mm)
+-- 
+1.7.4
 
-This looks a bit odd.. I think these drivers should be converted to
-a proper platform_driver so you can get rid of the machine_is_ams_delta
-check in the init. Then you can rely on the probe to match the
-device. To deal with the init order issues, you can pass a set_power
-function pointer in platform_data that the driver can use. Or
-set up a fixed regulator for it.
-
-Regards,
-
-Tony
