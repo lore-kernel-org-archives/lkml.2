@@ -1,142 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1LTAZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 19:25:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40068 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab1LTAYt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 19:24:49 -0500
+	id S1753560Ab1LTAZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 19:25:26 -0500
+Received: from ozlabs.org ([203.10.76.45]:50576 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120Ab1LTAZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 19:25:20 -0500
+Date: Tue, 20 Dec 2011 11:25:15 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
+        benh@kernel.crashing.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com, rusty@rustcorp.com.au,
+        iommu@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, joro@8bytes.org
+Subject: Re: [RFC] Device isolation infrastructure v2
+Message-ID: <20111220002515.GA5133@truffala.fritz.box>
+Mail-Followup-To: David Woodhouse <dwmw2@infradead.org>,
+	Joerg Roedel <joerg.roedel@amd.com>,
+	Alex Williamson <alex.williamson@redhat.com>, aik@ozlabs.ru,
+	benh@kernel.crashing.org, chrisw@redhat.com, agraf@suse.de,
+	scottwood@freescale.com, B08248@freescale.com,
+	rusty@rustcorp.com.au, iommu@lists.linux-foundation.org,
+	qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
+	joro@8bytes.org
+References: <1323930340-24055-1-git-send-email-david@gibson.dropbear.id.au>
+ <1323972307.2437.19.camel@x201.home>
+ <20111216145353.GA29877@amd.com>
+ <20111219001125.GA30390@truffala.fritz.box>
+ <1324309598.2132.12.camel@shinybook.infradead.org>
+ <20111219223120.GB5207@truffala.fritz.box>
+ <1324335400.2132.47.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1112191218350.3639@eggly.anvils>
-References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LSU.2.00.1112191218350.3639@eggly.anvils>
-Date: Tue, 20 Dec 2011 09:24:47 +0900
-Message-ID: <CABEgKgrk4X13V2Ra_g+V5J0echpj2YZfK20zaFRKP-PhWRWiYQ@mail.gmail.com>
-Subject: Re: [PATCH] memcg: reset to root_mem_cgroup at bypassing
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1324335400.2132.47.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/20 Hugh Dickins <hughd@google.com>:
-> On Mon, 19 Dec 2011, KAMEZAWA Hiroyuki wrote:
->> From d620ff605a3a592c2b1de3a046498ce5cd3d3c50 Mon Sep 17 00:00:00 2001
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Date: Mon, 19 Dec 2011 16:55:10 +0900
->> Subject: [PATCH 2/2] memcg: reset lru to root_mem_cgroup in special cases.
->>
->> This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
->>
->> After the patch, all pages which will be onto LRU must have sane
->> pc->mem_cgroup. But, in special case, it's not set.
->>
->> If task->mm is NULL or task is TIF_MEMDIE or fatal_signal_pending(),
->> try_charge() is bypassed and the new charge will not be charged. And
->> pc->mem_cgroup is unset even if the page will be used/mapped and added
->> to LRU. To avoid this,  this patch charges such pages to root_mem_cgroup,
->> then, pc->mem_cgroup will be handled correctly.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>  mm/memcontrol.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 0d6d21c..9268e8e 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -2324,7 +2324,7 @@ nomem:
->>       *ptr = NULL;
->>       return -ENOMEM;
->>  bypass:
->> -     *ptr = NULL;
->> +     *ptr = root_mem_cgroup;
->>       return 0;
->>  }
->>
->> --
->
-Thank you for review.
+On Mon, Dec 19, 2011 at 10:56:40PM +0000, David Woodhouse wrote:
+> On Tue, 2011-12-20 at 09:31 +1100, David Gibson wrote:
+> > When we're running paravirtualized under pHyp, it's impossible to
+> > merge multiple PEs into one domain per se.  We could fake it rather
+> > nastily by replicating all map/unmaps across mutiple PEs.  When
+> > running bare metal, we could do so a bit more nicely by assigning
+> > multiple PEs the same TCE pointer, but we have no mechanism to do so
+> > at present. 
+> 
+> VT-d does share the page tables, as you could on bare metal. But it's an
+> implementation detail â€” there's nothing *fundamentally* wrong with
+> having to do the map/unmap for each PE, is there? It's only at VM setup
+> time, so it doesn't really matter if it's slow.
+> 
+> Surely that's the only way you're going to present the guest with the
+> illusion of having no IOMMU; so that DMA to any given guest physical
+> address "just works".
+> 
+> On the other hand, perhaps you don't want to do that at all. Perhaps
+> you're better off presenting a virtualised IOMMU to the guest and
+> *insisting* that it fully uses it in order to do any DMA at all?
 
-> I'm dubious about this patch: certainly you have not fully justified it.
->
-I sometimes see panics (in !pc->mem_cgroup check in lru code)
-when I stops test programs by Ctrl-C or some. That was because
-of this path. I checked this by adding a debug code to make
-pc->mem_cgroup = NULL in prep_new_page.
+Not only do we want to, we more or less *have* to.  Existing kernels,
+which are used to being paravirt under phyp expect and need a paravirt
+iommu.  DMA without iommu setup just doesn't happen.  And the
+map/unmap hypercalls are frequently a hot path, so slow does matter.
 
-> I speak from experience: I did *exactly* the same at "bypass" when
-> I introduced our mem_cgroup_reset_page(), which corresponds to your
-> mem_cgroup_reset_owner(); it seemed right to me that a successful
-> (return 0) call to try_charge() should provide a good *ptr.
->
-ok.
+The other problem is that each domain's IOVA window is often fairly
+small, a limitation that would get even worse if we try to put too
+many devices in there.
 
-> But others (Ying and Greg) pointed out that it changes the semantics
-> of __mem_cgroup_try_charge() in this case, so you need to justify the
-> change to all those places which do something like "if (ret || !memcg)"
-> after calling it.  Perhaps it is a good change everywhere, but that's
-> not obvious, so we chose caution.
->
-
-> Doesn't it lead to bypass pages being marked as charged to root, so
-> they don't get charged to the right owner next time they're touched?
->
-Yes. You're right.
-Hm. So, it seems I should add reset_owner() to the !memcg path
-rather than here.
-
-> In our internal kernel, I restored "bypass" to set *ptr = NULL as
-> before, but routed those callers that need it to continue on to
-> __mem_cgroup_commit_charge() when it's NULL, and let that do a
-> quick little mem_cgroup_reset_page() to root_mem_cgroup for this.
->
-Yes, I'll prepare v2.
-
-> But I was growing tired of mem_cgroup_reset_page() when I prepared
-> the rollup I posted two weeks ago, it adds overhead where we don't
-> want it, so I found a way to avoid it completely.
->
-Hmm.
-
-> What you're doing with mem_cgroup_reset_owner() seems reasonable to
-> me as a phase to go through (though there's probably more callsites
-> to be found - sorry to be unhelpfully mysterious about that, but
-> just because per-memcg-lru-locking needed them doesn't imply that
-> your patchset needs them), but I expect to (offer a patch to) remove
-> it later.
->
-Sure. I'm now considering, finally, after removing pc->flags,
-we'll have chance to merge page_cgroup to struct page. If so,
-reseting pc->mem_cgroup in prep_new_page() will be a choice.
-
-> I am intending to rebase upon your patches, or at least the ones
-> which akpm has already taken in (I've not studied the pcg flag ones,
-> more noise than I want at the moment).  I'm waiting for those to
-> appear in a linux-next, disappointed that they weren't in today's.
->
-> (But I'm afraid my patches will then clash with Mel's new lru work.)
->
-> I have been running successfully on several machines with an
-> approximation to what I expect linux-next to be when it has your
-> patches in.  Ran very stably on two, but one hangs in reclaim after
-> a few hours, that's high on my list to investigate (you made no
-> change to vmscan.c, maybe the problem comes from Hannes's earlier
-> patches, but I hadn't noticed it with those alone).
->
-
-I saw file caches are not reclaimed at all by force_empty...only once.
-I'm now digging it.
-
-Thank you.
--Kame
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
