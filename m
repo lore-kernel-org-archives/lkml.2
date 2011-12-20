@@ -1,131 +1,861 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab1LTWXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 17:23:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41530 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab1LTWXU (ORCPT
+	id S1753201Ab1LTWXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 17:23:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39680 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab1LTWXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 17:23:20 -0500
-Message-ID: <1324419795.20886.3.camel@raz>
-Subject: Subject: [PATCH 2/2] priority System V Semaphores
-From: raz ben yehuda <raziebe@gmail.com>
-To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        manfred@colorfullife.com
-Cc: Lior Brafman <LBrafman@manz.com>, Torsten Scherer <TScherer@manz.com>,
-        Rasty Slutsker <RSlutsker@manz.com>
-Date: Wed, 21 Dec 2011 00:23:15 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Dec 2011 17:23:33 -0500
+Date: Tue, 20 Dec 2011 14:23:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] leds-tca6507: allow driver to compile when GPIOLIB
+ is not available.
+Message-Id: <20111220142331.e81f7dfc.akpm@linux-foundation.org>
+In-Reply-To: <20111221080300.02cb8a45@notabene.brown>
+References: <20111220054233.7043.3561.stgit@notabene.brown>
+	<20111220054441.7043.48656.stgit@notabene.brown>
+	<4EF0ED15.5030906@xenotime.net>
+	<4EF0EF8B.1030904@xenotime.net>
+	<20111221080300.02cb8a45@notabene.brown>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 25aa166505aff2561dd715c927c654d0bbb432ba Mon Sep 17 00:00:00 2001
-From: raz <raziebe@gmail.com>
-Date: Tue, 20 Dec 2011 22:54:56 +0200
+On Wed, 21 Dec 2011 08:03:00 +1100
+NeilBrown <neilb@suse.de> wrote:
+
+> I might just go an re-review all the code.  And repeat the tests.
+
+Here's the current patch as I see it:
 
 
-Add positioning routine find_pos. find_pos returns
-the place where to put the sleeper before.
-I sort only rt tasks, OTHER policy is pushed back in
-queue. I do not distinct between SCHED_RR and SCHED_FIFO
-policies and they are treated as a single policy
-for the sorting algorithm.
+From: NeilBrown <neilb@suse.de>
+Subject: leds: add driver for TCA6507 LED controller
 
-SETPRIO operates only when user issues a single semop
-operation and not an array of opretions.
+TI's TCA6507 is the LED driver in the GTA04 Openmoko motherboard.  The
+driver provides full support for brightness levels and hardware blinking.
 
-SETFIFO is the default for backward compatbility.
+This driver can drive each of 7 outputs as an LED or a GPIO output,
+and provides hardware-assist blinking.
 
-Signed-off-by: raz <raziebe@gmail.com>
+[akpm@linux-foundation.org: fix __mod_i2c_device_table alias]
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- ipc/sem.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 49 insertions(+), 2 deletions(-)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 90dc5a1..921056d 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1343,6 +1343,51 @@ static int get_queue_result(struct sem_queue *q)
- 	return error;
- }
+ drivers/leds/Kconfig         |    8 
+ drivers/leds/Makefile        |    1 
+ drivers/leds/leds-tca6507.c  |  725 +++++++++++++++++++++++++++++++++
+ include/linux/leds-tca6507.h |   34 +
+ 4 files changed, 768 insertions(+)
+
+diff -puN drivers/leds/Kconfig~leds-add-driver-for-tca6507-led-controller drivers/leds/Kconfig
+--- a/drivers/leds/Kconfig~leds-add-driver-for-tca6507-led-controller
++++ a/drivers/leds/Kconfig
+@@ -388,6 +388,14 @@ config LEDS_RENESAS_TPU
+ 	  pin function. The latter to support brightness control.
+ 	  Brightness control is supported but hardware blinking is not.
  
++config LEDS_TCA6507
++	tristate "LED Support for TCA6507 I2C chip"
++	depends on LEDS_CLASS && I2C
++	help
++	  This option enables support for LEDs connected to TC6507
++	  LED driver chips accessed via the I2C bus.
++	  Driver support brightness control and hardware-assisted blinking.
++
+ config LEDS_TRIGGERS
+ 	bool "LED Trigger support"
+ 	depends on LEDS_CLASS
+diff -puN drivers/leds/Makefile~leds-add-driver-for-tca6507-led-controller drivers/leds/Makefile
+--- a/drivers/leds/Makefile~leds-add-driver-for-tca6507-led-controller
++++ a/drivers/leds/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
+ obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
+ obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
+ obj-$(CONFIG_LEDS_RENESAS_TPU)		+= leds-renesas-tpu.o
++obj-$(CONFIG_LEDS_TCA6507)		+= leds-tca6507.o
+ 
+ # LED SPI Drivers
+ obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+diff -puN /dev/null drivers/leds/leds-tca6507.c
+--- /dev/null
++++ a/drivers/leds/leds-tca6507.c
+@@ -0,0 +1,725 @@
 +/*
-+ * find the best place to put the task sorted by rt prio
-+*/
-+static struct list_head *find_pos(struct sem *curr, int alter,
-+		struct task_struct *p)
++ * leds-tca6507
++ *
++ * The TCA6507 is a programmable LED controller that can drive 7
++ * separate lines either by holding them low, or by pulsing them
++ * with modulated width.
++ * The modulation can be varied in a simple pattern to produce a blink or
++ * double-blink.
++ *
++ * This driver can configure each line either as a 'GPIO' which is out-only
++ * (no pull-up) or as an LED with variable brightness and hardware-assisted
++ * blinking.
++ *
++ * Apart from OFF and ON there are three programmable brightness levels which
++ * can be programmed from 0 to 15 and indicate how many 500usec intervals in
++ * each 8msec that the led is 'on'.  The levels are named MASTER, BANK0 and
++ * BANK1.
++ *
++ * There are two different blink rates that can be programmed, each with
++ * separate time for rise, on, fall, off and second-off.  Thus if 3 or more
++ * different non-trivial rates are required, software must be used for the extra
++ * rates. The two different blink rates must align with the two levels BANK0 and
++ * BANK1.
++ * This driver does not support double-blink so 'second-off' always matches
++ * 'off'.
++ *
++ * Only 16 different times can be programmed is a roughly logarithmic scale from
++ * 64ms to 16320ms.   Times that cannot be closely matched with these must be
++ * handled in software.  This driver allows 12.5% error in matching.
++ *
++ * This driver does not allow rise/fall rates to be set explicitly.  When trying
++ * to match a given 'on' or 'off' period, an appropriate pair of 'change' and
++ * 'hold' times are chosen to get a close match, with the 'change' being the
++ * smaller.
++ *
++ * Access to the 3 levels and 2 blinks are on a first-come, first-served basis.
++ * Access can be shared by multiple leds if they have the same level and
++ * either same blink rates, or some don't blink.
++ * When a led changes, it relinquishes access and tries again, so it might
++ * lose access to hardware blink.
++ * If a blink engine cannot be allocated, software blink is used.  If the
++ * desired brightness cannot be allocated, the closest available non-zero
++ * brightness is used.  As 'full' is always available, the worst case would be
++ * to have two different blink rates at '1', with Max at '2', then other leds
++ * will have to choose between '2' and '16'.  Hopefully this is not likely.
++ *
++ * Each bank (BANK0 and BANK1) have two usage counts - Leds using the brightness
++ * and leds using the blink.  It can only be reprogrammed when appropriate
++ * counter is zero.  The MASTER level has as single usage count.
++ *
++ * Each Led has programmable 'on' and 'off' time as milliseconds.  With each
++ * there is a flag saying if it was explicitly requested or defaulted.
++ * Similarly the banks know if each time was explicit or a default.  Defaults
++ * are permitted to be changed freely - they are not recognised when matching.
++ *
++ *
++ * An led-tca6507 device must be provided with platform data.  This data
++ * lists for each output: the name, default trigger, and whether the signal
++ * is being used as a GPiO rather than an led.  'struct led_plaform_data'
++ * is used for this.  If 'name' is NULL, the output isn't used.  If 'flags'
++ * is non-zero, the output is a GPO.  The 'flags' for the first GPIO should
++ * be the base gpio number, or -1.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/workqueue.h>
++#include <linux/leds-tca6507.h>
++
++/* LED select registers determine the source that drives LED outputs */
++#define TCA6507_LS_LED_OFF	0x0	/* Output HI-Z (off) */
++#define TCA6507_LS_LED_PWM0	0x2	/* Output LOW with Bank0 rate */
++#define TCA6507_LS_LED_PWM1	0x3	/* Output LOW with Bank1 rate */
++#define TCA6507_LS_LED_ON	0x4	/* Output LOW (on) */
++#define TCA6507_LS_LED_MIR	0x5	/* Output LOW with Master Intensity */
++#define TCA6507_LS_BLINK0	0x6	/* Blink at Bank0 rate */
++#define TCA6507_LS_BLINK1	0x7	/* Blink at Bank1 rate */
++
++enum {
++	BANK0,
++	BANK1,
++	MASTER,
++};
++static int bank_source[3] = {
++	TCA6507_LS_LED_PWM0,
++	TCA6507_LS_LED_PWM1,
++	TCA6507_LS_LED_MIR,
++};
++static int blink_source[3] = {
++	TCA6507_LS_BLINK0,
++	TCA6507_LS_BLINK1,
++};
++
++/* PWM registers */
++#define	TCA6507_REG_CNT			11
++
++#define	TCA6507_FADE_ON			0x03
++#define	TCA6507_FULL_ON			0x04
++#define	TCA6507_FADE_OFF		0x05
++#define	TCA6507_FIRST_OFF		0x06
++#define	TCA6507_SECOND_OFF		0x07
++#define	TCA6507_MAX_INTENSITY		0x08
++#define	TCA6507_MASTER_INTENSITY	0x09
++#define	TCA6507_INITIALIZE		0x0A
++
++#define	INIT_CODE			0x8
++
++#define TIMECODES 16
++static int time_codes[TIMECODES] = {
++	0, 64, 128, 192, 256, 384, 512, 768,
++	1024, 1536, 2048, 3072, 4096, 5760, 8128, 16320
++};
++
++/* Convert an led.brightness level (0..255) to a TCA6507 level (0..15) */
++static inline int TO_LEVEL(int brightness)
 +{
-+	struct sem_queue *q;
-+	struct sem_queue *ret_pos = NULL;
-+	struct list_head *tasks_queue = &curr->sem_pending;
-+
-+	if (!alter)
-+		return tasks_queue;
-+
-+	if (!(curr->flags & PRIO_SEM))
-+		return tasks_queue;
-+	/*
-+	 *  make no effort to sort SCHED_OTHER,
-+	 *  just push task to the back of the queue.
-+	*/
-+	if (!(p->policy == SCHED_FIFO || p->policy == SCHED_RR))
-+		return tasks_queue;
-+	/*
-+	 *  make no distinction between SCHED_FIFO
-+	 *  and SCHED_RR policies.
-+	 */
-+	list_for_each_entry(q, tasks_queue, simple_list) {
-+		struct task_struct *t;
-+
-+		t  = q->sleeper;
-+		if (current->rt_priority == t->rt_priority) {
-+			/*
-+			* push in a FIFO manner
-+			* tasks in same priority
-+			*/
-+			ret_pos = q;
-+			continue;
-+		}
-+		if (current->rt_priority < t->rt_priority)
-+			continue;
-+		return &q->simple_list;
-+	}
-+	if (ret_pos)
-+		return ret_pos->simple_list.next;
-+	return tasks_queue;
++	return brightness >> 4;
 +}
- 
- SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 		unsigned, nsops, const struct timespec __user *, timeout)
-@@ -1357,6 +1402,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	unsigned long jiffies_left = 0;
- 	struct ipc_namespace *ns;
- 	struct list_head tasks;
-+	struct list_head *pending_pos;
- 
- 	ns = current->nsproxy->ipc_ns;
- 
-@@ -1478,10 +1524,11 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 		struct sem *curr;
- 		curr = &sma->sem_base[sops->sem_num];
- 
-+		pending_pos = find_pos(curr, alter, current);
- 		if (alter)
--			list_add_tail(&queue.simple_list, &curr->sem_pending);
-+			list_add_tail(&queue.simple_list, pending_pos);
- 		else
--			list_add(&queue.simple_list, &curr->sem_pending);
-+			list_add(&queue.simple_list, pending_pos);
- 	} else {
- 		INIT_LIST_HEAD(&queue.simple_list);
- 		sma->complex_count++;
--- 
-1.7.5.4
-
-
-
++
++/* ...and convert back */
++static inline int TO_BRIGHT(int level)
++{
++	if (level)
++		return (level << 4) | 0xf;
++	return 0;
++}
++
++#define NUM_LEDS 7
++struct tca6507_chip {
++	int			reg_set;	/* a '1' means the register
++						 * should be written */
++	u8			reg_file[TCA6507_REG_CNT];
++	/* Bank 0 is Master Intensity */
++	struct bank {
++		int level;
++		int ontime, offtime;
++		int on_dflt, off_dflt;
++		int time_use, level_use;
++	} bank[3];
++	struct i2c_client	*client;
++	struct work_struct	work;
++	spinlock_t		lock;
++
++	struct tca6507_led {
++		struct tca6507_chip	*chip;
++		struct led_classdev	led_cdev;
++		int			num;
++		int			ontime, offtime;
++		int			on_dflt, off_dflt;
++		int			bank;	/* Bank used, or -1 */
++		int			blink;	/* 1 if we are hardware-blinking */
++	} leds[NUM_LEDS];
++#ifdef CONFIG_GPIOLIB
++	struct gpio_chip		gpio;
++	const char			*gpio_name[NUM_LEDS];
++	int				gpio_map[NUM_LEDS];
++#endif
++};
++
++static const struct i2c_device_id tca6507_id[] = {
++	{ "tca6507" },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, tca6507_id);
++
++static int choose_times(int msec, int *c1p, int *c2p)
++{
++	/*
++	 * Choose two timecodes which add to 'msec' as near as possible.
++	 * The first returned should be the larger and is the 'on' of 'off'
++	 * time.  The second will be used as a 'fade-on' or 'fade-off' time.
++	 * If cannot get within 1/8, fail.
++	 * If two possibilities are equally good (e.g. 512+0, 256+256), choose
++	 * the first pair so there is more change-time visible (i.e. it is
++	 * softer).
++	 */
++	int c1, c2;
++	int tmax = msec * 9 / 8;
++	int tmin = msec * 7 / 8;
++	int diff = 65536;
++
++	/* We start at '1' to ensure we never even think of choosing a
++	 * total time of '0'.
++	 */
++	for (c1 = 1; c1 < TIMECODES; c1++) {
++		int t = time_codes[c1];
++		if (t*2 < tmin)
++			continue;
++		if (t > tmax)
++			break;
++		for (c2 = 0; c2 <= c1; c2--) {
++			int tt = t + time_codes[c2];
++			int d;
++			if (tt < tmin)
++				continue;
++			if (tt > tmax)
++				break;
++			/* This works! */
++			d = abs(msec - tt);
++			if (d >= diff)
++				continue;
++			/* Best yet */
++			*c1p = c1;
++			*c2p = c2;
++			diff = d;
++			if (d == 0)
++				return 0;
++		}
++	}
++	if (diff < 65536)
++		return 0;
++	/* No close match */
++	return -EINVAL;
++}
++
++/*
++ * Update the register file with the appropriate 3-bit state for
++ * the given led.
++ */
++static void set_select(struct tca6507_chip *tca, int led, int val)
++{
++	int mask = (1 << led);
++	int bit;
++
++	for (bit = 0; bit < 3; bit++) {
++		int n = tca->reg_file[bit] & ~mask;
++		if (val & (1 << bit))
++			n |= mask;
++		if (tca->reg_file[bit] != n) {
++			tca->reg_file[bit] = n;
++			tca->reg_set |= (1 << bit);
++		}
++	}
++}
++
++/* Update the register file with the appropriate 4-bit code for
++ * one bank or other.  This can be used for timers, for levels, or
++ * for initialisation.
++ */
++static void set_code(struct tca6507_chip *tca, int reg, int bank, int new)
++{
++	int mask = (0xF << bank);
++	int n = tca->reg_file[reg] & ~mask;
++	if (bank)
++		new <<= 4;
++	n |= new;
++	if (tca->reg_file[reg] != n) {
++		tca->reg_file[reg] = n;
++		tca->reg_set |= 1 << reg;
++	}
++}
++
++/* Update brightness level. */
++static void set_level(struct tca6507_chip *tca, int bank, int level)
++{
++	switch (bank) {
++	case BANK0:
++	case BANK1:
++		set_code(tca, TCA6507_MAX_INTENSITY, bank, level);
++		break;
++	case MASTER:
++		set_code(tca, TCA6507_MASTER_INTENSITY, 0, level);
++		break;
++	}
++	tca->bank[bank].level = level;
++}
++
++/* Record all relevant time code for a given bank */
++static void set_times(struct tca6507_chip *tca, int bank)
++{
++	int c1, c2;
++
++	choose_times(tca->bank[bank].ontime, &c1, &c2);
++	set_code(tca, TCA6507_FADE_ON, bank, c2);
++	set_code(tca, TCA6507_FULL_ON, bank, c1);
++	tca->bank[bank].ontime = time_codes[c1] + time_codes[c2];
++
++	choose_times(tca->bank[bank].offtime, &c1, &c2);
++	set_code(tca, TCA6507_FADE_OFF, bank, c2);
++	set_code(tca, TCA6507_FIRST_OFF, bank, c1);
++	set_code(tca, TCA6507_SECOND_OFF, bank, c1);
++	tca->bank[bank].offtime = time_codes[c1] + time_codes[c2];
++
++	set_code(tca, TCA6507_INITIALIZE, bank, INIT_CODE);
++}
++
++/* Write all needed register of tca6507 */
++
++static void tca6507_work(struct work_struct *work)
++{
++	struct tca6507_chip *tca = container_of(work, struct tca6507_chip,
++						work);
++	struct i2c_client *cl = tca->client;
++	int set;
++	u8 file[TCA6507_REG_CNT];
++	int r;
++
++	spin_lock(&tca->lock);
++	set = tca->reg_set;
++	memcpy(file, tca->reg_file, TCA6507_REG_CNT);
++	tca->reg_set = 0;
++	spin_unlock(&tca->lock);
++
++	for (r = 0; r < TCA6507_REG_CNT; r++)
++		if (set & (1<<r))
++			i2c_smbus_write_byte_data(cl, r, file[r]);
++}
++
++static void led_release(struct tca6507_led *led)
++{
++	/* If led owns any resource, release it. */
++	struct tca6507_chip *tca = led->chip;
++	if (led->bank >= 0) {
++		struct bank *b = tca->bank + led->bank;
++		if (led->blink)
++			b->time_use--;
++		b->level_use--;
++	}
++	led->blink = 0;
++	led->bank = -1;
++}
++
++static int led_prepare(struct tca6507_led *led)
++{
++	/* Assign this led to a bank. configuring that bank if necessary */
++	int level = TO_LEVEL(led->led_cdev.brightness);
++	struct tca6507_chip *tca = led->chip;
++	int c1, c2;
++	int i;
++	struct bank *b;
++	int need_init = 0;
++
++	led->led_cdev.brightness = TO_BRIGHT(level);
++	if (level == 0) {
++		set_select(tca, led->num, TCA6507_LS_LED_OFF);
++		return 0;
++	}
++
++	if (led->ontime == 0 || led->offtime == 0) {
++		/*
++		 * Just set the brightness, choosing first usable bank.
++		 * If none perfect, choose best.
++		 * Count backwards so we check MASTER bank first
++		 * to avoid wasting a timer.
++		 */
++		int best = -1;/* full-on */
++		int diff = 15-level;
++
++		if (level == 15) {
++			set_select(tca, led->num, TCA6507_LS_LED_ON);
++			return 0;
++		}
++
++		for (i = MASTER; i >= BANK0; i--) {
++			int d;
++			if (tca->bank[i].level == level ||
++			    tca->bank[i].level_use == 0) {
++				best = i;
++				break;
++			}
++			d = abs(level - tca->bank[i].level);
++			if (d < diff) {
++				diff = d;
++				best = i;
++			}
++		}
++		if (best == -1) {
++			/* Best brightness is full-on */
++			set_select(tca, led->num, TCA6507_LS_LED_ON);
++			led->led_cdev.brightness = LED_FULL;
++			return 0;
++		}
++
++		if (!tca->bank[best].level_use)
++			set_level(tca, best, level);
++
++		tca->bank[best].level_use++;
++		led->bank = best;
++		set_select(tca, led->num, bank_source[best]);
++		led->led_cdev.brightness = TO_BRIGHT(tca->bank[best].level);
++		return 0;
++	}
++
++	/* We have on/off time so we need to try to allocate a timing bank. */
++	if (choose_times(led->ontime, &c1, &c2) < 0)
++		return -EINVAL;
++	if (choose_times(led->offtime, &c1, &c2) < 0)
++		return -EINVAL;
++
++	for (i = BANK0; i <= BANK1; i++) {
++		if (tca->bank[i].level_use == 0)
++			/* not in use - it is ours! */
++			break;
++		if (tca->bank[i].level != level)
++			/* Incompatible level - skip */
++			/* FIX: if timer matches we maybe should consider
++			 * this anyway...
++			 */
++			continue;
++
++		if (tca->bank[i].time_use == 0)
++			/* Timer not in use, and level matches - use it */
++			break;
++
++		if (!(tca->bank[i].on_dflt ||
++		      led->on_dflt ||
++		      tca->bank[i].ontime == led->ontime))
++			/* on time is incompatible */
++			continue;
++
++		if (!(tca->bank[i].off_dflt ||
++		      led->off_dflt ||
++		      tca->bank[i].offtime == led->offtime))
++			/* off time is incompatible */
++			continue;
++
++		/* looks like a suitable match */
++		break;
++	}
++
++	if (i > BANK1)
++		/* Nothing matches - how sad */
++		return -EINVAL;
++
++	b = &tca->bank[i];
++	if (b->level_use == 0)
++		set_level(tca, i, level);
++	b->level_use++;
++	led->bank = i;
++
++	if (b->on_dflt ||
++	    !led->on_dflt ||
++	    b->time_use == 0) {
++		b->ontime = led->ontime;
++		b->on_dflt = led->on_dflt;
++		need_init = 1;
++	}
++
++	if (b->off_dflt ||
++	    !led->off_dflt ||
++	    b->time_use == 0) {
++		b->offtime = led->offtime;
++		b->off_dflt = led->off_dflt;
++		need_init = 1;
++	}
++
++	if (need_init)
++		set_times(tca, i);
++
++	led->ontime = b->ontime;
++	led->offtime = b->offtime;
++
++	b->time_use++;
++	led->blink = 1;
++	led->led_cdev.brightness = TO_BRIGHT(b->level);
++	set_select(tca, led->num, blink_source[i]);
++	return 0;
++}
++
++static int led_assign(struct tca6507_led *led)
++{
++	struct tca6507_chip *tca = led->chip;
++	int err;
++
++	spin_lock(&tca->lock);
++	led_release(led);
++	err = led_prepare(led);
++	if (err) {
++		/*
++		 * Can only fail on timer setup.  In that case we need to
++		 * re-establish as steady level.
++		 */
++		led->ontime = 0;
++		led->offtime = 0;
++		led_prepare(led);
++	}
++	spin_unlock(&tca->lock);
++
++	if (tca->reg_set)
++		schedule_work(&tca->work);
++	return err;
++}
++
++static void tca6507_brightness_set(struct led_classdev *led_cdev,
++				   enum led_brightness brightness)
++{
++	struct tca6507_led *led = container_of(led_cdev, struct tca6507_led,
++					       led_cdev);
++	led->led_cdev.brightness = brightness;
++	led->ontime = 0;
++	led->offtime = 0;
++	led_assign(led);
++}
++
++static int tca6507_blink_set(struct led_classdev *led_cdev,
++			     unsigned long *delay_on,
++			     unsigned long *delay_off)
++{
++	struct tca6507_led *led = container_of(led_cdev, struct tca6507_led,
++					       led_cdev);
++
++	if (*delay_on == 0)
++		led->on_dflt = 1;
++	else if (delay_on != &led_cdev->blink_delay_on)
++		led->on_dflt = 0;
++	led->ontime = *delay_on;
++
++	if (*delay_off == 0)
++		led->off_dflt = 1;
++	else if (delay_off != &led_cdev->blink_delay_off)
++		led->off_dflt = 0;
++	led->offtime = *delay_off;
++
++	if (led->ontime == 0)
++		led->ontime = 512;
++	if (led->offtime == 0)
++		led->offtime = 512;
++
++	if (led->led_cdev.brightness == LED_OFF)
++		led->led_cdev.brightness = LED_FULL;
++	if (led_assign(led) < 0) {
++		led->ontime = 0;
++		led->offtime = 0;
++		led->led_cdev.brightness = LED_OFF;
++		return -EINVAL;
++	}
++	*delay_on = led->ontime;
++	*delay_off = led->offtime;
++	return 0;
++}
++
++#ifdef CONFIG_GPIOLIB
++static void tca6507_gpio_set_value(struct gpio_chip *gc,
++				   unsigned offset, int val)
++{
++	struct tca6507_chip *tca = container_of(gc, struct tca6507_chip, gpio);
++
++	spin_lock(&tca->lock);
++	/*
++	 * 'OFF' is floating high, and 'ON' is pulled down, so it has the
++	 * inverse sense of 'val'.
++	 */
++	set_select(tca, tca->gpio_map[offset],
++		   val ? TCA6507_LS_LED_OFF : TCA6507_LS_LED_ON);
++	spin_unlock(&tca->lock);
++	if (tca->reg_set)
++		schedule_work(&tca->work);
++}
++
++static int tca6507_gpio_direction_output(struct gpio_chip *gc,
++					  unsigned offset, int val)
++{
++	tca6507_gpio_set_value(gc, offset, val);
++	return 0;
++}
++static int tca6507_probe_gpios(struct i2c_client *client,
++			       struct tca6507_chip *tca,
++			       struct tca6507_platform_data *pdata)
++{
++	int err;
++	int i = 0;
++	int gpios = 0;
++
++	for (i = 0; i < NUM_LEDS; i++)
++		if (pdata->leds.leds[i].name && pdata->leds.leds[i].flags) {
++			/* Configure as a gpio */
++			tca->gpio_name[gpios] = pdata->leds.leds[i].name;
++			tca->gpio_map[gpios] = i;
++			gpios++;
++		}
++
++	if (!gpios)
++		return 0;
++
++	tca->gpio.label = "gpio-tca6507";
++	tca->gpio.names = tca->gpio_name;
++	tca->gpio.ngpio = gpios;
++	tca->gpio.base = pdata->gpio_base;
++	tca->gpio.owner = THIS_MODULE;
++	tca->gpio.direction_output = tca6507_gpio_direction_output;
++	tca->gpio.set = tca6507_gpio_set_value;
++	tca->gpio.dev = &client->dev;
++	err = gpiochip_add(&tca->gpio);
++	if (err) {
++		tca->gpio.ngpio = 0;
++		return err;
++	}
++	if (pdata->setup)
++		pdata->setup(tca->gpio.base, tca->gpio.ngpio);
++	return 0;
++}
++
++static void tca6507_remove_gpio(struct tca6507_chip *tca)
++{
++	if (tca->gpio.ngpio) {
++		int err = gpiochip_remove(&tca->gpio);
++		dev_err(&tca->client->dev, "%s failed, %d\n",
++			"gpiochip_remove()", err);
++	}
++}
++#else /* CONFIG_GPIOLIB */
++static int tca6507_probe_gpios(struct i2c_client *client,
++			       struct tca6507_chip *tca,
++			       struct tca6507_platform_data *pdata)
++{
++	return 0;
++}
++static void tca6507_remove_gpio(struct tca6507_chip *tca)
++{
++}
++#endif /* CONFIG_GPIOLIB */
++
++static int __devinit tca6507_probe(struct i2c_client *client,
++				   const struct i2c_device_id *id)
++{
++	struct tca6507_chip *tca;
++	struct i2c_adapter *adapter;
++	struct tca6507_platform_data *pdata;
++	int err;
++	int i = 0;
++
++	adapter = to_i2c_adapter(client->dev.parent);
++	pdata = client->dev.platform_data;
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C))
++		return -EIO;
++
++	if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
++		dev_err(&client->dev, "Need %d entries in platform-data list\n",
++			NUM_LEDS);
++		return -ENODEV;
++	}
++	err = -ENOMEM;
++	tca = kzalloc(sizeof(*tca), GFP_KERNEL);
++	if (!tca)
++		goto exit;
++
++	tca->client = client;
++	INIT_WORK(&tca->work, tca6507_work);
++	spin_lock_init(&tca->lock);
++
++	for (i = 0; i < NUM_LEDS; i++) {
++		struct tca6507_led *l = tca->leds + i;
++
++		l->chip = tca;
++		l->num = i;
++		if (pdata->leds.leds[i].name && !pdata->leds.leds[i].flags) {
++			l->led_cdev.name = pdata->leds.leds[i].name;
++			l->led_cdev.default_trigger
++				= pdata->leds.leds[i].default_trigger;
++			l->led_cdev.brightness_set = tca6507_brightness_set;
++			l->led_cdev.blink_set = tca6507_blink_set;
++			l->bank = -1;
++			err = led_classdev_register(&client->dev,
++						    &l->led_cdev);
++			if (err < 0)
++				goto exit;
++		}
++	}
++	err = tca6507_probe_gpios(client, tca, pdata);
++	if (err)
++		goto exit;
++	i2c_set_clientdata(client, tca);
++	/* set all registers to known state - zero */
++	tca->reg_set = 0x7f;
++	schedule_work(&tca->work);
++
++	return 0;
++exit:
++	while (i--)
++		if (tca->leds[i].led_cdev.name)
++			led_classdev_unregister(&tca->leds[i].led_cdev);
++	kfree(tca);
++	return err;
++}
++
++static int __devexit tca6507_remove(struct i2c_client *client)
++{
++	int i;
++	struct tca6507_chip *tca = i2c_get_clientdata(client);
++	struct tca6507_led *tca_leds = tca->leds;
++
++	for (i = 0; i < NUM_LEDS; i++) {
++		if (tca_leds[i].led_cdev.name)
++			led_classdev_unregister(&tca_leds[i].led_cdev);
++	}
++	tca6507_remove_gpio(tca);
++	cancel_work_sync(&tca->work);
++	kfree(tca);
++	i2c_set_clientdata(client, NULL);
++
++	return 0;
++}
++
++static struct i2c_driver tca6507_driver = {
++	.driver   = {
++		.name    = "leds-tca6507",
++		.owner   = THIS_MODULE,
++	},
++	.probe    = tca6507_probe,
++	.remove   = __devexit_p(tca6507_remove),
++	.id_table = tca6507_id,
++};
++
++static int __init tca6507_leds_init(void)
++{
++	return i2c_add_driver(&tca6507_driver);
++}
++
++static void __exit tca6507_leds_exit(void)
++{
++	i2c_del_driver(&tca6507_driver);
++}
++
++module_init(tca6507_leds_init);
++module_exit(tca6507_leds_exit);
++
++MODULE_AUTHOR("NeilBrown <neilb@suse.de>");
++MODULE_DESCRIPTION("TCA6507 LED/GPO driver");
++MODULE_LICENSE("GPL v2");
+diff -puN /dev/null include/linux/leds-tca6507.h
+--- /dev/null
++++ a/include/linux/leds-tca6507.h
+@@ -0,0 +1,34 @@
++/*
++ * TCA6507 LED chip driver.
++ *
++ * Copyright (C) 2011 Neil Brown <neil@brown.name>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ */
++
++#ifndef __LINUX_TCA6507_H
++#define __LINUX_TCA6507_H
++#include <linux/leds.h>
++
++struct tca6507_platform_data {
++	struct led_platform_data leds;
++#ifdef CONFIG_GPIOLIB
++	int gpio_base;
++	void (*setup)(unsigned gpio_base, unsigned ngpio);
++#endif
++};
++
++#define	TCA6507_MAKE_GPIO 1
++#endif /* __LINUX_TCA6507_H*/
+_
 
