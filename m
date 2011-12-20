@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab1LTTSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:18:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50587 "EHLO
+	id S1752750Ab1LTTSu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:18:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50589 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab1LTTSZ (ORCPT
+	with ESMTP id S1752649Ab1LTTSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Dec 2011 14:18:25 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Nelson Elhage <nelhage@nelhage.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/10] perf evlist: Fix errno value reporting on failed mmap
-Date: Tue, 20 Dec 2011 17:18:05 -0200
-Message-Id: <1324408691-28296-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/10] perf tools: Fix a memory leak on perf_read_values_destroy
+Date: Tue, 20 Dec 2011 17:18:08 -0200
+Message-Id: <1324408691-28296-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1324408691-28296-1-git-send-email-acme@infradead.org>
 References: <1324408691-28296-1-git-send-email-acme@infradead.org>
@@ -25,43 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nelson Elhage <nelhage@nelhage.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-On failure, perf_evlist__mmap_per_{cpu,thread} will try to munmap()
-every map that doesn't have a NULL base. This will fail with EINVAL if
-one of them has base == MAP_FAILED, clobbering errno, so that
-perf_evlist__map will return EINVAL on any failure regardless of the
-root cause.
+After freeing each elements of the @values->value, we should free itself
+too.
 
-Fix this by resetting failed maps to a NULL base.
-
-Acked-by: Namhyung Kim <namhyung@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1324301972-22740-2-git-send-email-nelhage@nelhage.com
-Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
+Link: http://lkml.kernel.org/r/1323703017-6060-5-git-send-email-namhyung@gmail.com
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ tools/perf/util/values.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 8b19e7a..963d63d 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -447,8 +447,10 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 	evlist->mmap[idx].mask = mask;
- 	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
- 				      MAP_SHARED, fd, 0);
--	if (evlist->mmap[idx].base == MAP_FAILED)
-+	if (evlist->mmap[idx].base == MAP_FAILED) {
-+		evlist->mmap[idx].base = NULL;
- 		return -1;
-+	}
+diff --git a/tools/perf/util/values.c b/tools/perf/util/values.c
+index bdd3347..697c8b4e 100644
+--- a/tools/perf/util/values.c
++++ b/tools/perf/util/values.c
+@@ -32,6 +32,7 @@ void perf_read_values_destroy(struct perf_read_values *values)
  
- 	perf_evlist__add_pollfd(evlist, fd);
- 	return 0;
+ 	for (i = 0; i < values->threads; i++)
+ 		free(values->value[i]);
++	free(values->value);
+ 	free(values->pid);
+ 	free(values->tid);
+ 	free(values->counterrawid);
 -- 
 1.7.8.rc0.35.gee6df
 
