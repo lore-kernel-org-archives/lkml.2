@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab1LTP0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:26:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51503 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1LTPZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:25:56 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wmh8ChsIkccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=4S1qW6wH7CvvL9JZye0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324394753.5916.53.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCHv2 03/10] ftrace: Add enable/disable ftrace_ops control
- interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com,
-        Christoph Lameter <christoph@lameter.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 20 Dec 2011 10:25:53 -0500
-In-Reply-To: <20111220145727.GB4393@m.brq.redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-	 <1323105776-26961-4-git-send-email-jolsa@redhat.com>
-	 <1324323335.5916.46.camel@gandalf.stny.rr.com>
-	 <20111220145727.GB4393@m.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752701Ab1LTP2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:28:05 -0500
+Received: from 8bytes.org ([88.198.83.132]:52941 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab1LTP2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 10:28:00 -0500
+Date: Tue, 20 Dec 2011 16:27:59 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        Benjamin Block <bebl@mageta.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111220152758.GA30127@8bytes.org>
+References: <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de> <20111218234309.GA12958@elte.hu> <20111219090923.GB16765@erda.amd.com> <20111219105429.GC19861@elte.hu> <4EEF1C3B.3010307@redhat.com> <20111219114023.GB29855@elte.hu> <4EEF26F0.1050709@redhat.com> <20111220091511.GB3091@elte.hu> <4EF05996.8030807@redhat.com> <20111220100916.GA20788@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111220100916.GA20788@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 15:57 +0100, Jiri Olsa wrote:
+Hi Ingo,
 
-> > 
-> > If the above is called with preemption enabled, it will not do what is
-> > expected. We could disable function tracing on one CPU and then
-> > re-enable it for another CPU even though it is already enabled.
+On Tue, Dec 20, 2011 at 11:09:17AM +0100, Ingo Molnar wrote:
+> > No, it's worse.  They are ring 3 writeable, and ring 3 
+> > configurable.
 > 
-> It is only called inside perf reg callback within the
-> schedule function where the preemption is disabled.
+> Avi, i know that very well.
+
+So you agree that your ideas presented in this thread of integrating LWP
+into perf have serious security implications?
+
+> > btw, that means that the intended use case - self-monitoring 
+> > with no kernel support - cannot be done. [...]
 > 
-> The ftrace_function_enable is called when task is scheduled in
-> on respective cpu. Likewise the ftrace_function_disable is called 
-> when task is scheduled out on respective cpu.
+> Arguably many years ago the hardware was designed for brain-dead 
+> instrumentation abstractions.
 
-Yes I know how you use it, but this is an open API. It may be currently
-only used by perf today, but that doesn't mean that it wont be used by
-others. There's no documentation on how to use it. I don't look at this
-and say, "oh this is used by perf, we only need to worry about how perf
-uses it". That doesn't scale. It needs to be documented on how to use
-it, and if it requires preemption disabled when calling it, it should
-definitely be stated that fact and it may need a
-WARN_ON(preempt_count()) or something.
+The point of LWP design is, that it doesn't require abstractions except
+for the threshold interrupt.
 
--- Steve
+I am fine with integrating LWP into perf as long as it makes sense and
+does not break the intended usage scenario for LWP.
 
+	[ Because LWP is a user-space feature and designed as such,
+	  forcing it into an abstraction makes software that uses LWP
+	  unportable. ]
+
+But Ingo, the ideas you presented in this thread are clearly no-gos.
+Having a shared per-cpu buffer for LWP data that is read by perf
+obviously has very bad security implications, as Avi already pointed
+out. It also destroys the intended use-case for LWP because it disturbs
+any process that is doing self-profiling with LWP.
+
+> Note that as i said user-space *can* acccess the area if it 
+> thinks it can do it better than the kernel (and we could export 
+> that information in a well defined way - we could do the same 
+> for PEBS as well) - i have no particular strong feelings about 
+> allowing that other than i think it's an obviously inferior 
+> model - *as long* as proper, generic, usable support is added.
+
+LWP can't be compared in any serious way with PEBS. The only common
+thing is the hardware-managed ring-buffer. But PEBS is an addition to
+MSR based performance monitoring resources (for which a kernel
+abstraction makes a lot of sense) and can only be controlled from ring 0
+while LWP is a complete user-space controlled PMU which has no link at
+all to the MSR-based, ring 0 controlled PMU.
+
+> From my perspective there's really just one realistic option to 
+> accept this feature: if it's properly fit into existing, modern 
+> instrumentation abstractions. I made that abundantly clear in my 
+> feedback so far.
+
+The threshold interrupt fits well into the perf-abstraction layer. Even
+self-monitoring of processes does, and Hans posted patches from Benjamin
+for that.  What do you think about this approach?
+
+> User-space can smash it and make it not profile or profile the 
+> wrong thing or into the wrong buffer - but LWP itself runs with 
+> ring3 privileges so it won't do anything the user couldnt do 
+> already.
+
+The point is, if user-space re-programs LWP it will continue to write
+its samples to the new ring-buffer virtual-address set up by user-space.
+It will still use that virtual address in another address-space after a
+task-switch. This allows processes to corrupt memory of other processes.
+There are ways to hack around that but these have a serious impact on
+task-switch costs so this is also no way to go.
+
+> Lack of protection against self-misconfiguration-damage is a 
+> benign hardware mis-feature - something for LWP v2 to specify i 
+> guess.
+
+So what you are saying is (not just here, also in other emails in this
+thread) that every hardware not designed for perf is crap?
+
+> get_unmapped_area() + install_special_mapping() is probably 
+> better, but yeah.
+
+get_unmapped_area() only works on current. So it can't be used for
+that purpose too. Please believe me, we considered and evaluated a lot
+of ways to install a mapping into a different process, but none of them
+worked out. It is clearly not possible in a sane way without major
+changes to the VMM code. Feel free to show us a sane way if you disagree
+with that.
+
+So okay, where are we now? We have patches from Hans that make LWP
+mostly usable in the way it is intended for. There are already a lot of
+people waiting for this to support LWP in the kernel (and they want to
+use it in the intended way, not via perf). And we have patches from
+Benjamin adding the missing threshold interrupt and a self-monitoring
+abstraction of LWP for perf. Monitoring other processes using perf is
+not possible because we can't reliably install a mapping into another
+process. System wide monitoring has bad security implications and
+destroys the intended use-cases. So as I see it, the only abstraction
+for integrating LWP into perf that is feasible is posted in this thread.
+Can we agree to focus on the posted approach?
+
+
+Thanks,
+
+	Joerg
 
