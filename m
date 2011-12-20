@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab1LTI6R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 03:58:17 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47731 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab1LTI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 03:58:07 -0500
-Date: Tue, 20 Dec 2011 09:56:14 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Benjamin <bebl@mageta.org>
-Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
-        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
-        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>
-Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
-Message-ID: <20111220085613.GA3091@elte.hu>
-References: <1324051943-21112-4-git-send-email-hans.rosenfeld@amd.com>
- <20111218080443.GB4144@elte.hu>
- <ae462f089fd4375fe44b09361fb955af@server102.greatnet.de>
- <20111218234309.GA12958@elte.hu>
- <20111219090923.GB16765@erda.amd.com>
- <20111219105429.GC19861@elte.hu>
- <4EEF1C3B.3010307@redhat.com>
- <20111219114023.GB29855@elte.hu>
- <4EEF26F0.1050709@redhat.com>
- <4EEF7EC2.5060900@mageta.org>
+	id S1752559Ab1LTI7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 03:59:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33717 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab1LTI66 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 03:58:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EEF7EC2.5060900@mageta.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Date: Tue, 20 Dec 2011 10:58:37 +0200
+Message-ID: <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
+ KVM: emulate lapic tsc deadline timer for guest"
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 20, 2011 at 10:53, Liu, Jinsong <jinsong.liu@intel.com> wrote:
+> Alexey Zaytsev wrote:
+>> On Wed, Dec 14, 2011 at 11:37, Alexey Zaytsev
+>> <alexey.zaytsev@nexenta.com> wrote:
+>>> On Mon, Dec 12, 2011 at 10:13, Liu, Jinsong <jinsong.liu@intel.com>
+>>> wrote:
+>>>> Alexey Zaytsev wrote:
+>>>>> Hi.
+>>>>>
+>>>>> After a recent change, qemu --enable-kvm (both 0.15.92 and 1.0)
+>>>>> fails to boot illumos. The OS gets stuck pretty late in the boot
+>>>>> process, without any hints from the guest. MDB (the illumos
+>>>>> kenrnel debugger) failed to clarify the situation at once, the
+>>>>> kernel seems to be stuck idling. I've bisected the problem to
+>>>>> commit a3e06bbe8445f57eb949e6474c5a9b30f24d2057. Please let me
+>>>>> know if you need me to collect any debug information or test any
+>>>>> patches.
+>>>>
+>>>> Alexey,
+>>>>
+>>>> Does illumos use tsc deadline timer? and do you run it at Intel
+>>>> platform?
+>>>>
+>>>> If yes, would you please help me to collect debug information by
+>>>> add some printk points at kvm tsc deadline timer logic? currently I
+>>>> totally have no clue to figure out what the issue root from :) and,
+>>>> would you please check illumos tsc deadline timer logic by confirm
+>>>> whether illumos 1). Enumerate tsc deadline timer capability by
+>>>> CPUID; 2). Enable tsc deadline timer mode by lapic MMIO; 3). Start
+>>>> tsc deadline timer by WRMSR;
+>>>
+>>> I think, here's what's going on. We get into
+>>> kvm_get_lapic_tscdeadline_msr/kvm_set_lapic_tscdeadline_msr, but qemu
+>>> does not use the KVM_CREATE_IRQCHIP ioctl, so we are running without
+>>> vcpu->arch.apic and the functions do nothing. And the Linux guest
+>>> just handles broken tsc a lot  better, so it survives. Both guests
+>>> seem to work fine with qemu-kvm, which uses the ioctl.
+>>>
+>>
+>> Hi. Do you need any more info on thins?
+>
+> Seems illumos works fine w/ qemu-kvm, that's enough. Maybe you need to wait qemu-kvm sync into qemu?
+>
 
-* Benjamin <bebl@mageta.org> wrote:
-
-> LWP is highly limited in its ability's to support more than 
-> one "LWP-Instance" being active for a thread, IOW it is not 
-> possible.
-
-That's OK, we can deal with various PMU constraints just fine.
-
-> You can't activate LWP from a threads context and 
-> simultaneously activate lwp-system-wide-profiling in the way 
-> you suggested it, Ingo. Either do the first xor do the last,
-
-We have other PMU resources that are exclusive in that sense.
-
-> because you only have one xsave-area/msr/lwpcb that is read by 
-> the hardware and only one LWP-Buffer that is written by the 
-> hw.
-
-That's similar to PEBS (which we already support), there's only 
-one Debug Store per CPU, obviously.
-
-> So, if one thread is running LWP, because he wants to 
-> (selfmonitoring and stuff [like for what lwp was designed]) 
-> and a su or u would activate this system-wide-monitoring, both 
-> would frequently interfere with the each other. I don't think 
-> you want this to be possible at all.
-
-THe LWPCB is designed to allow multiple events, and the LWP 
-ring-buffer is shared between these events.
-
-If the kernel properly manages the lwpcb then no such 
-'interference' happens during normal use - both outside and 
-self-installed events can be activated at once, up to the event 
-limit - similar to how we handle regular PMU events.
-
-[ This is why the threshold IRQ support i requested is key: it 
-  is needed for the flow of events and for the kernel 
-  event-demultiplexer to work transparently. ]
-
-> Frankly, it was already a pain to get LWP running from 
-> in-kernel, like it is done now. I would expect a much higher 
-> pain, if you would want to do this with a transparent buffer, 
-> that gets passed around each scheduling (and this would 
-> permanently eliminate the "lightweight" in "LWP").
-
-There's no heavyweight 'passing around' of a buffer needed at 
-context switch time. The buffer context has to be flipped - part 
-of the job of context switching.
-
-So no, i don't think any of your objections have any merit.
-
-Thanks,
-
-	Ingo
+Qemu-kvm is fine for me, but this is a regression and should be fixed.
