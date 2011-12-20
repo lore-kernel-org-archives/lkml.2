@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab1LTQbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 11:31:16 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52690 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab1LTQbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 11:31:09 -0500
-Date: Tue, 20 Dec 2011 08:27:53 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: linux-next: build warning after merge of the tip and rcu trees
-Message-ID: <20111220162753.GH2351@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111220182451.c08fa803f748f48101008661@canb.auug.org.au>
+	id S1751944Ab1LTQbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 11:31:25 -0500
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:45383 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751418Ab1LTQbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 11:31:13 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HIshzKQVM1ladIzPWTJScIznoT3Opb2vAM_12C9yXrbYkpJ
+ vHwBvXXUGst64HBYLwIIPReLXhBPQFnrpQMa62Rn3uWFdWLZMrsDylrH5y7m
+ 79WRxSmyE7DBseyi.68asoGUwuhbBnbiOFnmcQk6kkvI7JB8UEU4Pbmrzv7p
+ 4X_DQTOZ4.DQER.BWyh3mKEg6WeY57Q8_b2WVOcRWjVACF0HAJHYXO.OD5y_
+ SPzAZMyXakX_x_sg4K9YldNe7V1Yw9EBxJt.6INwNykE7TUfrg4NLF.Ve9Ew
+ xtbVrI5C7la1pxg_41XfxxYMsK23QA5wVyCqd1UTR5b9TUY8EPTfwWmevx4g
+ mAvUNparS.KN3aCHAAUU2ndurOVcrjk0O6X91uQkgTLDqbTtDudCVzct83ZK
+ q_g0q8lJaYB6pZAaq9I8Dmw--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 20 Dec 2011 10:31:09 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
+In-Reply-To: <20111220162315.GC10752@google.com>
+Message-ID: <alpine.DEB.2.00.1112201027360.21231@router.home>
+References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain> <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com> <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com> <20111220162315.GC10752@google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220182451.c08fa803f748f48101008661@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11122016-1976-0000-0000-000008C0A89F
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 06:24:51PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
-> 
-> kernel/debug/kdb/kdb_support.c: In function 'kdb_task_state_char':
-> kernel/debug/kdb/kdb_support.c:639:2: warning: passing argument 1 of 'is_idle_task' discards 'const' qualifier from pointer target type [enabled by default]
-> include/linux/sched.h:2097:20: note: expected 'struct task_struct *' but argument is of type 'const struct task_struct *'
-> 
-> Introduced by commit 7fc20c5cbdd1 ("kdb: Make KDB use the new
-> is_idle_task() API").
-> 
-> This begs the question: Why does is_idle_task() not take a "const struct task_struct *"?
+On Tue, 20 Dec 2011, Tejun Heo wrote:
 
-No reason.  So I have pushed the following patch to -rcu.  ;-)
+> This is __this_cpu_add() + preemption disabled check.  Should be
+> removed.  Christoph, is there a use case where __this_cpu_XXX() is
+> used without preemption disabled?  Why doesn't it have preemption
+> check?
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-sched: Add "const" to is_idle_task() parameter
-
-This patch fixes a build warning in -next due to a const pointer being
-passed to is_idle_task().  Because is_idle_task() does not modify anything,
-this commit adds the "const" to is_idle_task()'s argument declaration.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4a7e4d3..56fa25a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2074,7 +2074,7 @@ extern struct task_struct *idle_task(int cpu);
-  * is_idle_task - is the specified task an idle task?
-  * @tsk: the task in question.
-  */
--static inline bool is_idle_task(struct task_struct *p)
-+static inline bool is_idle_task(const struct task_struct *p)
- {
- 	return p->pid == 0;
- }
+We discussed this before and said that it would be possible to add a
+preemption check there. We would need to verify that there is no use case
+of __this_cpu_XXX operations in preemptable context. There used to be a
+case where we did not care about the races for the vmstat counters but
+that seems to have been changed. Not aware of any other use case like
+that.
 
