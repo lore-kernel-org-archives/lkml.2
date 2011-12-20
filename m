@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1LTXOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:14:53 -0500
-Received: from mail-gy0-f202.google.com ([209.85.160.202]:58383 "EHLO
-	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab1LTXOo (ORCPT
+	id S1753294Ab1LTXOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:14:45 -0500
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:45767 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1LTXOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:14:44 -0500
+	Tue, 20 Dec 2011 18:14:43 -0500
 From: Mandeep Singh Baines <msb@chromium.org>
 To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
         LKML <linux-kernel@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Paul Menage <paul@paulmenage.org>
-Subject: [PATCH 3/5] cgroup: only need to check oldcgrp==newgrp once
-Date: Tue, 20 Dec 2011 15:14:31 -0800
-Message-Id: <1324422873-31001-4-git-send-email-msb@chromium.org>
+Subject: [PATCH 1/5 V3] cgroup: remove redundate get/put of old css_set from migrate
+Date: Tue, 20 Dec 2011 15:14:29 -0800
+Message-Id: <1324422873-31001-2-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1324422873-31001-1-git-send-email-msb@chromium.org>
 References: <1324422873-31001-1-git-send-email-msb@chromium.org>
@@ -29,9 +29,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cgroup_attach_proc it is now sufficient to only check that
-oldcgrp==newcgrp once. Now that we are using threadgroup_lock()
-during the migrations, oldcgrp will not change.
+Changes in V3:
+* Fixed to put error in retval (thanks Frederic Weisbecker)
+  * https://lkml.org/lkml/2011/12/20/255
+Changes in V2:
+* Updated commit message as per Tejun's feedback:
+  * https://lkml.org/lkml/2011/12/19/289
+
+-- >8 -- (snip)
+
+We can now assume that the css_set reference held by the task
+will not go away for an exiting task. PF_EXITING state can be
+trusted throughout migration by checking it after locking
+threadgroup.
+
+While at it, renamed css_set_check_fetched to css_set_fetched.
+!css_set_fetched() seems to read better than
+!css_set_check_fetched().
 
 Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 Cc: Tejun Heo <tj@kernel.org>
@@ -44,75 +58,70 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Paul Menage <paul@paulmenage.org>
 ---
- kernel/cgroup.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ kernel/cgroup.c |   25 ++++++-------------------
+ 1 files changed, 6 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 6649529..4668a3f 100644
+index bc3caff..4166066 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2069,7 +2069,7 @@ static int css_set_prefetch(struct cgroup *cgrp, struct css_set *cg,
-  */
- int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- {
--	int retval, i, group_size, nr_migrating_tasks;
-+	int retval, i, group_size;
- 	struct cgroup_subsys *ss, *failed_ss = NULL;
- 	/* guaranteed to be initialized later, but the compiler needs this */
- 	struct css_set *oldcg;
-@@ -2120,7 +2120,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+@@ -1856,7 +1856,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 	 */
+ 	task_lock(tsk);
+ 	oldcg = tsk->cgroups;
+-	get_css_set(oldcg);
+ 	task_unlock(tsk);
+ 
+ 	/* locate or allocate a new css_set for this task. */
+@@ -1872,12 +1871,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 		might_sleep();
+ 		/* find_css_set will give us newcg already referenced. */
+ 		newcg = find_css_set(oldcg, cgrp);
+-		if (!newcg) {
+-			put_css_set(oldcg);
++		if (!newcg)
+ 			return -ENOMEM;
+-		}
  	}
- 	/* take a reference on each task in the group to go in the array. */
- 	tsk = leader;
--	i = nr_migrating_tasks = 0;
-+	i = 0;
- 	do {
- 		struct task_and_cgroup ent;
+-	put_css_set(oldcg);
  
-@@ -2136,11 +2136,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		 */
- 		ent.task = tsk;
- 		ent.cgrp = task_cgroup_from_root(tsk, root);
-+		/* nothing to do if this task is already in the cgroup */
-+		if (ent.cgrp == cgrp)
-+			continue;
- 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
- 		BUG_ON(retval != 0);
- 		i++;
--		if (ent.cgrp != cgrp)
--			nr_migrating_tasks++;
- 	} while_each_thread(leader, tsk);
- 	/* remember the number of threads in the array for later. */
- 	group_size = i;
-@@ -2150,7 +2151,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	/* @tsk can't exit as its threadgroup is locked */
+ 	task_lock(tsk);
+@@ -2015,9 +2011,8 @@ struct cg_list_entry {
+ 	struct list_head links;
+ };
  
- 	/* methods shouldn't be called if no task is actually migrating */
- 	retval = 0;
--	if (!nr_migrating_tasks)
-+	if (!group_size)
- 		goto out_free_group_list;
- 
- 	/*
-@@ -2173,9 +2174,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	INIT_LIST_HEAD(&newcg_list);
- 	for (i = 0; i < group_size; i++) {
- 		tc = flex_array_get(group, i);
--		/* nothing to do if this task is already in the cgroup */
--		if (tc->cgrp == cgrp)
--			continue;
+-static bool css_set_check_fetched(struct cgroup *cgrp,
+-				  struct task_struct *tsk, struct css_set *cg,
+-				  struct list_head *newcg_list)
++static bool css_set_fetched(struct cgroup *cgrp, struct task_struct *tsk,
++			    struct css_set *cg, struct list_head *newcg_list)
+ {
+ 	struct css_set *newcg;
+ 	struct cg_list_entry *cg_entry;
+@@ -2185,19 +2180,11 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
  		/* get old css_set pointer */
  		task_lock(tc->task);
  		oldcg = tc->task->cgroups;
-@@ -2193,9 +2191,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	for (i = 0; i < group_size; i++) {
- 		tc = flex_array_get(group, i);
--		/* leave current thread as it is if it's already there */
--		if (tc->cgrp == cgrp)
--			continue;
- 		retval = cgroup_task_migrate(cgrp, tc->cgrp, tc->task, true);
- 		BUG_ON(retval);
+-		get_css_set(oldcg);
+ 		task_unlock(tc->task);
+-		/* see if the new one for us is already in the list? */
+-		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
+-			/* was already there, nothing to do. */
+-			put_css_set(oldcg);
+-		} else {
+-			/* we don't already have it. get new one. */
+-			retval = css_set_prefetch(cgrp, oldcg, &newcg_list);
+-			put_css_set(oldcg);
+-			if (retval)
++		/* if we don't already have it in the list get a new one */
++		if (!css_set_fetched(cgrp, tc->task, oldcg, &newcg_list))
++			if (retval = css_set_prefetch(cgrp, oldcg, &newcg_list))
+ 				goto out_list_teardown;
+-		}
  	}
+ 
+ 	/*
 -- 
 1.7.3.1
 
