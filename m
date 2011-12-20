@@ -1,215 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1LTTQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 14:16:21 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:47297 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751950Ab1LTTQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 14:16:14 -0500
-Message-ID: <4EF0ED15.5030906@xenotime.net>
-Date: Tue, 20 Dec 2011 12:16:21 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1752643Ab1LTTQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 14:16:54 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53390 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab1LTTQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 14:16:49 -0500
+Date: Tue, 20 Dec 2011 20:14:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] oprofile fix
+Message-ID: <20111220191454.GA13415@elte.hu>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] leds-tca6507: allow driver to compile when GPIOLIB
- is not available.
-References: <20111220054233.7043.3561.stgit@notabene.brown> <20111220054441.7043.48656.stgit@notabene.brown>
-In-Reply-To: <20111220054441.7043.48656.stgit@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 09:44 PM, NeilBrown wrote:
-> This driver can configure the outputs as GPIO line instead of LEDs.  But
-> that only works if GPIOLIB is available.  So make that code conditional
-> on the library's availability.
-> 
-> Also remove the 'teardown' callback as it is never called and should
-> never be needed.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+Linus,
 
-Thanks.  This builds.
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
+ Thanks,
 
-> ---
-> 
->  drivers/leds/leds-tca6507.c  |   92 +++++++++++++++++++++++++++++-------------
->  include/linux/leds-tca6507.h |    3 +
->  2 files changed, 65 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-> index a7ea4cf..3565a61 100644
-> --- a/drivers/leds/leds-tca6507.c
-> +++ b/drivers/leds/leds-tca6507.c
-> @@ -149,9 +149,11 @@ struct tca6507_chip {
->  		int			bank;	/* Bank used, or -1 */
->  		int			blink;	/* 1 if we are hardware-blinking */
->  	} leds[NUM_LEDS];
-> +#ifdef CONFIG_GPIOLIB
->  	struct gpio_chip		gpio;
->  	const char			*gpio_name[NUM_LEDS];
->  	int				gpio_map[NUM_LEDS];
-> +#endif
->  };
->  
->  static const struct i2c_device_id tca6507_id[] = {
-> @@ -520,6 +522,7 @@ static int tca6507_blink_set(struct led_classdev *led_cdev,
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_GPIOLIB
->  static void tca6507_gpio_set_value(struct gpio_chip *gc,
->  				   unsigned offset, int val)
->  {
-> @@ -542,6 +545,62 @@ static int tca6507_gpio_direction_output(struct gpio_chip *gc,
->  	tca6507_gpio_set_value(gc, offset, val);
->  	return 0;
->  }
-> +static int tca6507_probe_gpios(struct i2c_client *client,
-> +			       struct tca6507_chip *tca,
-> +			       struct tca6507_platform_data *pdata)
-> +{
-> +	int err;
-> +	int i = 0;
-> +	int gpios = 0;
-> +
-> +	for (i = 0; i < NUM_LEDS; i++)
-> +		if (pdata->leds.leds[i].name && pdata->leds.leds[i].flags) {
-> +			/* Configure as a gpio */
-> +			tca->gpio_name[gpios] = pdata->leds.leds[i].name;
-> +			tca->gpio_map[gpios] = i;
-> +			gpios++;
-> +		}
-> +
-> +	if (!gpios)
-> +		return 0;
-> +
-> +	tca->gpio.label = "gpio-tca6507";
-> +	tca->gpio.names = tca->gpio_name;
-> +	tca->gpio.ngpio = gpios;
-> +	tca->gpio.base = pdata->gpio_base;
-> +	tca->gpio.owner = THIS_MODULE;
-> +	tca->gpio.direction_output = tca6507_gpio_direction_output;
-> +	tca->gpio.set = tca6507_gpio_set_value;
-> +	tca->gpio.dev = &client->dev;
-> +	err = gpiochip_add(&tca->gpio);
-> +	if (err) {
-> +		tca->gpio.ngpio = 0;
-> +		return err;
-> +	}
-> +	if (pdata->setup)
-> +		pdata->setup(tca->gpio.base, tca->gpio.ngpio);
-> +	return 0;
-> +}
-> +
-> +static void tca6507_remove_gpio(struct tca6507_chip *tca)
-> +{
-> +	if (tca->gpio.ngpio) {
-> +		int err = gpiochip_remove(&tca->gpio);
-> +		dev_err(&tca->client->dev, "%s failed, %d\n",
-> +			"gpiochip_remove()", err);
-> +	}
-> +}
-> +#else /* CONFIG_GPIOLIB */
-> +static int tca6507_probe_gpios(struct i2c_client *client,
-> +			       struct tca6507_chip *tca,
-> +			       struct tca6507_platform_data *pdata)
-> +{
-> +	return 0;
-> +}
-> +static void tca6507_remove_gpio(struct tca6507_chip *tca)
-> +{
-> +}
-> +#endif /* CONFIG_GPIOLIB */
->  
->  static int __devinit tca6507_probe(struct i2c_client *client,
->  				   const struct i2c_device_id *id)
-> @@ -551,7 +610,6 @@ static int __devinit tca6507_probe(struct i2c_client *client,
->  	struct tca6507_platform_data *pdata;
->  	int err;
->  	int i = 0;
-> -	int gpios = 0;
->  
->  	adapter = to_i2c_adapter(client->dev.parent);
->  	pdata = client->dev.platform_data;
-> @@ -590,30 +648,10 @@ static int __devinit tca6507_probe(struct i2c_client *client,
->  			if (err < 0)
->  				goto exit;
->  		}
-> -		if (pdata->leds.leds[i].name && pdata->leds.leds[i].flags) {
-> -			/* Configure as a gpio */
-> -			tca->gpio_name[gpios] = pdata->leds.leds[i].name;
-> -			tca->gpio_map[gpios] = i;
-> -			gpios++;
-> -		}
-> -	}
-> -	if (gpios) {
-> -		tca->gpio.label = "gpio-tca6507";
-> -		tca->gpio.names = tca->gpio_name;
-> -		tca->gpio.ngpio = gpios;
-> -		tca->gpio.base = pdata->gpio_base;
-> -		tca->gpio.owner = THIS_MODULE;
-> -		tca->gpio.direction_output = tca6507_gpio_direction_output;
-> -		tca->gpio.set = tca6507_gpio_set_value;
-> -		tca->gpio.dev = &client->dev;
-> -		err = gpiochip_add(&tca->gpio);
-> -		if (err) {
-> -			tca->gpio.ngpio = 0;
-> -			goto exit;
-> -		}
-> -		if (pdata->setup)
-> -			pdata->setup(tca->gpio.base, tca->gpio.ngpio);
->  	}
-> +	err = tca6507_probe_gpios(client, tca, pdata);
-> +	if (err)
-> +		goto exit;
->  	i2c_set_clientdata(client, tca);
->  	/* set all registers to known state - zero */
->  	tca->reg_set = 0x7f;
-> @@ -638,11 +676,7 @@ static int __devexit tca6507_remove(struct i2c_client *client)
->  		if (tca_leds[i].led_cdev.name)
->  			led_classdev_unregister(&tca_leds[i].led_cdev);
->  	}
-> -	if (tca->gpio.ngpio) {
-> -		int err = gpiochip_remove(&tca->gpio);
-> -		dev_err(&tca->client->dev, "%s failed, %d\n",
-> -			"gpiochip_remove()", err);
-> -	}
-> +	tca6507_remove_gpio(tca);
->  	cancel_work_sync(&tca->work);
->  	kfree(tca);
->  	i2c_set_clientdata(client, NULL);
-> diff --git a/include/linux/leds-tca6507.h b/include/linux/leds-tca6507.h
-> index 3b8ac62..dcabf4f 100644
-> --- a/include/linux/leds-tca6507.h
-> +++ b/include/linux/leds-tca6507.h
-> @@ -24,9 +24,10 @@
->  
->  struct tca6507_platform_data {
->  	struct led_platform_data leds;
-> +#ifdef CONFIG_GPIOLIB
->  	int gpio_base;
->  	void (*setup)(unsigned gpio_base, unsigned ngpio);
-> -	void (*teardown)(unsigned gpio_base, unsigned ngpio);
-> +#endif
->  };
->  
->  #define	TCA6507_MAKE_GPIO 1
-> 
-> 
+	Ingo
+
+------------------>
+Robert Richter (1):
+      oprofile: Fix uninitialized memory access when writing to writing to oprofilefs
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/s390/oprofile/init.c         |    2 +-
+ drivers/oprofile/oprofile_files.c |    7 ++++---
+ drivers/oprofile/oprofilefs.c     |   11 +++++++++--
+ 3 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
+index 6efc18b..bd58b72 100644
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -88,7 +88,7 @@ static ssize_t hwsampler_write(struct file *file, char const __user *buf,
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	if (oprofile_started)
+diff --git a/drivers/oprofile/oprofile_files.c b/drivers/oprofile/oprofile_files.c
+index 89f6345..84a208d 100644
+--- a/drivers/oprofile/oprofile_files.c
++++ b/drivers/oprofile/oprofile_files.c
+@@ -45,7 +45,7 @@ static ssize_t timeout_write(struct file *file, char const __user *buf,
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_timeout(val);
+@@ -84,7 +84,7 @@ static ssize_t depth_write(struct file *file, char const __user *buf, size_t cou
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
+@@ -141,9 +141,10 @@ static ssize_t enable_write(struct file *file, char const __user *buf, size_t co
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
++	retval = 0;
+ 	if (val)
+ 		retval = oprofile_start();
+ 	else
+diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+index d0de6cc..2f0aa0f 100644
+--- a/drivers/oprofile/oprofilefs.c
++++ b/drivers/oprofile/oprofilefs.c
+@@ -60,6 +60,13 @@ ssize_t oprofilefs_ulong_to_user(unsigned long val, char __user *buf, size_t cou
+ }
+ 
+ 
++/*
++ * Note: If oprofilefs_ulong_from_user() returns 0, then *val remains
++ * unchanged and might be uninitialized. This follows write syscall
++ * implementation when count is zero: "If count is zero ... [and if]
++ * no errors are detected, 0 will be returned without causing any
++ * other effect." (man 2 write)
++ */
+ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_t count)
+ {
+ 	char tmpbuf[TMPBUFSIZE];
+@@ -79,7 +86,7 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
+ 	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
+ 	*val = simple_strtoul(tmpbuf, NULL, 0);
+ 	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
+-	return 0;
++	return count;
+ }
+ 
+ 
+@@ -99,7 +106,7 @@ static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&value, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_ulong(file->private_data, value);
