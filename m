@@ -1,121 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab1LTNsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 08:48:41 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40622 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab1LTNsf convert rfc822-to-8bit (ORCPT
+	id S1752309Ab1LTNvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 08:51:32 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49407 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795Ab1LTNv1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 08:48:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112201137.12003.laurent.pinchart@ideasonboard.com>
-References: <20111220163214.351b13b464c46f506f329b30@canb.auug.org.au>
-	<201112201137.12003.laurent.pinchart@ideasonboard.com>
-Date: Tue, 20 Dec 2011 14:48:33 +0100
-X-Google-Sender-Auth: y89RIKPmR9YVJQ7Wswo_s7eVMYU
-Message-ID: <CAMuHMdU5iRf4HUS5i_ibJxvHGcszdF+ZXmwMCWsXvr4k8DjPHQ@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the fbdev tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Dec 2011 08:51:27 -0500
+From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] davinci: DA850 EVM: OHCI platform code
+Thread-Topic: [PATCH] davinci: DA850 EVM: OHCI platform code
+Thread-Index: AQHMvweySyTHtm9kN0+l7odViuYyipXkvdLg
+Date: Tue, 20 Dec 2011 13:51:10 +0000
+Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA90659DC@DBDE01.ent.ti.com>
+References: <1324363005-11320-1-git-send-email-prakash.pm@ti.com>
+ <4EF06C64.8000708@mvista.com>
+In-Reply-To: <4EF06C64.8000708@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 11:37, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Tuesday 20 December 2011 06:32:14 Stephen Rothwell wrote:
->> After merging the fbdev tree, today's linux-next build (powerpc
->> ppc64_defconfig) produced this warning:
->>
->> drivers/video/matrox/matroxfb_base.c:150:2: warning: braces around scalar
->> initializer [enabled by default]
->> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near initialization
->> for 'vesafb_defined.colorspace') [enabled by default]
->> drivers/video/matrox/matroxfb_base.c:150:2: warning: excess elements in
->> scalar initializer [enabled by default]
->> drivers/video/matrox/matroxfb_base.c:150:2: warning: (near initialization
->> for 'vesafb_defined.colorspace') [enabled by default]
->> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: braces around scalar
->> initializer [enabled by default]
->> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near initialization
->> for 'matroxfb_dh_defined.colorspace') [enabled by default]
->> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: excess elements in
->> scalar initializer [enabled by default]
->> drivers/video/matrox/matroxfb_crtc2.c:596:3: warning: (near initialization
->> for 'matroxfb_dh_defined.colorspace') [enabled by default]
->>
->> Introduced by commit fb21c2f42879 ("fbdev: Add FOURCC-based format
->> configuration API").
->
-> The following patch should fix the issue. Florian, are you fine with it, or
-> would you rather modify the initializers to be name-based ?
->
-> From 078987fc14dba806fc1bc628e3e5c371db3cf1b8 Mon Sep 17 00:00:00 2001
-> From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Date: Tue, 20 Dec 2011 11:30:53 +0100
-> Subject: [PATCH] fbdev: matroxfb: Fix compilation after fb_var_screeninfo change
->
-> Commit fb21c2f42879 ("fbdev: Add FOURCC-based format configuration API")
-> modified the layout of the fb_var_screeninfo structure. Update the
-> static initializers in the matroxfb driver accordingly.
->
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  drivers/video/matrox/matroxfb_base.c  |    2 +-
->  drivers/video/matrox/matroxfb_crtc2.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
-> index 44bf8d4..f98aad5 100644
-> --- a/drivers/video/matrox/matroxfb_base.c
-> +++ b/drivers/video/matrox/matroxfb_base.c
-> @@ -147,7 +147,7 @@ static struct fb_var_screeninfo vesafb_defined = {
->        39721L,48L,16L,33L,10L,
->        96L,2L,~0,      /* No sync info */
->        FB_VMODE_NONINTERLACED,
-> -       0, {0,0,0,0,0}
-> +       0, 0, {0,0,0,0}
+Hi
+> Hello.
+> 
+> On 20.12.2011 10:36, Manjunathappa, Prakash wrote:
+> 
+> > From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+> 
+>     It's a good practice to CC the original author of the patch -- which
+> I'm
+> doing now...
+> 
+> > On this board the OHCI port's power control and over-current signals
+> from
+> > TPS2065 power switch are connected via GPIO1[15] and GPIO2[1]
+> respectively,
+> 
+>     Ajay, your description seems to be copied unchganged from the
+> analogous
+> DA830 EVM patch, and thus doesn't match your patch: GPIO2[4] and
+> GPIO6[13] are
+> used apparently. Be more attentive to detail next time please.
 
-All these zeroes should not be specified, the compiler will do the
-right thing for
-static variables anyway.
+Well, this patch was created long back for internal release work and
+couldn't review this before it is sent out.
 
-Else they have to be updated manually everytime one of the reserved fields
-is consumed for a new feature.
+Prakash, Please correct the patch description as suggested.
 
->  };
->
->
-> diff --git a/drivers/video/matrox/matroxfb_crtc2.c b/drivers/video/matrox/matroxfb_crtc2.c
-> index d7112c3..d0c1abc 100644
-> --- a/drivers/video/matrox/matroxfb_crtc2.c
-> +++ b/drivers/video/matrox/matroxfb_crtc2.c
-> @@ -593,7 +593,7 @@ static struct fb_var_screeninfo matroxfb_dh_defined = {
->                39721L,48L,16L,33L,10L,
->                96L,2,0,        /* no sync info */
->                FB_VMODE_NONINTERLACED,
-> -               0, {0,0,0,0,0}
-> +               0, 0, {0,0,0,0}
-
-Same here.
-
->  };
->
->  static int matroxfb_dh_regit(const struct matrox_fb_info *minfo,
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Regards,
+Ajay
+> .
+> > so we can implement the DA8xx OHCI glue layer's hooks for overriding
+> the
+> > root hub port's power and over-current status bits.
+> 
+> > We also have to properly set up the clocking mode in the CFGCHIP2
+> register,
+> > so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB)
+> PHY and
+> > its output is used to clock the USB 1.1 (OHCI) PHY...
+> 
+> > Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
+> > ---
+> >   arch/arm/mach-davinci/board-da850-evm.c |  126
+> +++++++++++++++++++++++++++++++
+> >   1 files changed, 126 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-
+> davinci/board-da850-evm.c
+> > index 6659a90..df74ba5 100644
+> > --- a/arch/arm/mach-davinci/board-da850-evm.c
+> > +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> [...]
+> > @@ -734,6 +736,127 @@ static struct davinci_i2c_platform_data
+> da850_evm_i2c_0_pdata = {
+> [...]
+> > +static int da850_evm_usb_ocic_notify(da8xx_ocic_handler_t handler)
+> > +{
+> > +	int irq		= gpio_to_irq(ON_BD_USB_OVC);
+> > +	int error	= 0;
+> > +
+> > +	if (handler != NULL) {
+> > +		da850_evm_usb_ocic_handler = handler;
+> > +
+> > +		error = request_irq(irq, da850_evm_usb_ocic_irq,
+> IRQF_DISABLED |
+> 
+>     IRQF_DISABLED is a nop now -- just remove it.
+> 
+> WBR, Sergei
