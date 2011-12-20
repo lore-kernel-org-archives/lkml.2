@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1LTXyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:54:43 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:58887 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab1LTXyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:54:40 -0500
-Date: Wed, 21 Dec 2011 00:54:28 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kosaki.motohiro@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Caspar Zhang <caspar@casparzhang.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] [v2] mempolicy: refix mbind_range() vma issue
-Message-ID: <20111220235428.GD3870@cmpxchg.org>
-References: <20111212112000.GB18789@cmpxchg.org>
- <1324405032-22281-1-git-send-email-kosaki.motohiro@gmail.com>
- <20111220192850.GB3870@cmpxchg.org>
- <20111220153757.8d80af1e.akpm@linux-foundation.org>
+	id S1753298Ab1LTX6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 18:58:48 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13675 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab1LTX6p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 18:58:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 20 Dec 2011 15:58:44 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <b29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Tue, 20 Dec 2011 15:58:43 -0800
+Subject: RE: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
+Thread-Topic: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
+Thread-Index: Acy/PPacJXVw3FbcT8+W9MCERHBz6QANfpzw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176BE92EE2@HQMAIL01.nvidia.com>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+ <1324402840-32451-2-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324402840-32451-2-git-send-email-b29396@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220153757.8d80af1e.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 03:37:57PM -0800, Andrew Morton wrote:
-> On Tue, 20 Dec 2011 20:28:50 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
+Dong Aisheng wrote at Tuesday, December 20, 2011 10:41 AM:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > > Cc: Minchan Kim <minchan.kim@gmail.com>
-> > > CC: Caspar Zhang <caspar@casparzhang.com>
-> > 
-> > Looks good to me now, thanks.
-> > 
-> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > Since this can corrupt virtual mappings and was released with 3.2, I
-> > think we also want this:
-> > 
-> > Cc: stable@kernel.org [3.2.x]
-> 
-> I assume you meant 3.1.x  And into mainline for 3.2?
+> Currently most code to get child count in kernel are almost same,
+> add a helper to implement this function for dt to use.
 
-Yes.
+> diff --git a/include/linux/of.h b/include/linux/of.h
+
+> +static inline int of_get_child_count(const struct device_node *np)
+> +{
+> +	return -ENOSYS;
+> +}
+
+Wouldn't it be better to return 0 here? -ENOSYS would be fine if the
+function returned an error code, but it's really returning a count, and
+other "dummy" functions that return data return 0/NULL already. This
+would also allow you to just use the value directly in all cases rather
+than having to check for a < 0 error case.
+
+-- 
+nvpublic
+
