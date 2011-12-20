@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab1LTP4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:56:37 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52205 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab1LTP4Q convert rfc822-to-8bit (ORCPT
+	id S1753073Ab1LTQBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 11:01:16 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38265 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752675Ab1LTQBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:56:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1318607132.3018.30.camel@dabdike.int.hansenpartnership.com>
-References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
- <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
- <CAErSpo7d3hHeJU87zYo=yJoG3eqOZ4QggkOyNnu7xuJe8oG9Qg@mail.gmail.com> <1318607132.3018.30.camel@dabdike.int.hansenpartnership.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Dec 2011 08:55:53 -0700
-Message-ID: <CAErSpo7yoWOg8P1NAi70HJX=OMyO6XUwnUBxVq3P0YK87eP5tw@mail.gmail.com>
-Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 11:01:08 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, dan.j.williams@intel.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] block: warn the wrong tag only if it is greater than real_max_depth.
+Date: Tue, 20 Dec 2011 23:58:47 +0800
+Message-Id: <1324396727-2840-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <4EF0940D.7070304@kernel.dk>
+References: <4EF0940D.7070304@kernel.dk>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.40.131 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 9:45 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Fri, 2011-10-14 at 09:33 -0600, Bjorn Helgaas wrote:
->> On Fri, Oct 14, 2011 at 9:14 AM, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->> > On Thu, 2011-10-13 at 22:27 -0600, Bjorn Helgaas wrote:
->> >> The most generic way to create a PCI root bus is with pci_scan_bus(), but
->> >> that doesn't allow you to specify what resources are available on the bus,
->> >> i.e., what the host bridge apertures are.
->> >
->> > Do you have an actual tree for this?  The PARISC pieces look a bit
->> > non-trivial and I'd like to test them out on the various sba/astro/dino
->> > systems.
->>
->> I don't yet, but it'd be great if you were willing to test them out,
->> so I'll set one up.
->>
->> While this is on your mind, I'm dubious about the pci_enable_bridges()
->> call in lba_driver_probe() and the pci_bus_assign_resources() call in
->> dino_probe().  These stand out as exceptions because no other arches
->> do that.
->>
->> If they weren't there, both places could use pci_scan_root_bus() like
->> most other arches.
->
-> Right, the dino code actually has to rearrange some of the PCI resources
-> to make sure we get our apertures correct.  That's the specific bit I
-> was planning to test.  I think it's only relevant for dino SBA cards
-> where the bridge doesn't set up the card correctly so we have to do it
-> after the fact.
+From: Tao Ma <boyu.mt@taobao.com>
 
-This series has been in linux-next for a while now (via Jesse's PCI
-tree), so this would be a good time to try it out if you haven't
-already.
+In queue depth decreases, we could meet with a tag greater than max_depth,
+but it should never be greater than real_max_depth. So only WARN if
+it is greater than real_max_depth and let it complets if it is greater
+than max_depth.
 
-I know ia64 has been exercised a bit (thanks, Tony), but I haven't
-heard anything about arm, mips, parisc, powerpc, sparc, etc.
+Reported-by: Dan Williams <dan.j.williams@intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ block/blk-tag.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-There is one outstanding bug fix for alpha that Jesse hasn't
-integrated yet, but as far as I know, everything else is in good
-shape.
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index e74d6d1..1c50d34 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -286,12 +286,12 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
+ 
+ 	BUG_ON(tag == -1);
+ 
+-	if (unlikely(tag >= bqt->max_depth)) {
++	if (unlikely(tag >= bqt->real_max_depth)) {
+ 		/*
+-		 * This can happen after tag depth has been reduced.
+-		 * But tag shouldn't be larger than real_max_depth.
++		 * tag shouldn't be larger than real_max_depth.
+ 		 */
+-		WARN_ON(tag >= bqt->real_max_depth);
++		WARN(1, "tag %d, bqt->real_max_depth %d\n",
++		     tag, bqt->real_max_depth);
+ 		return;
+ 	}
+ 
+-- 
+1.7.4.1
 
-Bjorn
