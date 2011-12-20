@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab1LTKRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:17:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55463 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab1LTKRm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:17:42 -0500
-Message-ID: <1324376248.24621.26.camel@twins>
-Subject: Re: [PATCH 3/6] perf: add ability to record event period
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: avagin@gmail.com
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, mingo@elte.hu, asharma@fb.com, devel@openvz.org,
-        dsahern@gmail.com, linux-perf-users@vger.kernel.org
-Date: Tue, 20 Dec 2011 11:17:28 +0100
-In-Reply-To: <4EF0424D.3070102@gmail.com>
-References: <1323266161-394927-1-git-send-email-avagin@openvz.org>
-	 <1323266161-394927-4-git-send-email-avagin@openvz.org>
-	 <4EEAEF83.3080100@gmail.com> <20111219205829.GB28058@infradead.org>
-	 <4EF0424D.3070102@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1753242Ab1LTKUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:20:45 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:34791 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab1LTKUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 05:20:38 -0500
+Message-ID: <4EF0614A.9020402@parallels.com>
+Date: Tue, 20 Dec 2011 14:19:54 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+References: <20111219154010.c2044c038a6174dd8fb6f477@canb.auug.org.au>  <20111219080813.GB30432@elte.hu> <20111219101134.3c2c0db5@de.ibm.com>  <20111219103513.GA17928@elte.hu> <20111219133151.4d14af80@de.ibm.com> <1324303723.24621.1.camel@twins>
+In-Reply-To: <1324303723.24621.1.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 12:07 +0400, Andrew Vagin wrote:
-> Look at the comment below. In it I try describe why we need this 
-> functionality. 
+On 12/19/2011 06:08 PM, Peter Zijlstra wrote:
+> On Mon, 2011-12-19 at 13:31 +0100, Martin Schwidefsky wrote:
+>> Just one question: are you sure that you want the cpustat array
+>> to be u64 instead of cputime64_t? The content of the cpustat array is defined
+>> by the architecture semantics of cputime64_t, for CONFIG_VIRT_CPU_ACCOUNTING=y
+>> this is not a jiffy counter. If the array is u64 we won't get the sparse
+>> checking when reading from cpustat.
+>
+> So as Glauber said the reason was that we wanted to use simply
+> operators, and IIRC he wanted to add a few fields that had to be u64.
+>
+> I'm not sure what the current plans are wrt adding more fields, but with
+> your work cputime_t should again be a simple type and thus regular math
+> operators should work again, right?
+>
+> Glauber, do you still need to add fields?
 
-Its not about comments, a patch has to have a Changelog that covers the
-why and what. If it doesn't the patch won't go anywhere. Also, its not
-the maintainers job to reconstruct such a changelog from an email
-discussion.
+Due to the current state of discussions of cpu vs cpuacct, I think the 
+final state of this is quite unclear. However, I think Martin's work is
+a quite worthwhile piece for us to have. So last case we can add extra 
+fields in a different array and tell them apart by the index, etc. It 
+shouldn't be expensive at all.
 
-So write up a proper changelog and resubmit the patch.
+
