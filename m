@@ -1,184 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1LTPbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:31:50 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:47710 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1LTPbp convert rfc822-to-8bit (ORCPT
+	id S1752780Ab1LTPcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:32:21 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:32875 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab1LTPcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:31:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <1324385081-30824-1-git-send-email-vhtnguyen@apm.com>
-References: <1324385081-30824-1-git-send-email-vhtnguyen@apm.com>
-Date: Tue, 20 Dec 2011 10:31:44 -0500
-Message-ID: <CA+5PVA41Haf-_H3UoR1O3VFbC3XtgScyo5hekNjt0VWxunL-fg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] powerpc/44x: Add support PCI-E for APM821xx SoC and
- Bluestone board
-From: Josh Boyer <jwboyer@gmail.com>
-To: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anton Blanchard <anton@samba.org>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Rob Herring <rob.herring@calxeda.com>, Jiri Kosina <jkosina@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Ayman El-Khashab <ayman@elkhashab.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 10:32:14 -0500
+Date: Tue, 20 Dec 2011 11:31:45 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: "Tian, Kevin" <kevin.tian@intel.com>
+Cc: "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "liang.tang@oracle.com" <liang.tang@oracle.com>,
+        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/8] ACPI: processor: add __acpi_processor_[un]register_driver helpers.
+Message-ID: <20111220153145.GB13253@andromeda.dapyr.net>
+References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com> <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com> <20111216220342.GC9832@phenom.dumpdata.com> <625BA99ED14B2D499DC4E29D8138F1506E01AABC7A@shsmsx502.ccr.corp.intel.com> <20111219142626.GB27772@andromeda.dapyr.net> <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 7:44 AM, Vinh Nguyen Huu Tuong
-<vhtnguyen@apm.com> wrote:
-> This patch extends PCI-E driver to support PCI-E for APM821xx SoC on Bluestone board.
->
-> Signed-off-by: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
+On Tue, Dec 20, 2011 at 10:29:12AM +0800, Tian, Kevin wrote:
+> > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
+> > Sent: Monday, December 19, 2011 10:26 PM
+> > 
+> > On Mon, Dec 19, 2011 at 01:48:01PM +0800, Tian, Kevin wrote:
+> > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> > > > Sent: Saturday, December 17, 2011 6:04 AM
+> > > >
+> > > > On Wed, Nov 30, 2011 at 12:20:59PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > > From: Tang Liang <liang.tang@oracle.com>
+> > > > >
+> > > > > This patch implement __acpi_processor_[un]register_driver helper,
+> > > > > so we can registry override processor driver function. Specifically
+> > > > > the Xen processor driver.
+> > > >
+> > > > Liang,
+> > > >
+> > > > Is the reason we are doing this b/c we need to call acpi_bus_register_driver
+> > > > and inhibit the registration of 'acpi_processor_driver' ?
+> > > >
+> > > > And the reason we don't want 'acpi_processor_driver' to run is b/c of what?
+> > > > If the cpuidle is disabled what is the harm of running the
+> > > > 'acpi_processor_driver'
+> > > > driver?
+> > >
+> > > IIRC, the reason why we want a Xen specific driver is because current driver
+> > > is integrated with OS logic too tightly, e.g. the various checks on VCPU related
+> > > structures. Long time ago the 1st version in Xen was to use same driver, by
+> > > adding various tweaking lines inside which makes it completely messed. Then
+> > > later it's found that it's clearer to create a Xen specific wrapping driver, by
+> > > invoking some exported functions from existing one.
+> > 
+> > What I am asking is does it matter "if the current driver is integrated
+> > with OS logic to tighly" - as it is not running anyhow (b/c cpuidle is
+> > disabled).
+> > 
+> > And if Xen specific driver can run along-side the generic one - since
+> > the generic one is not doing any work (b/c cpuidle is disabled).
+> > 
+> > That is what I am trying to figure out - since this patch purpose is to
+> > thwart the generic driver from running and allowing the xen one to run.
+> 
+> It's a separate issue from cpuidle case. Here we're talking about acpi processor
+> driver, not the acpi cpuidle driver. ACPI processor driver is responsible for 
+> discovering ACPI processor projects, and then enumerate various methods 
+> such as _PPC, _CST, etc. under those objects. So far this driver depends on 
+> VCPU presence in various places, which causes trouble when dom0 is configured
+> with less VCPU number than physical present one.
+> 
+> One example you can see from acpi_processor_add:
+> 
+>         result = acpi_processor_get_info(device); // call acpi_get_cpuid
+>         if (result) {
+>                 /* Processor is physically not present */
+>                 return 0;
+>         }
+> 
+> #ifdef CONFIG_SMP
+>         if (pr->id >= setup_max_cpus && pr->id != 0)
+>                 return 0;
+> #endif 
+> 
+>         BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
+> 
+> The binding between ACPI processor objects and VCPU presence would only parse
+> partial objects to Xen. And there're various places within driver validating pr->id
+> making it messy to workaround for Xen within same driver.
+> 
+> That's the major reason for coming up a Xen specific driver, which always parses
+> all present objects regardless of VCPU presence. :-)
 
-> +static int apm821xx_pciex_init_port_hw(struct ppc4xx_pciex_port *port)
-> +{
-> +       u32 val;
-> +       u32 utlset1;
-> +       u32 timeout;
-> +
-> +       /*
-> +        * Do a software reset on PCIe ports.
-> +        * This code is to fix the issue that pci drivers doesn't re-assign
-> +        * bus number for PCIE devices after Uboot
-> +        * scanned and configured all the buses (eg. PCIE NIC IntelPro/1000
-> +        * PT quad port, SAS LSI 1064E)
-> +        */
-> +
-> +       mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST + (port->index * 0x55), 0x0);
-> +       mdelay(10);
-> +
-> +       if (port->endpoint)
-> +               val = PTYPE_LEGACY_ENDPOINT << 20;
-> +       else
-> +               val = PTYPE_ROOT_PORT << 20;
-> +
-> +       if (port->index == 0) {
-> +               val |= LNKW_X1 << 12;
-> +               utlset1 = 0x00000000;
-> +       } else {
-> +               val |= LNKW_X4 << 12;
-> +               utlset1 = 0x20101101;
-> +       }
-> +
-> +       mtdcri(SDR0, port->sdr_base + PESDRn_DLPSET, val);
-> +       mtdcri(SDR0, port->sdr_base + PESDRn_UTLSET1, utlset1);
-> +       mtdcri(SDR0, port->sdr_base + PESDRn_UTLSET2, 0x01010000);
-> +
-> +       switch (port->index) {
-> +       case 0:
-> +               mtdcri(SDR0, PESDR0_460EX_L0CDRCTL, 0x00003230);
-> +               mtdcri(SDR0, PESDR0_460EX_L0DRV, 0x00000130);
-> +               mtdcri(SDR0, PESDR0_460EX_L0CLK, 0x00000006);
-> +
-> +               mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST, 0x10000000);
-> +               mdelay(50);
-> +               mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST, 0x30000000);
-> +               break;
-> +
-> +       case 1:
-> +               mtdcri(SDR0, PESDR1_460EX_L0CDRCTL, 0x00003230);
-> +               mtdcri(SDR0, PESDR1_460EX_L1CDRCTL, 0x00003230);
-> +               mtdcri(SDR0, PESDR1_460EX_L2CDRCTL, 0x00003230);
-> +               mtdcri(SDR0, PESDR1_460EX_L3CDRCTL, 0x00003230);
-> +               mtdcri(SDR0, PESDR1_460EX_L0DRV, 0x00000130);
-> +               mtdcri(SDR0, PESDR1_460EX_L1DRV, 0x00000130);
-> +               mtdcri(SDR0, PESDR1_460EX_L2DRV, 0x00000130);
-> +               mtdcri(SDR0, PESDR1_460EX_L3DRV, 0x00000130);
-> +               mtdcri(SDR0, PESDR1_460EX_L0CLK, 0x00000006);
-> +               mtdcri(SDR0, PESDR1_460EX_L1CLK, 0x00000006);
-> +               mtdcri(SDR0, PESDR1_460EX_L2CLK, 0x00000006);
-> +               mtdcri(SDR0, PESDR1_460EX_L3CLK, 0x00000006);
-> +
-> +               mtdcri(SDR0, PESDR1_460EX_PHY_CTL_RST, 0x10000000);
-> +               break;
-> +       }
+OK. Lets put the # VCPU != PCPU aside. Say dom0 will boot with all
+CPUs and then later on the admin starts unplugging them.
 
-Do we need a default case here to catch oddness and exit the function?
+With that in mind, could we use a slim driver (like the one in: "ACPI:
+ add processor driver for Xen virtual CPUs.") that would just
+take the _Pxx, Cxx data and shove them to the hypervisor (handwaving
+aside the checking for quirks and such). And lets assume that we use the
+unmodified acpi_processor_[add|remove|notify] code that is present in
+processor_driver.c.
 
-> +
-> +       mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
-> +               mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) |
-> +               (PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTPYN));
-> +
-> +       /* Poll for PHY reset */
-> +       timeout = 0;
-> +       while ((!(mfdcri(SDR0, PESDR0_460EX_RSTSTA +
-> +                       (port->index * 0x55)) & 0x1)) &&
-> +                (timeout < PCIE_PHY_RESET_TIMEOUT)) {
-> +               udelay(10);
-> +               timeout++;
-> +       }
-> +
-> +       if (timeout < PCIE_PHY_RESET_TIMEOUT) {
-> +               mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
-> +                       (mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) &
-> +                       ~(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTDL)) |
-> +                       PESDRx_RCSSET_RSTPYN);
-> +
-> +               port->has_ibpre = 1;
-> +
-> +               return 0;
-> +       } else {
-> +               printk(KERN_INFO "PCIE: Can't reset PHY\n");
-> +               return -1;
-> +       }
+Oh, and the processor-driver.c did try to load (with the understanding
+that it would load, but won't do much since cpuidle is turned off).
 
-If we can't reset the PHY, does this whole function essentially fail?
-Do the devices not get renumbered, etc?  If so, you probably want to
-make that KERN_ERR.
-
-> @@ -1751,9 +1856,9 @@ static void __init ppc4xx_configure_pciex_PIMs(struct ppc4xx_pciex_port *port,
->                 * if it works
->                 */
->                out_le32(mbase + PECFG_PIM0LAL, 0x00000000);
-> -               out_le32(mbase + PECFG_PIM0LAH, 0x00000000);
-> +               out_le32(mbase + PECFG_PIM0LAH, 0x00000008); /* Moving on HB */
->                out_le32(mbase + PECFG_PIM1LAL, 0x00000000);
-> -               out_le32(mbase + PECFG_PIM1LAH, 0x00000000);
-> +               out_le32(mbase + PECFG_PIM1LAH, 0x0000000c); /* Moving on HB */
->                out_le32(mbase + PECFG_PIM01SAH, 0xffff0000);
->                out_le32(mbase + PECFG_PIM01SAL, 0x00000000);
-
-Why are these values changed, and are those changes only needed on APM821xx?
-
-> diff --git a/arch/powerpc/sysdev/ppc4xx_pci.h b/arch/powerpc/sysdev/ppc4xx_pci.h
-> index 32ce763..faf3017 100644
-> --- a/arch/powerpc/sysdev/ppc4xx_pci.h
-> +++ b/arch/powerpc/sysdev/ppc4xx_pci.h
-> @@ -441,6 +441,7 @@
->  /*
->  * Config space register offsets
->  */
-> +#define PECFG_ECDEVCTL         0x060
->  #define PECFG_ECRTCTL          0x074
->
->  #define PECFG_BAR0LMPA         0x210
-> @@ -448,6 +449,7 @@
->  #define PECFG_BAR1MPA          0x218
->  #define PECFG_BAR2LMPA         0x220
->  #define PECFG_BAR2HMPA         0x224
-> +#define PECFG_ECDEVCAPPA       0x25c
->
->  #define PECFG_PIMEN            0x33c
->  #define PECFG_PIM0LAL          0x340
-> @@ -494,5 +496,7 @@ enum
->        LNKW_X8                 = 0x8
->  };
->
-> +/* Timout for reset phy */
-> +#define PCIE_PHY_RESET_TIMEOUT 10
-
-Is this value applicable to all the 44x devices with PCI-e?
-
-josh
+Would that still get the Pxx, Cxx data to the hypervisor?
