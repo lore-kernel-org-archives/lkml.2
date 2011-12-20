@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab1LTPsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 10:48:35 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33615 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab1LTPsa convert rfc822-to-8bit (ORCPT
+	id S1753011Ab1LTPsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 10:48:43 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60533 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1LTPsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 10:48:30 -0500
+	Tue, 20 Dec 2011 10:48:31 -0500
+Message-ID: <4EF0AE4A.3090509@gmail.com>
+Date: Tue, 20 Dec 2011 10:48:26 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
-References: <cover.1324318997.git.jbaron@redhat.com> <d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
- <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 20 Dec 2011 08:47:58 -0700
-Message-ID: <CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
-Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of ddebug_parse_query
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jason Baron <jbaron@redhat.com>, greg@kroah.com, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kevin Hilman <khilman@ti.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Michal Marek <mmarek@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        frank.rowand@am.sony.com, jan.kiszka@web.de,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 2/5] livedump: Add the new misc device "livedump"
+References: <20111220072028.9113.74876.stgit@t3500.sdl.hitachi.co.jp> <20111220072343.GC9220@t3500.sdl.hitachi.co.jp>
+In-Reply-To: <20111220072343.GC9220@t3500.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 1:17 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
->> From: Jim Cromie <jim.cromie@gmail.com>
->>
->> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
->> for reuse later.  Also change the printed labels: file, func to agree
->> with the query-spec keywords accepted in the control file.  Pass ""
->> when string is null, to avoid "(null)" output from sprintf.  For
->> format print, use precision to skip last char, assuming its '\n', no
->> great harm if not, its a debug msg.
->
-> pr_info_dq() or vpr_info_dq() ?
->
-> Bart.
+(12/20/11 2:23 AM), YOSHIDA Masanori wrote:
+> Introduces the new misc device "livedump".
+> The device only has open, close and empty ioctl operations.
 
-I chose vpr_info_dq, with leading v to hint at the "if (verbose)" part
+When cc me, please cc whole patches. Now I don't find patch [0/5] yet.
+so I haven't understand what problem do you tried to solve.
+
+Moreover, mere 2 lines patch description is not good idea if you want
+to add new device and/or new feature. Please imagine 'git log' only file
+this 2 lines.
