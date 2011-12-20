@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab1LTW0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 17:26:10 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59186 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab1LTW0G convert rfc822-to-8bit (ORCPT
+	id S1753171Ab1LTW1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 17:27:40 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31457 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752248Ab1LTW1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 17:26:06 -0500
+	Tue, 20 Dec 2011 17:27:37 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKUK8U55LL6d/2dsb2JhbAA7CKwEgQaBcgEBBTocIxAIAxguFCUDIRO/JBOIQ4JTYwSUfokciSk
+Date: Wed, 21 Dec 2011 09:27:34 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-ID: <20111220222734.GA23662@dastard>
+References: <4EF03915.60902@linux.vnet.ibm.com>
+ <1324373854.21588.16.camel@mengcong>
+ <4EF0654B.4060904@linux.vnet.ibm.com>
+ <4EF06C9B.4010703@linux.vnet.ibm.com>
+ <4EF084A4.3000106@linux.vnet.ibm.com>
+ <20111220140628.GD23916@ZenIV.linux.org.uk>
+ <4EF09D34.1060607@linux.vnet.ibm.com>
+ <20111220175919.GE23916@ZenIV.linux.org.uk>
+ <4EF0DE04.6030604@linux.vnet.ibm.com>
+ <20111220195806.GF23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
-References: <1324283611-18344-1-git-send-email-sumit.semwal@ti.com>
-	<20111220193117.GD3883@phenom.ffwll.local>
-	<CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
-Date: Tue, 20 Dec 2011 16:26:05 -0600
-X-Google-Sender-Auth: JWu3p4Ej1AuWVxhS6NoiNUtp5hM
-Message-ID: <CAF6AEGt9Ae_zVmhBmmtfyKrqC4EyBgAAO1RWdK_UhY-1RLfOSQ@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v3 0/2] Introduce DMA buffer sharing mechanism
-From: Rob Clark <rob@ti.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com,
-        t.stanislaws@samsung.com, patches@linaro.org, daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111220195806.GF23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 2:20 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>
->>> This is RFC v3 for DMA buffer sharing mechanism - changes from v2 are in the
->>> changelog below.
->>>
->>> Various subsystems - V4L2, GPU-accessors, DRI to name a few - have felt the
->>> need to have a common mechanism to share memory buffers across different
->>> devices - ARM, video hardware, GPU.
->>>
->>> This need comes forth from a variety of use cases including cameras, image
->>> processing, video recorders, sound processing, DMA engines, GPU and display
->>> buffers, and others.
->>>
->>> This RFC is an attempt to define such a buffer sharing mechanism- it is the
->>> result of discussions from a couple of memory-management mini-summits held by
->>> Linaro to understand and address common needs around memory management. [1]
->>>
->>> A new dma_buf buffer object is added, with operations and API to allow easy
->>> sharing of this buffer object across devices.
->>>
->>> The framework allows:
->>> - a new buffer-object to be created with fixed size.
->>> - different devices to 'attach' themselves to this buffer, to facilitate
->>>   backing storage negotiation, using dma_buf_attach() API.
->>> - association of a file pointer with each user-buffer and associated
->>>    allocator-defined operations on that buffer. This operation is called the
->>>    'export' operation.
->>> - this exported buffer-object to be shared with the other entity by asking for
->>>    its 'file-descriptor (fd)', and sharing the fd across.
->>> - a received fd to get the buffer object back, where it can be accessed using
->>>    the associated exporter-defined operations.
->>> - the exporter and user to share the scatterlist using map_dma_buf and
->>>    unmap_dma_buf operations.
->>>
->>> Documentation present in the patch-set gives more details.
->>>
->>> This is based on design suggestions from many people at the mini-summits,
->>> most notably from Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
->>> Daniel Vetter <daniel@ffwll.ch>.
->>>
->>> The implementation is inspired from proof-of-concept patch-set from
->>> Tomasz Stanislawski <t.stanislaws@samsung.com>, who demonstrated buffer sharing
->>> between two v4l2 devices. [2]
->>>
->>> References:
->>> [1]: https://wiki.linaro.org/OfficeofCTO/MemoryManagement
->>> [2]: http://lwn.net/Articles/454389
->>>
->>> Patchset based on top of 3.2-rc3, the current version can be found at
->>>
->>> http://git.linaro.org/gitweb?p=people/sumitsemwal/linux-3.x.git
->>> Branch: dma-buf-upstr-v2
->>>
->>> Earlier versions:
->>> v2 at: https://lkml.org/lkml/2011/12/2/53
->>> v1 at: https://lkml.org/lkml/2011/10/11/92
->>>
->>> Best regards,
->>> ~Sumit Semwal
->>
->> I think this is a really good v1 version of dma_buf. It contains all the
->> required bits (with well-specified semantics in the doc patch) to
->> implement some basic use-cases and start fleshing out the integration with
->> various subsystem (like drm and v4l). All the things still under
->> discussion like
->> - userspace mmap support
->> - more advanced (and more strictly specified) coherency models
->> - and shared infrastructure for implementing exporters
->> are imo much clearer once we have a few example drivers at hand and a
->> better understanding of some of the insane corner cases we need to be able
->> to handle.
->>
->> And I think any risk that the resulting clarifications will break a basic
->> use-case is really minimal, so I think it'd be great if this could go into
->> 3.3 (maybe as some kind of staging/experimental infrastructure).
->>
->> Hence for both patches:
->> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->
-> Yeah I'm with Daniel, I like this one, I can definitely build the drm
-> buffer sharing layer on top of this.
->
-> How do we see this getting merged? I'm quite happy to push it to Linus
-> if we don't have an identified path, though it could go via a Linaro
-> tree as well.
->
-> so feel free to add:
-> Reviewed-by: Dave Airlie <airlied@redhat.com>
+On Tue, Dec 20, 2011 at 07:58:06PM +0000, Al Viro wrote:
+> On Wed, Dec 21, 2011 at 12:42:04AM +0530, Srivatsa S. Bhat wrote:
+> > register_hotcpu_notifier(...);
+> > grab spinlock
+> > for_each_online_cpu(N)
+> >   add N to bitmap
+> > release spinlock
+> > 
+> > because the latter code is not fully race-free (because we don't handle
+> > CPU_DOWN_PREPARE event in the callback and hence cpu_online_mask can get
+> > updated in-between). But it would still work since cpus going down don't
+> > really pose problems for us.
+> 
+> Um?  Sure, that loop can end up adding CPUs on their way down into the set.
+> And as soon as they get their CPU_DEAD, notifier will prune them out...  Or
+> is there something I'm missing here?  Anyway, the variant I have here
+> (untested) follows:
 
-fwiw, patches to share buffers between drm and v4l2 are here:
+Only thing that concerns me about this patch is the bitmap changing
+between lock and unlock operations. i.e.
 
-https://github.com/robclark/kernel-omap4/commits/drmplane-dmabuf
+CPU 1: lock all cpus in mask
+CPU 2: brings up new cpu, notifier adds CPU to bitmask
+CPU 1: unlock all cpus in mask
 
-(need a bit of cleanup before the vb2 patches are submitted.. but that
-is unrelated to the dmabuf patches)
+And in this case the unlock tries to unlock a cpu that wasn't locked
+to start with. It really seems to me that while a global lock is in
+progress, the online bitmask cannot be allowed to change.
 
-so,
+Perhaps something can be passed between the lock and unlock
+operations to be able to detect a changed mask between lock/unlock
+operations (e.g. a generation number) and then handle that via a
+slow path that unlocks only locks that are active in the online
+bitmask?  i.e. all the notifier does is bump the generation count,
+and the slow path on the unlock handles everything else?
 
-Reviewed-and-Tested-by: Rob Clark <rob.clark@linaro.org>
+Cheers,
 
-> Dave.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
