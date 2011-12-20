@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab1LTAj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 19:39:29 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:36970
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752335Ab1LTAjZ (ORCPT
+	id S1753658Ab1LTAnU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 19:43:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36867 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752335Ab1LTAnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 19:39:25 -0500
-X-SpamScore: -7
-X-BigFish: VPS-7(zz14ffOzz1202hzz8275dhz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4EEFD926.3040201@am.sony.com>
-Date: Mon, 19 Dec 2011 16:39:02 -0800
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: linux-embedded <linux-embedded@vger.kernel.org>
-CC: linux kernel <linux-kernel@vger.kernel.org>
-Subject: Android mainlining project
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Mon, 19 Dec 2011 19:43:19 -0500
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH 00/10] kconfigs cleanups and fixes
+Date: Tue, 20 Dec 2011 02:42:17 +0200
+Message-Id: <1324341747-5922-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.8.rc1.14.g248db
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Hi,
 
-I would like to announce the beginning of a project to
-make a concerted effort to mainline patches and features
-from Android into the mainline Linux kernel.
+Here are some cleanups for kconfigs, mostly in ARM and USB stuff.
 
-At the recent kernel summit in Prague, there was a discussion
-about re-evaluating some of the Android-specific features
-that are found in Google's android kernel, and looking at
-whether and how to incorporate them into the mainline (kernel.org)
-kernel.
+Some of these have already been sent in the past, but never splitted nor
+applied, now I'm doing that. Others are new issues, and some actual warnings
+are fixed.
 
-Various parties, including individual developers, the
-CE workgroup in the Linux Foundation, and a group at Linaro
-have been working on different aspects of this.  A wiki
-page and mailing list have been created to help coordinate
-our efforts and avoid duplication and confusion.
+Cheers.
 
-The wiki page for this effort (still under construction) is
-at: http://elinux.org/Android_Mainlining_Project
+Felipe Contreras (10):
+  arm: omap4: fix kconfig warning
+  arm: vexpress: fix kconfig warning
+  arm: omap2: fix omap3 touchbook kconfig warning
+  arm: omap2: fix regulator warnings
+  usb: musb: trivial Kconfig cleanups
+  usb: core: trivial Kconfig cleanups
+  usb: gadget: remove useless depends on Kconfig
+  usb: gadget: remove useless dependency in config
+  usb: otg: trivial cleanups
+  musb: cleanup kconfig
 
-There's a mailing list if you wish to follow discussions
-about this project.  It's available at:
-https://lists.linuxfoundation.org/mailman/listinfo/ce-android-mainline
+ arch/arm/mach-omap2/Kconfig    |   13 ++++++-------
+ arch/arm/mach-vexpress/Kconfig |    4 ++--
+ drivers/usb/core/Kconfig       |    4 ----
+ drivers/usb/gadget/Kconfig     |    5 -----
+ drivers/usb/musb/Kconfig       |   15 ++++++++-------
+ drivers/usb/otg/Kconfig        |   20 ++++++++++----------
+ 6 files changed, 26 insertions(+), 35 deletions(-)
 
-If you are interested in this work, please join the mailing
-list or send me an e-mail.  Some interesting things are already
-happening.  I'll send a status message to the ce-android-mainline
-list in a day or two to let interested parties know what's currently
-going on.
-
-Regards,
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
+-- 
+1.7.8.rc1.14.g248db
 
