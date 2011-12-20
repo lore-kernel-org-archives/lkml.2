@@ -1,170 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab1LTNKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 08:10:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1LTNKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 08:10:30 -0500
-Date: Tue, 20 Dec 2011 14:10:19 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCHv2 02/10] ftrace: Change mcount call replacement logic
-Message-ID: <20111220131019.GA4393@m.brq.redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
- <1323105776-26961-1-git-send-email-jolsa@redhat.com>
- <1323105776-26961-3-git-send-email-jolsa@redhat.com>
- <1324321380.5916.26.camel@gandalf.stny.rr.com>
+	id S1751893Ab1LTNOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 08:14:44 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42099 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1LTNOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 08:14:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324321380.5916.26.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 20 Dec 2011 13:14:38 +0000
+Message-ID: <CABdF1a-UZ8uRjcoJ181_6VjW-iUCa-SY5A1ayr-1gZ45t27Ncw@mail.gmail.com>
+Subject: Jiffies counter stalled for minutes and then jumps forwards
+From: Robert Whitton <bob91966@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 02:03:00PM -0500, Steven Rostedt wrote:
-> On Mon, 2011-12-05 at 18:22 +0100, Jiri Olsa wrote:
-> > The current logic of updating calls is to do the mcount replacement
-> > only when ftrace_ops is being registered. When ftrace_ops is being
-> > unregistered then only in case it was the last registered ftrace_ops,
-> > all calls are disabled.
-> > 
-> > This is an issue when ftrace_ops without FTRACE_OPS_FL_GLOBAL flag
-> > is being unregistered, because all the functions stays enabled
-> > and thus inherrited by global_ops, like in following scenario:
-> > 
-> >   - set restricting global filter
-> >   - enable function trace
-> >   - register/unregister ftrace_ops with flags != FTRACE_OPS_FL_GLOBAL
-> >     and with no filter
-> 
-> I don't see this problem. I just changed stack_tracer to have its own
-> filter (I've been wanting to do that for a long time, so when I saw this
-> email, I decided it's a good time to implement it).
-> 
-> Here's what I did:
-> 
-> # echo schedule > set_ftrace_filter
-> # cat set_ftrace_filter
-> schedule
-> # cat enabled_functions
-> schedule (1)
-> # echo 1 > /proc/sys/kernel/stack_tracer_enabled
-> # cat enabled_functions
-> do_one_initcall (1)
-> match_dev_by_uuid (1)
-> name_to_dev_t (1)
-> idle_notifier_unregister (1)
-> idle_notifier_register (1)
-> start_thread_common.constprop.6 (1)
-> enter_idle (1)
-> exit_idle (1)
-> cpu_idle (1)
-> __show_regs (1)
-> release_thread (1)
-> [...]
-> _cond_resched (1)
-> preempt_schedule_irq (1)
-> schedule (2)
-> io_schedule (1)
-> yield_to (1)
-> yield (1)
-> 
-> // note that schedule is (2)
-> 
-> # echo 0 > /proc/sys/kernel/stack_tracer_enabled
-> # cat enabled_functions
-> schedule (1)
-> 
-> 
-> > 
-> > Now the global_ops will get by all the functions regardless the
-> > global_ops filter. So we need all functions that where enabled via
-> > this ftrace_ops and are not part of global filter to be disabled.
-> 
-> The global functions are not at issue here. What do you see?
-> 
-> Maybe I fixed something as I'm using the latest tip/perf/core. Note, I
-> can send you the stack_tracer patch if you want to take a look at this
-> example. I need to clean it up too.
+This message is aimed at the "timing Gods" of the Linux kernel - I
+really hope you can help.
 
-that would be great, thanks
+I have a very rare time related problem that on a given system only
+occurs about once every few years. However, we have a lot of systems
+and hence this is more than a weekly occurrence. Each occurrence
+causes a watchdog to reset the system which is bad!
 
-> 
-> > 
-> > Note, currently if there are only global ftrace_ops registered,
-> > there's no filter hash check and the filter is represented only
-> > by enabled records.
-> > 
-> > Changing the ftrace_shutdown logic to ensure the replacement
-> > is called for each ftrace_ops being unregistered.
-> > 
-> > Also changing FTRACE_ENABLE_CALLS into FTRACE_UPDATE_CALLS
-> > calls which seems more suitable now.
-> 
-> I still think this patch is wrong. What's the problem you are seeing?
+Environment:
 
-let me try with an example..
+We are running a Debian kernel 2.6.26-2-amd64 on a TYAN S5211
+motherboard that is fitted with an E8400 dual core CPU. The problem
+mainly occurs when the system is under heavy load. Due to code that
+isn't SMP safe the vast majority of the load is locked to CPU1 whilst
+CPU0 is mostly idle.
 
-say we have only 2 traceable functions - A and B ;)
+Problem Description
 
-1) set global filter for function A with 'echo A > ./set_ftrace_filter'
-	a - A is put to the global_ops filter
+Calls to "select" (with a timeout) and other similar user mode
+functions that are sitting on the jiffies timer are timing out (much)
+too late and then subsequently (much) too early. We have added code to
+the kernel in the form of a loadable module that on a regular
+interrupt compares jiffies to the TSC. The test code confirms that
+when the problem occurs the jiffies counter has stalled whilst the TSC
+continues to increase monotonically. At the end of the stall the
+jiffies counter jumps forwards to the correct time apparently in a
+single step. The "stall" periods are not short. They typically extend
+for minutes.
 
-2) enable function trace with 'echo function > current_tracer'
-	a - register_ftrace_function is called with function trace ftrace_ops (GLOBAL flag)
-	b - update_ftrace_function is called, setting ftrace_ops callback function
-	    to be called directly from the assembly entry_* code
-	c - ftrace_hash_rec_enable is called, and dyn_ftrace record
-	    for function A is updated:
-		A::flags|FL_MASK = 1
-	d - ftrace_replace_code(1) is called, and function A is
-	    brought in to life
+Are these symptoms recognised by anyone and if so has the issue been
+fixed in a later kernel?
 
-3) enable function trace via perf ftrace_ops
-	a - register_ftrace_function is called with perf event ftrace_ops (!GLOBAL flag)
-	b - update_ftrace_function is called, setting ftrace_ops_list_func
-	    function to be called from the assembly entry_* code and
-	    handle the ftrace_ops' dispatch
-	c - ftrace_hash_rec_enable is called, and A and B dyn_ftrace records
-	    are updated:
-		A::flags|FL_MASK = 2
-		B::flags|FL_MASK = 1
-	d - ftrace_replace_code(1) is called, and function B is
-	    brought in to life
+Unfortunately due to the rarity of the issue on a given system and due
+to the location of the systems I'm not in a position to be able to
+upgrade the kernel on enough systems to be able to test if this is
+fixed in a newer kernel within a reasonable time frame.
 
-4) disable function trace via perf ftrace_ops
-	a - unregister_ftrace_function is called with perf event ftrace_ops (same as in step 3)
-	b - update_ftrace_function is called, setting global ftrace_ops (from step 2)
-	    callback function to be called directly from the assembly entry_* code
-	c - ftrace_hash_rec_disable is called, and A and B dyn_ftrace
-	    records are updated:
-		A::flags|FL_MASK = 1
-		B::flags|FL_MASK = 0
-	d - ??? see below..
+A few commits have tweaked my interest but I can't obviously see that
+any of them exactly match the symptoms that we're seeing.
 
-Now, only the global function trace ftrace_ops is enabled (from step 2),
-but both A and B are alive and feeding the tracer despite its filter (function A),
-because its ftrace_ops is directly linked to the assembly entry_* code (step 4b).
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=b8f8c3cf0a4ac0632ec3f0e15e9dc0c29de917af
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=857f3fd7a496ddf4329345af65a4a2b16dd25fe8
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=02ff375590ac4140d88afc76505df1ad45c6af59
 
-The reason is that even though we updated the B's dyn_ftrace record (step 4c)
-to be 'B::flags|FL_MASK == 0', we did not update the B call itself and disable it.
+Please CC me in on any replies.
 
-If we'd call ftrace_replace_code(1) at 4d), the B function would be
-disabled, and we would get expected behaviour.
+Thanks in advance for any help.
 
-So thats the reason I think we should update the calls (mcount call code)
-each time we unregister the ftrace_ops, because some records could be
-enabled only for the specific ftrace_ops and we need to put them down
-when we disable this ftrace_ops.
-
-
-hopefully it make any sense.. :)
-
-thanks,
-jirka
+Rob
