@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1LTKQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:16:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42720 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab1LTKQv convert rfc822-to-8bit (ORCPT
+	id S1753284Ab1LTKRt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:17:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55463 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab1LTKRm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:16:51 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-Date: Tue, 20 Dec 2011 11:18:24 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <201112151001.52761.oneukum@suse.de> <CAGS+omCLU6FAxmT3+TgYf0b8YvgfbH9CL9M6WpZ0yNS01O5Hrw@mail.gmail.com>
-In-Reply-To: <CAGS+omCLU6FAxmT3+TgYf0b8YvgfbH9CL9M6WpZ0yNS01O5Hrw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 20 Dec 2011 05:17:42 -0500
+Message-ID: <1324376248.24621.26.camel@twins>
+Subject: Re: [PATCH 3/6] perf: add ability to record event period
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: avagin@gmail.com
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, mingo@elte.hu, asharma@fb.com, devel@openvz.org,
+        dsahern@gmail.com, linux-perf-users@vger.kernel.org
+Date: Tue, 20 Dec 2011 11:17:28 +0100
+In-Reply-To: <4EF0424D.3070102@gmail.com>
+References: <1323266161-394927-1-git-send-email-avagin@openvz.org>
+	 <1323266161-394927-4-git-send-email-avagin@openvz.org>
+	 <4EEAEF83.3080100@gmail.com> <20111219205829.GB28058@infradead.org>
+	 <4EF0424D.3070102@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201112201118.24342.oneukum@suse.de>
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 20. Dezember 2011, 11:12:37 schrieb Daniel Kurtz:
-> > > Could you please be more specific about what this patch breaks and
-> > > perhaps give some guidance on how to fix it?
-> >
-> > It breaks nothing. It just continues a bug and I assumed it was not present.
-> > Basically the work queue must do nothing after pre_reset() and post_reset()
-> > ought to rerun the work in case some request came down during that time.
-> 
-> So, is this an Ack for this patchset?
-> Can we fix any existing races in later patches?
+On Tue, 2011-12-20 at 12:07 +0400, Andrew Vagin wrote:
+> Look at the comment below. In it I try describe why we need this 
+> functionality. 
 
-Very well. You are fixing a bad bug and not making matters worse.
+Its not about comments, a patch has to have a Changelog that covers the
+why and what. If it doesn't the patch won't go anywhere. Also, its not
+the maintainers job to reconstruct such a changelog from an email
+discussion.
 
-Acked-by: Oliver Neukum <oneukum@suse.de>
-
-	Regards
-		Oliver
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+So write up a proper changelog and resubmit the patch.
