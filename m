@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1LTAf1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 19:35:27 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39681 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1LTAfZ convert rfc822-to-8bit (ORCPT
+	id S1753634Ab1LTAj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 19:39:29 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:36970
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752335Ab1LTAjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 19:35:25 -0500
+	Mon, 19 Dec 2011 19:39:25 -0500
+X-SpamScore: -7
+X-BigFish: VPS-7(zz14ffOzz1202hzz8275dhz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4EEFD926.3040201@am.sony.com>
+Date: Mon, 19 Dec 2011 16:39:02 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <20111219153738.GC1415@cmpxchg.org>
-References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111214165124.4d2cf723.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111219153738.GC1415@cmpxchg.org>
-Date: Tue, 20 Dec 2011 09:35:24 +0900
-Message-ID: <CABEgKgoJpv5YAvRQ82QL7RrrznGLFr-CD6=DWhw=VL5uWohxeA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] memcg: clear pc->mem_cgorup if necessary.
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-embedded <linux-embedded@vger.kernel.org>
+CC: linux kernel <linux-kernel@vger.kernel.org>
+Subject: Android mainlining project
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/20 Johannes Weiner <hannes@cmpxchg.org>:
-> On Wed, Dec 14, 2011 at 04:51:24PM +0900, KAMEZAWA Hiroyuki wrote:
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> This is a preparation before removing a flag PCG_ACCT_LRU in page_cgroup
->> and reducing atomic ops/complexity in memcg LRU handling.
->>
->> In some cases, pages are added to lru before charge to memcg and pages
->> are not classfied to memory cgroup at lru addtion. Now, the lru where
->> the page should be added is determined a bit in page_cgroup->flags and
->> pc->mem_cgroup. I'd like to remove the check of flag.
->>
->> To handle the case pc->mem_cgroup may contain stale pointers if pages are
->> added to LRU before classification. This patch resets pc->mem_cgroup to
->> root_mem_cgroup before lru additions.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> The followup compilation fixes aside, I agree.  But the sites where
-> the owner is actually reset are really not too obvious.  How about the
-> comment patch below?
->
-> Otherwise,
->
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
->
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: memcg: clear pc->mem_cgorup if necessary fix
->
-> Add comments to the clearing sites.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hello all,
 
-Ah, yes. This seems better. Thank you.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I would like to announce the beginning of a project to
+make a concerted effort to mainline patches and features
+from Android into the mainline Linux kernel.
+
+At the recent kernel summit in Prague, there was a discussion
+about re-evaluating some of the Android-specific features
+that are found in Google's android kernel, and looking at
+whether and how to incorporate them into the mainline (kernel.org)
+kernel.
+
+Various parties, including individual developers, the
+CE workgroup in the Linux Foundation, and a group at Linaro
+have been working on different aspects of this.  A wiki
+page and mailing list have been created to help coordinate
+our efforts and avoid duplication and confusion.
+
+The wiki page for this effort (still under construction) is
+at: http://elinux.org/Android_Mainlining_Project
+
+There's a mailing list if you wish to follow discussions
+about this project.  It's available at:
+https://lists.linuxfoundation.org/mailman/listinfo/ce-android-mainline
+
+If you are interested in this work, please join the mailing
+list or send me an e-mail.  Some interesting things are already
+happening.  I'll send a status message to the ce-android-mainline
+list in a day or two to let interested parties know what's currently
+going on.
+
+Regards,
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
