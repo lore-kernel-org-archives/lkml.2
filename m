@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab1LTMoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 07:44:15 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37162 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830Ab1LTMoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 07:44:08 -0500
-Date: Tue, 20 Dec 2011 13:42:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        sfr@canb.auug.org.au, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL core/memblock] memblock: kill early_node_map
-Message-ID: <20111220124205.GA25645@elte.hu>
-References: <20111219165838.GD24519@google.com>
- <20111219170112.GE24519@google.com>
+	id S1751669Ab1LTMpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 07:45:07 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:32536
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750830Ab1LTMpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 07:45:00 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 20 Dec 2011 20:54:02 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Artem Bityutskiy <artem.bityutskiy@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Huang Shijie <b32955@freescale.com>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH 0/4] Fix the left DMA_NONE from dma_transfer_direction
+ migration
+Message-ID: <20111220125401.GA5129@S2101-09.ap.freescale.net>
+References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
+ <1324373044.1641.10096.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111219170112.GE24519@google.com>
+In-Reply-To: <1324373044.1641.10096.camel@vkoul-udesk3>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tejun Heo <tj@kernel.org> wrote:
-
-> Oops, the original message had Stephen's address wrong.  Fixing up the
-> address and quoting whole body for him. :)
+On Tue, Dec 20, 2011 at 02:54:04PM +0530, Vinod Koul wrote:
+> On Tue, 2011-12-13 at 23:48 +0800, Shawn Guo wrote:
+> > I have been working on -rc recently, and have not noticed the failure
+> > until I ran next tree today.  The mxs-mmc driver is broken on next
+> > tree because the DMA_NONE was left over from the dma_transfer_direction
+> > migration for mxs-dma and its client drivers.
+> > 
+> For DMA transfer, the NONE direction makes no sense?
 > 
-> On Mon, Dec 19, 2011 at 08:58:38AM -0800, Tejun Heo wrote:
-> > Hello, Ingo.
-> > 
-> > The kill early_node_map patchset[1] has now been in linux-next for
-> > some time now and other than merge conflicts w/ -mm, there hasn't been
-> > any major problem, which is not to say there aren't broken archs but
-> > at least build should be okay on most archs and I don't think we'll be
-> > able to find out obscure arch breakage without pushing into upstream
-> > anyway.
-> > 
-> > Can you please pull from the following branch into core/memblock to
-> > receive memblock updates to kill early_node_map?  Merging into tip
-> > doesn't produce any conflict.
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map
-> > 
-> > Tejun Heo (23):
-> >       memblock: Fix include breakages caused by 24aa07882b
-> >       memblock: Make memblock_{add|remove|free|reserve}() return int and update prototypes
-> >       memblock: Use memblock_reserve() in memblock internal functions
-> >       memblock: Add __memblock_dump_all()
-> >       memblock: Kill sentinel entries at the end of static region arrays
-> >       memblock: Kill memblock_init()
-> >       memblock: Separate out memblock_isolate_range() from memblock_set_node()
-> >       memblock: Reimplement __memblock_remove() using memblock_isolate_range()
-> >       memblock: Make memblock functions handle overflowing range @size
-> >       memblock: Reimplement memblock_enforce_memory_limit() using __memblock_remove()
-> >       powerpc: Cleanup memblock usage
-> >       memblock: Track total size of regions automatically
-> >       memblock: s/memblock_analyze()/memblock_allow_resize()/ and update users
-> >       memblock: Implement memblock_add_node()
-> >       powerpc: Use HAVE_MEMBLOCK_NODE_MAP
-> >       sparc: Use HAVE_MEMBLOCK_NODE_MAP
-> >       SuperH: Use HAVE_MEMBLOCK_NODE_MAP
-> >       ia64: Use HAVE_MEMBLOCK_NODE_MAP
-> >       mips: Use HAVE_MEMBLOCK_NODE_MAP
-> >       s390: Use HAVE_MEMBLOCK_NODE_MAP
-> >       score: Use HAVE_MEMBLOCK_NODE_MAP
-> >       memblock: Kill early_node_map[]
-> >       memblock: Reimplement memblock allocation using reverse free area iterator
-> > 
-> >  arch/arm/kernel/setup.c                  |    1 +
-> >  arch/arm/mm/init.c                       |    4 +-
-> >  arch/ia64/Kconfig                        |    6 +-
-> >  arch/ia64/mm/contig.c                    |    3 +-
-> >  arch/ia64/mm/init.c                      |    4 +-
-> >  arch/microblaze/include/asm/memblock.h   |   14 -
-> >  arch/microblaze/kernel/prom.c            |    3 +-
-> >  arch/mips/Kconfig                        |    6 +-
-> >  arch/mips/kernel/setup.c                 |    3 +-
-> >  arch/mips/sgi-ip27/ip27-memory.c         |    5 +-
-> >  arch/openrisc/include/asm/memblock.h     |   24 --
-> >  arch/openrisc/kernel/prom.c              |    3 +-
-> >  arch/powerpc/Kconfig                     |    4 +-
-> >  arch/powerpc/include/asm/memblock.h      |    8 -
-> >  arch/powerpc/kernel/machine_kexec.c      |    3 -
-> >  arch/powerpc/kernel/prom.c               |   20 +-
-> >  arch/powerpc/mm/init_32.c                |    4 +-
-> >  arch/powerpc/mm/mem.c                    |    2 +-
-> >  arch/powerpc/mm/numa.c                   |   10 +-
-> >  arch/powerpc/mm/tlb_nohash.c             |    1 -
-> >  arch/powerpc/platforms/embedded6xx/wii.c |   23 +-
-> >  arch/powerpc/platforms/ps3/mm.c          |    1 -
-> >  arch/s390/Kconfig                        |    6 +-
-> >  arch/s390/kernel/setup.c                 |    4 +-
-> >  arch/score/Kconfig                       |    6 +-
-> >  arch/score/kernel/setup.c                |    4 +-
-> >  arch/sh/Kconfig                          |    1 +
-> >  arch/sh/include/asm/memblock.h           |    4 -
-> >  arch/sh/kernel/machine_kexec.c           |    3 -
-> >  arch/sh/kernel/setup.c                   |    3 +-
-> >  arch/sh/mm/Kconfig                       |    3 -
-> >  arch/sh/mm/init.c                        |    3 +-
-> >  arch/sparc/Kconfig                       |    4 +-
-> >  arch/sparc/include/asm/memblock.h        |    8 -
-> >  arch/sparc/mm/init_64.c                  |   28 +--
-> >  arch/unicore32/kernel/setup.c            |    1 +
-> >  arch/unicore32/mm/init.c                 |    4 +-
-> >  arch/unicore32/mm/mmu.c                  |    1 +
-> >  arch/x86/Kconfig                         |    3 -
-> >  arch/x86/kernel/e820.c                   |    3 +-
-> >  arch/x86/kernel/head32.c                 |    2 -
-> >  arch/x86/kernel/head64.c                 |    2 -
-> >  arch/x86/xen/enlighten.c                 |    2 -
-> >  drivers/iommu/intel-iommu.c              |    1 +
-> >  include/linux/memblock.h                 |  116 ++++--
-> >  include/linux/mm.h                       |   50 +--
-> >  include/linux/mmzone.h                   |    8 +-
-> >  include/linux/poison.h                   |    6 -
-> >  mm/memblock.c                            |  603 ++++++++++++++----------------
-> >  mm/page_alloc.c                          |  259 +------------
-> >  50 files changed, 452 insertions(+), 838 deletions(-)
-> >  delete mode 100644 arch/microblaze/include/asm/memblock.h
-> >  delete mode 100644 arch/openrisc/include/asm/memblock.h
-> >  delete mode 100644 arch/powerpc/include/asm/memblock.h
-> >  delete mode 100644 arch/sh/include/asm/memblock.h
-> >  delete mode 100644 arch/sparc/include/asm/memblock.h
+> In your conetext, what are you trying to achieve?
+> 
+The mxs-dma controller has a feature to program peripheral registers
+with given values (mxs-dma PIO mode).  This is designed to pipeline
+the operations.  For example, we can put mxs-mmc controller register
+values into scatter list as one element together with actual data.
+Triggering the mxs-dma, the dma will program the values into mxs-mmc
+controller register to set up and enable mxs-mmc, and then dma
+continue transfer data from/to mxs-mmc.  All these get done in one
+dmaengine_submit().
 
-Pulled into tip:core/memblock, thanks a lot Tejun!
+And DMA_NONE was used to let mxs-dma know this is a PIO operation.
 
-	Ingo
+-- 
+Regards,
+Shawn
+
