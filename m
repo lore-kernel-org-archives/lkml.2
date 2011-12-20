@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab1LTCSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:18:13 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:57753 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab1LTCSM (ORCPT
+	id S1754165Ab1LTCW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:22:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38704 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab1LTCW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:18:12 -0500
-Date: Tue, 20 Dec 2011 13:18:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zefir Kurtisi <zefir.kurtisi@neratec.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Subject: linux-next: build failure after merge of the wireless-next tree
-Message-Id: <20111220131802.e3782dfbf8172281a7df5a5c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__20_Dec_2011_13_18_02_+1100__gkaBSMz4Onyt8A_"
+	Mon, 19 Dec 2011 21:22:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF176BE92C1B@HQMAIL01.nvidia.com>
+References: <1324249593-3051-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF176BE92C1B@HQMAIL01.nvidia.com>
+Date: Tue, 20 Dec 2011 10:22:26 +0800
+Message-ID: <CAN1soZwEj2SYa9eqH-Nyw0wvVF8kk7tn_gLu+BPDS3ZT1Has+Q@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: add support for group and pinmux states
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__20_Dec_2011_13_18_02_+1100__gkaBSMz4Onyt8A_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 20, 2011 at 8:24 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Sunday, December 18, 2011 4:07 PM:
+>> This makes it possible for pin groups and pin muxes to go into
+>> different states, which is especially useful for power management,
+>> both runtime and across suspend/resume.
+>
+>> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+>
+>> +Pin group states
+>> +================
+>> +
+>> +To simplify handling of specific group states, such as when a group of
+>> +pins need to be deactivated or put in a specific sleep state, the pin controller
+>> +may implement a .pin_group_set_state() callback. This will for example be
+>> +called automatically to set a certain pin group in active state when the groups
+>> +are selected for use in a certain pin multiplexing configuration (see below).
+>> +This is a good opportunity to set up any default pin configuration (see below)
+>> +for the pins in a group.
+>
+> I don't think it's possible for a pinctrl driver to implement such a
+> callback; the appropriate state for a pin may well be board-specific,
+> and the pinctrl driver itself can't possibly know what that state is.
+>
+> For example, for some random pin that a board happens to be using as a
+> GPIO - how does the pinctrl driver know whether that GPIO actually does
+> something while in suspend; if the GPIO isn't used, the SoC can probably
+> just turn off all drivers and pull-up/downs on the pin, but if the GPIO
+> is used to control some aspect of a PMIC, it probably needs to be in a
+> specific state during suspend. This kind of thing is entirely board-
+> specific.
+>
+> Similarly, the sequencing of reprogramming of the various pins when
+> entering/leaving suspend is most likely board specific, e.g. there may
+> be a need to assert a "speaker mute" GPIO before de-asserting a GPIO
+> that enables power to speaker amplifiers etc.
+>
 
-Hi John,
+Do we really need to configure low power mode in device driver? In most time,
+user will set and tune the low power mode of pins. If the low power setting
+could be configured via sysfs, it could save a lot of time to rebuild kernel.
 
-After merging the wireless-next tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Especially GPIO pins are board specific. I think that configure all low power
+setting in board specific code is more reasonable.
 
-drivers/net/wireless/ath/ath9k/dfs.c: In function 'ath9k_postprocess_radar_=
-event':
-drivers/net/wireless/ath/ath9k/dfs.c:73:1: error: 'ATH_DBG_ATH_DBG_DFS' und=
-eclared (first use in this function)
-drivers/net/wireless/ath/ath9k/dfs.c: In function 'ath9k_dfs_process_phyerr=
-':
-drivers/net/wireless/ath/ath9k/dfs.c:166:1: error: 'ATH_DBG_ATH_DBG_DFS' un=
-declared (first use in this function)
-
-Caused by commit 29942bc12537 ("ath9k: add DFS radar pulse processing").
-ath_dbg prepends ATH_DBG_ to its second argument.
-
-I have used the wireless-next tree from next-20111219 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__20_Dec_2011_13_18_02_+1100__gkaBSMz4Onyt8A_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO7/BaAAoJEECxmPOUX5FEzLMQAJo6USdgdFiAV/vr3UUzfmgX
-MhFTTfopVBjSIhBDVqwiStKYGnzml4ycubcgDyIsAcuCosqh4vPKHVYwAPCjLW/F
-TZaWnDF66x56/T8yodT8Qm+8BWF46cFySl1ezYi2L9bIoiG1kG7aZ0pi1bZMr+PY
-9sA5BWl159fXCS557zvtkvLFAVvU6dSW75JYbfSAnlsWKqLSU8ecqXy+0vaAAM6O
-AznT3jANiZEY3MUzRypSPMvAxFjZArGWpKd6NRkG4ftWgsKAEhKwMS4HN7C4qDnD
-2goUh+2moXi/DlzYyFXA5X9BRWnIokPyPq2gp8KL774L4PTwU3u6Or1RPx/OFOFR
-8Sihq94MX3N2S1Mo/TnO2vy5PxGGsovwL0ObPyG9+rvVTOFyAT+IBpSAUi7LB2uf
-AgunhNVLi1n1N9MqZEImg6EI3EsW1mOr8novzfv/Xkt0ldxnbCiKXUYBnu/wftFi
-e1MesjhYrwMqWR1FeQPOFsetHIpUaSYvILt66tQalf17XevISna8x3cg5LIcDMdg
-IVpAt5UJcz9E8BxT3gjfd6iT1f6hF/B+xc3eQomYbg15UgXGsFsk5pqGc9MXu135
-lGGb82r25B4z1rGA8/BTJeHuYCe2KmXxYjqk2RaCvo7dxzFpPhQw8WLnZeC7U/QQ
-G/pxuCwLetxaEq4wIysI
-=BZqK
------END PGP SIGNATURE-----
-
---Signature=_Tue__20_Dec_2011_13_18_02_+1100__gkaBSMz4Onyt8A_--
+Thanks
+Haojian
