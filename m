@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1LTKZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 05:25:53 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37675 "EHLO mx3.mail.elte.hu"
+	id S1753213Ab1LTK0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:26:42 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:35716 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab1LTKZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 05:25:46 -0500
-Date: Tue, 20 Dec 2011 11:23:52 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] [GIT PULL v2] x86: Workaround for NMI iret woes
-Message-ID: <20111220102352.GD20788@elte.hu>
-References: <1324095039.23971.145.camel@gandalf.stny.rr.com>
- <20111218092405.GI4144@elte.hu>
- <1324314151.5916.15.camel@gandalf.stny.rr.com>
+	id S1752070Ab1LTK0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 05:26:34 -0500
+Message-ID: <4EF062B1.3030401@parallels.com>
+Date: Tue, 20 Dec 2011 14:25:53 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324314151.5916.15.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
+        <xemul@parallels.com>, <neilb@suse.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <bfields@fieldses.org>,
+        <davem@davemloft.net>, <devel@openvz.org>
+Subject: Re: [Devel] [PATCH] SUNRPC: search for service transports in network
+ namespace context
+References: <20111220101419.5673.21926.stgit@localhost6.localdomain6>
+In-Reply-To: <20111220101419.5673.21926.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/20/2011 03:14 PM, Stanislav Kinsbursky wrote:
+> Service transports are parametrized by network namespace. And thus lookup of
+> transport instance have to take network namespace into account.
+>
+> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>
+> ---
+>   fs/lockd/svc.c                  |    2 +-
+>   fs/nfsd/nfsctl.c                |    4 ++--
+>   include/linux/sunrpc/svc_xprt.h |    3 ++-
+>   net/sunrpc/svc_xprt.c           |    6 +++++-
+>   4 files changed, 10 insertions(+), 5 deletions(-)
+>
+> diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+> index c061b9a..ff379ff 100644
+> --- a/fs/lockd/svc.c
+> +++ b/fs/lockd/svc.c
+> @@ -193,7 +193,7 @@ static int create_lockd_listener(struct svc_serv *serv, const char *name,
+>   {
+>   	struct svc_xprt *xprt;
+>
+> -	xprt = svc_find_xprt(serv, name, family, 0);
+> +	xprt = svc_find_xprt(serv, name,&init_net, family, 0);
+>   	if (xprt == NULL)
+>   		return svc_create_xprt(serv, name,&init_net, family, port,
+>   						SVC_SOCK_DEFAULTS);
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+I might be missing something, but isn't it (at least part of it) already 
+merged in commit fc5d00b04a3a58cac8620403dfe9f43f72578ec1 ?
 
-> > > +	pushq_cfi $repeat_nmi
-> > > +
-> > > +	/* Put stack back */
-> > > +	addq $(11*8), %rsp
-> 
-> This is where we put the stack back to the original position. 
-> Is CFI notation really necessary here?
-
-i'd add it if it's not hard or ugly - in theory we could get a
-#MC exception in that window.
-
-> > Note that the IRQ return checks are needed because NMI path 
-> > can set the irq-work TIF. Might be worth putting into the 
-> > comment - NMIs are not *entirely* passive entities.
-> 
-> The NMI path can set the TIF flags? Then where should they be 
-> processed. There was an assumption that NMIs shouldn't do 
-> that. I could have been wrong with that. What work needs to be 
-> done and when? This is the change that Linus made. If that's 
-> the case, we need to work something else out.
-
-Hm, you are right, we at most access them (for 32-bit compat 
-checks for example) but don't modify them - we have switched to 
-using the special irq work self-IPI.
-
-So the change is fine.
-
-> > Something like nmi_postprocess_retry_preprocess()?
-> 
-> Not sure what would be good, as i386 does the retry, x86_64 
-> just switches the idt. The two archs do two different things. 
-> The above name would be confusing as it doesn't match what 
-> x86_64 does.
-
-Yeah, that assymetry is bothering me too. I guess we can keep it 
-as-is, no strong feelings. The whole thing *feels* fragile.
-
-Thanks,
-
-	Ingo
