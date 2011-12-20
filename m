@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1LTCNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 21:13:37 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16896 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752253Ab1LTCNe (ORCPT
+	id S1753410Ab1LTCQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 21:16:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55157 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab1LTCQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 21:13:34 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/5NgMooJ7qiZM3k9w0yVrZ
-Date: Mon, 19 Dec 2011 18:13:31 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 2/7] ARM: OMAP1: ams-delta: convert latches to
- basic_mmio_gpio
-Message-ID: <20111220021331.GB6464@atomide.com>
-References: <cover.1324331816.git.jkrzyszt@tis.icnet.pl>
- <201112200159.36558.jkrzyszt@tis.icnet.pl>
- <20111220010446.GA6464@atomide.com>
- <201112200218.03283.jkrzyszt@tis.icnet.pl>
+	Mon, 19 Dec 2011 21:16:52 -0500
+Date: Tue, 20 Dec 2011 06:16:47 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Android low memory killer vs. memory pressure notifications
+Message-ID: <20111220021647.GB4531@oksana.dev.rtsoft.ru>
+References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
+ <20111219121255.GA2086@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201112200218.03283.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111219121255.GA2086@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 16:46]:
-> On Tuesday 20 of December 2011 at 02:04:46, Tony Lindgren wrote:
-> > * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 16:28]:
-> > > On Tuesday 20 of December 2011 at 01:06:00, Tony Lindgren wrote:
-> > > > 
-> > > > This part especially looks like it really should be just a regular
-> > > > device driver under drivers/ somewhere. 
-> > > 
-> > > I really don't understand what kind of a driver you might mean here.
-> > > 
-> > > The latch_gpios[] table is initially filled with all latch1 and latch2 
-> > > GPIO pins in order to register and initialize them from the board file 
-> > > until they are handled by respective existing device drivers (leds, 
-> > > nand, lcd, serio, serial8250, asoc) instead of those drivers accessing 
-> > > the latches with those old ams_delta_latch[12]_write() functions. That 
-> > > table will get almost empty after the transision process is completed, 
-> > > holding only pins not used by any drivers / connected to unsued devices, 
-> > > in order to initialize them from the board file for power saving 
-> > > purposes. A separate driver for the purpose of initializing a few GPIO 
-> > > pins seems an overkill.
-> > 
-> > OK maybe update the comments a bit to describe how that table will
-> > mostly disappear? It's not obvious from glancing over this patch
-> > series :)
+On Mon, Dec 19, 2011 at 01:12:55PM +0100, Michal Hocko wrote:
+> [Didn't get to the patch yet but a comment on memcg]
 > 
-> To be sure, do you mean in-line comments? Or the changelog message?
+> On Mon 19-12-11 06:53:28, Anton Vorontsov wrote:
+> [...]
+> > - Use memory controller cgroup (CGROUP_MEM_RES_CTLR) notifications from
+> >   the kernel side, plus userland "manager" that would kill applications.
+> > 
+> >   The main downside of this approach is that mem_cg needs 20 bytes per
+> >   page (on a 32 bit machine). So on a 32 bit machine with 4K pages
+> >   that's approx. 0.5% of RAM, or, in other words, 5MB on a 1GB machine.
+> 
+> page_cgroup is 16B per page and with the current Johannes' memcg
+> naturalization work (in the mmotm tree) we are down to 8B per page (we
+> got rid of lru). Kamezawa has some patches to get rid of the flags so we
+> will be down to 4B per page on 32b. Is this still too much?
+> I would be really careful about a yet another lowmem notification
+> mechanism.
 
-Just the changelog.
+4 bytes (1MB wastage on a 1GB machine) sounds much better. If there are no
+other downsides of using cgroups-based low memory killer, then maybe it's
+not worth doing yet another low memory notification stuff.
 
-Tony
+> >   0.5% doesn't sound too bad, but 5MB does, quite a little bit. So,
+> >   mem_cg feels like an overkill for this simple task (see the driver at
+> >   the very bottom).
+> 
+> Why is it an overkill? I think that having 2 groups (active and
+> inactive) and move tasks between then sounds quite elegant.
+
+Yep, that was the original idea. But back then mem_cg was way too costly,
+so nobody seriously considered this as a solution.
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
