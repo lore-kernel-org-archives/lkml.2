@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1LTBQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Dec 2011 20:16:17 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36781 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab1LTBPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Dec 2011 20:15:37 -0500
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Liam Girdwood <lrg@ti.com> (supporter:VOLTAGE AND CURRE...),
-        Mark Brown <broonie@opensource.wolfsonmicro.com> (supporter:VOLTAGE
-	AND CURRE...)
-Subject: [PATCH v4 3/4] regulator: simplify twl4030 config
-Date: Tue, 20 Dec 2011 03:15:16 +0200
-Message-Id: <1324343717-7292-4-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.7.8.rc1.14.g248db
-In-Reply-To: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
-References: <1324343717-7292-1-git-send-email-felipe.contreras@gmail.com>
+	id S1753811Ab1LTBSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Dec 2011 20:18:49 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:51209 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab1LTBSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Dec 2011 20:18:46 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 2/7] ARM: OMAP1: ams-delta: convert latches to basic_mmio_gpio
+Date: Tue, 20 Dec 2011 02:18:02 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+References: <cover.1324331816.git.jkrzyszt@tis.icnet.pl> <201112200159.36558.jkrzyszt@tis.icnet.pl> <20111220010446.GA6464@atomide.com>
+In-Reply-To: <20111220010446.GA6464@atomide.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112200218.03283.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have TWL4030_CORE and REGULATOR, we *obviously* want
-REGULATOR_TWL4030 by default. But can be disabled if somebody wants for
-some strange reason.
+On Tuesday 20 of December 2011 at 02:04:46, Tony Lindgren wrote:
+> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 16:28]:
+> > On Tuesday 20 of December 2011 at 01:06:00, Tony Lindgren wrote:
+> > > 
+> > > This part especially looks like it really should be just a regular
+> > > device driver under drivers/ somewhere. 
+> > 
+> > I really don't understand what kind of a driver you might mean here.
+> > 
+> > The latch_gpios[] table is initially filled with all latch1 and latch2 
+> > GPIO pins in order to register and initialize them from the board file 
+> > until they are handled by respective existing device drivers (leds, 
+> > nand, lcd, serio, serial8250, asoc) instead of those drivers accessing 
+> > the latches with those old ams_delta_latch[12]_write() functions. That 
+> > table will get almost empty after the transision process is completed, 
+> > holding only pins not used by any drivers / connected to unsued devices, 
+> > in order to initialize them from the board file for power saving 
+> > purposes. A separate driver for the purpose of initializing a few GPIO 
+> > pins seems an overkill.
+> 
+> OK maybe update the comments a bit to describe how that table will
+> mostly disappear? It's not obvious from glancing over this patch
+> series :)
 
-This decreases the defconfig from:
+To be sure, do you mean in-line comments? Or the changelog message?
 
- CONFIG_TWL4030_CORE=y
- CONFIG_REGULATOR=y
- CONFIG_REGULATOR_TWL4030=y
-
-To:
-
- CONFIG_TWL4030_CORE=y
- CONFIG_REGULATOR=y
-
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- drivers/regulator/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9713b1b..e980b2f 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -138,6 +138,7 @@ config REGULATOR_MAX8998
- config REGULATOR_TWL4030
- 	bool "TI TWL4030/TWL5030/TWL6030/TPS659x0 PMIC"
- 	depends on TWL4030_CORE
-+	default y
- 	help
- 	  This driver supports the voltage regulators provided by
- 	  this family of companion chips.
--- 
-1.7.8.rc1.14.g248db
-
+Janusz
