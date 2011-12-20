@@ -1,94 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab1LTJ56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 04:57:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab1LTJ5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 04:57:53 -0500
-Date: Tue, 20 Dec 2011 09:57:50 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm: compaction: Introduce sync-light migration for use by compaction
- fix
-Message-ID: <20111220095750.GQ3487@suse.de>
+	id S1753218Ab1LTKDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 05:03:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37240 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752070Ab1LTKDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 05:03:39 -0500
+Date: Tue, 20 Dec 2011 10:03:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: da9052: Staticize non-exported symbols
+Message-ID: <20111220100310.GB2866@opensource.wolfsonmicro.com>
+References: <1324372320.16878.6.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1324372320.16878.6.camel@phoenix>
+X-Cookie: You enjoy the company of other people.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consistently name enum migrate_mode parameters "mode" instead of "sync".
+On Tue, Dec 20, 2011 at 05:12:00PM +0800, Axel Lin wrote:
+> da9052_regulator_info and da9053_regulator_info are not used outside
+> this driver so no need to make the symbol global.
 
-This is a fix for the patch
-mm-compaction-introduce-sync-light-migration-for-use-by-compaction.patch
-in mmotm.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Minchan Kim <minchan@kernel.org>
----
- fs/btrfs/disk-io.c      |    2 +-
- fs/nfs/write.c          |    2 +-
- include/linux/migrate.h |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index dbe9518..ff45cdf 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -873,7 +873,7 @@ static int btree_submit_bio_hook(struct inode *inode, int rw, struct bio *bio,
- #ifdef CONFIG_MIGRATION
- static int btree_migratepage(struct address_space *mapping,
- 			struct page *newpage, struct page *page,
--			enum migrate_mode sync)
-+			enum migrate_mode mode)
- {
- 	/*
- 	 * we can't safely write a btree page from here,
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index adb87d9..1f4f18f9 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1711,7 +1711,7 @@ out_error:
- 
- #ifdef CONFIG_MIGRATION
- int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
--		struct page *page, enum migrate_mode sync)
-+		struct page *page, enum migrate_mode mode)
- {
- 	/*
- 	 * If PagePrivate is set, then the page is currently associated with
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 775787c..eaf8674 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -27,10 +27,10 @@ extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode sync);
-+			enum migrate_mode mode);
- extern int migrate_huge_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode sync);
-+			enum migrate_mode mode);
- 
- extern int fail_migrate_page(struct address_space *,
- 			struct page *, struct page *);
-@@ -49,10 +49,10 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode sync) { return -ENOSYS; }
-+		enum migrate_mode mode) { return -ENOSYS; }
- static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode sync) { return -ENOSYS; }
-+		enum migrate_mode mode) { return -ENOSYS; }
- 
- static inline int migrate_prep(void) { return -ENOSYS; }
- static inline int migrate_prep_local(void) { return -ENOSYS; }
+Applied, thanks.
