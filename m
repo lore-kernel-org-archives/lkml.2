@@ -1,262 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1LUXND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 18:13:03 -0500
-Received: from yuna.grokhost.net ([87.117.228.63]:50134 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab1LUXM6 convert rfc822-to-8bit (ORCPT
+	id S1754209Ab1LUXPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 18:15:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32939 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab1LUXPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 18:12:58 -0500
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference in ipv6_select_ident
-Mime-Version: 1.0 (Apple Message framework v1254)
-Content-Type: text/plain; charset=iso-8859-1
-From: Chris Boot <bootc@bootc.net>
-In-Reply-To: <4EF2568C.6040006@bootc.net>
-Date: Wed, 21 Dec 2011 23:12:53 +0000
-Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AEC29013-98F3-4A16-A88B-AD31C9E88EB8@bootc.net>
-References: <4EF200BB.7000209@bootc.net>  <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4EF2117F.6000803@bootc.net>  <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4EF23BF2.4000601@bootc.net> <1324499332.2621.7.camel@edumazet-laptop> <1324500775.2621.9.camel@edumazet-laptop> <4EF2568C.6040006@bootc.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-X-Mailer: Apple Mail (2.1254)
+	Wed, 21 Dec 2011 18:15:07 -0500
+Date: Wed, 21 Dec 2011 15:15:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: Re: linux-next: Tree for Dec 21
+Message-Id: <20111221151503.4d78f94f.akpm@linux-foundation.org>
+In-Reply-To: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
+References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 Dec 2011, at 21:58, Chris Boot wrote:
+On Wed, 21 Dec 2011 17:47:33 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> On 21/12/2011 20:52, Eric Dumazet wrote:
->> Le mercredi 21 décembre 2011 à 21:28 +0100, Eric Dumazet a écrit :
->>> Le mercredi 21 décembre 2011 à 20:05 +0000, Chris Boot a écrit :
->>>> On 21/12/2011 18:00, Eric Dumazet wrote:
->>>>> Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
->>>>> 
->>>>>> Good point, thats a different problem then, since 3.1 is not supposed to
->>>>>> have this bug.
->>>>>> 
->>>>>> It seems rt->rt6i_peer points to invalid memory in your crash.
->>>>>> 
->>>>>> (RBX=00000000000001f4)
->>>>>> 
->>>>>> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
->>>>>> 1f4+a4 ->   CR2=0000000000000298
->>>>>> 
->>>>> It would help if you can confirm latest linux tree can reproduce the
->>>>> bug.
->>>> Hi Eric,
->>>> 
->>>> I just built a v3.2-rc6-140-gb9e26df with the same config as the Debian
->>>> 3.1.0 kernel. I can reproduce the bug just as easily with this kernel as
->>>> with the Debian kernel. Unfortunately I wasn't able to get an entire
->>>> trace, for some reason it didn't appear to be printed to the serial port
->>>> and hung after the (long) list of loaded kernel modules. The crash
->>>> happens at the same offset:
->>>> 
->>> Thanks !
->>> 
->>> Oh well, br_netfilter fake_rtable strikes again.
->>> 
->>> I'll cook a patch in a couple of minutes...
->>> 
->> Could you try following patch ?
->> 
->> [snip]
-> 
-> Eric,
-> 
-> It looks good! The rsync that caused the crash real quick hasn't done it at all with the patch applied. I'll keep testing it of course, but I think that's done it.
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).
 
-No, sorry, false hope. The following does look rather different however:
+This kernel is seriously busted.  Sometime between the Dec 15 tree and
+the Dec 31 tree someone added something which appears to be causing
+writes to the (ata_piix controlled) disk to get lost.  Processes are
+getting stuck in D state, usually before it reaches a login prompt.
 
-[ 1944.056075] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1944.063987] IP: [<          (null)>]           (null)
-[ 1944.069156] PGD 412c75067 PUD 413722067 PMD 0
-[ 1944.073783] Oops: 0010 [#1] SMP
-[ 1944.077201] CPU 0
-[ 1944.079136] Modules linked in: sha1_ssse3 sha1_generic hmac sha256_generic dlm configfs ebtable_nat ebtables acpi_cpufreq mperf cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace microcode xt_NOTRACK ip_set_hash_net act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_hfsc sch_htb sch_ingress sch_sfq xt_realm xt_addrtype xt_connlimit ip_set_hash_ip iptable_raw xt_comment xt_recent ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah ip6_queue xt_set ip_set nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda nf_conntrack_proto_udplite nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp nf_conntrack_pptp ts_kmp nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_amanda nf_conntrack_h323 nf_conntrack_ftp xt_time xt_TCPMSS xt_TPROXY xt_sctp xt_policy nf_tproxy_core xt_tcpmss xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_mark xt_mac xt_limit ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp ip6table_mangle xt_conntrack xt_connmark xt_CLASSIFY xt_AUDIT ipt_LOG xt_tcpudp xt_state iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink iptable_filter ip_tables ip6table_filter ip6_tables x_tables bridge stp bonding w83627ehf hwmon_vid coretemp crc32c_intel aesni_intel cryptd aes_x86_64 aes_generic ipmi_poweroff ipmi_devintf ipmi_si ipmi_msghandler vhost_net macvtap macvlan tun drbd lru_cache cn loop kvm_intel kvm snd_pcm snd_timer snd soundcore snd_page_alloc i2c_i801 i2c_core processor psmouse iTCO_wdt thermal_sys evdev button pcspkr joydev serio_raw iTCO_vendor_support ext4 mbcache jbd2 crc16 dm_mod raid1 md_mod usb_storage usbhid uas hid sd_mod crc_t10dif ahci libahci libata ehci_hcd igb scsi_mod dca usbcore e1000e usb_common [last unloaded: scsi_wait_scan]
-[ 1944.270355]
-[ 1944.271898] Pid: 6833, comm: vhost-6831 Not tainted 3.2.0-rc6+ #2 Supermicro X9SCL/X9SCM/X9SCL/X9SCM
-[ 1944.281431] RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-[ 1944.288974] RSP: 0018:ffff88043fc03960  EFLAGS: 00010206
-[ 1944.294422] RAX: ffffffffa0394940 RBX: ffff8804249ab580 RCX: 0000000000000000
-[ 1944.301690] RDX: ffff880425f36f70 RSI: ffffffffa03897ac RDI: ffff880425f36f70
-[ 1944.308975] RBP: ffff8803fb9a904e R08: ffff880425f36000 R09: ffff88043fc03970
-[ 1944.316295] R10: ffff8804249ab580 R11: ffff8804249ab580 R12: 0000000000000014
-[ 1944.323669] R13: ffff880427373200 R14: ffff880425f36000 R15: ffff88042315c000
-[ 1944.330984] FS:  0000000000000000(0000) GS:ffff88043fc00000(0000) knlGS:0000000000000000
-[ 1944.339247] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1944.345153] CR2: 0000000000000000 CR3: 0000000412e64000 CR4: 00000000000426e0
-[ 1944.352471] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1944.359696] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1944.366948] Process vhost-6831 (pid: 6833, threadinfo ffff8804134b2000, task ffff880415e93080)
-[ 1944.375836] Stack:
-[ 1944.377893]  ffffffff812a62e1 ffff880425f36f70 ffffffff8168f810 ffff880400000014
-[ 1944.385566]  ffffffffa038e82d ffff8804249ab580 ffffffffa03897ac ffff880427373200
-[ 1944.393283]  0000000000000008 ffff880425f36000 ffff8804249ab580 ffff880425f36000
-[ 1944.400926] Call Trace:
-[ 1944.403442]  <IRQ>
-[ 1944.405668]  [<ffffffff812a62e1>] ? ip_fragment+0x9d/0x62a
-[ 1944.411264]  [<ffffffffa038e82d>] ? br_parse_ip_options+0x19a/0x19a [bridge]
-[ 1944.418403]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.424500]  [<ffffffffa038e2cb>] ? br_nf_post_routing+0x17d/0x18f [bridge]
-[ 1944.431661]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1944.437075]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.443168]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.449299]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1944.455055]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.461162]  [<ffffffffa038e2fd>] ? nf_bridge_update_protocol+0x20/0x20 [bridge]
-[ 1944.468782]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.474866]  [<ffffffffa038985e>] ? NF_HOOK.constprop.8+0x3c/0x56 [bridge]
-[ 1944.481904]  [<ffffffffa038e119>] ? nf_bridge_push_encap_header+0x1c/0x26 [bridge]
-[ 1944.489657]  [<ffffffffa038e387>] ? br_nf_forward_finish+0x8a/0x95 [bridge]
-[ 1944.496793]  [<ffffffffa038e6d0>] ? br_parse_ip_options+0x3d/0x19a [bridge]
-[ 1944.503956]  [<ffffffffa038ea5c>] ? br_nf_forward_ip+0x1c0/0x1d4 [bridge]
-[ 1944.510928]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1944.516355]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1944.522803]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1944.529241]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1944.534941]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1944.541337]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1944.548501]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1944.554921]  [<ffffffffa038985e>] ? NF_HOOK.constprop.8+0x3c/0x56 [bridge]
-[ 1944.561963]  [<ffffffffa03899f2>] ? br_forward+0x16/0x5a [bridge]
-[ 1944.568219]  [<ffffffffa038a51b>] ? br_handle_frame_finish+0x1a1/0x20f [bridge]
-[ 1944.575725]  [<ffffffffa038e5f4>] ? br_nf_pre_routing_finish+0x1d0/0x1dd [bridge]
-[ 1944.583459]  [<ffffffffa038dfe5>] ? NF_HOOK_THRESH+0x3b/0x55 [bridge]
-[ 1944.589926]  [<ffffffffa038ef4d>] ? br_nf_pre_routing+0x3e8/0x3f5 [bridge]
-[ 1944.597036]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1944.602482]  [<ffffffffa0071d51>] ? scsi_request_fn+0x33f/0x404 [scsi_mod]
-[ 1944.609613]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1944.616701]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1944.622438]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1944.629566]  [<ffffffffa00714dd>] ? scsi_run_queue+0x212/0x221 [scsi_mod]
-[ 1944.636506]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1944.643533]  [<ffffffffa038a360>] ? NF_HOOK.constprop.4+0x3c/0x56 [bridge]
-[ 1944.650579]  [<ffffffffa038a73c>] ? br_handle_frame+0x1b3/0x1cb [bridge]
-[ 1944.657440]  [<ffffffffa038a589>] ? br_handle_frame_finish+0x20f/0x20f [bridge]
-[ 1944.664924]  [<ffffffff8127ae5d>] ? __netif_receive_skb+0x324/0x41f
-[ 1944.671318]  [<ffffffff8127afc4>] ? process_backlog+0x6c/0x123
-[ 1944.677277]  [<ffffffff81194394>] ? blk_done_softirq+0x65/0x74
-[ 1944.683235]  [<ffffffff8127ce3e>] ? net_rx_action+0xa1/0x1af
-[ 1944.688995]  [<ffffffff81036f83>] ? test_tsk_need_resched+0xa/0x13
-[ 1944.695229]  [<ffffffff8104bdc8>] ? __do_softirq+0xb9/0x177
-[ 1944.700887]  [<ffffffff8134122c>] ? call_softirq+0x1c/0x30
-[ 1944.706513]  <EOI>
-[ 1944.708704]  [<ffffffff8100f841>] ? do_softirq+0x3c/0x7b
-[ 1944.714116]  [<ffffffff8127d12e>] ? netif_rx_ni+0x1e/0x27
-[ 1944.719617]  [<ffffffffa0264721>] ? tun_get_user+0x39a/0x3c2 [tun]
-[ 1944.725927]  [<ffffffffa0264766>] ? tun_sendmsg+0x1d/0x1f [tun]
-[ 1944.731950]  [<ffffffffa026cb50>] ? handle_tx+0x340/0x3de [vhost_net]
-[ 1944.738506]  [<ffffffffa026a6cb>] ? vhost_worker+0x10b/0x121 [vhost_net]
-[ 1944.745315]  [<ffffffffa026a5c0>] ? vhost_attach_cgroups_work+0x1b/0x1b [vhost_net]
-[ 1944.753141]  [<ffffffff8105ee8d>] ? kthread+0x76/0x7e
-[ 1944.758332]  [<ffffffff81341134>] ? kernel_thread_helper+0x4/0x10
-[ 1944.764533]  [<ffffffff8105ee17>] ? kthread_worker_fn+0x139/0x139
-[ 1944.770759]  [<ffffffff81341130>] ? gs_change+0x13/0x13
-[ 1944.776109] Code:  Bad RIP value.
-[ 1944.779528] RIP  [<          (null)>]           (null)
-[ 1944.784777]  RSP <ffff88043fc03960>
-[ 1944.788327] CR2: 0000000000000000
-[ 1944.860298] ---[ end trace 7b7c89d77e0af47a ]---
-[ 1944.864943] Kernel panic - not syncing: Fatal exception in interrupt
-[ 1944.871420] Pid: 6833, comm: vhost-6831 Tainted: G      D      3.2.0-rc6+ #2
-[ 1944.878608] Call Trace:
-[ 1944.881070]  <IRQ>  [<ffffffff81333a17>] ? panic+0x95/0x1a5
-[ 1944.886655]  [<ffffffff8133ae46>] ? oops_end+0xa9/0xb6
-[ 1944.891815]  [<ffffffff8133336e>] ? no_context+0x1ff/0x20e
-[ 1944.897343]  [<ffffffff8133ce59>] ? do_page_fault+0x1a8/0x337
-[ 1944.903091]  [<ffffffff81293e3c>] ? sch_direct_xmit+0x85/0x12f
-[ 1944.908942]  [<ffffffff8133a5b5>] ? page_fault+0x25/0x30
-[ 1944.914291]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.920282]  [<ffffffff812a62e1>] ? ip_fragment+0x9d/0x62a
-[ 1944.925826]  [<ffffffffa038e82d>] ? br_parse_ip_options+0x19a/0x19a [bridge]
-[ 1944.932948]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.938939]  [<ffffffffa038e2cb>] ? br_nf_post_routing+0x17d/0x18f [bridge]
-[ 1944.945967]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1944.951296]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.957272]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.963246]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1944.968857]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.974810]  [<ffffffffa038e2fd>] ? nf_bridge_update_protocol+0x20/0x20 [bridge]
-[ 1944.982277]  [<ffffffffa03897ac>] ? br_flood+0xfa/0xfa [bridge]
-[ 1944.988264]  [<ffffffffa038985e>] ? NF_HOOK.constprop.8+0x3c/0x56 [bridge]
-[ 1944.995213]  [<ffffffffa038e119>] ? nf_bridge_push_encap_header+0x1c/0x26 [bridge]
-[ 1945.002868]  [<ffffffffa038e387>] ? br_nf_forward_finish+0x8a/0x95 [bridge]
-[ 1945.009908]  [<ffffffffa038e6d0>] ? br_parse_ip_options+0x3d/0x19a [bridge]
-[ 1945.016924]  [<ffffffffa038ea5c>] ? br_nf_forward_ip+0x1c0/0x1d4 [bridge]
-[ 1945.023815]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1945.029154]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1945.035466]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1945.041807]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1945.047397]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1945.053711]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1945.060641]  [<ffffffffa0389918>] ? __br_deliver+0xa0/0xa0 [bridge]
-[ 1945.066982]  [<ffffffffa038985e>] ? NF_HOOK.constprop.8+0x3c/0x56 [bridge]
-[ 1945.073908]  [<ffffffffa03899f2>] ? br_forward+0x16/0x5a [bridge]
-[ 1945.080083]  [<ffffffffa038a51b>] ? br_handle_frame_finish+0x1a1/0x20f [bridge]
-[ 1945.087497]  [<ffffffffa038e5f4>] ? br_nf_pre_routing_finish+0x1d0/0x1dd [bridge]
-[ 1945.095719]  [<ffffffffa038dfe5>] ? NF_HOOK_THRESH+0x3b/0x55 [bridge]
-[ 1945.102187]  [<ffffffffa038ef4d>] ? br_nf_pre_routing+0x3e8/0x3f5 [bridge]
-[ 1945.109095]  [<ffffffff8129db6d>] ? nf_iterate+0x41/0x77
-[ 1945.114455]  [<ffffffffa0071d51>] ? scsi_request_fn+0x33f/0x404 [scsi_mod]
-[ 1945.121420]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1945.128399]  [<ffffffff8129dc0b>] ? nf_hook_slow+0x68/0x101
-[ 1945.134054]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1945.141043]  [<ffffffffa00714dd>] ? scsi_run_queue+0x212/0x221 [scsi_mod]
-[ 1945.147903]  [<ffffffffa038a37a>] ? NF_HOOK.constprop.4+0x56/0x56 [bridge]
-[ 1945.154875]  [<ffffffffa038a360>] ? NF_HOOK.constprop.4+0x3c/0x56 [bridge]
-[ 1945.161830]  [<ffffffffa038a73c>] ? br_handle_frame+0x1b3/0x1cb [bridge]
-[ 1945.168580]  [<ffffffffa038a589>] ? br_handle_frame_finish+0x20f/0x20f [bridge]
-[ 1945.175945]  [<ffffffff8127ae5d>] ? __netif_receive_skb+0x324/0x41f
-[ 1945.182243]  [<ffffffff8127afc4>] ? process_backlog+0x6c/0x123
-[ 1945.188118]  [<ffffffff81194394>] ? blk_done_softirq+0x65/0x74
-[ 1945.193958]  [<ffffffff8127ce3e>] ? net_rx_action+0xa1/0x1af
-[ 1945.199638]  [<ffffffff81036f83>] ? test_tsk_need_resched+0xa/0x13
-[ 1945.205887]  [<ffffffff8104bdc8>] ? __do_softirq+0xb9/0x177
-[ 1945.211498]  [<ffffffff8134122c>] ? call_softirq+0x1c/0x30
-[ 1945.217018]  <EOI>  [<ffffffff8100f841>] ? do_softirq+0x3c/0x7b
-[ 1945.223149]  [<ffffffff8127d12e>] ? netif_rx_ni+0x1e/0x27
-[ 1945.228602]  [<ffffffffa0264721>] ? tun_get_user+0x39a/0x3c2 [tun]
-[ 1945.234841]  [<ffffffffa0264766>] ? tun_sendmsg+0x1d/0x1f [tun]
-[ 1945.240805]  [<ffffffffa026cb50>] ? handle_tx+0x340/0x3de [vhost_net]
-[ 1945.247269]  [<ffffffffa026a6cb>] ? vhost_worker+0x10b/0x121 [vhost_net]
-[ 1945.254020]  [<ffffffffa026a5c0>] ? vhost_attach_cgroups_work+0x1b/0x1b [vhost_net]
-[ 1945.261773]  [<ffffffff8105ee8d>] ? kthread+0x76/0x7e
-[ 1945.266844]  [<ffffffff81341134>] ? kernel_thread_helper+0x4/0x10
-[ 1945.272963]  [<ffffffff8105ee17>] ? kthread_worker_fn+0x139/0x139
-[ 1945.279100]  [<ffffffff81341130>] ? gs_change+0x13/0x13
-[ 1945.284417] Rebooting in 120 seconds..
+Suspects would be block, ata, scsi and possibly x86/acpi interrupt
+handling.
 
-(gdb) list *ip_fragment+0x9d
-0xffffffff812a62e1 is in ip_fragment (include/net/dst.h:209).
-204		return dst_metric(dst, RTAX_FEATURES) & feature;
-205	}
-206	
-207	static inline u32 dst_mtu(const struct dst_entry *dst)
-208	{
-209		return dst->ops->mtu(dst);
-210	}
-211	
-212	/* RTT metrics are stored in milliseconds for user ABI, but used as jiffies */
-213	static inline unsigned long dst_metric_rtt(const struct dst_entry *dst, int metric)
+And no, I'd rather not bisect - it would take ages.  If the maintainers
+of the relevant trees can suggest specific patches to revert then I can
+take a look at that tomorrow.
 
-(gdb) list *br_flood+0xfa
-0x17ac is in br_dev_queue_push_xmit (net/bridge/br_forward.c:43).
-38	{
-39		return skb->len - (skb->protocol == htons(ETH_P_8021Q) ? VLAN_HLEN : 0);
-40	}
-41	
-42	int br_dev_queue_push_xmit(struct sk_buff *skb)
-43	{
-44		/* ip_fragment doesn't copy the MAC header */
-45		if (nf_bridge_maybe_copy_header(skb) ||
-46		    (packet_length(skb) > skb->dev->mtu && !skb_is_gso(skb))) {
-47			kfree_skb(skb);
 
-Thanks,
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
+[  558.576528] SysRq : Show Blocked State
+[  558.576633]   task                        PC stack   pid father
+[  558.576738] sh              D 0000000000000001     0  4701   4700 0x00000080
+[  558.576882]  ffff8802493f78b8 0000000000000046 000000014a1121c0 ffff8802493f6010
+[  558.577109]  ffff88024a1121c0 00000000001d1100 ffff8802493f7fd8 0000000000004000
+[  558.577336]  ffff8802493f7fd8 00000000001d1100 ffff880255db66c0 ffff88024a1121c0
+[  558.577568] Call Trace:
+[  558.577623]  [<ffffffff81051592>] ? sched_clock_cpu+0xc3/0xd1
+[  558.577679]  [<ffffffff81051469>] ? sched_clock_local+0x1c/0x82
+[  558.577736]  [<ffffffff81051592>] ? sched_clock_cpu+0xc3/0xd1
+[  558.577793]  [<ffffffff810631ae>] ? trace_hardirqs_off+0xd/0xf
+[  558.577848]  [<ffffffff810515cb>] ? local_clock+0x2b/0x3c
+[  558.577905]  [<ffffffff813d2744>] schedule+0x55/0x57
+[  558.577960]  [<ffffffff813d27cd>] io_schedule+0x87/0xca
+[  558.578017]  [<ffffffff811a1e72>] get_request_wait+0xbd/0x19e
+[  558.578073]  [<ffffffff810446a7>] ? wake_up_bit+0x25/0x25
+[  558.578127]  [<ffffffff8119e225>] ? elv_merge+0x9a/0xaa
+[  558.578182]  [<ffffffff811a20cc>] blk_queue_bio+0x179/0x271
+[  558.578238]  [<ffffffff811a02a9>] generic_make_request+0x9c/0xde
+[  558.578293]  [<ffffffff811a03a4>] submit_bio+0xb9/0xc4
+[  558.578348]  [<ffffffff810ffcc6>] submit_bh+0xe6/0x108
+[  558.578404]  [<ffffffff8110273c>] __block_write_full_page+0x1ec/0x2e3
+[  558.578462]  [<ffffffff81101fbe>] ? end_buffer_async_read+0x14b/0x14b
+[  558.578518]  [<ffffffff811028fb>] block_write_full_page_endio+0xc8/0xcc
+[  558.578573]  [<ffffffff8110290f>] block_write_full_page+0x10/0x12
+[  558.578631]  [<ffffffff811417cd>] ext3_writeback_writepage+0xaa/0x11d
+[  558.578690]  [<ffffffff810a0ed0>] __writepage+0x15/0x34
+[  558.578744]  [<ffffffff810a1913>] write_cache_pages+0x240/0x33e
+[  558.578799]  [<ffffffff810a0ebb>] ? set_page_dirty+0x65/0x65
+[  558.578855]  [<ffffffff81064abf>] ? trace_hardirqs_on+0xd/0xf
+[  558.578911]  [<ffffffff810a1a54>] generic_writepages+0x43/0x5a
+[  558.578967]  [<ffffffff810a1a91>] do_writepages+0x26/0x28
+[  558.579022]  [<ffffffff8109a8cf>] __filemap_fdatawrite_range+0x4e/0x50
+[  558.579078]  [<ffffffff8109aee8>] filemap_flush+0x17/0x19
+[  558.579134]  [<ffffffff8113f2c2>] ext3_release_file+0x2e/0xa4
+[  558.579190]  [<ffffffff810dbdce>] fput+0x10f/0x1cd
+[  558.579244]  [<ffffffff810d86e0>] filp_close+0x70/0x7b
+[  558.579300]  [<ffffffff8102c09b>] put_files_struct+0x16c/0x2c1
+[  558.579356]  [<ffffffff8102bf7b>] ? put_files_struct+0x4c/0x2c1
+[  558.579412]  [<ffffffff8102c236>] exit_files+0x46/0x4e
+[  558.579465]  [<ffffffff8102dd2a>] do_exit+0x246/0x73c
+[  558.579521]  [<ffffffff813d3c4a>] ? retint_swapgs+0xe/0x13
+[  558.579576]  [<ffffffff8102e2a4>] do_group_exit+0x84/0xb2
+[  558.579743]  [<ffffffff8102e2e4>] sys_exit_group+0x12/0x16
+[  558.579910]  [<ffffffff813d9562>] system_call_fastpath+0x16/0x1b
 
