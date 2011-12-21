@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1LUCfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 21:35:53 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:37968 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751828Ab1LUCfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 21:35:51 -0500
-Message-ID: <1324434950.14214.3.camel@joe2Laptop>
-Subject: Re: [PATCH 1/8] IB/cxgb4: Fix formatting of physical address
-From: Joe Perches <joe@perches.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Dec 2011 18:35:50 -0800
-In-Reply-To: <1324431127.2844.146.camel@deadeye>
-References: <1324430940.2844.144.camel@deadeye>
-	 <1324431127.2844.146.camel@deadeye>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753153Ab1LUCpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 21:45:11 -0500
+Received: from outbound002.nyc1.bluetie.com ([206.65.164.141]:34691 "EHLO
+	outbound002.nyc1.bluetie.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751750Ab1LUCpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 21:45:09 -0500
+X-CMAE-OUT-Analysis: v=2.0 cv=fZ8vOjsF c=1 sm=1 a=V6phMDDkXcAA:10
+ a=IkcTkHD0fZMA:10 a=LAhFdcciAAAA:8 a=Ko9Y8a9dnnCDmAqRV4sA:9
+ a=QOWZEHLEdKAsrwFjFogA:7 a=QEXdDO2ut3YA:10 a=m6RB10zKYxsA:10
+ a=ORJk3ays4l8A:10 a=qaHCjPq1fVsA:10 a=0AlVHH8JL5/EJWcNM5YG6g==:117
+X-CMAE-OUT-Score: 0.00
+Message-ID: <20111220214239.27575@web002.nyc1.bluetie.com>
+X-HTTP-Received: from n38alpw25.mws21799288 [69.162.159.112] by web002.nyc1.bluetie.com (BlueTie WebMail ); Tue, 20 Dec 2011 21:42:39 -0500
+X-Mailer: BlueTie MTA
+Date: Tue, 20 Dec 2011 21:42:39 -0500
+To: n38alpw25@w2pay4la0v.20m.com
+From: "Horny Singles" <n38alpw25@w2pay4la0v.20m.com>
+Importance: normal
+Subject: View photos of singles in your area
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pBL2jZeR008833
 
-On Wed, 2011-12-21 at 01:32 +0000, Ben Hutchings wrote:
-> Physical addresses may be wider than virtual addresses (e.g. on i386
-> with PAE) and must not be formatted with %p.
-[]
-> The resource could alternately be formatted with %Pr.
-> diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
-[]
-> @@ -318,10 +318,10 @@ static int c4iw_rdev_open(struct c4iw_rdev *rdev)
->  	     rdev->lldi.vr->qp.size,
->  	     rdev->lldi.vr->cq.start,
->  	     rdev->lldi.vr->cq.size);
-> -	PDBG("udb len 0x%x udb base %p db_reg %p gts_reg %p qpshift %lu "
-> +	PDBG("udb len 0x%x udb base %llx db_reg %p gts_reg %p qpshift %lu "
->  	     "qpmask 0x%x cqshift %lu cqmask 0x%x\n",
->  	     (unsigned)pci_resource_len(rdev->lldi.pdev, 2),
-> -	     (void *)pci_resource_start(rdev->lldi.pdev, 2),
-> +	     (u64)pci_resource_start(rdev->lldi.pdev, 2),
+View photos of singles in your area
 
-Probably should be unsigned long long
+http://pi-u.de/q0
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This is an advertisement.
+
+To stop receiving messages, please visit here:
+http://pi-u.de/q1
+
+Or send a request to:
+378 14th Ave E
+Vancouver, CA
