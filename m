@@ -1,39 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1LUS6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:58:14 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34982
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751754Ab1LUS6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:58:11 -0500
-Date: Wed, 21 Dec 2011 13:58:03 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Aaron Spear <aspear@vmware.com>
-Cc: Ingo Molnar <mingo@elte.hu>, devel@driverdev.osuosl.org,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111221185803.GA3650@infradead.org>
-References: <20111220110813.GA19105@elte.hu>
- <fb3f11b9-d36f-4160-96ff-c4610af742de@aspear-win7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fb3f11b9-d36f-4160-96ff-c4610af742de@aspear-win7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753833Ab1LUS4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:56:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751525Ab1LUS4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:56:43 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/7] ftrace: Change filter/notrace set functions to return exit code
+Date: Wed, 21 Dec 2011 19:56:25 +0100
+Message-Id: <1324493791-5688-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+ <1324493791-5688-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vmware using it is more a reason to avoid it than using it.. :)
+Currently the ftrace_set_filter and ftrace_set_notrace functions
+do not return any return code. So there's no way for ftrace_ops
+user to tell wether the filter was correctly applied.
 
-And most certainly not a reason to export internal kernel details.
+The set_ftrace_filter interface returns error in case the filter
+did not match:
+
+  # echo krava > set_ftrace_filter
+  bash: echo: write error: Invalid argument
+
+Changing both ftrace_set_filter and ftrace_set_notrace functions
+to return zero if the filter was applied correctly or -E* values
+in case of error.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/ftrace.h |    4 ++--
+ kernel/trace/ftrace.c  |   16 ++++++++++------
+ 2 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 26eafce..523640f 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -180,9 +180,9 @@ struct dyn_ftrace {
+ };
+ 
+ int ftrace_force_update(void);
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset);
+ void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
+ void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b79ab33..7eb702f 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2912,8 +2912,11 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 	mutex_lock(&ftrace_regex_lock);
+ 	if (reset)
+ 		ftrace_filter_reset(hash);
+-	if (buf)
+-		ftrace_match_records(hash, buf, len);
++	if (buf &&
++	    !ftrace_match_records(hash, buf, len)) {
++		ret = -EINVAL;
++		goto out_regex_unlock;
++	}
+ 
+ 	mutex_lock(&ftrace_lock);
+ 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
+@@ -2923,6 +2926,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 
+ 	mutex_unlock(&ftrace_lock);
+ 
++ out_regex_unlock:
+ 	mutex_unlock(&ftrace_regex_lock);
+ 
+ 	free_ftrace_hash(hash);
+@@ -2939,10 +2943,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+  * Filters denote which functions should be enabled when tracing is enabled.
+  * If @buf is NULL and reset is set, all functions will be enabled for tracing.
+  */
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 1);
++	return ftrace_set_regex(ops, buf, len, reset, 1);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+ 
+@@ -2957,10 +2961,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+  * is enabled. If @buf is NULL and reset is set, all functions will be enabled
+  * for tracing.
+  */
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 0);
++	return ftrace_set_regex(ops, buf, len, reset, 0);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_notrace);
+ /**
+-- 
+1.7.1
+
