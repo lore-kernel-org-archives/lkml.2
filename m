@@ -1,80 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab1LUK0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:26:00 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:20336 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab1LUKZz (ORCPT
+	id S1753459Ab1LUKat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:30:49 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49891 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab1LUKar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:25:55 -0500
-Message-ID: <4EF1B423.8050707@siemens.com>
-Date: Wed, 21 Dec 2011 11:25:39 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        "Liu, Jinsong" <jinsong.liu@intel.com>, Avi Kivity <avi@redhat.com>
-CC: Kernel development list <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>
-Subject: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer feature
- in the absence of in-kernel APIC
-References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com>
-In-Reply-To: <4EF1B081.3010109@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Dec 2011 05:30:47 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Dec 2011 19:29:34 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH v3] memcg: return -EINTR at bypassing try_charge().
+Message-Id: <20111221192934.2751f8f1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We must not report the TSC deadline timer feature on our own when user
-space provides the APIC as we have no clue about its features.
+Thank you for review.
+I'm sorry if my response is delayed.
+==
+>From 1e8c917c64b3947d2e54c6e5073d53d80bd97c30 Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 21 Dec 2011 16:27:25 +0900
+Subject: [PATCH] memcg: return -EINTR at bypassing try_charge().
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
+When running testprogram and stop it by Ctrl-C, add_lru/del_lru
+will find pc->mem_cgroup is NULL and get panic. The reason
+is bypass code in try_charge().
+
+At try_charge(), it checks the thread is fatal or not as..
+fatal_signal_pending() or TIF_MEMDIE. In this case, __try_charge()
+returns 0(success) with setting *ptr as NULL.
+
+Now, lruvec are deteremined by pc->mem_cgroup. So, it's better
+to reset pc->mem_cgroup as root_mem_cgroup. This patch does
+following change in try_charge()
+  1. return -EINTR at bypassing.
+  2. set *ptr = root_mem_cgroup at bypassing.
+
+By this change, in page fault / radix-tree-insert path,
+the page will be charged against root_mem_cgroup and the thread's
+operations will go ahead without trouble. In other path,
+migration or move_account etc..., -EINTR will stop the operation.
+(may need some cleanup later..)
+
+After this change, pc->mem_cgroup will have valid pointer if
+the page is used.
+
+Changelog: v2 -> v3
+ - handle !mm case in another way.
+ - removed redundant commments
+ - fixed move_parent bug of uninitialized pointer
+Changelog: v1 -> v2
+ - returns -EINTR at bypassing.
+ - change error code handling at callers.
+ - changed the name of patch.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
+ mm/memcontrol.c |   45 ++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 34 insertions(+), 11 deletions(-)
 
-Changes in v2:
- - reorganized code to make the flow clearer
-
- arch/x86/kvm/cpuid.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 230f713..b7cdd3b 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -27,7 +27,6 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_cpuid_entry2 *best;
- 	struct kvm_lapic *apic = vcpu->arch.apic;
--	u32 timer_mode_mask;
- 
- 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
- 	if (!best)
-@@ -40,15 +39,14 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
- 			best->ecx |= bit(X86_FEATURE_OSXSAVE);
- 	}
- 
--	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
--		best->function == 0x1) {
--		best->ecx |= bit(X86_FEATURE_TSC_DEADLINE_TIMER);
--		timer_mode_mask = 3 << 17;
--	} else
--		timer_mode_mask = 1 << 17;
--
--	if (apic)
--		apic->lapic_timer.timer_mode_mask = timer_mode_mask;
-+	if (apic) {
-+		if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
-+		    best->function == 0x1) {
-+			best->ecx |= bit(X86_FEATURE_TSC_DEADLINE_TIMER);
-+			apic->lapic_timer.timer_mode_mask = 3 << 17;
-+		} else
-+			apic->lapic_timer.timer_mode_mask = 1 << 17;
-+	}
- 
- 	kvm_pmu_cpuid_update(vcpu);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9175097..5f78c99 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2185,6 +2185,24 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
  }
+ 
+ /*
++ * __mem_cgroup_try_charge() does
++ * 1. detect memcg to be charged against from passed *mm and *ptr,
++ * 2. update res_counter
++ * 3. call memory reclaim if necessary.
++ *
++ * In some special case, if the task is fatal, fatal_signal_pending() or
++ * TIF_MEMDIE, this functoion returns -EINTR with filling *ptr as
++ * root_mem_cgroup. There are 2 reasons for this. 1st is that
++ * fatal threads should quit as soon as possible without any hazards.
++ * 2nd is that all page should have valid pc->mem_cgroup if it will be
++ * used. If mm is NULL and the caller doesn't pass valid memcg pointer,
++ * that's treated as charge to root_mem_cgroup.
++ *
++ * So, try_charge will return
++ *  0       ...  at success. filling *ptr with a valid memcg pointer.
++ *  -ENOMEM ...  charge failure because of resource limits.
++ *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
++ *
+  * Unlike exported interface, "oom" parameter is added. if oom==true,
+  * oom-killer can be invoked.
+  */
+@@ -2215,7 +2233,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	 * set, if so charge the init_mm (happens for pagecache usage).
+ 	 */
+ 	if (!*ptr && !mm)
+-		goto bypass;
++		*ptr = root_mem_cgroup;
+ again:
+ 	if (*ptr) { /* css should be a valid one */
+ 		memcg = *ptr;
+@@ -2316,8 +2334,8 @@ nomem:
+ 	*ptr = NULL;
+ 	return -ENOMEM;
+ bypass:
+-	*ptr = NULL;
+-	return 0;
++	*ptr = root_mem_cgroup;
++	return -EINTR;
+ }
+ 
+ /*
+@@ -2583,7 +2601,7 @@ static int mem_cgroup_move_parent(struct page *page,
+ 
+ 	parent = mem_cgroup_from_cont(pcg);
+ 	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
+-	if (ret || !parent)
++	if (ret)
+ 		goto put_back;
+ 
+ 	if (nr_pages > 1)
+@@ -2630,9 +2648,8 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 
+ 	pc = lookup_page_cgroup(page);
+ 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+-	if (ret || !memcg)
++	if (ret == -ENOMEM)
+ 		return ret;
+-
+ 	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
+ 	return 0;
+ }
+@@ -2743,11 +2760,16 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 	*memcgp = memcg;
+ 	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
+ 	css_put(&memcg->css);
++	if (ret == -EINTR)
++		ret = 0;
+ 	return ret;
+ charge_cur_mm:
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+-	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
++	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
++	if (ret == -EINTR)
++		ret = 0;
++	return ret;
+ }
+ 
+ static void
+@@ -3205,7 +3227,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 	*memcgp = memcg;
+ 	ret = __mem_cgroup_try_charge(NULL, gfp_mask, 1, memcgp, false);
+ 	css_put(&memcg->css);/* drop extra refcnt */
+-	if (ret || *memcgp == NULL) {
++	if (ret) {
+ 		if (PageAnon(page)) {
+ 			lock_page_cgroup(pc);
+ 			ClearPageCgroupMigration(pc);
+@@ -3215,6 +3237,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 			 */
+ 			mem_cgroup_uncharge_page(page);
+ 		}
++		/* we'll need to revisit this error code (we have -EINTR) */
+ 		return -ENOMEM;
+ 	}
+ 	/*
+@@ -3633,7 +3656,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 		pc = lookup_page_cgroup(page);
+ 
+ 		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
+-		if (ret == -ENOMEM)
++		if (ret == -ENOMEM || ret == -EINTR)
+ 			break;
+ 
+ 		if (ret == -EBUSY || ret == -EINVAL) {
+@@ -5091,9 +5114,9 @@ one_by_one:
+ 		}
+ 		ret = __mem_cgroup_try_charge(NULL,
+ 					GFP_KERNEL, 1, &memcg, false);
+-		if (ret || !memcg)
++		if (ret)
+ 			/* mem_cgroup_clear_mc() will do uncharge later */
+-			return -ENOMEM;
++			return ret;
+ 		mc.precharge++;
+ 	}
+ 	return ret;
 -- 
-1.7.3.4
+1.7.4.1
+
+
