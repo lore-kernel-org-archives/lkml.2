@@ -1,259 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1LUS5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:57:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab1LUS4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:56:55 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 7/7] ftrace, perf: Add filter support for function trace event
-Date: Wed, 21 Dec 2011 19:56:31 +0100
-Message-Id: <1324493791-5688-8-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+	id S1754096Ab1LUS5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:57:23 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:53571 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753973Ab1LUS5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:57:17 -0500
+Message-ID: <4EF23A1F.60803@xenotime.net>
+Date: Wed, 21 Dec 2011 11:57:19 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Samuel Ortiz <samuel@sortiz.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>
+Subject: Re: linux-next: Tree for Dec 19 (nfc)
+References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>	 <4EEFA21B.5010305@xenotime.net> <1324399181.5354.0.camel@sortiz-mobl>
+In-Reply-To: <1324399181.5354.0.camel@sortiz-mobl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to filter function trace event via perf
-interface. It is now possible to use filter interface
-in the perf tool like:
+On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
+> Hi Randy,
+> 
+> On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
+>> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20111216:
+>>
+>>
+>> (not new today, just not reported earlier)
+> John applied my fix for this one. It should be fixed now.
 
-  perf record -e ftrace:function --filter="(ip == mm_*)" ls
+Hi Samuel,
 
-The filter syntax is restricted to the the 'ip' field only,
-and following operators are accepted '==' '!=' '||', ending
-up with the filter strings like:
+Is this supposed to be fixed in linux-next?
+It still fails today (linux-next 20111221).
 
-  "ip == f1 f2 ..." || "ip != f3 f4 ..." ...
 
-The '==' operator adds trace filter with same effect as would
-be added via set_ftrace_filter file.
+data.c:(.text+0x3e0): multiple definition of `nfc_llcp_mac_is_down'
+data.c:(.text+0x400): multiple definition of `nfc_llcp_mac_is_up'
+ntf.c:(.text+0xb60): multiple definition of `nfc_llcp_mac_is_down'
+ntf.c:(.text+0xb80): multiple definition of `nfc_llcp_mac_is_up'
+rsp.c:(.text+0x750): multiple definition of `nfc_llcp_mac_is_down'
+rsp.c:(.text+0x770): multiple definition of `nfc_llcp_mac_is_up'
+netlink.c:(.text+0x14e0): multiple definition of `nfc_llcp_mac_is_down'
+netlink.c:(.text+0x1500): multiple definition of `nfc_llcp_mac_is_up'
+af_nfc.c:(.text+0xe0): multiple definition of `nfc_llcp_mac_is_down'
+af_nfc.c:(.text+0x100): multiple definition of `nfc_llcp_mac_is_up'
+rawsock.c:(.text+0x1000): multiple definition of `nfc_llcp_mac_is_down'
+rawsock.c:(.text+0x1020): multiple definition of `nfc_llcp_mac_is_up'
 
-The '!=' operator adds trace filter with same effect as would
-be added via set_ftrace_notrace file.
 
-The right side of the '!=', '==' operators is list of functions
-or regexp. to be added to filter separated by space. Same syntax
-is supported/required as for the set_ftrace_filter and
-set_ftrace_notrace files.
-
-The '||' operator is used for connecting multiple filter definitions
-together. It is possible to have more than one '==' and '!='
-operators within one filter string.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace.h               |    2 -
- kernel/trace/trace_events_filter.c |  113 +++++++++++++++++++++++++++++++++---
- 2 files changed, 105 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index e88e58a..4ec6d18 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -770,9 +770,7 @@ struct filter_pred {
- 	u64 			val;
- 	struct regex		regex;
- 	unsigned short		*ops;
--#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	struct ftrace_event_field *field;
--#endif
- 	int 			offset;
- 	int 			not;
- 	int 			op;
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 66b74ab..600bb1e 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -54,6 +54,13 @@ struct filter_op {
- 	int precedence;
- };
- 
-+static struct filter_op filter_ftrace_ops[] = {
-+	{ OP_OR,	"||",		1 },
-+	{ OP_NE,	"!=",		2 },
-+	{ OP_EQ,	"==",		2 },
-+	{ OP_NONE,	"OP_NONE",	0 },
-+};
-+
- static struct filter_op filter_ops[] = {
- 	{ OP_OR,	"||",		1 },
- 	{ OP_AND,	"&&",		2 },
-@@ -81,6 +88,7 @@ enum {
- 	FILT_ERR_TOO_MANY_PREDS,
- 	FILT_ERR_MISSING_FIELD,
- 	FILT_ERR_INVALID_FILTER,
-+	FILT_ERR_IP_FIELD_ONLY,
- };
- 
- static char *err_text[] = {
-@@ -96,6 +104,7 @@ static char *err_text[] = {
- 	"Too many terms in predicate expression",
- 	"Missing field name and/or value",
- 	"Meaningless filter expression",
-+	"Only 'ip' field is supported for function trace",
- };
- 
- struct opstack_op {
-@@ -992,7 +1001,12 @@ static int init_pred(struct filter_parse_state *ps,
- 			fn = filter_pred_strloc;
- 		else
- 			fn = filter_pred_pchar;
--	} else if (!is_function_field(field)) {
-+	} else if (is_function_field(field)) {
-+		if (strcmp(field->name, "ip")) {
-+			parse_error(ps, FILT_ERR_IP_FIELD_ONLY, 0);
-+			return -EINVAL;
-+		}
-+	} else {
- 		if (field->is_signed)
- 			ret = strict_strtoll(pred->regex.pattern, 0, &val);
- 		else
-@@ -1339,10 +1353,8 @@ static struct filter_pred *create_pred(struct filter_parse_state *ps,
- 
- 	strcpy(pred.regex.pattern, operand2);
- 	pred.regex.len = strlen(pred.regex.pattern);
--
--#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	pred.field = field;
--#endif
-+
- 	return init_pred(ps, field, &pred) ? NULL : &pred;
- }
- 
-@@ -1894,6 +1906,83 @@ void ftrace_profile_free_filter(struct perf_event *event)
- 	__free_filter(filter);
- }
- 
-+struct function_filter_data {
-+	struct ftrace_ops *ops;
-+	int first_filter;
-+	int first_notrace;
-+};
-+
-+static int __ftrace_function_set_filter(int filter, char *buf, int len,
-+					struct function_filter_data *data)
-+{
-+	int *reset, ret;
-+
-+	reset = filter ? &data->first_filter : &data->first_notrace;
-+
-+	if (filter)
-+		ret = ftrace_set_filter(data->ops, buf, len, *reset);
-+	else
-+		ret = ftrace_set_notrace(data->ops, buf, len, *reset);
-+
-+	if (*reset)
-+		*reset = 0;
-+
-+	return ret;
-+}
-+
-+static int ftrace_function_check_pred(struct filter_pred *pred)
-+{
-+	struct ftrace_event_field *field = pred->field;
-+
-+	/*
-+	  Check the predicate for function trace, verify:
-+	   - only '==' and '!=' is used
-+	   - the 'ip' field is used
-+	*/
-+	if (WARN((pred->op != OP_EQ) && (pred->op != OP_NE),
-+		 "wrong operator for function filter: %d\n", pred->op))
-+		return -EINVAL;
-+
-+	if (strcmp(field->name, "ip"))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int ftrace_function_set_filter_cb(enum move_type move,
-+					 struct filter_pred *pred,
-+					 int *err, void *data)
-+{
-+	if ((move != MOVE_DOWN) ||
-+	    (pred->left != FILTER_PRED_INVALID))
-+		return WALK_PRED_DEFAULT;
-+
-+	/* Double checking the predicate is valid for function trace. */
-+	*err = ftrace_function_check_pred(pred);
-+	if (*err)
-+		return WALK_PRED_ABORT;
-+
-+	*err = __ftrace_function_set_filter(pred->op == OP_EQ,
-+					    pred->regex.pattern,
-+					    pred->regex.len,
-+					    data);
-+
-+	return (*err) ? WALK_PRED_ABORT : WALK_PRED_DEFAULT;
-+}
-+
-+static int ftrace_function_set_filter(struct perf_event *event,
-+				      struct event_filter *filter)
-+{
-+	struct function_filter_data data = {
-+		.first_filter  = 1,
-+		.first_notrace = 1,
-+		.ops           = &event->ftrace_ops,
-+	};
-+
-+	return walk_pred_tree(filter->preds, filter->root,
-+			      ftrace_function_set_filter_cb, &data);
-+}
-+
- int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 			      char *filter_str)
- {
-@@ -1901,6 +1990,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	struct event_filter *filter;
- 	struct filter_parse_state *ps;
- 	struct ftrace_event_call *call;
-+	struct filter_op *fops = filter_ops;
- 
- 	mutex_lock(&event_mutex);
- 
-@@ -1925,14 +2015,21 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	if (!ps)
- 		goto free_filter;
- 
--	parse_init(ps, filter_ops, filter_str);
-+	if (ftrace_event_is_function(call))
-+		fops = filter_ftrace_ops;
-+
-+	parse_init(ps, fops, filter_str);
- 	err = filter_parse(ps);
- 	if (err)
- 		goto free_ps;
- 
- 	err = replace_preds(call, filter, ps, filter_str, false);
--	if (!err)
--		event->filter = filter;
-+	if (!err) {
-+		if (ftrace_event_is_function(call))
-+			err = ftrace_function_set_filter(event, filter);
-+		else
-+			event->filter = filter;
-+	}
- 
- free_ps:
- 	filter_opstack_clear(ps);
-@@ -1940,7 +2037,7 @@ free_ps:
- 	kfree(ps);
- 
- free_filter:
--	if (err)
-+	if (err || ftrace_event_is_function(call))
- 		__free_filter(filter);
- 
- out_unlock:
 -- 
-1.7.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
