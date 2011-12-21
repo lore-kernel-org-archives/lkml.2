@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1LUVbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 16:31:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18698 "EHLO mx1.redhat.com"
+	id S1754088Ab1LUVcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 16:32:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53250 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab1LUVbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 16:31:05 -0500
-Date: Wed, 21 Dec 2011 16:30:55 -0500
+	id S1751848Ab1LUVcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 16:32:07 -0500
+Date: Wed, 21 Dec 2011 16:32:01 -0500
 From: Jason Baron <jbaron@redhat.com>
 To: greg@kroah.com, Bart Van Assche <bvanassche@acm.org>
 Cc: jim.cromie@gmail.com, joe@perches.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/16] dynamic_debug: replace strcpy with strlcpy, in
- ddebug_setup_query()
-Message-ID: <20111221213055.GA30393@redhat.com>
+Subject: Re: [PATCH 14/16] dynamic_debug: add trim_prefix() to provide
+ source-root relative paths
+Message-ID: <20111221213200.GB30393@redhat.com>
 References: <cover.1324318997.git.jbaron@redhat.com>
- <d817e288df0d43d36fde84353cda07772fe3b960.1324318997.git.jbaron@redhat.com>
- <CAO+b5-p6WY5fKpaPMumFBTO-9mdjxEO8e+WD-kPLPu9C8-H79g@mail.gmail.com>
+ <2de3288bd94ae76c7a7d7486b94e2e59e5ca97a8.1324318997.git.jbaron@redhat.com>
+ <CAO+b5-od4CFkJkxQKoXq4e85XeKq9VFX2kh5FbT7_JMSgFX=JQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAO+b5-p6WY5fKpaPMumFBTO-9mdjxEO8e+WD-kPLPu9C8-H79g@mail.gmail.com>
+In-Reply-To: <CAO+b5-od4CFkJkxQKoXq4e85XeKq9VFX2kh5FbT7_JMSgFX=JQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 08:08:41AM +0000, Bart Van Assche wrote:
-> On Mon, Dec 19, 2011 at 10:12 PM, Jason Baron <jbaron@redhat.com> wrote:
-> >
-> > From: Jim Cromie <jim.cromie@gmail.com>
-> >
-> > Replace strcpy with strlcpy, and add define for the size constant.
-> >
-> > [jbaron@redhat.com: Use DDEBUG_STRING_SIZE for overflow check]
-> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > ---
-> >  lib/dynamic_debug.c |    8 +++++---
-> >  1 files changed, 5 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> > index 8c88b89..6fc8622 100644
-> > --- a/lib/dynamic_debug.c
-> > +++ b/lib/dynamic_debug.c
-> > @@ -525,14 +525,16 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
-> >
-> >  #endif
-> >
-> > -static __initdata char ddebug_setup_string[1024];
-> > +#define DDEBUG_STRING_SIZE 1024
-> > +static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
+On Tue, Dec 20, 2011 at 08:15:55AM +0000, Bart Van Assche wrote:
+> On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
+> > +/* Return the path relative to source root */
+> > +static inline const char *trim_prefix(const char *path)
+> > +{
+> > +       int skip = strlen(__FILE__) - strlen("lib/dynamic_debug.c");
 > > +
-> >  static __init int ddebug_setup_query(char *str)
-> >  {
-> > -       if (strlen(str) >= 1024) {
-> > +       if (strlen(str) >= DDEBUG_STRING_SIZE) {
-> >                pr_warn("ddebug boot param string too large\n");
-> >                return 0;
-> >        }
-> > -       strcpy(ddebug_setup_string, str);
-> > +       strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
-> >        return 1;
-> >  }
+> > +       if (strncmp(path, __FILE__, skip))
+> > +               skip = 0; /* prefix mismatch, don't skip */
+> > +
+> > +       return path + skip;
+> > +}
 > 
-> Sorry, but it's not clear to me why it make sense to introduce the
-> DDEBUG_STRING_SIZE macro instead of using ARRAY_SIZE().
+> Isn't the preferred style to write if (strncmp(...) != 0) ..., i.e. to
+> mention "!= 0" explicitly instead of leaving it out when comparing
+> strings ?
 > 
 > Bart.
 
 Greg,
 
-The change suggested here by Bart isn't a functional change. If you
-think it warrants a re-post, let me know, but I am fine with it as-is.
+Again, no functional change here, just a style thing. Let me know if you
+want a re-post. I am fine with it as-is.
 
 Thanks,
 
