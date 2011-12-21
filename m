@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1LUAUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 19:20:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50464 "EHLO
+	id S1753814Ab1LUAUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 19:20:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50461 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753786Ab1LUAUn (ORCPT
+	by vger.kernel.org with ESMTP id S1753758Ab1LUAUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Dec 2011 19:20:43 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -12,9 +12,9 @@ To: Linus Walleij <linus.walleij@stericsson.com>,
         Grant Likely <grant@secretlab.ca>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] gpio: Add decode of WM8994 GPIO configuration
-Date: Wed, 21 Dec 2011 00:20:17 +0000
-Message-Id: <1324426817-2196-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/4] gpio: Convert GPIO drivers to module_platform_driver
+Date: Wed, 21 Dec 2011 00:20:16 +0000
+Message-Id: <1324426817-2196-3-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1324426817-2196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1324426817-2196-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -22,111 +22,289 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the human reader.
+Where appropriate factor out some boilerplate code for platform device
+registration into module_platform_driver. Drivers that don't use the
+standard module_init initcall haven't been converted.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/gpio-wm8994.c |   79 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 77 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-adp5520.c    |   12 +-----------
+ drivers/gpio/gpio-cs5535.c     |   13 +------------
+ drivers/gpio/gpio-da9052.c     |   12 +-----------
+ drivers/gpio/gpio-generic.c    |   12 +-----------
+ drivers/gpio/gpio-janz-ttl.c   |   13 +------------
+ drivers/gpio/gpio-rdc321x.c    |   13 +------------
+ drivers/gpio/gpio-sch.c        |   13 +------------
+ drivers/gpio/gpio-timberdale.c |   13 +------------
+ drivers/gpio/gpio-ucb1400.c    |   13 +------------
+ drivers/gpio/gpio-vr41xx.c     |   13 +------------
+ drivers/gpio/gpio-vx855.c      |   12 +-----------
+ 11 files changed, 11 insertions(+), 128 deletions(-)
 
-diff --git a/drivers/gpio/gpio-wm8994.c b/drivers/gpio/gpio-wm8994.c
-index 96198f3..92ea535 100644
---- a/drivers/gpio/gpio-wm8994.c
-+++ b/drivers/gpio/gpio-wm8994.c
-@@ -117,6 +117,60 @@ static int wm8994_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+diff --git a/drivers/gpio/gpio-adp5520.c b/drivers/gpio/gpio-adp5520.c
+index 9f27815..2f263cc 100644
+--- a/drivers/gpio/gpio-adp5520.c
++++ b/drivers/gpio/gpio-adp5520.c
+@@ -193,17 +193,7 @@ static struct platform_driver adp5520_gpio_driver = {
+ 	.remove		= __devexit_p(adp5520_gpio_remove),
+ };
  
+-static int __init adp5520_gpio_init(void)
+-{
+-	return platform_driver_register(&adp5520_gpio_driver);
+-}
+-module_init(adp5520_gpio_init);
+-
+-static void __exit adp5520_gpio_exit(void)
+-{
+-	platform_driver_unregister(&adp5520_gpio_driver);
+-}
+-module_exit(adp5520_gpio_exit);
++module_platform_driver(adp5520_gpio_driver);
  
- #ifdef CONFIG_DEBUG_FS
-+static const char *wm8994_gpio_fn(u16 fn)
-+{
-+	switch (fn) {
-+	case WM8994_GP_FN_PIN_SPECIFIC:
-+		return "pin-specific";
-+	case WM8994_GP_FN_GPIO:
-+		return "GPIO";
-+	case WM8994_GP_FN_SDOUT:
-+		return "SDOUT";
-+	case WM8994_GP_FN_IRQ:
-+		return "IRQ";
-+	case WM8994_GP_FN_TEMPERATURE:
-+		return "Temperature";
-+	case WM8994_GP_FN_MICBIAS1_DET:
-+		return "MICBIAS1 detect";
-+	case WM8994_GP_FN_MICBIAS1_SHORT:
-+		return "MICBIAS1 short";
-+	case WM8994_GP_FN_MICBIAS2_DET:
-+		return "MICBIAS2 detect";
-+	case WM8994_GP_FN_MICBIAS2_SHORT:
-+		return "MICBIAS2 short";
-+	case WM8994_GP_FN_FLL1_LOCK:
-+		return "FLL1 lock";
-+	case WM8994_GP_FN_FLL2_LOCK:
-+		return "FLL2 lock";
-+	case WM8994_GP_FN_SRC1_LOCK:
-+		return "SRC1 lock";
-+	case WM8994_GP_FN_SRC2_LOCK:
-+		return "SRC2 lock";
-+	case WM8994_GP_FN_DRC1_ACT:
-+		return "DRC1 activity";
-+	case WM8994_GP_FN_DRC2_ACT:
-+		return "DRC2 activity";
-+	case WM8994_GP_FN_DRC3_ACT:
-+		return "DRC3 activity";
-+	case WM8994_GP_FN_WSEQ_STATUS:
-+		return "Write sequencer";
-+	case WM8994_GP_FN_FIFO_ERROR:
-+		return "FIFO error";
-+	case WM8994_GP_FN_OPCLK:
-+		return "OPCLK";
-+	case WM8994_GP_FN_THW:
-+		return "Thermal warning";
-+	case WM8994_GP_FN_DCS_DONE:
-+		return "DC servo";
-+	case WM8994_GP_FN_FLL1_OUT:
-+		return "FLL1 output";
-+	case WM8994_GP_FN_FLL2_OUT:
-+		return "FLL1 output";
-+	default:
-+		return "Unknown";
-+	}
-+}
-+
- static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+ MODULE_DESCRIPTION("GPIO ADP5520 Driver");
+diff --git a/drivers/gpio/gpio-cs5535.c b/drivers/gpio/gpio-cs5535.c
+index 693a81b..19eda1b 100644
+--- a/drivers/gpio/gpio-cs5535.c
++++ b/drivers/gpio/gpio-cs5535.c
+@@ -381,18 +381,7 @@ static struct platform_driver cs5535_gpio_driver = {
+ 	.remove = __devexit_p(cs5535_gpio_remove),
+ };
+ 
+-static int __init cs5535_gpio_init(void)
+-{
+-	return platform_driver_register(&cs5535_gpio_driver);
+-}
+-
+-static void __exit cs5535_gpio_exit(void)
+-{
+-	platform_driver_unregister(&cs5535_gpio_driver);
+-}
+-
+-module_init(cs5535_gpio_init);
+-module_exit(cs5535_gpio_exit);
++module_platform_driver(cs5535_gpio_driver);
+ 
+ MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
+ MODULE_DESCRIPTION("AMD CS5535/CS5536 GPIO driver");
+diff --git a/drivers/gpio/gpio-da9052.c b/drivers/gpio/gpio-da9052.c
+index f8ce29e..56dd047 100644
+--- a/drivers/gpio/gpio-da9052.c
++++ b/drivers/gpio/gpio-da9052.c
+@@ -254,17 +254,7 @@ static struct platform_driver da9052_gpio_driver = {
+ 	},
+ };
+ 
+-static int __init da9052_gpio_init(void)
+-{
+-	return platform_driver_register(&da9052_gpio_driver);
+-}
+-module_init(da9052_gpio_init);
+-
+-static void __exit da9052_gpio_exit(void)
+-{
+-	return platform_driver_unregister(&da9052_gpio_driver);
+-}
+-module_exit(da9052_gpio_exit);
++module_platform_driver(da9052_gpio_driver);
+ 
+ MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
+ MODULE_DESCRIPTION("DA9052 GPIO Device Driver");
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index 4e24436..e38dd0c 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -524,17 +524,7 @@ static struct platform_driver bgpio_driver = {
+ 	.remove = __devexit_p(bgpio_pdev_remove),
+ };
+ 
+-static int __init bgpio_platform_init(void)
+-{
+-	return platform_driver_register(&bgpio_driver);
+-}
+-module_init(bgpio_platform_init);
+-
+-static void __exit bgpio_platform_exit(void)
+-{
+-	platform_driver_unregister(&bgpio_driver);
+-}
+-module_exit(bgpio_platform_exit);
++module_platform_driver(bgpio_driver);
+ 
+ #endif /* CONFIG_GPIO_GENERIC_PLATFORM */
+ 
+diff --git a/drivers/gpio/gpio-janz-ttl.c b/drivers/gpio/gpio-janz-ttl.c
+index 6f7fda0..f2f000d 100644
+--- a/drivers/gpio/gpio-janz-ttl.c
++++ b/drivers/gpio/gpio-janz-ttl.c
+@@ -237,20 +237,9 @@ static struct platform_driver ttl_driver = {
+ 	.remove		= __devexit_p(ttl_remove),
+ };
+ 
+-static int __init ttl_init(void)
+-{
+-	return platform_driver_register(&ttl_driver);
+-}
+-
+-static void __exit ttl_exit(void)
+-{
+-	platform_driver_unregister(&ttl_driver);
+-}
++module_platform_driver(ttl_driver);
+ 
+ MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
+ MODULE_DESCRIPTION("Janz MODULbus VMOD-TTL Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:janz-ttl");
+-
+-module_init(ttl_init);
+-module_exit(ttl_exit);
+diff --git a/drivers/gpio/gpio-rdc321x.c b/drivers/gpio/gpio-rdc321x.c
+index 2762698..e97016a 100644
+--- a/drivers/gpio/gpio-rdc321x.c
++++ b/drivers/gpio/gpio-rdc321x.c
+@@ -227,18 +227,7 @@ static struct platform_driver rdc321x_gpio_driver = {
+ 	.remove		= __devexit_p(rdc321x_gpio_remove),
+ };
+ 
+-static int __init rdc321x_gpio_init(void)
+-{
+-	return platform_driver_register(&rdc321x_gpio_driver);
+-}
+-
+-static void __exit rdc321x_gpio_exit(void)
+-{
+-	platform_driver_unregister(&rdc321x_gpio_driver);
+-}
+-
+-module_init(rdc321x_gpio_init);
+-module_exit(rdc321x_gpio_exit);
++module_platform_driver(rdc321x_gpio_driver);
+ 
+ MODULE_AUTHOR("Florian Fainelli <florian@openwrt.org>");
+ MODULE_DESCRIPTION("RDC321x GPIO driver");
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 1635158..8cadf4d 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -297,18 +297,7 @@ static struct platform_driver sch_gpio_driver = {
+ 	.remove		= __devexit_p(sch_gpio_remove),
+ };
+ 
+-static int __init sch_gpio_init(void)
+-{
+-	return platform_driver_register(&sch_gpio_driver);
+-}
+-
+-static void __exit sch_gpio_exit(void)
+-{
+-	platform_driver_unregister(&sch_gpio_driver);
+-}
+-
+-module_init(sch_gpio_init);
+-module_exit(sch_gpio_exit);
++module_platform_driver(sch_gpio_driver);
+ 
+ MODULE_AUTHOR("Denis Turischev <denis@compulab.co.il>");
+ MODULE_DESCRIPTION("GPIO interface for Intel Poulsbo SCH");
+diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
+index c593bd4..031c6ad 100644
+--- a/drivers/gpio/gpio-timberdale.c
++++ b/drivers/gpio/gpio-timberdale.c
+@@ -359,18 +359,7 @@ static struct platform_driver timbgpio_platform_driver = {
+ 
+ /*--------------------------------------------------------------------------*/
+ 
+-static int __init timbgpio_init(void)
+-{
+-	return platform_driver_register(&timbgpio_platform_driver);
+-}
+-
+-static void __exit timbgpio_exit(void)
+-{
+-	platform_driver_unregister(&timbgpio_platform_driver);
+-}
+-
+-module_init(timbgpio_init);
+-module_exit(timbgpio_exit);
++module_platform_driver(timbgpio_platform_driver);
+ 
+ MODULE_DESCRIPTION("Timberdale GPIO driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/gpio/gpio-ucb1400.c b/drivers/gpio/gpio-ucb1400.c
+index 50e6bd1..26405ef 100644
+--- a/drivers/gpio/gpio-ucb1400.c
++++ b/drivers/gpio/gpio-ucb1400.c
+@@ -103,23 +103,12 @@ static struct platform_driver ucb1400_gpio_driver = {
+ 	},
+ };
+ 
+-static int __init ucb1400_gpio_init(void)
+-{
+-	return platform_driver_register(&ucb1400_gpio_driver);
+-}
+-
+-static void __exit ucb1400_gpio_exit(void)
+-{
+-	platform_driver_unregister(&ucb1400_gpio_driver);
+-}
+-
+ void __init ucb1400_gpio_set_data(struct ucb1400_gpio_data *data)
  {
- 	struct wm8994_gpio *wm8994_gpio = to_wm8994_gpio(chip);
-@@ -148,8 +202,29 @@ static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			continue;
- 		}
- 
--		/* No decode yet; note that GPIO2 is special */
--		seq_printf(s, "(%x)\n", reg);
-+		if (reg & WM8994_GPN_DIR)
-+			seq_printf(s, "in ");
-+		else
-+			seq_printf(s, "out ");
-+
-+		if (reg & WM8994_GPN_PU)
-+			seq_printf(s, "pull up ");
-+
-+		if (reg & WM8994_GPN_PD)
-+			seq_printf(s, "pull down ");
-+
-+		if (reg & WM8994_GPN_POL)
-+			seq_printf(s, "inverted ");
-+		else
-+			seq_printf(s, "noninverted ");
-+
-+		if (reg & WM8994_GPN_OP_CFG)
-+			seq_printf(s, "open drain ");
-+		else
-+			seq_printf(s, "CMOS ");
-+
-+		seq_printf(s, "%s (%x)\n",
-+			   wm8994_gpio_fn(reg & WM8994_GPN_FN_MASK), reg);
- 	}
+ 	ucbdata = data;
  }
- #else
+ 
+-module_init(ucb1400_gpio_init);
+-module_exit(ucb1400_gpio_exit);
++module_platform_driver(ucb1400_gpio_driver);
+ 
+ MODULE_DESCRIPTION("Philips UCB1400 GPIO driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/gpio/gpio-vr41xx.c b/drivers/gpio/gpio-vr41xx.c
+index 98723cb..82d5c20 100644
+--- a/drivers/gpio/gpio-vr41xx.c
++++ b/drivers/gpio/gpio-vr41xx.c
+@@ -571,15 +571,4 @@ static struct platform_driver giu_device_driver = {
+ 	},
+ };
+ 
+-static int __init vr41xx_giu_init(void)
+-{
+-	return platform_driver_register(&giu_device_driver);
+-}
+-
+-static void __exit vr41xx_giu_exit(void)
+-{
+-	platform_driver_unregister(&giu_device_driver);
+-}
+-
+-module_init(vr41xx_giu_init);
+-module_exit(vr41xx_giu_exit);
++module_platform_driver(giu_device_driver);
+diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
+index ef5aabd..76ebfe5 100644
+--- a/drivers/gpio/gpio-vx855.c
++++ b/drivers/gpio/gpio-vx855.c
+@@ -315,17 +315,7 @@ static struct platform_driver vx855gpio_driver = {
+ 	.remove		= __devexit_p(vx855gpio_remove),
+ };
+ 
+-static int vx855gpio_init(void)
+-{
+-	return platform_driver_register(&vx855gpio_driver);
+-}
+-module_init(vx855gpio_init);
+-
+-static void vx855gpio_exit(void)
+-{
+-	platform_driver_unregister(&vx855gpio_driver);
+-}
+-module_exit(vx855gpio_exit);
++module_platform_driver(vx855gpio_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Harald Welte <HaraldWelte@viatech.com>");
 -- 
 1.7.7.3
 
