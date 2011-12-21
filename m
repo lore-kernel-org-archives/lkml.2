@@ -1,234 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1LUTzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:55:55 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:38014 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab1LUTzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:55:52 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] input: serio: ams-delta: toggle keyboard power over GPIO
-Date: Wed, 21 Dec 2011 20:55:09 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-References: <378bcda9c6cb6a1ddeeb54817078bc7ec68c5987.1324331816.git.jkrzyszt@tis.icnet.pl> <1324419034-31024-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111221190945.GD24444@atomide.com>
-In-Reply-To: <20111221190945.GD24444@atomide.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1753774Ab1LUT7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:59:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59541 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab1LUT7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 14:59:20 -0500
+Date: Wed, 21 Dec 2011 11:59:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        "Artem S. Tashkinov" <t.artem@mailcity.com>,
+        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [resend PATCH for 3.2] procfs: do not confuse jiffies with
+ cputime64_t
+Message-Id: <20111221115919.6beac46f.akpm@linux-foundation.org>
+In-Reply-To: <20111221100334.GD27137@tiehlicka.suse.cz>
+References: <m28vmi7ip3.fsf@igel.home>
+	<201112120922.13633.arnd@arndb.de>
+	<m21usavwi0.fsf_-_@igel.home>
+	<20111212124333.GC14720@tiehlicka.suse.cz>
+	<m2wra2uedy.fsf_-_@igel.home>
+	<20111212131218.GD14720@tiehlicka.suse.cz>
+	<20111221100334.GD27137@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112212055.10343.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 of December 2011 at 20:09:45, Tony Lindgren wrote:
-> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111220 13:39]:
-> > Don't use Amstrad Delta custom I/O functions once GPIO interface is
-> > available for the underlying hardware.
-> > 
-> > While requesting and initializing GPIO pins used, also take care of one
-> > extra pin KEYBRD_DATAOUT which, even if not used by the driver, belongs
-> > to the device and affects its functioning.
-> > 
-> > Once done, move the driver initialization back to the device_initcall
-> > level, reverting the temporary chane introduced with patch 1/7 "ARM:
-> > OMAP1: ams-delta: register latch dependent devices later".  That change
-> > is no longer required once the driver takes care of registering used
-> > GPIO pins, and it's better to initialize the device before others using
-> > the latch2 based GPIO pins, otherwise a garbage is reported on boot,
-> > perhaps due to random data already captured by the FIQ handler while the
-> > keyboard related latch bits are written with random values during
-> > initialization of those other latch2 dependent devices.
-> > 
-> > Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
-> > basic_mmio_gpio"
-> > 
-> > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> 
-> I'm assuming Dmitry's ack for an earlier version of this patch also
-> covers this one when applying.
+On Wed, 21 Dec 2011 11:03:34 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Hi Dmitry,
-Can we assume your ack still valid for this version?
+> Hmm, it seems that this bugfix (for 3.2) stalled. I guess that it is
+> primarily because it is multiarch fix.
+> I am sorry to bother you Andrew but could we push this through you,
+> please?
+> 
+> The full patch for reference:
+> ---
+> >From 1fca39b21f3b344c90c30d98db6dcdcdc6815797 Mon Sep 17 00:00:00 2001
+> From: Andreas Schwab <schwab@linux-m68k.org>
+> Date: Mon, 12 Dec 2011 14:07:53 +0100
+> Subject: [PATCH] procfs: do not confuse jiffies with cputime64_t
+> 
+> get_{idle,iowait}_time are supposed to return cputime64_t values, not
+> jiffies.  Add usecs_to_cputime64 for this.
 
-Thanks,
-Janusz
+This makes a huge mess when mixed with Martin's "cputime: add sparse
+checking and cleanup" in linux-next.  I think I got it fixed up but it
+needs careful checking - I don't _think_ I needed to add more __force
+thingies.  The version against today's linux-next is below.
 
-> Regards,
-> 
-> Tony
-> 
-> > ---
-> > Hi,
-> > I'm submitting only this one refreshed on top of updated 1/7. All others
-> > (2/7-6/7) don't require any refresh, can be rebased smoothly.
-> > 
-> > Thanks,
-> > Janusz
-> > 
-> > 
-> > Changes against version 2:
-> > * refreshed on top of updated patch 1/7 v2,
-> > * changelog: corrected patch 1/7 summary (was inaccurate).
-> > 
-> > Changes against initial version:
-> > * was 9/10,
-> > * rebased on top of v2 of patch 2/7, just in case,
-> > * moved AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT pin handling from the board
-> >   code to the driver,
-> > * reverted a temporary change to the driver initcall level, introduced
-> >   by the new solution provided with patch 1/7.
-> > 
-> > 
-> >  arch/arm/mach-omap1/board-ams-delta.c             |   10 ----
-> >  arch/arm/plat-omap/include/plat/board-ams-delta.h |    2 -
-> >  drivers/input/serio/ams_delta_serio.c             |   53 ++++++++++++--------
-> > :x 3 files changed, 32 insertions(+), 33 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-> > index 3aba8f9..673cf21 100644
-> > --- a/arch/arm/mach-omap1/board-ams-delta.c
-> > +++ b/arch/arm/mach-omap1/board-ams-delta.c
-> > @@ -227,16 +227,6 @@ static struct gpio latch_gpios[] __initconst = {
-> >  		.label	= "dockit2",
-> >  	},
-> >  	{
-> > -		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-> > -		.flags	= GPIOF_OUT_INIT_LOW,
-> > -		.label	= "keybrd_pwr",
-> > -	},
-> > -	{
-> > -		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
-> > -		.flags	= GPIOF_OUT_INIT_LOW,
-> > -		.label	= "keybrd_dataout",
-> > -	},
-> > -	{
-> >  		.gpio	= AMS_DELTA_GPIO_PIN_SCARD_RSTIN,
-> >  		.flags	= GPIOF_OUT_INIT_LOW,
-> >  		.label	= "scard_rstin",
-> > diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> > index e9ad673..027e79e 100644
-> > --- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> > +++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> > @@ -28,8 +28,6 @@
-> >  
-> >  #if defined (CONFIG_MACH_AMS_DELTA)
-> >  
-> > -#define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
-> > -#define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
-> >  #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
-> >  #define AMD_DELTA_LATCH2_SCARD_CMDVCC	0x0800
-> >  #define AMS_DELTA_LATCH2_MODEM_NRESET	0x1000
-> > diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
-> > index 835d37a..ef1ec40 100644
-> > --- a/drivers/input/serio/ams_delta_serio.c
-> > +++ b/drivers/input/serio/ams_delta_serio.c
-> > @@ -92,8 +92,7 @@ static irqreturn_t ams_delta_serio_interrupt(int irq, void *dev_id)
-> >  static int ams_delta_serio_open(struct serio *serio)
-> >  {
-> >  	/* enable keyboard */
-> > -	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR,
-> > -			AMD_DELTA_LATCH2_KEYBRD_PWR);
-> > +	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 1);
-> >  
-> >  	return 0;
-> >  }
-> > @@ -101,9 +100,32 @@ static int ams_delta_serio_open(struct serio *serio)
-> >  static void ams_delta_serio_close(struct serio *serio)
-> >  {
-> >  	/* disable keyboard */
-> > -	ams_delta_latch2_write(AMD_DELTA_LATCH2_KEYBRD_PWR, 0);
-> > +	gpio_set_value(AMS_DELTA_GPIO_PIN_KEYBRD_PWR, 0);
-> >  }
-> >  
-> > +static struct gpio _gpios[] __initconst_or_module = {
-> > +	{
-> > +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATA,
-> > +		.flags	= GPIOF_DIR_IN,
-> > +		.label	= "serio-data",
-> > +	},
-> > +	{
-> > +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_CLK,
-> > +		.flags	= GPIOF_DIR_IN,
-> > +		.label	= "serio-clock",
-> > +	},
-> > +	{
-> > +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
-> > +		.flags	= GPIOF_OUT_INIT_LOW,
-> > +		.label	= "serio-power",
-> > +	},
-> > +	{
-> > +		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_DATAOUT,
-> > +		.flags	= GPIOF_OUT_INIT_LOW,
-> > +		.label	= "serio-dataout",
-> > +	},
-> > +};
-> > +
-> >  static int __init ams_delta_serio_init(void)
-> >  {
-> >  	int err;
-> > @@ -123,19 +145,11 @@ static int __init ams_delta_serio_init(void)
-> >  	strlcpy(ams_delta_serio->phys, "GPIO/serio0",
-> >  			sizeof(ams_delta_serio->phys));
-> >  
-> > -	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_DATA, "serio-data");
-> > +	err = gpio_request_array(_gpios, ARRAY_SIZE(_gpios));
-> >  	if (err) {
-> > -		pr_err("ams_delta_serio: Couldn't request gpio pin for data\n");
-> > +		pr_err("ams_delta_serio: Couldn't request gpio pins\n");
-> >  		goto serio;
-> >  	}
-> > -	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> > -
-> > -	err = gpio_request(AMS_DELTA_GPIO_PIN_KEYBRD_CLK, "serio-clock");
-> > -	if (err) {
-> > -		pr_err("ams_delta_serio: couldn't request gpio pin for clock\n");
-> > -		goto gpio_data;
-> > -	}
-> > -	gpio_direction_input(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
-> >  
-> >  	err = request_irq(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK),
-> >  			ams_delta_serio_interrupt, IRQ_TYPE_EDGE_RISING,
-> > @@ -143,7 +157,7 @@ static int __init ams_delta_serio_init(void)
-> >  	if (err < 0) {
-> >  		pr_err("ams_delta_serio: couldn't request gpio interrupt %d\n",
-> >  				gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
-> > -		goto gpio_clk;
-> > +		goto gpio;
-> >  	}
-> >  	/*
-> >  	 * Since GPIO register handling for keyboard clock pin is performed
-> > @@ -157,21 +171,18 @@ static int __init ams_delta_serio_init(void)
-> >  	dev_info(&ams_delta_serio->dev, "%s\n", ams_delta_serio->name);
-> >  
-> >  	return 0;
-> > -gpio_clk:
-> > -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
-> > -gpio_data:
-> > -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> > +gpio:
-> > +	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
-> >  serio:
-> >  	kfree(ams_delta_serio);
-> >  	return err;
-> >  }
-> > -late_initcall(ams_delta_serio_init);
-> > +module_init(ams_delta_serio_init);
-> >  
-> >  static void __exit ams_delta_serio_exit(void)
-> >  {
-> >  	serio_unregister_port(ams_delta_serio);
-> >  	free_irq(OMAP_GPIO_IRQ(AMS_DELTA_GPIO_PIN_KEYBRD_CLK), 0);
-> > -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_CLK);
-> > -	gpio_free(AMS_DELTA_GPIO_PIN_KEYBRD_DATA);
-> > +	gpio_free_array(_gpios, ARRAY_SIZE(_gpios));
-> >  }
-> >  module_exit(ams_delta_serio_exit);
-> 
+(I did party tricks with this so I could carry the against-mainline and
+against-next versions in the same tree).
+
+
+Also, in include/asm-generic/cputime.h we have:
+
+#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
+
+But it would be neater to have used nsecs_to_cputime64(), surely.
+
+
+Also, the changelog still sucks
+
+From: Andreas Schwab <schwab@linux-m68k.org>
+Subject: procfs: do not confuse jiffies with cputime64_t
+
+get_{idle,iowait}_time are supposed to return cputime64_t values, not
+jiffies.  Add usecs_to_cputime64 for this.
+
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: "Artem S. Tashkinov" <t.artem@mailcity.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ arch/ia64/include/asm/cputime.h    |    1 +
+ arch/powerpc/include/asm/cputime.h |    2 ++
+ arch/s390/include/asm/cputime.h    |    2 ++
+ fs/proc/stat.c                     |    4 ++--
+ include/asm-generic/cputime.h      |    1 +
+ 5 files changed, 8 insertions(+), 2 deletions(-)
+
+diff -puN arch/ia64/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t arch/ia64/include/asm/cputime.h
+--- a/arch/ia64/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t
++++ a/arch/ia64/include/asm/cputime.h
+@@ -50,6 +50,7 @@ typedef u64 __nocast cputime64_t;
+ 	((__force u64)(__ct) / NSEC_PER_USEC)
+ #define usecs_to_cputime(__usecs)	\
+ 	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
++#define usecs_to_cputime64(__usecs)	usecs_to_cputime(__usecs)
+ 
+ /*
+  * Convert cputime <-> seconds
+diff -puN arch/powerpc/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t arch/powerpc/include/asm/cputime.h
+--- a/arch/powerpc/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t
++++ a/arch/powerpc/include/asm/cputime.h
+@@ -134,6 +134,8 @@ static inline cputime_t usecs_to_cputime
+ 	return (__force cputime_t) ct;
+ }
+ 
++#define usecs_to_cputime64(us)		usecs_to_cputime(us)
++
+ /*
+  * Convert cputime <-> seconds
+  */
+diff -puN arch/s390/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t arch/s390/include/asm/cputime.h
+--- a/arch/s390/include/asm/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t
++++ a/arch/s390/include/asm/cputime.h
+@@ -72,6 +72,8 @@ static inline cputime_t usecs_to_cputime
+ 	return (__force cputime_t)(m * 4096ULL);
+ }
+ 
++#define usecs_to_cputime64(m)		usecs_to_cputime(m)
++
+ /*
+  * Convert cputime to milliseconds and back.
+  */
+diff -puN fs/proc/stat.c~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t fs/proc/stat.c
+--- a/fs/proc/stat.c~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t
++++ a/fs/proc/stat.c
+@@ -31,7 +31,7 @@ static u64 get_idle_time(int cpu)
+ 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+ 		idle += arch_idle_time(cpu);
+ 	} else
+-		idle = nsecs_to_jiffies64(1000 * idle_time);
++		idle = usecs_to_cputime64(idle_time);
+ 
+ 	return idle;
+ }
+@@ -44,7 +44,7 @@ static u64 get_iowait_time(int cpu)
+ 		/* !NO_HZ so we can rely on cpustat.iowait */
+ 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+ 	else
+-		iowait = nsecs_to_jiffies64(1000 * iowait_time);
++		iowait = usecs_to_cputime64(iowait_time);
+ 
+ 	return iowait;
+ }
+diff -puN include/asm-generic/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t include/asm-generic/cputime.h
+--- a/include/asm-generic/cputime.h~reapply-procfs-do-not-confuse-jiffies-with-cputime64_t
++++ a/include/asm-generic/cputime.h
+@@ -27,6 +27,7 @@ typedef u64 __nocast cputime64_t;
+ 	jiffies_to_usecs(cputime_to_jiffies(__ct));
+ #define usecs_to_cputime(__msecs)	\
+ 	jiffies_to_cputime(usecs_to_jiffies(__msecs));
++#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
+ 
+ /*
+  * Convert cputime to seconds and back.
+_
+.
