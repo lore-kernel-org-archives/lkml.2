@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab1LUB1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:27:33 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59842 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab1LUB1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:27:31 -0500
-Message-ID: <4EF13675.9030000@cn.fujitsu.com>
-Date: Wed, 21 Dec 2011 09:29:25 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Mandeep Singh Baines <msb@chromium.org>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 3/5] cgroup: only need to check oldcgrp==newgrp once
-References: <1324422873-31001-1-git-send-email-msb@chromium.org> <1324422873-31001-4-git-send-email-msb@chromium.org>
-In-Reply-To: <1324422873-31001-4-git-send-email-msb@chromium.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-21 09:26:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-21 09:26:42,
-	Serialize complete at 2011-12-21 09:26:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753885Ab1LUB3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:29:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45507 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753067Ab1LUB3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 20:29:20 -0500
+Message-ID: <1324430940.2844.144.camel@deadeye>
+Subject: [PATCH 0/8] Fix virtual and physical address types
+From: Ben Hutchings <ben@decadent.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org,
+        Kevin Curtis <kevin.curtis@farsite.co.uk>, netdev@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        rds-devel@oss.oracle.com,
+        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+Date: Wed, 21 Dec 2011 01:29:00 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-auuee/X1upD+bQMYrTHk"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandeep Singh Baines wrote:
-> In cgroup_attach_proc it is now sufficient to only check that
-> oldcgrp==newcgrp once. Now that we are using threadgroup_lock()
-> during the migrations, oldcgrp will not change.
-> 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+--=-auuee/X1upD+bQMYrTHk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |   17 ++++++-----------
->  1 files changed, 6 insertions(+), 11 deletions(-)
+This series fixes compiler warnings on some architectures about implicit
+conversions and narrowing conversions between pointer and integer types.
+
+Please apply these to the appropriate trees.
+
+Ben.
+
+Ben Hutchings (8):
+  IB/cxgb4: Fix formatting of physical address
+  farsync: Fix confusion about DMA address and buffer offset types
+  drm: Do not include page offset in argument to virt_to_page()
+  drm: Pass pointers to virt_to_page()
+  [SCSI] tgt: Pass pointers to virt_to_page(), not integers
+  uio: Pass pointers to virt_to_page(), not integers
+  rds: Pass pointers to virt_to_page(), not integers
+  pmcraid: Pass pointers to access_ok(), not integers
+
+ drivers/gpu/drm/drm_pci.c            |    4 ++--
+ drivers/gpu/drm/drm_vm.c             |    2 +-
+ drivers/infiniband/hw/cxgb4/device.c |    4 ++--
+ drivers/net/wan/farsync.c            |   19 +++++++------------
+ drivers/scsi/pmcraid.c               |    3 ++-
+ drivers/scsi/scsi_tgt_if.c           |    2 +-
+ drivers/uio/uio.c                    |    6 ++++--
+ net/rds/message.c                    |    2 +-
+ 8 files changed, 20 insertions(+), 22 deletions(-)
+
+--=20
+1.7.7.3
+
+
+
+--=-auuee/X1upD+bQMYrTHk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATvE2XOe/yOyVhhEJAQpCPBAAzxsxERWWaiZhuyPldAGrhVCYw5gYv014
+kiOOfmLRnZXeRxRVFi7ZJlV603NvxDWL3/FGtjFvwDI5CTxb6wqWjjzvp+fCcaET
+O6pv6ehpvSISQM0mmkpv2shy8+f7+IZtVB9xRpPmWnQ4lE2Nbc5JhjqQcmBb4bPx
+QYymccb4Xivg1a4i9R0zMeKsQ9oNS+SqZy3zJmGNhUFVVc7f/OChbXfGueFHtJ0u
+NOZz7bA9wD+tbm6PkGjjHpZ7vWPIDcJQ/n5CRo9LSgSY7BwwTLHd8Cwgz7tzrfTt
+emvQHA8kqN9tob486h02GAj3ny9GwfQZb6wDRsrmbhw4ahbeULlzfOxjLW76f0kf
+OmyE4xqFx7PqCJD8bT3Sw/JDCtF08CguJabEXpqzAPkgc+rmGdYr9pTxlJ1WeHCZ
+Q+Sv/pD88Jmn2USwg5fTNZcrTny39e4wMmLY1qKU5md5Z01RfQhEpzXWczrjIWeH
+hBR3GJr29lS4uodvex9hoMIK+N+KxIeWQe6o4lTcKuCQ6RjanB+z9CKTe7yejQri
+rvoHHmdkFFa/6nKDYNkp9UmODE4Aja3f1BRn/9VLEtztT4GRL2C+DY+bSI2ZpZXn
+wb/MG88Q00OZi5qQaHR2V2/fT+0V93xCgx+YLqHEei22Y75tQxgbujzXnzlOYjrn
+jju3au81Fks=
+=gkq1
+-----END PGP SIGNATURE-----
+
+--=-auuee/X1upD+bQMYrTHk--
