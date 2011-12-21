@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1LURxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:53:38 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:51702
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751598Ab1LURxg (ORCPT
+	id S1753580Ab1LUR4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:56:43 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47001 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab1LUR4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:53:36 -0500
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LWKF14-01-J1H-02
-X-M-MSG: 
-Date: Wed, 21 Dec 2011 18:53:26 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: oprofile patch broke s390 build in tip/perf/core
-Message-ID: <20111221175326.GM16765@erda.amd.com>
-References: <1324488646.5916.107.camel@gandalf.stny.rr.com>
+	Wed, 21 Dec 2011 12:56:40 -0500
+Date: Wed, 21 Dec 2011 18:56:35 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20111221175632.GF17668@somewhere>
+References: <20111221034334.GD17668@somewhere>
+ <20111221130848.GA19679@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1324488646.5916.107.camel@gandalf.stny.rr.com>
+In-Reply-To: <20111221130848.GA19679@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.12.11 12:30:46, Steven Rostedt wrote:
-> In doing my tests last night before sending out my patch series this
-> morning, I found that s390 build didn't work, but it wasn't due to my
-> patches. I removed all my patches and built with latest mainline (which
-> builds fine), and then merged the current tip/perf/core. The result
-> didn't build.
+On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
+> On 12/21, Frederic Weisbecker wrote:
+> > Hi,
+> >
+> > Starring at some parts of cgroups, I have a few questions:
+> >
+> > - Is cgroup_enable_task_cg_list()'s while_each_thread() safe
+> > against concurrent exec()? The leader may change in de_thread()
+> > and invalidate the test done in while_each_thread().
 > 
-> I kicked off a ktest git bisect with last night's Linus tree as good,
-> and with the merged in tip/perf/core as bad. It ended up with this patch
-> that broke the build (which looks like a likely suspect).
-> 
-> 
-> The break is this:
-> 
->   LD      .tmp_vmlinux1
-> arch/s390/oprofile/built-in.o: In function `oprofile_arch_exit':
-> (.text+0x3f52): undefined reference to `oprofile_timer_exit'
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
+> Yes. Oh, we need to do something with while_each_thread.
 
-A fix is already in tip/perf/core:
+Would something like this work?
 
- f8c8520 oprofile: Fix oprofile_timer_exit() breakage
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c0c5876..e002a00 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2293,8 +2293,12 @@ extern bool current_is_single_threaded(void);
+ #define do_each_thread(g, t) \
+ 	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+ 
+-#define while_each_thread(g, t) \
+-	while ((t = next_thread(t)) != g)
++#define while_each_thread(g, t)					\
++	while (({						\
++		struct task_struct *__prev = t;			\
++		t = next_thread(t);				\
++		t != __prev && t != g;				\
++	}))
+ 
+ static inline int get_nr_threads(struct task_struct *tsk)
+ {
