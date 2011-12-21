@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1LUSJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:09:16 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36510 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab1LUSJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:09:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="90074379"
-Subject: [PATCH v2] block: fix blk_queue_end_tag()
-To: axboe@kernel.dk
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-scsi@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-        Tao Ma <boyu.mt@taobao.com>, Meelis Roos <mroos@ut.ee>,
-        linux-kernel@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
-Date: Wed, 21 Dec 2011 10:09:13 -0800
-Message-ID: <20111221180703.26525.17796.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15-7-g9bfb-dirty
+	id S1753406Ab1LUSK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:10:56 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:20529
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752969Ab1LUSKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:10:55 -0500
+X-SpamScore: -6
+X-BigFish: PS-6(zz1432Nzz1202hzzz2fh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:207.46.4.139;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0602HT004.namprd06.prod.outlook.com;RD:none;EFVD:NLI
+Message-ID: <4EF22127.3060905@ixiacom.com>
+Date: Wed, 21 Dec 2011 10:10:47 -0800
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RFC: Inconsistent short read behaviour in __do_proc_dointvec vs _proc_do_string
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.23.154.50]
+X-MS-Exchange-CrossPremises-AuthSource: SN2PRD0602HT004.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-Rules-Execution-History: Support - Juniper
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: SN2PRD0602HT004.namprd06.prod.outlook.com
+X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5e081591 "block: warn if tag is greater than real_max_depth"
-cleaned up blk_queue_end_tag() to warn when the tag is truly invalid
-(greater than real_max_depth).  However, it changed behavior in the tag
-< max_depth case to not end the request.  Leading to triggering of
-BUG_ON(blk_queued_rq(rq)) in the request completion path:
+Should repeated short reads in __do_proc_dointvec behave consistently with _proc_do_string ?
 
-  http://marc.info/?l=linux-kernel&m=132204370518629&w=2
+Consider:
 
-In order to allow blk_queue_resize_tags() to shrink the tag space
-blk_queue_end_tag() must always complete tags with a value less than
-real_max_depth regardless of the current max_depth.  The comment about
-"handling the shrink case" seems to be what prompted changes in this
-space, so remove it and BUG on all invalid tags (made even simpler by
-Matthew's suggestion to use an unsigned compare).
+>     char c[1];
+>     int n;
+> 
+>     while (1)
+>     {
+>         n = read(0, c, 1);
+> 
+>         if (n <= 0) break;
+> 
+>         write (1, c, 1);
+>     }
 
-Cc: Tao Ma <boyu.mt@taobao.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Reported-by: Meelis Roos <mroos@ut.ee>
-Reported-by: Ed Nadolski <edmund.nadolski@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
-v2: kill the warn+comment, and, per Matthew, do an unsigned compare to
-    catch the entire range of known invalid tags.
+Running this program on /proc/self/stat emits the expected output.
 
- block/blk-tag.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+Running this program on /proc/sys/kernel/random/poolsize does not :-(
 
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index e74d6d1..4af6f5c 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -282,18 +282,9 @@ EXPORT_SYMBOL(blk_queue_resize_tags);
- void blk_queue_end_tag(struct request_queue *q, struct request *rq)
- {
- 	struct blk_queue_tag *bqt = q->queue_tags;
--	int tag = rq->tag;
-+	unsigned tag = rq->tag; /* negative tags invalid */
- 
--	BUG_ON(tag == -1);
--
--	if (unlikely(tag >= bqt->max_depth)) {
--		/*
--		 * This can happen after tag depth has been reduced.
--		 * But tag shouldn't be larger than real_max_depth.
--		 */
--		WARN_ON(tag >= bqt->real_max_depth);
--		return;
--	}
-+	BUG_ON(tag >= bqt->real_max_depth);
- 
- 	list_del_init(&rq->queuelist);
- 	rq->cmd_flags &= ~REQ_QUEUED;
+The issue is that __do_proc_dointvec does not accommodate non-zero file positions
+when reading:
+
+>         if (!tbl_data || !table->maxlen || !*lenp || (*ppos && !write)) {
+>                *lenp = 0;
+>                return 0;
+>         }
+
+
+OTOH _proc_do_string seems quite willing to accommodate it:
+
+>         if (write) {
+>            ...
+>         } else {
+>            len = strlen(data);
+>            if (len > maxlen)
+>                     len = maxlen;
+>
+>            if (*ppos > len) {
+>                     *lenp = 0;
+>                     return 0;
+>            }
+
+
+Should __do_proc_intvec behave more like _proc_do_string, or vice-versa ?
+
+
+Earl
+
 
