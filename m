@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab1LUBck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:32:40 -0500
-Received: from mga07.intel.com ([143.182.124.22]:26895 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752770Ab1LUBcg convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1LUBc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:32:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45542 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752770Ab1LUBc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:32:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B286840@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1324407064-16875-1-git-send-email-kys@microsoft.com>
-	<CAA9_cmf2RQapBD3th-RAhhTBB64N9ChKNFNXz0PEZJexeQUoqw@mail.gmail.com>
-	<6E21E5352C11B742B20C142EB499E0481B286840@TK5EX14MBXC122.redmond.corp.microsoft.com>
-Date: Tue, 20 Dec 2011 17:32:35 -0800
-Message-ID: <CABE8wwsat+JGLiKpu_70bxZQAYegdrcsow=9XXBabwgWUgBT4Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage driver
- out of the staging area
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Dec 2011 20:32:57 -0500
+Message-ID: <1324431172.2844.147.camel@deadeye>
+Subject: [PATCH 2/8] farsync: Fix confusion about DMA address and buffer
+ offset types
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Kevin Curtis <kevin.curtis@farsite.co.uk>, netdev <netdev@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Dec 2011 01:32:52 +0000
+In-Reply-To: <1324430940.2844.144.camel@deadeye>
+References: <1324430940.2844.144.camel@deadeye>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ea7sVFMPsswuSiiPROlZ"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 4:42 PM, KY Srinivasan <kys@microsoft.com> wrote:
->
->
->> -----Original Message-----
->> From: dan.j.williams@gmail.com [mailto:dan.j.williams@gmail.com] On Behalf Of
->> Dan Williams
->> Sent: Tuesday, December 20, 2011 6:06 PM
->> To: KY Srinivasan
->> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
->> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
->> James.Bottomley@hansenpartnership.com; hch@infradead.org; linux-
->> scsi@vger.kernel.org
->> Subject: Re: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage driver
->> out of the staging area
->>
->> On Tue, Dec 20, 2011 at 10:51 AM, K. Y. Srinivasan <kys@microsoft.com> wrote:
->> > The storage driver (storvsc_drv.c) handles all block storage devices
->> > assigned to Linux guests hosted on Hyper-V. This driver has been in the
->> > staging tree for a while and this patch moves it out of the staging area.
->> > As per Greg's recommendation, this patch makes no changes to the staging/hv
->> > directory. Once the driver moves out of staging, we will cleanup the
->> > staging/hv directory.
->> >
->> > This patch includes all the patches that I have sent against the staging/hv
->> > tree to address the comments I have gotten to date on this storage driver.
->> > Greg has already applied all these patches to the staging tree.
->> >
->> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
->> > ---
->> >  drivers/scsi/Kconfig       |    7 +
->> >  drivers/scsi/Makefile      |    3 +
->> >  drivers/scsi/storvsc_drv.c | 1586
->> ++++++++++++++++++++++++++++++++++++++++++++
->> >  3 files changed, 1596 insertions(+), 0 deletions(-)
->> >  create mode 100644 drivers/scsi/storvsc_drv.c
->>
->> Shouldn't this diffstat be something like the following?
->>
->>  drivers/scsi/Kconfig                       |    7 +
->>  drivers/scsi/Makefile                      |    3 +
->>  drivers/{staging/hv => scsi}/storvsc_drv.c |  310 +++++++++++++++++++---------
->>  3 files changed, 218 insertions(+), 102 deletions(-)
->>  rename drivers/{staging/hv => scsi}/storvsc_drv.c (87%)
->
-> As per Greg's suggestion, this patch does not remove the driver from
-> the staging tree. Once the driver lands in the correct directory, we will
-> remove the driver from the staging directory.
 
-Ah, ok, so the patch can be accepted in parallel with the staging update.
+--=-ea7sVFMPsswuSiiPROlZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I still think it wouldn't hurt to show what:
+Consistently use dma_addr_t for DMA addresses, except in
+fst_{rx,tx}_dma where we truncate them to 32 bits.  (We know this is
+OK because that's the default DMA mask for PCI devices.)
 
-git diff --stat --summary -M
+Consistently use u32 for buffer offsets within shared memory.
 
-...is after the removal of the version in drivers/staging/hv/ to
-quickly show that git agrees that the versions are indeed identical,
-but no big deal.
+Compile-tested only.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/wan/farsync.c |   19 +++++++------------
+ 1 files changed, 7 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
+index ebb9f24..98c04c6 100644
+--- a/drivers/net/wan/farsync.c
++++ b/drivers/net/wan/farsync.c
+@@ -886,15 +886,13 @@ fst_rx_dma_complete(struct fst_card_info *card, struc=
+t fst_port_info *port,
+  *      Receive a frame through the DMA
+  */
+ static inline void
+-fst_rx_dma(struct fst_card_info *card, dma_addr_t skb,
+-	   dma_addr_t mem, int len)
++fst_rx_dma(struct fst_card_info *card, dma_addr_t skb, u32 mem, int len)
+ {
+ 	/*
+ 	 * This routine will setup the DMA and start it
+ 	 */
+=20
+-	dbg(DBG_RX, "In fst_rx_dma %lx %lx %d\n",
+-	    (unsigned long) skb, (unsigned long) mem, len);
++	dbg(DBG_RX, "In fst_rx_dma %x %x %d\n", (u32)skb, mem, len);
+ 	if (card->dmarx_in_progress) {
+ 		dbg(DBG_ASS, "In fst_rx_dma while dma in progress\n");
+ 	}
+@@ -915,20 +913,19 @@ fst_rx_dma(struct fst_card_info *card, dma_addr_t skb=
+,
+  *      Send a frame through the DMA
+  */
+ static inline void
+-fst_tx_dma(struct fst_card_info *card, unsigned char *skb,
+-	   unsigned char *mem, int len)
++fst_tx_dma(struct fst_card_info *card, dma_addr_t skb, u32 mem, int len)
+ {
+ 	/*
+ 	 * This routine will setup the DMA and start it.
+ 	 */
+=20
+-	dbg(DBG_TX, "In fst_tx_dma %p %p %d\n", skb, mem, len);
++	dbg(DBG_TX, "In fst_tx_dma %x %x %d\n", (u32)skb, mem, len);
+ 	if (card->dmatx_in_progress) {
+ 		dbg(DBG_ASS, "In fst_tx_dma while dma in progress\n");
+ 	}
+=20
+-	outl((unsigned long) skb, card->pci_conf + DMAPADR1);	/* Copy from here *=
+/
+-	outl((unsigned long) mem, card->pci_conf + DMALADR1);	/* to here */
++	outl(skb, card->pci_conf + DMAPADR1);	/* Copy from here */
++	outl(mem, card->pci_conf + DMALADR1);	/* to here */
+ 	outl(len, card->pci_conf + DMASIZ1);	/* for this length */
+ 	outl(0x000000004, card->pci_conf + DMADPR1);	/* In this direction */
+=20
+@@ -1405,9 +1402,7 @@ do_bottom_half_tx(struct fst_card_info *card)
+ 					card->dma_len_tx =3D skb->len;
+ 					card->dma_txpos =3D port->txpos;
+ 					fst_tx_dma(card,
+-						   (char *) card->
+-						   tx_dma_handle_card,
+-						   (char *)
++						   card->tx_dma_handle_card,
+ 						   BUF_OFFSET(txBuffer[pi]
+ 							      [port->txpos][0]),
+ 						   skb->len);
+--=20
+1.7.7.3
+
+
+
+
+--=-ea7sVFMPsswuSiiPROlZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATvE3ROe/yOyVhhEJAQq5UBAApGAMHnAosLKRWvXAKg1lgnzYWxTLrAgj
+XlAbV2820p796oa6PEZo/7JNQ1SAEYwF6VihzMIYV06oRyqoJ1bYvHg0iOQioSwM
+nFFpq63T8Zmvm8TU7VPOoPRRPXGyCC8sLDa9Wg0cBF6x+WB7NZesbnb2nJ92cEm0
+oiabEIQMdzamHxLcZ5hCDPC+iUSErfTOSO/xpWcRTLH7TN9e2bBexnggdIRuwJht
+zraoU+Y+86tA7Ljp7yB0vdxmilcemon12l4rGoGvGIWQuw90W//Iu1C0vxqefxp0
+cL4HwroiYDCo/6oaDtEoVWOAJyQyZOMxUD+i01/k0WLxcdf6x7BYeVZsJrODYFnI
++Xq9mc9dDb1kZMWKxtj6e/iCisKEVr8SxNdyAlrpiZGDNRf/40KLlGIMlRSq2OI1
+bAA/tHiDLxV473aEwitFcHn2aWOcxfp4r5l3NZkzKmV6BZUxfWVZW6g0Memv39rc
+kvCQbUA4z5j4Ke070C/7qgdU/BK9+aYu7dfGPw5VhCfFBNgRaF41zXTzEWA0MFJC
+avQIcT0UEfxyVtv/0i5TZ61ZaPOO87fZI+zsjv6nlfGjH4dnrG0GDVLTyPVC5VWU
+Q3YoGLnuvv0Zekz/0wOVi4isGFlfrN/H2yJVgLpPQl/0NbfUxF3rkY5Pp/rFWdnV
+WAMZYJLAOyo=
+=E8g0
+-----END PGP SIGNATURE-----
+
+--=-ea7sVFMPsswuSiiPROlZ--
