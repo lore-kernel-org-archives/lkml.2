@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1LUVdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 16:33:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab1LUVds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 16:33:48 -0500
-Date: Wed, 21 Dec 2011 16:33:42 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: greg@kroah.com, Bart Van Assche <bvanassche@acm.org>
-Cc: Jim Cromie <jim.cromie@gmail.com>, joe@perches.com,
+	id S1754100Ab1LUVl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 16:41:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52455 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1LUVl0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 16:41:26 -0500
+Message-ID: <1324503667.17070.7.camel@twins>
+Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vince@deater.net>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>, mingo@elte.hu,
+        William Cohen <wcohen@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/16] dynamic_debug: factor vpr_info_dq out of
- ddebug_parse_query
-Message-ID: <20111221213341.GC30393@redhat.com>
-References: <cover.1324318997.git.jbaron@redhat.com>
- <d3379e3504fcb51e666d85b0a7aef33f27e0c353.1324318997.git.jbaron@redhat.com>
- <CAO+b5-rZpHfB+OkHtsvBOaZx3tnLSCmBz=Md1+vY2hx+N2TLtA@mail.gmail.com>
- <CAJfuBxxrDp-1rPA5oR53Oy0OkZFvXTXHaBYL7+8n=ExCX3PtOg@mail.gmail.com>
- <CAO+b5-qMoL-BJupLAsstHDgfNwQTQXmDNUNjSn0ivxmD_j+ENQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAO+b5-qMoL-BJupLAsstHDgfNwQTQXmDNUNjSn0ivxmD_j+ENQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Wed, 21 Dec 2011 22:41:07 +0100
+In-Reply-To: <alpine.DEB.2.02.1112211622560.16411@pianoman.cluster.toy>
+References: <20111121145114.049265181@chello.nl>
+	  <alpine.DEB.2.00.1112161731570.6060@cl320.eecs.utk.edu>
+	 <1324472337.10752.11.camel@twins>
+	 <alpine.DEB.2.02.1112210959540.10098@pianoman.cluster.toy>
+	 <alpine.DEB.2.02.1112211622560.16411@pianoman.cluster.toy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 03:49:54PM +0000, Bart Van Assche wrote:
-> On Tue, Dec 20, 2011 at 3:47 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> > On Tue, Dec 20, 2011 at 1:17 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> > > On Mon, Dec 19, 2011 at 10:13 PM, Jason Baron <jbaron@redhat.com> wrote:
-> > >> From: Jim Cromie <jim.cromie@gmail.com>
-> > >>
-> > >> Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
-> > >> for reuse later.  Also change the printed labels: file, func to agree
-> > >> with the query-spec keywords accepted in the control file.  Pass ""
-> > >> when string is null, to avoid "(null)" output from sprintf.  For
-> > >> format print, use precision to skip last char, assuming its '\n', no
-> > >> great harm if not, its a debug msg.
-> > >
-> > > pr_info_dq() or vpr_info_dq() ?
-> >
-> > I chose vpr_info_dq, with leading v to hint at the "if (verbose)" part
-> 
-> In case my reply was a little too terse: isn't there a letter "v"
-> missing in the commit message ?
-> 
-> Bart.
+On Wed, 2011-12-21 at 16:32 -0500, Vince Weaver wrote:
 
-Thanks for catching this.
+> * One, is it possible to detect at runtime that rdpmc() is supported?  
+>   Maybe a field in the mmap'd buffer that can be read?
 
-Greg, if you want to s/pr_info_dq/vpr_info_dq, in the commit msg, this
-one is all set.
+Ingo suggested a similar thing, will implement (although Christmas might
+interfere with delivery timelines etc..).
 
-Thanks,
+> * Second, if I try a start / run 100M instructions / read
+>   and measure retired instructions I get:
+>       281474977711543 instructions
+>   This is 0x10000000f45b7 which is 1<<48 + 100M.  I guess an artifact
+>   of how the counters are set up?  Is it possible to have this start
+>   at 0?  
 
--Jason
+Its supposed to be 0 based, clearly I messed up something and need to go
+figure out what. Thanks for reporting.
