@@ -1,190 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab1LUTIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:08:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53710 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab1LUTIk (ORCPT
+	id S1754277Ab1LUTIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:08:42 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55232 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab1LUTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:08:40 -0500
-Date: Wed, 21 Dec 2011 11:08:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH for-3.3 UPDATED] mempool: fix and document synchronization
- and memory barrier usage
-Message-ID: <20111221190835.GJ9213@google.com>
-References: <20111220221818.GJ10752@google.com>
+	Wed, 21 Dec 2011 14:08:38 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/1bg7qh4t0eVWFTHhaovsN
+Date: Wed, 21 Dec 2011 11:08:15 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 1/7 v2] ARM: OMAP1: ams-delta: register latch
+ dependent devices later
+Message-ID: <20111221190815.GC24444@atomide.com>
+References: <201112200028.32947.jkrzyszt@tis.icnet.pl>
+ <1324418058-30905-1-git-send-email-jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111220221818.GJ10752@google.com>
+In-Reply-To: <1324418058-30905-1-git-send-email-jkrzyszt@tis.icnet.pl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mempool_alloc/free() use undocumented smp_mb()'s.  The code is
-slightly broken and misleading.
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111220 13:23]:
+> In preparation to converting Amstrad Delta on-board latches to
+> basic_mmio_gpio devices, registration of platform devices which depend
+> on latches and will require initialization of their GPIO pins first,
+> should be moved out of .machine_init down to late_initcall level, as the
+> gpio-generic driver is not available until device_initcall time.  The
+> latch reset operation, which will be replaced with GPIO initialization,
+> must also be moved to late_initcall for the same reason.
+> 
+> Since there was already another, separate arch_initcall function for
+> setting up one of those latch dependent devices, the on-board modem
+> device, reuse that function, i.e., rename it to a name that matches the
+> new purpose, extend with other device setup relocated from
+> .machine_init, and move down to the late_initcall level.
+> 
+> While being at it, add missing gpio_free() in case the modem platform
+> device registration fails.
+> 
+> Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
+> instead of shifting up the gpio-generic driver initialization.
+> 
+> In addition, defer registration of the Amstrad Delta ASoC and serio
+> devices, done from their device driver files, until late_initcall time,
+> as those drivers will depend on their GPIO pins already requested from
+> the board late_init() function until updated to register their GPIO pins
+> themselves.
+> 
+> Created and tested against linux-3.2-rc6.
+> 
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 
-The lockless part is in mempool_free().  It wants to determine whether
-the item being freed needs to be returned to the pool or backing
-allocator without grabbing pool->lock.  Two things need to be
-guaranteed for correct operation.
+Planning to apply this series. Dmitry, care to ack the drivers/input/serio/
+related change?
 
-1. pool->curr_nr + #allocated should never dip below pool->min_nr.
-2. Waiters shouldn't be left dangling.
+Regards,
 
-For #1, The only necessary condition is that curr_nr visible at free
-is from after the allocation of the element being freed (details in
-the comment).  For most cases, this is true without any barrier but
-there can be fringe cases where the allocated pointer is passed to the
-freeing task without going through memory barriers.  To cover this
-case, wmb is necessary before returning from allocation and rmb is
-necessary before reading curr_nr.  IOW,
+Tony
 
-	ALLOCATING TASK			FREEING TASK
-
-	update pool state after alloc;
-	wmb();
-	pass pointer to freeing task;
-					read pointer;
-					rmb();
-					read pool state to free;
-
-The current code doesn't have wmb after pool update during allocation
-and may theoretically, on machines where unlock doesn't behave as full
-wmb, lead to pool depletion and deadlock.  smp_wmb() needs to be added
-after successful allocation from reserved elements and smp_mb() in
-mempool_free() can be replaced with smp_rmb().
-
-For #2, the waiter needs to add itself to waitqueue and then check the
-wait condition and the waker needs to update the wait condition and
-then wake up.  Because waitqueue operations always go through full
-spinlock synchronization, there is no need for extra memory barriers.
-
-Furthermore, mempool_alloc() is already holding pool->lock when it
-decides that it needs to wait.  There is no reason to do unlock - add
-waitqueue - test condition again.  It can simply add itself to
-waitqueue while holding pool->lock and then unlock and sleep.
-
-This patch adds smp_wmb() after successful allocation from reserved
-pool, replaces smp_mb() in mempool_free() with smp_rmb() and extend
-pool->lock over waitqueue addition.  More importantly, it explains
-what memory barriers do and how the lockless testing is correct.
-
--v2: Oleg pointed out that unlock doesn't imply wmb.  Added explicit
-     smp_wmb() after successful allocation from reserved pool and
-     updated comments accordingly.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
----
-Oleg, can you please ack?  With the addition of explicit smp_wmb(),
-this patch becomes a fix, but I'm not sure about sending this to
--stable.  The chance of actual breakage is between nill and extremely
-unlikely while this change introducing a new bug is much higher.
-Maybe after a release cycle or two.
-
-Andrew, if people agree with the patch, it would be great if you can
-route this through -mm.
-
-Thanks a lot.
-
- mm/mempool.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 48 insertions(+), 13 deletions(-)
-
-Index: work/mm/mempool.c
-===================================================================
---- work.orig/mm/mempool.c
-+++ work/mm/mempool.c
-@@ -224,28 +224,31 @@ repeat_alloc:
- 	if (likely(pool->curr_nr)) {
- 		element = remove_element(pool);
- 		spin_unlock_irqrestore(&pool->lock, flags);
-+		/* paired with rmb in mempool_free(), read comment there */
-+		smp_wmb();
- 		return element;
- 	}
--	spin_unlock_irqrestore(&pool->lock, flags);
- 
- 	/* We must not sleep in the GFP_ATOMIC case */
--	if (!(gfp_mask & __GFP_WAIT))
-+	if (!(gfp_mask & __GFP_WAIT)) {
-+		spin_unlock_irqrestore(&pool->lock, flags);
- 		return NULL;
-+	}
- 
--	/* Now start performing page reclaim */
-+	/* Let's wait for someone else to return an element to @pool */
- 	gfp_temp = gfp_mask;
- 	init_wait(&wait);
- 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
--	smp_mb();
--	if (!pool->curr_nr) {
--		/*
--		 * FIXME: this should be io_schedule().  The timeout is there
--		 * as a workaround for some DM problems in 2.6.18.
--		 */
--		io_schedule_timeout(5*HZ);
--	}
--	finish_wait(&pool->wait, &wait);
- 
-+	spin_unlock_irqrestore(&pool->lock, flags);
-+
-+	/*
-+	 * FIXME: this should be io_schedule().  The timeout is there as a
-+	 * workaround for some DM problems in 2.6.18.
-+	 */
-+	io_schedule_timeout(5*HZ);
-+
-+	finish_wait(&pool->wait, &wait);
- 	goto repeat_alloc;
- }
- EXPORT_SYMBOL(mempool_alloc);
-@@ -265,7 +268,39 @@ void mempool_free(void *element, mempool
- 	if (unlikely(element == NULL))
- 		return;
- 
--	smp_mb();
-+	/*
-+	 * Paired with the wmb in mempool_alloc().  The preceding read is
-+	 * for @element and the following @pool->curr_nr.  This ensures
-+	 * that the visible value of @pool->curr_nr is from after the
-+	 * allocation of @element.  This is necessary for fringe cases
-+	 * where @element was passed to this task without going through
-+	 * barriers.
-+	 *
-+	 * For example, assume @p is %NULL at the beginning and one task
-+	 * performs "p = mempool_alloc(...);" while another task is doing
-+	 * "while (!p) cpu_relax(); mempool_free(p, ...);".  This function
-+	 * may end up using curr_nr value which is from before allocation
-+	 * of @p without the following rmb.
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * For correctness, we need a test which is guaranteed to trigger
-+	 * if curr_nr + #allocated == min_nr.  Testing curr_nr < min_nr
-+	 * without locking achieves that and refilling as soon as possible
-+	 * is desirable.
-+	 *
-+	 * Because curr_nr visible here is always a value after the
-+	 * allocation of @element, any task which decremented curr_nr below
-+	 * min_nr is guaranteed to see curr_nr < min_nr unless curr_nr gets
-+	 * incremented to min_nr afterwards.  If curr_nr gets incremented
-+	 * to min_nr after the allocation of @element, the elements
-+	 * allocated after that are subject to the same guarantee.
-+	 *
-+	 * Waiters happen iff curr_nr is 0 and the above guarantee also
-+	 * ensures that there will be frees which return elements to the
-+	 * pool waking up the waiters.
-+	 */
- 	if (pool->curr_nr < pool->min_nr) {
- 		spin_lock_irqsave(&pool->lock, flags);
- 		if (pool->curr_nr < pool->min_nr) {
+> ---
+> Changes since the initial version of this patch:
+> * use late_initcall() unconditionally in modules, requested by Russell
+>   King (thanks!); an updated patch 7/7 will follow,
+> * in the changelog message, move credits to Tony up a bit, since the
+>   person responsible for other changes (he might not necessarily like)
+>   is me, not him ;).
+> 
+> Comments copied from this patch initial submission:
+> This patch was not present in the initial submission, it replaces the
+> old patch 1/10, providing an alternative solution not touching the
+> gpio-generic driver.
+> 
+>  arch/arm/mach-omap1/board-ams-delta.c |   28 ++++++++++++++++++++--------
+>  drivers/input/serio/ams_delta_serio.c |    2 +-
+>  sound/soc/omap/ams-delta.c            |    2 +-
+>  3 files changed, 22 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
+> index b0f15d2..50987c9 100644
+> --- a/arch/arm/mach-omap1/board-ams-delta.c
+> +++ b/arch/arm/mach-omap1/board-ams-delta.c
+> @@ -275,11 +275,14 @@ static struct omap1_cam_platform_data ams_delta_camera_platform_data = {
+>  };
+>  
+>  static struct platform_device *ams_delta_devices[] __initdata = {
+> -	&ams_delta_nand_device,
+>  	&ams_delta_kp_device,
+> +	&ams_delta_camera_device,
+> +};
+> +
+> +static struct platform_device *late_devices[] __initdata = {
+> +	&ams_delta_nand_device,
+>  	&ams_delta_lcd_device,
+>  	&ams_delta_led_device,
+> -	&ams_delta_camera_device,
+>  };
+>  
+>  static void __init ams_delta_init(void)
+> @@ -307,9 +310,6 @@ static void __init ams_delta_init(void)
+>  	omap_serial_init();
+>  	omap_register_i2c_bus(1, 100, NULL, 0);
+>  
+> -	/* Clear latch2 (NAND, LCD, modem enable) */
+> -	ams_delta_latch2_write(~0, 0);
+> -
+>  	omap1_usb_init(&ams_delta_usb_config);
+>  	omap1_set_camera_info(&ams_delta_camera_platform_data);
+>  #ifdef CONFIG_LEDS_TRIGGERS
+> @@ -345,13 +345,18 @@ static struct platform_device ams_delta_modem_device = {
+>  	},
+>  };
+>  
+> -static int __init ams_delta_modem_init(void)
+> +static int __init late_init(void)
+>  {
+>  	int err;
+>  
+>  	if (!machine_is_ams_delta())
+>  		return -ENODEV;
+>  
+> +	/* Clear latch2 (NAND, LCD, modem enable) */
+> +	ams_delta_latch2_write(~0, 0);
+> +
+> +	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
+> +
+>  	omap_cfg_reg(M14_1510_GPIO2);
+>  	ams_delta_modem_ports[0].irq =
+>  			gpio_to_irq(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+> @@ -367,9 +372,16 @@ static int __init ams_delta_modem_init(void)
+>  		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC,
+>  		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC);
+>  
+> -	return platform_device_register(&ams_delta_modem_device);
+> +	err = platform_device_register(&ams_delta_modem_device);
+> +	if (err)
+> +		goto gpio_free;
+> +	return 0;
+> +
+> +gpio_free:
+> +	gpio_free(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+> +	return err;
+>  }
+> -arch_initcall(ams_delta_modem_init);
+> +late_initcall(late_init);
+>  
+>  static void __init ams_delta_map_io(void)
+>  {
+> diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
+> index d4d08bd..835d37a 100644
+> --- a/drivers/input/serio/ams_delta_serio.c
+> +++ b/drivers/input/serio/ams_delta_serio.c
+> @@ -165,7 +165,7 @@ serio:
+>  	kfree(ams_delta_serio);
+>  	return err;
+>  }
+> -module_init(ams_delta_serio_init);
+> +late_initcall(ams_delta_serio_init);
+>  
+>  static void __exit ams_delta_serio_exit(void)
+>  {
+> diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
+> index ccb8a6a..be81bc7 100644
+> --- a/sound/soc/omap/ams-delta.c
+> +++ b/sound/soc/omap/ams-delta.c
+> @@ -636,7 +636,7 @@ err:
+>  	platform_device_put(ams_delta_audio_platform_device);
+>  	return ret;
+>  }
+> -module_init(ams_delta_module_init);
+> +late_initcall(ams_delta_module_init);
+>  
+>  static void __exit ams_delta_module_exit(void)
+>  {
+> -- 
+> 1.7.3.4
+> 
