@@ -1,315 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1LUS6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:58:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab1LUS4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:56:44 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/7] ftrace: Add enable/disable ftrace_ops control interface
-Date: Wed, 21 Dec 2011 19:56:26 +0100
-Message-Id: <1324493791-5688-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+	id S1754139Ab1LUTAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:00:36 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36759 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab1LUTAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 14:00:34 -0500
+Date: Wed, 21 Dec 2011 13:59:14 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2011-12-21
+Message-ID: <20111221185914.GD11842@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a way to temporarily enable/disable ftrace_ops. The change
-follows the same way as 'global' ftrace_ops are done.
 
-Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
-which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
-flag. In addition new per cpu flag called 'disabled' is also added to
-ftrace_ops to provide the control information for each cpu.
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
-set as disabled for all cpus.
+commit b4949b84567f3ae1227d076fc95bbd8efea06506
 
-The ftrace_control_list contains all the registered 'control' ftrace_ops.
-The control_ops provides function which iterates ftrace_control_list
-and does the check for 'disabled' flag on current cpu.
+Dave,
 
-Adding 2 inline functions ftrace_function_enable/ftrace_function_disable,
-which enable/disable the ftrace_ops for given cpu.
+A few last(?) fixes intended for 3.2...
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+The biggest portion are from Gustavo:
+
+"3 fixes for 3.2! There one revert that was causing connection issues,
+a RFCOMM fix to a potential kernel panic, and the last on L2CAP to
+a possible access to uninitialized data due to broken remote devices."
+
+Also, an iwlwifi fix for a problem causing firmware asserts.
+
+Please let me know if there are problems!
+
+John
+
 ---
- include/linux/ftrace.h |   42 +++++++++++++++++
- kernel/trace/ftrace.c  |  119 +++++++++++++++++++++++++++++++++++++++++++++---
- kernel/trace/trace.h   |    2 +
- 3 files changed, 156 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 523640f..0d43a2b 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -35,12 +35,14 @@ enum {
- 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
- 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
- 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
-+	FTRACE_OPS_FL_CONTROL		= 1 << 3,
- };
- 
- struct ftrace_ops {
- 	ftrace_func_t			func;
- 	struct ftrace_ops		*next;
- 	unsigned long			flags;
-+	void __percpu			*disabled;
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	struct ftrace_hash		*notrace_hash;
- 	struct ftrace_hash		*filter_hash;
-@@ -97,6 +99,46 @@ int register_ftrace_function(struct ftrace_ops *ops);
- int unregister_ftrace_function(struct ftrace_ops *ops);
- void clear_ftrace_function(void);
- 
-+/**
-+ * ftrace_function_enable - enable controlled ftrace_ops on given cpu
-+ *
-+ * This function enables tracing on given cpu by decreasing
-+ * the per cpu control variable.
-+ * It must be called with preemption disabled and only on
-+ * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
-+ */
-+static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
-+{
-+	atomic_t *disabled;
-+
-+	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
-+			 !preempt_count()))
-+		return;
-+
-+	disabled = per_cpu_ptr(ops->disabled, cpu);
-+	atomic_dec(disabled);
-+}
-+
-+/**
-+ * ftrace_function_disable - enable controlled ftrace_ops on given cpu
-+ *
-+ * This function enables tracing on given cpu by decreasing
-+ * the per cpu control variable.
-+ * It must be called with preemption disabled and only on
-+ * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
-+ */
-+static inline void ftrace_function_disable(struct ftrace_ops *ops, int cpu)
-+{
-+	atomic_t *disabled;
-+
-+	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL) ||
-+			 !preempt_count()))
-+		return;
-+
-+	disabled = per_cpu_ptr(ops->disabled, cpu);
-+	atomic_inc(disabled);
-+}
-+
- extern void ftrace_stub(unsigned long a0, unsigned long a1);
- 
- #else /* !CONFIG_FUNCTION_TRACER */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 7eb702f..3c75928 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -60,6 +60,8 @@
- #define FTRACE_HASH_DEFAULT_BITS 10
- #define FTRACE_HASH_MAX_BITS 12
- 
-+#define FL_GLOBAL_CONTROL_MASK (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTROL)
-+
- /* ftrace_enabled is a method to turn ftrace on or off */
- int ftrace_enabled __read_mostly;
- static int last_ftrace_enabled;
-@@ -87,12 +89,14 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
- };
- 
- static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
-+static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
- static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
- ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
-+static struct ftrace_ops control_ops;
- 
- static void
- ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
-@@ -166,6 +170,38 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
- }
- #endif
- 
-+static void control_ops_disable_all(struct ftrace_ops *ops)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		atomic_set(per_cpu_ptr(ops->disabled, cpu), 1);
-+}
-+
-+static int control_ops_alloc(struct ftrace_ops *ops)
-+{
-+	atomic_t *disabled;
-+
-+	disabled = alloc_percpu(atomic_t);
-+	if (!disabled)
-+		return -ENOMEM;
-+
-+	ops->disabled = disabled;
-+	control_ops_disable_all(ops);
-+	return 0;
-+}
-+
-+static void control_ops_free(struct ftrace_ops *ops)
-+{
-+	free_percpu(ops->disabled);
-+}
-+
-+static int control_ops_is_disabled(struct ftrace_ops *ops, int cpu)
-+{
-+	atomic_t *disabled = per_cpu_ptr(ops->disabled, cpu);
-+	return atomic_read(disabled);
-+}
-+
- static void update_global_ops(void)
- {
- 	ftrace_func_t func;
-@@ -257,6 +293,26 @@ static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
- 	return 0;
- }
- 
-+static void add_ftrace_list_ops(struct ftrace_ops **list,
-+				struct ftrace_ops *main_ops,
-+				struct ftrace_ops *ops)
-+{
-+	int first = *list == &ftrace_list_end;
-+	add_ftrace_ops(list, ops);
-+	if (first)
-+		add_ftrace_ops(&ftrace_ops_list, main_ops);
-+}
-+
-+static int remove_ftrace_list_ops(struct ftrace_ops **list,
-+				  struct ftrace_ops *main_ops,
-+				  struct ftrace_ops *ops)
-+{
-+	int ret = remove_ftrace_ops(list, ops);
-+	if (!ret && *list == &ftrace_list_end)
-+		ret = remove_ftrace_ops(&ftrace_ops_list, main_ops);
-+	return ret;
-+}
-+
- static int __register_ftrace_function(struct ftrace_ops *ops)
- {
- 	if (ftrace_disabled)
-@@ -268,15 +324,20 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
- 	if (WARN_ON(ops->flags & FTRACE_OPS_FL_ENABLED))
- 		return -EBUSY;
- 
-+	/* We don't support both control and global flags set. */
-+	if ((ops->flags & FL_GLOBAL_CONTROL_MASK) == FL_GLOBAL_CONTROL_MASK)
-+		return -EINVAL;
-+
- 	if (!core_kernel_data((unsigned long)ops))
- 		ops->flags |= FTRACE_OPS_FL_DYNAMIC;
- 
- 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
--		int first = ftrace_global_list == &ftrace_list_end;
--		add_ftrace_ops(&ftrace_global_list, ops);
-+		add_ftrace_list_ops(&ftrace_global_list, &global_ops, ops);
- 		ops->flags |= FTRACE_OPS_FL_ENABLED;
--		if (first)
--			add_ftrace_ops(&ftrace_ops_list, &global_ops);
-+	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-+		if (control_ops_alloc(ops))
-+			return -ENOMEM;
-+		add_ftrace_list_ops(&ftrace_control_list, &control_ops, ops);
- 	} else
- 		add_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -300,11 +361,23 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 		return -EINVAL;
- 
- 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
--		ret = remove_ftrace_ops(&ftrace_global_list, ops);
--		if (!ret && ftrace_global_list == &ftrace_list_end)
--			ret = remove_ftrace_ops(&ftrace_ops_list, &global_ops);
-+		ret = remove_ftrace_list_ops(&ftrace_global_list,
-+					     &global_ops, ops);
- 		if (!ret)
- 			ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
-+		ret = remove_ftrace_list_ops(&ftrace_control_list,
-+					     &control_ops, ops);
-+		if (!ret) {
-+			/*
-+			 * The ftrace_ops is now removed from the list,
-+			 * so there'll be no new users. We must ensure
-+			 * all current users are done before we free
-+			 * the control data.
-+			 */
-+			synchronize_sched();
-+			control_ops_free(ops);
-+		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -3566,6 +3639,38 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
- static void
-+ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
-+{
-+	struct ftrace_ops *op;
-+	int cpu;
-+
-+	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
-+		return;
-+
-+	/*
-+	 * Some of the ops may be dynamically allocated,
-+	 * they must be freed after a synchronize_sched().
+The following changes since commit cd7816d14953c8af910af5bb92f488b0b277e29d:
+
+  net: have ipconfig not wait if no dev is available (2011-12-20 14:09:15 -=
+0500)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+Emmanuel Grumbach (1):
+      iwlwifi: update SCD BC table for all SCD queues
+
+Gustavo F. Padovan (1):
+      Revert "Bluetooth: Revert: Fix L2CAP connection establishment"
+
+John W. Linville (2):
+      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Mat Martineau (2):
+      Bluetooth: Prevent uninitialized data access in L2CAP configuration
+      Bluetooth: Clear RFCOMM session timer when disconnecting last channel
+
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c |    4 +---
+ net/bluetooth/hci_conn.c                      |    2 +-
+ net/bluetooth/l2cap_core.c                    |   12 +++++++++++-
+ net/bluetooth/rfcomm/core.c                   |    1 +
+ 4 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c b/drivers/net/wi=
+reless/iwlwifi/iwl-trans-pcie.c
+index ce91898..5f17ab8 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
+@@ -1197,9 +1197,7 @@ static int iwl_trans_pcie_tx(struct iwl_trans *trans,=
+ struct sk_buff *skb,
+ 	iwl_print_hex_dump(trans, IWL_DL_TX, (u8 *)tx_cmd->hdr, hdr_len);
+=20
+ 	/* Set up entry for this TFD in Tx byte-count array */
+-	if (is_agg)
+-		iwl_trans_txq_update_byte_cnt_tbl(trans, txq,
+-					       le16_to_cpu(tx_cmd->len));
++	iwl_trans_txq_update_byte_cnt_tbl(trans, txq, le16_to_cpu(tx_cmd->len));
+=20
+ 	dma_sync_single_for_device(bus(trans)->dev, txcmd_phys, firstlen,
+ 			DMA_BIDIRECTIONAL);
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index e0af723..c1c597e 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -673,7 +673,7 @@ int hci_conn_security(struct hci_conn *conn, __u8 sec_l=
+evel, __u8 auth_type)
+ 		goto encrypt;
+=20
+ auth:
+-	if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
++	if (test_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
+ 		return 0;
+=20
+ 	if (!hci_conn_auth(conn, sec_level, auth_type))
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 5ea94a1..17b5b1c 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -2152,7 +2152,7 @@ static int l2cap_parse_conf_rsp(struct l2cap_chan *ch=
+an, void *rsp, int len, voi
+ 	void *ptr =3D req->data;
+ 	int type, olen;
+ 	unsigned long val;
+-	struct l2cap_conf_rfc rfc;
++	struct l2cap_conf_rfc rfc =3D { .mode =3D L2CAP_MODE_BASIC };
+=20
+ 	BT_DBG("chan %p, rsp %p, len %d, req %p", chan, rsp, len, data);
+=20
+@@ -2271,6 +2271,16 @@ static void l2cap_conf_rfc_get(struct l2cap_chan *ch=
+an, void *rsp, int len)
+ 		}
+ 	}
+=20
++	/* Use sane default values in case a misbehaving remote device
++	 * did not send an RFC option.
 +	 */
-+	preempt_disable_notrace();
-+	trace_recursion_set(TRACE_CONTROL_BIT);
-+	cpu = smp_processor_id();
-+	op = rcu_dereference_raw(ftrace_control_list);
-+	while (op != &ftrace_list_end) {
-+		if (!control_ops_is_disabled(op, cpu) &&
-+		    ftrace_ops_test(op, ip))
-+			op->func(ip, parent_ip);
++	rfc.mode =3D chan->mode;
++	rfc.retrans_timeout =3D cpu_to_le16(L2CAP_DEFAULT_RETRANS_TO);
++	rfc.monitor_timeout =3D cpu_to_le16(L2CAP_DEFAULT_MONITOR_TO);
++	rfc.max_pdu_size =3D cpu_to_le16(chan->imtu);
 +
-+		op = rcu_dereference_raw(op->next);
-+	};
-+	trace_recursion_clear(TRACE_CONTROL_BIT);
-+	preempt_enable_notrace();
-+}
++	BT_ERR("Expected RFC option was not found, using defaults");
 +
-+static struct ftrace_ops control_ops = {
-+	.func = ftrace_ops_control_func,
-+};
-+
-+static void
- ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
- {
- 	struct ftrace_ops *op;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 2c26574..41c54e3 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -288,6 +288,8 @@ struct tracer {
- /* for function tracing recursion */
- #define TRACE_INTERNAL_BIT		(1<<11)
- #define TRACE_GLOBAL_BIT		(1<<12)
-+#define TRACE_CONTROL_BIT		(1<<13)
-+
- /*
-  * Abuse of the trace_recursion.
-  * As we need a way to maintain state if we are tracing the function
--- 
-1.7.1
+ done:
+ 	switch (rfc.mode) {
+ 	case L2CAP_MODE_ERTM:
+diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+index 4e32e18..2d28dfe 100644
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -1146,6 +1146,7 @@ static int rfcomm_recv_ua(struct rfcomm_session *s, u=
+8 dlci)
+ 			if (list_empty(&s->dlcs)) {
+ 				s->state =3D BT_DISCONN;
+ 				rfcomm_send_disc(s, 0);
++				rfcomm_session_clear_timer(s);
+ 			}
+=20
+ 			break;
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
 
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO8iyBAAoJEJctW/TcYTgGczsP/10aGT5iebMXycYgtRuvKn5p
+KTAMBk9+oqiK8ac6HGRjztKtZQCm5VhQbXH8W+/mbUzMR/mWFQQYe+yJctWh8QKV
+wk5k4C0E7yaMzu7vuoRo5rRD2c9L20I5I3DybkrrpADQNd6Sbe8R+Wmq1VhBMKTV
+7hTcEy0F0VzS9Zjg4JHNm+E2xTNjZrYSlLR1rjcizuOfPXM2VuJ9sNzyVW5Bfe8S
+tTXfOl03wR24LU6U4Ll/d1iHK9w5/2mRLx1X0y+S37KKLpH2IylfbtkdvIvFQLHk
+c0oxAKmbjf8j02gfGZyDJ82fUIB1AG940IDt2jDbpvTY7qk5DWz4+UJZSNfA1RJ2
+QUbBE5nPcMyCopufI15EY3ciuhrPdxD/nHofhq0kkR5H4T/Lq1Mu1jFvwWZzDsN2
+laUY1MHQiySDOAe6U4P3LyVfBRKXKD7gFCCPexJsasSFwiL+glX0hX54Ph3LtJIo
+qDy3yC3tcxcCcjSN+Ygf+sCgrDuupkttFwkwMPpmSbiBO97TE+kLlqqa1PWOOgZQ
+rIVsKSgmL6ZZxaBJS57RZNgaRJ6RaXiFoKE9LvnhZd6G1QRR58Z/4qTNl2YVJx3n
+LGDgvFophETFsaajxA/8v/OuQSb0jNjFIq5ff/ZoGrd0hNw0zmEJHO2EXrOkUW+a
+WQY5LooUeX57JsyWxokQ
+=b5wA
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
