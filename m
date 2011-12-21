@@ -1,152 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab1LULud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:50:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab1LULtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:49:23 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 7/8] ftrace, perf: Distinguish ftrace function event field type
-Date: Wed, 21 Dec 2011 12:48:55 +0100
-Message-Id: <1324468136-3997-8-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
-References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
- <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+	id S1753831Ab1LULvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:51:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34124 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab1LULvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:51:03 -0500
+Date: Wed, 21 Dec 2011 03:50:30 -0800
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-3u1jucza77j3wuvs0x2bic0f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        asharma@fb.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, asharma@fb.com, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/fast] perf: Extend the mmap control page with time (TSC)
+  fields
+Git-Commit-ID: e3f3541c19c89a4daae39300defba68943301949
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:50:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding FILTER_TRACE_FN event field type for function tracepoint
-event, so it can be properly recognized within filtering code.
+Commit-ID:  e3f3541c19c89a4daae39300defba68943301949
+Gitweb:     http://git.kernel.org/tip/e3f3541c19c89a4daae39300defba68943301949
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 21 Nov 2011 11:43:53 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 21 Dec 2011 11:01:13 +0100
 
-Currently all fields of ftrace subsystem events share the common
-field type FILTER_OTHER. Since the function trace fields need special
-care within the filtering code we need to recognize it properly,
-hence adding the FILTER_TRACE_FN event type.
+perf: Extend the mmap control page with time (TSC) fields
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Extend the mmap control page with fields so that userspace can compute
+time deltas relative to the provided time fields.
+
+Currently only implemented for x86 with constant and nonstop TSC.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Arun Sharma <asharma@fb.com>
+Link: http://lkml.kernel.org/n/tip-3u1jucza77j3wuvs0x2bic0f@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/ftrace_event.h       |    1 +
- kernel/trace/trace_events_filter.c |    7 ++++++-
- kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
- 3 files changed, 27 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   14 ++++++++++++++
+ include/linux/perf_event.h       |    4 +++-
+ kernel/events/core.c             |   21 ++++++++++++++-------
+ 3 files changed, 31 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 2bf677c..dd478fc 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -245,6 +245,7 @@ enum {
- 	FILTER_STATIC_STRING,
- 	FILTER_DYN_STRING,
- 	FILTER_PTR_STRING,
-+	FILTER_TRACE_FN,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 116b040..f8bddb5 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -32,6 +32,7 @@
+ #include <asm/compat.h>
+ #include <asm/smp.h>
+ #include <asm/alternative.h>
++#include <asm/timer.h>
+ 
+ #include "perf_event.h"
+ 
+@@ -1627,6 +1628,19 @@ static struct pmu pmu = {
+ 	.event_idx	= x86_pmu_event_idx,
  };
  
- #define EVENT_STORAGE_SIZE 128
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index f04cc31..66b74ab 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
- 	return FILTER_OTHER;
- }
- 
-+static bool is_function_field(struct ftrace_event_field *field)
++void perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
 +{
-+	return field->filter_type == FILTER_TRACE_FN;
++	if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
++		return;
++
++	if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
++		return;
++
++	userpg->time_mult = this_cpu_read(cyc2ns);
++	userpg->time_shift = CYC2NS_SCALE_FACTOR;
++	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
 +}
 +
- static bool is_string_field(struct ftrace_event_field *field)
+ /*
+  * callchain support
+  */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 5311b79..0b91db2 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -291,12 +291,14 @@ struct perf_event_mmap_page {
+ 	__s64	offset;			/* add to hardware event value */
+ 	__u64	time_enabled;		/* time event active */
+ 	__u64	time_running;		/* time event on cpu */
++	__u32	time_mult, time_shift;
++	__u64	time_offset;
+ 
+ 		/*
+ 		 * Hole for extension of the self monitor capabilities
+ 		 */
+ 
+-	__u64	__reserved[123];	/* align to 1k */
++	__u64	__reserved[121];	/* align to 1k */
+ 
+ 	/*
+ 	 * Control data for the mmap() data buffer.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index dcd4049..3a9c7d8 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3220,17 +3220,22 @@ static int perf_event_index(struct perf_event *event)
+ }
+ 
+ static void calc_timer_values(struct perf_event *event,
++				u64 *now,
+ 				u64 *enabled,
+ 				u64 *running)
  {
- 	return field->filter_type == FILTER_DYN_STRING ||
-@@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
- 			fn = filter_pred_strloc;
- 		else
- 			fn = filter_pred_pchar;
--	} else {
-+	} else if (!is_function_field(field)) {
- 		if (field->is_signed)
- 			ret = strict_strtoll(pred->regex.pattern, 0, &val);
- 		else
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 867653c..46c35e2 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 	ret = trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
+-	u64 now, ctx_time;
++	u64 ctx_time;
  
-@@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
+-	now = perf_clock();
+-	ctx_time = event->shadow_ctx_time + now;
++	*now = perf_clock();
++	ctx_time = event->shadow_ctx_time + *now;
+ 	*enabled = ctx_time - event->tstamp_enabled;
+ 	*running = ctx_time - event->tstamp_running;
+ }
  
-@@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 		ret = trace_define_field(event_call, event_storage, #item, \
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 		mutex_unlock(&event_storage_mutex);			\
- 		if (ret)						\
- 			return ret;					\
-@@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
- 
-@@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
- #define __dynamic_array(type, item)					\
- 	ret = trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
--				 0, is_signed_type(type), FILTER_OTHER);\
-+				 0, is_signed_type(type), filter_type);\
- 	if (ret)							\
- 		return ret;
- 
-+#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
-+#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
-+#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
-+#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
-+#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
-+#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
-+#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
-+#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
-+#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
-+#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
-+#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
-+#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
-+#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
++void __weak perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
++{
++}
 +
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
- int									\
-@@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
- {									\
- 	struct struct_name field;					\
- 	int ret;							\
-+	int filter_type = FILTER_TYPE(id);				\
- 									\
- 	tstruct;							\
- 									\
--- 
-1.7.1
-
+ /*
+  * Callers need to ensure there can be no nesting of this function, otherwise
+  * the seqlock logic goes bad. We can not serialize this because the arch
+@@ -3240,7 +3245,7 @@ void perf_event_update_userpage(struct perf_event *event)
+ {
+ 	struct perf_event_mmap_page *userpg;
+ 	struct ring_buffer *rb;
+-	u64 enabled, running;
++	u64 enabled, running, now;
+ 
+ 	rcu_read_lock();
+ 	/*
+@@ -3252,7 +3257,7 @@ void perf_event_update_userpage(struct perf_event *event)
+ 	 * because of locking issue as we can be called in
+ 	 * NMI context
+ 	 */
+-	calc_timer_values(event, &enabled, &running);
++	calc_timer_values(event, &now, &enabled, &running);
+ 	rb = rcu_dereference(event->rb);
+ 	if (!rb)
+ 		goto unlock;
+@@ -3277,6 +3282,8 @@ void perf_event_update_userpage(struct perf_event *event)
+ 	userpg->time_running = running +
+ 			atomic64_read(&event->child_total_time_running);
+ 
++	perf_update_user_clock(userpg, now);
++
+ 	barrier();
+ 	++userpg->lock;
+ 	preempt_enable();
+@@ -3763,7 +3770,7 @@ static void perf_output_read_group(struct perf_output_handle *handle,
+ static void perf_output_read(struct perf_output_handle *handle,
+ 			     struct perf_event *event)
+ {
+-	u64 enabled = 0, running = 0;
++	u64 enabled = 0, running = 0, now;
+ 	u64 read_format = event->attr.read_format;
+ 
+ 	/*
+@@ -3776,7 +3783,7 @@ static void perf_output_read(struct perf_output_handle *handle,
+ 	 * NMI context
+ 	 */
+ 	if (read_format & PERF_FORMAT_TOTAL_TIMES)
+-		calc_timer_values(event, &enabled, &running);
++		calc_timer_values(event, &now, &enabled, &running);
+ 
+ 	if (event->attr.read_format & PERF_FORMAT_GROUP)
+ 		perf_output_read_group(handle, event, enabled, running);
