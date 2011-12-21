@@ -1,136 +1,614 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1LUVVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 16:21:42 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52937 "EHLO
+	id S1754223Ab1LUVVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 16:21:52 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57061 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753827Ab1LUVVj (ORCPT
+	by vger.kernel.org with ESMTP id S1753915Ab1LUVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 16:21:39 -0500
-X-Sasl-enc: sR5ZXthCj7UODNzzzOThdQzkduRV43x0u0bGwG/1RTEN 1324502498
-Date: Wed, 21 Dec 2011 13:21:11 -0800
+	Wed, 21 Dec 2011 16:21:40 -0500
+X-Sasl-enc: OpGe0fd172p+boQsmMyvPkGXt6Q9L3e41H38U0KJPoTt 1324502499
+Date: Wed, 21 Dec 2011 13:21:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Subject: Linux 2.6.32.51
-Message-ID: <20111221212111.GA15958@kroah.com>
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.32.51
+Message-ID: <20111221212130.GB15958@kroah.com>
+References: <20111221212111.GA15958@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20111221212111.GA15958@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 2.6.32.51 kernel.
-
-All users of the 2.6.32 kernel series must upgrade.
-
-The updated 2.6.32.y git tree can be found at (NOTE THE ADDRESS CHANGE):
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-2.6.32.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsh=
-ortlog;h=3Drefs/heads/linux-2.6.32.y
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                 |    2=20
- arch/arm/mach-davinci/board-dm646x-evm.c |    6 +-
- arch/x86/oprofile/backtrace.c            |   46 ++++++++++++++++++++--
- arch/x86/oprofile/nmi_int.c              |    8 +--
- drivers/oprofile/buffer_sync.c           |   21 +++++-----
- drivers/usb/class/cdc-acm.c              |   10 ++++
- fs/ext4/inode.c                          |    2=20
- fs/hfs/btree.c                           |   20 +++++++--
- fs/jbd/journal.c                         |    8 +++
- fs/jbd2/journal.c                        |    8 +++
- include/linux/log2.h                     |    1=20
- kernel/taskstats.c                       |    1=20
- mm/percpu.c                              |   32 +++++++++------
- mm/util.c                                |   13 ++++++
- net/xfrm/xfrm_algo.c                     |    4 -
- sound/pci/hda/patch_realtek.c            |    2=20
- sound/pci/sis7019.c                      |   64 +++++++++++++++++++++++++-=
------
- 17 files changed, 193 insertions(+), 55 deletions(-)
-
-Andrea Arcangeli (1):
-      ext4: avoid hangs in ext4_da_should_update_i_disksize()
-
-David Dillow (1):
-      ALSA: sis7019 - give slow codecs more time to reset
-
-Eryu Guan (1):
-      jbd/jbd2: validate sb->s_first in journal_get_superblock()
-
-Greg Kroah-Hartman (1):
-      Linux 2.6.32.51
-
-Hans Verkuil (1):
-      ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_cha=
-nnel_mode
-
-Krzysztof Ha=C5=82asa (1):
-      USB: cdc-acm: add IDs for Motorola H24 HSPA USB module.
-
-Linus Torvalds (2):
-      linux/log2.h: Fix rounddown_pow_of_two(1)
-      Make TASKSTATS require root access
-
-Phillip Lougher (1):
-      hfs: fix hfs_find_init() sb->ext_tree NULL ptr oops
-
-Robert Richter (4):
-      oprofile: Free potentially owned tasks in case of errors
-      oprofile: Fix locking dependency in sync_start()
-      oprofile, x86: Fix nmi-unsafe callgraph support
-      oprofile, x86: Fix crash when unloading module (timer mode)
-
-Takashi Iwai (1):
-      ALSA: hda/realtek - Fix Oops in alc_mux_select()
-
-Tejun Heo (1):
-      percpu: fix chunk range calculation
-
-Tushar Gohad (1):
-      xfrm: Fix key lengths for rfc3686(ctr(aes))
-
-Xiao Guangrong (1):
-      export __get_user_pages_fast() function
-
-
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO8k3HAAoJEDjbvchgkmk+U3EP/3nS+4w9TLPlQAljOwkcblb/
-hBHIOTDG2uXybqNJzuWK8vtVYLTpttOKHoY3B62o0/1WRja0Btk+Wu4d4IdBqHBa
-D+hH6ht47Ey3g0ZE8Z7J1/kxJg/Y2JYG4mxaeOl775krYvINRMeG7WX7OoO0U27D
-NK/7uqF7q60V8wv/OXcMB9RrQ6X8KPUNU1B7SkEWR4zIWuwdMzpQaKtYPmqBjsBI
-uGeG4/tJqlDCz24Zh8fKcJ15SSJMmzb6tQrk6D07bDVwl7gHHM2QG8a80jJHwdjc
-fWn0Kq3ebNW1TOvvFYHuBmZQRWzucBDCaBqd872pNQQEHL+0+vs8f0ZRUQMjTOGM
-nKdsrK4oNdoIBG9hwDi3Bnvh7nH3zkp6KbYewTQ5xfYZ4pJ1SxM1eBQFMxEUY3n+
-dKoE08w2ZfYajAc6Q0KuTS9IosihsL5UwTQsFU2/igY9UknudEbIdqH/vFd29fpy
-P3fbkFTrWjkBbNauxbjxc4F+506imDeleUYSo1GwAs9lIgZsM+U2AKJsctENNTfD
-9OBQAxymklpeHrVZCl0f+2G2QKNrD4fr1zdwTU/jenWFiwHu5GuiXQ+YvHJAQJes
-+owb2zJaYxJTtD7O2aZItVsUCSfd3zt5nkyOa68Om46QITcoUAyjzoNWSICZtE91
-F9VkOlziX1wglpRpgp9a
-=NiJ+
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
+diff --git a/Makefile b/Makefile
+index f38986c..1c640ea 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .50
++EXTRAVERSION = .51
+ NAME = Man-Eating Seals of Antiquity
+ 
+ # *DOCUMENTATION*
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index 24e0e13..6b25227 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -502,7 +502,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 	int val;
+ 	u32 value;
+ 
+-	if (!vpif_vsclkdis_reg || !cpld_client)
++	if (!vpif_vidclkctl_reg || !cpld_client)
+ 		return -ENXIO;
+ 
+ 	val = i2c_smbus_read_byte(cpld_client);
+@@ -510,7 +510,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 		return val;
+ 
+ 	spin_lock_irqsave(&vpif_reg_lock, flags);
+-	value = __raw_readl(vpif_vsclkdis_reg);
++	value = __raw_readl(vpif_vidclkctl_reg);
+ 	if (mux_mode) {
+ 		val &= VPIF_INPUT_TWO_CHANNEL;
+ 		value |= VIDCH1CLK;
+@@ -518,7 +518,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 		val |= VPIF_INPUT_ONE_CHANNEL;
+ 		value &= ~VIDCH1CLK;
+ 	}
+-	__raw_writel(value, vpif_vsclkdis_reg);
++	__raw_writel(value, vpif_vidclkctl_reg);
+ 	spin_unlock_irqrestore(&vpif_reg_lock, flags);
+ 
+ 	err = i2c_smbus_write_byte(cpld_client, val);
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index 044897b..829edf0 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -11,6 +11,8 @@
+ #include <linux/oprofile.h>
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/highmem.h>
++
+ #include <asm/ptrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/stacktrace.h>
+@@ -47,6 +49,42 @@ static struct stacktrace_ops backtrace_ops = {
+ 	.address = backtrace_address,
+ };
+ 
++/* from arch/x86/kernel/cpu/perf_event.c: */
++
++/*
++ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
++ */
++static unsigned long
++copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++{
++	unsigned long offset, addr = (unsigned long)from;
++	unsigned long size, len = 0;
++	struct page *page;
++	void *map;
++	int ret;
++
++	do {
++		ret = __get_user_pages_fast(addr, 1, 0, &page);
++		if (!ret)
++			break;
++
++		offset = addr & (PAGE_SIZE - 1);
++		size = min(PAGE_SIZE - offset, n - len);
++
++		map = kmap_atomic(page, KM_USER0);
++		memcpy(to, map+offset, size);
++		kunmap_atomic(map, KM_USER0);
++		put_page(page);
++
++		len  += size;
++		to   += size;
++		addr += size;
++
++	} while (len < n);
++
++	return len;
++}
++
+ struct frame_head {
+ 	struct frame_head *bp;
+ 	unsigned long ret;
+@@ -54,12 +92,12 @@ struct frame_head {
+ 
+ static struct frame_head *dump_user_backtrace(struct frame_head *head)
+ {
++	/* Also check accessibility of one struct frame_head beyond: */
+ 	struct frame_head bufhead[2];
++	unsigned long bytes;
+ 
+-	/* Also check accessibility of one struct frame_head beyond */
+-	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
+-		return NULL;
+-	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
++	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	if (bytes != sizeof(bufhead))
+ 		return NULL;
+ 
+ 	oprofile_add_trace(bufhead[0].ret);
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index ca6b336..8f0e49b 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -750,12 +750,12 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 
+ void op_nmi_exit(void)
+ {
+-	if (using_nmi) {
+-		exit_sysfs();
++	if (!using_nmi)
++		return;
++	exit_sysfs();
+ #ifdef CONFIG_SMP
+-		unregister_cpu_notifier(&oprofile_cpu_nb);
++	unregister_cpu_notifier(&oprofile_cpu_nb);
+ #endif
+-	}
+ 	if (model->exit)
+ 		model->exit();
+ }
+diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
+index 5c4df24..334ccd6 100644
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -140,6 +140,13 @@ static struct notifier_block module_load_nb = {
+ 	.notifier_call = module_load_notify,
+ };
+ 
++static void free_all_tasks(void)
++{
++	/* make sure we don't leak task structs */
++	process_task_mortuary();
++	process_task_mortuary();
++}
++
+ int sync_start(void)
+ {
+ 	int err;
+@@ -147,8 +154,6 @@ int sync_start(void)
+ 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
+ 		return -ENOMEM;
+ 
+-	mutex_lock(&buffer_mutex);
+-
+ 	err = task_handoff_register(&task_free_nb);
+ 	if (err)
+ 		goto out1;
+@@ -165,7 +170,6 @@ int sync_start(void)
+ 	start_cpu_work();
+ 
+ out:
+-	mutex_unlock(&buffer_mutex);
+ 	return err;
+ out4:
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+@@ -173,6 +177,7 @@ out3:
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ out2:
+ 	task_handoff_unregister(&task_free_nb);
++	free_all_tasks();
+ out1:
+ 	free_cpumask_var(marked_cpus);
+ 	goto out;
+@@ -181,20 +186,16 @@ out1:
+ 
+ void sync_stop(void)
+ {
+-	/* flush buffers */
+-	mutex_lock(&buffer_mutex);
+ 	end_cpu_work();
+ 	unregister_module_notifier(&module_load_nb);
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ 	task_handoff_unregister(&task_free_nb);
+-	mutex_unlock(&buffer_mutex);
+-	flush_scheduled_work();
++	barrier();			/* do all of the above first */
+ 
+-	/* make sure we don't leak task structs */
+-	process_task_mortuary();
+-	process_task_mortuary();
++	flush_scheduled_work();
+ 
++	free_all_tasks();
+ 	free_cpumask_var(marked_cpus);
+ }
+ 
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 9d3d8cf..cec9bff 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1528,6 +1528,16 @@ static struct usb_device_id acm_ids[] = {
+ 	},
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
++	/* Motorola H24 HSPA module: */
++	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
++	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
++	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
++	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
++	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
++
+ 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
+ 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+ 					   data interface instead of
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 8572c79..72ba88f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3228,7 +3228,7 @@ static int ext4_da_write_end(struct file *file,
+ 	 */
+ 
+ 	new_i_size = pos + copied;
+-	if (new_i_size > EXT4_I(inode)->i_disksize) {
++	if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+ 		if (ext4_da_should_update_i_disksize(page, end)) {
+ 			down_write(&EXT4_I(inode)->i_data_sem);
+ 			if (new_i_size > EXT4_I(inode)->i_disksize) {
+diff --git a/fs/hfs/btree.c b/fs/hfs/btree.c
+index 052f214..0609e71 100644
+--- a/fs/hfs/btree.c
++++ b/fs/hfs/btree.c
+@@ -45,11 +45,26 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
+ 	case HFS_EXT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drXTExtRec, mdb->drXTFlSize,
+ 				    mdb->drXTFlSize, be32_to_cpu(mdb->drXTClpSiz));
++		if (HFS_I(tree->inode)->alloc_blocks >
++					HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	case HFS_CAT_CNID:
+ 		hfs_inode_read_fork(tree->inode, mdb->drCTExtRec, mdb->drCTFlSize,
+ 				    mdb->drCTFlSize, be32_to_cpu(mdb->drCTClpSiz));
++
++		if (!HFS_I(tree->inode)->first_blocks) {
++			printk(KERN_ERR "hfs: invalid btree extent records "
++								"(0 size).\n");
++			unlock_new_inode(tree->inode);
++			goto free_inode;
++		}
++
+ 		tree->inode->i_mapping->a_ops = &hfs_btree_aops;
+ 		break;
+ 	default:
+@@ -58,11 +73,6 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id, btree_keycmp ke
+ 	}
+ 	unlock_new_inode(tree->inode);
+ 
+-	if (!HFS_I(tree->inode)->first_blocks) {
+-		printk(KERN_ERR "hfs: invalid btree extent records (0 size).\n");
+-		goto free_inode;
+-	}
+-
+ 	mapping = tree->inode->i_mapping;
+ 	page = read_mapping_page(mapping, 0, NULL);
+ 	if (IS_ERR(page))
+diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+index 45905ff..70713d5 100644
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -1070,6 +1070,14 @@ static int journal_get_superblock(journal_t *journal)
+ 		goto out;
+ 	}
+ 
++	if (be32_to_cpu(sb->s_first) == 0 ||
++	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
++		printk(KERN_WARNING
++			"JBD: Invalid start block of journal: %u\n",
++			be32_to_cpu(sb->s_first));
++		goto out;
++	}
++
+ 	return 0;
+ 
+ out:
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 17af879..c00de9c 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1183,6 +1183,14 @@ static int journal_get_superblock(journal_t *journal)
+ 		goto out;
+ 	}
+ 
++	if (be32_to_cpu(sb->s_first) == 0 ||
++	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
++		printk(KERN_WARNING
++			"JBD2: Invalid start block of journal: %u\n",
++			be32_to_cpu(sb->s_first));
++		goto out;
++	}
++
+ 	return 0;
+ 
+ out:
+diff --git a/include/linux/log2.h b/include/linux/log2.h
+index 25b8086..fd7ff3d 100644
+--- a/include/linux/log2.h
++++ b/include/linux/log2.h
+@@ -185,7 +185,6 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+ #define rounddown_pow_of_two(n)			\
+ (						\
+ 	__builtin_constant_p(n) ? (		\
+-		(n == 1) ? 0 :			\
+ 		(1UL << ilog2(n))) :		\
+ 	__rounddown_pow_of_two(n)		\
+  )
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index b080920..a4ef542 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -592,6 +592,7 @@ static struct genl_ops taskstats_ops = {
+ 	.cmd		= TASKSTATS_CMD_GET,
+ 	.doit		= taskstats_user_cmd,
+ 	.policy		= taskstats_cmd_get_policy,
++	.flags		= GENL_ADMIN_PERM,
+ };
+ 
+ static struct genl_ops cgroupstats_ops = {
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 3bfd6e2..c90614a 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -110,9 +110,9 @@ static int pcpu_atom_size __read_mostly;
+ static int pcpu_nr_slots __read_mostly;
+ static size_t pcpu_chunk_struct_size __read_mostly;
+ 
+-/* cpus with the lowest and highest unit numbers */
+-static unsigned int pcpu_first_unit_cpu __read_mostly;
+-static unsigned int pcpu_last_unit_cpu __read_mostly;
++/* cpus with the lowest and highest unit addresses */
++static unsigned int pcpu_low_unit_cpu __read_mostly;
++static unsigned int pcpu_high_unit_cpu __read_mostly;
+ 
+ /* the address of the first chunk which starts with the kernel static area */
+ void *pcpu_base_addr __read_mostly;
+@@ -746,8 +746,8 @@ static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
+ 				 int page_start, int page_end)
+ {
+ 	flush_cache_vunmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
+@@ -809,8 +809,8 @@ static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
+ 				      int page_start, int page_end)
+ {
+ 	flush_tlb_kernel_range(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static int __pcpu_map_pages(unsigned long addr, struct page **pages,
+@@ -887,8 +887,8 @@ static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
+ 				int page_start, int page_end)
+ {
+ 	flush_cache_vmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ /**
+@@ -1680,7 +1680,9 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+-	pcpu_first_unit_cpu = NR_CPUS;
++
++	pcpu_low_unit_cpu = NR_CPUS;
++	pcpu_high_unit_cpu = NR_CPUS;
+ 
+ 	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
+ 		const struct pcpu_group_info *gi = &ai->groups[group];
+@@ -1700,9 +1702,13 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 			unit_map[cpu] = unit + i;
+ 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
+ 
+-			if (pcpu_first_unit_cpu == NR_CPUS)
+-				pcpu_first_unit_cpu = cpu;
+-			pcpu_last_unit_cpu = cpu;
++			/* determine low/high unit_cpu */
++			if (pcpu_low_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
++				pcpu_low_unit_cpu = cpu;
++			if (pcpu_high_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
++				pcpu_high_unit_cpu = cpu;
+ 		}
+ 	}
+ 	pcpu_nr_units = unit;
+diff --git a/mm/util.c b/mm/util.c
+index b377ce4..e48b493 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -233,6 +233,19 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ }
+ #endif
+ 
++/*
++ * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
++ * back to the regular GUP.
++ * If the architecture not support this fucntion, simply return with no
++ * page pinned
++ */
++int __attribute__((weak)) __get_user_pages_fast(unsigned long start,
++				 int nr_pages, int write, struct page **pages)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(__get_user_pages_fast);
++
+ /**
+  * get_user_pages_fast() - pin user pages in memory
+  * @start:	starting user address
+diff --git a/net/xfrm/xfrm_algo.c b/net/xfrm/xfrm_algo.c
+index faf54c6..9bd850a 100644
+--- a/net/xfrm/xfrm_algo.c
++++ b/net/xfrm/xfrm_algo.c
+@@ -411,8 +411,8 @@ static struct xfrm_algo_desc ealg_list[] = {
+ 	.desc = {
+ 		.sadb_alg_id = SADB_X_EALG_AESCTR,
+ 		.sadb_alg_ivlen	= 8,
+-		.sadb_alg_minbits = 128,
+-		.sadb_alg_maxbits = 256
++		.sadb_alg_minbits = 160,
++		.sadb_alg_maxbits = 288
+ 	}
+ },
+ };
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index ba44dc0..6419095 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -432,6 +432,8 @@ static int alc_mux_enum_put(struct snd_kcontrol *kcontrol,
+ 	imux = &spec->input_mux[mux_idx];
+ 	if (!imux->num_items && mux_idx > 0)
+ 		imux = &spec->input_mux[0];
++	if (!imux->num_items)
++		return 0;
+ 
+ 	type = get_wcaps_type(get_wcaps(codec, nid));
+ 	if (type == AC_WID_AUD_MIX) {
+diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
+index 1a5ff06..b11ee62 100644
+--- a/sound/pci/sis7019.c
++++ b/sound/pci/sis7019.c
+@@ -40,6 +40,7 @@ MODULE_SUPPORTED_DEVICE("{{SiS,SiS7019 Audio Accelerator}}");
+ static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
+ static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
+ static int enable = 1;
++static int codecs = 1;
+ 
+ module_param(index, int, 0444);
+ MODULE_PARM_DESC(index, "Index value for SiS7019 Audio Accelerator.");
+@@ -47,6 +48,8 @@ module_param(id, charp, 0444);
+ MODULE_PARM_DESC(id, "ID string for SiS7019 Audio Accelerator.");
+ module_param(enable, bool, 0444);
+ MODULE_PARM_DESC(enable, "Enable SiS7019 Audio Accelerator.");
++module_param(codecs, int, 0444);
++MODULE_PARM_DESC(codecs, "Set bit to indicate that codec number is expected to be present (default 1)");
+ 
+ static struct pci_device_id snd_sis7019_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SI, 0x7019) },
+@@ -139,6 +142,9 @@ struct sis7019 {
+ 	dma_addr_t silence_dma_addr;
+ };
+ 
++/* These values are also used by the module param 'codecs' to indicate
++ * which codecs should be present.
++ */
+ #define SIS_PRIMARY_CODEC_PRESENT	0x0001
+ #define SIS_SECONDARY_CODEC_PRESENT	0x0002
+ #define SIS_TERTIARY_CODEC_PRESENT	0x0004
+@@ -1075,6 +1081,7 @@ static int sis_chip_init(struct sis7019 *sis)
+ {
+ 	unsigned long io = sis->ioport;
+ 	void __iomem *ioaddr = sis->ioaddr;
++	unsigned long timeout;
+ 	u16 status;
+ 	int count;
+ 	int i;
+@@ -1101,21 +1108,45 @@ static int sis_chip_init(struct sis7019 *sis)
+ 	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
+ 		udelay(1);
+ 
++	/* Command complete, we can let go of the semaphore now.
++	 */
++	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
++	if (!count)
++		return -EIO;
++
+ 	/* Now that we've finished the reset, find out what's attached.
++	 * There are some codec/board combinations that take an extremely
++	 * long time to come up. 350+ ms has been observed in the field,
++	 * so we'll give them up to 500ms.
+ 	 */
+-	status = inl(io + SIS_AC97_STATUS);
+-	if (status & SIS_AC97_STATUS_CODEC_READY)
+-		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC2_READY)
+-		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC3_READY)
+-		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
+-
+-	/* All done, let go of the semaphore, and check for errors
++	sis->codecs_present = 0;
++	timeout = msecs_to_jiffies(500) + jiffies;
++	while (time_before_eq(jiffies, timeout)) {
++		status = inl(io + SIS_AC97_STATUS);
++		if (status & SIS_AC97_STATUS_CODEC_READY)
++			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC2_READY)
++			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC3_READY)
++			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
++
++		if (sis->codecs_present == codecs)
++			break;
++
++		msleep(1);
++	}
++
++	/* All done, check for errors.
+ 	 */
+-	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
+-	if (!sis->codecs_present || !count)
++	if (!sis->codecs_present) {
++		printk(KERN_ERR "sis7019: could not find any codecs\n");
+ 		return -EIO;
++	}
++
++	if (sis->codecs_present != codecs) {
++		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
++		       sis->codecs_present, codecs);
++	}
+ 
+ 	/* Let the hardware know that the audio driver is alive,
+ 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
+@@ -1387,6 +1418,17 @@ static int __devinit snd_sis7019_probe(struct pci_dev *pci,
+ 	if (!enable)
+ 		goto error_out;
+ 
++	/* The user can specify which codecs should be present so that we
++	 * can wait for them to show up if they are slow to recover from
++	 * the AC97 cold reset. We default to a single codec, the primary.
++	 *
++	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
++	 */
++	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
++		  SIS_TERTIARY_CODEC_PRESENT;
++	if (!codecs)
++		codecs = SIS_PRIMARY_CODEC_PRESENT;
++
+ 	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
+ 	if (rc < 0)
+ 		goto error_out;
