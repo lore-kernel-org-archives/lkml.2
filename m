@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab1LUSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:00:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52983 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab1LUSAF (ORCPT
+	id S1753708Ab1LUSHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:07:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47477 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1LUSHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:00:05 -0500
-Message-ID: <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference in
- ipv6_select_ident
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Boot <bootc@bootc.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Date: Wed, 21 Dec 2011 19:00:01 +0100
-In-Reply-To: <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <4EF200BB.7000209@bootc.net>
-	 <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <4EF2117F.6000803@bootc.net>
-	 <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+	Wed, 21 Dec 2011 13:07:04 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=3YJMZR4FIEkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=X1Fof1SVcJgS15oOyOEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324490822.5916.109.camel@gandalf.stny.rr.com>
+Subject: Re: oprofile patch broke s390 build in tip/perf/core
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Wed, 21 Dec 2011 13:07:02 -0500
+In-Reply-To: <20111221175326.GM16765@erda.amd.com>
+References: <1324488646.5916.107.camel@gandalf.stny.rr.com>
+	 <20111221175326.GM16765@erda.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
+On Wed, 2011-12-21 at 18:53 +0100, Robert Richter wrote:
 
-> Good point, thats a different problem then, since 3.1 is not supposed to
-> have this bug.
+> > The break is this:
+> > 
+> >   LD      .tmp_vmlinux1
+> > arch/s390/oprofile/built-in.o: In function `oprofile_arch_exit':
+> > (.text+0x3f52): undefined reference to `oprofile_timer_exit'
+> > make[1]: *** [.tmp_vmlinux1] Error 1
+> > make: *** [sub-make] Error 2
 > 
-> It seems rt->rt6i_peer points to invalid memory in your crash.
+> A fix is already in tip/perf/core:
 > 
-> (RBX=00000000000001f4)
-> 
-> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
-> 1f4+a4 -> CR2=0000000000000298
-> 
+>  f8c8520 oprofile: Fix oprofile_timer_exit() breakage
 
-It would help if you can confirm latest linux tree can reproduce the
-bug.
+Huh, I thought I did a recent pull from tip. But it came in with my pull
+today.
 
-Thanks !
+
+Thanks,
+
+-- Steve
 
 
