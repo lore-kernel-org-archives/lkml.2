@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab1LUSrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:47:16 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44442 "EHLO
+	id S1753795Ab1LUSrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:47:12 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44449 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753134Ab1LUSrF (ORCPT
+	by vger.kernel.org with ESMTP id S1752317Ab1LUSrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:47:05 -0500
+	Wed, 21 Dec 2011 13:47:06 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        sparclinux@vger.kernel.org
-Subject: [PATCH 1/2] sparc: Make SA_NOMASK a synonym of SA_NODEFER
-Date: Wed, 21 Dec 2011 18:47:00 +0000
-Message-Id: <1324493221-4435-2-git-send-email-matt@console-pimps.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/2] signal: Add block_sigmask() for adding sigmask to current->blocked
+Date: Wed, 21 Dec 2011 18:47:01 +0000
+Message-Id: <1324493221-4435-3-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
 References: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
@@ -24,36 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Unlike other architectures, sparc currently has no SA_NODEFER
-definition but only the older SA_NOMASK. Since SA_NOMASK is the
-historical name for SA_NODEFER, add SA_NODEFER and copy what other
-architectures do by making SA_NOMASK a synonym for SA_NODEFER.
+This patch abstracts the code sequence for adding a signal handler's
+sa_mask to current->blocked because the sequence is identical for all
+architectures. Furthermore, in the past some architectures actually
+got this code wrong, so introduce a wrapper that all architectures can
+use.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/sparc/include/asm/signal.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/kernel/signal.c |    6 +-----
+ include/linux/signal.h   |    1 +
+ kernel/signal.c          |   21 +++++++++++++++++++++
+ 3 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sparc/include/asm/signal.h b/arch/sparc/include/asm/signal.h
-index e49b828..aa42fe3 100644
---- a/arch/sparc/include/asm/signal.h
-+++ b/arch/sparc/include/asm/signal.h
-@@ -143,10 +143,11 @@ struct sigstack {
- #define SA_ONSTACK	_SV_SSTACK
- #define SA_RESTART	_SV_INTR
- #define SA_ONESHOT	_SV_RESET
--#define SA_NOMASK	0x20u
-+#define SA_NODEFER	0x20u
- #define SA_NOCLDWAIT    0x100u
- #define SA_SIGINFO      0x200u
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 54ddaeb2..46a01bd 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -682,7 +682,6 @@ static int
+ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 		struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int ret;
  
-+#define SA_NOMASK	SA_NODEFER
+ 	/* Are we from a system call? */
+@@ -733,10 +732,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 	 */
+ 	regs->flags &= ~X86_EFLAGS_TF;
  
- #define SIG_BLOCK          0x01	/* for blocking signals */
- #define SIG_UNBLOCK        0x02	/* for unblocking signals */
+-	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&blocked, sig);
+-	set_current_blocked(&blocked);
++	block_sigmask(ka, sig);
+ 
+ 	tracehook_signal_handler(sig, info, ka, regs,
+ 				 test_thread_flag(TIF_SINGLESTEP));
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index a822300..7987ce74 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -254,6 +254,7 @@ extern void set_current_blocked(const sigset_t *);
+ extern int show_unhandled_signals;
+ 
+ extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
++extern void block_sigmask(struct k_sigaction *ka, int signr);
+ extern void exit_signals(struct task_struct *tsk);
+ 
+ extern struct kmem_cache *sighand_cachep;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index b3f78d0..22b6667 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2322,6 +2322,27 @@ relock:
+ 	return signr;
+ }
+ 
++/**
++ * block_sigmask - add @ka's signal mask to current->blocked
++ * @ka: action for @signr
++ * @signr: signal that has been successfully delivered
++ *
++ * This function should be called when a signal has succesfully been
++ * delivered. It adds the mask of signals for @ka to current->blocked
++ * so that they are blocked during the execution of the signal
++ * handler. In addition, @signr will be blocked unless %SA_NODEFER is
++ * set in @ka->sa.sa_flags.
++ */
++void block_sigmask(struct k_sigaction *ka, int signr)
++{
++	sigset_t blocked;
++
++	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
++		sigaddset(&blocked, signr);
++	set_current_blocked(&blocked);
++}
++
+ /*
+  * It could be that complete_signal() picked us to notify about the
+  * group-wide signal. Other threads should be notified now to take
 -- 
 1.7.4.4
 
