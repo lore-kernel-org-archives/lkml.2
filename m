@@ -1,27 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab1LUOdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 09:33:13 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43548 "EHLO mx2.mail.elte.hu"
+	id S1753177Ab1LUOnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 09:43:16 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50530 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752973Ab1LUOdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 09:33:11 -0500
-Date: Wed, 21 Dec 2011 14:15:11 +0100
+	id S1751399Ab1LUOnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 09:43:13 -0500
+Date: Wed, 21 Dec 2011 14:22:33 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, William Cohen <wcohen@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        Vince Weaver <vince@deater.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
-Message-ID: <20111221131511.GA31186@elte.hu>
-References: <20111121145114.049265181@chello.nl>
- <alpine.DEB.2.00.1112161731570.6060@cl320.eecs.utk.edu>
- <1324472337.10752.11.camel@twins>
+To: Avi Kivity <avi@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Robert Richter <robert.richter@amd.com>,
+        Benjamin Block <bebl@mageta.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111221132233.GB31186@elte.hu>
+References: <20111219114023.GB29855@elte.hu>
+ <4EEF26F0.1050709@redhat.com>
+ <20111220091511.GB3091@elte.hu>
+ <4EF05996.8030807@redhat.com>
+ <20111220100916.GA20788@elte.hu>
+ <20111220152758.GA30127@8bytes.org>
+ <20111220184004.GE8408@elte.hu>
+ <20111221000716.GB30127@8bytes.org>
+ <20111221123442.GB6071@elte.hu>
+ <4EF1D4B6.3020408@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1324472337.10752.11.camel@twins>
+In-Reply-To: <4EF1D4B6.3020408@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,65 +46,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+* Avi Kivity <avi@redhat.com> wrote:
 
-> > I used the mmap_read_self() routine from your example as the 
-> > "read" performance that I measured.
+> On 12/21/2011 02:34 PM, Ingo Molnar wrote:
+>
+> > I think it can all be supported in a consistent way (see my 
+> > previous mails) - but the feature as presented today just 
+> > does not look useful enough to me if only supports that 
+> > niche self-monitoring usecase.
 > 
-> Yeah that's about it, if you want to discard the overload 
-> scenario, eg you use pinned counters or so, you can optimize 
-> it further by stripping out the tsc and scaling muck.
+> I hate to re-enter this thread, but this "niche use case" is 
+> exactly what LWP is designed for. [...]
 
-With the TSC scaling muck it a bit above 50 cycles here.
+It's not the only usecase that it can be used in, and that is 
+what matters to me.
 
-Without that, by optimizing it further for pinned counters, the 
-overhead of mmap_read_self() gets down to 36 cycles on a Nehalem 
-box.
+> [...] And once the JVM is adapted to exploit LWP, its use will 
+> dwarf all of the uses of perf put together (except the NMI 
+> watchdog).  You're only causing the developers needless pain 
+> by forcing them to fit this red peg into a green hole.
 
-A PEBS profile run of it shows that 90% of the overhead is in 
-the RDPMC instruction:
-
-    2.92 :          42a919:       lea    -0x1(%rax),%ecx                                          ▒
-         :                                                                                        ▒
-         :        static u64 rdpmc(unsigned int counter)                                          ▒
-         :        {                                                                               ▒
-         :                unsigned int low, high;                                                 ▒
-         :                                                                                        ▒
-         :                asm volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));        ▒
-   89.20 :          42a91c:       rdpmc                                                           ▒
-         :                        count = pc->offset;                                             ▒
-         :                        if (idx)                                                        ▒
-         :                                count += rdpmc(idx - 1);                                ▒
-         :                                                                                        ▒
-
-So the RDPMC instruction alone is 32 cycles. The perf way of 
-reading it adds another 4 cycles to it.
-
-So the measured 'perf overhead' is so ridiculously low that it's 
-virtually non-existent.
-
-Here's "pinned events" variant i've measured:
-
-static u64 mmap_read_self(void *addr)
-{
-        struct perf_event_mmap_page *pc = addr;
-        u32 seq, idx;
-        u64 count;
-
-        do {
-                seq = pc->lock;
-                barrier();
-
-                idx = pc->index;
-                count = pc->offset;
-                if (idx)
-                        count += rdpmc(idx - 1);
-
-                barrier();
-        } while (pc->lock != seq);
-
-        return count;
-}
+I disagree - i think LWP has been seriously over-sold and 
+seriously under-designed. Anyway, i'm willing to be convinced 
+that it's worth to be merged upstream, if it brings tangible 
+benefits to the usecases i mentioned.
 
 Thanks,
 
