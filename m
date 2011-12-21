@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1LUBfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:35:46 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51949 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab1LUBfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:35:45 -0500
-Message-ID: <4EF1377D.8080405@oracle.com>
-Date: Tue, 20 Dec 2011 17:33:49 -0800
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        wim@iguana.be
-Subject: Re: [PATCH] hpwd watchdog mark page executable
-References: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>	<1323131139-32451-2-git-send-email-maxim.uvarov@oracle.com> <20111220165059.4e79a416.akpm@linux-foundation.org>
-In-Reply-To: <20111220165059.4e79a416.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4EF137ED.00E7,ss=1,re=0.000,fgs=0
+	id S1753881Ab1LUBgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:36:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45579 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752931Ab1LUBgi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 20:36:38 -0500
+Message-ID: <1324431393.2844.153.camel@deadeye>
+Subject: [PATCH 6/8] uio: Pass pointers to virt_to_page(), not integers
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Dec 2011 01:36:33 +0000
+In-Reply-To: <1324430940.2844.144.camel@deadeye>
+References: <1324430940.2844.144.camel@deadeye>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 04:50 PM, Andrew Morton wrote:
-> On Mon,  5 Dec 2011 16:25:39 -0800
-> Maxim Uvarov<maxim.uvarov@oracle.com>  wrote:
->
->> Mark hpwdt watchdog pages executable to prevent failing:
->> BUG: unable to handle kernel paging request at c00f0000
->>   IP: [<c00f0000>] 0xc00effff
->>   *pdpt = 0000000000b7c001 *pde = 0000000000cf5067 *pte = 80000000000f0163
->>   Oops: 0011 [#1] SMP
->>
->> ...
->>
->> --- a/drivers/watchdog/hpwdt.c
->> +++ b/drivers/watchdog/hpwdt.c
->> @@ -335,6 +335,8 @@ static int __devinit detect_cru_service(void)
->>   	if (p == NULL)
->>   		return -ENOMEM;
->>
->> +	set_memory_x((unsigned long)p&  PAGE_MASK, ROM_SIZE>>  PAGE_SHIFT);
->> +
->>   	for (q = p; q<  p + ROM_SIZE; q += 16) {
->>   		rc = bios32_present(q);
->>   		if (!rc)
->
-> Odd.  Either nobody else is using this driver, or there's something
-> special about your setup.  Are you able to explain this?
->
+Most architectures define virt_to_page() as a macro that casts its
+argument such that an argument of type unsigned long will be accepted
+without complaint.  However, the proper type is void *, and passing
+unsigned long results in a warning on MIPS.
 
-Code drivers/watchdog/hpwdt.c is ifdefed on 2 branches for 32 and 64 bit 
-accordingly. For 64 bit address for watchdog handler is used from 
-smbios, for 32 bit - from ioremap(0x000F0000, ). Accordingly 64 kernel 
-unsets  _PAGE_NX flag to pages. I.e. calls set_memory_x(). But 32 bit 
-did not do so. It worked on 2.6.32 and since 3.0 looks like additional 
-page protection code was added. I can't find the right commit which 
-changed it right now.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+It might be clearer to assign:
 
-> Also, do you believe that this fix should be backported into earlier
-> stable kernels and if so, why?
->
-Andrew, I found this problem in 3.0 than checked that it exist in 
-linux-next when it was 3.1+. Because it's panic on module loading,  yes 
-this is critical bug and it's needs to be back-ported. (Actually this 
-driver was not changed so simple cherry-pick one line patch will work.).
+	addr = (void *)((unsigned long)idev->info->mem[mi].addr + offset);
 
-Maxim.
-  > Thanks.
+since arithmetic on void pointers is weird.  Either way should work though.
+
+Ben.
+
+ drivers/uio/uio.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index a783d53..1ff7927 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -620,6 +620,7 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct uio_device *idev = vma->vm_private_data;
+ 	struct page *page;
+ 	unsigned long offset;
++	void *addr;
+ 
+ 	int mi = uio_find_mem_index(vma);
+ 	if (mi < 0)
+@@ -631,10 +632,11 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	 */
+ 	offset = (vmf->pgoff - mi) << PAGE_SHIFT;
+ 
++	addr = (void *)(unsigned long)idev->info->mem[mi].addr + offset;
+ 	if (idev->info->mem[mi].memtype == UIO_MEM_LOGICAL)
+-		page = virt_to_page(idev->info->mem[mi].addr + offset);
++		page = virt_to_page(addr);
+ 	else
+-		page = vmalloc_to_page((void *)(unsigned long)idev->info->mem[mi].addr + offset);
++		page = vmalloc_to_page(addr);
+ 	get_page(page);
+ 	vmf->page = page;
+ 	return 0;
+-- 
+1.7.7.3
+
+
 
