@@ -1,144 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1LUMgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 07:36:43 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39261 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab1LUMgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 07:36:41 -0500
-Date: Wed, 21 Dec 2011 13:34:42 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
-        Benjamin Block <bebl@mageta.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
-        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
-        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
-Message-ID: <20111221123442.GB6071@elte.hu>
-References: <20111219105429.GC19861@elte.hu>
- <4EEF1C3B.3010307@redhat.com>
- <20111219114023.GB29855@elte.hu>
- <4EEF26F0.1050709@redhat.com>
- <20111220091511.GB3091@elte.hu>
- <4EF05996.8030807@redhat.com>
- <20111220100916.GA20788@elte.hu>
- <20111220152758.GA30127@8bytes.org>
- <20111220184004.GE8408@elte.hu>
- <20111221000716.GB30127@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221000716.GB30127@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753748Ab1LUMiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 07:38:18 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43158 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579Ab1LUMiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 07:38:07 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=MnYK5gt4TwkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5WSkYo6Eoo2OwDka7ncA:9 a=6n7fa0yeXSLr2W_RtMwA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=sQIOF5EQxsKyQ06s2OMA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111221123805.619027837@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 21 Dec 2011 07:36:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 06/16] ftrace: Replace record newlist with record page list
+References: <20111221123624.193898256@goodmis.org>
+Content-Disposition: inline; filename=0006-ftrace-Replace-record-newlist-with-record-page-list.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-* Joerg Roedel <joro@8bytes.org> wrote:
+From: Steven Rostedt <srostedt@redhat.com>
 
-> On Tue, Dec 20, 2011 at 07:40:04PM +0100, Ingo Molnar wrote:
-> 
-> > > I am fine with integrating LWP into perf as long as it makes 
-> > > sense and does not break the intended usage scenario for LWP.
-> > 
-> > That's the wrong way around - in reality we'll integrate LWP 
-> > upstream only once it makes sense and works well with the 
-> > primary instrumentation abstraction we have in the kernel.
-> 
-> I still don't see why you want an abstraction for a hardware 
-> feature [...]
+As new functions come in to be initalized from mcount to nop,
+they are done by groups of pages. Whether it is the core kernel
+or a module. There's no need to keep track of these on a per record
+basis.
 
-Because if done properly then Linux users and developers will be 
-able to utilize the hardware feature well beyond the limited 
-scope these patches are giving it.
+At startup, and as any module is loaded, the functions to be
+traced are stored in a group of pages and added to the function
+list at the end. We just need to keep a pointer to the first
+page of the list that was added, and use that to know where to
+start on the list for initializing functions.
 
-A couple of examples:
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h |    5 +---
+ kernel/trace/ftrace.c  |   68 ++++++++++++++++++++++++++------------------=
+----
+ 2 files changed, 38 insertions(+), 35 deletions(-)
 
-1) This command:
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 3f79bc4..31b9fd7 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -173,10 +173,7 @@ struct dyn_ftrace {
+ 		unsigned long		ip; /* address of mcount call-site */
+ 		struct dyn_ftrace	*freelist;
+ 	};
+-	union {
+-		unsigned long		flags;
+-		struct dyn_ftrace	*newlist;
+-	};
++	unsigned long		flags;
+ 	struct dyn_arch_ftrace		arch;
+ };
+=20
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 2e72188..366d788 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -977,8 +977,6 @@ static struct ftrace_ops global_ops =3D {
+ 	.filter_hash		=3D EMPTY_HASH,
+ };
+=20
+-static struct dyn_ftrace *ftrace_new_addrs;
+-
+ static DEFINE_MUTEX(ftrace_regex_lock);
+=20
+ struct ftrace_page {
+@@ -988,6 +986,8 @@ struct ftrace_page {
+ 	int			size;
+ };
+=20
++static struct ftrace_page *ftrace_new_pgs;
++
+ #define ENTRY_SIZE sizeof(struct dyn_ftrace)
+ #define ENTRIES_PER_PAGE (PAGE_SIZE / ENTRY_SIZE)
+=20
+@@ -1445,8 +1445,6 @@ ftrace_record_ip(unsigned long ip)
+ 		return NULL;
+=20
+ 	rec->ip =3D ip;
+-	rec->newlist =3D ftrace_new_addrs;
+-	ftrace_new_addrs =3D rec;
+=20
+ 	return rec;
+ }
+@@ -1936,9 +1934,11 @@ static int ops_traces_mod(struct ftrace_ops *ops)
+=20
+ static int ftrace_update_code(struct module *mod)
+ {
++	struct ftrace_page *pg;
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
+ 	unsigned long ref =3D 0;
++	int i;
+=20
+ 	/*
+ 	 * When adding a module, we need to check if tracers are
+@@ -1960,41 +1960,44 @@ static int ftrace_update_code(struct module *mod)
+ 	start =3D ftrace_now(raw_smp_processor_id());
+ 	ftrace_update_cnt =3D 0;
+=20
+-	while (ftrace_new_addrs) {
++	for (pg =3D ftrace_new_pgs; pg; pg =3D pg->next) {
+=20
+-		/* If something went wrong, bail without enabling anything */
+-		if (unlikely(ftrace_disabled))
+-			return -1;
++		for (i =3D 0; i < pg->index; i++) {
++			/* If something went wrong, bail without enabling anything */
++			if (unlikely(ftrace_disabled))
++				return -1;
+=20
+-		p =3D ftrace_new_addrs;
+-		ftrace_new_addrs =3D p->newlist;
+-		p->flags =3D ref;
++			p =3D &pg->records[i];
++			p->flags =3D ref;
+=20
+-		/*
+-		 * Do the initial record conversion from mcount jump
+-		 * to the NOP instructions.
+-		 */
+-		if (!ftrace_code_disable(mod, p))
+-			break;
++			/*
++			 * Do the initial record conversion from mcount jump
++			 * to the NOP instructions.
++			 */
++			if (!ftrace_code_disable(mod, p))
++				break;
+=20
+-		ftrace_update_cnt++;
++			ftrace_update_cnt++;
+=20
+-		/*
+-		 * If the tracing is enabled, go ahead and enable the record.
+-		 *
+-		 * The reason not to enable the record immediatelly is the
+-		 * inherent check of ftrace_make_nop/ftrace_make_call for
+-		 * correct previous instructions.  Making first the NOP
+-		 * conversion puts the module to the correct state, thus
+-		 * passing the ftrace_make_call check.
+-		 */
+-		if (ftrace_start_up && ref) {
+-			int failed =3D __ftrace_replace_code(p, 1);
+-			if (failed)
+-				ftrace_bug(failed, p->ip);
++			/*
++			 * If the tracing is enabled, go ahead and enable the record.
++			 *
++			 * The reason not to enable the record immediatelly is the
++			 * inherent check of ftrace_make_nop/ftrace_make_call for
++			 * correct previous instructions.  Making first the NOP
++			 * conversion puts the module to the correct state, thus
++			 * passing the ftrace_make_call check.
++			 */
++			if (ftrace_start_up && ref) {
++				int failed =3D __ftrace_replace_code(p, 1);
++				if (failed)
++					ftrace_bug(failed, p->ip);
++			}
+ 		}
+ 	}
+=20
++	ftrace_new_pgs =3D NULL;
++
+ 	stop =3D ftrace_now(raw_smp_processor_id());
+ 	ftrace_update_time =3D stop - start;
+ 	ftrace_update_tot_cnt +=3D ftrace_update_cnt;
+@@ -3632,6 +3635,9 @@ static int ftrace_process_locs(struct module *mod,
+ 			break;
+ 	}
+=20
++	/* These new locations need to be initialized */
++	ftrace_new_pgs =3D pg;
++
+ 	/*
+ 	 * We only need to disable interrupts on start up
+ 	 * because we are modifying code that an interrupt
+--=20
+1.7.7.3
 
-      perf record -e lwp:instructions ./myapp
 
-   will be possible and will be able to do skid-less profiling.
 
-2) In the long run apps might be able to insert lightweight 
-   trace entries without entering the kernel, using the LWPINS 
-   instruction.
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-3) Maybe LWP will be enhanced with the ability to profile system 
-   mode execution as well - which we'll be able to support very 
-   easily.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-These features are *far* more interesting than some limited 
-self-monitoring use of LWP.
+iQIcBAABAgAGBQJO8dMtAAoJEIy3vGnGbaoASyAQALE5O3S5BNXIFmKuh4VFUyyN
+x7cbZ0iXAH5EoqvszbXnfJsWD4c8bm2o+8YTTMBwtkQ4zJOxUWsjd1VPf/vK1SAG
+e+RULizigribWgACcUzZgKW4iF2DSpINPuHkUxj1+K4TGsVjSy9VkElFrJKC3Y94
+TWoQolCWUajr3jtqL6Rl3SwH4hhudvnioETBI9Ij1m8hwvl34HQJSr+sQoA4Mhda
+47gaoFA9OQbpsPBc+dJUHxLHfw7wOUrs1GekVINYlsKGPMMS9HvyD/9FkC90gj6l
+iG5rwxThl/Mb8RyENATFrxYhdK3YqoqvB53BaCfqJDLocnWPQbbMMCPMksP41EF9
+4JConFgPVsp4xbEhrAJnCBPSI8NIZZnozr/X3toWGNKcHlyJv5+cXuyPSC+pXtsn
+1TfS87cT4MExT32/opF+Ktx6WauZk5E6fCGeJcRi9u9vJbrvX6znLizrW0ntBkPR
+Jl9w0qkoJUWDToo5v9a28CxilGpkPB5yDJuVcl3E/DNKkQr8SlrDM7hNy5uBH2QC
+oFHzfqQWuNUgy366SlWsMGlBUnz1taRmp3sF0kUFxwIlp7jNBjWp5A4Nsn1MpVG/
+RBTE67qTBsQRmPKK0kurh1eoc4GnM+2pJbu2X7ua5yrCVGriFNNVp4e6ASG2EjSV
+OwAm2jjZe0Z9yCtqX/HR
+=ueHh
+-----END PGP SIGNATURE-----
 
-I don't mind niches per se, so i don't mind the self-monitoring 
-usecase either, as long as they are not trying to be the *only* 
-feature, at the expense of more interesting features.
-
-I think it can all be supported in a consistent way (see my 
-previous mails) - but the feature as presented today just does 
-not look useful enough to me if only supports that niche 
-self-monitoring usecase.
-
-> > > [...] It also destroys the intended use-case for LWP 
-> > > because it disturbs any process that is doing 
-> > > self-profiling with LWP.
-> > 
-> > Why would it destroy that? Self-profiling can install events 
-> > just fine, the kernel will arbitrate the resource.
-> 
-> Because you can't reliably hand over the LWPCB management to 
-> the kernel. The instruction to load a new LWPCB is executable 
-> in ring-3. Any kernel-use of LWP will never be reliable.
-
-It will be reliable for all tasks that don't intentionally 
-modify their own LWPCB's but stay with the defined APIs and no 
-task will be able to destroy *another* task's LWPCB (be it in or 
-outside of any APIs), if properly implemented.
-
-So a task can mess with itself - and it can already do that 
-today.
-
-So what's your point?
-
-> > > So what you are saying is (not just here, also in other 
-> > > emails in this thread) that every hardware not designed 
-> > > for perf is crap?
-> > 
-> > No - PMU hardware designed to not allow the profiling of the 
-> > kernel is obviously a crappy aspect of it. Also, PMU 
-> > hardware that does not allow 100% encapsulation by the 
-> > kernel is obviously not very wisely done either.
-> 
-> Why? Whats wrong with user-space having control over its own 
-> PMU in a safe way? This is what the feature was designed for.
-
-Read what i've written: 'PMU hardware designed to not allow the 
-profiling of the kernel is obviously a crappy aspect of it'.
-
-There is no reason why LWP could not allow profiling of kernel 
-execution as well, with a simple security model to make sure 
-unprivileged user-space does not profile kernel execution: such 
-as a LWP-load-time check whether the LWPCB lies on a system pte 
-or not.
-
-This would allow everything that is possible today - and more.
-
-Allowing user-space access to the PMU does not preclude a proper 
-PMU abstraction.
-
-Thanks,
-
-	Ingo
+--00GvhwF7k39YY--
