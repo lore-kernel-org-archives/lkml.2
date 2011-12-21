@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1LUBcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:32:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45537 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751713Ab1LUBcM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:32:12 -0500
-Message-ID: <1324431127.2844.146.camel@deadeye>
-Subject: [PATCH 1/8] IB/cxgb4: Fix formatting of physical address
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Dec 2011 01:32:07 +0000
-In-Reply-To: <1324430940.2844.144.camel@deadeye>
-References: <1324430940.2844.144.camel@deadeye>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754035Ab1LUBck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:32:40 -0500
+Received: from mga07.intel.com ([143.182.124.22]:26895 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752770Ab1LUBcg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 20:32:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B286840@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1324407064-16875-1-git-send-email-kys@microsoft.com>
+	<CAA9_cmf2RQapBD3th-RAhhTBB64N9ChKNFNXz0PEZJexeQUoqw@mail.gmail.com>
+	<6E21E5352C11B742B20C142EB499E0481B286840@TK5EX14MBXC122.redmond.corp.microsoft.com>
+Date: Tue, 20 Dec 2011 17:32:35 -0800
+Message-ID: <CABE8wwsat+JGLiKpu_70bxZQAYegdrcsow=9XXBabwgWUgBT4Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage driver
+ out of the staging area
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Physical addresses may be wider than virtual addresses (e.g. on i386
-with PAE) and must not be formatted with %p.
+On Tue, Dec 20, 2011 at 4:42 PM, KY Srinivasan <kys@microsoft.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: dan.j.williams@gmail.com [mailto:dan.j.williams@gmail.com] On Behalf Of
+>> Dan Williams
+>> Sent: Tuesday, December 20, 2011 6:06 PM
+>> To: KY Srinivasan
+>> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+>> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+>> James.Bottomley@hansenpartnership.com; hch@infradead.org; linux-
+>> scsi@vger.kernel.org
+>> Subject: Re: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage driver
+>> out of the staging area
+>>
+>> On Tue, Dec 20, 2011 at 10:51 AM, K. Y. Srinivasan <kys@microsoft.com> wrote:
+>> > The storage driver (storvsc_drv.c) handles all block storage devices
+>> > assigned to Linux guests hosted on Hyper-V. This driver has been in the
+>> > staging tree for a while and this patch moves it out of the staging area.
+>> > As per Greg's recommendation, this patch makes no changes to the staging/hv
+>> > directory. Once the driver moves out of staging, we will cleanup the
+>> > staging/hv directory.
+>> >
+>> > This patch includes all the patches that I have sent against the staging/hv
+>> > tree to address the comments I have gotten to date on this storage driver.
+>> > Greg has already applied all these patches to the staging tree.
+>> >
+>> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>> > ---
+>> >  drivers/scsi/Kconfig       |    7 +
+>> >  drivers/scsi/Makefile      |    3 +
+>> >  drivers/scsi/storvsc_drv.c | 1586
+>> ++++++++++++++++++++++++++++++++++++++++++++
+>> >  3 files changed, 1596 insertions(+), 0 deletions(-)
+>> >  create mode 100644 drivers/scsi/storvsc_drv.c
+>>
+>> Shouldn't this diffstat be something like the following?
+>>
+>>  drivers/scsi/Kconfig                       |    7 +
+>>  drivers/scsi/Makefile                      |    3 +
+>>  drivers/{staging/hv => scsi}/storvsc_drv.c |  310 +++++++++++++++++++---------
+>>  3 files changed, 218 insertions(+), 102 deletions(-)
+>>  rename drivers/{staging/hv => scsi}/storvsc_drv.c (87%)
+>
+> As per Greg's suggestion, this patch does not remove the driver from
+> the staging tree. Once the driver lands in the correct directory, we will
+> remove the driver from the staging directory.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-The resource could alternately be formatted with %Pr.
+Ah, ok, so the patch can be accepted in parallel with the staging update.
 
-Ben.
+I still think it wouldn't hurt to show what:
 
- drivers/infiniband/hw/cxgb4/device.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+git diff --stat --summary -M
 
-diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
-index 6d0df6e..d395623 100644
---- a/drivers/infiniband/hw/cxgb4/device.c
-+++ b/drivers/infiniband/hw/cxgb4/device.c
-@@ -318,10 +318,10 @@ static int c4iw_rdev_open(struct c4iw_rdev *rdev)
- 	     rdev->lldi.vr->qp.size,
- 	     rdev->lldi.vr->cq.start,
- 	     rdev->lldi.vr->cq.size);
--	PDBG("udb len 0x%x udb base %p db_reg %p gts_reg %p qpshift %lu "
-+	PDBG("udb len 0x%x udb base %llx db_reg %p gts_reg %p qpshift %lu "
- 	     "qpmask 0x%x cqshift %lu cqmask 0x%x\n",
- 	     (unsigned)pci_resource_len(rdev->lldi.pdev, 2),
--	     (void *)pci_resource_start(rdev->lldi.pdev, 2),
-+	     (u64)pci_resource_start(rdev->lldi.pdev, 2),
- 	     rdev->lldi.db_reg,
- 	     rdev->lldi.gts_reg,
- 	     rdev->qpshift, rdev->qpmask,
--- 
-1.7.7.3
-
-
-
+...is after the removal of the version in drivers/staging/hv/ to
+quickly show that git agrees that the versions are indeed identical,
+but no big deal.
