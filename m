@@ -1,117 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab1LUSrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:47:12 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44449 "EHLO
+	id S1753860Ab1LUSrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:47:43 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44432 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752317Ab1LUSrG (ORCPT
+	by vger.kernel.org with ESMTP id S1752438Ab1LUSrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:47:06 -0500
+	Wed, 21 Dec 2011 13:47:04 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/2] signal: Add block_sigmask() for adding sigmask to current->blocked
-Date: Wed, 21 Dec 2011 18:47:01 +0000
-Message-Id: <1324493221-4435-3-git-send-email-matt@console-pimps.org>
+        Oleg Nesterov <oleg@redhat.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 0/2] block_sigmask() helper function
+Date: Wed, 21 Dec 2011 18:46:59 +0000
+Message-Id: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
-References: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-This patch abstracts the code sequence for adding a signal handler's
-sa_mask to current->blocked because the sequence is identical for all
-architectures. Furthermore, in the past some architectures actually
-got this code wrong, so introduce a wrapper that all architectures can
-use.
+Hi Andrew,
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/kernel/signal.c |    6 +-----
- include/linux/signal.h   |    1 +
- kernel/signal.c          |   21 +++++++++++++++++++++
- 3 files changed, 23 insertions(+), 5 deletions(-)
+Oleg doesn't have a repo on kernel.org yet and suggested that you
+might take these patches through your -mm tree? Ideally I'd like to
+get these two in for the 3.3 merge window because I've got a bunch of
+other patches that can go through the respective maintainers' trees
+once these two have been merged.
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 54ddaeb2..46a01bd 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -682,7 +682,6 @@ static int
- handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 		struct pt_regs *regs)
- {
--	sigset_t blocked;
- 	int ret;
- 
- 	/* Are we from a system call? */
-@@ -733,10 +732,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	 */
- 	regs->flags &= ~X86_EFLAGS_TF;
- 
--	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&blocked, sig);
--	set_current_blocked(&blocked);
-+	block_sigmask(ka, sig);
- 
- 	tracehook_signal_handler(sig, info, ka, regs,
- 				 test_thread_flag(TIF_SINGLESTEP));
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index a822300..7987ce74 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -254,6 +254,7 @@ extern void set_current_blocked(const sigset_t *);
- extern int show_unhandled_signals;
- 
- extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
-+extern void block_sigmask(struct k_sigaction *ka, int signr);
- extern void exit_signals(struct task_struct *tsk);
- 
- extern struct kmem_cache *sighand_cachep;
-diff --git a/kernel/signal.c b/kernel/signal.c
-index b3f78d0..22b6667 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2322,6 +2322,27 @@ relock:
- 	return signr;
- }
- 
-+/**
-+ * block_sigmask - add @ka's signal mask to current->blocked
-+ * @ka: action for @signr
-+ * @signr: signal that has been successfully delivered
-+ *
-+ * This function should be called when a signal has succesfully been
-+ * delivered. It adds the mask of signals for @ka to current->blocked
-+ * so that they are blocked during the execution of the signal
-+ * handler. In addition, @signr will be blocked unless %SA_NODEFER is
-+ * set in @ka->sa.sa_flags.
-+ */
-+void block_sigmask(struct k_sigaction *ka, int signr)
-+{
-+	sigset_t blocked;
-+
-+	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
-+		sigaddset(&blocked, signr);
-+	set_current_blocked(&blocked);
-+}
-+
- /*
-  * It could be that complete_signal() picked us to notify about the
-  * group-wide signal. Other threads should be notified now to take
+These two patches have been posted before (along with the other 40)
+but I attempted to get them all merged in one go, which didn't really
+work. The original thread is here,
+
+      https://lkml.org/lkml/2011/8/19/411
+
+Matt Fleming (2):
+  sparc: Make SA_NOMASK a synonym of SA_NODEFER
+  signal: Add block_sigmask() for adding sigmask to current->blocked
+
+ arch/sparc/include/asm/signal.h |    3 ++-
+ arch/x86/kernel/signal.c        |    6 +-----
+ include/linux/signal.h          |    1 +
+ kernel/signal.c                 |   21 +++++++++++++++++++++
+ 4 files changed, 25 insertions(+), 6 deletions(-)
+
 -- 
 1.7.4.4
 
