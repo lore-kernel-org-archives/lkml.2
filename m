@@ -1,62 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab1LUQDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 11:03:11 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58197 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab1LUQDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 11:03:10 -0500
-Date: Wed, 21 Dec 2011 16:03:23 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 7/7] serial, 8250: Mostly avoid wakeups from under
- port->lock
-Message-ID: <20111221160323.1084e954@pyramind.ukuu.org.uk>
-In-Reply-To: <20111221111143.678537446@chello.nl>
-References: <20111221105739.798864333@chello.nl>
-	<20111221111143.678537446@chello.nl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752787Ab1LUQQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 11:16:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906Ab1LUQQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 11:16:37 -0500
+Date: Wed, 21 Dec 2011 17:16:13 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, acme@redhat.com
+Cc: mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: new syntax for perf event
+Message-ID: <20111221161613.GA1659@m.brq.redhat.com>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+ <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+ <1324044159.18942.104.camel@twins>
+ <1324044196.18942.105.camel@twins>
+ <20111220103154.GA1861@m.brq.redhat.com>
+ <1324378070.24621.32.camel@twins>
+ <1324380648.24621.49.camel@twins>
+ <1324381161.24621.53.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324381161.24621.53.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 11:57:46 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> While not a strict requirement (anymore), it is nice not to issue
-> wakeups (or have them connected by locks) from console output.
+On Tue, Dec 20, 2011 at 12:39:21PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-12-20 at 12:30 +0100, Peter Zijlstra wrote:
+> > event   config-0:7
+> > umask   config-8:15
+> > usr     config-16
+> > os      config-17
+> > edge    config-18
+> > any     config-21
+> > inv     config-23
+> > cmask   config-24:31
+> > 
+> > nhm-dmnd_data_rd        config1-0
+> > nhm-dmnd_rfo            config1-1
+> > nhm-dmnd_ifetch         config1-2
+> > ...
+> > 
+> > (the real syntax will likely be a little more complex in order to be
+> > able to express the various other architectures their raw input format). 
 > 
-> This patch avoids doing most wakeups from under port->lock, which is
-> connected to 8250console_write(). Only seriously challenged UARTs will
-> still do the wakeup, but since I don't actually have such a creature,
-> I'm less inclined to fix it up.
+> for instance AMD would need:
+> 
+> event	config-0:7,32-35
+> guest	config-40
+> host	config-41
+> 
+> (assuming you read that as a mask from LSB to MSB)
+> 
+> And I still haven't actually read how the P4 works so I can't help out
+> there.
 
-Gak..
 
-> +	BUG_ON(!state);
-> +	tty = state->port.tty;
-> +	tty_kref_get(tty);
-> +	spin_unlock_irqrestore(&up->port.lock, flags);
-> +	tty_wakeup(tty);
-> +	tty_kref_put(tty);
+ok first try ;) description + grammar attached
 
-driver innards shouldn't know this stuff and this makes it worse rather
-than cleaning it up
+- event has a general format:
+        pmu/event_def[:modifier] [ ',' pmu/event_def[:modifier] ] ...
 
-The basic idea looks fine but I really don't want magic lock hackery in
-the 8250 driver. We need a way of generalising this so the code is
-cleaner and the locking internal knowledge stays out of the driver itself.
+  where event_def depends on the chosen pmu:
+        'cpu' 'tracepoint' 'breakpoint'
 
-Also I think it's probably buggy - sending the x_char is forward progress
-so probably needs to cause a wakeup.
 
-So for the moment NAK, but worthy of figuring out how to do it right
+- to keep some of the old interface, symbolic and cache events stays,
+  since they are recognizable by keywords (event_symbol, event_cache)
+
+
+- raw events are defined with the help of event keywords like:
+        cpu/raw,config=1,config1=0,config2=0
+        cpu/hw,config=1,config1=0
+
+  * first symbol after '/' defines the type: raw/hw/cache
+    which match PERF_TYPE_RAW/PERF_TYPE_HARDWARE/PERF_TYPE_HW_CACHE
+
+  * the rest consists assignments for 'config/config1/config1' keywords
+    that match with the perf_event_attr:config/config1/config values
+    (possibly extended once we have sysfs events representation)
+
+
+- tracepoint events are defined like:
+        tracepoint/system:tracepoint
+
+  where tracepoint could contain '*?'
+
+
+- breakpoint events are defined like:
+        breakpoint/addr:type
+
+
+- each event could be followed by modifier definition
+
+
+- I think pmu names should match registered pmu names,
+  but we could make some shortcuts so we dont need to type 'tracepoint/',
+  but just 'tp/' or smth..
+
+
+- as for tracepoints it looks like the old format does not clash with the new one
+  and we could add shortcut (omit the 'tracepoint/') like:
+      event: event_tracepoint
+
+
+- not sure I should include 'software' pmu, as it seems to covered by
+  event_symbol events
+
+
+thanks for comments,
+jirka
+
+
+
+grammar
+-------
+events:
+                event_mod ',' event_mod | event_mod
+
+event_mod:
+                event | event ':' modifier
+
+event:
+                event_symbol |
+                event_cache |
+                'cpu' '/' event_cpu |
+                'tracepoint' '/' event_tracepoint
+                'breakpoint' '/' event_breakpoint
+
+event_symbol:
+                cpu-cycles|cycles
+                stalled-cycles-frontend|idle-cycles-frontend
+                stalled-cycles-backend|idle-cycles-backend
+                instructions
+                cache-references
+                cache-misses
+                branch-instructions|branches
+                branch-misses
+                bus-cycles
+                cpu-clock
+                task-clock
+                page-faults|faults
+                minor-faults
+                major-faults
+                context-switches|cs
+                cpu-migrations|migrations
+                alignment-faults
+                emulation-faults
+
+event_cache:
+                cache_type
+                cache_type '-' cache_result_op
+                cache_type '-' cache_result_op '-' cache_result_op
+
+cache_type:
+                L1-dcache|l1-d|l1d|L1-data
+                L1-icache|l1-i|l1i|L1-instruction
+                LLC|L2
+                dTLB|d-tlb|Data-TLB
+                iTLB|i-tlb|Instruction-TLB
+                branch|branches|bpu|btb|bpc
+                node
+
+cache_result_op:
+                load|loads|read
+                store|stores|write
+                prefetch|prefetches
+                speculative-read|speculative-load
+                refs|Reference|ops|access
+                misses|miss
+
+event_cpu:
+                'raw'    ',' event_cpu_def
+                'hw'     ',' event_cpu_def
+                'cache'  ',' event_cpu_def
+
+event_cpu_def:
+                event_cpu_ass ',' event_cpu_ass |
+                event_cpu_ass
+
+event_cpu_ass:
+                event_cpu_elem '=' value
+
+event_cpu_elem:
+                'config' | 'config1' | 'config2'
+
+event_tracepoint:
+                system ':' tracepoint
+
+event_breakpoint:
+                addr ':' type
+
+modifier:
+                [ukhp]{1,4}
