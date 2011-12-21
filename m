@@ -1,93 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab1LUL6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:58:49 -0500
-Received: from david.siemens.de ([192.35.17.14]:18214 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab1LUL6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:58:47 -0500
-Message-ID: <4EF1C9E9.50805@siemens.com>
-Date: Wed, 21 Dec 2011 12:58:33 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        "Liu, Jinsong" <jinsong.liu@intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer feature
- in the absence of in-kernel APIC
-References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com> <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com> <4EF1B7C0.3080200@siemens.com> <4EF1B8A4.2050008@redhat.com> <4EF1C2DD.8070303@siemens.com> <4EF1C6C5.6080300@redhat.com>
-In-Reply-To: <4EF1C6C5.6080300@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753860Ab1LUMAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 07:00:15 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:53545 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab1LUMAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 07:00:11 -0500
+Date: Wed, 21 Dec 2011 22:59:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <francesco.gringoli@ing.unibs.it>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ net-next tree
+Message-Id: <20111221225956.6db7ca8f0a620b234bc25001@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Dec_2011_22_59_56_+1100_6pIWgGx/xmSmxB0a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-21 12:45, Avi Kivity wrote:
-> On 12/21/2011 01:28 PM, Jan Kiszka wrote:
->>>
->>> timer_mode_mask can just be slaved to the bit (as received by
->>> KVM_SET_CPUID); that's exactly kvm_update_cpuid()'s role.
->>
->> Like
-> 
-> Ugh, the facebook generation invades lkml.
+--Signature=_Wed__21_Dec_2011_22_59_56_+1100_6pIWgGx/xmSmxB0a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not on facebook. Does anyone sell shirts with that?
+[Resending to get through vger's address checks - sorry for duplicate]
 
-> 
->> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
->> index 230f713..89b02bf 100644
->> --- a/arch/x86/kvm/cpuid.c
->> +++ b/arch/x86/kvm/cpuid.c
->> @@ -27,7 +27,6 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
->>  {
->>  	struct kvm_cpuid_entry2 *best;
->>  	struct kvm_lapic *apic = vcpu->arch.apic;
->> -	u32 timer_mode_mask;
->>
->>  	best = kvm_find_cpuid_entry(vcpu, 1, 0);
->>  	if (!best)
->> @@ -40,15 +39,12 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
->>  			best->ecx |= bit(X86_FEATURE_OSXSAVE);
->>  	}
->>
->> -	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
->> -		best->function == 0x1) {
->> -		best->ecx |= bit(X86_FEATURE_TSC_DEADLINE_TIMER);
->> -		timer_mode_mask = 3 << 17;
->> -	} else
->> -		timer_mode_mask = 1 << 17;
->> -
->> -	if (apic)
->> -		apic->lapic_timer.timer_mode_mask = timer_mode_mask;
->> +	if (apic) {
->> +		if (best->ecx & bit(X86_FEATURE_TSC_DEADLINE_TIMER))
->> +			apic->lapic_timer.timer_mode_mask = 3 << 17;
->> +		else
->> +			apic->lapic_timer.timer_mode_mask = 1 << 17;
->> +	}
->>
->>  	kvm_pmu_cpuid_update(vcpu);
->>  }
->>
->>
->> + the KVM_CAP thing?
->>
-> 
-> +1
+Hi John,
 
-Ah, the adult crowd that trusts the other side.
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/wireless/b43/dma.c between commit 3db1cd5c05f3 ("net: fix
+assignment of 0/1 to bool variables") from the net-next tree and commit
+bad691946966 ("b43: avoid packet losses in the dma worker code") from the
+wireless-next tree.
 
-OK, will see that I can cook up a proper patch later.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 
-Jan
+The newly created tx_queue_stopped array element assignments should be
+changed form 0/1 to false/true as well (here and in main.c).
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/wireless/b43/dma.c
+index af23968,56d37dc..0000000
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@@ -1465,8 -1465,10 +1465,10 @@@ int b43_dma_tx(struct b43_wldev *dev, s
+  	if ((free_slots(ring) < TX_SLOTS_PER_FRAME) ||
+  	    should_inject_overflow(ring)) {
+  		/* This TX ring is full. */
+- 		ieee80211_stop_queue(dev->wl->hw, skb_get_queue_mapping(skb));
++ 		unsigned int skb_mapping =3D skb_get_queue_mapping(skb);
++ 		ieee80211_stop_queue(dev->wl->hw, skb_mapping);
++ 		dev->wl->tx_queue_stopped[skb_mapping] =3D 1;
+ -		ring->stopped =3D 1;
+ +		ring->stopped =3D true;
+  		if (b43_debug(dev, B43_DBG_DMAVERBOSE)) {
+  			b43dbg(dev->wl, "Stopped TX ring %d\n", ring->index);
+  		}
+@@@ -1584,8 -1586,15 +1586,15 @@@ void b43_dma_handle_txstatus(struct b43
+  	}
+  	if (ring->stopped) {
+  		B43_WARN_ON(free_slots(ring) < TX_SLOTS_PER_FRAME);
+- 		ieee80211_wake_queue(dev->wl->hw, ring->queue_prio);
+ -		ring->stopped =3D 0;
+ +		ring->stopped =3D false;
++ 	}
++=20
++ 	if (dev->wl->tx_queue_stopped[ring->queue_prio]) {
++ 		dev->wl->tx_queue_stopped[ring->queue_prio] =3D 0;
++ 	} else {
++ 		/* If the driver queue is running wake the corresponding
++ 		 * mac80211 queue. */
++ 		ieee80211_wake_queue(dev->wl->hw, ring->queue_prio);
+  		if (b43_debug(dev, B43_DBG_DMAVERBOSE)) {
+  			b43dbg(dev->wl, "Woke up TX ring %d\n", ring->index);
+  		}
+
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__21_Dec_2011_22_59_56_+1100_6pIWgGx/xmSmxB0a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO8co8AAoJEECxmPOUX5FEXOoP/jMw37mrQ2ITzFUDpOY8XS+w
+pvF7FYy23juF6EhbGjA5wIcOlS9/zJoN4AXvNdST2DclF0orJaXQ+/1fqYzeJ38N
+dCEjQSmmxGRtS55zb1H4ZxyJp2RD8fVW8yLv2SALhMmzLN5OchUzHlcj6+NyuthM
+S9nB7pyLY/jod3eWQ1WnsYVT1to1P7lBYBpWw6++WCRP5W1S6SWvlRHyHIADThcF
+kD4pK0qWtAxQca7kV8EqJLqXq4YL26Tu31oJOJHqe4LtuD9o8BgBbLYQGAeoxNEk
+Ge9tcBehgtruPUMrNiM4cP7X2L8cLcpRrIc7TISz7arvM08EHyC29THL8owObm7c
+xF7JyWmMsZBvrgSj485yavr8rD2ThsYGWgiq7rleP4L3J6UFkEg+Oe0Vh4kqlZwU
+7R2iEP9AfIxuZmda8wztCigcNapxGv1Tjxywqv7/Ja7BMOZAoFQSK0PnnoLaQaRl
+uRi41bH1LE5tzfIXFLhwr+zjTm3HCFutRaaIdfo+8eoGhFOy3mfqgvFLhJeXA5o7
+FManOO8YSZHGaI2rum6pYGrBN68gdrlKCsVpPV7lnDoTaT697a0myZzQRb+t6T3x
+0G2uYFVZthHPChEhSjLXheUj6mdymNsiP7DGWhOgFo6CJjqvk3kdC821ck8E7gat
+P4FytXnBCOJzxs0vfyJd
+=f78X
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Dec_2011_22_59_56_+1100_6pIWgGx/xmSmxB0a--
