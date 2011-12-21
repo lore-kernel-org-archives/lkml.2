@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab1LUWJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:09:11 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46296 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab1LUWJJ (ORCPT
+	id S1754235Ab1LUWMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:12:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60835 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab1LUWMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:09:09 -0500
-Message-ID: <4EF258FE.9030709@gmail.com>
-Date: Thu, 22 Dec 2011 09:09:02 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 4/4] microblaze: Remove NO_IRQ from architecture
-References: <1324477932-19262-1-git-send-email-monstr@monstr.eu> <1324477932-19262-2-git-send-email-monstr@monstr.eu> <1324477932-19262-3-git-send-email-monstr@monstr.eu> <1324477932-19262-4-git-send-email-monstr@monstr.eu>
-In-Reply-To: <1324477932-19262-4-git-send-email-monstr@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Dec 2011 17:12:30 -0500
+Date: Wed, 21 Dec 2011 14:12:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, mc@linux.vnet.ibm.com,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        david@fromorbit.com, Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-Id: <20111221141229.7f691c43.akpm@linux-foundation.org>
+In-Reply-To: <4EF24C71.6000609@linux.vnet.ibm.com>
+References: <20111220062710.GC23916@ZenIV.linux.org.uk>
+	<4EF03915.60902@linux.vnet.ibm.com>
+	<1324373854.21588.16.camel@mengcong>
+	<4EF0654B.4060904@linux.vnet.ibm.com>
+	<4EF06C9B.4010703@linux.vnet.ibm.com>
+	<4EF084A4.3000106@linux.vnet.ibm.com>
+	<20111220140628.GD23916@ZenIV.linux.org.uk>
+	<4EF09D34.1060607@linux.vnet.ibm.com>
+	<20111220175919.GE23916@ZenIV.linux.org.uk>
+	<4EF0DE04.6030604@linux.vnet.ibm.com>
+	<20111220195806.GF23916@ZenIV.linux.org.uk>
+	<4EF24C71.6000609@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/12/11 01:32, Michal Simek wrote:
+On Thu, 22 Dec 2011 02:45:29 +0530
+"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-> NO_IRQ shouldn't be used by any driver. All Microblaze
-> drivers are fixed that's why NO_IRQ can be removed.
+off-topic, but the lockdep stuff in include/linux/lglock.h
+(LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
 
-
-This only describes half of what the patch does. You should also state
-that arch/microblaze/pci/pci-common.c has references to NO_IRQ removed.
-Maybe it' worth splitting this patch in half so the final patch just
-does the removal of the NO_IRQ definition, but maybe that is overkill?
-
-Other than that, for the whole series:
-
-Reviewed-by: Ryan Mallon <rmallon@gmail.com>
-
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Ryan Mallon <rmallon@gmail.com>
-> ---
->  arch/microblaze/include/asm/irq.h |    2 --
->  arch/microblaze/pci/pci-common.c  |    4 ++--
->  2 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
-> index b116a82..a175132 100644
-> --- a/arch/microblaze/include/asm/irq.h
-> +++ b/arch/microblaze/include/asm/irq.h
-> @@ -27,8 +27,6 @@ typedef unsigned long irq_hw_number_t;
+> --- a/include/linux/lglock.h
+> +++ b/include/linux/lglock.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/percpu.h>
+> +#include <linux/cpu.h>
 >  
->  extern unsigned int nr_irq;
+>  /* can make br locks by using local lock for read side, global lock for write */
+>  #define br_lock_init(name)	name##_lock_init()
+> @@ -72,9 +73,31 @@
 >  
-> -#define NO_IRQ 0
-> -
->  struct pt_regs;
->  extern void do_IRQ(struct pt_regs *regs);
->  
-> diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-> index db841c7..0d71b2e 100644
-> --- a/arch/microblaze/pci/pci-common.c
-> +++ b/arch/microblaze/pci/pci-common.c
-> @@ -242,7 +242,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
->  			 line, pin);
->  
->  		virq = irq_create_mapping(NULL, line);
-> -		if (virq != NO_IRQ)
-> +		if (virq)
->  			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
->  	} else {
->  		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
-> @@ -253,7 +253,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
->  		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
->  					     oirq.size);
->  	}
-> -	if (virq == NO_IRQ) {
-> +	if (!virq) {
->  		pr_debug(" Failed to map !\n");
->  		return -1;
->  	}
+>  #define DEFINE_LGLOCK(name)						\
+>  									\
+> + DEFINE_SPINLOCK(name##_cpu_lock);					\
+> + cpumask_t name##_cpus __read_mostly;					\
+>   DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
+>   DEFINE_LGLOCK_LOCKDEP(name);						\
+>  									\
 
-
+also off-topic: we can't define a static lglock with this macro.
