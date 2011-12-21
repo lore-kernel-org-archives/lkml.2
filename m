@@ -1,295 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab1LUTMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:12:22 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61036 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab1LUTMQ (ORCPT
+	id S1754109Ab1LUTPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:15:35 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40625 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab1LUTPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:12:16 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19KqEm/0UuXs0QoWtqvgTQb
-Date: Wed, 21 Dec 2011 11:12:12 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v2 5/7] MTD: NAND: ams-delta: use GPIO instead of
- custom I/O
-Message-ID: <20111221191211.GE24444@atomide.com>
-References: <cover.1324331816.git.jkrzyszt@tis.icnet.pl>
- <ebab42f6ddd313afb38b71880ac7865e4e0ceab4.1324331816.git.jkrzyszt@tis.icnet.pl>
+	Wed, 21 Dec 2011 14:15:33 -0500
+Date: Wed, 21 Dec 2011 14:02:11 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Samuel Ortiz <samuel@sortiz.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: linux-next: Tree for Dec 19 (nfc)
+Message-ID: <20111221190211.GE11842@tuxdriver.com>
+References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
+ <4EEFA21B.5010305@xenotime.net>
+ <1324399181.5354.0.camel@sortiz-mobl>
+ <4EF23A1F.60803@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ebab42f6ddd313afb38b71880ac7865e4e0ceab4.1324331816.git.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EF23A1F.60803@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111219 14:41]:
-> Don't use Amstrad Delta custom I/O functions for controlling the device,
-> use GPIO API instead.
+On Wed, Dec 21, 2011 at 11:57:19AM -0800, Randy Dunlap wrote:
+> On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
+> > Hi Randy,
+> > 
+> > On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
+> >> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
+> >>> Hi all,
+> >>>
+> >>> Changes since 20111216:
+> >>
+> >>
+> >> (not new today, just not reported earlier)
+> > John applied my fix for this one. It should be fixed now.
 > 
-> While being at it, add missing gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB).
+> Hi Samuel,
 > 
-> Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
-> basic_mmio_gpio"
+> Is this supposed to be fixed in linux-next?
+> It still fails today (linux-next 20111221).
 > 
-> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Tony Lindgren <tony@atomide.com>
+> 
+> data.c:(.text+0x3e0): multiple definition of `nfc_llcp_mac_is_down'
+> data.c:(.text+0x400): multiple definition of `nfc_llcp_mac_is_up'
+> ntf.c:(.text+0xb60): multiple definition of `nfc_llcp_mac_is_down'
+> ntf.c:(.text+0xb80): multiple definition of `nfc_llcp_mac_is_up'
+> rsp.c:(.text+0x750): multiple definition of `nfc_llcp_mac_is_down'
+> rsp.c:(.text+0x770): multiple definition of `nfc_llcp_mac_is_up'
+> netlink.c:(.text+0x14e0): multiple definition of `nfc_llcp_mac_is_down'
+> netlink.c:(.text+0x1500): multiple definition of `nfc_llcp_mac_is_up'
+> af_nfc.c:(.text+0xe0): multiple definition of `nfc_llcp_mac_is_down'
+> af_nfc.c:(.text+0x100): multiple definition of `nfc_llcp_mac_is_up'
+> rawsock.c:(.text+0x1000): multiple definition of `nfc_llcp_mac_is_down'
+> rawsock.c:(.text+0x1020): multiple definition of `nfc_llcp_mac_is_up'
 
-Artem, care to ack this one?
+I have this commit in wireless-next, been there a couple of days:
 
-Regards,
+commit 645d35902c8f05a1b12fa838aa9052d8eeaf161e
+Author: Samuel Ortiz <sameo@linux.intel.com>
+Date:   Fri Dec 16 15:03:36 2011 +0100
 
-Tony
+    NFC: Fix LLCP related build failure
+    
+    llcp_mac routines should be static and inlined or build will fail with NFC
+    selected without LLCP.
+    
+    This patch fixes:
+    
+    LD [M]  net/nfc/nfc.o
+    net/nfc/netlink.o: In function `nfc_llcp_mac_is_down':
+    netlink.c:(.text+0x0): multiple definition of `nfc_llcp_mac_is_down'
+    net/nfc/core.o:(.text+0x0): first defined here
+    net/nfc/netlink.o: In function `nfc_llcp_mac_is_up':
+    netlink.c:(.text+0x10): multiple definition of `nfc_llcp_mac_is_up'
+    net/nfc/core.o:(.text+0x10): first defined here
+    net/nfc/af_nfc.o: In function `nfc_llcp_mac_is_down':
+    (.text+0x0): multiple definition of `nfc_llcp_mac_is_down'
+    net/nfc/core.o:(.text+0x0): first defined here
+    net/nfc/af_nfc.o: In function `nfc_llcp_mac_is_up':
+    (.text+0x10): multiple definition of `nfc_llcp_mac_is_up'
+    net/nfc/core.o:(.text+0x10): first defined here
+    net/nfc/rawsock.o: In function `nfc_llcp_mac_is_down':
+    rawsock.c:(.text+0x0): multiple definition of `nfc_llcp_mac_is_down'
+    net/nfc/core.o:(.text+0x0): first defined here
+    net/nfc/rawsock.o: In function `nfc_llcp_mac_is_up':
+    rawsock.c:(.text+0x10): multiple definition of `nfc_llcp_mac_is_up'
+    net/nfc/core.o:(.text+0x10): first defined here
+    
+    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-
-> ---
-> Changes against initial version:
-> * no functional changes,
-> * rebased on top of v2 of patch 2/7, just in case.
-> 
-> Comments copied from initial submission:
-> 
-> Hi,
-> I considered dropping the Amstrad Delta NAND driver and moving to either
-> gpio-nand or gen_nand, but finally decided to keep it for now.
-> 
-> The problem with the gpio-nand is that it seems to match a different
-> hardware interface model. Having no knowledge about the original
-> hardware that driver was designed in mind, I'd rather not try to
-> modify it, and creating another GPIO based NAND driver also seems not
-> a really good idea.
-> 
-> If I decided to use gen_nand instead, I would have to move virtually all
-> of the old driver callback functions somewhere under arch, either to the
-> board file or to a new one, and still use some hacks unless either
-> nand_base.c or plat_nand.c is modified.
-> 
-> I'm willing to take one of those two approaches in a follow up series if
-> I get a positive feedback.
-> 
-> Thanks,
-> Janusz
-> 
-> 
->  arch/arm/mach-omap1/board-ams-delta.c             |   30 --------
->  arch/arm/plat-omap/include/plat/board-ams-delta.h |    6 --
->  drivers/mtd/nand/ams-delta.c                      |   74 ++++++++++++++------
->  3 files changed, 52 insertions(+), 58 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
-> index 034d009..cc6f962 100644
-> --- a/arch/arm/mach-omap1/board-ams-delta.c
-> +++ b/arch/arm/mach-omap1/board-ams-delta.c
-> @@ -237,36 +237,6 @@ static struct gpio latch_gpios[] __initconst = {
->  		.label	= "lcd_ndisp",
->  	},
->  	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NCE,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_nce",
-> -	},
-> -	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NRE,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_nre",
-> -	},
-> -	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWP,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_nwp",
-> -	},
-> -	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWE,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_nwe",
-> -	},
-> -	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_ALE,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_ale",
-> -	},
-> -	{
-> -		.gpio	= AMS_DELTA_GPIO_PIN_NAND_CLE,
-> -		.flags	= GPIOF_OUT_INIT_LOW,
-> -		.label	= "nand_cle",
-> -	},
-> -	{
->  		.gpio	= AMS_DELTA_GPIO_PIN_KEYBRD_PWR,
->  		.flags	= GPIOF_OUT_INIT_LOW,
->  		.label	= "keybrd_pwr",
-> diff --git a/arch/arm/plat-omap/include/plat/board-ams-delta.h b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> index a0f86ca..3e57833 100644
-> --- a/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> +++ b/arch/arm/plat-omap/include/plat/board-ams-delta.h
-> @@ -30,12 +30,6 @@
->  
->  #define AMS_DELTA_LATCH2_LCD_VBLEN	0x0001
->  #define AMS_DELTA_LATCH2_LCD_NDISP	0x0002
-> -#define AMS_DELTA_LATCH2_NAND_NCE	0x0004
-> -#define AMS_DELTA_LATCH2_NAND_NRE	0x0008
-> -#define AMS_DELTA_LATCH2_NAND_NWP	0x0010
-> -#define AMS_DELTA_LATCH2_NAND_NWE	0x0020
-> -#define AMS_DELTA_LATCH2_NAND_ALE	0x0040
-> -#define AMS_DELTA_LATCH2_NAND_CLE	0x0080
->  #define AMD_DELTA_LATCH2_KEYBRD_PWR	0x0100
->  #define AMD_DELTA_LATCH2_KEYBRD_DATA	0x0200
->  #define AMD_DELTA_LATCH2_SCARD_RSTIN	0x0400
-> diff --git a/drivers/mtd/nand/ams-delta.c b/drivers/mtd/nand/ams-delta.c
-> index 9e6b498..5769bd2 100644
-> --- a/drivers/mtd/nand/ams-delta.c
-> +++ b/drivers/mtd/nand/ams-delta.c
-> @@ -26,7 +26,7 @@
->  #include <asm/io.h>
->  #include <mach/hardware.h>
->  #include <asm/sizes.h>
-> -#include <asm/gpio.h>
-> +#include <linux/gpio.h>
->  #include <plat/board-ams-delta.h>
->  
->  /*
-> @@ -34,8 +34,6 @@
->   */
->  static struct mtd_info *ams_delta_mtd = NULL;
->  
-> -#define NAND_MASK (AMS_DELTA_LATCH2_NAND_NRE | AMS_DELTA_LATCH2_NAND_NWE | AMS_DELTA_LATCH2_NAND_CLE | AMS_DELTA_LATCH2_NAND_ALE | AMS_DELTA_LATCH2_NAND_NCE | AMS_DELTA_LATCH2_NAND_NWP)
-> -
->  /*
->   * Define partitions for flash devices
->   */
-> @@ -68,10 +66,9 @@ static void ams_delta_write_byte(struct mtd_info *mtd, u_char byte)
->  
->  	writew(0, io_base + OMAP_MPUIO_IO_CNTL);
->  	writew(byte, this->IO_ADDR_W);
-> -	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NWE, 0);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NWE, 0);
->  	ndelay(40);
-> -	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NWE,
-> -			       AMS_DELTA_LATCH2_NAND_NWE);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NWE, 1);
->  }
->  
->  static u_char ams_delta_read_byte(struct mtd_info *mtd)
-> @@ -80,12 +77,11 @@ static u_char ams_delta_read_byte(struct mtd_info *mtd)
->  	struct nand_chip *this = mtd->priv;
->  	void __iomem *io_base = this->priv;
->  
-> -	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NRE, 0);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NRE, 0);
->  	ndelay(40);
->  	writew(~0, io_base + OMAP_MPUIO_IO_CNTL);
->  	res = readw(this->IO_ADDR_R);
-> -	ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_NRE,
-> -			       AMS_DELTA_LATCH2_NAND_NRE);
-> +	gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NRE, 1);
->  
->  	return res;
->  }
-> @@ -132,15 +128,12 @@ static void ams_delta_hwcontrol(struct mtd_info *mtd, int cmd,
->  {
->  
->  	if (ctrl & NAND_CTRL_CHANGE) {
-> -		unsigned long bits;
-> -
-> -		bits = (~ctrl & NAND_NCE) ? AMS_DELTA_LATCH2_NAND_NCE : 0;
-> -		bits |= (ctrl & NAND_CLE) ? AMS_DELTA_LATCH2_NAND_CLE : 0;
-> -		bits |= (ctrl & NAND_ALE) ? AMS_DELTA_LATCH2_NAND_ALE : 0;
-> -
-> -		ams_delta_latch2_write(AMS_DELTA_LATCH2_NAND_CLE |
-> -				AMS_DELTA_LATCH2_NAND_ALE |
-> -				AMS_DELTA_LATCH2_NAND_NCE, bits);
-> +		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_NCE,
-> +				(ctrl & NAND_NCE) == 0);
-> +		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_CLE,
-> +				(ctrl & NAND_CLE) != 0);
-> +		gpio_set_value(AMS_DELTA_GPIO_PIN_NAND_ALE,
-> +				(ctrl & NAND_ALE) != 0);
->  	}
->  
->  	if (cmd != NAND_CMD_NONE)
-> @@ -152,6 +145,39 @@ static int ams_delta_nand_ready(struct mtd_info *mtd)
->  	return gpio_get_value(AMS_DELTA_GPIO_PIN_NAND_RB);
->  }
->  
-> +static struct gpio _mandatory_gpio[] __initconst_or_module = {
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NCE,
-> +		.flags	= GPIOF_OUT_INIT_HIGH,
-> +		.label	= "nand_nce",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NRE,
-> +		.flags	= GPIOF_OUT_INIT_HIGH,
-> +		.label	= "nand_nre",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWP,
-> +		.flags	= GPIOF_OUT_INIT_HIGH,
-> +		.label	= "nand_nwp",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_NWE,
-> +		.flags	= GPIOF_OUT_INIT_HIGH,
-> +		.label	= "nand_nwe",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_ALE,
-> +		.flags	= GPIOF_OUT_INIT_LOW,
-> +		.label	= "nand_ale",
-> +	},
-> +	{
-> +		.gpio	= AMS_DELTA_GPIO_PIN_NAND_CLE,
-> +		.flags	= GPIOF_OUT_INIT_LOW,
-> +		.label	= "nand_cle",
-> +	},
-> +};
-> +
->  /*
->   * Main initialization routine
->   */
-> @@ -223,10 +249,9 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
->  	platform_set_drvdata(pdev, io_base);
->  
->  	/* Set chip enabled, but  */
-> -	ams_delta_latch2_write(NAND_MASK, AMS_DELTA_LATCH2_NAND_NRE |
-> -					  AMS_DELTA_LATCH2_NAND_NWE |
-> -					  AMS_DELTA_LATCH2_NAND_NCE |
-> -					  AMS_DELTA_LATCH2_NAND_NWP);
-> +	err = gpio_request_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-> +	if (err)
-> +		goto out_gpio;
->  
->  	/* Scan to find existence of the device */
->  	if (nand_scan(ams_delta_mtd, 1)) {
-> @@ -241,7 +266,10 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
->  	goto out;
->  
->   out_mtd:
-> +	gpio_free_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-> +out_gpio:
->  	platform_set_drvdata(pdev, NULL);
-> +	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
->  	iounmap(io_base);
->  out_release_io:
->  	release_mem_region(res->start, resource_size(res));
-> @@ -262,6 +290,8 @@ static int __devexit ams_delta_cleanup(struct platform_device *pdev)
->  	/* Release resources, unregister device */
->  	nand_release(ams_delta_mtd);
->  
-> +	gpio_free_array(_mandatory_gpio, ARRAY_SIZE(_mandatory_gpio));
-> +	gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB);
->  	iounmap(io_base);
->  	release_mem_region(res->start, resource_size(res));
->  
-> -- 
-> 1.7.3.4
-> 
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
