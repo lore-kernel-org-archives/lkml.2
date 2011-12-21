@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab1LURat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:30:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45248 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1LURas (ORCPT
+	id S1753583Ab1LURfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:35:30 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57896 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab1LURf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:30:48 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=m9rXBrEGayMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=zd2uoN0lAAAA:8 a=HQ7H2QLLrSKk408_L_sA:9 a=V6mIvt4C4gx_6XknJHMA:7 a=PUjeQqilurYA:10 a=wu_e27o_rKQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324488646.5916.107.camel@gandalf.stny.rr.com>
-Subject: oprofile patch broke s390 build in tip/perf/core
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Wed, 21 Dec 2011 12:30:46 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 21 Dec 2011 12:35:28 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.169.13]
+In-Reply-To: <20111212103301.5ff6a582dca82394ace40e8d@canb.auug.org.au>
+References: <CAK=WgbaU6vpiBGSgogYPjQNmrF-U0wk1rSXMX83DdgQa9hw5Mw@mail.gmail.com>
+ <20111212103301.5ff6a582dca82394ace40e8d@canb.auug.org.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 21 Dec 2011 19:35:07 +0200
+Message-ID: <CAK=WgbZm9txdvZ1VW-iUn5306yMz1Y=DT_Uygwi6zPZNyWx7gA@mail.gmail.com>
+Subject: Re: Adding remoteproc/rpmsg to linux-next
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-next@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Brian Swetland <swetland@google.com>, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Arnd,
 
-In doing my tests last night before sending out my patch series this
-morning, I found that s390 build didn't work, but it wasn't due to my
-patches. I removed all my patches and built with latest mainline (which
-builds fine), and then merged the current tip/perf/core. The result
-didn't build.
+On Mon, Dec 12, 2011 at 1:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Fri, 9 Dec 2011 16:55:27 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>>
+>> Can you please add the following remoteproc tree to linux-next ?
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
+>
+> I have added that from today.
 
-I kicked off a ktest git bisect with last night's Linus tree as good,
-and with the merged in tip/perf/core as bad. It ended up with this patch
-that broke the build (which looks like a likely suspect).
+Would you like rpmsg/remoteproc to go through arm-soc or do you prefer
+me to send a pull request directly to Linus ?
 
+If you prefer the former (IIRC you told me you might consider it in a
+random ELCE hallway conversation :) then I'll send you a pull request.
 
-The break is this:
+I'm happy either way.
 
-  LD      .tmp_vmlinux1
-arch/s390/oprofile/built-in.o: In function `oprofile_arch_exit':
-(.text+0x3f52): undefined reference to `oprofile_timer_exit'
-make[1]: *** [.tmp_vmlinux1] Error 1
-make: *** [sub-make] Error 2
-
-The patch the bisect found that breaks the build is this:
-
-commit 75c43a20b220f885c39ffa7cdbbb1191e257a9a9
-Author: Robert Richter <robert.richter@amd.com>
-Date:   Fri Oct 14 15:46:10 2011 +0200
-
-    oprofile: Remove exit function for timer mode
-    
-    Remove exit functions by moving init/exit code to oprofile's setup/
-    shutdown functions. Doing so the oprofile module exit code will be
-    easier and less error-prone.
-    
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
-
--- Steve
-
-
+Thanks!
+Ohad.
