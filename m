@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab1LUKTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:19:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59526 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab1LUKT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:19:29 -0500
-Date: Wed, 21 Dec 2011 11:19:26 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, bleung@chromium.org,
-        stern@rowland.harvard.edu, olofj@chromium.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-In-Reply-To: <201112201118.24342.oneukum@suse.de>
-Message-ID: <alpine.LNX.2.00.1112211119190.8727@pobox.suse.cz>
-References: <1321529030-7845-1-git-send-email-djkurtz@chromium.org> <201112151001.52761.oneukum@suse.de> <CAGS+omCLU6FAxmT3+TgYf0b8YvgfbH9CL9M6WpZ0yNS01O5Hrw@mail.gmail.com> <201112201118.24342.oneukum@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753052Ab1LUKWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:22:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51155 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1LUKWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 05:22:38 -0500
+Message-ID: <4EF1B36A.8050304@monstr.eu>
+Date: Wed, 21 Dec 2011 11:22:34 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/8] gpio/microblaze: Eliminate duplication of of_get_named_gpio_flags()
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-2-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1320801583-12774-2-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Dec 2011, Oliver Neukum wrote:
-
-> > > > Could you please be more specific about what this patch breaks and
-> > > > perhaps give some guidance on how to fix it?
-> > >
-> > > It breaks nothing. It just continues a bug and I assumed it was not present.
-> > > Basically the work queue must do nothing after pre_reset() and post_reset()
-> > > ought to rerun the work in case some request came down during that time.
-> > 
-> > So, is this an Ack for this patchset?
-> > Can we fix any existing races in later patches?
+Grant Likely wrote:
+> of_reset_gpio_handle() is largely a cut-and-paste copy of
+> of_get_named_gpio_flags(). There really isn't any reason for the
+> split, so this patch deletes the duplicate function
 > 
-> Very well. You are fixing a bad bug and not making matters worse.
-> 
-> Acked-by: Oliver Neukum <oneukum@suse.de>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Michal Simek <monstr@monstr.eu>
+> ---
+>  arch/microblaze/kernel/reset.c |   43 +--------------------------------------
+>  1 files changed, 2 insertions(+), 41 deletions(-)
 
-Thanks guys. Applied.
+Sorry for taking to long.
+
+Tested and applied to microblaze tree.
+
+Thanks,
+Michal
 
 -- 
-Jiri Kosina
-SUSE Labs
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
