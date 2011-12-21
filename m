@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1LUSbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:31:03 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43012 "EHLO
+	id S1753937Ab1LUScD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:32:03 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50389 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab1LUSa6 (ORCPT
+	with ESMTP id S1753748Ab1LUSbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:30:58 -0500
+	Wed, 21 Dec 2011 13:31:01 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,10 +14,10 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
         jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
         dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, mszeredi@suse.cz
-Subject: [PATCH 6/9] overlayfs: add statfs support
-Date: Wed, 21 Dec 2011 19:29:45 +0100
-Message-Id: <1324492188-3481-7-git-send-email-miklos@szeredi.hu>
+        penberg@kernel.org, mszeredi@suse.cz, Erez Zadok <ezk@cs.sunysb.edu>
+Subject: [PATCH 7/9] overlayfs: implement show_options
+Date: Wed, 21 Dec 2011 19:29:46 +0100
+Message-Id: <1324492188-3481-8-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
 References: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
@@ -25,57 +25,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Whitcroft <apw@canonical.com>
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
 
-Add support for statfs to the overlayfs filesystem.  As the upper layer
-is the target of all write operations assume that the space in that
-filesystem is the space in the overlayfs.  There will be some inaccuracy as
-overwriting a file will copy it up and consume space we were not expecting,
-but it is better than nothing.
+This is useful because of the stacking nature of overlayfs.  Users like to
+find out (via /proc/mounts) which lower/upper directory were used at mount
+time.
 
-Use the upper layer dentry and mount from the overlayfs root inode,
-passing the statfs call to that filesystem.
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/overlayfs/super.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ fs/overlayfs/super.c |   63 ++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 43 insertions(+), 20 deletions(-)
 
 diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 18042cf..8091f76 100644
+index 8091f76..a854f97 100644
 --- a/fs/overlayfs/super.c
 +++ b/fs/overlayfs/super.c
-@@ -404,9 +404,29 @@ static int ovl_remount_fs(struct super_block *sb, int *flagsp, char *data)
- 		return mnt_want_write(ufs->upper_mnt);
+@@ -15,17 +15,27 @@
+ #include <linux/slab.h>
+ #include <linux/parser.h>
+ #include <linux/module.h>
++#include <linux/seq_file.h>
+ #include "overlayfs.h"
+ 
+ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+ MODULE_DESCRIPTION("Overlay filesystem");
+ MODULE_LICENSE("GPL");
+ 
++struct ovl_config {
++	char *lowerdir;
++	char *upperdir;
++};
++
++/* private information held for overlayfs's superblock */
+ struct ovl_fs {
+ 	struct vfsmount *upper_mnt;
+ 	struct vfsmount *lower_mnt;
++	/* pathnames of lower and upper dirs, for show_options */
++	struct ovl_config config;
+ };
+ 
++/* private information held for every overlayfs dentry */
+ struct ovl_entry {
+ 	/*
+ 	 * Keep "double reference" on upper dentries, so that
+@@ -382,6 +392,8 @@ static void ovl_put_super(struct super_block *sb)
+ 	mntput(ufs->upper_mnt);
+ 	mntput(ufs->lower_mnt);
+ 
++	kfree(ufs->config.lowerdir);
++	kfree(ufs->config.upperdir);
+ 	kfree(ufs);
+ }
+ 
+@@ -423,15 +435,27 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
  }
  
 +/**
-+ * ovl_statfs
-+ * @sb: The overlayfs super block
-+ * @buf: The struct kstatfs to fill in with stats
++ * ovl_show_options
 + *
-+ * Get the filesystem statistics.  As writes always target the upper layer
-+ * filesystem pass the statfs to the same filesystem.
++ * Prints the mount options for a given superblock.
++ * Returns zero; does not fail.
 + */
-+static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
++static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
 +{
-+	struct dentry *root_dentry = dentry->d_sb->s_root;
-+	struct path path;
-+	ovl_path_upper(root_dentry, &path);
++	struct super_block *sb = dentry->d_sb;
++	struct ovl_fs *ufs = sb->s_fs_info;
 +
-+	if (!path.dentry->d_sb->s_op->statfs)
-+		return -ENOSYS;
-+	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
++	seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
++	seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
++	return 0;
 +}
 +
  static const struct super_operations ovl_super_operations = {
  	.put_super	= ovl_put_super,
  	.remount_fs	= ovl_remount_fs,
-+	.statfs		= ovl_statfs,
+ 	.statfs		= ovl_statfs,
+-};
+-
+-struct ovl_config {
+-	char *lowerdir;
+-	char *upperdir;
++	.show_options	= ovl_show_options,
  };
  
- struct ovl_config {
+ enum {
+@@ -491,37 +515,36 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct dentry *root_dentry;
+ 	struct ovl_entry *oe;
+ 	struct ovl_fs *ufs;
+-	struct ovl_config config;
+ 	int err;
+ 
+-	err = ovl_parse_opt((char *) data, &config);
+-	if (err)
++	err = -ENOMEM;
++	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
++	if (!ufs)
+ 		goto out;
+ 
++	err = ovl_parse_opt((char *) data, &ufs->config);
++	if (err)
++		goto out_free_ufs;
++
+ 	err = -EINVAL;
+-	if (!config.upperdir || !config.lowerdir) {
++	if (!ufs->config.upperdir || !ufs->config.lowerdir) {
+ 		printk(KERN_ERR "overlayfs: missing upperdir or lowerdir\n");
+ 		goto out_free_config;
+ 	}
+ 
+-	err = -ENOMEM;
+-	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
+-	if (!ufs)
+-		goto out_free_config;
+-
+ 	oe = ovl_alloc_entry();
+ 	if (oe == NULL)
+-		goto out_free_ufs;
++		goto out_free_config;
+ 
+ 	root_inode = ovl_new_inode(sb, S_IFDIR, oe);
+ 	if (!root_inode)
+ 		goto out_free_oe;
+ 
+-	err = kern_path(config.upperdir, LOOKUP_FOLLOW, &upperpath);
++	err = kern_path(ufs->config.upperdir, LOOKUP_FOLLOW, &upperpath);
+ 	if (err)
+ 		goto out_put_root;
+ 
+-	err = kern_path(config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
++	err = kern_path(ufs->config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
+ 	if (err)
+ 		goto out_put_upperpath;
+ 
+@@ -595,11 +618,11 @@ out_put_root:
+ 	iput(root_inode);
+ out_free_oe:
+ 	kfree(oe);
++out_free_config:
++	kfree(ufs->config.lowerdir);
++	kfree(ufs->config.upperdir);
+ out_free_ufs:
+ 	kfree(ufs);
+-out_free_config:
+-	kfree(config.lowerdir);
+-	kfree(config.upperdir);
+ out:
+ 	return err;
+ }
 -- 
 1.7.7
 
