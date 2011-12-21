@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab1LUXzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 18:55:12 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:47020 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab1LUXzK (ORCPT
+	id S1754248Ab1LUXzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 18:55:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42922 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab1LUXzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 18:55:10 -0500
-X-Auth-Info: ZGwDiEnXfRttZ1+iln0duh7H5EBopbptv5e+8TTOrRk=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [resend PATCH for 3.2] procfs: do not confuse jiffies with cputime64_t
-References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
-	<m21usavwi0.fsf_-_@igel.home>
-	<20111212124333.GC14720@tiehlicka.suse.cz>
-	<m2wra2uedy.fsf_-_@igel.home>
-	<20111212131218.GD14720@tiehlicka.suse.cz>
-	<20111221100334.GD27137@tiehlicka.suse.cz>
-	<20111221115919.6beac46f.akpm@linux-foundation.org>
-X-Yow: You were s'posed to laugh!
-Date: Thu, 22 Dec 2011 00:55:07 +0100
-In-Reply-To: <20111221115919.6beac46f.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 21 Dec 2011 11:59:19 -0800")
-Message-ID: <m24nwtpjj8.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+	Wed, 21 Dec 2011 18:55:32 -0500
+Date: Wed, 21 Dec 2011 15:55:30 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
+In-Reply-To: <20111221221527.GE23662@dastard>
+Message-ID: <alpine.LSU.2.00.1112211545150.25868@eggly.anvils>
+References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils> <20111221050740.GD23662@dastard> <alpine.LSU.2.00.1112202218490.4026@eggly.anvils> <20111221221527.GE23662@dastard>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, 22 Dec 2011, Dave Chinner wrote:
+> On Tue, Dec 20, 2011 at 10:53:17PM -0800, Hugh Dickins wrote:
+> > On Wed, 21 Dec 2011, Dave Chinner wrote:
+> > 
+> > We do need to set node->parent NULL in all cases (and cannot clear
+> > it when freeing).  I chose the "slot = blah(slot)" style to follow the
+> > "newptr = blah(newptr)" over in radix_tree_shrink(), thought it helped
+> > to keep those blocks alike.
+> 
+> You're right. I really was being dense yesterday. To tell the truth,
+> though, I found the "newptr" style easier to follow because it was
+> obvious which was the object being initialised. I think that it not
+> being obvious which object needed full initialisation contribted to
+> my mix up of node and slot parent pointers in my above comment...
 
-> Also, in include/asm-generic/cputime.h we have:
->
-> #define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
->
-> But it would be neater to have used nsecs_to_cputime64(), surely.
+Yes, I too get confused between parent and child and node and slot,
+slot being a node which contains an array of slots.  I did experiment
+with saying "parent" instead of "node" in several of the places touched,
+or "child" instead of "slot", but didn't end up with anything that
+satisfied me very much; so stuck with the bland node and slot.
 
-The procfs interface wants to convert usecs to cputime64, but generic
-cputime does not have usecs_to_jiffies64.  Once someone writes the
-latter it can be used here.
+> > At the top of the hunk, we can see the tag_set(slot, settag, offset)
+> > where it sets the tag in the leafnode "slot"; then it loops up to parent
+> > "node" of slot, to parent of parent, etc, setting tag in those, but
+> > breaking as soon as it finds the tag already set - it can be sure that
+> > the tag must already be set on all nodes above.
+> > 
+> > If afterwards it comes to set tag at another offset (most likely the
+> > very next) in this same leafnode, we know that it has already set tag
+> > on the parent, the parent's parent etc., so need not bother to tag_get
+> > from the level above to discover that.  And since we happen to have a
+> > variable "node" which stops the loop when it's NULL, let's set it to
+> > NULL now to stop the loop immediately in future.
+> 
+> Ok, gotcha. perhaps a more expansive comment along the lines of:
+> 
+> /*
+>  * we can clear the node pointer now as all it's ancestors have the
+>  * tage set due to setting it on the slot above. Hence we have no
+>  * need to walk back up the tree to set tags if there is no further
+>  * tags to set.
+>  */
+> 
+> is in order to remind me in a few months time why it this was done?
 
-Andreas.
+I've plagiarized your wording, but changed it enough that I cannot
+honestly cite you as the Author.  Incremental patch to akpm follows
+in a moment.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Hugh
