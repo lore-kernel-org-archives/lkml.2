@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab1LULtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:49:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42472 "EHLO mx1.redhat.com"
+	id S1753582Ab1LULtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:49:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600Ab1LULtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:49:08 -0500
+	id S1752600Ab1LULtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:49:17 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: [PATCHv3 0/8] ftrace, perf: Adding support to use function trace
-Date: Wed, 21 Dec 2011 12:48:48 +0100
-Message-Id: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 5/8] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Wed, 21 Dec 2011 12:48:53 +0100
+Message-Id: <1324468136-3997-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
 References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+ <1324468136-3997-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-here's another version of perf support for function trace
-with filter. 
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-attached patches:
-  1/8 ftrace: Change filter/notrace set functions to return exit code
-  2/8 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
-  3/8 ftrace: Add enable/disable ftrace_ops control interface
-  4/8 ftrace, perf: Add open/close tracepoint perf registration actions
-  5/8 ftrace, perf: Add add/del tracepoint perf registration actions
-  6/8 ftrace, perf: Add support to use function tracepoint in perf
-  7/8 ftrace, perf: Distinguish ftrace function event field type
-  8/8 ftrace, perf: Add filter support for function trace event
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
-v3 changes:
-  3/8 - renamed __add/remove_ftrace_ops
-      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
-      - renamed/commented API functions -  enable/disable_ftrace_function
-  
-  ommited graph tracer workarounf patch 10/10  
-
-v2 changes:
- 01/10 - keeping the old fix instead of adding hash_has_contents func
-         I'll send separating patchset for this
- 02/10 - using different way to avoid the issue (3/9 in v1)
- 03/10 - using the way proposed by Steven for controling ftrace_ops
-         (4/9 in v1)
- 06/10 - added check ensuring the ftrace:function event could be used by
-         root only (7/9 in v1)
- 08/10 - added more description (8/9 in v1)
- 09/10 - changed '&&' operator to '||' which seems more suitable
-         in this case (9/9 in v1)
-
-thanks,
-jirka
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace.h             |   46 ++++++++-
- include/linux/ftrace_event.h       |    9 +-
- include/linux/perf_event.h         |    3 +
- kernel/trace/ftrace.c              |  135 ++++++++++++++++++++---
- kernel/trace/trace.h               |   11 ++-
- kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
- kernel/trace/trace_events.c        |   12 ++-
- kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
- kernel/trace/trace_export.c        |   53 ++++++++-
- kernel/trace/trace_kprobe.c        |    8 +-
- kernel/trace/trace_syscalls.c      |   18 +++-
- 11 files changed, 541 insertions(+), 82 deletions(-)
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 195e360..2bf677c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
+ };
+ 
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ 
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
+ }
+ 
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
+ 
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 8599c1d..5e4f62e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -667,6 +667,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -691,6 +693,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+-- 
+1.7.1
+
