@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1LUFlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 00:41:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47255 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750924Ab1LUFl2 (ORCPT
+	id S1751671Ab1LUFpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 00:45:42 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42435 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab1LUFpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 00:41:28 -0500
-Message-ID: <1324446073.2844.190.camel@deadeye>
-Subject: Re: [PATCH 2/8] farsync: Fix confusion about DMA address and buffer
- offset types
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: kevin.curtis@farsite.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Dec 2011 05:41:13 +0000
-In-Reply-To: <20111220.234656.658595607282312696.davem@davemloft.net>
-References: <1324430940.2844.144.camel@deadeye>
-	 <1324431172.2844.147.camel@deadeye>
-	 <20111220.234656.658595607282312696.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-twrbCDpmnZPfVRp7A4XA"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 21 Dec 2011 00:45:39 -0500
+Date: Wed, 21 Dec 2011 14:45:31 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vmalloc: remove #ifdef in function body
+Message-ID: <20111221054531.GB28505@barrios-laptop.redhat.com>
+References: <1324444679-9247-1-git-send-email-minchan@kernel.org>
+ <1324445481.20505.7.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324445481.20505.7.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 20, 2011 at 09:31:21PM -0800, Joe Perches wrote:
+> On Wed, 2011-12-21 at 14:17 +0900, Minchan Kim wrote:
+> > We don't like function body which include #ifdef.
+> []
+> > diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> []
+> > @@ -505,6 +505,7 @@ static void unmap_vmap_area(struct vmap_area *va)
+> >  	vunmap_page_range(va->va_start, va->va_end);
+> >  }
+> >  
+> > +#ifdef CONFIG_DEBUG_PAGEALLOC
+> >  static void vmap_debug_free_range(unsigned long start, unsigned long end)
+> >  {
+> >  	/*
+> > @@ -520,11 +521,15 @@ static void vmap_debug_free_range(unsigned long start, unsigned long end)
+> >  	 * debugging doesn't do a broadcast TLB flush so it is a lot
+> >  	 * faster).
+> >  	 */
+> > -#ifdef CONFIG_DEBUG_PAGEALLOC
+> >  	vunmap_page_range(start, end);
+> >  	flush_tlb_kernel_range(start, end);
+> > -#endif
+> >  }
+> > +#else
+> > +static inline void vmap_debug_free_range(unsigned long start,
+> > +					unsigned long end)
+> > +{
+> > +}
+> > +#endif
+> 
+> I don't like this change.
+> I think it's perfectly good style to use:
 
---=-twrbCDpmnZPfVRp7A4XA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I feel it's no problem as it is because it's very short function now
+but it's not style we prefer. 
 
-On Tue, 2011-12-20 at 23:46 -0500, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Wed, 21 Dec 2011 01:32:52 +0000
->=20
-> > -	dbg(DBG_RX, "In fst_rx_dma %lx %lx %d\n",
-> > -	    (unsigned long) skb, (unsigned long) mem, len);
-> > +	dbg(DBG_RX, "In fst_rx_dma %x %x %d\n", (u32)skb, mem, len);
->=20
-> This is more appropriately fixed by using "%p" instead of casting
-> to a 32-bit int.
+> 
+> 1	void foo(args...)
+> 2	{
+> 3	#ifdef CONFIG_FOO
+> 4		...
+> 5	#endif
+> 6	}
+> 
+> instead of
+> 
+> 1	#ifdef CONFIG_FOO
+> 2	void foo(args...)
+> 3	{
+> 4		...
+> 5	}
+> 6	#else
+> 7	void foo(args...)
+> 8	{
+> 9	}
+> 10	#endif
+> 
+> The first version is shorter and gcc optimizes
+> away the void func just fine.  It also means
 
-'skb' is the physical address of the data in the skb.  Whereas 'mem' is
-the offset of the corresponding buffer in shared memory.
+Agree but if function would be long(but I convice
+it's not long in future :)), it would be messy.
 
-All completely clear, right? ;-)
+> that 2 function prototypes don't need to be
+> kept in agreement when someone changes one
+> without testing CONFIG_FOO=y and CONFIG_FOO=n.
 
-Ben.
+The goal is not for making test easily.
+Patch author should keep it consistent.
 
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
+This patch is just trivial so I don't mind if who have
+against this patch strongly. What I want to say is 
+it's not style we prefer. 
 
---=-twrbCDpmnZPfVRp7A4XA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> 
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATvFxeee/yOyVhhEJAQqN+hAA0R0buHs4pfmomXfNyjlDWvZUdrvoHh9k
-tXrVDPaHQgotIRbsCTOwmXC55JGd3O9vsJgGk70df8Y/OTygXqHsLmlxwyRoe2lT
-NU+sonkKBJYmoIR4UIdENGRxKy2E1ABJdBlBZY0Iwt55Pw+VORzSVECU59uTn7OQ
-aAg+Z+z4a9m5+56JlafMlwKN4UeKBSDDC1XPveeULgawovtt1anTilw2Nl+f7Jb7
-5u+fo7rQ4PjRPkv4CxUUpa8T8WemAPS39VPAwiWVC4qex6ussMxOhKQyb5hC4nrt
-oX7muBFUbjwhE7sonN77eCw5wI5Uwqp0aZ23br+svPdFZgq6zDWvaIRBKUfGCW6l
-S8qsotxwr0EryQjw+OU+D5zdpMto3YzUnkwu6OrAnSiuvc5+KI+W4GZN178k2q44
-OKWjPbAtxQ7vjnKmdOWTOw0XNIikE+IDqG7NDah+whX0rXA5vGQghP1F5IdrbrT0
-zcE1TKMVkiX6/ytZm9il1HP9BMDVslhcoz9CbXUKGuL97ycL7azDgQxHkVHmUryC
-tDxEyzp4fwyiorxKcGDo7PUjKXCPjyjyzJ8qO/lBhCwMTM8XV4ji4OqUdVCtdPKP
-3Qo9kh1+qvmkJTrGeYO9ZuMdBaTbfyuCuJ7iQz4D+ELF92A8U/V+T/4Mro+VYRo8
-AKxnHmRs6yE=
-=WHuV
------END PGP SIGNATURE-----
-
---=-twrbCDpmnZPfVRp7A4XA--
+-- 
+Kind regards,
+Minchan Kim
