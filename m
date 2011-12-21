@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab1LUGdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 01:33:12 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:39936 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab1LUGdJ (ORCPT
+	id S1751764Ab1LUGdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 01:33:46 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33678 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751071Ab1LUGdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 01:33:09 -0500
-Date: Wed, 21 Dec 2011 17:33:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: linux-next: build failure after merge of the final tree (mfd tree
- related)
-Message-Id: <20111221173301.1111dc371e11d5c7025f03ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Dec_2011_17_33_01_+1100_8aMus3PSCPlttZSj"
+	Wed, 21 Dec 2011 01:33:44 -0500
+Message-ID: <4EF17DC4.5010008@tao.ma>
+Date: Wed, 21 Dec 2011 14:33:40 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Dan Williams <dan.j.williams@intel.com>
+CC: axboe@kernel.dk, Tao Ma <boyu.mt@taobao.com>, Meelis Roos <mroos@ut.ee>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Ed Nadolski <edmund.nadolski@intel.com>
+Subject: Re: [PATCH] block: fix blk_queue_end_tag()
+References: <20111220233117.17757.71139.stgit@localhost6.localdomain6>
+In-Reply-To: <20111220233117.17757.71139.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 121.0.29.114 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Dec_2011_17_33_01_+1100_8aMus3PSCPlttZSj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/21/2011 07:33 AM, Dan Williams wrote:
+> Commit 5e081591 "block: warn if tag is greater than real_max_depth"
+> cleaned up blk_queue_end_tag() to warn when the tag is truly invalid
+> (greater than real_max_depth).  However, it changed behavior in the tag
+> < max_depth case to not end the request.  Leading to triggering of
+> BUG_ON(blk_queued_rq(rq)) in the request completion path:
+> 
+>   http://marc.info/?l=linux-kernel&m=132204370518629&w=2
+> 
+> In order to allow blk_queue_resize_tags() to shrink the tag space
+> blk_queue_end_tag() must always complete tags with a value less than
+> real_max_depth regardless of the current max_depth.
+> 
+> Cc: Tao Ma <boyu.mt@taobao.com>
+> Reported-by: Meelis Roos <mroos@ut.ee>
+> Reported-by: Ed Nadolski <edmund.nadolski@intel.com>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+> Functionally the same as Tao Ma's fix [1], but just moves the warn into the
+> if() directly.
+> 
+> [1]: http://marc.info/?l=linux-scsi&m=132439698602441&w=2
+> 
+> --
+> Dan
+> 
+>  block/blk-tag.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/blk-tag.c b/block/blk-tag.c
+> index e74d6d1..6e61262 100644
+> --- a/block/blk-tag.c
+> +++ b/block/blk-tag.c
+> @@ -286,12 +286,13 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
+>  
+>  	BUG_ON(tag == -1);
+>  
+> -	if (unlikely(tag >= bqt->max_depth)) {
+> +	if (WARN_ONCE(tag >= bqt->real_max_depth,
+> +		      "%s: tag %d greater than tag map size: %d\n",
+> +		      __func__, tag, bqt->real_max_depth)) {
+>  		/*
+>  		 * This can happen after tag depth has been reduced.
+Please also change the comments here since it should never happen in the
+right workload.
 
-Hi all,
+Thanks
+Tao
+>  		 * But tag shouldn't be larger than real_max_depth.
+>  		 */
+> -		WARN_ON(tag >= bqt->real_max_depth);
+>  		return;
+>  	}
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/mfd/twl-core.c: In function 'twl_probe':
-drivers/mfd/twl-core.c:1212:22: error: 'TWL6030_IRQ_BASE' undeclared (first=
- use in this function)
-drivers/mfd/twl-core.c:1212:22: note: each undeclared identifier is reporte=
-d only once for each function it appears in
-drivers/mfd/twl-core.c:1213:39: error: 'TWL6030_BASE_NR_IRQS' undeclared (f=
-irst use in this function)
-drivers/mfd/twl-core.c:1215:22: error: 'TWL4030_IRQ_BASE' undeclared (first=
- use in this function)
-drivers/mfd/twl-core.c:1216:39: error: 'TWL4030_BASE_NR_IRQS' undeclared (f=
-irst use in this function)
-drivers/mfd/twl-core.c:1218:3: error: implicit declaration of function 'irq=
-_domain_add_simple' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit 4eea8b1d717d ("mfd: Add initial DT support for
-twl4030/twl6030").  A missing include?  Or a CONFIG problem?
-
-This build does not have CONFIG_IRQ_DOMAIN set.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__21_Dec_2011_17_33_01_+1100_8aMus3PSCPlttZSj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO8X2dAAoJEECxmPOUX5FE7acQAKfO1JnHBxP1N23UHIovjsfY
-DpcXbSEfKGcC1O//3fg7KJNSyF0/miKsAhMvSJFuBTwFbE0AlpZkj7qlSMuDtwvq
-zXw8TrPvHegzwoKL5kjc6+q6BoyGsYKWa8ecjqmkmT8C1my+HxjhweCnPwutMI7W
-mOst3FKfJOgWCXKKAJr5XlfMDVnb3cl/m/vO9ycYlOjRe+ozN+j2SaiIeruFeySH
-HSDb3ik6gCn/4GSzWWj8NjV8mXcRnqvZXmVDYueS1EVDLUm1ZF+OHPi0EEknrVv4
-uP22MT0q5sw76IOCl6UAgd1AoTEnEKkOZ6OtuVlKx6XayWyvvMuOhFt7Kme8ZaCL
-G9l+/gedGBcMM6zTSGqHB0UCRZjSTszgi7qn3MMtK0D9Z+NtQ38UPGpGhO3Z/FLG
-eaZjlykm7CeshX2XHzu306mNVYvVG7Pub8F5dxxNbas6IYK7aphFy5qnKbI6IwwV
-PWL8Z7aBSUE+4nU4SuH8vRK9VRC9TqsAliEpwjQmw+GpB3Gj4Aq5rs7O7Jy61JQw
-iQt9clZj5NdEkbKsLGCwRmdpaMtA1dJpehJSyxM28HUjefEi+0fixugCM6suLK0R
-YtxMDG9EDkfYFElaO2MGwOGA6GwO1zCD8AnQchdiOSZKxbLBdqEYHaEc/Ty1zTXA
-qGhTwMITY4GYhPwideBe
-=pr19
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Dec_2011_17_33_01_+1100_8aMus3PSCPlttZSj--
