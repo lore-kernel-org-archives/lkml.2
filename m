@@ -1,259 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1LUCYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 21:24:23 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35392 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1LUCYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 21:24:21 -0500
+	id S1752817Ab1LUCZC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 21:25:02 -0500
+Received: from void.printf.net ([89.145.121.20]:54779 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752787Ab1LUCY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 21:24:59 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.2
+Date: Tue, 20 Dec 2011 21:24:47 -0500
+Message-ID: <m2k45q3bm8.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU__U0CCiyzF9kDC1Z=PUEoTe1Jm-M97EbCO440Vm9P_A@mail.gmail.com>
-References: <1324083546-1003-1-git-send-email-yinghai@kernel.org>
-	<1324363882.2286.23.camel@sbsiddha-mobl2>
-	<CAE9FiQU__U0CCiyzF9kDC1Z=PUEoTe1Jm-M97EbCO440Vm9P_A@mail.gmail.com>
-Date: Tue, 20 Dec 2011 18:24:21 -0800
-X-Google-Sender-Auth: Y38awBHJle87XQoKVuqHEDiUQ0Y
-Message-ID: <CAE9FiQXodjK=GRO2ut4fGS=wXBc59+rov-BVKXhDGK8vJVBHhQ@mail.gmail.com>
-Subject: Re: [PATCH -v8] x86: Disable x2apic if nox2apic is specified or
- intr-remap can not be enabled
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf302d4af8aab87204b490e18f
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf302d4af8aab87204b490e18f
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Tue, Dec 20, 2011 at 5:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Dec 19, 2011 at 10:51 PM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
->> While reviewing the code, I ended up doing some of this cleanup of your
->> patch. I have appended the modified version. Can you please incorporate
->> the smpboot checks before the AP bringup (apic-id should be less than
->> 255 in !x2apic_mode etc) and split the patch into couple of patches
->> (apic_probe etc) along with other needed cleanups.
->
-> We could handle AP's apic id > 255 panic problem later if needed in
-> another patch.
->
-> Actually on system with apic id > 255, intr-remapping aka DMAR must be
-> working, otherwise those big box can not be sold.
->
-> And in this case, nox2apic must be passed to disable x2apic, because
-> dmar is correct in both case kexec or first boot.
->
-> when nox2apic is passed, =A0those entries will be skipped early. and BSP
-> x2apic get disabled early.
-> and code path is more like bios enable xapic only.
->
-> Can we let this patch get into tip and have test cycle at first?
-> at least we should not let it break any working set up.
+Hi Linus,
 
-put your updated version as v9.
+Please pull from:
 
-like to let ingo or hpa or thomas to decide v8 or v9 to be used.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-        Changes:
-                 1. clear x2apic cpu features
-                 2. disable x2apic later instead of check_x2apic()
+to receive three fixes for MMC for 3.2:
 
-Thanks
+  * Revert automatic enabling of SDIO runtime PM (added in -rc1), after
+    finding that this has caused a regression for a few setups that we
+    don't know how to fix yet.  We'll try again in a later release.
+  * Silence PCI suspend WARN_ON()s that appeared in -rc1 regarding
+    legacy PM support.  This patch is what makes the diffstat large.
+  * Fix the type of a module_param in the vub300 driver.
 
-Yinghai
+These have been tested in linux-next, and there are no merge conflicts.
+Thanks.
 
---20cf302d4af8aab87204b490e18f
-Content-Type: text/x-patch; charset=US-ASCII; name="nox2apic_v9.patch"
-Content-Disposition: attachment; filename="nox2apic_v9.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gwfpxlaa0
 
-RnJvbTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpTdWJqZWN0OiBbUEFUQ0ggLXY5
-XSB4ODY6IERpc2FibGUgeDJhcGljIGlmIG5veDJhcGljIGlzIHNwZWNpZmllZCBvciBpbnRyLXJl
-bWFwIGNhbiBub3QgYmUgZW5hYmxlZAoKRm9yCjEuIHgyYXBpYyBwcmVlbmFibGVkIHN5c3RlbQoy
-LiBmaXJzdCBrZXJuZWwgaGF2ZSB4MmFwaWMgZW5hYmxlZCwgYW5kIHRyeSB0byBrZXhlYyBzZWNv
-bmQga2VybmVsIHdpdGggIm5veDJhcGljIgoKV2lsbCBwdXQgYmFjayBjcHUgd2l0aCBhcGljIGlk
-IDwgMjU1IGludG8geGFwaWMgbW9kZSwgaW5zdGVhZCBvZiBwYW5pYy4KCi12MjogdXNlIHZhcmlh
-YmxlIHgyYXBpY19kaXNhYmxlZCBpbnN0ZWFkIG9mIHZhcmlhYmxlIG5veDJhcGljLCBTdWdnZXN0
-ZWQgYnkgVGhvbWFzCiAgICAgdXBkYXRlIHgyYXBpY19zdXBwb3J0ZWQgd2l0aCB4MmFwaWNfZGlz
-YWJsZWQsIFN1Z2dlc3RlZCBieSBUaG9tYXMKCi12MzogYWRkIGNoZWNraW5nIGZvciBib290IGNw
-dSBhcGljIGlkID4gMjU1LiBpbiB0aGF0IGNhc2Ugd2lsbCBqdXN0IHBhbmljCiAgICAgLS0tIHBv
-aW50ZWQgb3V0IGJ5IFN1cmVzaC4KCi12NDogYWNjb3JkaW5nIHRvIEluZ28sIGZvciB4MmFwaWMg
-cHJlLWVuYWJsZWQgc3lzdGVtLCBpZiBpbnRyLXJlbWFwIGNhbiBub3QKICAgICAgICBiZSBlbmFi
-bGVkLCB0cnkgdG8gZGlzYWJsZSB4MmFwaWMgaW5zdGVhZCBvZiBwYW5pYyBhbmQgcmVxdWVzdCB0
-bwogICAgICAgIHNwZWNpZnkgbm94MmFwaWMgZm9yIG5leHQgYm9vdC4KCi12NTogZml4IHRoZSBs
-YXBpYyBtYXBwaW5nIGZvciBmYWxsaW5nIHBhdGguCgotdjY6IGFkZCB3YXJuaW5nIHdoZW4gY2hl
-Y2tfdGltZXIgZmFpbHMgaW4gc3RyYW5nZSBjYXNlIHdoZW4gQklPUyBlbmFibGUgeDJhcGljCiAg
-ICAgYW5kIGludHJfcmVtYXBwaW5nIGJ1dCBkb2VzIG5vdCBwcm92aWRlIGRtYXIgdGFibGUuIHJl
-cXVlc3RlZCBieSBTdXJlc2guCgotdjc6IGZpeCBjb21waWxpbmcgd2l0aCB4MmFwaWNfcHJlZW5h
-YmxlZAoKLXY4OiBmaXggY29tcGlsaW5nIHdpdGggeDJhcGljX2Rpc2FibGVkIGFzc2lnbmVkIHdp
-dGggIVg4Nl9YMkFQSUMKCi12OTogdXBkYXRlZCB2ZXJzaW9uIGZyb20gU3VyZXNoCglDaGFuZ2Vz
-OiAxLiBjbGVhciB4MmFwaWMgY3B1IGZlYXR1cmVzCgkJIDIuIGRpc2FibGUgeDJhcGljIGxhdGVy
-IGluc3RlYWQgb2YgY2hlY2tfeDJhcGljKCkKClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlp
-bmdoYWlAa2VybmVsLm9yZz4KVGVzdGVkLWJ5OiAiQmVyY2sgRS4gTmFzaCIgPGZseWJveUBnbWFp
-bC5jb20+CgotLS0KIGFyY2gveDg2L2luY2x1ZGUvYXNtL2FwaWMuaCAgICAgICAgIHwgICAgNiAr
-KwogYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpY2RlZi5oICAgICAgfCAgICAxIAogYXJjaC94ODYv
-a2VybmVsL2FjcGkvYm9vdC5jICAgICAgICAgfCAgIDEwICsrKwogYXJjaC94ODYva2VybmVsL2Fw
-aWMvYXBpYy5jICAgICAgICAgfCAgIDkyICsrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0t
-LS0tLQogYXJjaC94ODYva2VybmVsL2FwaWMvYXBpY19mbGF0XzY0LmMgfCAgICA3ICsrCiBhcmNo
-L3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMgICAgICB8ICAgIDQgKwogYXJjaC94ODYvbW0vc3Jh
-dC5jICAgICAgICAgICAgICAgICAgfCAgICA3ICsrCiA3IGZpbGVzIGNoYW5nZWQsIDk5IGluc2Vy
-dGlvbnMoKyksIDI4IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNs
-dWRlL2FzbS9hcGljLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5j
-bHVkZS9hc20vYXBpYy5oCisrKyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5o
-CkBAIC0xNzYsNiArMTc2LDggQEAgc3RhdGljIGlubGluZSB1NjQgbmF0aXZlX3gyYXBpY19pY3Jf
-cmVhZAogfQogCiBleHRlcm4gaW50IHgyYXBpY19waHlzOworZXh0ZXJuIGludCB4MmFwaWNfcHJl
-ZW5hYmxlZDsKK2V4dGVybiBpbnQgeDJhcGljX2Rpc2FibGVkOwogZXh0ZXJuIHZvaWQgY2hlY2tf
-eDJhcGljKHZvaWQpOwogZXh0ZXJuIHZvaWQgZW5hYmxlX3gyYXBpYyh2b2lkKTsKIGV4dGVybiB2
-b2lkIHgyYXBpY19pY3Jfd3JpdGUodTMyIGxvdywgdTMyIGlkKTsKQEAgLTE5OCw2ICsyMDAsOSBA
-QCBzdGF0aWMgaW5saW5lIHZvaWQgeDJhcGljX2ZvcmNlX3BoeXModm9pCiAJeDJhcGljX3BoeXMg
-PSAxOwogfQogI2Vsc2UKK3N0YXRpYyBpbmxpbmUgdm9pZCBkaXNhYmxlX3gyYXBpYyh2b2lkKQor
-eworfQogc3RhdGljIGlubGluZSB2b2lkIGNoZWNrX3gyYXBpYyh2b2lkKQogewogfQpAQCAtMjE0
-LDYgKzIxOSw3IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCB4MmFwaWNfZm9yY2VfcGh5cyh2b2kKIAog
-I2RlZmluZQl4MmFwaWNfcHJlZW5hYmxlZCAwCiAjZGVmaW5lCXgyYXBpY19zdXBwb3J0ZWQoKQkw
-CisjZGVmaW5lCXgyYXBpY19kaXNhYmxlZAkxCiAjZW5kaWYKIAogZXh0ZXJuIHZvaWQgZW5hYmxl
-X0lSX3gyYXBpYyh2b2lkKTsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9h
-cGljZGVmLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9h
-c20vYXBpY2RlZi5oCisrKyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpY2RlZi5o
-CkBAIC0xNDQsNiArMTQ0LDcgQEAKIAogI2RlZmluZSBBUElDX0JBU0UgKGZpeF90b192aXJ0KEZJ
-WF9BUElDX0JBU0UpKQogI2RlZmluZSBBUElDX0JBU0VfTVNSCTB4ODAwCisjZGVmaW5lIFhBUElD
-X0VOQUJMRQkoMVVMIDw8IDExKQogI2RlZmluZSBYMkFQSUNfRU5BQkxFCSgxVUwgPDwgMTApCiAK
-ICNpZmRlZiBDT05GSUdfWDg2XzMyCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL2Fj
-cGkvYm9vdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9h
-Y3BpL2Jvb3QuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9hY3BpL2Jvb3QuYwpAQCAt
-MjE5LDYgKzIxOSw4IEBAIHN0YXRpYyBpbnQgX19pbml0CiBhY3BpX3BhcnNlX3gyYXBpYyhzdHJ1
-Y3QgYWNwaV9zdWJ0YWJsZV9oZWFkZXIgKmhlYWRlciwgY29uc3QgdW5zaWduZWQgbG9uZyBlbmQp
-CiB7CiAJc3RydWN0IGFjcGlfbWFkdF9sb2NhbF94MmFwaWMgKnByb2Nlc3NvciA9IE5VTEw7CisJ
-aW50IGFwaWNfaWQ7CisJdTggZW5hYmxlZDsKIAogCXByb2Nlc3NvciA9IChzdHJ1Y3QgYWNwaV9t
-YWR0X2xvY2FsX3gyYXBpYyAqKWhlYWRlcjsKIApAQCAtMjI3LDYgKzIyOSw4IEBAIGFjcGlfcGFy
-c2VfeDJhcGljKHN0cnVjdCBhY3BpX3N1YnRhYmxlX2gKIAogCWFjcGlfdGFibGVfcHJpbnRfbWFk
-dF9lbnRyeShoZWFkZXIpOwogCisJYXBpY19pZCA9IHByb2Nlc3Nvci0+bG9jYWxfYXBpY19pZDsK
-KwllbmFibGVkID0gcHJvY2Vzc29yLT5sYXBpY19mbGFncyAmIEFDUElfTUFEVF9FTkFCTEVEOwog
-I2lmZGVmIENPTkZJR19YODZfWDJBUElDCiAJLyoKIAkgKiBXZSBuZWVkIHRvIHJlZ2lzdGVyIGRp
-c2FibGVkIENQVSBhcyB3ZWxsIHRvIHBlcm1pdApAQCAtMjM1LDggKzIzOSwxMCBAQCBhY3BpX3Bh
-cnNlX3gyYXBpYyhzdHJ1Y3QgYWNwaV9zdWJ0YWJsZV9oCiAJICogdG8gbm90IHByZWFsbG9jYXRp
-bmcgbWVtb3J5IGZvciBhbGwgTlJfQ1BVUwogCSAqIHdoZW4gd2UgdXNlIENQVSBob3RwbHVnLgog
-CSAqLwotCWFjcGlfcmVnaXN0ZXJfbGFwaWMocHJvY2Vzc29yLT5sb2NhbF9hcGljX2lkLAkvKiBB
-UElDIElEICovCi0JCQkgICAgcHJvY2Vzc29yLT5sYXBpY19mbGFncyAmIEFDUElfTUFEVF9FTkFC
-TEVEKTsKKwlpZiAoeDJhcGljX2Rpc2FibGVkICYmIChhcGljX2lkID49IDB4ZmYpICYmIGVuYWJs
-ZWQpCisJCXByaW50ayhLRVJOX1dBUk5JTkcgUFJFRklYICJ4MmFwaWMgZW50cnkgaWdub3JlZFxu
-Iik7CisJZWxzZQorCQlhY3BpX3JlZ2lzdGVyX2xhcGljKGFwaWNfaWQsIGVuYWJsZWQpOwogI2Vs
-c2UKIAlwcmludGsoS0VSTl9XQVJOSU5HIFBSRUZJWCAieDJhcGljIGVudHJ5IGlnbm9yZWRcbiIp
-OwogI2VuZGlmCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL2FwaWMvYXBpYy5jCj09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9hcGljL2FwaWMuYwor
-KysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9hcGljL2FwaWMuYwpAQCAtMTQ2LDE2ICsxNDYs
-MTYgQEAgX19zZXR1cCgiYXBpY3BtdGltZXIiLCBzZXR1cF9hcGljcG10aW1lcgogaW50IHgyYXBp
-Y19tb2RlOwogI2lmZGVmIENPTkZJR19YODZfWDJBUElDCiAvKiB4MmFwaWMgZW5hYmxlZCBiZWZv
-cmUgT1MgaGFuZG92ZXIgKi8KLXN0YXRpYyBpbnQgeDJhcGljX3ByZWVuYWJsZWQ7CitpbnQgeDJh
-cGljX3ByZWVuYWJsZWQ7CitpbnQgeDJhcGljX2Rpc2FibGVkOwogc3RhdGljIF9faW5pdCBpbnQg
-c2V0dXBfbm94MmFwaWMoY2hhciAqc3RyKQogewotCWlmICh4MmFwaWNfZW5hYmxlZCgpKSB7Ci0J
-CXByX3dhcm5pbmcoIkJpb3MgYWxyZWFkeSBlbmFibGVkIHgyYXBpYywgIgotCQkJICAgImNhbid0
-IGVuZm9yY2Ugbm94MmFwaWMiKTsKLQkJcmV0dXJuIDA7Ci0JfQorCWlmICh4MmFwaWNfZW5hYmxl
-ZCgpKQorCQlwcl93YXJuaW5nKCJCaW9zIGFscmVhZHkgZW5hYmxlZCB4MmFwaWMsIHdpbGwgZGlz
-YWJsZSBpdCIpOworCWVsc2UKKwkJc2V0dXBfY2xlYXJfY3B1X2NhcChYODZfRkVBVFVSRV9YMkFQ
-SUMpOworCXgyYXBpY19kaXNhYmxlZCA9IDE7CiAKLQlzZXR1cF9jbGVhcl9jcHVfY2FwKFg4Nl9G
-RUFUVVJFX1gyQVBJQyk7CiAJcmV0dXJuIDA7CiB9CiBlYXJseV9wYXJhbSgibm94MmFwaWMiLCBz
-ZXR1cF9ub3gyYXBpYyk7CkBAIC0xNDMyLDYgKzE0MzIsNDUgQEAgdm9pZCBfX2luaXQgYnNwX2Vu
-ZF9sb2NhbF9BUElDX3NldHVwKHZvaQogfQogCiAjaWZkZWYgQ09ORklHX1g4Nl9YMkFQSUMKKwor
-c3RhdGljIGlubGluZSB2b2lkIF9fZGlzYWJsZV94MmFwaWModTY0IG1zcikKK3sKKwl3cm1zcmwo
-TVNSX0lBMzJfQVBJQ0JBU0UsCisJICAgICAgIG1zciAmIH4oWDJBUElDX0VOQUJMRSB8IFhBUElD
-X0VOQUJMRSkpOworCXdybXNybChNU1JfSUEzMl9BUElDQkFTRSwgbXNyICYgflgyQVBJQ19FTkFC
-TEUpOworfQorCitzdGF0aWMgX19pbml0IHZvaWQgZGlzYWJsZV94MmFwaWModm9pZCkKK3sKKwl1
-NjQgbXNyOworCisJaWYgKCFjcHVfaGFzX3gyYXBpYykKKwkJcmV0dXJuOworCisJcmRtc3JsKE1T
-Ul9JQTMyX0FQSUNCQVNFLCBtc3IpOworCWlmIChtc3IgJiBYMkFQSUNfRU5BQkxFKSB7CisJCXUz
-MiB4MmFwaWNfaWQgPSByZWFkX2FwaWNfaWQoKTsKKworCQlpZiAoeDJhcGljX2lkID4gMjU1KQor
-CQkJcGFuaWMoIkNhbiBub3QgZGlzYWJsZSB4MmFwaWMsIGlkOiAlMDh4XG4iLCB4MmFwaWNfaWQp
-OworCisJCXByX2luZm8oIkRpc2FibGluZyB4MmFwaWNcbiIpOworCQkvKgorCQkgKiBOZWVkIHRv
-IGRpc2FibGUgeGFwaWMgYW5kIHgyYXBpYyBhdCB0aGUgc2FtZSB0aW1lIGF0IGZpcnN0CisJCSAq
-ICB0aGVuIGVuYWJsZSB4YXBpYworCQkgKi8KKwkJX19kaXNhYmxlX3gyYXBpYyhtc3IpOworCisJ
-CWlmICh4MmFwaWNfZGlzYWJsZWQpCisJCQlzZXR1cF9jbGVhcl9jcHVfY2FwKFg4Nl9GRUFUVVJF
-X1gyQVBJQyk7CisKKwkJeDJhcGljX2Rpc2FibGVkID0gMTsKKwkJeDJhcGljX21vZGUgPSAwOwor
-CisJCXJlZ2lzdGVyX2xhcGljX2FkZHJlc3MobXBfbGFwaWNfYWRkcik7CisJfQorfQorCiB2b2lk
-IGNoZWNrX3gyYXBpYyh2b2lkKQogewogCWlmICh4MmFwaWNfZW5hYmxlZCgpKSB7CkBAIC0xNDQy
-LDE1ICsxNDgxLDIwIEBAIHZvaWQgY2hlY2tfeDJhcGljKHZvaWQpCiAKIHZvaWQgZW5hYmxlX3gy
-YXBpYyh2b2lkKQogewotCWludCBtc3IsIG1zcjI7CisJdTY0IG1zcjsKKworCXJkbXNybChNU1Jf
-SUEzMl9BUElDQkFTRSwgbXNyKTsKKwlpZiAoeDJhcGljX2Rpc2FibGVkKSB7CisJCV9fZGlzYWJs
-ZV94MmFwaWMobXNyKTsKKwkJcmV0dXJuOworCX0KIAogCWlmICgheDJhcGljX21vZGUpCiAJCXJl
-dHVybjsKIAotCXJkbXNyKE1TUl9JQTMyX0FQSUNCQVNFLCBtc3IsIG1zcjIpOwogCWlmICghKG1z
-ciAmIFgyQVBJQ19FTkFCTEUpKSB7CiAJCXByaW50a19vbmNlKEtFUk5fSU5GTyAiRW5hYmxpbmcg
-eDJhcGljXG4iKTsKLQkJd3Jtc3IoTVNSX0lBMzJfQVBJQ0JBU0UsIG1zciB8IFgyQVBJQ19FTkFC
-TEUsIG1zcjIpOworCQl3cm1zcmwoTVNSX0lBMzJfQVBJQ0JBU0UsIG1zciB8IFgyQVBJQ19FTkFC
-TEUpOwogCX0KIH0KICNlbmRpZiAvKiBDT05GSUdfWDg2X1gyQVBJQyAqLwpAQCAtMTQ5NCwyNSAr
-MTUzOCwzNCBAQCB2b2lkIF9faW5pdCBlbmFibGVfSVJfeDJhcGljKHZvaWQpCiAJcmV0ID0gc2F2
-ZV9pb2FwaWNfZW50cmllcygpOwogCWlmIChyZXQpIHsKIAkJcHJfaW5mbygiU2F2aW5nIElPLUFQ
-SUMgc3RhdGUgZmFpbGVkOiAlZFxuIiwgcmV0KTsKLQkJZ290byBvdXQ7CisJCXJldHVybjsKIAl9
-CiAKIAlsb2NhbF9pcnFfc2F2ZShmbGFncyk7CiAJbGVnYWN5X3BpYy0+bWFza19hbGwoKTsKIAlt
-YXNrX2lvYXBpY19lbnRyaWVzKCk7CiAKKwlpZiAoeDJhcGljX2Rpc2FibGVkKQorCQlkaXNhYmxl
-X3gyYXBpYygpOworCiAJaWYgKGRtYXJfdGFibGVfaW5pdF9yZXQpCiAJCXJldCA9IC0xOwogCWVs
-c2UKIAkJcmV0ID0gZW5hYmxlX0lSKCk7CiAKKwlpZiAoIXgyYXBpY19zdXBwb3J0ZWQoKSkKKwkJ
-Z290byBub3gyYXBpYzsKKwogCWlmIChyZXQgPCAwKSB7CiAJCS8qIElSIGlzIHJlcXVpcmVkIGlm
-IHRoZXJlIGlzIEFQSUMgSUQgPiAyNTUgZXZlbiB3aGVuIHJ1bm5pbmcKIAkJICogdW5kZXIgS1ZN
-CiAJCSAqLwogCQlpZiAobWF4X3BoeXNpY2FsX2FwaWNpZCA+IDI1NSB8fAotCQkgICAgIWh5cGVy
-dmlzb3JfeDJhcGljX2F2YWlsYWJsZSgpKQorCQkgICAgIWh5cGVydmlzb3JfeDJhcGljX2F2YWls
-YWJsZSgpKSB7CisJCQlpZiAoeDJhcGljX3ByZWVuYWJsZWQgJiYgIXgyYXBpY19kaXNhYmxlZCkK
-KwkJCQlkaXNhYmxlX3gyYXBpYygpOwogCQkJZ290byBub3gyYXBpYzsKKwkJfQogCQkvKgogCQkg
-KiB3aXRob3V0IElSIGFsbCBDUFVzIGNhbiBiZSBhZGRyZXNzZWQgYnkgSU9BUElDL01TSQogCQkg
-KiBvbmx5IGluIHBoeXNpY2FsIG1vZGUKQEAgLTE1MjAsOCArMTU3MywxMCBAQCB2b2lkIF9faW5p
-dCBlbmFibGVfSVJfeDJhcGljKHZvaWQpCiAJCXgyYXBpY19mb3JjZV9waHlzKCk7CiAJfQogCi0J
-aWYgKHJldCA9PSBJUlFfUkVNQVBfWEFQSUNfTU9ERSkKKwlpZiAocmV0ID09IElSUV9SRU1BUF9Y
-QVBJQ19NT0RFKSB7CisJCXByX2luZm8oIngyYXBpYyBub3QgZW5hYmxlZCwgSVJRIHJlbWFwcGlu
-ZyBpcyBpbiB4YXBpYyBtb2RlXG4iKTsKIAkJZ290byBub3gyYXBpYzsKKwl9CiAKIAl4MmFwaWNf
-ZW5hYmxlZCA9IDE7CiAKQEAgLTE1MzYsMTcgKzE1OTEsNiBAQCBub3gyYXBpYzoKIAkJcmVzdG9y
-ZV9pb2FwaWNfZW50cmllcygpOwogCWxlZ2FjeV9waWMtPnJlc3RvcmVfbWFzaygpOwogCWxvY2Fs
-X2lycV9yZXN0b3JlKGZsYWdzKTsKLQotb3V0OgotCWlmICh4MmFwaWNfZW5hYmxlZCB8fCAheDJh
-cGljX3N1cHBvcnRlZCgpKQotCQlyZXR1cm47Ci0KLQlpZiAoeDJhcGljX3ByZWVuYWJsZWQpCi0J
-CXBhbmljKCJ4MmFwaWM6IGVuYWJsZWQgYnkgQklPUyBidXQga2VybmVsIGluaXQgZmFpbGVkLiIp
-OwotCWVsc2UgaWYgKHJldCA9PSBJUlFfUkVNQVBfWEFQSUNfTU9ERSkKLQkJcHJfaW5mbygieDJh
-cGljIG5vdCBlbmFibGVkLCBJUlEgcmVtYXBwaW5nIGlzIGluIHhhcGljIG1vZGVcbiIpOwotCWVs
-c2UgaWYgKHJldCA8IDApCi0JCXByX2luZm8oIngyYXBpYyBub3QgZW5hYmxlZCwgSVJRIHJlbWFw
-cGluZyBpbml0IGZhaWxlZFxuIik7CiB9CiAKICNpZmRlZiBDT05GSUdfWDg2XzY0CkluZGV4OiBs
-aW51eC0yLjYvYXJjaC94ODYva2VybmVsL2FwaWMvYXBpY19mbGF0XzY0LmMKPT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQot
-LS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2FwaWMvYXBpY19mbGF0XzY0LmMKKysr
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9hcGljX2ZsYXRfNjQuYwpAQCAtMTcxLDkg
-KzE3MSwxNCBAQCBzdGF0aWMgaW50IGZsYXRfcGh5c19wa2dfaWQoaW50IGluaXRpYWxfCiAJcmV0
-dXJuIGluaXRpYWxfYXBpY19pZCA+PiBpbmRleF9tc2I7CiB9CiAKK3N0YXRpYyBpbnQgZmxhdF9w
-cm9iZSh2b2lkKQoreworCXJldHVybiAxOworfQorCiBzdGF0aWMgc3RydWN0IGFwaWMgYXBpY19m
-bGF0ID0gIHsKIAkubmFtZQkJCQk9ICJmbGF0IiwKLQkucHJvYmUJCQkJPSBOVUxMLAorCS5wcm9i
-ZQkJCQk9IGZsYXRfcHJvYmUsCiAJLmFjcGlfbWFkdF9vZW1fY2hlY2sJCT0gZmxhdF9hY3BpX21h
-ZHRfb2VtX2NoZWNrLAogCS5hcGljX2lkX3JlZ2lzdGVyZWQJCT0gZmxhdF9hcGljX2lkX3JlZ2lz
-dGVyZWQsCiAKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMK
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2FwaWMvaW9fYXBp
-Yy5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL2FwaWMvaW9fYXBpYy5jCkBAIC0yOTQ3
-LDYgKzI5NDcsMTAgQEAgc3RhdGljIGlubGluZSB2b2lkIF9faW5pdCBjaGVja190aW1lcih2bwog
-CX0KIAlsb2NhbF9pcnFfZGlzYWJsZSgpOwogCWFwaWNfcHJpbnRrKEFQSUNfUVVJRVQsIEtFUk5f
-SU5GTyAiLi4uLi4gZmFpbGVkIDooLlxuIik7CisJaWYgKHgyYXBpY19wcmVlbmFibGVkICYmICF4
-MmFwaWNfbW9kZSkKKwkJcHJfaW5mbygiWW91ciBzeXN0ZW0gaGFzIHgyYXBpYyBwcmUtZW5hYmxl
-ZCwgYnV0IGtlcm5lbCBjYW4gbm90IGVuYWJsZSBpbnRyLXJlbWFwcGluZy5cbiIKKwkJCSJTbyBr
-ZXJuZWwgdHJ5IHRvIGRpc2FibGUgeDJhcGljLCBidXQgaW50ZXJydXB0IHN0aWxsIGhhdmUgcHJv
-YmxlbS5cbiIKKwkJCSJZb3UgY291bGQgZGlzYWJsZSB4MmFwaWMgZnJvbSBCSU9TIHNldHVwXG4i
-KTsKIAlwYW5pYygiSU8tQVBJQyArIHRpbWVyIGRvZXNuJ3Qgd29yayEgIEJvb3Qgd2l0aCBhcGlj
-PWRlYnVnIGFuZCBzZW5kIGEgIgogCQkicmVwb3J0LiAgVGhlbiB0cnkgYm9vdGluZyB3aXRoIHRo
-ZSAnbm9hcGljJyBvcHRpb24uXG4iKTsKIG91dDoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9t
-bS9zcmF0LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0vc3JhdC5j
-CisrKyBsaW51eC0yLjYvYXJjaC94ODYvbW0vc3JhdC5jCkBAIC02OSw2ICs2OSwxMiBAQCBhY3Bp
-X251bWFfeDJhcGljX2FmZmluaXR5X2luaXQoc3RydWN0IGFjCiAJaWYgKChwYS0+ZmxhZ3MgJiBB
-Q1BJX1NSQVRfQ1BVX0VOQUJMRUQpID09IDApCiAJCXJldHVybjsKIAlweG0gPSBwYS0+cHJveGlt
-aXR5X2RvbWFpbjsKKwlhcGljX2lkID0gcGEtPmFwaWNfaWQ7CisJaWYgKHgyYXBpY19kaXNhYmxl
-ZCAmJiAoYXBpY19pZCA+PSAweGZmKSkgeworCQlwcmludGsoS0VSTl9JTkZPICJTUkFUOiBQWE0g
-JXUgLT4gWDJBUElDIDB4JTA0eCBpZ25vcmVkXG4iLAorCQkJIHB4bSwgYXBpY19pZCk7CisJCXJl
-dHVybjsKKwl9CiAJbm9kZSA9IHNldHVwX25vZGUocHhtKTsKIAlpZiAobm9kZSA8IDApIHsKIAkJ
-cHJpbnRrKEtFUk5fRVJSICJTUkFUOiBUb28gbWFueSBwcm94aW1pdHkgZG9tYWlucyAleFxuIiwg
-cHhtKTsKQEAgLTc2LDcgKzgyLDYgQEAgYWNwaV9udW1hX3gyYXBpY19hZmZpbml0eV9pbml0KHN0
-cnVjdCBhYwogCQlyZXR1cm47CiAJfQogCi0JYXBpY19pZCA9IHBhLT5hcGljX2lkOwogCWlmIChh
-cGljX2lkID49IE1BWF9MT0NBTF9BUElDKSB7CiAJCXByaW50ayhLRVJOX0lORk8gIlNSQVQ6IFBY
-TSAldSAtPiBBUElDIDB4JTA0eCAtPiBOb2RlICV1IHNraXBwZWQgYXBpY2lkIHRoYXQgaXMgdG9v
-IGJpZ1xuIiwgcHhtLCBhcGljX2lkLCBub2RlKTsKIAkJcmV0dXJuOwo=
---20cf302d4af8aab87204b490e18f--
+The following changes since commit 49df78074963c97e25debc3c67b72f059111607d:
+
+  mmc: core: Fix deadlock when the CONFIG_MMC_UNSAFE_RESUME is not defined (2011-12-10 16:18:39 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+for you to fetch changes up to 61074287c2965edf0fc75b54ae8f4ce99f182669:
+
+  mmc: vub300: fix type of firmware_rom_wait_states module parameter (2011-12-19 15:56:09 -0800)
+
+- ----------------------------------------------------------------
+Manuel Lauss (1):
+      mmc: sdhci: remove "state" argument from sdhci_suspend_host
+
+Ohad Ben-Cohen (1):
+      Revert "mmc: enable runtime PM by default"
+
+Rusty Russell (1):
+      mmc: vub300: fix type of firmware_rom_wait_states module parameter
+
+ drivers/mmc/core/host.c            |   11 -----------
+ drivers/mmc/host/sdhci-cns3xxx.c   |    5 +----
+ drivers/mmc/host/sdhci-dove.c      |    5 +----
+ drivers/mmc/host/sdhci-esdhc-imx.c |    5 +----
+ drivers/mmc/host/sdhci-of-esdhc.c  |    5 +----
+ drivers/mmc/host/sdhci-of-hlwd.c   |    5 +----
+ drivers/mmc/host/sdhci-pci.c       |   26 +++++++++++++-------------
+ drivers/mmc/host/sdhci-pltfm.c     |   18 +++++++++++-------
+ drivers/mmc/host/sdhci-pltfm.h     |    6 ++++--
+ drivers/mmc/host/sdhci-pxav2.c     |    5 +----
+ drivers/mmc/host/sdhci-pxav3.c     |    5 +----
+ drivers/mmc/host/sdhci-s3c.c       |   21 ++++++++++++++-------
+ drivers/mmc/host/sdhci-tegra.c     |    5 +----
+ drivers/mmc/host/sdhci.c           |    2 +-
+ drivers/mmc/host/sdhci.h           |    2 +-
+ drivers/mmc/host/vub300.c          |    2 +-
+ 16 files changed, 53 insertions(+), 75 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO8UCZAAoJEHNBYZ7TNxYMSJIQAIbASQ0kezY5hLMyaf9mtInc
+s1o0UrKRAVhmjnqUvpQY3/woG2ABszrmjYAbHlGEVPe7/XPztPSXh4myjags+Jri
+K13omUqsGUaq1JJUk0/z0tQe8ixlaZTArfQpSCiaMUDZ8eO+p5eWNx0m0ZktBdUy
+VJAsk7HMg4Kvi4DUHplPnO9erbu0XZaTj93hpDLk3R7wpipkjDtb5p43Wt8KMVk3
+SwMbhQ6jdJbFwqh6D1GjFKTcIYOjNYluNHHwjI+rpzIElIkJmyK9eyORo9C9aEyD
+Oy7ap8934jYPEae9YApnPUwjDSWeH+VvAWY3vXEuPGGDlvZ1mQEHJ7vvpnqG9nvv
+u3CD7A0v4eXwAoaWxtCFfN+YlvLu8O+JYFmky/QlUfiUtWZH/miU8XWslofBrbT5
+h2gUn6wcjdNPFM1jshuSOoZS8IQt0XnQGsAaI/ChPDRA3Mx6JSvL/Fh8i2kyjh1I
+i751Y6WJoYVBGecFtfrjzEbCjKaKUPGnM+JIlvYKpzskmszxxR2tvd/x3EFUyDUL
+OD9BLzpJJRueOB1cMamdo3aJ8YEb/28to/Om2AeidWSD7Gaj0N7lu85CQpNxLmhm
+jySjWtaDAQYmMjMxR3jNrNirb47AkbkzMeToFCc78F/RpEZu1EJPVxQ+qX7P5BVT
+vTwVHvdvob0frPRyBPCs
+=exRR
+-----END PGP SIGNATURE-----
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
