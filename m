@@ -1,47 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1LUGsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 01:48:15 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:34471 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752022Ab1LUGsO (ORCPT
+	id S1752481Ab1LUGx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 01:53:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50760 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab1LUGx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 01:48:14 -0500
-Message-ID: <4EF18129.7030407@tao.ma>
-Date: Wed, 21 Dec 2011 14:48:09 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Wed, 21 Dec 2011 01:53:27 -0500
+Date: Tue, 20 Dec 2011 22:53:17 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
+In-Reply-To: <20111221050740.GD23662@dastard>
+Message-ID: <alpine.LSU.2.00.1112202218490.4026@eggly.anvils>
+References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils> <20111221050740.GD23662@dastard>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Meelis Roos <mroos@linux.ee>
-CC: Dan Williams <dan.j.williams@intel.com>, axboe@kernel.dk,
-        Tao Ma <boyu.mt@taobao.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
-Subject: Re: [PATCH] block: fix blk_queue_end_tag()
-References: <20111220233117.17757.71139.stgit@localhost6.localdomain6> <4EF17DC4.5010008@tao.ma> <alpine.SOC.1.00.1112210835010.6858@math.ut.ee>
-In-Reply-To: <alpine.SOC.1.00.1112210835010.6858@math.ut.ee>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 121.0.29.114 authed with tm@tao.ma}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 02:36 PM, Meelis Roos wrote:
->>> -	if (unlikely(tag >= bqt->max_depth)) {
->>> +	if (WARN_ONCE(tag >= bqt->real_max_depth,
->>> +		      "%s: tag %d greater than tag map size: %d\n",
->>> +		      __func__, tag, bqt->real_max_depth)) {
->>>  		/*
->>>  		 * This can happen after tag depth has been reduced.
->> Please also change the comments here since it should never happen in the
->> right workload.
+On Wed, 21 Dec 2011, Dave Chinner wrote:
+> On Sun, Dec 18, 2011 at 10:41:39PM -0800, Hugh Dickins wrote:
 > 
-> What do you mean by right workload? Normal workload?
-yeah, so real_max_depth is the maximum depth we ever have. So in normal
-case(shrinking queue depth is also a normal user case), we should never
-arrive here. In another word, if tag >= real_max_depth, we should have a
-bug in the kernel.
+> > and once radix_tree_tag_if_tagged() has set
+> > tag on a node and its ancestors, it need not ascend from that node again.
+> 
+> I'm not sure I really follow this. I think I know what you mean, but
+> I can't quite get it straight and the comment in the code doesn't
+> help me get it straight. Can you describe it a bit more - I think
+> I'm just being dense at the moment....
 
-Thanks
-Tao
+Below...
+
+> 
+> Not sure about the page cache, but other users of the radix tree
+> definitely do delete objects with tags still set. For example, when
+> XFS is reclaiming inodes it will delete the inode from it's internal
+> radix trees with the reclaim tag still set on the index. This
+> happens for every single inode that is reclaimed, so it's anything
+> but seldom and should really be considered a common operation....
+
+Thanks for that info: it was the pagecache case's deep stack that
+was worrying me, and I'm only dimly aware of its other uses.
+
+> 
+> Couple more comments below.
+> 
+> > @@ -274,18 +273,23 @@ static int radix_tree_extend(struct radi
+> >  		if (!(node = radix_tree_node_alloc(root)))
+> >  			return -ENOMEM;
+> >  
+> > -		/* Increase the height.  */
+> > -		node->slots[0] = indirect_to_ptr(root->rnode);
+> > -
+> >  		/* Propagate the aggregated tag info into the new root */
+> >  		for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
+> >  			if (root_tag_get(root, tag))
+> >  				tag_set(node, tag, 0);
+> >  		}
+> >  
+> > +		/* Increase the height.  */
+> >  		newheight = root->height+1;
+> 
+> While touching this code, fixing the adjacent whitespace damage
+> would be good.
+
+I didn't notice any: do you mean "root->height+1" instead of
+"root->height + 1"?  I don't care much, and checkpatch didn't complain.
+
+> 
+> >  		node->height = newheight;
+> >  		node->count = 1;
+> > +		node->parent = NULL;
+> > +		slot = root->rnode;
+> > +		if (newheight > 1) {
+> > +			slot = indirect_to_ptr(slot);
+> > +			slot->parent = node;
+> > +		}
+> > +		node->slots[0] = slot;
+> 
+> This would be much more obvious in function if it separated the two
+> different cases completely:
+> 
+> 		if (newheight > 1) {
+> 			slot = indirect_to_ptr(root->rnode);
+> 			slot->parent = node;
+> 		} else {
+> 			slot = root->rnode;
+> 			node->parent = NULL;
+> 		}
+> 		node->slots[0] = slot;
+
+We do need to set node->parent NULL in all cases (and cannot clear
+it when freeing).  I chose the "slot = blah(slot)" style to follow the
+"newptr = blah(newptr)" over in radix_tree_shrink(), thought it helped
+to keep those blocks alike.
+
+> 
+> > @@ -701,15 +691,21 @@ unsigned long radix_tree_range_tag_if_ta
+> >  		tag_set(slot, settag, offset);
+> >  
+> >  		/* walk back up the path tagging interior nodes */
+> > -		pathp = &path[0];
+> > -		while (pathp->node) {
+> > +		upindex = index;
+> > +		while (node) {
+> > +			upindex >>= RADIX_TREE_MAP_SHIFT;
+> > +			offset = upindex & RADIX_TREE_MAP_MASK;
+> > +
+> >  			/* stop if we find a node with the tag already set */
+> > -			if (tag_get(pathp->node, settag, pathp->offset))
+> > +			if (tag_get(node, settag, offset))
+> >  				break;
+> > -			tag_set(pathp->node, settag, pathp->offset);
+> > -			pathp++;
+> > +			tag_set(node, settag, offset);
+> > +			node = node->parent;
+> >  		}
+> >  
+> > +		/* optimization: no need to walk up from this node again */
+> > +		node = NULL;
+> 
+> As per my query above: why? That's the question the comment needs to
+> answer....
+
+At the top of the hunk, we can see the tag_set(slot, settag, offset)
+where it sets the tag in the leafnode "slot"; then it loops up to parent
+"node" of slot, to parent of parent, etc, setting tag in those, but
+breaking as soon as it finds the tag already set - it can be sure that
+the tag must already be set on all nodes above.
+
+If afterwards it comes to set tag at another offset (most likely the
+very next) in this same leafnode, we know that it has already set tag
+on the parent, the parent's parent etc., so need not bother to tag_get
+from the level above to discover that.  And since we happen to have a
+variable "node" which stops the loop when it's NULL, let's set it to
+NULL now to stop the loop immediately in future.
+
+Hugh
