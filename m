@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab1LURwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:52:13 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42573 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753223Ab1LURwK (ORCPT
+	id S1753758Ab1LURxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:53:38 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:51702
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598Ab1LURxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:52:10 -0500
-Date: Wed, 21 Dec 2011 18:52:03 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 2/2 v2] cgroup: Drop task_lock(parent) on cgroup_fork()
-Message-ID: <20111221175201.GE17668@somewhere>
-References: <1324432958-20414-1-git-send-email-fweisbec@gmail.com>
- <1324432958-20414-3-git-send-email-fweisbec@gmail.com>
- <4EF14176.9040206@cn.fujitsu.com>
- <20111221024849.GC17668@somewhere>
- <4EF14F7B.2040507@cn.fujitsu.com>
- <20111221175024.GG9213@google.com>
+	Wed, 21 Dec 2011 12:53:36 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LWKF14-01-J1H-02
+X-M-MSG: 
+Date: Wed, 21 Dec 2011 18:53:26 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: oprofile patch broke s390 build in tip/perf/core
+Message-ID: <20111221175326.GM16765@erda.amd.com>
+References: <1324488646.5916.107.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111221175024.GG9213@google.com>
+In-Reply-To: <1324488646.5916.107.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 09:50:24AM -0800, Tejun Heo wrote:
-> Hello,
+On 21.12.11 12:30:46, Steven Rostedt wrote:
+> In doing my tests last night before sending out my patch series this
+> morning, I found that s390 build didn't work, but it wasn't due to my
+> patches. I removed all my patches and built with latest mainline (which
+> builds fine), and then merged the current tip/perf/core. The result
+> didn't build.
 > 
-> On Wed, Dec 21, 2011 at 11:16:11AM +0800, Li Zefan wrote:
-> > So I'll ack this patch.
+> I kicked off a ktest git bisect with last night's Linus tree as good,
+> and with the merged in tip/perf/core as bad. It ended up with this patch
+> that broke the build (which looks like a likely suspect).
 > 
-> Do I have your ack on the first one too?  If so, I'll go ahead and
-> apply these two.
 > 
-> Thanks.
+> The break is this:
+> 
+>   LD      .tmp_vmlinux1
+> arch/s390/oprofile/built-in.o: In function `oprofile_arch_exit':
+> (.text+0x3f52): undefined reference to `oprofile_timer_exit'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> make: *** [sub-make] Error 2
 
-Lemme just update the comment on this one before, I'll resend a new version
-quickly, thanks!
+A fix is already in tip/perf/core:
+
+ f8c8520 oprofile: Fix oprofile_timer_exit() breakage
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
