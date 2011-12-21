@@ -1,180 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1LUScD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:32:03 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50389 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab1LUSbB (ORCPT
+	id S1753954Ab1LUScJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:32:09 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46500 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab1LUScE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:31:01 -0500
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, mszeredi@suse.cz, Erez Zadok <ezk@cs.sunysb.edu>
-Subject: [PATCH 7/9] overlayfs: implement show_options
-Date: Wed, 21 Dec 2011 19:29:46 +0100
-Message-Id: <1324492188-3481-8-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
-References: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
+	Wed, 21 Dec 2011 13:32:04 -0500
+Message-ID: <4EF2261F.4050002@colorfullife.com>
+Date: Wed, 21 Dec 2011 19:31:59 +0100
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: raz ben yehuda <raziebe@gmail.com>
+CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lior Brafman <LBrafman@manz.com>, Torsten Scherer <TScherer@manz.com>,
+        Rasty Slutsker <RSlutsker@manz.com>
+Subject: Re: Subject: [PATCH 2/2] priority System V Semaphores
+References: <1324419795.20886.3.camel@raz>
+In-Reply-To: <1324419795.20886.3.camel@raz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+Hi raz,
 
-This is useful because of the stacking nature of overlayfs.  Users like to
-find out (via /proc/mounts) which lower/upper directory were used at mount
-time.
 
-Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/overlayfs/super.c |   63 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 43 insertions(+), 20 deletions(-)
+On 12/20/2011 11:23 PM, raz ben yehuda wrote:
+> > From 25aa166505aff2561dd715c927c654d0bbb432ba Mon Sep 17 00:00:00 2001
+> From: raz<raziebe@gmail.com>
+> Date: Tue, 20 Dec 2011 22:54:56 +0200
+>
+>
+> Add positioning routine find_pos. find_pos returns
+> the place where to put the sleeper before.
+> I sort only rt tasks, OTHER policy is pushed back in
+> queue. I do not distinct between SCHED_RR and SCHED_FIFO
+> policies and they are treated as a single policy
+> for the sorting algorithm.
+>
+> SETPRIO operates only when user issues a single semop
+> operation and not an array of opretions.
+As far as I can see, the advantages of sysvsem are backward 
+compatibility and the ability to use complex ops.
+You propose to add a new feature that doesn't work on complex ops.
 
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 8091f76..a854f97 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -15,17 +15,27 @@
- #include <linux/slab.h>
- #include <linux/parser.h>
- #include <linux/module.h>
-+#include <linux/seq_file.h>
- #include "overlayfs.h"
- 
- MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
- MODULE_DESCRIPTION("Overlay filesystem");
- MODULE_LICENSE("GPL");
- 
-+struct ovl_config {
-+	char *lowerdir;
-+	char *upperdir;
-+};
-+
-+/* private information held for overlayfs's superblock */
- struct ovl_fs {
- 	struct vfsmount *upper_mnt;
- 	struct vfsmount *lower_mnt;
-+	/* pathnames of lower and upper dirs, for show_options */
-+	struct ovl_config config;
- };
- 
-+/* private information held for every overlayfs dentry */
- struct ovl_entry {
- 	/*
- 	 * Keep "double reference" on upper dentries, so that
-@@ -382,6 +392,8 @@ static void ovl_put_super(struct super_block *sb)
- 	mntput(ufs->upper_mnt);
- 	mntput(ufs->lower_mnt);
- 
-+	kfree(ufs->config.lowerdir);
-+	kfree(ufs->config.upperdir);
- 	kfree(ufs);
- }
- 
-@@ -423,15 +435,27 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
- }
- 
-+/**
-+ * ovl_show_options
-+ *
-+ * Prints the mount options for a given superblock.
-+ * Returns zero; does not fail.
-+ */
-+static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
-+{
-+	struct super_block *sb = dentry->d_sb;
-+	struct ovl_fs *ufs = sb->s_fs_info;
-+
-+	seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
-+	seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
-+	return 0;
-+}
-+
- static const struct super_operations ovl_super_operations = {
- 	.put_super	= ovl_put_super,
- 	.remount_fs	= ovl_remount_fs,
- 	.statfs		= ovl_statfs,
--};
--
--struct ovl_config {
--	char *lowerdir;
--	char *upperdir;
-+	.show_options	= ovl_show_options,
- };
- 
- enum {
-@@ -491,37 +515,36 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
- 	struct dentry *root_dentry;
- 	struct ovl_entry *oe;
- 	struct ovl_fs *ufs;
--	struct ovl_config config;
- 	int err;
- 
--	err = ovl_parse_opt((char *) data, &config);
--	if (err)
-+	err = -ENOMEM;
-+	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
-+	if (!ufs)
- 		goto out;
- 
-+	err = ovl_parse_opt((char *) data, &ufs->config);
-+	if (err)
-+		goto out_free_ufs;
-+
- 	err = -EINVAL;
--	if (!config.upperdir || !config.lowerdir) {
-+	if (!ufs->config.upperdir || !ufs->config.lowerdir) {
- 		printk(KERN_ERR "overlayfs: missing upperdir or lowerdir\n");
- 		goto out_free_config;
- 	}
- 
--	err = -ENOMEM;
--	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
--	if (!ufs)
--		goto out_free_config;
--
- 	oe = ovl_alloc_entry();
- 	if (oe == NULL)
--		goto out_free_ufs;
-+		goto out_free_config;
- 
- 	root_inode = ovl_new_inode(sb, S_IFDIR, oe);
- 	if (!root_inode)
- 		goto out_free_oe;
- 
--	err = kern_path(config.upperdir, LOOKUP_FOLLOW, &upperpath);
-+	err = kern_path(ufs->config.upperdir, LOOKUP_FOLLOW, &upperpath);
- 	if (err)
- 		goto out_put_root;
- 
--	err = kern_path(config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
-+	err = kern_path(ufs->config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
- 	if (err)
- 		goto out_put_upperpath;
- 
-@@ -595,11 +618,11 @@ out_put_root:
- 	iput(root_inode);
- out_free_oe:
- 	kfree(oe);
-+out_free_config:
-+	kfree(ufs->config.lowerdir);
-+	kfree(ufs->config.upperdir);
- out_free_ufs:
- 	kfree(ufs);
--out_free_config:
--	kfree(config.lowerdir);
--	kfree(config.upperdir);
- out:
- 	return err;
- }
--- 
-1.7.7
+Are there any apps that use SETPRIO?
+What is the use case?
+> SETFIFO is the default for backward compatbility.
+>
+> Signed-off-by: raz<raziebe@gmail.com>
+> ---
+>   ipc/sem.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>   1 files changed, 49 insertions(+), 2 deletions(-)
+>
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 90dc5a1..921056d 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1343,6 +1343,51 @@ static int get_queue_result(struct sem_queue *q)
+>   	return error;
+>   }
+>
+> +/*
+> + * find the best place to put the task sorted by rt prio
+> +*/
+> +static struct list_head *find_pos(struct sem *curr, int alter,
+> +		struct task_struct *p)
+> +{
+> +	struct sem_queue *q;
+> +	struct sem_queue *ret_pos = NULL;
+> +	struct list_head *tasks_queue =&curr->sem_pending;
+> +
+> +	if (!alter)
+> +		return tasks_queue;
+> +
+Tasks that do not alter anything end up first - IMHO correct.
 
+> +	if (!(curr->flags&  PRIO_SEM))
+> +		return tasks_queue;
+> +	/*
+> +	 *  make no effort to sort SCHED_OTHER,
+> +	 *  just push task to the back of the queue.
+> +	*/
+> +	if (!(p->policy == SCHED_FIFO || p->policy == SCHED_RR))
+> +		return tasks_queue;
+> +	/*
+> +	 *  make no distinction between SCHED_FIFO
+> +	 *  and SCHED_RR policies.
+> +	 */
+> +	list_for_each_entry(q, tasks_queue, simple_list) {
+> +		struct task_struct *t;
+> +
+> +		t  = q->sleeper;
+> +		if (current->rt_priority == t->rt_priority) {
+> +			/*
+> +			* push in a FIFO manner
+> +			* tasks in same priority
+> +			*/
+> +			ret_pos = q;
+> +			continue;
+> +		}
+> +		if (current->rt_priority<  t->rt_priority)
+> +			continue;
+> +		return&q->simple_list;
+> +	}
+Here in the loop, non-alter tasks are evaluated as well.
+I think that's wrong, it could starve non-alter tasks.
+
+e.g. queue:
+- high prio non-alter
+- low prio non-alter.
+
+Now a medium prio alter task is added.
+I think it will end up in the wrong position (before the low-prio 
+non-alter task), correct?
+
+--
+     Manfred
