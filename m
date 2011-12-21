@@ -1,122 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab1LUScJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:32:09 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46500 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab1LUScE (ORCPT
+	id S1753798Ab1LUSaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:30:52 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43012 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab1LUSaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:32:04 -0500
-Message-ID: <4EF2261F.4050002@colorfullife.com>
-Date: Wed, 21 Dec 2011 19:31:59 +0100
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: raz ben yehuda <raziebe@gmail.com>
-CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lior Brafman <LBrafman@manz.com>, Torsten Scherer <TScherer@manz.com>,
-        Rasty Slutsker <RSlutsker@manz.com>
-Subject: Re: Subject: [PATCH 2/2] priority System V Semaphores
-References: <1324419795.20886.3.camel@raz>
-In-Reply-To: <1324419795.20886.3.camel@raz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Dec 2011 13:30:46 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, mszeredi@suse.cz
+Subject: [PATCH 2/9] vfs: add i_op->open()
+Date: Wed, 21 Dec 2011 19:29:41 +0100
+Message-Id: <1324492188-3481-3-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
+References: <1324492188-3481-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi raz,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
+Add a new inode operation i_op->open().  This is for stacked
+filesystems that want to return a struct file from a different
+filesystem.
 
-On 12/20/2011 11:23 PM, raz ben yehuda wrote:
-> > From 25aa166505aff2561dd715c927c654d0bbb432ba Mon Sep 17 00:00:00 2001
-> From: raz<raziebe@gmail.com>
-> Date: Tue, 20 Dec 2011 22:54:56 +0200
->
->
-> Add positioning routine find_pos. find_pos returns
-> the place where to put the sleeper before.
-> I sort only rt tasks, OTHER policy is pushed back in
-> queue. I do not distinct between SCHED_RR and SCHED_FIFO
-> policies and they are treated as a single policy
-> for the sorting algorithm.
->
-> SETPRIO operates only when user issues a single semop
-> operation and not an array of opretions.
-As far as I can see, the advantages of sysvsem are backward 
-compatibility and the ability to use complex ops.
-You propose to add a new feature that doesn't work on complex ops.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ Documentation/filesystems/Locking |    2 ++
+ Documentation/filesystems/vfs.txt |    8 ++++++++
+ fs/open.c                         |   25 +++++++++++++++++++++++--
+ include/linux/fs.h                |    3 +++
+ 4 files changed, 36 insertions(+), 2 deletions(-)
 
-Are there any apps that use SETPRIO?
-What is the use case?
-> SETFIFO is the default for backward compatbility.
->
-> Signed-off-by: raz<raziebe@gmail.com>
-> ---
->   ipc/sem.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++--
->   1 files changed, 49 insertions(+), 2 deletions(-)
->
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 90dc5a1..921056d 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -1343,6 +1343,51 @@ static int get_queue_result(struct sem_queue *q)
->   	return error;
->   }
->
-> +/*
-> + * find the best place to put the task sorted by rt prio
-> +*/
-> +static struct list_head *find_pos(struct sem *curr, int alter,
-> +		struct task_struct *p)
-> +{
-> +	struct sem_queue *q;
-> +	struct sem_queue *ret_pos = NULL;
-> +	struct list_head *tasks_queue =&curr->sem_pending;
-> +
-> +	if (!alter)
-> +		return tasks_queue;
-> +
-Tasks that do not alter anything end up first - IMHO correct.
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index 4fca82e..42b0539 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -62,6 +62,7 @@ ata *);
+ 	int (*removexattr) (struct dentry *, const char *);
+ 	void (*truncate_range)(struct inode *, loff_t, loff_t);
+ 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start, u64 len);
++	struct file *(*open)(struct dentry *,struct file *,const struct cred *);
+ 
+ locking rules:
+ 	all may block
+@@ -89,6 +90,7 @@ listxattr:	no
+ removexattr:	yes
+ truncate_range:	yes
+ fiemap:		no
++open:		no
+ 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
+ victim.
+ 	cross-directory ->rename() has (per-superblock) ->s_vfs_rename_sem.
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 3d9393b..3c65a0f 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -364,6 +364,8 @@ struct inode_operations {
+ 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
+ 	int (*removexattr) (struct dentry *, const char *);
+ 	void (*truncate_range)(struct inode *, loff_t, loff_t);
++	struct file *(*open) (struct dentry *, struct file *,
++			      const struct cred *);
+ };
+ 
+ Again, all methods are called without any locks being held, unless
+@@ -475,6 +477,12 @@ otherwise noted.
+   truncate_range: a method provided by the underlying filesystem to truncate a
+   	range of blocks , i.e. punch a hole somewhere in a file.
+ 
++  open: this is an alternative to f_op->open(), the difference is that this
++	method may return any open file, not necessarily originating from the
++	same filesystem as the one i_op->open() was called on.  It may be useful
++	for stacking filesystems which want to allow native I/O directly on
++	underlying files.
++
+ 
+ The Address Space Object
+ ========================
+diff --git a/fs/open.c b/fs/open.c
+index ceab906..7f56fc1 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -796,7 +796,7 @@ struct file *nameidata_to_filp(struct nameidata *nd)
+ 
+ 	/* Has the filesystem initialised the file for us? */
+ 	if (filp->f_path.dentry == NULL)
+-		filp = __dentry_open(&nd->path, filp, NULL, cred);
++		filp = vfs_open(&nd->path, filp, cred);
+ 
+ 	return filp;
+ }
+@@ -821,7 +821,7 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
+ 	f = get_empty_filp();
+ 	if (f != NULL) {
+ 		f->f_flags = flags;
+-		ret = __dentry_open(&path, f, NULL, cred);
++		ret = vfs_open(&path, f, cred);
+ 	}
+ 	path_put(&path);
+ 
+@@ -829,6 +829,27 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
+ }
+ EXPORT_SYMBOL(dentry_open);
+ 
++/**
++ * vfs_open - open the file at the given path
++ * @path: path to open
++ * @filp: newly allocated file with f_flag initialized
++ * @cred: credentials to use
++ *
++ * Open the file.  If successful, the returned file will have acquired
++ * an additional reference for path.
++ */
++struct file *vfs_open(struct path *path, struct file *filp,
++		      const struct cred *cred)
++{
++	struct inode *inode = path->dentry->d_inode;
++
++	if (inode->i_op->open)
++		return inode->i_op->open(path->dentry, filp, cred);
++	else
++		return __dentry_open(path, filp, NULL, cred);
++}
++EXPORT_SYMBOL(vfs_open);
++
+ static void __put_unused_fd(struct files_struct *files, unsigned int fd)
+ {
+ 	struct fdtable *fdt = files_fdtable(files);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index df499ad..c744032 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1645,6 +1645,8 @@ struct inode_operations {
+ 	void (*truncate_range)(struct inode *, loff_t, loff_t);
+ 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
+ 		      u64 len);
++	struct file *(*open) (struct dentry *, struct file *,
++			      const struct cred *);
+ } ____cacheline_aligned;
+ 
+ struct seq_file;
+@@ -2015,6 +2017,7 @@ extern long do_sys_open(int dfd, const char __user *filename, int flags,
+ extern struct file *filp_open(const char *, int, umode_t);
+ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
+ 				   const char *, int);
++extern struct file *vfs_open(struct path *, struct file *, const struct cred *);
+ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
+ 				 const struct cred *);
+ extern int filp_close(struct file *, fl_owner_t id);
+-- 
+1.7.7
 
-> +	if (!(curr->flags&  PRIO_SEM))
-> +		return tasks_queue;
-> +	/*
-> +	 *  make no effort to sort SCHED_OTHER,
-> +	 *  just push task to the back of the queue.
-> +	*/
-> +	if (!(p->policy == SCHED_FIFO || p->policy == SCHED_RR))
-> +		return tasks_queue;
-> +	/*
-> +	 *  make no distinction between SCHED_FIFO
-> +	 *  and SCHED_RR policies.
-> +	 */
-> +	list_for_each_entry(q, tasks_queue, simple_list) {
-> +		struct task_struct *t;
-> +
-> +		t  = q->sleeper;
-> +		if (current->rt_priority == t->rt_priority) {
-> +			/*
-> +			* push in a FIFO manner
-> +			* tasks in same priority
-> +			*/
-> +			ret_pos = q;
-> +			continue;
-> +		}
-> +		if (current->rt_priority<  t->rt_priority)
-> +			continue;
-> +		return&q->simple_list;
-> +	}
-Here in the loop, non-alter tasks are evaluated as well.
-I think that's wrong, it could starve non-alter tasks.
-
-e.g. queue:
-- high prio non-alter
-- low prio non-alter.
-
-Now a medium prio alter task is added.
-I think it will end up in the wrong position (before the low-prio 
-non-alter task), correct?
-
---
-     Manfred
