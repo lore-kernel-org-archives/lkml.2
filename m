@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1LUQlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 11:41:46 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:46509 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1LUQlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 11:41:44 -0500
-Message-ID: <4EF20C40.3060909@criticallink.com>
-Date: Wed, 21 Dec 2011 11:41:36 -0500
-From: Michael Williamson <michael.williamson@criticallink.com>
-Organization: Critical Link, LLC
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.24) Gecko/20111103 Thunderbird/3.1.16
+	id S1753439Ab1LUQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 11:42:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753344Ab1LUQmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 11:42:54 -0500
+Date: Wed, 21 Dec 2011 14:27:26 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>, Avi Kivity <avi@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, jeremy.fitzhardinge@citrix.com,
+        levinsasha928@gmail.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4 V7] Avoid soft lockup message when KVM is stopped by
+ host
+Message-ID: <20111221162726.GA26611@amt.cnet>
+References: <1323978126-13222-1-git-send-email-emunson@mgebm.net>
 MIME-Version: 1.0
-To: Michael Williamson <michael.williamson@criticallink.com>
-CC: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        gregkh@suse.de
-Subject: Re: [PATCH] regmap: fix return value in regcache-indexed read call.
-References: <1324482482-30889-1-git-send-email-michael.williamson@criticallink.com>
-In-Reply-To: <1324482482-30889-1-git-send-email-michael.williamson@criticallink.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323978126-13222-1-git-send-email-emunson@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 10:48 AM, Michael Williamson wrote:
-> The regcache_read() API for regmap requires a 0 return value for
-> successful cached reads.  The read method for the indexed type
-> cache implementation is returning the positive map offset for a
-> successful read, which is incorrect.  Fix it.
->
-[...]
+On Thu, Dec 15, 2011 at 02:42:02PM -0500, Eric B Munson wrote:
+> Changes from V6:
+> Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
 
-Looks like this cache type is due to be removed in linux-next.  Please
-withdraw.  Thanks.
+Avi, 
 
-http://permalink.gmane.org/gmane.linux.kernel/1217338
+Do you have any further comments on how this should be done?
 
--Mike
