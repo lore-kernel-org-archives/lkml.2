@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab1LUIGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:06:10 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39084 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752363Ab1LUIGI (ORCPT
+	id S1752744Ab1LUIHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:07:36 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:48074 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab1LUIHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:06:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112201016380.21231@router.home>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
-	<CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
-	<CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
-	<alpine.DEB.2.00.1112201016380.21231@router.home>
-Date: Wed, 21 Dec 2011 10:06:07 +0200
-X-Google-Sender-Auth: nfqmD1CgHh8Mt6RSsMw2Pw1hmjs
-Message-ID: <CAOJsxLGj+y2UygJLQO4xbxqgY5OcU65RBZg-P7yecNgc6fKZjQ@mail.gmail.com>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Dec 2011 03:07:34 -0500
+Date: Wed, 21 Dec 2011 03:07:27 -0500 (EST)
+Message-Id: <20111221.030727.1528369698756365464.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: richard.weinberger@gmail.com, gladewitz@gmx.de,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Kernel-DOS error in arp mechanism
+ =?iso-2022-jp-3?B?GyQoUSN8GyhC?= no delete off incomplete arp adresses
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1324453467.2610.20.camel@edumazet-laptop>
+References: <4EEC5286.3070408@gmx.de>
+	<CAFLxGvxjLCyMCPXtpm7a7RaOL4A4=bhCLPKD=FVAc8xOdx_CsQ@mail.gmail.com>
+	<1324453467.2610.20.camel@edumazet-laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Dec 2011 00:07:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Dec 2011, Pekka Enberg wrote:
->> To illustrate the issue, for "per cpu add" we have:
->>
->> __this_cpu_add()
->> this_cpu_add()
->> irqsafe_cpu_add()
->> percpu_add()
->>
->> Why do we need all of them?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 21 Dec 2011 08:44:27 +0100
 
-On Tue, Dec 20, 2011 at 6:26 PM, Christoph Lameter <cl@linux.com> wrote:
-> These are all operations that frequently occur in hot paths of the OS.
+> David, I suggest we add back the garbage collector for current kernels,
+> we'll remove it when route cache really disappear ?
+> 
+> I'll send a patch today.
 
-It's a provably difficult API to use that has pretty much zero
-debugging code. That's a problem.
+Yes, it's the best idea.
 
-I still don't understand why we'd want separate preempt safe and
-irqsafe variants. It should be enough to have only unsafe and safe
-variants where the latter would always do the right thing.
-
-                                Pekka
+We can actually remove it again as early as when when route neigh's
+are ref-less.
