@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab1LUWPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:15:33 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:54624 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752569Ab1LUWPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:15:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAHtX8k55LL6d/2dsb2JhbABDrCGBBoFyAQEEAScTHCMQCAMYLhQlAyETh3q3WxOLGWMElH6JHIks
-Date: Thu, 22 Dec 2011 09:15:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
-Message-ID: <20111221221527.GE23662@dastard>
-References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
- <20111221050740.GD23662@dastard>
- <alpine.LSU.2.00.1112202218490.4026@eggly.anvils>
+	id S1754303Ab1LUWP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:15:58 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:54228 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937Ab1LUWPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 17:15:55 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 07/10] ASoC: OMAP: ams-delta: Drive modem/codec pins over GPIO API
+Date: Wed, 21 Dec 2011 23:14:39 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl> <1323634328-856-8-git-send-email-jkrzyszt@tis.icnet.pl> <1324492424.8478.5.camel@odin>
+In-Reply-To: <1324492424.8478.5.camel@odin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1112202218490.4026@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112212314.39844.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 10:53:17PM -0800, Hugh Dickins wrote:
-> On Wed, 21 Dec 2011, Dave Chinner wrote:
-> > On Sun, Dec 18, 2011 at 10:41:39PM -0800, Hugh Dickins wrote:
-.....
-> > >  		if (!(node = radix_tree_node_alloc(root)))
-> > >  			return -ENOMEM;
-> > >  
-> > > -		/* Increase the height.  */
-> > > -		node->slots[0] = indirect_to_ptr(root->rnode);
-> > > -
-> > >  		/* Propagate the aggregated tag info into the new root */
-> > >  		for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
-> > >  			if (root_tag_get(root, tag))
-> > >  				tag_set(node, tag, 0);
-> > >  		}
-> > >  
-> > > +		/* Increase the height.  */
-> > >  		newheight = root->height+1;
+On Wednesday 21 of December 2011 at 19:33:44, Liam Girdwood wrote:
+> On Sun, 2011-12-11 at 21:12 +0100, Janusz Krzysztofik wrote:
+> > Don't use Amstrad Delta custom I/O functions any longer, replace them
+> > with GPIO. Old pin definitions, no longer used by the modem bits either,
+> > can be dropped.
 > > 
-> > While touching this code, fixing the adjacent whitespace damage
-> > would be good.
-> 
-> I didn't notice any: do you mean "root->height+1" instead of
-> "root->height + 1"?  I don't care much, and checkpatch didn't complain.
-
-Yeah, that was what I was refering to.
-
-> > >  		node->height = newheight;
-> > >  		node->count = 1;
-> > > +		node->parent = NULL;
-> > > +		slot = root->rnode;
-> > > +		if (newheight > 1) {
-> > > +			slot = indirect_to_ptr(slot);
-> > > +			slot->parent = node;
-> > > +		}
-> > > +		node->slots[0] = slot;
+> > Depends on patch 2/10 "ARM: OMAP1: Convert Amstrad E3 latches to
+> > basic_mmio_gpio".
 > > 
-> > This would be much more obvious in function if it separated the two
-> > different cases completely:
-> > 
-> > 		if (newheight > 1) {
-> > 			slot = indirect_to_ptr(root->rnode);
-> > 			slot->parent = node;
-> > 		} else {
-> > 			slot = root->rnode;
-> > 			node->parent = NULL;
-> > 		}
-> > 		node->slots[0] = slot;
+> > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 > 
-> We do need to set node->parent NULL in all cases (and cannot clear
-> it when freeing).  I chose the "slot = blah(slot)" style to follow the
-> "newptr = blah(newptr)" over in radix_tree_shrink(), thought it helped
-> to keep those blocks alike.
+> Applied.
 
-You're right. I really was being dense yesterday. To tell the truth,
-though, I found the "newptr" style easier to follow because it was
-obvious which was the object being initialised. I think that it not
-being obvious which object needed full initialisation contribted to
-my mix up of node and slot parent pointers in my above comment...
+Hi,
+I'm sorry, but I've probably missed to infrom you explicitly, i.e. other 
+than in a cover letter to v2 of this series, that this particular patch 
+has been dropped from the series. I've already started working on an 
+alternative solution, which I intend to submit as a separate set. It 
+will be free of potentail problems with two devices, a modem and the 
+sound card, accessing the same GPIO pins concurrently. For the 
+MODEM_NRESET pin I've already set up a virtual regulator on top of it, 
+and for the MODEM_CODEC pin I'll probably choose a virtual clock (pinmux 
+would match the hardware more closely here, but it looks too complicated 
+to me). Moreover, I've already started to move all those GPIO pin 
+related functions, i.e. bias control, digital mute and line discipline 
+interaction, from the board file to the codec driver, where all those 
+seem to belong.
 
-> > > @@ -701,15 +691,21 @@ unsigned long radix_tree_range_tag_if_ta
-> > >  		tag_set(slot, settag, offset);
-> > >  
-> > >  		/* walk back up the path tagging interior nodes */
-> > > -		pathp = &path[0];
-> > > -		while (pathp->node) {
-> > > +		upindex = index;
-> > > +		while (node) {
-> > > +			upindex >>= RADIX_TREE_MAP_SHIFT;
-> > > +			offset = upindex & RADIX_TREE_MAP_MASK;
-> > > +
-> > >  			/* stop if we find a node with the tag already set */
-> > > -			if (tag_get(pathp->node, settag, pathp->offset))
-> > > +			if (tag_get(node, settag, offset))
-> > >  				break;
-> > > -			tag_set(pathp->node, settag, pathp->offset);
-> > > -			pathp++;
-> > > +			tag_set(node, settag, offset);
-> > > +			node = node->parent;
-> > >  		}
-> > >  
-> > > +		/* optimization: no need to walk up from this node again */
-> > > +		node = NULL;
-> > 
-> > As per my query above: why? That's the question the comment needs to
-> > answer....
-> 
-> At the top of the hunk, we can see the tag_set(slot, settag, offset)
-> where it sets the tag in the leafnode "slot"; then it loops up to parent
-> "node" of slot, to parent of parent, etc, setting tag in those, but
-> breaking as soon as it finds the tag already set - it can be sure that
-> the tag must already be set on all nodes above.
-> 
-> If afterwards it comes to set tag at another offset (most likely the
-> very next) in this same leafnode, we know that it has already set tag
-> on the parent, the parent's parent etc., so need not bother to tag_get
-> from the level above to discover that.  And since we happen to have a
-> variable "node" which stops the loop when it's NULL, let's set it to
-> NULL now to stop the loop immediately in future.
+Having this patch applied will conflict with the regultor and the clock 
+solutions, taking control over those two GPIO pins. Please revert this 
+patch, or reset it if still possible.
 
-Ok, gotcha. perhaps a more expansive comment along the lines of:
-
-/*
- * we can clear the node pointer now as all it's ancestors have the
- * tage set due to setting it on the slot above. Hence we have no
- * need to walk back up the tree to set tags if there is no further
- * tags to set.
- */
-
-is in order to remind me in a few months time why it this was done?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Janusz
