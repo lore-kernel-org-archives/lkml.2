@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab1LULkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:40:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33940 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab1LULko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:40:44 -0500
-Date: Wed, 21 Dec 2011 03:40:23 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-8zpopbny51023rdb0qq67eye@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep/waitqueues: Add better annotation
-Git-Commit-ID: f07fdec50a13f134ea9608c8fb3f6408c58ef55e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752891Ab1LULlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:41:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752536Ab1LULlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:41:07 -0500
+Date: Wed, 21 Dec 2011 12:40:44 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCHv2 02/10] ftrace: Change mcount call replacement logic
+Message-ID: <20111221114044.GA2901@m.redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-3-git-send-email-jolsa@redhat.com>
+ <1324409949.5916.78.camel@gandalf.stny.rr.com>
+ <20111221095703.GB1726@m.redhat.com>
+ <1324467296.5916.79.camel@gandalf.stny.rr.com>
+ <1324467354.5916.80.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:40:29 -0800 (PST)
+In-Reply-To: <1324467354.5916.80.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f07fdec50a13f134ea9608c8fb3f6408c58ef55e
-Gitweb:     http://git.kernel.org/tip/f07fdec50a13f134ea9608c8fb3f6408c58ef55e
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 13 Dec 2011 13:20:54 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Dec 2011 10:07:39 +0100
+On Wed, Dec 21, 2011 at 06:35:54AM -0500, Steven Rostedt wrote:
+> On Wed, 2011-12-21 at 06:34 -0500, Steven Rostedt wrote:
+> > On Wed, 2011-12-21 at 10:57 +0100, Jiri Olsa wrote:
+> > > On Tue, Dec 20, 2011 at 02:39:09PM -0500, Steven Rostedt wrote:
+> > > > On Mon, 2011-12-05 at 18:22 +0100, Jiri Olsa wrote:
+> > > 
+> > > SNIP
+> > > 
+> > > >           <idle>-0     [001] ...1    13.258665: __schedule <-schedule
+> > > >           <idle>-0     [001] ...1    13.258665: add_preempt_count <-__schedule
+> > > >           <idle>-0     [001] ...2    13.258665: rcu_note_context_switch <-__schedule
+> > > >           <idle>-0     [001] ...2    13.258665: rcu_utilization: Start context switch
+> > > > 
+> > > > I'll put this to the front of my patch queue and also add it to urgent.
+> > > > I'll also rewrite your change log to remove the reference to the global
+> > > 
+> > > ok, I'll send new version without this one
+> > 
+> > No need, I've already queued it and will be the first patch in the
+> > patchset I send out soon.
+> > 
+> 
+> Or do you mean you'll send out a new patch series without this patch.
 
-lockdep/waitqueues: Add better annotation
+yep :)
 
- -> #2 (&tty->write_wait){-.-...}:
-
-is a lot more informative than:
-
- -> #2 (key#19){-.....}:
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-8zpopbny51023rdb0qq67eye@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/wait.h |    4 ++--
- kernel/wait.c        |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 3efc9f3..a9ce45e 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -77,13 +77,13 @@ struct task_struct;
- #define __WAIT_BIT_KEY_INITIALIZER(word, bit)				\
- 	{ .flags = word, .bit_nr = bit, }
- 
--extern void __init_waitqueue_head(wait_queue_head_t *q, struct lock_class_key *);
-+extern void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *);
- 
- #define init_waitqueue_head(q)				\
- 	do {						\
- 		static struct lock_class_key __key;	\
- 							\
--		__init_waitqueue_head((q), &__key);	\
-+		__init_waitqueue_head((q), #q, &__key);	\
- 	} while (0)
- 
- #ifdef CONFIG_LOCKDEP
-diff --git a/kernel/wait.c b/kernel/wait.c
-index 26fa779..7fdd9ea 100644
---- a/kernel/wait.c
-+++ b/kernel/wait.c
-@@ -10,10 +10,10 @@
- #include <linux/wait.h>
- #include <linux/hash.h>
- 
--void __init_waitqueue_head(wait_queue_head_t *q, struct lock_class_key *key)
-+void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *key)
- {
- 	spin_lock_init(&q->lock);
--	lockdep_set_class(&q->lock, key);
-+	lockdep_set_class_and_name(&q->lock, key, name);
- 	INIT_LIST_HEAD(&q->task_list);
- }
- 
+> 
+> /me should not send email out when he first wakes up.
+> 
+> -- Steve
+> 
+> 
