@@ -1,114 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1LUPb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 10:31:28 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:47755 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab1LUPb0 convert rfc822-to-8bit (ORCPT
+	id S1753283Ab1LUPcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 10:32:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64243 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164Ab1LUPcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 10:31:26 -0500
-Date: Wed, 21 Dec 2011 10:30:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, thellstrom@vmware.com
-Subject: Re: [PATCH 2/3] drm/ttm/dma: Fix accounting error when calling
- ttm_mem_global_free_page.
-Message-ID: <20111221153018.GA26757@phenom.dumpdata.com>
-References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
- <1323720569-15435-3-git-send-email-konrad.wilk@oracle.com>
- <CAH3drwZGNBOr0+b8S_7ZAnhG=7RXFdjAc1D+ySxzGMy1LBJOqA@mail.gmail.com>
+	Wed, 21 Dec 2011 10:32:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CAH3drwZGNBOr0+b8S_7ZAnhG=7RXFdjAc1D+ySxzGMy1LBJOqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4EF1FBCA.00C0,ss=1,re=0.000,fgs=0
+In-Reply-To: <201112211602.26845.trenn@suse.de>
+References: <1324338394-4670-1-git-send-email-andi@firstfloor.org>
+ <1324338394-4670-9-git-send-email-andi@firstfloor.org> <201112211602.26845.trenn@suse.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 21 Dec 2011 16:32:28 +0100
+Message-ID: <CAPXgP12xDOjaEoRDdjYSSoLFCmpUOCZjoLFuyZHdnEMVsKGa0w@mail.gmail.com>
+Subject: Re: [PATCH 9/8] CPU: Introduce ARCH_HAS_CPU_AUTOPROBE and X86 parts
+To: Thomas Renninger <trenn@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, Andi Kleen <ak@linux.intel.com>, axboe@kernel.dk,
+        herbert@gondor.hengli.com.au, ying.huang@intel.com, lenb@kernel.org,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBLFWuNt013829
 
-On Wed, Dec 21, 2011 at 10:17:36AM -0500, Jerome Glisse wrote:
-> On Mon, Dec 12, 2011 at 3:09 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > The code to figure out how many pages to shrink the pool
-> > ends up capping the 'count' at _manager->options.max_size - which is OK.
-> > Except that the 'count' is also used when accounting for how many pages
-> > are recycled - which we end up with the invalid values. This fixes
-> > it by using a different value for the amount of pages to shrink.
-> >
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> > �drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | � 10 ++++++----
-> > �1 files changed, 6 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> > index 6c06d0b..e57aa24 100644
-> > --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> > +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> > @@ -949,7 +949,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
-> > � � � �struct dma_page *d_page, *next;
-> > � � � �enum pool_type type;
-> > � � � �bool is_cached = false;
-> > - � � � unsigned count = 0, i;
-> > + � � � unsigned count = 0, i, npages;
-> > � � � �unsigned long irq_flags;
-> >
-> > � � � �type = ttm_to_type(ttm->page_flags, ttm->caching_state);
-> > @@ -971,11 +971,13 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
-> > � � � �pool->npages_in_use -= count;
-> > � � � �if (is_cached) {
-> > � � � � � � � �pool->nfrees += count;
-> > + � � � � � � � npages = count;
-> 
-> This is wrong, i thought we didn't wanted to shrink cached page, your
-> 3/3 patch remove this line. Thought i am kind of wondering why we
-> don't shrink the cached pool, i can't remember the reason.
+2011/12/21 Thomas Renninger <trenn@suse.de>:
 
-We delete the cached ones:
+Cool. That sounds good. Nice work. Thanks.
 
- 988         if (is_cached) {
- 989                 list_for_each_entry_safe(d_page, next, &ttm_dma->pages_list, page_list) {
- 990                         ttm_mem_global_free_page(ttm->glob->mem_glob,
- 991                                                  d_page->p);
- 992                         ttm_dma_page_put(pool, d_page);
- 993                 }
+Adding Greg, so he's in the loop.
 
-And then we end up calling in ttm_dma_page_pool_free for (count) pages
-that we had already deleted. So it ends up being a bit redundant.
+Greg, Andi's upcoming CPU modaliases are temporarily hooked into the
+'cpuid' class devices to make them work with userspace, which isn't
+possible with the weird sysdev stuff.
 
-The 3/3 patch fixes that (by removing the call to ttm_dma_page_pool_free
-for is_cached. This patch (2/3) tries to preserve the logic if it is either
-is_cached or !is_cached.
+We don't want to depend on the 'cpuid' class, but hook into the real
+'cpu' subsystem. This switches them over after we have the
+sysdev-cpu-conversion stuff merged.
 
-> 
-> > � � � �} else {
-> > � � � � � � � �pool->npages_free += count;
-> > � � � � � � � �list_splice(&ttm_dma->pages_list, &pool->free_list);
-> > + � � � � � � � npages = count;
-> > � � � � � � � �if (pool->npages_free > _manager->options.max_size) {
-> > - � � � � � � � � � � � count = pool->npages_free - _manager->options.max_size;
-> > + � � � � � � � � � � � npages = pool->npages_free - _manager->options.max_size;
-> > � � � � � � � �}
-> > � � � �}
-> > � � � �spin_unlock_irqrestore(&pool->lock, irq_flags);
-> > @@ -1000,8 +1002,8 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
-> > � � � �}
-> >
-> > � � � �/* shrink pool if necessary */
-> > - � � � if (count)
-> > - � � � � � � � ttm_dma_page_pool_free(pool, count);
-> > + � � � if (npages)
-> > + � � � � � � � ttm_dma_page_pool_free(pool, npages);
-> > � � � �ttm->state = tt_unpopulated;
-> > �}
-> > �EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-> > --
-> > 1.7.7.3
-> >
-> 
-> Otherwise Reviewed-by:Jerome Glisse <jglisse@redhat.com>
+Thanks,
+Kay
 
-Thanks!
+> CPU: Introduce ARCH_HAS_CPU_AUTOPROBE and X86 parts
+>
+> This patch is based on Andi Kleen's work:
+> Implement autoprobing/loading of modules serving CPU
+> specific features (x86cpu autoloading).
+>
+> And Kay Siever's work to get rid of sysdev cpu structures
+> and making use of struct device instead.
+>
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> CC: ak@linux.intel.com
+> CC: kay.sievers@vrfy.org
+> CC: hpa@zytor.com
+> CC: davej@redhat.com
+> CC: kay.sievers@vrfy.org
+> CC: axboe@kernel.dk
+> CC: hpa@zytor.com
+> CC: herbert@gondor.apana.org.au
+> CC: ying.huang@intel.com
+> CC: lenb@kernel.org
+>
+> ---
+>  arch/x86/Kconfig            |    3 ++
+>  arch/x86/kernel/cpu/match.c |   43 ++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/cpuid.c     |   58 --------------------------------------------
+>  drivers/base/cpu.c          |   11 ++++++++
+>  include/linux/cpu.h         |    7 +++++
+>  5 files changed, 65 insertions(+), 57 deletions(-)
+>
+> Index: linux-3.2-rc6-master/arch/x86/kernel/cpuid.c
+> ===================================================================
+> --- linux-3.2-rc6-master.orig/arch/x86/kernel/cpuid.c
+> +++ linux-3.2-rc6-master/arch/x86/kernel/cpuid.c
+> @@ -40,7 +40,6 @@
+>  #include <linux/notifier.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/gfp.h>
+> -#include <linux/slab.h>
+>
+>  #include <asm/processor.h>
+>  #include <asm/msr.h>
+> @@ -139,56 +138,13 @@ static const struct file_operations cpui
+>        .open = cpuid_open,
+>  };
+>
+> -static ssize_t print_cpu_modalias(struct device *dev,
+> -                                 struct device_attribute *attr,
+> -                                 char *bufptr)
+> -{
+> -       int size = PAGE_SIZE;
+> -       int i, n;
+> -       char *buf = bufptr;
+> -
+> -       n = snprintf(buf, size, "x86cpu:vendor:%04x:family:%04x:model:%04x:feature:",
+> -               boot_cpu_data.x86_vendor,
+> -               boot_cpu_data.x86,
+> -               boot_cpu_data.x86_model);
+> -       size -= n;
+> -       buf += n;
+> -       size -= 2;
+> -       for (i = 0; i < NCAPINTS*32; i++) {
+> -               if (boot_cpu_has(i)) {
+> -                       n = snprintf(buf, size, ",%04x", i);
+> -                       if (n < 0) {
+> -                               WARN(1, "x86 features overflow page\n");
+> -                               break;
+> -                       }
+> -                       size -= n;
+> -                       buf += n;
+> -               }
+> -       }
+> -       *buf++ = ',';
+> -       *buf++ = '\n';
+> -       return buf - bufptr;
+> -}
+> -
+> -static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+> -
+>  static __cpuinit int cpuid_device_create(int cpu)
+>  {
+>        struct device *dev;
+> -       int err;
+>
+>        dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
+>                            "cpu%d", cpu);
+> -       if (IS_ERR(dev))
+> -               return PTR_ERR(dev);
+> -
+> -       err = device_create_file(dev, &dev_attr_modalias);
+> -       if (err) {
+> -               /* keep device around on error. attribute is optional. */
+> -               err = 0;
+> -       }
+> -
+> -       return 0;
+> +       return IS_ERR(dev) ? PTR_ERR(dev) : 0;
+>  }
+>
+>  static void cpuid_device_destroy(int cpu)
+> @@ -226,17 +182,6 @@ static char *cpuid_devnode(struct device
+>        return kasprintf(GFP_KERNEL, "cpu/%u/cpuid", MINOR(dev->devt));
+>  }
+>
+> -static int cpuid_dev_uevent(struct device *dev, struct kobj_uevent_env *env)
+> -{
+> -       char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> -       if (buf) {
+> -               print_cpu_modalias(NULL, NULL, buf);
+> -               add_uevent_var(env, "MODALIAS=%s", buf);
+> -               kfree(buf);
+> -       }
+> -       return 0;
+> -}
+> -
+>  static int __init cpuid_init(void)
+>  {
+>        int i, err = 0;
+> @@ -255,7 +200,6 @@ static int __init cpuid_init(void)
+>                goto out_chrdev;
+>        }
+>        cpuid_class->devnode = cpuid_devnode;
+> -       cpuid_class->dev_uevent = cpuid_dev_uevent;
+>        for_each_online_cpu(i) {
+>                err = cpuid_device_create(i);CPU: Introduce ARCH_HAS_CPU_AUTOPROBE and X86 parts
+>                if (err != 0)
+> Index: linux-3.2-rc6-master/arch/x86/Kconfig
+> ===================================================================
+> --- linux-3.2-rc6-master.orig/arch/x86/Kconfig
+> +++ linux-3.2-rc6-master/arch/x86/Kconfig
+> @@ -185,6 +185,9 @@ config ARCH_HAS_DEFAULT_IDLE
+>  config ARCH_HAS_CACHE_LINE_SIZE
+>        def_bool y
+>
+> +config ARCH_HAS_CPU_AUTOPROBE
+> +       def_bool y
+> +
+>  config HAVE_SETUP_PER_CPU_AREA
+>        def_bool y
+>
+> Index: linux-3.2-rc6-master/drivers/base/cpu.c
+> ===================================================================
+> --- linux-3.2-rc6-master.orig/drivers/base/cpu.c
+> +++ linux-3.2-rc6-master/drivers/base/cpu.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/device.h>
+>  #include <linux/node.h>
+>  #include <linux/gfp.h>
+> +#include <linux/slab.h>
+>
+>  #include "base.h"
+>
+> @@ -221,6 +222,9 @@ int __cpuinit register_cpu(struct cpu *c
+>        cpu->node_id = cpu_to_node(num);
+>        cpu->dev.id = num;
+>        cpu->dev.bus = &cpu_subsys;
+> +#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +       cpu->dev.bus->uevent = arch_cpu_uevent;
+> +#endif
+>        error = device_register(&cpu->dev);
+>        if (!error && cpu->hotpluggable)
+>                register_cpu_control(cpu);
+> @@ -245,6 +249,10 @@ struct device *get_cpu_device(unsigned c
+>  }
+>  EXPORT_SYMBOL_GPL(get_cpu_device);
+>
+> +#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +static DEVICE_ATTR(modalias, 0444, arch_print_cpu_modalias, NULL);
+> +#endif
+> +
+>  static struct attribute *cpu_root_attrs[] = {
+>  #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
+>        &dev_attr_probe.attr,
+> @@ -255,6 +263,9 @@ static struct attribute *cpu_root_attrs[
+>        &cpu_attrs[2].attr.attr,
+>        &dev_attr_kernel_max.attr,
+>        &dev_attr_offline.attr,
+> +#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +       &dev_attr_modalias.attr,
+> +#endif
+>        NULL
+>  };
+>
+> Index: linux-3.2-rc6-master/arch/x86/kernel/cpu/match.c
+> ===================================================================
+> --- linux-3.2-rc6-master.orig/arch/x86/kernel/cpu/match.c
+> +++ linux-3.2-rc6-master/arch/x86/kernel/cpu/match.c
+> @@ -2,6 +2,7 @@
+>  #include <asm/processor.h>
+>  #include <linux/cpu.h>
+>  #include <linux/module.h>
+> +#include <linux/slab.h>
+>
+>  /**
+>  * x86_match_cpu - match current CPU again an array of x86_cpu_ids
+> @@ -46,3 +47,45 @@ const struct x86_cpu_id *x86_match_cpu(c
+>        return NULL;
+>  }
+>  EXPORT_SYMBOL(x86_match_cpu);
+> +
+> +ssize_t arch_print_cpu_modalias(struct device *dev,
+> +                               struct device_attribute *attr,
+> +                               char *bufptr)
+> +{
+> +       int size = PAGE_SIZE;
+> +       int i, n;
+> +       char *buf = bufptr;
+> +
+> +       n = snprintf(buf, size, "x86cpu:vendor:%04x:family:%04x:model:%04x:feature:",
+> +               boot_cpu_data.x86_vendor,
+> +               boot_cpu_data.x86,
+> +               boot_cpu_data.x86_model);
+> +       size -= n;
+> +       buf += n;
+> +       size -= 2;
+> +       for (i = 0; i < NCAPINTS*32; i++) {
+> +               if (boot_cpu_has(i)) {
+> +                       n = snprintf(buf, size, ",%04x", i);
+> +                       if (n < 0) {
+> +                               WARN(1, "x86 features overflow page\n");
+> +                               break;
+> +                       }
+> +                       size -= n;
+> +                       buf += n;
+> +               }
+> +       }
+> +       *buf++ = ',';
+> +       *buf++ = '\n';
+> +       return buf - bufptr;
+> +}
+> +
+> +int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+> +{
+> +       char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +       if (buf) {
+> +               arch_print_cpu_modalias(NULL, NULL, buf);
+> +               add_uevent_var(env, "MODALIAS=%s", buf);
+> +               kfree(buf);
+> +       }
+> +       return 0;
+> +}
+> Index: linux-3.2-rc6-master/include/linux/cpu.h
+> ===================================================================
+> --- linux-3.2-rc6-master.orig/include/linux/cpu.h
+> +++ linux-3.2-rc6-master/include/linux/cpu.h
+> @@ -43,6 +43,13 @@ extern ssize_t arch_cpu_release(const ch
+>  #endif
+>  struct notifier_block;
+>
+> +#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +extern int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env);
+> +extern ssize_t arch_print_cpu_modalias(struct device *dev,
+> +                                      struct device_attribute *attr,
+> +                                      char *bufptr);
+> +#endif
+> +
+>  /*
+>  * CPU notifier priorities.
+>  */
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
