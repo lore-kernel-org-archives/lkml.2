@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab1LUWhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:37:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38363 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab1LUWhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:37:06 -0500
-Message-ID: <4EF25F83.8070002@zytor.com>
-Date: Wed, 21 Dec 2011 14:36:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753648Ab1LUWoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:44:54 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60974 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1LUWow (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 17:44:52 -0500
+Date: Wed, 21 Dec 2011 23:44:50 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 3.2-rc6-rt9
+Message-ID: <alpine.LFD.2.02.1112212310390.3020@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>, Greg KH <greg@kroah.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        ftpadmin@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        "J.H." <warthog9@kernel.org>
-Subject: Re: Availability of files area (here: binutils from H.J. Lu)?
-References: <CA+icZUUfxUPKFnVU4Pd6cLCE_CUUhM7SdQE0G3sGSu7yiyYv3w@mail.gmail.com> <20111027123525.GA7910@kroah.com> <CA+icZUV2=END4Zr68fCF0e7t306DmQQ7cQwUtcbZpAUct5VVSA@mail.gmail.com>
-In-Reply-To: <CA+icZUV2=END4Zr68fCF0e7t306DmQQ7cQwUtcbZpAUct5VVSA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is up to H.J. to upload that content anew, sorry.
+Dear RT Folks,
 
-	-hpa
+I'm pleased to announce the 3.2-rc6-rt9 release.
 
-On 12/21/2011 02:30 PM, Sedat Dilek wrote:
-> On Thu, Oct 27, 2011 at 2:35 PM, Greg KH<greg@kroah.com>  wrote:
->> On Thu, Oct 27, 2011 at 12:18:24PM +0200, Sedat Dilek wrote:
->>> Hi,
->>>
->>> several OSS projects depend on files stored on<kernel.org>.
->>> For example the Freetz router project uses binutils from H.J. Lu [1].
->>> After break-in (31-Aug-2011) the files area is still not available.
->>> Is there an alternative URL?
->>> If not, when will these files be again available for download?
->>
->> The files will eventually be restored, please be patient, we are working
->> on this as quickly as possible.
->>
->> greg k-h
->
-> Ping?!
->
-> [1] is browsable again, but lists antique versions of binutils.
->
-> - Sedat -
->
-> [1] http://www.kernel.org/pub/linux/devel/binutils/
+3.2-rc6-rt9 is a not any different from 3.2-rc5-rt8, it merily bumps
+the version numbers.
 
+I leave out the usual pointers. You know where to find it and if not,
+you can just apply the 3.2-rc5-rt8 patch to 3.2-rc6. It won't be any
+different except for the version number. I'll catch you when you send
+bug reports against 3.2-rc6-rt8! :)
+
+The only purpose of this release is to say:
+
+     Thanks! 
+
+Thanks, to all of you who have supported the RT project in the last
+year - be it with patches, bug reports, testing, success stories or
+whatever form of contribution.
+
+As an extra bonus for my beloved roadmap enthusiasts I'm revealing my
+RT plans for the near future:
+
+    RT won't have any further updates before Jan / 9 / 2012
+
+As always, I stronlgy recommend _not_ to put any bets on that. :)
+
+
+That said, I wish you all a Merry Christmas and a Happy New Year!
+
+     Thomas
+
+---
+
+But I am sure that I have always thought of Christmas time, when it
+has come round... as a good time; a kind, forgiving, charitable,
+pleasant time; the only time I know of, in the long calendar of the
+year, when men and women seem by one consent to open their shut-up
+hearts freely.
+
+       Charles Dickens, A Christmas Carol
