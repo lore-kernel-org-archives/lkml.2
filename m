@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1LUGgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 01:36:12 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:46935 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab1LUGgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 01:36:09 -0500
-Date: Wed, 21 Dec 2011 08:36:06 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Tao Ma <tm@tao.ma>
-cc: Dan Williams <dan.j.williams@intel.com>, axboe@kernel.dk,
-        Tao Ma <boyu.mt@taobao.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
-Subject: Re: [PATCH] block: fix blk_queue_end_tag()
-In-Reply-To: <4EF17DC4.5010008@tao.ma>
-Message-ID: <alpine.SOC.1.00.1112210835010.6858@math.ut.ee>
-References: <20111220233117.17757.71139.stgit@localhost6.localdomain6> <4EF17DC4.5010008@tao.ma>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1752285Ab1LUGlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 01:41:09 -0500
+Received: from snt0-omc4-s34.snt0.hotmail.com ([65.55.90.237]:9765 "EHLO
+	snt0-omc4-s34.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733Ab1LUGlI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 01:41:08 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 01:41:07 EST
+Message-ID: <SNT125-W26894BC9E91209254F0941C3A50@phx.gbl>
+X-Originating-IP: [50.47.182.211]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <hpa@kernel.org>, <mhocko@suse.cz>
+CC: <lacombar@gmail.com>, <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: RE: x86-32 PAE-enabled kernel fails to boot with 64GB of RAM
+Date: Tue, 20 Dec 2011 22:34:55 -0800
+Importance: Normal
+In-Reply-To: <4EDE5B36.2000203@kernel.org>
+References: <CACqU3MXMAP-7LtVWHENNAQSS+B0c5qVcdWq=4NFGNACxkTRYzg@mail.gmail.com>
+ <20111206102628.GC1342@tiehlicka.suse.cz>,<4EDE5B36.2000203@kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 21 Dec 2011 06:34:56.0212 (UTC) FILETIME=[A77B4140:01CCBFAA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > -	if (unlikely(tag >= bqt->max_depth)) {
-> > +	if (WARN_ONCE(tag >= bqt->real_max_depth,
-> > +		      "%s: tag %d greater than tag map size: %d\n",
-> > +		      __func__, tag, bqt->real_max_depth)) {
-> >  		/*
-> >  		 * This can happen after tag depth has been reduced.
-> Please also change the comments here since it should never happen in the
-> right workload.
 
-What do you mean by right workload? Normal workload?
+> On 12/06/2011 02:26 AM, Michal Hocko wrote:
+> >
+> > Quoting from Documentation/vm/highmem.txt:
+> > "
+> > The general recommendation is that you don't use more than 8GiB on a
+> > 32-bit machine - although more might work for you and your workload,
+> > you're pretty much on your own - don't expect kernel developers to
+> > really care much if things come apart.
+> > "
+> >
+>
+> Still, I suspect the failure to cap the memory space... it still
+> *should* at least limp along. But yes, at some point the wheels really
+> will just come off the bus.
+>
+> Does specifying a kernel"mem=" option (thereby capping the memory
+> artificially) work?
 
--- 
-Meelis Roos (mroos@linux.ee)
+FYI Windows when set to 3G/1G VA split with PAE enabled caps to 16GB of RAM.
+Yuhong Bao 		 	   		  
