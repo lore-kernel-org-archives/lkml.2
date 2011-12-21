@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab1LUCr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 21:47:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46076 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753151Ab1LUCrv (ORCPT
+	id S1753616Ab1LUCs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 21:48:59 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65306 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab1LUCs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 21:47:51 -0500
-Message-ID: <1324435650.2844.182.camel@deadeye>
-Subject: Re: [PATCH 1/8] IB/cxgb4: Fix formatting of physical address
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Dec 2011 02:47:30 +0000
-In-Reply-To: <1324434950.14214.3.camel@joe2Laptop>
-References: <1324430940.2844.144.camel@deadeye>
-	 <1324431127.2844.146.camel@deadeye> <1324434950.14214.3.camel@joe2Laptop>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-rR6XqhiWyN5RW7QTcWIx"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 20 Dec 2011 21:48:57 -0500
+Date: Wed, 21 Dec 2011 03:48:52 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 2/2 v2] cgroup: Drop task_lock(parent) on cgroup_fork()
+Message-ID: <20111221024849.GC17668@somewhere>
+References: <1324432958-20414-1-git-send-email-fweisbec@gmail.com>
+ <1324432958-20414-3-git-send-email-fweisbec@gmail.com>
+ <4EF14176.9040206@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF14176.9040206@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 21, 2011 at 10:16:22AM +0800, Li Zefan wrote:
+> Frederic Weisbecker wrote:
+> > We don't need to hold the parent task_lock() on the
+> > parent in cgroup_fork() because we are already synchronized
+> > against the two places that may change the parent css_set
+> > concurrently:
+> > 
+> > - cgroup_exit(), but the parent obviously can't exit concurrently
+> > - cgroup migration: we are synchronized against threadgroup_lock()
+> > 
+> > So we can safely remove the task_lock() there.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > Cc: Containers <containers@lists.linux-foundation.org>
+> > Cc: Cgroups <cgroups@vger.kernel.org>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Paul Menage <paul@paulmenage.org>
+> > Cc: Mandeep Singh Baines <msb@chromium.org>
+> > ---
+> >  kernel/cgroup.c |   10 +++++++---
+> >  1 files changed, 7 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 24f6d6f..1999f60 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -4556,7 +4556,7 @@ static const struct file_operations proc_cgroupstats_operations = {
+> >   *
+> >   * A pointer to the shared css_set was automatically copied in
+> >   * fork.c by dup_task_struct().  However, we ignore that copy, since
+> > - * it was not made under the protection of RCU or cgroup_mutex, so
+> > + * it was not made under the protection of threadgroup_change_begin(), so
+> 
+> I think the original comment still stands, but now threadgroup_change_begin()
+> can also protect the cgroup pointer from becoming invalid.
 
---=-rR6XqhiWyN5RW7QTcWIx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Right but I'm not sure it's worth quoting RCU and cgroup_mutex. The reason
+why we use threadgroup_change_begin() is not only to ensure the pointer
+validity but also to synchronize the whole cgroup proc logic. This way
+when we attach a whole proc with cgroup_attach_proc(), we are sure that
+no thread forked too soon or too late such that it wouldn't be migrated with
+the rest.
 
-On Tue, 2011-12-20 at 18:35 -0800, Joe Perches wrote:
-> On Wed, 2011-12-21 at 01:32 +0000, Ben Hutchings wrote:
-> > Physical addresses may be wider than virtual addresses (e.g. on i386
-> > with PAE) and must not be formatted with %p.
-> []
-> > The resource could alternately be formatted with %Pr.
-> > diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/=
-hw/cxgb4/device.c
-> []
-> > @@ -318,10 +318,10 @@ static int c4iw_rdev_open(struct c4iw_rdev *rdev)
-> >  	     rdev->lldi.vr->qp.size,
-> >  	     rdev->lldi.vr->cq.start,
-> >  	     rdev->lldi.vr->cq.size);
-> > -	PDBG("udb len 0x%x udb base %p db_reg %p gts_reg %p qpshift %lu "
-> > +	PDBG("udb len 0x%x udb base %llx db_reg %p gts_reg %p qpshift %lu "
-> >  	     "qpmask 0x%x cqshift %lu cqmask 0x%x\n",
-> >  	     (unsigned)pci_resource_len(rdev->lldi.pdev, 2),
-> > -	     (void *)pci_resource_start(rdev->lldi.pdev, 2),
-> > +	     (u64)pci_resource_start(rdev->lldi.pdev, 2),
->=20
-> Probably should be unsigned long long
+RCU or cgroup_mutex on dup_task_struct() (+ a get_css_set()) would have
+protected the pointer validity but not the whole above described machinery.
+So I don't think it's even worth quoting those solutions. But if you prefer
+I can keep the old comment.
 
-unsigned long long is so long long long to type.  And u64 is now defined
-as unsigned long long on all architectures, partly because of that.
+OTOH what I think is missing in the comment is that explanation on the synchronization
+against entire proc migration. I can edit that.
 
-Ben.
-
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-
---=-rR6XqhiWyN5RW7QTcWIx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATvFIwue/yOyVhhEJAQpbUg/+OfseC8ZndYGQT1BZ3Loti6gyw7uTTCqF
-lmQPdEGf4MN/LfkMTI6rEPO9atBzljxT7KCAcMVplzhJHpBziSuzw6rpLKxyB4lK
-TKqkLIb8yBkpmswFTQ8VfxI14DUg4iFxm8jNhGv3vjgkkHlZ4TH7aMq4CTNAcNqj
-amJ7h8cPyDSkV5Bof8WzpnPbtUr3ovZZ4tLhegOCguStpSiehvfQYKhhRgKdhA/6
-fljT4xhRWDnMZixxuCUiWQchbFNgg/g51yOC4gNEPoDzNd1RdTgwWG5GQE+uu/Q0
-fI6yyiUBEuujqp842nG6lfPrXfO0mhaIvOiCdr6+Fh0CZKz6MxnwMK9225p2pJMW
-fJevvywXllI482wvAfPqt8APc2KtYaRtPAzXk5N0wq6dbW8jgqkUavUKv74zcCgE
-+6Srn/IqX51qM2PDULaegi2k2f82v2CqCJ5Q5UhmUzKwB2TTCFJVERLW7ByAbtMU
-JGPGPJhylky2gRAYoNHaBPpggPCvAM0bfLgq0s9d3V8ER2lvBS/Bl2cuagVca6K6
-EzmOzdYJA7UffcziIML8IEmfXLCq+pzH9Z0P2eFVp7BjemroNt0+OLRtAzMWtdsB
-1U0P6S+Gl7eI+RIhYSgmF1z1rWRLIYS6IWzPaFbpEtLLXY6IwXtyykncC4dmdM61
-pq3dQviQOJs=
-=ohY7
------END PGP SIGNATURE-----
-
---=-rR6XqhiWyN5RW7QTcWIx--
+> 
+> >   * might no longer be a valid cgroup pointer.  cgroup_attach_task() might
+> >   * have already changed current->cgroups, allowing the previously
+> >   * referenced cgroup group to be removed and freed.
+> > @@ -4566,10 +4566,14 @@ static const struct file_operations proc_cgroupstats_operations = {
+> >   */
+> >  void cgroup_fork(struct task_struct *child)
+> >  {
+> > -	task_lock(current);
+> > +	/*
+> > +	 * We don't need to task_lock() current because current->cgroups
+> > +	 * can't be changed concurrently here. The parent obviously hasn't
+> > +	 * exited and called cgroup_exit(), and we are synchronized against
+> > +	 * cgroup migration through threadgroup_change_begin().
+> > +	 */
+> >  	child->cgroups = current->cgroups;
+> >  	get_css_set(child->cgroups);
+> > -	task_unlock(current);
+> >  	INIT_LIST_HEAD(&child->cg_list);
+> >  }
+> >  
