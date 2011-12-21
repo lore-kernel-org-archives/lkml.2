@@ -1,414 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1LUJE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 04:04:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41448 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab1LUJEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 04:04:21 -0500
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Cc: patches@linaro.org, eric.miao@linaro.org,
-        broonie@opensource.wolfsonmicro.com,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: [PATCHv2] Regulator: Add Anatop regulator driver
-Date: Wed, 21 Dec 2011 17:03:31 +0800
-Message-Id: <1324458211-1612-1-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323265998-29088-2-git-send-email-paul.liu@linaro.org>
-References: <1323265998-29088-2-git-send-email-paul.liu@linaro.org>
+	id S1752807Ab1LUJEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 04:04:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab1LUJEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 04:04:48 -0500
+Date: Wed, 21 Dec 2011 11:06:37 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>, Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio_net: fix refill related races
+Message-ID: <20111221090637.GA31592@redhat.com>
+References: <20111211144428.GB14381@redhat.com>
+ <878vmioh10.fsf@rustcorp.com.au>
+ <20111212115405.GB7946@redhat.com>
+ <87iplltd0g.fsf@rustcorp.com.au>
+ <20111220190908.GC25689@redhat.com>
+ <20111220190946.GD10752@google.com>
+ <20111220193055.GA26392@redhat.com>
+ <20111220193154.GG10752@google.com>
+ <20111220194518.GB26692@redhat.com>
+ <87hb0udd2h.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hb0udd2h.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On Wed, Dec 21, 2011 at 10:13:18AM +1030, Rusty Russell wrote:
+> On Tue, 20 Dec 2011 21:45:19 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Tue, Dec 20, 2011 at 11:31:54AM -0800, Tejun Heo wrote:
+> > > On Tue, Dec 20, 2011 at 09:30:55PM +0200, Michael S. Tsirkin wrote:
+> > > > Hmm, in that case it looks like a nasty race could get
+> > > > triggered, with try_fill_recv run on multiple CPUs in parallel,
+> > > > corrupting the linked list within the vq.
+> > > > 
+> > > > Using the mutex as my patch did will fix that naturally, as well.
+> > > 
+> > > Don't know the code but just use nrt wq.  There's even a system one
+> > > called system_nrq_wq.
+> > > 
+> > > Thanks.
+> > 
+> > We can, but we need the mutex for other reasons, anyway.
+> 
+> Well, here's the alternate approach.  What do you think?
 
-Anatop regulator driver is used by i.MX6 SoC. The regulator provides
-controlling the voltage of PU, CORE, SOC, and some devices. This patch
-adds the Anatop regulator driver.
+It looks very clean, thanks. Some documentation suggestions below.
+Also - Cc stable on this and the block patch?
 
-Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>
----
- drivers/regulator/Kconfig                  |    7 +
- drivers/regulator/Makefile                 |    1 +
- drivers/regulator/anatop-regulator.c       |  260 ++++++++++++++++++++++++++++
- include/linux/regulator/anatop-regulator.h |   67 +++++++
- 4 files changed, 335 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/anatop-regulator.c
- create mode 100644 include/linux/regulator/anatop-regulator.h
+> Finding two wq issues makes you justifiably cautious, but it almost
+> feels like giving up to simply wrap it in a lock.  The APIs are designed
+> to let us do it without a lock; I was just using them wrong.
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9713b1b..6aebd6d 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -327,5 +327,12 @@ config REGULATOR_AAT2870
- 	  If you have a AnalogicTech AAT2870 say Y to enable the
- 	  regulator driver.
- 
-+config REGULATOR_ANATOP
-+	tristate "ANATOP LDO regulators"
-+	depends on SOC_IMX6
-+	default y if SOC_IMX6
-+	help
-+	  Say y here to support ANATOP LDOs regulators.
-+
- endif
- 
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 93a6318..990c332 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -46,5 +46,6 @@ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
- obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-+obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
- 
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-new file mode 100644
-index 0000000..31156d5
---- /dev/null
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -0,0 +1,260 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/anatop-regulator.h>
-+
-+static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
-+				  int max_uV, unsigned *selector)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	u32 val, rega;
-+	int uv;
-+
-+	uv = max_uV;
-+	pr_debug("%s: uv %d, min %d, max %d\n", __func__,
-+		 uv, reg->constraints->min_uV,
-+		 reg->constraints->max_uV);
-+
-+	if (uv < reg->constraints->min_uV || uv > reg->constraints->max_uV)
-+		return -EINVAL;
-+
-+	if (anatop_reg->rdata->control_reg) {
-+		val = anatop_reg->rdata->min_bit_val +
-+			(uv - reg->constraints->min_uV) / 25000;
-+		rega = (__raw_readl(anatop_reg->rdata->control_reg) &
-+		       ~(anatop_reg->rdata->vol_bit_mask <<
-+			 anatop_reg->rdata->vol_bit_shift));
-+		pr_debug("%s: calculated val %d\n", __func__, val);
-+		__raw_writel((val << anatop_reg->rdata->vol_bit_shift) | rega,
-+			     anatop_reg->rdata->control_reg);
-+		return 0;
-+	} else {
-+		pr_debug("Regulator not supported.\n");
-+		return -ENOTSUPP;
-+	}
-+}
-+
-+static int anatop_get_voltage(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	int uv;
-+	struct anatop_regulator_data *rdata = anatop_reg->rdata;
-+
-+	if (rdata->control_reg) {
-+		u32 val = (__raw_readl(rdata->control_reg) <<
-+			   rdata->vol_bit_shift) & rdata->vol_bit_mask;
-+		uv = reg->constraints->min_uV
-+		  + (val - rdata->min_bit_val) * 25000;
-+		pr_debug("vddio = %d, val=%u\n", uv, val);
-+		return uv;
-+	} else {
-+		pr_debug("Regulator not supported.\n");
-+		return -ENOTSUPP;
-+	}
-+}
-+
-+static int anatop_enable(struct regulator_dev *reg)
-+{
-+	return 0;
-+}
-+
-+static int anatop_disable(struct regulator_dev *reg)
-+{
-+	return 0;
-+}
-+
-+static int anatop_is_enabled(struct regulator_dev *reg)
-+{
-+	return 1;
-+}
-+
-+static struct regulator_ops anatop_rops = {
-+	.set_voltage	= anatop_set_voltage,
-+	.get_voltage	= anatop_get_voltage,
-+	.enable		= anatop_enable,
-+	.disable	= anatop_disable,
-+	.is_enabled	= anatop_is_enabled,
-+};
-+
-+static struct regulator_desc anatop_reg_desc[] = {
-+	{
-+		.name = "vddpu",
-+		.id = ANATOP_VDDPU,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddcore",
-+		.id = ANATOP_VDDCORE,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddsoc",
-+		.id = ANATOP_VDDSOC,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd2p5",
-+		.id = ANATOP_VDD2P5,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd1p1",
-+		.id = ANATOP_VDD1P1,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd3p0",
-+		.id = ANATOP_VDD3P0,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+};
-+
-+int anatop_regulator_probe(struct platform_device *pdev)
-+{
-+	struct regulator_desc *rdesc;
-+	struct regulator_dev *rdev;
-+	struct anatop_regulator *sreg;
-+	struct regulator_init_data *initdata;
-+
-+	sreg = platform_get_drvdata(pdev);
-+	initdata = pdev->dev.platform_data;
-+	sreg->cur_current = 0;
-+	sreg->next_current = 0;
-+	sreg->cur_voltage = 0;
-+
-+	init_waitqueue_head(&sreg->wait_q);
-+	spin_lock_init(&sreg->lock);
-+
-+	if (pdev->id > ANATOP_SUPPLY_NUM) {
-+		rdesc = kzalloc(sizeof(struct regulator_desc), GFP_KERNEL);
-+		memcpy(rdesc, &anatop_reg_desc[ANATOP_SUPPLY_NUM],
-+			sizeof(struct regulator_desc));
-+		rdesc->name = kstrdup(sreg->rdata->name, GFP_KERNEL);
-+	} else
-+		rdesc = &anatop_reg_desc[pdev->id];
-+
-+	pr_debug("probing regulator %s %s %d\n",
-+			sreg->rdata->name,
-+			rdesc->name,
-+			pdev->id);
-+
-+	/* register regulator */
-+	rdev = regulator_register(rdesc, &pdev->dev,
-+				  initdata, sreg);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			rdesc->name);
-+		return PTR_ERR(rdev);
-+	}
-+
-+	return 0;
-+}
-+
-+
-+int anatop_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+
-+	regulator_unregister(rdev);
-+
-+	return 0;
-+
-+}
-+
-+int anatop_register_regulator(
-+		struct anatop_regulator *reg_data, int reg,
-+			      struct regulator_init_data *initdata)
-+{
-+	struct platform_device *pdev;
-+	int ret;
-+
-+	pdev = platform_device_alloc("anatop_reg", reg);
-+	if (!pdev)
-+		return -ENOMEM;
-+
-+	pdev->dev.platform_data = initdata;
-+
-+	platform_set_drvdata(pdev, reg_data);
-+	ret = platform_device_add(pdev);
-+
-+	if (ret != 0) {
-+		pr_debug("Failed to register regulator %d: %d\n",
-+			reg, ret);
-+		platform_device_del(pdev);
-+	}
-+	pr_debug("register regulator %s, %d: %d\n",
-+			reg_data->rdata->name, reg, ret);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(anatop_register_regulator);
-+
-+struct platform_driver anatop_reg = {
-+	.driver = {
-+		.name	= "anatop_reg",
-+	},
-+	.probe	= anatop_regulator_probe,
-+	.remove	= anatop_regulator_remove,
-+};
-+
-+int anatop_regulator_init(void)
-+{
-+	return platform_driver_register(&anatop_reg);
-+}
-+
-+void anatop_regulator_exit(void)
-+{
-+	platform_driver_unregister(&anatop_reg);
-+}
-+
-+postcore_initcall(anatop_regulator_init);
-+module_exit(anatop_regulator_exit);
-+
-+MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-+MODULE_DESCRIPTION("ANATOP Regulator driver");
-+MODULE_LICENSE("GPL");
-+
-diff --git a/include/linux/regulator/anatop-regulator.h b/include/linux/regulator/anatop-regulator.h
-new file mode 100644
-index 0000000..70f096b
---- /dev/null
-+++ b/include/linux/regulator/anatop-regulator.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#ifndef __ANATOP_REGULATOR_H
-+#define __ANATOP_REGULATOR_H
-+#include <linux/regulator/driver.h>
-+
-+/* regulator supplies for Anatop */
-+enum anatop_regulator_supplies {
-+	ANATOP_VDDPU,
-+	ANATOP_VDDCORE,
-+	ANATOP_VDDSOC,
-+	ANATOP_VDD2P5,
-+	ANATOP_VDD1P1,
-+	ANATOP_VDD3P0,
-+	ANATOP_SUPPLY_NUM
-+};
-+
-+struct anatop_regulator {
-+	struct regulator_desc regulator;
-+	struct anatop_regulator *parent;
-+	struct anatop_regulator_data *rdata;
-+	struct completion done;
-+
-+	spinlock_t         lock;
-+	wait_queue_head_t  wait_q;
-+	struct notifier_block nb;
-+
-+	int mode;
-+	int cur_voltage;
-+	int cur_current;
-+	int next_current;
-+};
-+
-+
-+struct anatop_regulator_data {
-+	char name[80];
-+	char *parent_name;
-+
-+	u32 control_reg;
-+	int vol_bit_shift;
-+	int vol_bit_mask;
-+	int min_bit_val;
-+};
-+
-+int anatop_register_regulator(
-+		struct anatop_regulator *reg_data, int reg,
-+		      struct regulator_init_data *initdata);
-+
-+#endif /* __ANATOP_REGULATOR_H */
+One thing I note is that this scheme works because there's a single
+entity disabling/enabling napi and the refill thread.
+So it's possible that Amit will need to add a lock and track NAPI
+state anyway to make suspend work. But we'll see.
+
+> Two patches in one mail.  It's gauche, but it's an RFC only (untested).
+> 
+> Cheers,
+> Rusty.
+> 
+> virtio_net: set/cancel work on ndo_open/ndo_stop
+> 
+> Michael S. Tsirkin noticed that we could run the refill work after
+> ndo_close, which can re-enable napi - we don't disable it until
+> virtnet_remove.  This is clearly wrong, so move the workqueue control
+> to ndo_open and ndo_stop (aka. virtnet_open and virtnet_close).
+> 
+> One subtle point: virtnet_probe() could simply fail if it couldn't
+> allocate a receive buffer, but that's less polite in virtnet_open() so
+> we schedule a refill as we do in the normal receive path if we run out
+> of memory.
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -719,6 +719,10 @@ static int virtnet_open(struct net_devic
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  
+> +	/* Make sure we have some buffersl if oom use wq. */
+
+Typo :)
+
+> +	if (!try_fill_recv(vi, GFP_KERNEL))
+> +		schedule_delayed_work(&vi->refill, 0);
+> +
+>  	virtnet_napi_enable(vi);
+>  	return 0;
+>  }
+> @@ -772,6 +776,8 @@ static int virtnet_close(struct net_devi
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  
+> +	/* Make sure refill_work doesn't re-enable napi! */
+> +	cancel_delayed_work_sync(&vi->refill);
+>  	napi_disable(&vi->napi);
+>  
+>  	return 0;
+> @@ -1082,7 +1088,6 @@ static int virtnet_probe(struct virtio_d
+>  
+>  unregister:
+>  	unregister_netdev(dev);
+> -	cancel_delayed_work_sync(&vi->refill);
+>  free_vqs:
+>  	vdev->config->del_vqs(vdev);
+>  free_stats:
+> @@ -1121,9 +1126,7 @@ static void __devexit virtnet_remove(str
+>  	/* Stop all the virtqueues. */
+>  	vdev->config->reset(vdev);
+>  
+> -
+>  	unregister_netdev(vi->dev);
+> -	cancel_delayed_work_sync(&vi->refill);
+>  
+>  	/* Free unused buffers in both send and recv, if any. */
+>  	free_unused_bufs(vi);
+> 
+> 
+> virtio_net: use non-reentrant workqueue.
+> 
+> Michael S. Tsirkin also noticed that we could run the refill work
+> multiple CPUs: if we kick off a refill on one CPU and then on another,
+> they would both manipulate the queue at the same time (they use
+> napi_disable to avoid racing against the receive handler itself).
+> 
+> Tejun points out that this is what the WQ_NON_REENTRANT flag is for,
+> and that there is a convenient system kthread we can use.
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -501,7 +501,7 @@ static void refill_work(struct work_stru
+>  	/* In theory, this can happen: if we don't get any buffers in
+>  	 * we will *never* try to fill again. */
+>  	if (still_empty)
+> -		schedule_delayed_work(&vi->refill, HZ/2);
+> +		queue_delayed_work(system_nrt_wq, &vi->refill, HZ/2);
+>  }
+>  
+>  static int virtnet_poll(struct napi_struct *napi, int budget)
+> @@ -520,7 +520,7 @@ again:
+>  
+>  	if (vi->num < vi->max / 2) {
+>  		if (!try_fill_recv(vi, GFP_ATOMIC))
+> -			schedule_delayed_work(&vi->refill, 0);
+> +			queue_delayed_work(system_nrt_wq, &vi->refill, 0);
+>  	}
+>  
+>  	/* Out of packets? */
+> @@ -721,7 +721,7 @@ static int virtnet_open(struct net_devic
+>  
+>  	/* Make sure we have some buffersl if oom use wq. */
+>  	if (!try_fill_recv(vi, GFP_KERNEL))
+> -		schedule_delayed_work(&vi->refill, 0);
+> +		queue_delayed_work(&system_nrt_wq, &vi->refill, 0);
+>  
+>  	virtnet_napi_enable(vi);
+>  	return 0;
+
+Maybe document some rules:
+- try_fill_recv must always run from napi or with napi disabled ...
+- refill only runs when device is open
+
 -- 
-1.7.7.3
-
+MST
