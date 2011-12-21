@@ -1,278 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab1LUF0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 00:26:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49967 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab1LUF0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 00:26:03 -0500
-Message-ID: <4EF16DE1.8010909@canonical.com>
-Date: Tue, 20 Dec 2011 21:25:53 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111215 Thunderbird/9.0
+	id S1751249Ab1LUF2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 00:28:22 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:56595 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab1LUF2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 00:28:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=gSLWaXDsTLB+xqW4x1so/uwCwnr15K7b
+	Ci+/4Lvl3LBfBtOMKl5qkZhw9jWTAy2uv4LKHuwVOgrD6EhYXRwTOx87lpXLwc6p
+	sge4TcLVexLJaKdGl7lt5GLQC5QIyEv46O8JhDOF+rDUFCnues4q9PwVF9Mj/QJG
+	aX3wQmAAuPE=
+From: Junio C Hamano <gitster@pobox.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] ext4 bugfixes for 3.2-rc5
+References: <E1RauNd-0008W1-02@tytso-glaptop.cam.corp.google.com>
+ <CA+55aFw6n=WaDWRn7NqtBei1x0-w1PkH5x6r3iQSSPZvxYvDhQ@mail.gmail.com>
+ <20111215190846.GA2709@thunk.org>
+Date: Tue, 20 Dec 2011 21:28:15 -0800
+In-Reply-To: <20111215190846.GA2709@thunk.org> (Ted Ts'o's message of "Thu,
+ 15 Dec 2011 14:08:46 -0500")
+Message-ID: <7vd3biijdc.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: kernel-hardening@lists.openwall.com
-CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Roland McGrath <roland@hack.frob.com>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [kernel-hardening] [PATCH 2/2] security: Yama LSM
-References: <1324333066-12452-1-git-send-email-keescook@chromium.org> <1324333066-12452-3-git-send-email-keescook@chromium.org>
-In-Reply-To: <1324333066-12452-3-git-send-email-keescook@chromium.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 964BE0E0-2B94-11E1-9653-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 02:17 PM, Kees Cook wrote:
-> This adds the Yama Linux Security Module to collect DAC security
-> improvements (specifically just ptrace restrictions for now) that have
-> existed in various forms over the years and have been carried outside the
-> mainline kernel by other Linux distributions like Openwall and grsecurity.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> v9:
->  - Remove pid_ns feature. Touches too many core kernel areas at the moment.
-> v8:
->  - Updated RCU usage and locking, thanks to Mandeep Singh Baines.
-> v7:
->  - Merge ptrace restrictions, which include various fixes from
->    Vasiliy Kulikov, Solar Designer, Ming Lei, Tetsuo Handa, and Eric Paris.
->  - Merge pid_ns feature from Vasiliy Kulikov.
->  - Rip out link restrictions for initial upstreaming.
-> v6:
->  - Fix interaction with overlayfs, thanks to Andy Whitcroft and Leann
->    Ogasawara.
->  - Clarify rationale for LSM.
->  - Move documentation under security subdirectory.
-> v5:
->  - resend, with ptrace relationship interface
-> v4:
->  - drop accidentally included fs/exec.c chunk.
-> v3:
->  - drop needless cap_ callbacks.
->  - fix usage of get_task_comm.
->  - drop CONFIG_ of sysctl defaults, as recommended by Andi Kleen.
->  - require SYSCTL.
-> v2:
->  - add rcu locking, thanks to Tetsuo Handa.
->  - add Documentation/Yama.txt for summary of features.
+Ted Ts'o <tytso@mit.edu> writes:
 
-This is looking really good.  I have a few notes inlined below but I didn't
-find any problems.
+> Cool!  Does it save enough that GPG signature information can be
+> verified later?  I'm a little fuzzy on what is covered by the
+> signature which gets verified when you run the command "git verify-tag
+> tytso-for-linus-20111214".  Better yet, does the new version of git
+> have a command that will automatically verify the digital signature
+> found in a merge commit?
+>
+> And this isn't in 1.7.8 yet, right?  I'd have to build version of git
+> based on the next branch to play with this new signatury goodness?
 
-I am happy giving it an
-Acked-by: John Johansen <john.johansen@canonical.com>
+The 'master' branch as of this week has the topic merged.
 
-or Reviewed-by: if that is more appropriate here
-
-<snip>
-
-> index 0000000..1029fcd
-> --- /dev/null
-> +++ b/security/yama/yama_lsm.c
-> @@ -0,0 +1,315 @@
-> +/*
-> + * Yama Linux Security Module
-> + *
-> + * Author: Kees Cook <keescook@chromium.org>
-> + *
-> + * Copyright (C) 2010 Canonical, Ltd.
-> + * Copyright (C) 2011 The Chromium OS Authors.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/security.h>
-> +#include <linux/sysctl.h>
-> +#include <linux/ptrace.h>
-> +#include <linux/prctl.h>
-> +#include <linux/ratelimit.h>
-> +
-> +static int ptrace_scope = 1;
-> +
-> +/* describe a ptrace relationship for potential exception */
-> +struct ptrace_relation {
-> +	struct task_struct *tracer;
-> +	struct task_struct *tracee;
-> +	struct list_head node;
-> +};
-> +
-> +static LIST_HEAD(ptracer_relations);
-> +static DEFINE_SPINLOCK(ptracer_relations_lock);
-> +
-> +/**
-> + * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
-> + * @tracer: the task_struct of the process doing the ptrace
-> + * @tracee: the task_struct of the process to be ptraced
-> + *
-> + * Returns 0 if relationship was added, -ve on error.
-> + */
-It might be good to add a note here, or a more explicit note in the Yama
-Documentation that a tracee can only have a single tracer (+ its descendants).
-
-In the documentation
-  An inferior can declare which other process (and its descendents) are allowed
-  to call PTRACE_ATTACH against it
-
-Its real easy to not catch its process instead of processes
-
-> +static int yama_ptracer_add(struct task_struct *tracer,
-> +			    struct task_struct *tracee)
-> +{
-> +	int rc = 0;
-> +	struct ptrace_relation *added;
-> +	struct ptrace_relation *entry, *relation = NULL;
-> +
-> +	added = kmalloc(sizeof(*added), GFP_KERNEL);
-> +	spin_lock_bh(&ptracer_relations_lock);
-> +	list_for_each_entry(entry, &ptracer_relations, node)
-> +		if (entry->tracee == tracee) {
-> +			relation = entry;
-> +			break;
-> +		}
-> +	if (!relation) {
-> +		relation = added;
-> +		if (!relation) {
-> +			rc = -ENOMEM;
-> +			goto unlock_out;
-> +		}
-> +		relation->tracee = tracee;
-> +		list_add(&relation->node, &ptracer_relations);
-> +	}
-> +	relation->tracer = tracer;
-> +
-> +unlock_out:
-> +	spin_unlock_bh(&ptracer_relations_lock);
-> +	if (added && added != relation)
-> +		kfree(added);
-> +
-> +	return rc;
-> +}
-> +
-I think pulling the out of the locking makes the fn a little easier to
-read.
-static int yama_ptracer_add(struct task_struct *tracer,
-			    struct task_struct *tracee)
-{
-	int rc = 0;
-	struct ptrace_relation *added;
-	struct ptrace_relation *entry, *relation = NULL;
-
-	added = kmalloc(sizeof(*added), GFP_KERNEL);
-	if (!added)
-		return -ENOMEM;
-
-	spin_lock_bh(&ptracer_relations_lock);
-	list_for_each_entry(entry, &ptracer_relations, node)
-		if (entry->tracee == tracee) {
-			relation = entry;
-			break;
-		}
-	if (!relation) {
-		relation = added;
-		relation->tracee = tracee;
-		list_add(&relation->node, &ptracer_relations);
-	}
-	relation->tracer = tracer;
-
-	spin_unlock_bh(&ptracer_relations_lock);
-	if (added != relation)
-		kfree(added);
-
-	return rc;
-}
-
-or if you prefer to keep a single exit point
-
-static int yama_ptracer_add(struct task_struct *tracer,
-			    struct task_struct *tracee)
-{
-	int rc = -ENOMEM;
-	struct ptrace_relation *added;
-	struct ptrace_relation *entry, *relation = NULL;
-
-	added = kmalloc(sizeof(*added), GFP_KERNEL);
-	if (!added)
-		goto out;
-
-	spin_lock_bh(&ptracer_relations_lock);
-	list_for_each_entry(entry, &ptracer_relations, node)
-		if (entry->tracee == tracee) {
-			relation = entry;
-			break;
-		}
-	if (!relation) {
-		relation = added;
-		relation->tracee = tracee;
-		list_add(&relation->node, &ptracer_relations);
-	}
-	relation->tracer = tracer;
-
-	spin_unlock_bh(&ptracer_relations_lock);
-	if (added != relation)
-		kfree(added);
-
-	rc = 0;
-out:
-	return rc;
-}
-
-> +/**
-> + * yama_ptracer_del - remove exceptions related to the given tasks
-> + * @tracer: remove any relation where tracer task matches
-> + * @tracee: remove any relation where tracee task matches
-> + */
-> +static void yama_ptracer_del(struct task_struct *tracer,
-> +			     struct task_struct *tracee)
-> +{
-> +	struct ptrace_relation *relation;
-> +	struct list_head *list, *safe;
-> +
-> +	spin_lock_bh(&ptracer_relations_lock);
-> +	list_for_each_safe(list, safe, &ptracer_relations) {
-> +		relation = list_entry(list, struct ptrace_relation, node);
-You could use list_for_each_entry_safe here
-	list_for_each_entry_safe(relation, safe, &ptracer_relations, node)
-
-> +		if (relation->tracee == tracee ||
-> +		    relation->tracer == tracer) {
-> +			list_del(&relation->node);
-> +			kfree(relation);
-> +		}
-> +	}
-> +	spin_unlock_bh(&ptracer_relations_lock);
-> +}
-> +
-> +/**
-> + * yama_task_free - check for task_pid to remove from exception list
-> + * @task: task being removed
-> + */
-> +static void yama_task_free(struct task_struct *task)
-> +{
-> +	yama_ptracer_del(task, task);
-> +}
-> +
-> +/**
-> + * yama_task_prctl - check for Yama-specific prctl operations
-> + * @option: operation
-> + * @arg2: argument
-> + * @arg3: argument
-> + * @arg4: argument
-> + * @arg5: argument
-> + *
-> + * Return 0 on success, -ve on error.  -ENOSYS is returned when Yama
-> + * does not handle the given option.
-> + */
-So maybe add a note here about why the tracee is being stored via the
-group_leader, but that the tracer isn't.  Its not really a problem but I
-tripped over this at first as I was going through the code.
 
