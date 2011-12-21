@@ -1,66 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1LUS5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:57:23 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:53571 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753973Ab1LUS5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:57:17 -0500
-Message-ID: <4EF23A1F.60803@xenotime.net>
-Date: Wed, 21 Dec 2011 11:57:19 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Samuel Ortiz <samuel@sortiz.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>
-Subject: Re: linux-next: Tree for Dec 19 (nfc)
-References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>	 <4EEFA21B.5010305@xenotime.net> <1324399181.5354.0.camel@sortiz-mobl>
-In-Reply-To: <1324399181.5354.0.camel@sortiz-mobl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754006Ab1LUS4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:56:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752418Ab1LUS4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:56:49 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 4/7] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Wed, 21 Dec 2011 19:56:28 +0100
+Message-Id: <1324493791-5688-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+ <1324493791-5688-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
-> Hi Randy,
-> 
-> On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
->> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20111216:
->>
->>
->> (not new today, just not reported earlier)
-> John applied my fix for this one. It should be fixed now.
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-Hi Samuel,
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
-Is this supposed to be fixed in linux-next?
-It still fails today (linux-next 20111221).
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
 
-
-data.c:(.text+0x3e0): multiple definition of `nfc_llcp_mac_is_down'
-data.c:(.text+0x400): multiple definition of `nfc_llcp_mac_is_up'
-ntf.c:(.text+0xb60): multiple definition of `nfc_llcp_mac_is_down'
-ntf.c:(.text+0xb80): multiple definition of `nfc_llcp_mac_is_up'
-rsp.c:(.text+0x750): multiple definition of `nfc_llcp_mac_is_down'
-rsp.c:(.text+0x770): multiple definition of `nfc_llcp_mac_is_up'
-netlink.c:(.text+0x14e0): multiple definition of `nfc_llcp_mac_is_down'
-netlink.c:(.text+0x1500): multiple definition of `nfc_llcp_mac_is_up'
-af_nfc.c:(.text+0xe0): multiple definition of `nfc_llcp_mac_is_down'
-af_nfc.c:(.text+0x100): multiple definition of `nfc_llcp_mac_is_up'
-rawsock.c:(.text+0x1000): multiple definition of `nfc_llcp_mac_is_down'
-rawsock.c:(.text+0x1020): multiple definition of `nfc_llcp_mac_is_up'
-
-
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 195e360..2bf677c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
+ };
+ 
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ 
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
+ }
+ 
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
+ 
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 8599c1d..5e4f62e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -667,6 +667,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -691,6 +693,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.1
+
