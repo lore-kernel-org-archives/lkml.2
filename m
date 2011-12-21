@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab1LUSXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:23:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51207 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab1LUSXv (ORCPT
+	id S1753712Ab1LUSY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:24:56 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44111 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab1LUSYx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:23:51 -0500
-Date: Wed, 21 Dec 2011 19:23:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20111221182344.GH17668@somewhere>
-References: <20111221034334.GD17668@somewhere>
- <20111221130848.GA19679@redhat.com>
- <20111221175943.GG17668@somewhere>
- <20111221181101.GA3092@redhat.com>
+	Wed, 21 Dec 2011 13:24:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221181101.GA3092@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111221145928.GP5650@redhat.com>
+References: <1318533267-18880-2-git-send-email-dzickus@redhat.com>
+	<tip-3603a2512f9e69dc87914ba922eb4a0812b21cd6@git.kernel.org>
+	<CAE9FiQWX_2bV1phLCUrEpiPSfo24xWEv3Y+DZnwmi9JJgJHbmQ@mail.gmail.com>
+	<20111221145928.GP5650@redhat.com>
+Date: Wed, 21 Dec 2011 10:24:53 -0800
+X-Google-Sender-Auth: 7uEP1kz8d-b3I_ZQNhHvg9o4x5s
+Message-ID: <CAE9FiQUW5tf5-Fbn0a_8s58P+7rXbG6iWPaDeHOuhxw4TZE+hQ@mail.gmail.com>
+Subject: Re: [tip:x86/debug] x86, reboot: Use NMI instead of REBOOT_VECTOR to
+ stop cpus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 07:11:01PM +0100, Oleg Nesterov wrote:
-> On 12/21, Frederic Weisbecker wrote:
-> >
-> > On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
-> > > On 12/21, Frederic Weisbecker wrote:
-> > > > - By the time we call cgroup_post_fork(), it is ready to be woken up
-> > > > and usable by the scheduler.
-> > >
-> > > No, the new child can't run until do_fork()->wake_up_new_task().
-> >
-> > Out of curiosity, why is it not possible for a task to kill and wake up the child
-> > before that happens?
-> 
-> Because it is not possible to wake it up.
-> 
-> Please note that copy_process() creates the "deactivated" child, iow
-> it is not on rq.
-> 
-> But, at the same time its ->state == TASK_RUNNING. This "fools"
-> try_to_wake_up() or anything else which in theory could place it
-> on the runqueue.
-
-Aaah I see.
-
-> 
-> Except, of course, wake_up_new_task() does activate_task(). And
-> note that it does this unconditionally, exactly because we know that
-> this task can't be woken.
+On Wed, Dec 21, 2011 at 6:59 AM, Don Zickus <dzickus@redhat.com> wrote:
+> On Tue, Dec 20, 2011 at 02:38:39PM -0800, Yinghai Lu wrote:
+>> > @@ -230,7 +285,7 @@ struct smp_ops smp_ops = {
+>> >        .smp_prepare_cpus       = native_smp_prepare_cpus,
+>> >        .smp_cpus_done          = native_smp_cpus_done,
+>> >
+>> > -       .stop_other_cpus        = native_stop_other_cpus,
+>> > +       .stop_other_cpus        = native_nmi_stop_other_cpus,
+>> >        .smp_send_reschedule    = native_smp_send_reschedule,
+>> >
+>> >        .cpu_up                 = native_cpu_up,
+>>
+>> this broke kexec on our intel nehalem, westmere and sandbridge platforms.
+>> system get reset while try to kexec second kernel.
 >
+>
+> Hmm. Ok.  Does the reboot path work correctly?
 
-ok, thanks for the explanation!
+Yes.
+
+> Vivek showed me that the
+> kexec and reboot paths do the same shutdowns.  Perhaps the second kernel
+> has trouble dealing with cpus spinning in an NMI context and can't
+> properly reset them.
+
+not sure.
+when use nonmi_ipi in first kernel, it will work well.
+
+Thanks
+
+Yinghai
