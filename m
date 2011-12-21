@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab1LUWUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:20:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3137 "EHLO mx1.redhat.com"
+	id S1754430Ab1LUWUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:20:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753520Ab1LUWUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752633Ab1LUWUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Dec 2011 17:20:41 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -16,114 +16,83 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 1/4] pagemap: avoid splitting thp when reading /proc/pid/pagemap
-Date: Wed, 21 Dec 2011 17:23:45 -0500
-Message-Id: <1324506228-18327-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 4/4] pagemap: document KPF_THP and make page-types aware of it
+Date: Wed, 21 Dec 2011 17:23:48 -0500
+Message-Id: <1324506228-18327-5-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thp split is not necessary if we explicitly check whether pmds are
-mapping thps or not. This patch introduces the check and the code
-to generate pagemap entries for pmds mapping thps, which results in
-less performance impact of pagemap on thp.
+page-types, which is a common user of pagemap, gets aware of thp
+with this patch. This helps system admins and kernel hackers know
+about how thp works.
+Here is a sample output of page-types over a thp:
+
+  $ page-types -p <pid> --raw --list
+
+  voffset offset  len     flags
+  ...
+  7f9d40200       3f8400  1       ___U_lA____Ma_bH______t____________
+  7f9d40201       3f8401  1ff     ________________T_____t____________
+
+               flags      page-count       MB  symbolic-flags                     long-symbolic-flags
+  0x0000000000410000             511        1  ________________T_____t____________        compound_tail,thp
+  0x000000000040d868               1        0  ___U_lA____Ma_bH______t____________        uptodate,lru,active,mmap,anonymous,swapbacked,compound_head,thp
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 
 Changes since v1:
-  - move pfn declaration to the beginning of pagemap_pte_range()
+  - fix misused word
 ---
- fs/proc/task_mmu.c |   49 +++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 43 insertions(+), 6 deletions(-)
+ Documentation/vm/page-types.c |    2 ++
+ Documentation/vm/pagemap.txt  |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
-index e418c5a..0df61ab 100644
---- 3.2-rc5.orig/fs/proc/task_mmu.c
-+++ 3.2-rc5/fs/proc/task_mmu.c
-@@ -600,6 +600,9 @@ struct pagemapread {
- 	u64 *buffer;
- };
+diff --git 3.2-rc5.orig/Documentation/vm/page-types.c 3.2-rc5/Documentation/vm/page-types.c
+index 7445caa..0b13f02 100644
+--- 3.2-rc5.orig/Documentation/vm/page-types.c
++++ 3.2-rc5/Documentation/vm/page-types.c
+@@ -98,6 +98,7 @@
+ #define KPF_HWPOISON		19
+ #define KPF_NOPAGE		20
+ #define KPF_KSM			21
++#define KPF_THP			22
  
-+#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
-+#define PAGEMAP_WALK_MASK	(PMD_MASK)
+ /* [32-] kernel hacking assistances */
+ #define KPF_RESERVED		32
+@@ -147,6 +148,7 @@ static const char *page_flag_names[] = {
+ 	[KPF_HWPOISON]		= "X:hwpoison",
+ 	[KPF_NOPAGE]		= "n:nopage",
+ 	[KPF_KSM]		= "x:ksm",
++	[KPF_THP]		= "t:thp",
+ 
+ 	[KPF_RESERVED]		= "r:reserved",
+ 	[KPF_MLOCKED]		= "m:mlocked",
+diff --git 3.2-rc5.orig/Documentation/vm/pagemap.txt 3.2-rc5/Documentation/vm/pagemap.txt
+index df09b96..4600cbe 100644
+--- 3.2-rc5.orig/Documentation/vm/pagemap.txt
++++ 3.2-rc5/Documentation/vm/pagemap.txt
+@@ -60,6 +60,7 @@ There are three components to pagemap:
+     19. HWPOISON
+     20. NOPAGE
+     21. KSM
++    22. THP
+ 
+ Short descriptions to the page flags:
+ 
+@@ -97,6 +98,9 @@ Short descriptions to the page flags:
+ 21. KSM
+     identical memory pages dynamically shared between one or more processes
+ 
++22. THP
++    contiguous pages which construct transparent hugepages
 +
- #define PM_ENTRY_BYTES      sizeof(u64)
- #define PM_STATUS_BITS      3
- #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
-@@ -658,6 +661,22 @@ static u64 pte_to_pagemap_entry(pte_t pte)
- 	return pme;
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
-+{
-+	u64 pme = 0;
-+	if (pte_present(pte))
-+		pme = PM_PFRAME(pte_pfn(pte) + offset)
-+			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
-+	return pme;
-+}
-+#else
-+static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 			     struct mm_walk *walk)
- {
-@@ -665,14 +684,34 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	struct pagemapread *pm = walk->private;
- 	pte_t *pte;
- 	int err = 0;
--
--	split_huge_page_pmd(walk->mm, pmd);
-+	u64 pfn = PM_NOT_PRESENT;
- 
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
--	for (; addr != end; addr += PAGE_SIZE) {
--		u64 pfn = PM_NOT_PRESENT;
- 
-+	spin_lock(&walk->mm->page_table_lock);
-+	if (pmd_trans_huge(*pmd)) {
-+		if (pmd_trans_splitting(*pmd)) {
-+			spin_unlock(&walk->mm->page_table_lock);
-+			wait_split_huge_page(vma->anon_vma, pmd);
-+		} else {
-+			for (; addr != end; addr += PAGE_SIZE) {
-+				int offset = (addr & ~PAGEMAP_WALK_MASK)
-+					>> PAGE_SHIFT;
-+				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
-+							       offset);
-+				err = add_to_pagemap(addr, pfn, pm);
-+				if (err)
-+					break;
-+			}
-+			spin_unlock(&walk->mm->page_table_lock);
-+			return err;
-+		}
-+	} else {
-+		spin_unlock(&walk->mm->page_table_lock);
-+	}
-+
-+	for (; addr != end; addr += PAGE_SIZE) {
- 		/* check to see if we've left 'vma' behind
- 		 * and need a new, higher one */
- 		if (vma && (addr >= vma->vm_end))
-@@ -754,8 +793,6 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-  * determine which areas of memory are actually mapped and llseek to
-  * skip over unmapped regions.
-  */
--#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
--#define PAGEMAP_WALK_MASK	(PMD_MASK)
- static ssize_t pagemap_read(struct file *file, char __user *buf,
- 			    size_t count, loff_t *ppos)
- {
+     [IO related page flags]
+  1. ERROR     IO error occurred
+  3. UPTODATE  page has up-to-date data
 -- 
 1.7.7.3
 
