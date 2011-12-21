@@ -1,194 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1LULuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:50:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34113 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab1LULuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:50:06 -0500
-Date: Wed, 21 Dec 2011 03:49:43 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-pqeog465zo5hsimtkfz73f27@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        asharma@fb.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, asharma@fb.com, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/fast] perf, x86:
-  Provide means for disabling userspace RDPMC
-Git-Commit-ID: 0c9d42ed4cee2aa1dfc3a260b741baae8615744f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:49:49 -0800 (PST)
+	id S1753792Ab1LULub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:50:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753591Ab1LULtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:49:24 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 6/8] ftrace, perf: Add support to use function tracepoint in perf
+Date: Wed, 21 Dec 2011 12:48:54 +0100
+Message-Id: <1324468136-3997-7-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+ <1324468136-3997-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0c9d42ed4cee2aa1dfc3a260b741baae8615744f
-Gitweb:     http://git.kernel.org/tip/0c9d42ed4cee2aa1dfc3a260b741baae8615744f
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sun, 20 Nov 2011 23:30:47 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Dec 2011 11:01:11 +0100
+Adding perf registration support for the ftrace function event,
+so it is now possible to register it via perf interface.
 
-perf, x86: Provide means for disabling userspace RDPMC
+The perf_event struct statically contains ftrace_ops as a handle
+for function tracer. The function tracer is registered/unregistered
+in open/close actions, and enabled/disabled in add/del actions.
 
-Allow the disabling of RDPMC via a pmu specific attribute:
+It is now possible to use function trace within perf commands
+like:
 
-  echo 0 > /sys/bus/event_source/devices/cpu/rdpmc
+  perf record -e ftrace:function ls
+  perf stat -e ftrace:function ls
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Arun Sharma <asharma@fb.com>
-Link: http://lkml.kernel.org/n/tip-pqeog465zo5hsimtkfz73f27@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Allowed only for root.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   55 +++++++++++++++++++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event.h |    8 +++++
- include/linux/perf_event.h       |    1 +
- kernel/events/core.c             |    1 +
- 4 files changed, 64 insertions(+), 1 deletions(-)
+ include/linux/perf_event.h      |    3 +
+ kernel/trace/trace.h            |    2 +
+ kernel/trace/trace_event_perf.c |   92 +++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_export.c     |   28 ++++++++++++
+ 4 files changed, 125 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 53b5699..116b040 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/cpu.h>
- #include <linux/bitops.h>
-+#include <linux/device.h>
- 
- #include <asm/apic.h>
- #include <asm/stacktrace.h>
-@@ -1210,7 +1211,8 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- 		break;
- 
- 	case CPU_STARTING:
--		set_in_cr4(X86_CR4_PCE);
-+		if (x86_pmu.attr_rdpmc)
-+			set_in_cr4(X86_CR4_PCE);
- 		if (x86_pmu.cpu_starting)
- 			x86_pmu.cpu_starting(cpu);
- 		break;
-@@ -1320,6 +1322,8 @@ static int __init init_hw_perf_events(void)
- 		}
- 	}
- 
-+	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
-+
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
- 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
-@@ -1555,10 +1559,59 @@ static int x86_pmu_event_idx(struct perf_event *event)
- 	return idx + 1;
- }
- 
-+static ssize_t get_attr_rdpmc(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      char *buf)
-+{
-+	return snprintf(buf, 40, "%d\n", x86_pmu.attr_rdpmc);
-+}
-+
-+static void change_rdpmc(void *info)
-+{
-+	bool enable = !!(unsigned long)info;
-+
-+	if (enable)
-+		set_in_cr4(X86_CR4_PCE);
-+	else
-+		clear_in_cr4(X86_CR4_PCE);
-+}
-+
-+static ssize_t set_attr_rdpmc(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	unsigned long val = simple_strtoul(buf, NULL, 0);
-+
-+	if (!!val != !!x86_pmu.attr_rdpmc) {
-+		x86_pmu.attr_rdpmc = !!val;
-+		smp_call_function(change_rdpmc, (void *)val, 1);
-+	}
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+
-+static struct attribute *x86_pmu_attrs[] = {
-+	&dev_attr_rdpmc.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group x86_pmu_attr_group = {
-+	.attrs = x86_pmu_attrs,
-+};
-+
-+static const struct attribute_group *x86_pmu_attr_groups[] = {
-+	&x86_pmu_attr_group,
-+	NULL,
-+};
-+
- static struct pmu pmu = {
- 	.pmu_enable	= x86_pmu_enable,
- 	.pmu_disable	= x86_pmu_disable,
- 
-+	.attr_groups	= x86_pmu_attr_groups,
-+
- 	.event_init	= x86_pmu_event_init,
- 
- 	.add		= x86_pmu_add,
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8944062..513d617 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -307,6 +307,14 @@ struct x86_pmu {
- 	struct x86_pmu_quirk *quirks;
- 	int		perfctr_second_write;
- 
-+	/*
-+	 * sysfs attrs
-+	 */
-+	int		attr_rdpmc;
-+
-+	/*
-+	 * CPU Hotplug hooks
-+	 */
- 	int		(*cpu_prepare)(int cpu);
- 	void		(*cpu_starting)(int cpu);
- 	void		(*cpu_dying)(int cpu);
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 02545e6..5311b79 100644
+index 564769c..47a9df6 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -615,6 +615,7 @@ struct pmu {
- 	struct list_head		entry;
+@@ -848,6 +848,9 @@ struct perf_event {
+ #ifdef CONFIG_EVENT_TRACING
+ 	struct ftrace_event_call	*tp_event;
+ 	struct event_filter		*filter;
++#ifdef CONFIG_FUNCTION_TRACER
++	struct ftrace_ops               ftrace_ops;
++#endif
+ #endif
  
- 	struct device			*dev;
-+	const struct attribute_group	**attr_groups;
- 	char				*name;
- 	int				type;
+ #ifdef CONFIG_CGROUP_PERF
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 85732a8..e88e58a 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -591,6 +591,8 @@ static inline int ftrace_trace_task(struct task_struct *task)
+ static inline int ftrace_is_dead(void) { return 0; }
+ #endif
  
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 05affc3..dcd4049 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5505,6 +5505,7 @@ static int pmu_dev_alloc(struct pmu *pmu)
- 	if (!pmu->dev)
- 		goto out;
++int ftrace_event_is_function(struct ftrace_event_call *call);
++
+ /*
+  * struct trace_parser - servers for reading the user input separated by spaces
+  * @cont: set if the input is not complete - no final space char was found
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index d72af0b..57eb232 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -24,6 +24,11 @@ static int	total_ref_count;
+ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
+ {
++	/* The ftrace function trace is allowed only for root. */
++	if (ftrace_event_is_function(tp_event) &&
++	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	/* No tracing, just counting, so no obvious leak */
+ 	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
+ 		return 0;
+@@ -250,3 +255,90 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+ 	return raw_data;
+ }
+ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
++
++
++static void
++perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
++{
++	struct ftrace_entry *entry;
++	struct hlist_head *head;
++	struct pt_regs regs;
++	int rctx;
++
++#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
++		    sizeof(u64)) - sizeof(u32))
++
++	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
++
++	perf_fetch_caller_regs(&regs);
++
++	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
++	if (!entry)
++		return;
++
++	entry->ip = ip;
++	entry->parent_ip = parent_ip;
++
++	head = this_cpu_ptr(event_function.perf_events);
++	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
++			      1, &regs, head);
++
++#undef ENTRY_SIZE
++}
++
++static int perf_ftrace_function_register(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++
++	ops->flags |= FTRACE_OPS_FL_CONTROL;
++	ops->func = perf_ftrace_function_call;
++	return register_ftrace_function(ops);
++}
++
++static int perf_ftrace_function_unregister(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	return unregister_ftrace_function(ops);
++}
++
++static void perf_ftrace_function_enable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	ftrace_function_enable(ops, smp_processor_id());
++}
++
++static void perf_ftrace_function_disable(struct perf_event *event)
++{
++	struct ftrace_ops *ops = &event->ftrace_ops;
++	ftrace_function_disable(ops, smp_processor_id());
++}
++
++int perf_ftrace_event_register(struct ftrace_event_call *call,
++			       enum trace_reg type, void *data)
++{
++	int etype = call->event.type;
++
++	if (etype != TRACE_FN)
++		return -EINVAL;
++
++	switch (type) {
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++		return perf_ftrace_function_register(data);
++	case TRACE_REG_PERF_CLOSE:
++		return perf_ftrace_function_unregister(data);
++	case TRACE_REG_PERF_ADD:
++		perf_ftrace_function_enable(data);
++		return 0;
++	case TRACE_REG_PERF_DEL:
++		perf_ftrace_function_disable(data);
++		return 0;
++	}
++
++	return -EINVAL;
++}
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index bbeec31..867653c 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -131,6 +131,28 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
  
-+	pmu->dev->groups = pmu->attr_groups;
- 	device_initialize(pmu->dev);
- 	ret = dev_set_name(pmu->dev, "%s", pmu->name);
- 	if (ret)
+ #include "trace_entries.h"
+ 
++static int ftrace_event_class_register(struct ftrace_event_call *call,
++				       enum trace_reg type, void *data)
++{
++	switch (type) {
++	case TRACE_REG_PERF_REGISTER:
++	case TRACE_REG_PERF_UNREGISTER:
++		return 0;
++	case TRACE_REG_PERF_OPEN:
++	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
++#ifdef CONFIG_PERF_EVENTS
++		return perf_ftrace_event_register(call, type, data);
++#endif
++	case TRACE_REG_REGISTER:
++	case TRACE_REG_UNREGISTER:
++		break;
++	}
++
++	return -EINVAL;
++}
++
+ #undef __entry
+ #define __entry REC
+ 
+@@ -159,6 +181,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
++	.reg			= ftrace_event_class_register,		\
+ };									\
+ 									\
+ struct ftrace_event_call __used event_##call = {			\
+@@ -170,4 +193,9 @@ struct ftrace_event_call __used event_##call = {			\
+ struct ftrace_event_call __used						\
+ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+ 
++int ftrace_event_is_function(struct ftrace_event_call *call)
++{
++	return call == &event_function;
++}
++
+ #include "trace_entries.h"
+-- 
+1.7.1
+
