@@ -1,216 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab1LUIZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:25:42 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43770 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab1LUIZi (ORCPT
+	id S1752409Ab1LUI1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:27:54 -0500
+Received: from darkcity.gna.ch ([195.226.6.51]:36146 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751568Ab1LUI1t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:25:38 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 21 Dec 2011 17:24:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH v2] memcg: return -EINTR at bypassing try_charge().
-Message-Id: <20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 21 Dec 2011 03:27:49 -0500
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 03:27:48 EST
+Message-ID: <1324455480.1807.153.camel@thor.local>
+Subject: Re: 3.2-rc6+: Reported regressions from 3.0 and 3.1
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Bob Tracy <rct@gherkin.frus.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Date: Wed, 21 Dec 2011 09:18:00 +0100
+In-Reply-To: <201112210039.14100.linux-pm-bounces@lists.linux-foundation.org>
+References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
+	 <201112210039.14100.linux-pm-bounces@lists.linux-foundation.org>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about this ?
---
->From 6076425613f594d442c58a5d463c09f8309236aa Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 21 Dec 2011 16:27:25 +0900
-Subject: [PATCH] memcg: return -EINTR at bypassing try_charge().
+On Mit, 2011-12-21 at 00:39 +0100, Rafael J. Wysocki wrote: 
+> 
+> Subject    : [BUG] 3.2-rcX radeon KMS system freeze
+> Submitter  : Bob Tracy <rct@gherkin.frus.com>
+> Date       : 2011-11-25 20:33
+> Message-ID : 20111125203351.GA3651@gherkin.frus.com
+> References : http://marc.info/?l=linux-kernel&m=132225331312019&w=2
 
-This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
-When running testprogram and stop it by Ctrl-C, add_lru/del_lru
-will find pc->mem_cgroup is NULL and get panic. The reason
-is bypass code in try_charge().
+Is that really a (recent) regression? It sounds like Bob's only getting
+things working for the first time, and I can't see any mention of a
+previous working kernel version.
 
-At try_charge(), it checks the thread is fatal or not as..
-fatal_signal_pending() or TIF_MEMDIE. In this case, __try_charge()
-returns 0(success) with setting *ptr as NULL.
+Anyway, might be worth following up on this on the dri-devel list with
+more information, e.g. the dmesg output and Xorg.0.log corresponding to
+the freeze.
 
-Now, lruvec are deteremined by pc->mem_cgroup. So, it's better
-to reset pc->mem_cgroup as root_mem_cgroup. This patch does
-following change in try_charge()
-  1. return -EINTR at bypassing.
-  2. set *ptr = root_mem_cgroup at bypassing.
 
-By this change, in page fault / radix-tree-insert path,
-the page will be charged against root_mem_cgroup and the thread's
-operations will go ahead without trouble. In other path,
-migration or move_account etc..., -EINTR will stop the operation.
-(may need some cleanup later..)
-
-After this change, pc->mem_cgroup will have valid pointer if
-the page is used.
-
-Changelog: v1 -> v2
- - returns -EINTR at bypassing.
- - change error code handling at callers.
- - changed the name of patch.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   53 +++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 41 insertions(+), 12 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9175097..3c6eb7e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2185,6 +2185,23 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- }
- 
- /*
-+ * __mem_cgroup_try_charge() does
-+ * 1. detect memcg to be charged against from passed *mm and *ptr,
-+ * 2. update res_counter
-+ * 3. call memory reclaim if necessary.
-+ *
-+ * In some special case, if the task is fatal, fatal_signal_pending() or
-+ * TIF_MEMDIE or ->mm is NULL, this functoion returns -EINTR with filling
-+ * *ptr as root_mem_cgroup. There are 2 reasons for this. 1st is that
-+ * fatal threads should quit as soon as possible without any hazards.
-+ * 2nd is that all page should have valid pc->mem_cgroup if it will be
-+ * used.
-+ *
-+ * So, try_charge will return
-+ *  0       ...  at success. filling *ptr with a valid memcg pointer.
-+ *  -ENOMEM ...  charge failure because of resource limits.
-+ *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
-+ *
-  * Unlike exported interface, "oom" parameter is added. if oom==true,
-  * oom-killer can be invoked.
-  */
-@@ -2316,8 +2333,8 @@ nomem:
- 	*ptr = NULL;
- 	return -ENOMEM;
- bypass:
--	*ptr = NULL;
--	return 0;
-+	*ptr = root_mem_cgroup;
-+	return -EINTR;
- }
- 
- /*
-@@ -2564,7 +2581,7 @@ static int mem_cgroup_move_parent(struct page *page,
- {
- 	struct cgroup *cg = child->css.cgroup;
- 	struct cgroup *pcg = cg->parent;
--	struct mem_cgroup *parent;
-+	struct mem_cgroup *parent, *ptr;
- 	unsigned int nr_pages;
- 	unsigned long uninitialized_var(flags);
- 	int ret;
-@@ -2582,8 +2599,8 @@ static int mem_cgroup_move_parent(struct page *page,
- 	nr_pages = hpage_nr_pages(page);
- 
- 	parent = mem_cgroup_from_cont(pcg);
--	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
--	if (ret || !parent)
-+	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &ptr, false);
-+	if (ret)
- 		goto put_back;
- 
- 	if (nr_pages > 1)
-@@ -2630,9 +2647,9 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
- 
- 	pc = lookup_page_cgroup(page);
- 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
--	if (ret || !memcg)
-+	if (ret == -ENOMEM)
- 		return ret;
--
-+	/* we'll bypass -EINTR case and charge this page to root memcg */
- 	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
- 	return 0;
- }
-@@ -2703,6 +2720,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
- 	else { /* page is swapcache/shmem */
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-+		/* see try_charge_swapi() for -EINTR case */
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
- 	}
-@@ -2743,11 +2761,21 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	*memcgp = memcg;
- 	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
- 	css_put(&memcg->css);
-+	/*
-+	 * If this thread is fatal, charge against root cgroup and allow
-+	 * this thread to exit in quick manner. EINTR is not handled
-+	 * in page fault path. So, just bypass this.
-+	 */
-+	if (ret == -EINTR)
-+		ret = 0;
- 	return ret;
- charge_cur_mm:
- 	if (unlikely(!mm))
- 		mm = &init_mm;
--	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-+	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-+	if (ret == -EINTR)
-+		ret = 0;
-+	return ret;
- }
- 
- static void
-@@ -3205,7 +3233,7 @@ int mem_cgroup_prepare_migration(struct page *page,
- 	*memcgp = memcg;
- 	ret = __mem_cgroup_try_charge(NULL, gfp_mask, 1, memcgp, false);
- 	css_put(&memcg->css);/* drop extra refcnt */
--	if (ret || *memcgp == NULL) {
-+	if (ret) {
- 		if (PageAnon(page)) {
- 			lock_page_cgroup(pc);
- 			ClearPageCgroupMigration(pc);
-@@ -3215,6 +3243,7 @@ int mem_cgroup_prepare_migration(struct page *page,
- 			 */
- 			mem_cgroup_uncharge_page(page);
- 		}
-+		/* we'll need to revisit this error code (we have -EINTR) */
- 		return -ENOMEM;
- 	}
- 	/*
-@@ -3633,7 +3662,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- 		pc = lookup_page_cgroup(page);
- 
- 		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
--		if (ret == -ENOMEM)
-+		if (ret == -ENOMEM || ret == -EINTR)
- 			break;
- 
- 		if (ret == -EBUSY || ret == -EINVAL) {
-@@ -5091,9 +5120,9 @@ one_by_one:
- 		}
- 		ret = __mem_cgroup_try_charge(NULL,
- 					GFP_KERNEL, 1, &memcg, false);
--		if (ret || !memcg)
-+		if (ret)
- 			/* mem_cgroup_clear_mc() will do uncharge later */
--			return -ENOMEM;
-+			return ret;
- 		mc.precharge++;
- 	}
- 	return ret;
 -- 
-1.7.4.1
-
-
+Earthling Michel Dänzer           |                   http://www.amd.com
+Libre software enthusiast         |          Debian, X and DRI developer
