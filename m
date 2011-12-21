@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab1LUMBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 07:01:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43196 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab1LUMBD (ORCPT
+	id S1753918Ab1LUMB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 07:01:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58812 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1LUMA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 07:01:03 -0500
+	Wed, 21 Dec 2011 07:00:58 -0500
 From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
 To: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
         linux-acpi@vger.kernel.org, lenb@kernel.org,
         linaro-dev@lists.linaro.org, lm-sensors@lm-sensors.org,
         amit.kachhap@linaro.org, patches@linaro.org
-Subject: [RFC PATCH 3/3] ARM: exynos4: Add thermal sensor driver platform device support
-Date: Wed, 21 Dec 2011 17:29:58 +0530
-Message-Id: <1324468798-20423-4-git-send-email-amit.kachhap@linaro.org>
+Subject: [RFC PATCH 2/3] thermal: exynos4: Register the tmu sensor with the thermal interface layer
+Date: Wed, 21 Dec 2011 17:29:57 +0530
+Message-Id: <1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
 References: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
@@ -23,198 +23,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds necessary source definations needed for TMU driver and
-the platform device support.
+Export and register information from the hwmon tmu sensor to the samsung
+exynos kernel thermal framework where different cooling devices and thermal
+zone are binded. The exported information is based according to the data
+structure thermal_sensor_conf present in exynos_thermal.h. HWMON sysfs
+functions are currently left although all of them are present in generic
+linux thermal layer.
+Also the platform data structure is modified to pass frequency cooling
+in percentages for each thermal level.
 
 Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
 ---
- arch/arm/mach-exynos/Kconfig              |   12 +++++
- arch/arm/mach-exynos/Makefile             |    1 +
- arch/arm/mach-exynos/clock.c              |    4 ++
- arch/arm/mach-exynos/dev-tmu.c            |   64 +++++++++++++++++++++++++++++
- arch/arm/mach-exynos/include/mach/irqs.h  |    2 +
- arch/arm/mach-exynos/include/mach/map.h   |    1 +
- arch/arm/mach-exynos/mach-origen.c        |    1 +
- arch/arm/plat-samsung/include/plat/devs.h |    1 +
- 8 files changed, 86 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-exynos/dev-tmu.c
+ drivers/hwmon/exynos4_tmu.c               |   34 ++++++++++++++++++++++++++--
+ include/linux/platform_data/exynos4_tmu.h |    7 ++++++
+ 2 files changed, 38 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index 724ec0f..cfc6119 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -82,6 +82,17 @@ config EXYNOS4_DEV_DWMCI
- 	help
- 	  Compile in platform device definitions for DWMCI
+diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
+index f2359a0..6912a7f 100644
+--- a/drivers/hwmon/exynos4_tmu.c
++++ b/drivers/hwmon/exynos4_tmu.c
+@@ -37,6 +37,9 @@
+ #include <linux/hwmon-sysfs.h>
  
-+config EXYNOS4_DEV_TMU
-+	bool "Exynos4 tmu device support"
-+	default n
-+	depends on ARCH_EXYNOS4
-+	---help---
-+	  Compile in platform device definitions for TMU. This macro also
-+	  enables compilation hwmon base TMU driver and also allows compilation
-+	  of the platform device files. The platform data in this case is trip
-+	  temperature and some tmu h/w configurations related parameter.
-+
-+
- config EXYNOS4_SETUP_I2C1
- 	bool
- 	help
-@@ -288,6 +299,7 @@ config MACH_ORIGEN
- 	select SAMSUNG_DEV_BACKLIGHT
- 	select SAMSUNG_DEV_PWM
- 	select EXYNOS4_DEV_PD
-+	select EXYNOS4_DEV_TMU
- 	select EXYNOS4_SETUP_FIMD0
- 	select EXYNOS4_SETUP_SDHCI
- 	select EXYNOS4_SETUP_USB_PHY
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index 59069a3..d2493e8 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -44,6 +44,7 @@ obj-$(CONFIG_EXYNOS4_DEV_AHCI)		+= dev-ahci.o
- obj-$(CONFIG_EXYNOS4_DEV_PD)		+= dev-pd.o
- obj-$(CONFIG_EXYNOS4_DEV_SYSMMU)	+= dev-sysmmu.o
- obj-$(CONFIG_EXYNOS4_DEV_DWMCI)		+= dev-dwmci.o
-+obj-$(CONFIG_EXYNOS4_DEV_TMU)           += dev-tmu.o
+ #include <linux/platform_data/exynos4_tmu.h>
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++#include <linux/exynos_thermal.h>
++#endif
  
- obj-$(CONFIG_EXYNOS4_SETUP_FIMC)	+= setup-fimc.o
- obj-$(CONFIG_EXYNOS4_SETUP_FIMD0)	+= setup-fimd0.o
-diff --git a/arch/arm/mach-exynos/clock.c b/arch/arm/mach-exynos/clock.c
-index 2894f0a..edecc5e 100644
---- a/arch/arm/mach-exynos/clock.c
-+++ b/arch/arm/mach-exynos/clock.c
-@@ -567,6 +567,10 @@ static struct clk init_clocks_off[] = {
- 		.enable		= exynos4_clk_ip_peril_ctrl,
- 		.ctrlbit	= (1 << 15),
- 	}, {
-+		.name		= "tmu_apbif",
-+		.enable		= exynos4_clk_ip_perir_ctrl,
-+		.ctrlbit	= (1 << 17),
-+	}, {
- 		.name		= "keypad",
- 		.enable		= exynos4_clk_ip_perir_ctrl,
- 		.ctrlbit	= (1 << 16),
-diff --git a/arch/arm/mach-exynos/dev-tmu.c b/arch/arm/mach-exynos/dev-tmu.c
-new file mode 100644
-index 0000000..2e98912
---- /dev/null
-+++ b/arch/arm/mach-exynos/dev-tmu.c
-@@ -0,0 +1,64 @@
-+/* linux/arch/arm/mach-exynos4/dev-tmu.c
-+ *
-+ * Copyright 2011 by SAMSUNG
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/platform_data/exynos4_tmu.h>
-+#include <asm/irq.h>
-+
-+#include <mach/irqs.h>
-+#include <mach/map.h>
-+#include <plat/devs.h>
-+
-+static struct resource exynos4_tmu_resource[] = {
-+	[0] = {
-+		.start	= EXYNOS4_PA_TMU,
-+		.end	= EXYNOS4_PA_TMU + 0xFFFF - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= IRQ_TMU_TRIG0,
-+		.end	= IRQ_TMU_TRIG0,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct exynos4_tmu_platform_data default_tmu_data = {
-+	.threshold = 80,
-+	.trigger_levels[0] = 2,
-+	.trigger_levels[1] = 5,
-+	.trigger_levels[2] = 20,
-+	.trigger_levels[3] = 30,
-+	.trigger_level0_en = 1,
-+	.trigger_level1_en = 1,
-+	.trigger_level2_en = 1,
-+	.trigger_level3_en = 1,
-+	.gain = 15,
-+	.reference_voltage = 7,
-+	.cal_type = TYPE_ONE_POINT_TRIMMING,
-+	.freq_tab[0] = {
-+		.freq_clip_pctg[0] = 30,
-+		},
-+	.freq_tab[1] = {
-+		.freq_clip_pctg[0] = 99,
-+		},
-+	.freq_tab_count = 2,
-+};
-+
-+struct platform_device exynos4_device_tmu = {
-+	.name		= "exynos4-tmu",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(exynos4_tmu_resource),
-+	.resource	= exynos4_tmu_resource,
-+	.dev	= {
-+		.platform_data	= &default_tmu_data,
-+	},
-+};
-diff --git a/arch/arm/mach-exynos/include/mach/irqs.h b/arch/arm/mach-exynos/include/mach/irqs.h
-index dfd4b7e..d66a24b 100644
---- a/arch/arm/mach-exynos/include/mach/irqs.h
-+++ b/arch/arm/mach-exynos/include/mach/irqs.h
-@@ -125,6 +125,8 @@
- #define COMBINER_GROUP(x)	((x) * MAX_IRQ_IN_COMBINER + IRQ_SPI(128))
- #define COMBINER_IRQ(x, y)	(COMBINER_GROUP(x) + y)
+ #define EXYNOS4_TMU_REG_TRIMINFO	0x0
+ #define EXYNOS4_TMU_REG_CONTROL		0x20
+@@ -248,10 +251,13 @@ static void exynos4_tmu_work(struct work_struct *work)
  
-+#define IRQ_TMU_TRIG0		COMBINER_IRQ(2, 4)
-+#define IRQ_TMU_TRIG1		COMBINER_IRQ(3, 4)
- #define IRQ_SYSMMU_MDMA0_0	COMBINER_IRQ(4, 0)
- #define IRQ_SYSMMU_SSS_0	COMBINER_IRQ(4, 1)
- #define IRQ_SYSMMU_FIMC0_0	COMBINER_IRQ(4, 2)
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index 058541d..0d79b88 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -66,6 +66,7 @@
- #define EXYNOS4_PA_COREPERI		0x10500000
- #define EXYNOS4_PA_TWD			0x10500600
- #define EXYNOS4_PA_L2CC			0x10502000
-+#define EXYNOS4_PA_TMU			0x100C0000
+ 	kobject_uevent(&data->hwmon_dev->kobj, KOBJ_CHANGE);
  
- #define EXYNOS4_PA_MDMA			0x10810000
- #define EXYNOS4_PA_PDMA0		0x12680000
-diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
-index f80b563..699140a 100644
---- a/arch/arm/mach-exynos/mach-origen.c
-+++ b/arch/arm/mach-exynos/mach-origen.c
-@@ -615,6 +615,7 @@ static struct platform_device *origen_devices[] __initdata = {
- 	&exynos4_device_pd[PD_MFC],
- 	&origen_device_gpiokeys,
- 	&origen_lcd_hv070wsa,
-+	&exynos4_device_tmu,
+-	enable_irq(data->irq);
+ 
+ 	clk_disable(data->clk);
+ 	mutex_unlock(&data->lock);
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++	exynos4_report_trigger();
++#endif
++	enable_irq(data->irq);
+ }
+ 
+ static irqreturn_t exynos4_tmu_irq(int irq, void *id)
+@@ -345,6 +351,14 @@ static const struct attribute_group exynos4_tmu_attr_group = {
+ 	.attrs = exynos4_tmu_attributes,
  };
  
- /* LCD Backlight data */
-diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-samsung/include/plat/devs.h
-index ab633c9..74cbf0d 100644
---- a/arch/arm/plat-samsung/include/plat/devs.h
-+++ b/arch/arm/plat-samsung/include/plat/devs.h
-@@ -135,6 +135,7 @@ extern struct platform_device exynos4_device_pcm2;
- extern struct platform_device exynos4_device_pd[];
- extern struct platform_device exynos4_device_spdif;
- extern struct platform_device exynos4_device_sysmmu;
-+extern struct platform_device exynos4_device_tmu;
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++static struct thermal_sensor_conf exynos4_sensor_conf = {
++	.name			= "exynos4-therm",
++	.read_temperature	= (int (*)(void *))exynos4_tmu_read,
++};
++#endif
++/*CONFIG_SAMSUNG_THERMAL_INTERFACE*/
++
+ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
+ {
+ 	struct exynos4_tmu_data *data;
+@@ -432,9 +446,20 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
+ 	}
  
- extern struct platform_device samsung_asoc_dma;
- extern struct platform_device samsung_asoc_idma;
+ 	exynos4_tmu_control(pdev, true);
+-
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++	(&exynos4_sensor_conf)->private_data = data;
++	(&exynos4_sensor_conf)->sensor_data = pdata;
++	ret = exynos4_register_thermal(&exynos4_sensor_conf);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register thermal interface\n");
++		goto err_hwmon_device;
++	}
++#endif
+ 	return 0;
+-
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++err_hwmon_device:
++	hwmon_device_unregister(data->hwmon_dev);
++#endif
+ err_create_group:
+ 	sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
+ err_clk:
+@@ -458,6 +483,9 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
+ 
+ 	exynos4_tmu_control(pdev, false);
+ 
++#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
++	exynos4_unregister_thermal();
++#endif
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
+ 
+diff --git a/include/linux/platform_data/exynos4_tmu.h b/include/linux/platform_data/exynos4_tmu.h
+index 39e038c..642c508 100644
+--- a/include/linux/platform_data/exynos4_tmu.h
++++ b/include/linux/platform_data/exynos4_tmu.h
+@@ -21,6 +21,7 @@
+ 
+ #ifndef _LINUX_EXYNOS4_TMU_H
+ #define _LINUX_EXYNOS4_TMU_H
++#include <linux/cpu_cooling.h>
+ 
+ enum calibration_type {
+ 	TYPE_ONE_POINT_TRIMMING,
+@@ -64,6 +65,9 @@ enum calibration_type {
+  *	in the positive-TC generator block
+  *	0 <= reference_voltage <= 31
+  * @cal_type: calibration type for temperature
++ * @freq_pctg_table: Table representing frequency reduction percentage.
++ * @freq_tab_count: Count of the above table as frequency reduction may
++ *	applicable to only some of the trigger levels.
+  *
+  * This structure is required for configuration of exynos4_tmu driver.
+  */
+@@ -79,5 +83,8 @@ struct exynos4_tmu_platform_data {
+ 	u8 reference_voltage;
+ 
+ 	enum calibration_type cal_type;
++
++	struct freq_pctg_table freq_tab[4];
++	unsigned int freq_tab_count;
+ };
+ #endif /* _LINUX_EXYNOS4_TMU_H */
 -- 
 1.7.1
 
