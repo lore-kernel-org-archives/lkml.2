@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab1LULsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:48:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34077 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab1LULse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:48:34 -0500
-Date: Wed, 21 Dec 2011 03:48:10 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-1ixr3olci40w8rgv2evv2ldh@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/fast] perf: Fix mmap_page::offset computation
-Git-Commit-ID: 365a4038486b57bb2bd516706a80f82f250f5306
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:48:16 -0800 (PST)
+	id S1753543Ab1LULtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:49:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600Ab1LULtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:49:08 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: [PATCHv3 0/8] ftrace, perf: Adding support to use function trace
+Date: Wed, 21 Dec 2011 12:48:48 +0100
+Message-Id: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  365a4038486b57bb2bd516706a80f82f250f5306
-Gitweb:     http://git.kernel.org/tip/365a4038486b57bb2bd516706a80f82f250f5306
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 21 Nov 2011 20:58:59 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Dec 2011 11:01:09 +0100
+hi,
+here's another version of perf support for function trace
+with filter. 
 
-perf: Fix mmap_page::offset computation
+attached patches:
+  1/8 ftrace: Change filter/notrace set functions to return exit code
+  2/8 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
+  3/8 ftrace: Add enable/disable ftrace_ops control interface
+  4/8 ftrace, perf: Add open/close tracepoint perf registration actions
+  5/8 ftrace, perf: Add add/del tracepoint perf registration actions
+  6/8 ftrace, perf: Add support to use function tracepoint in perf
+  7/8 ftrace, perf: Distinguish ftrace function event field type
+  8/8 ftrace, perf: Add filter support for function trace event
 
-There's multiple reason the counter might be unavailable, change the
-condition to !->index since perf_event_index() should return 0 for all
-those cases.
+v3 changes:
+  3/8 - renamed __add/remove_ftrace_ops
+      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
+      - renamed/commented API functions -  enable/disable_ftrace_function
+  
+  ommited graph tracer workarounf patch 10/10  
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-1ixr3olci40w8rgv2evv2ldh@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+v2 changes:
+ 01/10 - keeping the old fix instead of adding hash_has_contents func
+         I'll send separating patchset for this
+ 02/10 - using different way to avoid the issue (3/9 in v1)
+ 03/10 - using the way proposed by Steven for controling ftrace_ops
+         (4/9 in v1)
+ 06/10 - added check ensuring the ftrace:function event could be used by
+         root only (7/9 in v1)
+ 08/10 - added more description (8/9 in v1)
+ 09/10 - changed '&&' operator to '||' which seems more suitable
+         in this case (9/9 in v1)
+
+thanks,
+jirka
 ---
- kernel/events/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 3894309..05affc3 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3268,7 +3268,7 @@ void perf_event_update_userpage(struct perf_event *event)
- 	barrier();
- 	userpg->index = perf_event_index(event);
- 	userpg->offset = perf_event_count(event);
--	if (event->state == PERF_EVENT_STATE_ACTIVE)
-+	if (userpg->index)
- 		userpg->offset -= local64_read(&event->hw.prev_count);
- 
- 	userpg->time_enabled = enabled +
+ include/linux/ftrace.h             |   46 ++++++++-
+ include/linux/ftrace_event.h       |    9 +-
+ include/linux/perf_event.h         |    3 +
+ kernel/trace/ftrace.c              |  135 ++++++++++++++++++++---
+ kernel/trace/trace.h               |   11 ++-
+ kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
+ kernel/trace/trace_events.c        |   12 ++-
+ kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
+ kernel/trace/trace_export.c        |   53 ++++++++-
+ kernel/trace/trace_kprobe.c        |    8 +-
+ kernel/trace/trace_syscalls.c      |   18 +++-
+ 11 files changed, 541 insertions(+), 82 deletions(-)
