@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab1LUSla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:41:30 -0500
-Received: from sous-sol.org ([216.99.217.87]:57036 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752126Ab1LUSl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:41:27 -0500
-Date: Wed, 21 Dec 2011 10:41:08 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: "Hao, Xudong" <xudong.hao@intel.com>
-Cc: Chris Wright <chrisw@sous-sol.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Message-ID: <20111221184108.GB961@sequoia.sous-sol.org>
-References: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
- <20111220160730.GD30205@sequoia.sous-sol.org>
- <BC00F5384FCFC9499AF06F92E8B78A9E28904879BF@shsmsx502.ccr.corp.intel.com>
+	id S1753345Ab1LUSrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:47:05 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:20739 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751525Ab1LUSrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:47:03 -0500
+Date: Wed, 21 Dec 2011 10:47:02 -0800 (PST)
+From: Aaron Spear <aspear@vmware.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: devel@driverdev.osuosl.org, Peter Zijlstra <peterz@infradead.org>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <fb3f11b9-d36f-4160-96ff-c4610af742de@aspear-win7>
+In-Reply-To: <20111220110813.GA19105@elte.hu>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E28904879BF@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Originating-IP: [24.8.22.216]
+X-Mailer: Zimbra 7.1.3_GA_3374 (Zimbra Desktop/7.1.2_10978_Windows)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hao, Xudong (xudong.hao@intel.com) wrote:
-> Yes, Chris, thanks your comments.
-> How about this one?
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-Yes, it gets the locking right.
+> "CTF" was mainly written by yourself, right?
+> 
+> If there's any tool worth caring about that wants to deal in CTF
+> then it can be converted just fine. I don't think it matters
+> nearly as much as you seem to imply, see my reply further below.
 
-Also makes host device and guest assigned device go through the same order:
+Hi Ingo,
 
-alloc_devinfo and init
-lock; place info on lists; unlock
-domain_context_mapping()
+I thought it might be a useful point of reference to mention that there is a commitment to CTF for more than just LTTng.  The Multicore Association and member companies including TI, Freescale, Samsung, Mentor Graphics, Wind River Systems, VMware and others intend to use CTF as a lingua franca for correlation of traces taken from different tracing technologies in heterogeneous multi-core systems.  Linux is pivotal here of course, but we are also aggregating various types of hardware traces as well as instrumentation trace from bare metal, RTOS's, and other OS's.  Many of the requirements that went into the draft CTF specification were driven by this working groups experience in the embedded industry and many different legacy tracing technologies.  While Mathieu has been instrumental in creating CTF, he is certainly not the only one with a vested interest in its future.
 
-The patch itself is whitespace damaged and does not apply.  Please fix
-and feel free to add my:
-
-Acked-by: Chris Wright <chrisw@sous-sol.org>
+respectfully,
+Aaron Spear - VMware
+Chairman, Multicore Association Tools Infrastructure Working Group
