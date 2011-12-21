@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1LUBhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:37:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45581 "EHLO
+	id S1754023Ab1LUBhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:37:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45587 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752931Ab1LUBhD convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1752956Ab1LUBhb convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:37:03 -0500
-Message-ID: <1324431418.2844.154.camel@deadeye>
-Subject: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
+	Tue, 20 Dec 2011 20:37:31 -0500
+Message-ID: <1324431446.2844.155.camel@deadeye>
+Subject: [PATCH 8/8] pmcraid: Pass pointers to access_ok(), not integers
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        rds-devel@oss.oracle.com
+To: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        linux-scsi@vger.kernel.org
 Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Dec 2011 01:36:58 +0000
+Date: Wed, 21 Dec 2011 01:37:26 +0000
 In-Reply-To: <1324430940.2844.144.camel@deadeye>
 References: <1324430940.2844.144.camel@deadeye>
 Content-Type: text/plain; charset="UTF-8"
@@ -27,31 +27,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most architectures define virt_to_page() as a macro that casts its
+Most architectures define access_ok() as a macro that casts its
 argument such that an argument of type unsigned long will be accepted
 without complaint.  However, the proper type is void *, and passing
-unsigned long results in a warning on MIPS.
+unsigned long results in a warning on sparc64.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/message.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/scsi/pmcraid.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/net/rds/message.c b/net/rds/message.c
-index f0a4658..ccd3de5 100644
---- a/net/rds/message.c
-+++ b/net/rds/message.c
-@@ -257,7 +257,7 @@ struct rds_message *rds_message_map_pages(unsigned long *page_addrs, unsigned in
- 
- 	for (i = 0; i < rm->data.op_nents; ++i) {
- 		sg_set_page(&rm->data.op_sg[i],
--				virt_to_page(page_addrs[i]),
-+				virt_to_page((void *)page_addrs[i]),
- 				PAGE_SIZE, 0);
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 5163edb..01b29a6 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3807,7 +3807,8 @@ static long pmcraid_ioctl_passthrough(
  	}
  
+ 	if (request_size > 0) {
+-		rc = access_ok(access, arg, request_offset + request_size);
++		rc = access_ok(access, (void *)arg,
++			       request_offset + request_size);
+ 
+ 		if (!rc) {
+ 			rc = -EFAULT;
 -- 
 1.7.7.3
-
 
 
