@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1LUKXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:23:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33497 "EHLO
+	id S1753338Ab1LUKYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:24:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33507 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab1LUKXl (ORCPT
+	with ESMTP id S1751390Ab1LUKYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:23:41 -0500
-Date: Wed, 21 Dec 2011 02:23:26 -0800
+	Wed, 21 Dec 2011 05:24:36 -0500
+Date: Wed, 21 Dec 2011 02:24:14 -0800
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-c37e17497e01fc0f5d2d6feb5723b210b3ab8890@git.kernel.org>
+Message-ID: <tip-9c1497ea591b25d491f8e795f90a1405100b75ef@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1323559734-3488-3-git-send-email-eranian@google.com>
-References: <1323559734-3488-3-git-send-email-eranian@google.com>
+In-Reply-To: <1323559734-3488-4-git-send-email-eranian@google.com>
+References: <1323559734-3488-4-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf events:
-  Add PERF_COUNT_HW_REF_CPU_CYCLES generic PMU event
-Git-Commit-ID: c37e17497e01fc0f5d2d6feb5723b210b3ab8890
+  Add Intel x86 mapping for PERF_COUNT_HW_REF_CPU_CYCLES
+Git-Commit-ID: 9c1497ea591b25d491f8e795f90a1405100b75ef
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,45 +30,43 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 02:23:31 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 02:24:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c37e17497e01fc0f5d2d6feb5723b210b3ab8890
-Gitweb:     http://git.kernel.org/tip/c37e17497e01fc0f5d2d6feb5723b210b3ab8890
+Commit-ID:  9c1497ea591b25d491f8e795f90a1405100b75ef
+Gitweb:     http://git.kernel.org/tip/9c1497ea591b25d491f8e795f90a1405100b75ef
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Sun, 11 Dec 2011 00:28:52 +0100
+AuthorDate: Sun, 11 Dec 2011 00:28:53 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Dec 2011 10:26:37 +0100
+CommitDate: Wed, 21 Dec 2011 10:26:39 +0100
 
-perf events: Add PERF_COUNT_HW_REF_CPU_CYCLES generic PMU event
+perf events: Add Intel x86 mapping for PERF_COUNT_HW_REF_CPU_CYCLES
 
-This event counts the number of reference core cpu cycles.
-Reference means that the event increments at a constant rate which
-is not subject to core CPU frequency adjustments. The event may
-not count when the processor is in halted (low power) state.
-As such, it may not be equivalent to wall clock time. However,
-when the processor is not halted state, the event keeps
-a constant correlation with wall clock time.
+Add event maps for Intel x86 processors (with architected PMU v2 or later).
+
+On AMD, there is frequency scaling but no Turbo. There is no core
+cycle event not subject to frequency scaling, therefore we do not
+provide a mapping.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1323559734-3488-3-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/r/1323559734-3488-4-git-send-email-eranian@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 564769c..0885561 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -54,6 +54,7 @@ enum perf_hw_id {
- 	PERF_COUNT_HW_BUS_CYCLES		= 6,
- 	PERF_COUNT_HW_STALLED_CYCLES_FRONTEND	= 7,
- 	PERF_COUNT_HW_STALLED_CYCLES_BACKEND	= 8,
-+	PERF_COUNT_HW_REF_CPU_CYCLES		= 9,
- 
- 	PERF_COUNT_HW_MAX,			/* non-ABI */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 61f865f..cbfaaa2 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -28,6 +28,7 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
+   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
+   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
+   [PERF_COUNT_HW_BUS_CYCLES]		= 0x013c,
++  [PERF_COUNT_HW_REF_CPU_CYCLES]	= 0x0300, /* pseudo-encoding */
  };
+ 
+ static struct event_constraint intel_core_event_constraints[] __read_mostly =
