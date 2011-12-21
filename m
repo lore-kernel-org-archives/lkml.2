@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1LUPUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 10:20:35 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43012 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753226Ab1LUPUd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 10:20:33 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: y8x2ft8VM1lsyXFJDF4fDk2YPKmsCTc.9dg6aRXEQ1K2sq0
- PO7vAwrvO1HcMD_gK9_lmPWFC1yP.U7TLJRzIBTnRAQABMSwlEC6Fb8iBLQL
- LzOALXvOuVOw_5oke9iQnGoNuYkGRwM8iLvjsn6HL1u_6MhUGsWahfLawmZt
- hL882PlFT3iPpeoiH1n8fCpDP_KrlDcmnqahfX1MsrSTRuJjZ5YUYO8OkcwP
- iNgqhaIiJoYFq0PNXZ7fzEQsS8crjE1Nnhq3RRwVnJOREm7vebrPXrGPBUkp
- jJ05zLSYxpNIMFbP3suXZpiymdSpybXblTdCkE4FxG1kVQgFQHF3W0gMOXgR
- m1gi9w.FpIdXIi0KFpqJw02CRffiR3hy.O44oLxDk9OUNow--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 21 Dec 2011 09:20:29 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-In-Reply-To: <CAOJsxLGj+y2UygJLQO4xbxqgY5OcU65RBZg-P7yecNgc6fKZjQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112210916400.9601@router.home>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain> <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com> <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com> <alpine.DEB.2.00.1112201016380.21231@router.home>
- <CAOJsxLGj+y2UygJLQO4xbxqgY5OcU65RBZg-P7yecNgc6fKZjQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753322Ab1LUPVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 10:21:13 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:60680 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752865Ab1LUPVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 10:21:11 -0500
+Date: Wed, 21 Dec 2011 10:21:01 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Joe Perches <joe@perches.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vmalloc: remove #ifdef in function body
+Message-ID: <20111221152101.GD24863@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Michal Nazarewicz <mina86@mina86.com>,
+	Joe Perches <joe@perches.com>, Minchan Kim <minchan@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+References: <1324444679-9247-1-git-send-email-minchan@kernel.org>
+ <1324445481.20505.7.camel@joe2Laptop>
+ <20111221054531.GB28505@barrios-laptop.redhat.com>
+ <1324447099.21340.6.camel@joe2Laptop>
+ <op.v6ttagny3l0zgt@mpn-glaptop>
+ <1324449156.21735.7.camel@joe2Laptop>
+ <op.v6tug3vi3l0zgt@mpn-glaptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.v6tug3vi3l0zgt@mpn-glaptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011, Pekka Enberg wrote:
+On Wed, Dec 21, 2011 at 07:47:17AM +0100, Michal Nazarewicz wrote:
+> This patch that you pointed to is against “#ifdefs are ugly” style
+> described in Documentation/SubmittingPatches.
+> 
+> >If it's not in coding style, I suggest
+> >it should be changed if it doesn't
+> >add some other useful value.
+> 
+> That my be true.  I guess no one took time to adding it to the document.
 
-> I still don't understand why we'd want separate preempt safe and
-> irqsafe variants. It should be enough to have only unsafe and safe
-> variants where the latter would always do the right thing.
+Like all things, judgement is required.  Some of the greatest artists
+know when it's OK (and in fact, a good thing) to break the rules.
+Beethoven, for example, broke the rules when he added a chorus of
+singers to his 9th Symphony.  Take a look at Bach's chorales,
+universally acknowledged to be works of genius.  Yet there Bach has
+occasionally double thirds, crossed voices, and engaged in parallel
+fifths --- and big no-no's which go against the textbook rules of
+chorale writing.
 
-The effort to make something irqsafe is higher than making it preempt
-safe. If that difference is not important then we could just have safe and
-unsafe variants. Traditionally counter operations were only preempt safe
-though. So making those irqsafe would increse the overhead.
+In this case, if you have an #ifdef surrounding an entire function
+body, I think common sense says that the it's fine.  There's also the
+rule which is says that all other things being equal, it's better not
+to waste vertical space and useless boiler plate.
 
+Worst of all is patches to change perfectly existing code because
+someone is trying to be a stickler for rules, since it can break other
+people's patches.  If you are need to make a change, it's best that it
+be checkpatch clean.  But sending random cleanups just because someone
+is trying to get their patch count in the kernel higher is Just
+Stupid, and should be strongly discouraged.
 
+(And that last, too, is a rule that has exceptions...)
 
-
+							- Ted
