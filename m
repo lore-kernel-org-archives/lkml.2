@@ -1,93 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1LUAHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 19:07:19 -0500
-Received: from 8bytes.org ([88.198.83.132]:35251 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab1LUAHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 19:07:17 -0500
-Date: Wed, 21 Dec 2011 01:07:16 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
-        Benjamin Block <bebl@mageta.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
-        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
-        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
-Message-ID: <20111221000716.GB30127@8bytes.org>
-References: <20111219090923.GB16765@erda.amd.com> <20111219105429.GC19861@elte.hu> <4EEF1C3B.3010307@redhat.com> <20111219114023.GB29855@elte.hu> <4EEF26F0.1050709@redhat.com> <20111220091511.GB3091@elte.hu> <4EF05996.8030807@redhat.com> <20111220100916.GA20788@elte.hu> <20111220152758.GA30127@8bytes.org> <20111220184004.GE8408@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111220184004.GE8408@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753561Ab1LUAJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 19:09:26 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:62070 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab1LUAJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Dec 2011 19:09:15 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org
+Cc: Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Colin Cross <ccross@android.com>
+Subject: [PATCH 1/3] cpuidle: refactor out cpuidle_enter_state
+Date: Tue, 20 Dec 2011 16:09:05 -0800
+Message-Id: <1324426147-16735-2-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1324426147-16735-1-git-send-email-ccross@android.com>
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 07:40:04PM +0100, Ingo Molnar wrote:
+Split the code to enter a state and update the stats into a helper
+function, cpuidle_enter_state, and export it.  This function will
+be called by the coupled state code to handle entering the safe
+state and the final coupled state.
 
-> > I am fine with integrating LWP into perf as long as it makes 
-> > sense and does not break the intended usage scenario for LWP.
-> 
-> That's the wrong way around - in reality we'll integrate LWP 
-> upstream only once it makes sense and works well with the 
-> primary instrumentation abstraction we have in the kernel.
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ drivers/cpuidle/cpuidle.c |   43 +++++++++++++++++++++++++++++--------------
+ drivers/cpuidle/cpuidle.h |    2 ++
+ 2 files changed, 31 insertions(+), 14 deletions(-)
 
-I still don't see why you want an abstraction for a hardware feature
-that clearly doesn't need it. From an enablement perspective LWP is much
-closer to AVX than to the MSR based PMU. And nobody really wants or
-needs a kernel abstraction for AVX, no?
-
-> Me or PeterZ could just say "this feature is too limited and not 
-> convincing enough yet, sorry".
-
-This statement shows very clearly the bottom-line of our conflict. You
-see this as a perf-topic, for everyone else it is an x86 topic.
-
-> But i'm being nice and helpful here [...]
-
-And I appreciate the discussion. But we have fundamentally different
-stand-points.  I hope we can come to an agreement.
-
-> There's no "security implications" whatsoever. LWP is a ring-3 
-> hw feature and it can do nothing that the user-space app could 
-> not already do ...
-
-Really? How could an application count DCache misses today without
-instrumentation? I guess your answer is 'with perf', but LWP is a much
-more light-weight way to do that because it works _completly_ in
-hardware when the kernel supports context-switching it.
-
-> 
-> > [...] It also destroys the intended use-case for LWP because 
-> > it disturbs any process that is doing self-profiling with LWP.
-> 
-> Why would it destroy that? Self-profiling can install events 
-> just fine, the kernel will arbitrate the resource.
-
-Because you can't reliably hand over the LWPCB management to the kernel.
-The instruction to load a new LWPCB is executable in ring-3. Any
-kernel-use of LWP will never be reliable. 
-
-> > So what you are saying is (not just here, also in other emails 
-> > in this thread) that every hardware not designed for perf is 
-> > crap?
-> 
-> No - PMU hardware designed to not allow the profiling of the 
-> kernel is obviously a crappy aspect of it. Also, PMU hardware 
-> that does not allow 100% encapsulation by the kernel is 
-> obviously not very wisely done either.
-
-Why? Whats wrong with user-space having control over its own PMU in a
-safe way? This is what the feature was designed for.
-
-
-Thanks,
-
-	Joerg
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 06ce268..1486b3c 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -54,6 +54,34 @@ static void cpuidle_kick_cpus(void) {}
+ static int __cpuidle_register_device(struct cpuidle_device *dev);
+ 
+ /**
++ * cpuidle_enter_state
++ *
++ * enter the state and update stats
++ */
++int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
++		int next_state)
++{
++	int entered_state;
++	struct cpuidle_state *target_state;
++
++	target_state = &drv->states[next_state];
++
++	entered_state = target_state->enter(dev, drv, next_state);
++
++	if (entered_state >= 0) {
++		/* Update cpuidle counters */
++		/* This can be moved to within driver enter routine
++		 * but that results in multiple copies of same code.
++		 */
++		dev->states_usage[entered_state].time +=
++				(unsigned long long)dev->last_residency;
++		dev->states_usage[entered_state].usage++;
++	}
++
++	return entered_state;
++}
++
++/**
+  * cpuidle_idle_call - the main idle loop
+  *
+  * NOTE: no locks or semaphores should be used here
+@@ -63,7 +91,6 @@ int cpuidle_idle_call(void)
+ {
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_driver();
+-	struct cpuidle_state *target_state;
+ 	int next_state, entered_state;
+ 
+ 	if (off)
+@@ -92,26 +119,14 @@ int cpuidle_idle_call(void)
+ 		return 0;
+ 	}
+ 
+-	target_state = &drv->states[next_state];
+-
+ 	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+ 	trace_cpu_idle(next_state, dev->cpu);
+ 
+-	entered_state = target_state->enter(dev, drv, next_state);
++	entered_state = cpuidle_enter_state(dev, drv, next_state);
+ 
+ 	trace_power_end(dev->cpu);
+ 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+ 
+-	if (entered_state >= 0) {
+-		/* Update cpuidle counters */
+-		/* This can be moved to within driver enter routine
+-		 * but that results in multiple copies of same code.
+-		 */
+-		dev->states_usage[entered_state].time +=
+-				(unsigned long long)dev->last_residency;
+-		dev->states_usage[entered_state].usage++;
+-	}
+-
+ 	/* give the governor an opportunity to reflect on the outcome */
+ 	if (cpuidle_curr_governor->reflect)
+ 		cpuidle_curr_governor->reflect(dev, entered_state);
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index 38c3fd8..dd2df8f 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -14,6 +14,8 @@ extern struct list_head cpuidle_detected_devices;
+ extern struct mutex cpuidle_lock;
+ extern spinlock_t cpuidle_driver_lock;
+ extern int cpuidle_disabled(void);
++int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
++		int next_state);
+ 
+ /* idle loop */
+ extern void cpuidle_install_idle_handler(void);
+-- 
+1.7.4.1
 
