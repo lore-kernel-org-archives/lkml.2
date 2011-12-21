@@ -1,142 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1LUKDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:03:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1LUKDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:03:38 -0500
-Date: Wed, 21 Dec 2011 11:03:34 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Subject: [resend PATCH for 3.2] procfs: do not confuse jiffies with
- cputime64_t
-Message-ID: <20111221100334.GD27137@tiehlicka.suse.cz>
-References: <m28vmi7ip3.fsf@igel.home>
- <201112120922.13633.arnd@arndb.de>
- <m21usavwi0.fsf_-_@igel.home>
- <20111212124333.GC14720@tiehlicka.suse.cz>
- <m2wra2uedy.fsf_-_@igel.home>
- <20111212131218.GD14720@tiehlicka.suse.cz>
+	id S1753280Ab1LUKFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:05:19 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42769 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab1LUKFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 05:05:15 -0500
+Message-ID: <4EF1AF57.2010307@kernel.dk>
+Date: Wed, 21 Dec 2011 11:05:11 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111212131218.GD14720@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+CC: Tao Ma <tm@tao.ma>, Meelis Roos <mroos@linux.ee>,
+        Tao Ma <boyu.mt@taobao.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
+Subject: Re: [PATCH] block: fix blk_queue_end_tag()
+References: <20111220233117.17757.71139.stgit@localhost6.localdomain6> <4EF17DC4.5010008@tao.ma> <alpine.SOC.1.00.1112210835010.6858@math.ut.ee> <4EF18129.7030407@tao.ma> <CABE8wwtrq=SuuhAvNDjpSbfPGE+N4cWjjmVGWq8UzaH6sM9kRg@mail.gmail.com> <4EF195EE.9010409@tao.ma> <CABE8wwsRDjNs=UjBG071=AF7-h7RB+NNrQzPMREypNwSpYAVPA@mail.gmail.com>
+In-Reply-To: <CABE8wwsRDjNs=UjBG071=AF7-h7RB+NNrQzPMREypNwSpYAVPA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm, it seems that this bugfix (for 3.2) stalled. I guess that it is
-primarily because it is multiarch fix.
-I am sorry to bother you Andrew but could we push this through you,
-please?
+On 2011-12-21 09:22, Williams, Dan J wrote:
+> On Wed, Dec 21, 2011 at 12:16 AM, Tao Ma <tm@tao.ma> wrote:
+>> On 12/21/2011 03:30 PM, Williams, Dan J wrote:
+>>> On Tue, Dec 20, 2011 at 10:48 PM, Tao Ma <tm@tao.ma> wrote:
+>>>> On 12/21/2011 02:36 PM, Meelis Roos wrote:
+>>>>>>> -   if (unlikely(tag >= bqt->max_depth)) {
+>>>>>>> +   if (WARN_ONCE(tag >= bqt->real_max_depth,
+>>>>>>> +                 "%s: tag %d greater than tag map size: %d\n",
+>>>>>>> +                 __func__, tag, bqt->real_max_depth)) {
+>>>>>>>             /*
+>>>>>>>              * This can happen after tag depth has been reduced.
+>>>>>> Please also change the comments here since it should never happen in the
+>>>>>> right workload.
+>>>>>
+>>>>> What do you mean by right workload? Normal workload?
+>>>> yeah, so real_max_depth is the maximum depth we ever have. So in normal
+>>>> case(shrinking queue depth is also a normal user case), we should never
+>>>> arrive here. In another word, if tag >= real_max_depth, we should have a
+>>>> bug in the kernel.
+>>>
+>>> So this is what Ed Nadolski suggested, just cut to the chase and do,
+>>> the following.  Seems like the comment is what got us into trouble in
+>>> the first place.
+>>>
+>>> diff --git a/block/blk-tag.c b/block/blk-tag.c
+>>> index e74d6d1..e297d9d7 100644
+>>> --- a/block/blk-tag.c
+>>> +++ b/block/blk-tag.c
+>>> @@ -284,16 +284,7 @@ void blk_queue_end_tag(struct request_queue *q,
+>>> struct request *rq)
+>>>         struct blk_queue_tag *bqt = q->queue_tags;
+>>>         int tag = rq->tag;
+>>>
+>>> -       BUG_ON(tag == -1);
+>>> -
+>>> -       if (unlikely(tag >= bqt->max_depth)) {
+>>> -               /*
+>>> -                * This can happen after tag depth has been reduced.
+>>> -                * But tag shouldn't be larger than real_max_depth.
+>>> -                */
+>>> -               WARN_ON(tag >= bqt->real_max_depth);
+>>> -               return;
+>>> -       }
+>>> +       BUG_ON(tag == -1 || tag > bqt->real_max_depth);
+>> I guess tag = bqt->real_max_depth should also be a problem.
+> 
+> Yes, sorry, should have been >=
 
-The full patch for reference:
----
->From 1fca39b21f3b344c90c30d98db6dcdcdc6815797 Mon Sep 17 00:00:00 2001
-From: Andreas Schwab <schwab@linux-m68k.org>
-Date: Mon, 12 Dec 2011 14:07:53 +0100
-Subject: [PATCH] procfs: do not confuse jiffies with cputime64_t
-
-get_{idle,iowait}_time are supposed to return cputime64_t values, not
-jiffies.  Add usecs_to_cputime64 for this.
-
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- arch/ia64/include/asm/cputime.h    |    1 +
- arch/powerpc/include/asm/cputime.h |    2 ++
- arch/s390/include/asm/cputime.h    |    2 ++
- fs/proc/stat.c                     |    4 ++--
- include/asm-generic/cputime.h      |    1 +
- 5 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
-index 6073b18..5a274af 100644
---- a/arch/ia64/include/asm/cputime.h
-+++ b/arch/ia64/include/asm/cputime.h
-@@ -60,6 +60,7 @@ typedef u64 cputime64_t;
-  */
- #define cputime_to_usecs(__ct)		((__ct) / NSEC_PER_USEC)
- #define usecs_to_cputime(__usecs)	((__usecs) * NSEC_PER_USEC)
-+#define usecs_to_cputime64(__usecs)	usecs_to_cputime(__usecs)
- 
- /*
-  * Convert cputime <-> seconds
-diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-index 1cf20bd..98b7c4b 100644
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -150,6 +150,8 @@ static inline cputime_t usecs_to_cputime(const unsigned long us)
- 	return ct;
- }
- 
-+#define usecs_to_cputime64(us)		usecs_to_cputime(us)
-+
- /*
-  * Convert cputime <-> seconds
-  */
-diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-index 0814348..b9acaaa 100644
---- a/arch/s390/include/asm/cputime.h
-+++ b/arch/s390/include/asm/cputime.h
-@@ -87,6 +87,8 @@ usecs_to_cputime(const unsigned int m)
- 	return (cputime_t) m * 4096;
- }
- 
-+#define usecs_to_cputime64(m)		usecs_to_cputime(m)
-+
- /*
-  * Convert cputime to milliseconds and back.
-  */
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 2a30d67..0855e6f 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
- 		idle = kstat_cpu(cpu).cpustat.idle;
- 		idle = cputime64_add(idle, arch_idle_time(cpu));
- 	} else
--		idle = nsecs_to_jiffies64(1000 * idle_time);
-+		idle = usecs_to_cputime64(idle_time);
- 
- 	return idle;
- }
-@@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
- 		/* !NO_HZ so we can rely on cpustat.iowait */
- 		iowait = kstat_cpu(cpu).cpustat.iowait;
- 	else
--		iowait = nsecs_to_jiffies64(1000 * iowait_time);
-+		iowait = usecs_to_cputime64(iowait_time);
- 
- 	return iowait;
- }
-diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index 62ce682..12a1764 100644
---- a/include/asm-generic/cputime.h
-+++ b/include/asm-generic/cputime.h
-@@ -40,6 +40,7 @@ typedef u64 cputime64_t;
-  */
- #define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct)
- #define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs)
-+#define usecs_to_cputime64(__msecs)	nsecs_to_jiffies64((__msecs) * 1000)
- 
- /*
-  * Convert cputime to seconds and back.
--- 
-1.7.7.3
-
+Can you resend a v2 and I'll get it applied, thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jens Axboe
+
