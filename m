@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab1LUAgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 19:36:04 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54541 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab1LUAgA convert rfc822-to-8bit (ORCPT
+	id S1753485Ab1LUAj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 19:39:28 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1200 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab1LUAjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 19:36:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="49184900"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "liang.tang@oracle.com" <liang.tang@oracle.com>,
-        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Date: Wed, 21 Dec 2011 08:35:34 +0800
-Subject: RE: [Xen-devel] [PATCH 3/8] ACPI: processor: add
- __acpi_processor_[un]register_driver helpers.
-Thread-Topic: [Xen-devel] [PATCH 3/8] ACPI: processor: add
- __acpi_processor_[un]register_driver helpers.
-Thread-Index: Acy/LIQ3vCjZEYHGRkS1ziA4iSTX8wAShIpw
-Message-ID: <625BA99ED14B2D499DC4E29D8138F1506E01AAC469@shsmsx502.ccr.corp.intel.com>
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
- <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com>
- <20111216220342.GC9832@phenom.dumpdata.com>
- <625BA99ED14B2D499DC4E29D8138F1506E01AABC7A@shsmsx502.ccr.corp.intel.com>
- <20111219142626.GB27772@andromeda.dapyr.net>
- <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
- <20111220153145.GB13253@andromeda.dapyr.net>
-In-Reply-To: <20111220153145.GB13253@andromeda.dapyr.net>
+	Tue, 20 Dec 2011 19:39:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 20 Dec 2011 16:39:23 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <b29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Tue, 20 Dec 2011 16:39:23 -0800
+Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Index: Acy/PPx8DCjD0TfjQL6bVpPiGEgHegAN2gng
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+ <1324402840-32451-3-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324402840-32451-3-git-send-email-b29396@freescale.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -51,125 +43,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
-> Sent: Tuesday, December 20, 2011 11:32 PM
-> 
-> On Tue, Dec 20, 2011 at 10:29:12AM +0800, Tian, Kevin wrote:
-> > > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
-> > > Sent: Monday, December 19, 2011 10:26 PM
-> > >
-> > > On Mon, Dec 19, 2011 at 01:48:01PM +0800, Tian, Kevin wrote:
-> > > > > From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> > > > > Sent: Saturday, December 17, 2011 6:04 AM
-> > > > >
-> > > > > On Wed, Nov 30, 2011 at 12:20:59PM -0500, Konrad Rzeszutek Wilk
-> wrote:
-> > > > > > From: Tang Liang <liang.tang@oracle.com>
-> > > > > >
-> > > > > > This patch implement __acpi_processor_[un]register_driver helper,
-> > > > > > so we can registry override processor driver function. Specifically
-> > > > > > the Xen processor driver.
-> > > > >
-> > > > > Liang,
-> > > > >
-> > > > > Is the reason we are doing this b/c we need to call
-> acpi_bus_register_driver
-> > > > > and inhibit the registration of 'acpi_processor_driver' ?
-> > > > >
-> > > > > And the reason we don't want 'acpi_processor_driver' to run is b/c of
-> what?
-> > > > > If the cpuidle is disabled what is the harm of running the
-> > > > > 'acpi_processor_driver'
-> > > > > driver?
-> > > >
-> > > > IIRC, the reason why we want a Xen specific driver is because current
-> driver
-> > > > is integrated with OS logic too tightly, e.g. the various checks on VCPU
-> related
-> > > > structures. Long time ago the 1st version in Xen was to use same driver,
-> by
-> > > > adding various tweaking lines inside which makes it completely messed.
-> Then
-> > > > later it's found that it's clearer to create a Xen specific wrapping driver, by
-> > > > invoking some exported functions from existing one.
-> > >
-> > > What I am asking is does it matter "if the current driver is integrated
-> > > with OS logic to tighly" - as it is not running anyhow (b/c cpuidle is
-> > > disabled).
-> > >
-> > > And if Xen specific driver can run along-side the generic one - since
-> > > the generic one is not doing any work (b/c cpuidle is disabled).
-> > >
-> > > That is what I am trying to figure out - since this patch purpose is to
-> > > thwart the generic driver from running and allowing the xen one to run.
-> >
-> > It's a separate issue from cpuidle case. Here we're talking about acpi
-> processor
-> > driver, not the acpi cpuidle driver. ACPI processor driver is responsible for
-> > discovering ACPI processor projects, and then enumerate various methods
-> > such as _PPC, _CST, etc. under those objects. So far this driver depends on
-> > VCPU presence in various places, which causes trouble when dom0 is
-> configured
-> > with less VCPU number than physical present one.
-> >
-> > One example you can see from acpi_processor_add:
-> >
-> >         result = acpi_processor_get_info(device); // call acpi_get_cpuid
-> >         if (result) {
-> >                 /* Processor is physically not present */
-> >                 return 0;
-> >         }
-> >
-> > #ifdef CONFIG_SMP
-> >         if (pr->id >= setup_max_cpus && pr->id != 0)
-> >                 return 0;
-> > #endif
-> >
-> >         BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
-> >
-> > The binding between ACPI processor objects and VCPU presence would only
-> parse
-> > partial objects to Xen. And there're various places within driver validating
-> pr->id
-> > making it messy to workaround for Xen within same driver.
-> >
-> > That's the major reason for coming up a Xen specific driver, which always
-> parses
-> > all present objects regardless of VCPU presence. :-)
-> 
-> OK. Lets put the # VCPU != PCPU aside. Say dom0 will boot with all
-> CPUs and then later on the admin starts unplugging them.
+Dong Aisheng wrote at Tuesday, December 20, 2011 10:41 AM:
+> This patch provies a common API for driver to use to register pinmux
+> mappings from dts file. It is needed for dt support.
 
-This should be communicated to major Xen based distributions, so that it's
-an agreed approach since in majority case dom0 is configured as UP or
-a few VCPUs.
+Dong,
 
-> 
-> With that in mind, could we use a slim driver (like the one in: "ACPI:
->  add processor driver for Xen virtual CPUs.") that would just
-> take the _Pxx, Cxx data and shove them to the hypervisor (handwaving
-> aside the checking for quirks and such). And lets assume that we use the
-> unmodified acpi_processor_[add|remove|notify] code that is present in
-> processor_driver.c.
+Thanks for providing a concrete binding to get discussion started. I had
+intended to do this myself, but got side-tracked on other things.
 
-There may still have other condition checks which may fail, but yes it's possible
-to reuse the interfaces. From my memory #VCPU is the major blocker...
+I'll comment exclusively on the documentation in this patch, since any
+changes there will require the code to be changed.
 
-> 
-> Oh, and the processor-driver.c did try to load (with the understanding
-> that it would load, but won't do much since cpuidle is turned off).
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl.txt
+> +The pin control subsystem
+> +
+> +The pin control subsystem provides a common API to support parsing pinmux
+> +mappings data from device tree. Each board dts file should provide a device
+> +node of which all the child nodes are the corresponding pinmux mappings.
 
-you also need consider cpufreq. IIRC, Px related information may be only
-parsed from loaded acpi cpufreq driver, which is another reason why a Xen
-wrapper driver is created. But of course this could be relaxed from existing
-code if you want to go that way.
+So, the binding you propose seems very reasonable from the point-of-view
+of the Linux pinctrl subsystem. However, it violates basic device tree
+philosophy in a few ways. Some background:
 
-> 
-> Would that still get the Pxx, Cxx data to the hypervisor?
+Device tree is supposed to be a pure representation of hardware, not the
+software that runs on it. This means a couple of things: (a) the nodes
+in the DT generally match 1:1 with specific HW on the board (b) the
+design of the bindings should be justifiable given HW datasheets without
+any reference to specific operating systems or software driver design
+(c) the DT should be useful to all operating systems that run on the HW;
+there should be no "DT for Linux", "DT for FreeBSD", "DT for Windows".
+Hence, I see a few problems with this binding:
 
-yes, it's possible under the assumption you put in the start. But you need
-verify more code paths to make sure some conditional checks for native
-Linux still hold true for dom0.
+a) The binding is documented as being for the pinctrl subsystem, rather
+than for pinmux hardware.
 
-Thanks
-Kevin
+b) The top-level node ("imx6q-sabreauto-map" below) is not tied to any
+particular piece of hardware (no compatible flag, not reg property etc.)
+
+c) The design of the binding is very much derived from the design of the
+pinctrl subsystem's internal data structures. This isn't necessarily bad,
+since in general SW data structures might be very closely related to how
+HW is put together. In this case though, the binding seems very SW oriented.
+
+> +The required properties for pinmux mapping are:
+> +- map-name: the name of this specific map entry
+> +- clk-dev-name: the name of the device controlling this specific mapping
+> +- funcion: a function in the driver to use for this mapping
+> +
+> +Optional properties:
+> +- group: a certain specific pin group to activate for the function
+> +- dev-name: the name of the device using this specific mapping
+> +- hog-on-boot: indicate wether hog the mappings(do not need to specify value)
+> +
+> +Examples:
+> +
+> +pinmux: imx6q-sabreauto-map {
+
+Here we have an all-encompassing standalone "pinctrl mapping table" node.
+If we continue to have such an all-encompassing table, it should really
+be part of (a child of) the pinmux HW's node in order to tie it directly
+to the HW, rather than standing out as a HW concept. So, perhaps something
+more like:
+
+iomuxc@020e0000 {
+    compatible = "fsl,imx6-pinmux";
+    usage { // I can't think of a good name for the table right now
+        sd4 {
+        };
+        sd3 {
+        };
+        ...
+    };
+};
+
+Others have suggested that having this all-encompassing table isn't the
+correct approach, and instead, it should be split into chunks that are
+co-located with the devices that use the pinmux:
+
+sdhci@1000 {
+    compatible = "...";
+    regs = <...>;
+    pinmux = <&pmx>;
+    pinmux-usage = {
+        // Some representation of the pins/groups/functions used
+        // by just this HW block.
+    };
+};
+sdhci@2000 {
+    compatible = "...";
+    regs = <...>;
+    pinmux = <&pmx>;
+    pinmux-usage = {
+        // Some representation of the pins/groups/functions used
+        // by just this HW block.
+    };
+};
+
+The latter probably is a little more idiomatic, although I haven't seen
+or thought through any details on what goes inside such a "pinmux-usage"
+node yet.
+
+> +	map-sd4 {
+> +		map-name = "usdhc4";
+
+I don't think that field is needed; I'd suggest just using the name of
+the DT node containing the entry (which could be renamed to your desired
+names)
+
+> +		ctrl-dev-name = "20e0000.iomuxc";
+...
+> +		dev-name = "219c000.usdhc";
+
+That name is Linux-specific. Instead of using device names, we should
+use phandle references, e.g. see the "dev" property below:
+
+sdhci1: sdhci@1000 {
+...
+};
+sdhci2: sdhci@1000 {
+...
+};
+iomuxc@020e0000 {
+    compatible = "fsl,imx6-pinmux";
+    usage {
+        sd4 {
+            dev = <&sdhci1>;
+        };
+        sd3 {
+            dev = <&sdhci2>;
+        };
+        ...
+    };
+};
+
+(in the above, your ctrl-dev-name would be implied to be iomuxc@020e0000
+since the table is part of that pinctrl device's node)
+
+> +		function = "sd4";
+
+Here it would be nice to use an integer instead. However, putting lots
+of opaque integers in the device tree is going to be ripe for mistakes.
+It's a real pity that dtc doesn't have a way of doing named integer
+constants, so this could be re-written as e.g.:
+
+SoC .dtsi file:
+
+/define/ TEGRA_MUX_FUNC_SD4 234
+
+Board .dts file:
+
+function = <TEGRA_MUX_FUNC_SD4>;
+
+Without that feature, using strings here seems the only reasonable thing
+to do.
+
+We also need to consider compatibility and extensibility. A DT binding
+is an ABI between the kernel and whatever is providing it, and so we
+need to be able to maintain and extend it in a compatible fashion, just
+like the user-space syscall ABI. Now it's true that the .dts files are
+currently part of the kernel source tree and can be rev'd in sync with
+kernel changes, but that may not always be the case moving forward.
+
+In other words, taking a board with an old device tree embedded into
+Flash and running a new kernel using that device tree should work just
+like running the original kernel did.
+
+There are a couple of current active areas of change in the pinctrl
+subsystem that impact this:
+
+* Pin configuration is being added. We probably need to add the data to
+configure pin config into the mapping table in the kernel, or some
+parallel table.
+
+* Support for pins being in multiple states (active, suspend, unused,
+...) is being added to pinctrl. We need to be able to represent this in
+DT too.
+
+(and yes I know I wrote that from a Linux pinctrl SW perspective, but
+the concepts apply to HW!)
+
+To support this, we may just be able to add more fields to any mapping
+table entries e.g. to describe pin config setup alongside mux setup.
+It'd probably be a good idea to add some kind of "type" field to the
+table entries though, so that we can transparently add new types in
+the future, much like compatible does for HW nodes.
+
+iomuxc@020e0000 {
+    compatible = "fsl,imx6-pinmux";
+    usage {
+        sd4 {
+            type = <0>; // 0 == mux setting
+            dev = <&sdhci1>;
+        };
+        sd3 {
+            type = <0>; // 0 == mux setting
+            dev = <&sdhci2>;
+        };
+        foo {
+            type = <1>; // 1 == pin config?
+            dev = <&sdhci2>;
+            pull-up;
+            tri-state;
+            ...
+        };
+        ...
+    };
+};
+
+-- 
+nvpublic
+
