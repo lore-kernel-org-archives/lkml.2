@@ -1,99 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1LUUFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:05:12 -0500
-Received: from yuna.grokhost.net ([87.117.228.63]:56497 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab1LUUFK (ORCPT
+	id S1753326Ab1LUUHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:07:53 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20652 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751456Ab1LUUHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:05:10 -0500
-Message-ID: <4EF23BF2.4000601@bootc.net>
-Date: Wed, 21 Dec 2011 20:05:06 +0000
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 21 Dec 2011 15:07:50 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ckfHVMJyW7i4ajIJRrDwB
+Date: Wed, 21 Dec 2011 12:07:29 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 1/7 v2] ARM: OMAP1: ams-delta: register latch
+ dependent devices later
+Message-ID: <20111221200728.GG24444@atomide.com>
+References: <201112200028.32947.jkrzyszt@tis.icnet.pl>
+ <1324418058-30905-1-git-send-email-jkrzyszt@tis.icnet.pl>
+ <20111221190815.GC24444@atomide.com>
+ <201112212051.13113.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference in ipv6_select_ident
-References: <4EF200BB.7000209@bootc.net>  <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4EF2117F.6000803@bootc.net>  <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112212051.13113.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/12/2011 18:00, Eric Dumazet wrote:
-> Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
->
->> Good point, thats a different problem then, since 3.1 is not supposed to
->> have this bug.
->>
->> It seems rt->rt6i_peer points to invalid memory in your crash.
->>
->> (RBX=00000000000001f4)
->>
->> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
->> 1f4+a4 ->  CR2=0000000000000298
->>
-> It would help if you can confirm latest linux tree can reproduce the
-> bug.
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111221 11:20]:
+> On Wednesday 21 of December 2011 at 20:08:15, Tony Lindgren wrote:
+> > * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111220 13:23]:
+> > > In preparation to converting Amstrad Delta on-board latches to
+> > > basic_mmio_gpio devices, registration of platform devices which depend
+> > > on latches and will require initialization of their GPIO pins first,
+> > > should be moved out of .machine_init down to late_initcall level, as the
+> > > gpio-generic driver is not available until device_initcall time.  The
+> > > latch reset operation, which will be replaced with GPIO initialization,
+> > > must also be moved to late_initcall for the same reason.
+> > > 
+> > > Since there was already another, separate arch_initcall function for
+> > > setting up one of those latch dependent devices, the on-board modem
+> > > device, reuse that function, i.e., rename it to a name that matches the
+> > > new purpose, extend with other device setup relocated from
+> > > .machine_init, and move down to the late_initcall level.
+> > > 
+> > > While being at it, add missing gpio_free() in case the modem platform
+> > > device registration fails.
+> > > 
+> > > Thanks to Tony Lindgren <tony@atomide.com> who suggested this approach
+> > > instead of shifting up the gpio-generic driver initialization.
+> > > 
+> > > In addition, defer registration of the Amstrad Delta ASoC and serio
+> > > devices, done from their device driver files, until late_initcall time,
+> > > as those drivers will depend on their GPIO pins already requested from
+> > > the board late_init() function until updated to register their GPIO pins
+> > > themselves.
+> > > 
+> > > Created and tested against linux-3.2-rc6.
+> > > 
+> > > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> > 
+> > Planning to apply this series. Dmitry, care to ack the drivers/input/serio/
+> > related change?
+> 
+> Don't we need Jarkko's or Mark's or Liam's ack as well for the change to 
+> the sound/soc/omap/ams-delta.c file?
 
-Hi Eric,
+Yes, you're right.
 
-I just built a v3.2-rc6-140-gb9e26df with the same config as the Debian 
-3.1.0 kernel. I can reproduce the bug just as easily with this kernel as 
-with the Debian kernel. Unfortunately I wasn't able to get an entire 
-trace, for some reason it didn't appear to be printed to the serial port 
-and hung after the (long) list of loaded kernel modules. The crash 
-happens at the same offset:
+Tony
 
-[  356.683420] BUG: unable to handle kernel NULL pointer dereference at 
-0000000000000298
-[  356.691438] IP: [<ffffffff812ea0da>] ipv6_select_ident+0x31/0xa7
-[  356.697633] PGD 425060067 PUD 41de8d067 PMD 0
-[  356.702123] Oops: 0000 [#1] SMP
-[  356.705451] CPU 4
-[  356.707366] Modules linked in: tun sha1_ssse3 sha1_generic hmac 
-sha256_generic dlm configfs ebtable_nat ebtables acpi_cpufreq mperf 
-cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace 
-microcode xt_NOTRACK ip_set_hash_net act_police cls_basic cls_flow 
-cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq 
-xt_realm xt_addrtype xt_connlimit iptable_raw ip_set_hash_ip xt_comment 
-ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN 
-ipt_ecn ipt_CLUSTERIP ipt_ah nf_nat_tftp nf_nat_snmp_basic 
-nf_conntrack_snmp xt_recent nf_nat_sip nf_nat_pptp nf_nat_proto_gre 
-nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ip6_queue xt_set ip_set 
-nf_conntrack_tftp nf_conntrack_sip nf_conntrack_sane 
-nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp 
-nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns 
-nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 
-nf_conntrack_ftp ts_kmp xt_NFLOG nfnetlink_log nf_conntrack_amanda 
-xt_TPROXY nf_tproxy_core xt_time xt_TCPMSS xt_tcpmss xt_sctp xt_policy 
-xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_multiport xt_mark xt_mac 
-xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp 
-xt_dccp xt_connmark ip6t_LOG xt_CLASSIFY ip6t_REJECT xt_AUDIT 
-nf_conntrack_ipv6
-
-I loaded the kernel in gdb to see where it thought that was:
-
-(gdb) list *ipv6_select_ident+0x31/0xa7
-0xffffffff812ea0a9 is in ipv6_select_ident (net/ipv6/ip6_output.c:602).
-597
-598             return offset;
-599     }
-600
-601     void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-602     {
-603             static atomic_t ipv6_fragmentation_id;
-604             int old, new;
-605
-606             if (rt) {
-
-HTH,
-Chris
-
--- 
-Chris Boot
-bootc@bootc.net
-
+> > > Changes since the initial version of this patch:
+> > > * use late_initcall() unconditionally in modules, requested by Russell
+> > >   King (thanks!); an updated patch 7/7 will follow,
+> > > * in the changelog message, move credits to Tony up a bit, since the
+> > >   person responsible for other changes (he might not necessarily like)
+> > >   is me, not him ;).
+> > > 
+> > > Comments copied from this patch initial submission:
+> > > This patch was not present in the initial submission, it replaces the
+> > > old patch 1/10, providing an alternative solution not touching the
+> > > gpio-generic driver.
+> > > 
+> > >  arch/arm/mach-omap1/board-ams-delta.c |   28 ++++++++++++++++++++--------
+> > >  drivers/input/serio/ams_delta_serio.c |    2 +-
+> > >  sound/soc/omap/ams-delta.c            |    2 +-
+> > >  3 files changed, 22 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
+> > > index b0f15d2..50987c9 100644
+> > > --- a/arch/arm/mach-omap1/board-ams-delta.c
+> > > +++ b/arch/arm/mach-omap1/board-ams-delta.c
+> > > @@ -275,11 +275,14 @@ static struct omap1_cam_platform_data ams_delta_camera_platform_data = {
+> > >  };
+> > >  
+> > >  static struct platform_device *ams_delta_devices[] __initdata = {
+> > > -	&ams_delta_nand_device,
+> > >  	&ams_delta_kp_device,
+> > > +	&ams_delta_camera_device,
+> > > +};
+> > > +
+> > > +static struct platform_device *late_devices[] __initdata = {
+> > > +	&ams_delta_nand_device,
+> > >  	&ams_delta_lcd_device,
+> > >  	&ams_delta_led_device,
+> > > -	&ams_delta_camera_device,
+> > >  };
+> > >  
+> > >  static void __init ams_delta_init(void)
+> > > @@ -307,9 +310,6 @@ static void __init ams_delta_init(void)
+> > >  	omap_serial_init();
+> > >  	omap_register_i2c_bus(1, 100, NULL, 0);
+> > >  
+> > > -	/* Clear latch2 (NAND, LCD, modem enable) */
+> > > -	ams_delta_latch2_write(~0, 0);
+> > > -
+> > >  	omap1_usb_init(&ams_delta_usb_config);
+> > >  	omap1_set_camera_info(&ams_delta_camera_platform_data);
+> > >  #ifdef CONFIG_LEDS_TRIGGERS
+> > > @@ -345,13 +345,18 @@ static struct platform_device ams_delta_modem_device = {
+> > >  	},
+> > >  };
+> > >  
+> > > -static int __init ams_delta_modem_init(void)
+> > > +static int __init late_init(void)
+> > >  {
+> > >  	int err;
+> > >  
+> > >  	if (!machine_is_ams_delta())
+> > >  		return -ENODEV;
+> > >  
+> > > +	/* Clear latch2 (NAND, LCD, modem enable) */
+> > > +	ams_delta_latch2_write(~0, 0);
+> > > +
+> > > +	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
+> > > +
+> > >  	omap_cfg_reg(M14_1510_GPIO2);
+> > >  	ams_delta_modem_ports[0].irq =
+> > >  			gpio_to_irq(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+> > > @@ -367,9 +372,16 @@ static int __init ams_delta_modem_init(void)
+> > >  		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC,
+> > >  		AMS_DELTA_LATCH2_MODEM_NRESET | AMS_DELTA_LATCH2_MODEM_CODEC);
+> > >  
+> > > -	return platform_device_register(&ams_delta_modem_device);
+> > > +	err = platform_device_register(&ams_delta_modem_device);
+> > > +	if (err)
+> > > +		goto gpio_free;
+> > > +	return 0;
+> > > +
+> > > +gpio_free:
+> > > +	gpio_free(AMS_DELTA_GPIO_PIN_MODEM_IRQ);
+> > > +	return err;
+> > >  }
+> > > -arch_initcall(ams_delta_modem_init);
+> > > +late_initcall(late_init);
+> > >  
+> > >  static void __init ams_delta_map_io(void)
+> > >  {
+> > > diff --git a/drivers/input/serio/ams_delta_serio.c b/drivers/input/serio/ams_delta_serio.c
+> > > index d4d08bd..835d37a 100644
+> > > --- a/drivers/input/serio/ams_delta_serio.c
+> > > +++ b/drivers/input/serio/ams_delta_serio.c
+> > > @@ -165,7 +165,7 @@ serio:
+> > >  	kfree(ams_delta_serio);
+> > >  	return err;
+> > >  }
+> > > -module_init(ams_delta_serio_init);
+> > > +late_initcall(ams_delta_serio_init);
+> > >  
+> > >  static void __exit ams_delta_serio_exit(void)
+> > >  {
+> > > diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
+> > > index ccb8a6a..be81bc7 100644
+> > > --- a/sound/soc/omap/ams-delta.c
+> > > +++ b/sound/soc/omap/ams-delta.c
+> > > @@ -636,7 +636,7 @@ err:
+> > >  	platform_device_put(ams_delta_audio_platform_device);
+> > >  	return ret;
+> > >  }
+> > > -module_init(ams_delta_module_init);
+> > > +late_initcall(ams_delta_module_init);
+> > >  
+> > >  static void __exit ams_delta_module_exit(void)
+> > >  {
+> > 
