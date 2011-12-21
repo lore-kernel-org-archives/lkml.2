@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1LULDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:03:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33772 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab1LULD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:03:28 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 7/8] cpufreq: Add support for x86 cpuinfo auto loading v3
-Date: Wed, 21 Dec 2011 12:03:25 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, kay.sievers@vrf.org,
-        Andi Kleen <ak@linux.intel.com>, davej@redhat.com,
-        kay.sievers@vrfy.org
-References: <1324338394-4670-1-git-send-email-andi@firstfloor.org> <1324338394-4670-8-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1324338394-4670-8-git-send-email-andi@firstfloor.org>
+	id S1751807Ab1LULJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:09:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55958 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab1LULJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:09:46 -0500
+Message-ID: <4EF1BE69.5090300@gmail.com>
+Date: Wed, 21 Dec 2011 19:09:29 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cleanup: mm/migrate.c: cleanup comment for function migration_entry_wait
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112211203.26153.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 20, 2011 12:46:33 AM Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> This marks all the x86 cpuinfo tables to the CPU specific device drivers,
-> to allow auto loading by udev. This should simplify the distribution
-> startup scripts for this greatly.
-> 
-> I didn't add MODULE_DEVICE_IDs to the centrino and p4-clockmod drivers,
-> because those probably shouldn't be auto loaded and the acpi driver
-> be used instead (not fully sure on that, would appreciate feedback)
-> 
-> The old nforce drivers autoload based on the PCI ID.
-> 
-> ACPI cpufreq is autoloaded in another patch.
-> 
-> v3: Autoload gx based on PCI IDs only. Remove cpu check (Dave Jones)
-> Cc: davej@redhat.com
-> Cc: trenn@suse.de
-> Cc: kay.sievers@vrfy.org
-> Cc: hpa@zytor.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-...
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index bce576d..c87fabb 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -37,6 +37,7 @@
->  #include <linux/delay.h>
->  
->  #include <asm/msr.h>
-> +#include <asm/cpu_device_id.h>
->  
->  #include <linux/acpi.h>
->  #include <linux/mutex.h>
-> @@ -514,6 +515,18 @@ static int core_voltage_post_transition(struct powernow_k8_data *data,
->  	return 0;
->  }
->  
-> +static const struct x86_cpu_id powernow_k8_ids[] = {
-> +	{ X86_VENDOR_AMD, 0xf, },
-> +	{ X86_VENDOR_AMD, 0x10, },
-> +	{ X86_VENDOR_AMD, 0x11, },
-> +	{ X86_VENDOR_AMD, 0x12, },
-> +	{ X86_VENDOR_AMD, 0x13, },
-> +	{ X86_VENDOR_AMD, 0x14, },
-{ X86_VENDOR_AMD, 0x15, },
+migration_entry_wait can also be called from hugetlb_fault now.
+Cleanup the comment.
 
-Should also have BullDozer family included.
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ mm/migrate.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-> +	/* Add more here? */
-> +	{}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 177aca4..640002a 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -181,8 +181,6 @@ static void remove_migration_ptes(struct page *old, struct page *new)
+  * Something used the pte of a page under migration. We need to
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+- *
+- * This function is called from do_swap_page().
+  */
+ void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 				unsigned long address)
+-- 
+1.7.1
 
-    Thomas
