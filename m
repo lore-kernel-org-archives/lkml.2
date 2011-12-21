@@ -1,130 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1LUOzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 09:55:48 -0500
-Received: from rose.urlnameserver.com ([199.168.186.150]:33099 "EHLO
-	rose.urlnameserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab1LUOzq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 09:55:46 -0500
-X-Greylist: delayed 165827 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 09:55:46 EST
-From: "Tanitiim Muzigi" <jinglejingleplus@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: jinglejingleplus@gmail.com
-Date: Wed, 21 Dec 2011 11:26:15 +0200
-Subject: reklam muziginiz (jingle) ile ilgili
+	id S1752554Ab1LUPAD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 10:00:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11439 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258Ab1LUPAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 10:00:00 -0500
+Date: Wed, 21 Dec 2011 09:59:28 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/debug] x86, reboot: Use NMI instead of REBOOT_VECTOR to
+ stop cpus
+Message-ID: <20111221145928.GP5650@redhat.com>
+References: <1318533267-18880-2-git-send-email-dzickus@redhat.com>
+ <tip-3603a2512f9e69dc87914ba922eb4a0812b21cd6@git.kernel.org>
+ <CAE9FiQWX_2bV1phLCUrEpiPSfo24xWEv3Y+DZnwmi9JJgJHbmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-9
-Content-Transfer-Encoding: 8BIT
-X-Mailer: aspNetEmail ver 3.6.0.77
-Message-ID: <COMPUTER5434b46c83874f07b59bff8efc770947@computer>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - rose.urlnameserver.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - gmail.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQWX_2bV1phLCUrEpiPSfo24xWEv3Y+DZnwmi9JJgJHbmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Merhaba,
-
-    ben reklam müzikleri hazýrlamakta olan þirketlerin sanatçýsý Okan Akdeniz.
-
-    Reklam mÜziklerinde kendi giriþimlerimin olmasý adýna size reklam müziði
-
-    dediðimiz kurumsal jingle hazýrladým.
-
-     Ajans olmadýðýmýz için rakam oldukça uygun. Amacým zaten her
-
-    konuda olduðu gibi aracýlarýn reklamlarýnýn olmasý ve gerçek emek harcayan
-
-    mutfaðýndaki kiþilerin bilinmemesi durumunu aþýp kendi sunumumu yapmak.
-
-    Müzisyen ekibimle birlikte birçok büyük þirketlere reklam müziklerini biz
-
-    hazýrlamaktayýz. Ama pek bilinmeyiz. efe raký, ankamol, abalýoðlu, havan
-
-    erkek giyim kc göksu alýþveriþ merkezi, PTT, Pamukkale Otobüs Þirketi gibi
-
-    bir çok yere reklam müziklerini ben hazýrladým.
-
-    Nerelerde kullanabilirsiniz?
-
-     * Radyo ve TV en yaygýn olaný
-
-     * Þirket telefonu bekleme müziði olarak
-
-     * Fuar standlarda
-
-     * Web sayfanýzda ingilizce ve türkçe ayrý ayrý yapýlan reklam müzikleriyle
-
-    daha kýsa versiyonu
-
-     * tanýtým cd lerinizde hem ingilizce hem türkçe
-
-     * Þirket çalýþanlarýnýzýn cep telefonlarýnda telefon sesi olarak
-
-    Dahasý sizin yaratýcýlýðýnýza kalmýþ.
-
-     Neden gerekli?
-
-     Çünkü müzik unutulmaz görsel reklam ve broþurler yok olur gider. Pirelli,
-
-    saray saray saray, eti eti eti...Nasýl? hemen aklýnýza geldi melodisi.
-
-    Yýllar öncesinden olmasýna raðmen... Daha fazla bu konuda söze gerek yok
-
-    sanýrým.
-
-     Lütfen daha geniþ bilgi için http://www.jingleplus.com da reklam müzikleri
-
-    bölümünden referanslarýma bakýn. Yani bu iþte neredeyse 10 yýldýr varým.
-
-    Ayrýca sanatçýlara beste satmaktayým. En son Rafet El Roman ýn sevdim ama
-
-    sonu yoktu adlý þarkýsýnýn bestecisiyim. Size özel hazýrlamýþ olduðum 2
-
-    örnek demo ücretsizdir. Dinlemenizi istiyorum. Beðenirseniz alýrsýnýz.
-
-    Ýstediðiniz deðiþiklikleri size hazýrlar hatta 1 senelikte her türlü
-
-    reklam müziðinize seslendirmelerinizi de ücretsiz yaparým. Bunun yanýnda
-
-    yeni örnek isterseniz ve benimle çalýþmak
-
-    isterseniz telefonumuz 05353725885 .Bana en azýndan olumlu ya da olumsuz
-
-    cevap yazarsanýz çok memnun olurum.
-
-     Ýyi çalýþmalar ve bol kazançlý günler dilerim.
-
-     Ve not: Reklam müziklerimi beðeneceðinize eminim. Ayrýca dilerseniz
-
-    ingilizce olarakta seslendirilebileceðini bilmenizi istiyorum. ( web
-
-    sayfasý ve yurt dýþý tanýtým CD leri için)
-
-    
-
-     http://www.jingleplus.com
-
-        
-
-     Halkla iliþkiler Pazarlama
-
-     Ahmet Odabaþý
-
-     Cep: 0535 372 58 85
-
-    diðer iletiþim adresi :ahmetodabasi@yahoo.com.tr
+On Tue, Dec 20, 2011 at 02:38:39PM -0800, Yinghai Lu wrote:
+> > @@ -230,7 +285,7 @@ struct smp_ops smp_ops = {
+> >        .smp_prepare_cpus       = native_smp_prepare_cpus,
+> >        .smp_cpus_done          = native_smp_cpus_done,
+> >
+> > -       .stop_other_cpus        = native_stop_other_cpus,
+> > +       .stop_other_cpus        = native_nmi_stop_other_cpus,
+> >        .smp_send_reschedule    = native_smp_send_reschedule,
+> >
+> >        .cpu_up                 = native_cpu_up,
+> 
+> this broke kexec on our intel nehalem, westmere and sandbridge platforms.
+> system get reset while try to kexec second kernel.
 
 
+Hmm. Ok.  Does the reboot path work correctly?  Vivek showed me that the
+kexec and reboot paths do the same shutdowns.  Perhaps the second kernel
+has trouble dealing with cpus spinning in an NMI context and can't
+properly reset them.
 
+Let me grab one of those boxes from our lab and try and reproduce the
+problem.
 
+Cheers,
+Don
 
-
-
+> 
+> 3603a2512f9e69dc87914ba922eb4a0812b21cd6 is the first bad commit
+> commit 3603a2512f9e69dc87914ba922eb4a0812b21cd6
+> Author: Don Zickus <dzickus@redhat.com>
+> Date:   Thu Oct 13 15:14:25 2011 -0400
+> 
+>     x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus
+> 
+>     A recent discussion started talking about the locking on the
+>     pstore fs and how it relates to the kmsg infrastructure.  We
+>     noticed it was possible for userspace to r/w to the pstore fs
+>     (grabbing the locks in the process) and block the panic path
+>     from r/w to the same fs.
+> 
+>     The reason was the cpu with the lock could be doing work while
+>     the crashing cpu is panic'ing.  Busting those spinlocks might
+>     cause those cpus to step on each other's data.  Fine, fair
+>     enough.
+> 
+>     It was suggested it would be nice to serialize the panic path
+>     (ie stop the other cpus) and have only one cpu running.  This
+>     would allow us to bust the spinlocks and not worry about another
+>     cpu stepping on the data.
+> 
+>     Of course, smp_send_stop() does this in the panic case.
+>     kmsg_dump() would have to be moved to be called after it.  Easy
+>     enough.
+> 
+>     The only problem is on x86 the smp_send_stop() function calls
+>     the REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and
+>     its backend ERST would do), block this IPI and thus do not stop.
+>      This makes it difficult to reliably log data to the pstore fs.
+> 
+>     The patch below switches from the REBOOT_VECTOR to NMI (and
+>     mimics what kdump does).  Switching to NMI allows us to deliver
+>     the IPI when irqs are disabled, increasing the reliability of
+>     this function.
+> 
+>     However, Andi carefully noted that on some machines this
+>     approach does not work because of broken BIOSes or whatever.
+> 
+>     To help accomodate this, the next couple of patches will run a
+>     selftest and provide a knob to disable.
+> 
+>     V2:
+>       uses atomic ops to serialize the cpu that shuts everyone down
+>     V3:
+>       comment cleanup
+> 
+>     Signed-off-by: Don Zickus <dzickus@redhat.com>
+>     Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>     Cc: Peter Zijlstra <peterz@infradead.org>
+>     Cc: Robert Richter <robert.richter@amd.com>
+>     Cc: seiji.aguchi@hds.com
+>     Cc: vgoyal@redhat.com
+>     Cc: mjg@redhat.com
+>     Cc: tony.luck@intel.com
+>     Cc: gong.chen@intel.com
+>     Cc: satoru.moriya@hds.com
+>     Cc: avi@redhat.com
+>     Cc: Andi Kleen <andi@firstfloor.org>
+>     Link:
+> http://lkml.kernel.org/r/1318533267-18880-2-git-send-email-dzickus@redhat.com
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> 
+> :040000 040000 47a646e9ead83f34fb0728d88c786c875fab91dd
+> 6f7a6d5ad8ed686199c0dfbc748ee07a0db97cc5 M      arch
