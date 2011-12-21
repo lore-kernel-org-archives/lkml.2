@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1LTX6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 18:58:48 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13675 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab1LTX6p convert rfc822-to-8bit (ORCPT
+	id S1753419Ab1LUADV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 19:03:21 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49173 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab1LUADS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 18:58:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 20 Dec 2011 15:58:44 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Dong Aisheng <b29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Tue, 20 Dec 2011 15:58:43 -0800
-Subject: RE: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
-Thread-Topic: [RFC PATCH v3 1/5] dt: add of_get_child_count helper function
-Thread-Index: Acy/PPacJXVw3FbcT8+W9MCERHBz6QANfpzw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF176BE92EE2@HQMAIL01.nvidia.com>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-2-git-send-email-b29396@freescale.com>
-In-Reply-To: <1324402840-32451-2-git-send-email-b29396@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 20 Dec 2011 19:03:18 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Dec 2011 09:01:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/4] memcg: simplify page cache charging.
+Message-Id: <20111221090158.64521b11.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111220135817.5ba7ab05.akpm@linux-foundation.org>
+References: <20111214164734.4d7d6d97.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111214164922.05fb4afe.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111216142814.dbb77209.akpm@linux-foundation.org>
+	<20111219090122.66024659.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111220135817.5ba7ab05.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dong Aisheng wrote at Tuesday, December 20, 2011 10:41 AM:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On Tue, 20 Dec 2011 13:58:17 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Mon, 19 Dec 2011 09:01:22 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-> Currently most code to get child count in kernel are almost same,
-> add a helper to implement this function for dt to use.
+> > On Fri, 16 Dec 2011 14:28:14 -0800
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > On Wed, 14 Dec 2011 16:49:22 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
+> > > > of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
+> > > > called against FUSE's pages from splice.
+> > > 
+> > > Speaking of ef6a3c6311 ("mm: add replace_page_cache_page() function"),
+> > > may I pathetically remind people that it's rather inefficient?
+> > > 
+> > > http://lkml.indiana.edu/hypermail/linux/kernel/1109.1/00375.html
+> > > 
+> > 
+> > IIRC, people says inefficient because it uses memcg codes for page-migration
+> > for fixing up accounting. Now, We added replace-page-cache for memcg in
+> > memcg-add-mem_cgroup_replace_page_cache-to-fix-lru-issue.patch
+> > 
+> > So, I think the problem originally mentioned is fixed.
+> > 
+> 
+> No, the inefficiency in replace_page_cache_page() is still there.  Two
+> identical walks down the radix tree, a pointless decrement then
+> increment of mapping->nrpages, two writes to page->mapping, an often
+> pointless decrement then increment of NR_FILE_PAGES, and probably other things.
+> 
 
-> diff --git a/include/linux/of.h b/include/linux/of.h
+Hmm, then, replace_page_cache_page() itself has some problem.
+I'll look into that.
 
-> +static inline int of_get_child_count(const struct device_node *np)
-> +{
-> +	return -ENOSYS;
-> +}
+Thanks,
+-Kame
 
-Wouldn't it be better to return 0 here? -ENOSYS would be fine if the
-function returned an error code, but it's really returning a count, and
-other "dummy" functions that return data return 0/NULL already. This
-would also allow you to just use the value directly in all cases rather
-than having to check for a < 0 error case.
 
--- 
-nvpublic
+
 
