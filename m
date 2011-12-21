@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1LUUfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:35:16 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51065 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752134Ab1LUUfM (ORCPT
+	id S1753996Ab1LUUhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:37:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51677 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab1LUUhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:35:12 -0500
-Date: Wed, 21 Dec 2011 22:35:05 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
-        mingo@elte.hu
-Subject: Re: [PATCH] kvm tool: Implement a serial FIFO emulation
-In-Reply-To: <alpine.LFD.2.02.1112211632490.3020@ionos>
-Message-ID: <alpine.LFD.2.02.1112212233310.2642@tux.localdomain>
-References: <alpine.LFD.2.02.1112211632490.3020@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Wed, 21 Dec 2011 15:37:32 -0500
+Subject: Re: linux-next: Tree for Dec 19 (nfc)
+From: Samuel Ortiz <samuel@sortiz.org>
+Reply-To: Samuel Ortiz <samuel@sortiz.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>
+In-Reply-To: <4EF23A1F.60803@xenotime.net>
+References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
+	 <4EEFA21B.5010305@xenotime.net> <1324399181.5354.0.camel@sortiz-mobl>
+	 <4EF23A1F.60803@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Dec 2011 21:42:40 +0100
+Message-ID: <1324500160.5354.3.camel@sortiz-mobl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011, Thomas Gleixner wrote:
-> Adding FIFO functionality to the serial emulator to speed up the
-> console handling.
->
-> This also restricts sysrq functionality to the first serial port and
-> fixes the sysrq injection, which was broken because nothing ever reset
-> the BI status bit in the LSR.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Hi Randy,
 
-Applied, thanks! Ingo, this speeds up serial console significantly and 
-hopefully fixes things up for you as well.
+On Wed, 2011-12-21 at 11:57 -0800, Randy Dunlap wrote:
+> On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
+> > Hi Randy,
+> > 
+> > On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
+> >> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
+> >>> Hi all,
+> >>>
+> >>> Changes since 20111216:
+> >>
+> >>
+> >> (not new today, just not reported earlier)
+> > John applied my fix for this one. It should be fixed now.
+> 
+> Hi Samuel,
+> 
+> Is this supposed to be fixed in linux-next?
+> It still fails today (linux-next 20111221).
+Do you have a .config for me to look at ?
 
- 			Pekka
+Cheers,
+Samuel.
+
