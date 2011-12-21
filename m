@@ -1,78 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1LUIsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:48:51 -0500
-Received: from outm2.farsite.co.uk ([82.108.209.243]:11513 "EHLO
-	outm2.farsite.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1LUIsu (ORCPT
+	id S1753205Ab1LUItA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:49:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:32930 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab1LUIsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:48:50 -0500
-X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 03:48:49 EST
-Content-class: urn:content-classes:message
+	Wed, 21 Dec 2011 03:48:55 -0500
+Date: Wed, 21 Dec 2011 00:48:26 -0800
+From: tip-bot for Kevin Winchester <kjwinchester@gmail.com>
+Message-ID: <tip-141168c36cdee3ff23d9c7700b0edc47cb65479f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        kjwinchester@gmail.com, sp@numascale.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kjwinchester@gmail.com, tglx@linutronix.de, sp@numascale.com,
+        mingo@elte.hu
+In-Reply-To: <1324428742-12498-1-git-send-email-kjwinchester@gmail.com>
+References: <1324428742-12498-1-git-send-email-kjwinchester@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: Simplify code by removing a !SMP #ifdefs from 
+ 'struct cpuinfo_x86'
+Git-Commit-ID: 141168c36cdee3ff23d9c7700b0edc47cb65479f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Subject: RE: [PATCH 2/8] farsync: Fix confusion about DMA address and buffer offset types
-Date: Wed, 21 Dec 2011 08:33:33 -0000
-Message-ID: <F0A3125A154C5B46B8540D5E65D671050153356A@captain.hq.farsitecommunications.com>
-In-Reply-To: <1324446073.2844.190.camel@deadeye>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2/8] farsync: Fix confusion about DMA address and buffer offset types
-Thread-Index: Acy/oy+t9+HPpfdKS/qE5iavWUfL1gAF+O5w
-References: <1324430940.2844.144.camel@deadeye> <1324431172.2844.147.camel@deadeye> <20111220.234656.658595607282312696.davem@davemloft.net> <1324446073.2844.190.camel@deadeye>
-From: "Kevin Curtis" <kevin.curtis@farsite.com>
-To: "Ben Hutchings" <ben@decadent.org.uk>,
-        "David Miller" <davem@davemloft.net>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 00:48:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBL8mvaH010922
 
-Hi,
-    Thanks for the patches.  I will apply them to the master copy of the source code here.
+Commit-ID:  141168c36cdee3ff23d9c7700b0edc47cb65479f
+Gitweb:     http://git.kernel.org/tip/141168c36cdee3ff23d9c7700b0edc47cb65479f
+Author:     Kevin Winchester <kjwinchester@gmail.com>
+AuthorDate: Tue, 20 Dec 2011 20:52:22 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 21 Dec 2011 09:25:09 +0100
 
+x86: Simplify code by removing a !SMP #ifdefs from 'struct cpuinfo_x86'
 
-Regards
+Several fields in struct cpuinfo_x86 were not defined for the
+!SMP case, likely to save space.  However, those fields still
+have some meaning for UP, and keeping them allows some #ifdef
+removal from other files.  The additional size of the UP kernel
+from this change is not significant enough to worry about
+keeping up the distinction:
 
+	   text    data     bss     dec     hex filename
+	4737168	 506459	 972040	6215667	 5ed7f3	vmlinux.o.before
+	4737444	 506459	 972040	6215943	 5ed907	vmlinux.o.after
 
-Kevin Curtis
-Linux Development
-FarSite Communications Ltd http://www.farsite.com
-Winner of The Queen's Award for Enterprise 2009
-tel:Â  +44 1256 330461
-fax:Â  +44 1256 854931
+for a difference of 276 bytes for an example UP config.
 
+If someone wants those 276 bytes back badly then it should
+be implemented in a cleaner way.
 
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Steffen Persvold <sp@numascale.com>
+Link: http://lkml.kernel.org/r/1324428742-12498-1-git-send-email-kjwinchester@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/processor.h     |    2 --
+ arch/x86/kernel/amd_nb.c             |    8 ++------
+ arch/x86/kernel/cpu/amd.c            |    2 --
+ arch/x86/kernel/cpu/common.c         |    7 -------
+ arch/x86/kernel/cpu/intel.c          |    2 --
+ arch/x86/kernel/cpu/mcheck/mce.c     |    2 --
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    7 +------
+ arch/x86/kernel/cpu/proc.c           |    4 +---
+ drivers/edac/sb_edac.c               |    2 --
+ drivers/hwmon/coretemp.c             |    7 +++----
+ 10 files changed, 7 insertions(+), 36 deletions(-)
 
------Original Message-----
-From: Ben Hutchings [mailto:ben@decadent.org.uk] 
-Sent: 21 December 2011 05:41
-To: David Miller
-Cc: Kevin Curtis; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] farsync: Fix confusion about DMA address and buffer offset types
-
-On Tue, 2011-12-20 at 23:46 -0500, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Wed, 21 Dec 2011 01:32:52 +0000
-> 
-> > -	dbg(DBG_RX, "In fst_rx_dma %lx %lx %d\n",
-> > -	    (unsigned long) skb, (unsigned long) mem, len);
-> > +	dbg(DBG_RX, "In fst_rx_dma %x %x %d\n", (u32)skb, mem, len);
-> 
-> This is more appropriately fixed by using "%p" instead of casting to a 
-> 32-bit int.
-
-'skb' is the physical address of the data in the skb.  Whereas 'mem' is the offset of the corresponding buffer in shared memory.
-
-All completely clear, right? ;-)
-
-Ben.
-
---
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b650435..aa9088c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -99,7 +99,6 @@ struct cpuinfo_x86 {
+ 	u16			apicid;
+ 	u16			initial_apicid;
+ 	u16			x86_clflush_size;
+-#ifdef CONFIG_SMP
+ 	/* number of cores as seen by the OS: */
+ 	u16			booted_cores;
+ 	/* Physical processor id: */
+@@ -110,7 +109,6 @@ struct cpuinfo_x86 {
+ 	u8			compute_unit_id;
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+-#endif
+ 	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 4c39baa..013c181 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -123,16 +123,14 @@ int amd_get_subcaches(int cpu)
+ {
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+ 	unsigned int mask;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return 0;
+ 
+ 	pci_read_config_dword(link, 0x1d4, &mask);
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	return (mask >> (4 * cuid)) & 0xf;
+ }
+ 
+@@ -141,7 +139,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 	static unsigned int reset, ban;
+ 	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
+ 	unsigned int reg;
+-	int cuid = 0;
++	int cuid;
+ 
+ 	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
+ 		return -EINVAL;
+@@ -159,9 +157,7 @@ int amd_set_subcaches(int cpu, int mask)
+ 		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
+ 	}
+ 
+-#ifdef CONFIG_SMP
+ 	cuid = cpu_data(cpu).compute_unit_id;
+-#endif
+ 	mask <<= 4 * cuid;
+ 	mask |= (0xf ^ (1 << cuid)) << 26;
+ 
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ef21bdc..f4773f4 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -192,7 +191,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 
+ valid_k7:
+ 	;
+-#endif
+ }
+ 
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a70bd5b..850f296 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -676,9 +676,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+ 
+-#ifdef CONFIG_SMP
+ 	c->cpu_index = 0;
+-#endif
+ 	filter_cpuid_features(c, false);
+ 
+ 	setup_smep(c);
+@@ -764,10 +762,7 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ 		c->apicid = c->initial_apicid;
+ # endif
+ #endif
+-
+-#ifdef CONFIG_X86_HT
+ 		c->phys_proc_id = c->initial_apicid;
+-#endif
+ 	}
+ 
+ 	setup_smep(c);
+@@ -1146,9 +1141,7 @@ static void dbg_restore_debug_regs(void)
+  */
+ void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-#ifdef CONFIG_NUMA
+ 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-#endif
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 5231312..3e6ff6c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -181,7 +181,6 @@ static void __cpuinit trap_init_f00f_bug(void)
+ 
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+ 	if (!c->cpu_index)
+ 		return;
+@@ -198,7 +197,6 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ 		WARN_ONCE(1, "WARNING: SMP operation may be unreliable"
+ 				    "with B stepping processors.\n");
+ 	}
+-#endif
+ }
+ 
+ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2af127d..e9c9d0a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -119,9 +119,7 @@ void mce_setup(struct mce *m)
+ 	m->time = get_seconds();
+ 	m->cpuvendor = boot_cpu_data.x86_vendor;
+ 	m->cpuid = cpuid_eax(1);
+-#ifdef CONFIG_SMP
+ 	m->socketid = cpu_data(m->extcpu).phys_proc_id;
+-#endif
+ 	m->apicid = cpu_data(m->extcpu).initial_apicid;
+ 	rdmsrl(MSR_IA32_MCG_CAP, m->mcgcap);
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index f547421..1d76872 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -64,11 +64,9 @@ struct threshold_bank {
+ };
+ static DEFINE_PER_CPU(struct threshold_bank * [NR_BANKS], threshold_banks);
+ 
+-#ifdef CONFIG_SMP
+ static unsigned char shared_bank[NR_BANKS] = {
+ 	0, 0, 0, 0, 1
+ };
+-#endif
+ 
+ static DEFINE_PER_CPU(unsigned char, bank_map);	/* see which banks are on */
+ 
+@@ -202,10 +200,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 
+ 			if (!block)
+ 				per_cpu(bank_map, cpu) |= (1 << bank);
+-#ifdef CONFIG_SMP
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+-#endif
++
+ 			offset = setup_APIC_mce(offset,
+ 						(high & MASK_LVTOFF_HI) >> 20);
+ 
+@@ -531,7 +528,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 	sprintf(name, "threshold_bank%i", bank);
+ 
+-#ifdef CONFIG_SMP
+ 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+ 		i = cpumask_first(cpu_llc_shared_mask(cpu));
+ 
+@@ -558,7 +554,6 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 		goto out;
+ 	}
+-#endif
+ 
+ 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+ 	if (!b) {
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 14b2314..8022c66 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -64,12 +64,10 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ static int show_cpuinfo(struct seq_file *m, void *v)
+ {
+ 	struct cpuinfo_x86 *c = v;
+-	unsigned int cpu = 0;
++	unsigned int cpu;
+ 	int i;
+ 
+-#ifdef CONFIG_SMP
+ 	cpu = c->cpu_index;
+-#endif
+ 	seq_printf(m, "processor\t: %u\n"
+ 		   "vendor_id\t: %s\n"
+ 		   "cpu family\t: %d\n"
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 7a402bf..88df489 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1609,11 +1609,9 @@ static int sbridge_mce_check_error(struct notifier_block *nb, unsigned long val,
+ 		mce->cpuvendor, mce->cpuid, mce->time,
+ 		mce->socketid, mce->apicid);
+ 
+-#ifdef CONFIG_SMP
+ 	/* Only handle if it is the right mc controller */
+ 	if (cpu_data(mce->cpu).phys_proc_id != pvt->sbridge_dev->mc)
+ 		return NOTIFY_DONE;
+-#endif
+ 
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 104b376..1fdef88 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -57,16 +57,15 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 
+-#ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
++#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
++
++#ifdef CONFIG_SMP
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+ #else
+-#define TO_PHYS_ID(cpu)		(cpu)
+-#define TO_CORE_ID(cpu)		(cpu)
+ #define for_each_sibling(i, cpu)	for (i = 0; false; )
+ #endif
+-#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+ 
+ /*
+  * Per-Core Temperature Data
