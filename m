@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1LUTYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:24:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37839 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab1LUTYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:24:25 -0500
-From: Jan Kara <jack@suse.cz>
-To: linux-fsdevel@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, reiserfs-devel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/2] reiserfs: Fix quota mount option parsing
-Date: Wed, 21 Dec 2011 20:23:55 +0100
-Message-Id: <1324495436-11203-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1324495436-11203-1-git-send-email-jack@suse.cz>
-References: <1324495436-11203-1-git-send-email-jack@suse.cz>
+	id S1754253Ab1LUTYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:24:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64827 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab1LUTY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 14:24:26 -0500
+Date: Wed, 21 Dec 2011 11:24:13 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20111221192413.GF13529@google.com>
+References: <20111221034334.GD17668@somewhere>
+ <20111221130848.GA19679@redhat.com>
+ <20111221175632.GF17668@somewhere>
+ <20111221190102.GE13529@google.com>
+ <20111221190817.GI17668@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221190817.GI17668@somewhere>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When jqfmt mount option is not specified on remount, we mistakenly clear
-s_jquota_fmt value stored in superblock. Fix the problem.
+Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Wed, Dec 21, 2011 at 11:01:02AM -0800, Mandeep Singh Baines wrote:
+> > Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
+> > > > On 12/21, Frederic Weisbecker wrote:
+> > > > > Hi,
+> > > > >
+> > > > > Starring at some parts of cgroups, I have a few questions:
+> > > > >
+> > > > > - Is cgroup_enable_task_cg_list()'s while_each_thread() safe
+> > > > > against concurrent exec()? The leader may change in de_thread()
+> > > > > and invalidate the test done in while_each_thread().
+> > > > 
+> > > > Yes. Oh, we need to do something with while_each_thread.
+> > > 
+> > > Would something like this work?
+> > > 
+> > > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > > index c0c5876..e002a00 100644
+> > > --- a/include/linux/sched.h
+> > > +++ b/include/linux/sched.h
+> > > @@ -2293,8 +2293,12 @@ extern bool current_is_single_threaded(void);
+> > >  #define do_each_thread(g, t) \
+> > >  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+> > >  
+> > > -#define while_each_thread(g, t) \
+> > > -	while ((t = next_thread(t)) != g)
+> > > +#define while_each_thread(g, t)					\
+> > > +	while (({						\
+> > > +		struct task_struct *__prev = t;			\
+> > > +		t = next_thread(t);				\
+> > > +		t != __prev && t != g;				\
+> > 
+> > Hi,
+> > 
+> > Don't you still have an (highly unlikely) race if you exec
+> > and then pthread_create()?
+> 
+> I'm not sure what you mean.
 
-CC: reiserfs-devel@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/reiserfs/super.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Here is what I'm thinking:
 
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 14363b9..f9eaa4a 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1164,7 +1164,8 @@ static void handle_quota_files(struct super_block *s, char **qf_names,
- 			kfree(REISERFS_SB(s)->s_qf_names[i]);
- 		REISERFS_SB(s)->s_qf_names[i] = qf_names[i];
- 	}
--	REISERFS_SB(s)->s_jquota_fmt = *qfmt;
-+	if (*qfmt)
-+		REISERFS_SB(s)->s_jquota_fmt = *qfmt;
- }
- #endif
- 
--- 
-1.7.1
+If you call exec from a thread other than g, g is now unlinked. So
+"t != g" will always be true. If you then pthread_create, you now
+have two threads so "t != __prev" will also always be true. So
+you now have an infinite loop.
 
+> 
+> > 
+> > Instead of:
+> > 
+> > t != __prev && t != g;
+> > 
+> > How about:
+> > 
+> > t != t->group_leader;
+> 
+> That might work too but we need a pair of memory barriers.
+
+next_thread() calls list_entry_rcu. Shouldn't that protect against
+a dereference? You don't need to synchronize group_leader since
+you are only using it as a value. You don't dereference it.
+
+Regards,
+Mandeep
