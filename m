@@ -1,124 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab1LUPAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 10:00:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11439 "EHLO mx1.redhat.com"
+	id S1752731Ab1LUPB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 10:01:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19412 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab1LUPAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 10:00:00 -0500
-Date: Wed, 21 Dec 2011 09:59:28 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/debug] x86, reboot: Use NMI instead of REBOOT_VECTOR to
- stop cpus
-Message-ID: <20111221145928.GP5650@redhat.com>
-References: <1318533267-18880-2-git-send-email-dzickus@redhat.com>
- <tip-3603a2512f9e69dc87914ba922eb4a0812b21cd6@git.kernel.org>
- <CAE9FiQWX_2bV1phLCUrEpiPSfo24xWEv3Y+DZnwmi9JJgJHbmQ@mail.gmail.com>
+	id S1751258Ab1LUPBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 10:01:24 -0500
+Date: Wed, 21 Dec 2011 15:55:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-3.3] mempool: clean up and document synchronization
+	and memory barrier usage
+Message-ID: <20111221145556.GA25657@redhat.com>
+References: <20111220221818.GJ10752@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQWX_2bV1phLCUrEpiPSfo24xWEv3Y+DZnwmi9JJgJHbmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111220221818.GJ10752@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 02:38:39PM -0800, Yinghai Lu wrote:
-> > @@ -230,7 +285,7 @@ struct smp_ops smp_ops = {
-> >        .smp_prepare_cpus       = native_smp_prepare_cpus,
-> >        .smp_cpus_done          = native_smp_cpus_done,
-> >
-> > -       .stop_other_cpus        = native_stop_other_cpus,
-> > +       .stop_other_cpus        = native_nmi_stop_other_cpus,
-> >        .smp_send_reschedule    = native_smp_send_reschedule,
-> >
-> >        .cpu_up                 = native_cpu_up,
-> 
-> this broke kexec on our intel nehalem, westmere and sandbridge platforms.
-> system get reset while try to kexec second kernel.
+On 12/20, Tejun Heo wrote:
+>
+> For #1, The only necessary condition is that curr_nr visible at free
+> is from after the allocation of the element being freed (details in
+> the comment).  For most cases, this is true without any barrier but
+> there can be fringe cases where the allocated pointer is passed to the
+> freeing task without going through memory barriers.  To cover this
+> case, wmb is necessary before returning from allocation and rmb is
+> necessary before reading curr_nr.  IOW,
+>
+> 	ALLOCATING TASK			FREEING TASK
+>
+> 	update pool state after alloc;
+> 	wmb();
+> 	pass pointer to freeing task;
+> 					read pointer;
+> 					rmb();
+> 					read pool state to free;
+>
+> The wmb can be the implied one from unlocking pool->lock and smp_mb()
+> in mempool_free() can be replaced with smp_rmb().
 
+OK... I do not know if this is the bug or not, but I agree this race
+is possible.
 
-Hmm. Ok.  Does the reboot path work correctly?  Vivek showed me that the
-kexec and reboot paths do the same shutdowns.  Perhaps the second kernel
-has trouble dealing with cpus spinning in an NMI context and can't
-properly reset them.
+> Furthermore, mempool_alloc() is already holding pool->lock when it
+> decides that it needs to wait.  There is no reason to do unlock - add
+> waitqueue - test condition again.  It can simply add itself to
+> waitqueue while holding pool->lock and then unlock and sleep.
 
-Let me grab one of those boxes from our lab and try and reproduce the
-problem.
+Confused. I agree, we can hold pool->lock until schedule(). But, at
+the same time, why should we hold it?
 
-Cheers,
-Don
+Or I missed the reason why we must not unlock before prepare_to_wait?
 
-> 
-> 3603a2512f9e69dc87914ba922eb4a0812b21cd6 is the first bad commit
-> commit 3603a2512f9e69dc87914ba922eb4a0812b21cd6
-> Author: Don Zickus <dzickus@redhat.com>
-> Date:   Thu Oct 13 15:14:25 2011 -0400
-> 
->     x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus
-> 
->     A recent discussion started talking about the locking on the
->     pstore fs and how it relates to the kmsg infrastructure.  We
->     noticed it was possible for userspace to r/w to the pstore fs
->     (grabbing the locks in the process) and block the panic path
->     from r/w to the same fs.
-> 
->     The reason was the cpu with the lock could be doing work while
->     the crashing cpu is panic'ing.  Busting those spinlocks might
->     cause those cpus to step on each other's data.  Fine, fair
->     enough.
-> 
->     It was suggested it would be nice to serialize the panic path
->     (ie stop the other cpus) and have only one cpu running.  This
->     would allow us to bust the spinlocks and not worry about another
->     cpu stepping on the data.
-> 
->     Of course, smp_send_stop() does this in the panic case.
->     kmsg_dump() would have to be moved to be called after it.  Easy
->     enough.
-> 
->     The only problem is on x86 the smp_send_stop() function calls
->     the REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and
->     its backend ERST would do), block this IPI and thus do not stop.
->      This makes it difficult to reliably log data to the pstore fs.
-> 
->     The patch below switches from the REBOOT_VECTOR to NMI (and
->     mimics what kdump does).  Switching to NMI allows us to deliver
->     the IPI when irqs are disabled, increasing the reliability of
->     this function.
-> 
->     However, Andi carefully noted that on some machines this
->     approach does not work because of broken BIOSes or whatever.
-> 
->     To help accomodate this, the next couple of patches will run a
->     selftest and provide a knob to disable.
-> 
->     V2:
->       uses atomic ops to serialize the cpu that shuts everyone down
->     V3:
->       comment cleanup
-> 
->     Signed-off-by: Don Zickus <dzickus@redhat.com>
->     Cc: Linus Torvalds <torvalds@linux-foundation.org>
->     Cc: Peter Zijlstra <peterz@infradead.org>
->     Cc: Robert Richter <robert.richter@amd.com>
->     Cc: seiji.aguchi@hds.com
->     Cc: vgoyal@redhat.com
->     Cc: mjg@redhat.com
->     Cc: tony.luck@intel.com
->     Cc: gong.chen@intel.com
->     Cc: satoru.moriya@hds.com
->     Cc: avi@redhat.com
->     Cc: Andi Kleen <andi@firstfloor.org>
->     Link:
-> http://lkml.kernel.org/r/1318533267-18880-2-git-send-email-dzickus@redhat.com
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> :040000 040000 47a646e9ead83f34fb0728d88c786c875fab91dd
-> 6f7a6d5ad8ed686199c0dfbc748ee07a0db97cc5 M      arch
+> --- work.orig/mm/mempool.c
+> +++ work/mm/mempool.c
+> @@ -223,29 +223,31 @@ repeat_alloc:
+>  	spin_lock_irqsave(&pool->lock, flags);
+>  	if (likely(pool->curr_nr)) {
+>  		element = remove_element(pool);
+> +		/* implied wmb in unlock is faired with rmb in mempool_free() */
+>  		spin_unlock_irqrestore(&pool->lock, flags);
+
+Not really afaics. unlock() doesn't imply wmb().
+
+So, if some thread does PTR = mempool_alloc(), the "final" store to PTR
+can leak into the critical section, and it can be reordered inside this
+section with --curr_nr.
+
+See the fat comment about set_current_state() in prepare_to_wait().
+
+> @@ -265,7 +267,39 @@ void mempool_free(void *element, mempool
+>  	if (unlikely(element == NULL))
+>  		return;
+>  
+> -	smp_mb();
+> +	/*
+> +	 * Paired with implied wmb of @pool->lock in mempool_alloc().  The
+> +	 * preceding read is for @element and the following @pool->curr_nr.
+> +	 * This ensures that the visible value of @pool->curr_nr is from
+> +	 * after the allocation of @element.  This is necessary for fringe
+> +	 * cases where @element was passed to this task without going
+> +	 * through barriers.
+> +	 *
+> +	 * For example, assume @p is %NULL at the beginning and one task
+> +	 * performs "p = mempool_alloc(...);" while another task is doing
+> +	 * "while (!p) cpu_relax(); mempool_free(p, ...);".  This function
+> +	 * may end up using curr_nr value which is from before allocation
+> +	 * of @p without the following rmb.
+> +	 */
+> +	smp_rmb();
+> +
+> +	/*
+> +	 * For correctness, we need a test which is guaranteed to trigger
+> +	 * if curr_nr + #allocated == min_nr.  Testing curr_nr < min_nr
+> +	 * without locking achieves that and refilling as soon as possible
+> +	 * is desirable.
+> +	 *
+> +	 * Because curr_nr visible here is always a value after the
+> +	 * allocation of @element, any task which decremented curr_nr below
+> +	 * min_nr is guaranteed to see curr_nr < min_nr unless curr_nr gets
+> +	 * incremented to min_nr afterwards.  If curr_nr gets incremented
+> +	 * to min_nr after the allocation of @element, the elements
+> +	 * allocated after that are subject to the same guarantee.
+> +	 *
+> +	 * Waiters happen iff curr_nr is 0 and the above guarantee also
+> +	 * ensures that there will be frees which return elements to the
+> +	 * pool waking up the waiters.
+> +	 */
+>  	if (pool->curr_nr < pool->min_nr) {
+>  		spin_lock_irqsave(&pool->lock, flags);
+>  		if (pool->curr_nr < pool->min_nr) {
+
+Just to check my understanding...
+
+IOW. Whatever we do, we can race with other threads and miss "curr_nr < min_nr"
+condition. But this is fine, unless this element (which we are going to free)
+was the reason for this condition. Otherwise we can rely on another mempool_free(),
+the waiters in mempool_alloc() can never hang forever.
+
+Yes, I think this is right.
+
+Oleg.
+
