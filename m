@@ -1,649 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1LUQAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 11:00:37 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:2771 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab1LUQAf (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 21 Dec 2011 11:00:35 -0500
-Message-Id: <4EF210E7020000780006965E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 21 Dec 2011 16:01:27 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad@darnok.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Xen: consolidate and simplify struct xenbus_driver
- instantiation
+	id S1753044Ab1LUQBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 11:01:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43207 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab1LUQBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 11:01:34 -0500
+X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gi03_xuaV2EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=O4XBFQGAp-FpmVUVIJ0A:9 a=ou-KjvlrU2UzCLTaskcA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324483293.5916.89.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/8] ftrace: Add enable/disable ftrace_ops control
+ interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Wed, 21 Dec 2011 11:01:33 -0500
+In-Reply-To: <1324468136-3997-4-git-send-email-jolsa@redhat.com>
+References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+	 <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+	 <1324468136-3997-4-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__Part113EA0C7.4__="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+On Wed, 2011-12-21 at 12:48 +0100, Jiri Olsa wrote:
+> Adding a way to temporarily enable/disable ftrace_ops. The change
+> follows the same way as 'global' ftrace_ops are done.
+> 
+> Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
+> which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
+> flag. In addition new per cpu flag called 'disabled' is also added to
+> ftrace_ops to provide the control information for each cpu.
+> 
+> When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
+> set as disabled for all cpus.
+> 
+> The ftrace_control_list contains all the registered 'control' ftrace_ops.
+> The control_ops provides function which iterates ftrace_control_list
+> and does the check for 'disabled' flag on current cpu.
+> 
+> Adding 2 inline functions ftrace_function_enable/ftrace_function_disable,
+> which enable/disable the ftrace_ops for given cpu.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  include/linux/ftrace.h |   42 +++++++++++++++++
+>  kernel/trace/ftrace.c  |  116 +++++++++++++++++++++++++++++++++++++++++++++---
+>  kernel/trace/trace.h   |    2 +
+>  3 files changed, 153 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index 523640f..67b8236 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -35,12 +35,14 @@ enum {
+>  	FTRACE_OPS_FL_ENABLED		= 1 << 0,
+>  	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
+>  	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
+> +	FTRACE_OPS_FL_CONTROL		= 1 << 3,
+>  };
+>  
+>  struct ftrace_ops {
+>  	ftrace_func_t			func;
+>  	struct ftrace_ops		*next;
+>  	unsigned long			flags;
+> +	void __percpu			*disabled;
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+>  	struct ftrace_hash		*notrace_hash;
+>  	struct ftrace_hash		*filter_hash;
+> @@ -97,6 +99,46 @@ int register_ftrace_function(struct ftrace_ops *ops);
+>  int unregister_ftrace_function(struct ftrace_ops *ops);
+>  void clear_ftrace_function(void);
+>  
+> +/**
+> + * ftrace_function_enable - enable controlled ftrace_ops on given cpu
+> + *
+> + * This function enables tracing on given cpu by decreasing
+> + * the per cpu control variable.
+> + * It must be called with preemption disabled and only on
+> + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
+> + */
+> +static inline void ftrace_function_enable(struct ftrace_ops *ops, int cpu)
+> +{
+> +	atomic_t *disabled;
+> +
+> +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL)) ||
+> +			 !preempt_count())
 
---=__Part113EA0C7.4__=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
-The 'name', 'owner', and 'mod_name' members are redundant with the
-identically named fields in the 'driver' sub-structure. Rather than
-switching each instance to specify these fields explicitly, introduce
-a macro to simplify this.
-
-Eliminate further redundancy by allowing the drvname argument to
-DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
-the ID table will be used for .driver.name).
-
-Also eliminate the questionable xenbus_register_{back,front}end()
-wrappers - their sole remaining purpose was the checking of the
-'owner' field, proper setting of which shouldn't be an issue anymore
-when the macro gets used.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
----
- drivers/block/xen-blkback/xenbus.c         |    9 ++------
- drivers/block/xen-blkfront.c               |   11 +++-------
- drivers/input/misc/xen-kbdfront.c          |    7 +-----
- drivers/net/xen-netback/xenbus.c           |    9 ++------
- drivers/net/xen-netfront.c                 |    9 ++------
- drivers/pci/xen-pcifront.c                 |   11 +++-------
- drivers/video/xen-fbfront.c                |    9 ++------
- drivers/xen/xen-pciback/xenbus.c           |   13 ++++--------
- drivers/xen/xenbus/xenbus_probe.c          |    7 ------
- drivers/xen/xenbus/xenbus_probe.h          |    4 ---
- drivers/xen/xenbus/xenbus_probe_backend.c  |    8 ++-----
- drivers/xen/xenbus/xenbus_probe_frontend.c |    8 ++-----
- include/xen/xenbus.h                       |   31 ++++++++----------------=
------
- 13 files changed, 44 insertions(+), 92 deletions(-)
-
---- 3.2-rc6/drivers/block/xen-blkback/xenbus.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/block/xen-blkback/xenbus.c
-@@ -787,17 +787,14 @@ static const struct xenbus_device_id xen
- };
-=20
-=20
--static struct xenbus_driver xen_blkbk =3D {
--	.name =3D "vbd",
--	.owner =3D THIS_MODULE,
--	.ids =3D xen_blkbk_ids,
-+static DEFINE_XENBUS_DRIVER(xen_blkbk, ,
- 	.probe =3D xen_blkbk_probe,
- 	.remove =3D xen_blkbk_remove,
- 	.otherend_changed =3D frontend_changed
--};
-+);
-=20
-=20
- int xen_blkif_xenbus_init(void)
- {
--	return xenbus_register_backend(&xen_blkbk);
-+	return xenbus_register_backend(&xen_blkbk_driver);
- }
---- 3.2-rc6/drivers/block/xen-blkfront.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/block/xen-blkfront.c
-@@ -1437,16 +1437,13 @@ static const struct xenbus_device_id blk
- 	{ "" }
- };
-=20
--static struct xenbus_driver blkfront =3D {
--	.name =3D "vbd",
--	.owner =3D THIS_MODULE,
--	.ids =3D blkfront_ids,
-+static DEFINE_XENBUS_DRIVER(blkfront, ,
- 	.probe =3D blkfront_probe,
- 	.remove =3D blkfront_remove,
- 	.resume =3D blkfront_resume,
- 	.otherend_changed =3D blkback_changed,
- 	.is_ready =3D blkfront_is_ready,
--};
-+);
-=20
- static int __init xlblk_init(void)
- {
-@@ -1461,7 +1458,7 @@ static int __init xlblk_init(void)
- 		return -ENODEV;
- 	}
-=20
--	ret =3D xenbus_register_frontend(&blkfront);
-+	ret =3D xenbus_register_frontend(&blkfront_driver);
- 	if (ret) {
- 		unregister_blkdev(XENVBD_MAJOR, DEV_NAME);
- 		return ret;
-@@ -1474,7 +1471,7 @@ module_init(xlblk_init);
-=20
- static void __exit xlblk_exit(void)
- {
--	return xenbus_unregister_driver(&blkfront);
-+	return xenbus_unregister_driver(&blkfront_driver);
- }
- module_exit(xlblk_exit);
-=20
---- 3.2-rc6/drivers/input/misc/xen-kbdfront.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/input/misc/xen-kbdfront.c
-@@ -361,15 +361,12 @@ static const struct xenbus_device_id xen
- 	{ "" }
- };
-=20
--static struct xenbus_driver xenkbd_driver =3D {
--	.name =3D "vkbd",
--	.owner =3D THIS_MODULE,
--	.ids =3D xenkbd_ids,
-+static DEFINE_XENBUS_DRIVER(xenkbd, ,
- 	.probe =3D xenkbd_probe,
- 	.remove =3D xenkbd_remove,
- 	.resume =3D xenkbd_resume,
- 	.otherend_changed =3D xenkbd_backend_changed,
--};
-+);
-=20
- static int __init xenkbd_init(void)
- {
---- 3.2-rc6/drivers/net/xen-netback/xenbus.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/net/xen-netback/xenbus.c
-@@ -474,17 +474,14 @@ static const struct xenbus_device_id net
- };
-=20
-=20
--static struct xenbus_driver netback =3D {
--	.name =3D "vif",
--	.owner =3D THIS_MODULE,
--	.ids =3D netback_ids,
-+static DEFINE_XENBUS_DRIVER(netback, ,
- 	.probe =3D netback_probe,
- 	.remove =3D netback_remove,
- 	.uevent =3D netback_uevent,
- 	.otherend_changed =3D frontend_changed,
--};
-+);
-=20
- int xenvif_xenbus_init(void)
- {
--	return xenbus_register_backend(&netback);
-+	return xenbus_register_backend(&netback_driver);
- }
---- 3.2-rc6/drivers/net/xen-netfront.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/net/xen-netfront.c
-@@ -1910,7 +1910,7 @@ static void xennet_sysfs_delif(struct ne
-=20
- #endif /* CONFIG_SYSFS */
-=20
--static struct xenbus_device_id netfront_ids[] =3D {
-+static const struct xenbus_device_id netfront_ids[] =3D {
- 	{ "vif" },
- 	{ "" }
- };
-@@ -1937,15 +1937,12 @@ static int __devexit xennet_remove(struc
- 	return 0;
- }
-=20
--static struct xenbus_driver netfront_driver =3D {
--	.name =3D "vif",
--	.owner =3D THIS_MODULE,
--	.ids =3D netfront_ids,
-+static DEFINE_XENBUS_DRIVER(netfront, ,
- 	.probe =3D netfront_probe,
- 	.remove =3D __devexit_p(xennet_remove),
- 	.resume =3D netfront_resume,
- 	.otherend_changed =3D netback_changed,
--};
-+);
-=20
- static int __init netif_init(void)
- {
---- 3.2-rc6/drivers/pci/xen-pcifront.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/pci/xen-pcifront.c
-@@ -1126,14 +1126,11 @@ static const struct xenbus_device_id xen
- 	{""},
- };
-=20
--static struct xenbus_driver xenbus_pcifront_driver =3D {
--	.name			=3D "pcifront",
--	.owner			=3D THIS_MODULE,
--	.ids			=3D xenpci_ids,
-+static DEFINE_XENBUS_DRIVER(xenpci, "pcifront",
- 	.probe			=3D pcifront_xenbus_probe,
- 	.remove			=3D pcifront_xenbus_remove,
- 	.otherend_changed	=3D pcifront_backend_changed,
--};
-+);
-=20
- static int __init pcifront_init(void)
- {
-@@ -1142,12 +1139,12 @@ static int __init pcifront_init(void)
-=20
- 	pci_frontend_registrar(1 /* enable */);
-=20
--	return xenbus_register_frontend(&xenbus_pcifront_driver);
-+	return xenbus_register_frontend(&xenpci_driver);
- }
-=20
- static void __exit pcifront_cleanup(void)
- {
--	xenbus_unregister_driver(&xenbus_pcifront_driver);
-+	xenbus_unregister_driver(&xenpci_driver);
- 	pci_frontend_registrar(0 /* disable */);
- }
- module_init(pcifront_init);
---- 3.2-rc6/drivers/video/xen-fbfront.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/video/xen-fbfront.c
-@@ -671,20 +671,17 @@ InitWait:
- 	}
- }
-=20
--static struct xenbus_device_id xenfb_ids[] =3D {
-+static const struct xenbus_device_id xenfb_ids[] =3D {
- 	{ "vfb" },
- 	{ "" }
- };
-=20
--static struct xenbus_driver xenfb_driver =3D {
--	.name =3D "vfb",
--	.owner =3D THIS_MODULE,
--	.ids =3D xenfb_ids,
-+static DEFINE_XENBUS_DRIVER(xenfb, ,
- 	.probe =3D xenfb_probe,
- 	.remove =3D xenfb_remove,
- 	.resume =3D xenfb_resume,
- 	.otherend_changed =3D xenfb_backend_changed,
--};
-+);
-=20
- static int __init xenfb_init(void)
- {
---- 3.2-rc6/drivers/xen/xen-pciback/xenbus.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xen-pciback/xenbus.c
-@@ -707,19 +707,16 @@ static int xen_pcibk_xenbus_remove(struc
- 	return 0;
- }
-=20
--static const struct xenbus_device_id xenpci_ids[] =3D {
-+static const struct xenbus_device_id xen_pcibk_ids[] =3D {
- 	{"pci"},
- 	{""},
- };
-=20
--static struct xenbus_driver xenbus_xen_pcibk_driver =3D {
--	.name			=3D DRV_NAME,
--	.owner			=3D THIS_MODULE,
--	.ids			=3D xenpci_ids,
-+static DEFINE_XENBUS_DRIVER(xen_pcibk, "pciback",
- 	.probe			=3D xen_pcibk_xenbus_probe,
- 	.remove			=3D xen_pcibk_xenbus_remove,
- 	.otherend_changed	=3D xen_pcibk_frontend_changed,
--};
-+);
-=20
- const struct xen_pcibk_backend *__read_mostly xen_pcibk_backend;
-=20
-@@ -735,11 +732,11 @@ int __init xen_pcibk_xenbus_register(voi
- 	if (passthrough)
- 		xen_pcibk_backend =3D &xen_pcibk_passthrough_backend;
- 	pr_info(DRV_NAME ": backend is %s\n", xen_pcibk_backend->name);
--	return xenbus_register_backend(&xenbus_xen_pcibk_driver);
-+	return xenbus_register_backend(&xen_pcibk_driver);
- }
-=20
- void __exit xen_pcibk_xenbus_unregister(void)
- {
- 	destroy_workqueue(xen_pcibk_wq);
--	xenbus_unregister_driver(&xenbus_xen_pcibk_driver);
-+	xenbus_unregister_driver(&xen_pcibk_driver);
- }
---- 3.2-rc6/drivers/xen/xenbus/xenbus_probe.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe.c
-@@ -291,14 +291,9 @@ void xenbus_dev_shutdown(struct device *
- EXPORT_SYMBOL_GPL(xenbus_dev_shutdown);
-=20
- int xenbus_register_driver_common(struct xenbus_driver *drv,
--				  struct xen_bus_type *bus,
--				  struct module *owner,
--				  const char *mod_name)
-+				  struct xen_bus_type *bus)
- {
--	drv->driver.name =3D drv->name;
- 	drv->driver.bus =3D &bus->bus;
--	drv->driver.owner =3D owner;
--	drv->driver.mod_name =3D mod_name;
-=20
- 	return driver_register(&drv->driver);
- }
---- 3.2-rc6/drivers/xen/xenbus/xenbus_probe.h
-+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe.h
-@@ -53,9 +53,7 @@ extern int xenbus_match(struct device *_
- extern int xenbus_dev_probe(struct device *_dev);
- extern int xenbus_dev_remove(struct device *_dev);
- extern int xenbus_register_driver_common(struct xenbus_driver *drv,
--					 struct xen_bus_type *bus,
--					 struct module *owner,
--					 const char *mod_name);
-+					 struct xen_bus_type *bus);
- extern int xenbus_probe_node(struct xen_bus_type *bus,
- 			     const char *type,
- 			     const char *nodename);
---- 3.2-rc6/drivers/xen/xenbus/xenbus_probe_backend.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe_backend.c
-@@ -232,15 +232,13 @@ int xenbus_dev_is_online(struct xenbus_d
- }
- EXPORT_SYMBOL_GPL(xenbus_dev_is_online);
-=20
--int __xenbus_register_backend(struct xenbus_driver *drv,
--			      struct module *owner, const char *mod_name)
-+int xenbus_register_backend(struct xenbus_driver *drv)
- {
- 	drv->read_otherend_details =3D read_frontend_details;
-=20
--	return xenbus_register_driver_common(drv, &xenbus_backend,
--					     owner, mod_name);
-+	return xenbus_register_driver_common(drv, &xenbus_backend);
- }
--EXPORT_SYMBOL_GPL(__xenbus_register_backend);
-+EXPORT_SYMBOL_GPL(xenbus_register_backend);
-=20
- static int backend_probe_and_watch(struct notifier_block *notifier,
- 				   unsigned long event,
---- 3.2-rc6/drivers/xen/xenbus/xenbus_probe_frontend.c
-+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe_frontend.c=
-
-@@ -230,15 +230,13 @@ static void wait_for_devices(struct xenb
- 			 print_device_status);
- }
-=20
--int __xenbus_register_frontend(struct xenbus_driver *drv,
--			       struct module *owner, const char *mod_name)
-+int xenbus_register_frontend(struct xenbus_driver *drv)
- {
- 	int ret;
-=20
- 	drv->read_otherend_details =3D read_backend_details;
-=20
--	ret =3D xenbus_register_driver_common(drv, &xenbus_frontend,
--					    owner, mod_name);
-+	ret =3D xenbus_register_driver_common(drv, &xenbus_frontend);
- 	if (ret)
- 		return ret;
-=20
-@@ -247,7 +245,7 @@ int __xenbus_register_frontend(struct xe
-=20
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(__xenbus_register_frontend);
-+EXPORT_SYMBOL_GPL(xenbus_register_frontend);
-=20
- static DECLARE_WAIT_QUEUE_HEAD(backend_state_wq);
- static int backend_state;
---- 3.2-rc6/include/xen/xenbus.h
-+++ 3.2-rc6-struct-xenbus_driver/include/xen/xenbus.h
-@@ -85,8 +85,6 @@ struct xenbus_device_id
-=20
- /* A xenbus driver. */
- struct xenbus_driver {
--	char *name;
--	struct module *owner;
- 	const struct xenbus_device_id *ids;
- 	int (*probe)(struct xenbus_device *dev,
- 		     const struct xenbus_device_id *id);
-@@ -101,31 +99,20 @@ struct xenbus_driver {
- 	int (*is_ready)(struct xenbus_device *dev);
- };
-=20
--static inline struct xenbus_driver *to_xenbus_driver(struct device_driver =
-*drv)
--{
--	return container_of(drv, struct xenbus_driver, driver);
-+#define DEFINE_XENBUS_DRIVER(var, drvname, methods...)		\
-+struct xenbus_driver var ## _driver =3D {				\
-+	.driver.name =3D drvname + 0 ?: var ## _ids->devicetype,	\
-+	.driver.owner =3D THIS_MODULE,				\
-+	.ids =3D var ## _ids, ## methods				\
- }
-=20
--int __must_check __xenbus_register_frontend(struct xenbus_driver *drv,
--					    struct module *owner,
--					    const char *mod_name);
--
--static inline int __must_check
--xenbus_register_frontend(struct xenbus_driver *drv)
-+static inline struct xenbus_driver *to_xenbus_driver(struct device_driver =
-*drv)
- {
--	WARN_ON(drv->owner !=3D THIS_MODULE);
--	return __xenbus_register_frontend(drv, THIS_MODULE, KBUILD_MODNAME)=
-;
-+	return container_of(drv, struct xenbus_driver, driver);
- }
-=20
--int __must_check __xenbus_register_backend(struct xenbus_driver *drv,
--					   struct module *owner,
--					   const char *mod_name);
--static inline int __must_check
--xenbus_register_backend(struct xenbus_driver *drv)
--{
--	WARN_ON(drv->owner !=3D THIS_MODULE);
--	return __xenbus_register_backend(drv, THIS_MODULE, KBUILD_MODNAME);=
-
--}
-+int __must_check xenbus_register_frontend(struct xenbus_driver *);
-+int __must_check xenbus_register_backend(struct xenbus_driver *);
-=20
- void xenbus_unregister_driver(struct xenbus_driver *drv);
-=20
+The WARN_ON_ONCE() should also include the !preempt_count().
 
 
+> +		return;
+> +
+> +	disabled = per_cpu_ptr(ops->disabled, cpu);
+> +	atomic_dec(disabled);
+> +}
+> +
+> +/**
+> + * ftrace_function_disable - enable controlled ftrace_ops on given cpu
+> + *
+> + * This function enables tracing on given cpu by decreasing
+> + * the per cpu control variable.
+> + * It must be called with preemption disabled and only on
+> + * ftrace_ops registered with FTRACE_OPS_FL_CONTROL.
+> + */
+> +static inline void ftrace_function_disable(struct ftrace_ops *ops, int cpu)
+> +{
+> +	atomic_t *disabled;
+> +
+> +	if (WARN_ON_ONCE(!(ops->flags & FTRACE_OPS_FL_CONTROL)) ||
+> +			 !preempt_count())
 
---=__Part113EA0C7.4__=
-Content-Type: text/plain; name="linux-3.2-rc6-struct-xenbus_driver.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="linux-3.2-rc6-struct-xenbus_driver.patch"
+Same here.
 
-Xen: consolidate and simplify struct xenbus_driver instantiation=0A=0AThe =
-'name', 'owner', and 'mod_name' members are redundant with the=0Aidenticall=
-y named fields in the 'driver' sub-structure. Rather than=0Aswitching each =
-instance to specify these fields explicitly, introduce=0Aa macro to =
-simplify this.=0A=0AEliminate further redundancy by allowing the drvname =
-argument to=0ADEFINE_XENBUS_DRIVER() to be blank (in which case the first =
-entry from=0Athe ID table will be used for .driver.name).=0A=0AAlso =
-eliminate the questionable xenbus_register_{back,front}end()=0Awrappers - =
-their sole remaining purpose was the checking of the=0A'owner' field, =
-proper setting of which shouldn't be an issue anymore=0Awhen the macro =
-gets used.=0A=0ASigned-off-by: Jan Beulich <jbeulich@suse.com>=0A=0A---=0A =
-drivers/block/xen-blkback/xenbus.c         |    9 ++------=0A drivers/block=
-/xen-blkfront.c               |   11 +++-------=0A drivers/input/misc/xen-k=
-bdfront.c          |    7 +-----=0A drivers/net/xen-netback/xenbus.c       =
-    |    9 ++------=0A drivers/net/xen-netfront.c                 |    9 =
-++------=0A drivers/pci/xen-pcifront.c                 |   11 +++-------=0A=
- drivers/video/xen-fbfront.c                |    9 ++------=0A drivers/xen/=
-xen-pciback/xenbus.c           |   13 ++++--------=0A drivers/xen/xenbus/xe=
-nbus_probe.c          |    7 ------=0A drivers/xen/xenbus/xenbus_probe.h   =
-       |    4 ---=0A drivers/xen/xenbus/xenbus_probe_backend.c  |    8 =
-++-----=0A drivers/xen/xenbus/xenbus_probe_frontend.c |    8 ++-----=0A =
-include/xen/xenbus.h                       |   31 ++++++++-----------------=
-----=0A 13 files changed, 44 insertions(+), 92 deletions(-)=0A=0A--- =
-3.2-rc6/drivers/block/xen-blkback/xenbus.c=0A+++ 3.2-rc6-struct-xenbus_driv=
-er/drivers/block/xen-blkback/xenbus.c=0A@@ -787,17 +787,14 @@ static const =
-struct xenbus_device_id xen=0A };=0A =0A =0A-static struct xenbus_driver =
-xen_blkbk =3D {=0A-	.name =3D "vbd",=0A-	.owner =3D THIS_MODULE,=0A-=
-	.ids =3D xen_blkbk_ids,=0A+static DEFINE_XENBUS_DRIVER(xen_blkbk, =
-,=0A 	.probe =3D xen_blkbk_probe,=0A 	.remove =3D xen_blkbk_remove,=0A 	=
-.otherend_changed =3D frontend_changed=0A-};=0A+);=0A =0A =0A int =
-xen_blkif_xenbus_init(void)=0A {=0A-	return xenbus_register_backend(&xen=
-_blkbk);=0A+	return xenbus_register_backend(&xen_blkbk_driver);=0A =
-}=0A--- 3.2-rc6/drivers/block/xen-blkfront.c=0A+++ 3.2-rc6-struct-xenbus_dr=
-iver/drivers/block/xen-blkfront.c=0A@@ -1437,16 +1437,13 @@ static const =
-struct xenbus_device_id blk=0A 	{ "" }=0A };=0A =0A-static struct =
-xenbus_driver blkfront =3D {=0A-	.name =3D "vbd",=0A-	.owner =3D =
-THIS_MODULE,=0A-	.ids =3D blkfront_ids,=0A+static DEFINE_XENBUS_DRIV=
-ER(blkfront, ,=0A 	.probe =3D blkfront_probe,=0A 	.remove =3D =
-blkfront_remove,=0A 	.resume =3D blkfront_resume,=0A 	.otherend_c=
-hanged =3D blkback_changed,=0A 	.is_ready =3D blkfront_is_ready,=0A-};=0A+)=
-;=0A =0A static int __init xlblk_init(void)=0A {=0A@@ -1461,7 +1458,7 @@ =
-static int __init xlblk_init(void)=0A 		return -ENODEV;=0A 	=
-}=0A =0A-	ret =3D xenbus_register_frontend(&blkfront);=0A+	=
-ret =3D xenbus_register_frontend(&blkfront_driver);=0A 	if (ret) {=0A 		=
-unregister_blkdev(XENVBD_MAJOR, DEV_NAME);=0A 		return ret;=0A@@ =
--1474,7 +1471,7 @@ module_init(xlblk_init);=0A =0A static void __exit =
-xlblk_exit(void)=0A {=0A-	return xenbus_unregister_driver(&blkfront);=
-=0A+	return xenbus_unregister_driver(&blkfront_driver);=0A }=0A =
-module_exit(xlblk_exit);=0A =0A--- 3.2-rc6/drivers/input/misc/xen-kbdfront.=
-c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/input/misc/xen-kbdfront.c=0A@@=
- -361,15 +361,12 @@ static const struct xenbus_device_id xen=0A 	{ =
-"" }=0A };=0A =0A-static struct xenbus_driver xenkbd_driver =3D {=0A-	=
-.name =3D "vkbd",=0A-	.owner =3D THIS_MODULE,=0A-	.ids =3D xenkbd_ids=
-,=0A+static DEFINE_XENBUS_DRIVER(xenkbd, ,=0A 	.probe =3D xenkbd_probe,=0A=
- 	.remove =3D xenkbd_remove,=0A 	.resume =3D xenkbd_resume,=0A 	=
-.otherend_changed =3D xenkbd_backend_changed,=0A-};=0A+);=0A =0A static =
-int __init xenkbd_init(void)=0A {=0A--- 3.2-rc6/drivers/net/xen-netback/xen=
-bus.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/net/xen-netback/xenbus.c=
-=0A@@ -474,17 +474,14 @@ static const struct xenbus_device_id net=0A };=0A =
-=0A =0A-static struct xenbus_driver netback =3D {=0A-	.name =3D =
-"vif",=0A-	.owner =3D THIS_MODULE,=0A-	.ids =3D netback_ids,=0A+st=
-atic DEFINE_XENBUS_DRIVER(netback, ,=0A 	.probe =3D netback_probe,=
-=0A 	.remove =3D netback_remove,=0A 	.uevent =3D netback_uevent,=0A 	=
-.otherend_changed =3D frontend_changed,=0A-};=0A+);=0A =0A int xenvif_xenbu=
-s_init(void)=0A {=0A-	return xenbus_register_backend(&netback);=0A+	=
-return xenbus_register_backend(&netback_driver);=0A }=0A--- 3.2-rc6/drivers=
-/net/xen-netfront.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/net/xen-netf=
-ront.c=0A@@ -1910,7 +1910,7 @@ static void xennet_sysfs_delif(struct ne=0A =
-=0A #endif /* CONFIG_SYSFS */=0A =0A-static struct xenbus_device_id =
-netfront_ids[] =3D {=0A+static const struct xenbus_device_id netfront_ids[]=
- =3D {=0A 	{ "vif" },=0A 	{ "" }=0A };=0A@@ -1937,15 +1937,12 @@ =
-static int __devexit xennet_remove(struc=0A 	return 0;=0A }=0A =
-=0A-static struct xenbus_driver netfront_driver =3D {=0A-	.name =3D =
-"vif",=0A-	.owner =3D THIS_MODULE,=0A-	.ids =3D netfront_ids,=0A+s=
-tatic DEFINE_XENBUS_DRIVER(netfront, ,=0A 	.probe =3D netfront_probe,=
-=0A 	.remove =3D __devexit_p(xennet_remove),=0A 	.resume =3D =
-netfront_resume,=0A 	.otherend_changed =3D netback_changed,=0A-};=0A+);=
-=0A =0A static int __init netif_init(void)=0A {=0A--- 3.2-rc6/drivers/pci/x=
-en-pcifront.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/pci/xen-pcifront.c=
-=0A@@ -1126,14 +1126,11 @@ static const struct xenbus_device_id xen=0A 	=
-{""},=0A };=0A =0A-static struct xenbus_driver xenbus_pcifront_driver =3D =
-{=0A-	.name			=3D "pcifront",=0A-	.owner			=
-=3D THIS_MODULE,=0A-	.ids			=3D xenpci_ids,=0A+static =
-DEFINE_XENBUS_DRIVER(xenpci, "pcifront",=0A 	.probe			=
-=3D pcifront_xenbus_probe,=0A 	.remove			=3D pcifront_xenbus=
-_remove,=0A 	.otherend_changed	=3D pcifront_backend_changed,=0A-};=
-=0A+);=0A =0A static int __init pcifront_init(void)=0A {=0A@@ -1142,12 =
-+1139,12 @@ static int __init pcifront_init(void)=0A =0A 	pci_fronten=
-d_registrar(1 /* enable */);=0A =0A-	return xenbus_register_frontend(&xe=
-nbus_pcifront_driver);=0A+	return xenbus_register_frontend(&xenpci_dri=
-ver);=0A }=0A =0A static void __exit pcifront_cleanup(void)=0A {=0A-	=
-xenbus_unregister_driver(&xenbus_pcifront_driver);=0A+	xenbus_unregister_d=
-river(&xenpci_driver);=0A 	pci_frontend_registrar(0 /* disable =
-*/);=0A }=0A module_init(pcifront_init);=0A--- 3.2-rc6/drivers/video/xen-fb=
-front.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/video/xen-fbfront.c=0A@@=
- -671,20 +671,17 @@ InitWait:=0A 	}=0A }=0A =0A-static struct =
-xenbus_device_id xenfb_ids[] =3D {=0A+static const struct xenbus_device_id =
-xenfb_ids[] =3D {=0A 	{ "vfb" },=0A 	{ "" }=0A };=0A =0A-static struct =
-xenbus_driver xenfb_driver =3D {=0A-	.name =3D "vfb",=0A-	.owner =3D =
-THIS_MODULE,=0A-	.ids =3D xenfb_ids,=0A+static DEFINE_XENBUS_DRIVER(=
-xenfb, ,=0A 	.probe =3D xenfb_probe,=0A 	.remove =3D xenfb_remove,=
-=0A 	.resume =3D xenfb_resume,=0A 	.otherend_changed =3D xenfb_backend=
-_changed,=0A-};=0A+);=0A =0A static int __init xenfb_init(void)=0A {=0A--- =
-3.2-rc6/drivers/xen/xen-pciback/xenbus.c=0A+++ 3.2-rc6-struct-xenbus_driver=
-/drivers/xen/xen-pciback/xenbus.c=0A@@ -707,19 +707,16 @@ static int =
-xen_pcibk_xenbus_remove(struc=0A 	return 0;=0A }=0A =0A-static const =
-struct xenbus_device_id xenpci_ids[] =3D {=0A+static const struct =
-xenbus_device_id xen_pcibk_ids[] =3D {=0A 	{"pci"},=0A 	{""},=0A =
-};=0A =0A-static struct xenbus_driver xenbus_xen_pcibk_driver =3D {=0A-	=
-.name			=3D DRV_NAME,=0A-	.owner			=
-=3D THIS_MODULE,=0A-	.ids			=3D xenpci_ids,=0A+static =
-DEFINE_XENBUS_DRIVER(xen_pcibk, "pciback",=0A 	.probe			=
-=3D xen_pcibk_xenbus_probe,=0A 	.remove			=3D xen_pcibk_xenbu=
-s_remove,=0A 	.otherend_changed	=3D xen_pcibk_frontend_changed,=0A-=
-};=0A+);=0A =0A const struct xen_pcibk_backend *__read_mostly xen_pcibk_bac=
-kend;=0A =0A@@ -735,11 +732,11 @@ int __init xen_pcibk_xenbus_register(voi=
-=0A 	if (passthrough)=0A 		xen_pcibk_backend =3D &xen_pcibk_pa=
-ssthrough_backend;=0A 	pr_info(DRV_NAME ": backend is %s\n", xen_pcibk_bac=
-kend->name);=0A-	return xenbus_register_backend(&xenbus_xen_pcibk_dr=
-iver);=0A+	return xenbus_register_backend(&xen_pcibk_driver);=0A }=0A =
-=0A void __exit xen_pcibk_xenbus_unregister(void)=0A {=0A 	destroy_wor=
-kqueue(xen_pcibk_wq);=0A-	xenbus_unregister_driver(&xenbus_xen_pcibk_=
-driver);=0A+	xenbus_unregister_driver(&xen_pcibk_driver);=0A }=0A--- =
-3.2-rc6/drivers/xen/xenbus/xenbus_probe.c=0A+++ 3.2-rc6-struct-xenbus_drive=
-r/drivers/xen/xenbus/xenbus_probe.c=0A@@ -291,14 +291,9 @@ void xenbus_dev_=
-shutdown(struct device *=0A EXPORT_SYMBOL_GPL(xenbus_dev_shutdown);=0A =0A =
-int xenbus_register_driver_common(struct xenbus_driver *drv,=0A-		=
-		  struct xen_bus_type *bus,=0A-				  =
-struct module *owner,=0A-				  const char =
-*mod_name)=0A+				  struct xen_bus_type *bus)=0A =
-{=0A-	drv->driver.name =3D drv->name;=0A 	drv->driver.bus =3D =
-&bus->bus;=0A-	drv->driver.owner =3D owner;=0A-	drv->driver.mod_nam=
-e =3D mod_name;=0A =0A 	return driver_register(&drv->driver);=0A }=0A--- =
-3.2-rc6/drivers/xen/xenbus/xenbus_probe.h=0A+++ 3.2-rc6-struct-xenbus_drive=
-r/drivers/xen/xenbus/xenbus_probe.h=0A@@ -53,9 +53,7 @@ extern int =
-xenbus_match(struct device *_=0A extern int xenbus_dev_probe(struct device =
-*_dev);=0A extern int xenbus_dev_remove(struct device *_dev);=0A extern =
-int xenbus_register_driver_common(struct xenbus_driver *drv,=0A-		=
-			 struct xen_bus_type *bus,=0A-				=
-	 struct module *owner,=0A-					 =
-const char *mod_name);=0A+					 struct =
-xen_bus_type *bus);=0A extern int xenbus_probe_node(struct xen_bus_type =
-*bus,=0A 			     const char *type,=0A 			=
-     const char *nodename);=0A--- 3.2-rc6/drivers/xen/xenbus/xenbus_probe_b=
-ackend.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe=
-_backend.c=0A@@ -232,15 +232,13 @@ int xenbus_dev_is_online(struct =
-xenbus_d=0A }=0A EXPORT_SYMBOL_GPL(xenbus_dev_is_online);=0A =0A-int =
-__xenbus_register_backend(struct xenbus_driver *drv,=0A-			=
-      struct module *owner, const char *mod_name)=0A+int xenbus_register_ba=
-ckend(struct xenbus_driver *drv)=0A {=0A 	drv->read_otherend_details =
-=3D read_frontend_details;=0A =0A-	return xenbus_register_driver_commo=
-n(drv, &xenbus_backend,=0A-					     =
-owner, mod_name);=0A+	return xenbus_register_driver_common(drv, =
-&xenbus_backend);=0A }=0A-EXPORT_SYMBOL_GPL(__xenbus_register_backend);=0A+=
-EXPORT_SYMBOL_GPL(xenbus_register_backend);=0A =0A static int backend_probe=
-_and_watch(struct notifier_block *notifier,=0A 				   =
-unsigned long event,=0A--- 3.2-rc6/drivers/xen/xenbus/xenbus_probe_frontend=
-.c=0A+++ 3.2-rc6-struct-xenbus_driver/drivers/xen/xenbus/xenbus_probe_front=
-end.c=0A@@ -230,15 +230,13 @@ static void wait_for_devices(struct xenb=0A 	=
-		 print_device_status);=0A }=0A =0A-int __xenbus_register_fr=
-ontend(struct xenbus_driver *drv,=0A-			       struct =
-module *owner, const char *mod_name)=0A+int xenbus_register_frontend(struct=
- xenbus_driver *drv)=0A {=0A 	int ret;=0A =0A 	drv->read_otherend_=
-details =3D read_backend_details;=0A =0A-	ret =3D xenbus_register_dri=
-ver_common(drv, &xenbus_frontend,=0A-					   =
- owner, mod_name);=0A+	ret =3D xenbus_register_driver_common(drv, =
-&xenbus_frontend);=0A 	if (ret)=0A 		return ret;=0A =0A@@ =
--247,7 +245,7 @@ int __xenbus_register_frontend(struct xe=0A =0A 	=
-return 0;=0A }=0A-EXPORT_SYMBOL_GPL(__xenbus_register_frontend);=0A+EXPORT_=
-SYMBOL_GPL(xenbus_register_frontend);=0A =0A static DECLARE_WAIT_QUEUE_HEAD=
-(backend_state_wq);=0A static int backend_state;=0A--- 3.2-rc6/include/xen/=
-xenbus.h=0A+++ 3.2-rc6-struct-xenbus_driver/include/xen/xenbus.h=0A@@ =
--85,8 +85,6 @@ struct xenbus_device_id=0A =0A /* A xenbus driver. */=0A =
-struct xenbus_driver {=0A-	char *name;=0A-	struct module *owner;=0A 	=
-const struct xenbus_device_id *ids;=0A 	int (*probe)(struct xenbus_device =
-*dev,=0A 		     const struct xenbus_device_id *id);=0A@@ =
--101,31 +99,20 @@ struct xenbus_driver {=0A 	int (*is_ready)(struct =
-xenbus_device *dev);=0A };=0A =0A-static inline struct xenbus_driver =
-*to_xenbus_driver(struct device_driver *drv)=0A-{=0A-	return container_of=
-(drv, struct xenbus_driver, driver);=0A+#define DEFINE_XENBUS_DRIVER(var, =
-drvname, methods...)		\=0A+struct xenbus_driver var ## _driver =
-=3D {				\=0A+	.driver.name =3D drvname + 0 ?: =
-var ## _ids->devicetype,	\=0A+	.driver.owner =3D THIS_MODULE,		=
-		\=0A+	.ids =3D var ## _ids, ## methods			=
-	\=0A }=0A =0A-int __must_check __xenbus_register_frontend(struct =
-xenbus_driver *drv,=0A-					    struct module =
-*owner,=0A-					    const char *mod_name);=
-=0A-=0A-static inline int __must_check=0A-xenbus_register_frontend(struct =
-xenbus_driver *drv)=0A+static inline struct xenbus_driver *to_xenbus_driver=
-(struct device_driver *drv)=0A {=0A-	WARN_ON(drv->owner !=3D THIS_MODULE=
-);=0A-	return __xenbus_register_frontend(drv, THIS_MODULE, KBUILD_MODNAME)=
-;=0A+	return container_of(drv, struct xenbus_driver, driver);=0A }=0A =
-=0A-int __must_check __xenbus_register_backend(struct xenbus_driver =
-*drv,=0A-					   struct module *owner,=0A=
--					   const char *mod_name);=0A-static=
- inline int __must_check=0A-xenbus_register_backend(struct xenbus_driver =
-*drv)=0A-{=0A-	WARN_ON(drv->owner !=3D THIS_MODULE);=0A-	return =
-__xenbus_register_backend(drv, THIS_MODULE, KBUILD_MODNAME);=0A-}=0A+int =
-__must_check xenbus_register_frontend(struct xenbus_driver *);=0A+int =
-__must_check xenbus_register_backend(struct xenbus_driver *);=0A =0A void =
-xenbus_unregister_driver(struct xenbus_driver *drv);=0A =0A
---=__Part113EA0C7.4__=--
+> +		return;
+> +
+> +	disabled = per_cpu_ptr(ops->disabled, cpu);
+> +	atomic_inc(disabled);
+> +}
+> +
+>  extern void ftrace_stub(unsigned long a0, unsigned long a1);
+>  
+>  #else /* !CONFIG_FUNCTION_TRACER */
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 7eb702f..1b56013 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -60,6 +60,8 @@
+>  #define FTRACE_HASH_DEFAULT_BITS 10
+>  #define FTRACE_HASH_MAX_BITS 12
+>  
+> +#define FL_GLOBAL_CONTROL (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTROL)
+> +
+>  /* ftrace_enabled is a method to turn ftrace on or off */
+>  int ftrace_enabled __read_mostly;
+>  static int last_ftrace_enabled;
+> @@ -87,12 +89,14 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
+>  };
+>  
+>  static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
+> +static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
+>  static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
+>  ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
+>  static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
+>  ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
+>  ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+>  static struct ftrace_ops global_ops;
+> +static struct ftrace_ops control_ops;
+>  
+>  static void
+>  ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
+> @@ -166,6 +170,38 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
+>  }
+>  #endif
+>  
+> +static void control_ops_disable_all(struct ftrace_ops *ops)
+> +{
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu)
+> +		atomic_set(per_cpu_ptr(ops->disabled, cpu), 1);
+> +}
+> +
+> +static int control_ops_alloc(struct ftrace_ops *ops)
+> +{
+> +	atomic_t *disabled;
+> +
+> +	disabled = alloc_percpu(atomic_t);
+> +	if (!disabled)
+> +		return -ENOMEM;
+> +
+> +	ops->disabled = disabled;
+> +	control_ops_disable_all(ops);
+> +	return 0;
+> +}
+> +
+> +static void control_ops_free(struct ftrace_ops *ops)
+> +{
+> +	free_percpu(ops->disabled);
+> +}
+> +
+> +static int control_ops_is_disabled(struct ftrace_ops *ops)
+> +{
+> +	atomic_t *disabled = this_cpu_ptr(ops->disabled);
+
+Again, the use of "this_cpu_ptr" is wrong. Gah! We should nuke all of
+that crap.
+
+
+> +	return atomic_read(disabled);
+> +}
+> +
+>  static void update_global_ops(void)
+>  {
+>  	ftrace_func_t func;
+> @@ -257,6 +293,26 @@ static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+>  	return 0;
+>  }
+>  
+> +static void add_ftrace_list_ops(struct ftrace_ops **list,
+> +				struct ftrace_ops *main_ops,
+> +				struct ftrace_ops *ops)
+> +{
+> +	int first = *list == &ftrace_list_end;
+> +	add_ftrace_ops(list, ops);
+> +	if (first)
+> +		add_ftrace_ops(&ftrace_ops_list, main_ops);
+> +}
+> +
+> +static int remove_ftrace_list_ops(struct ftrace_ops **list,
+> +				  struct ftrace_ops *main_ops,
+> +				  struct ftrace_ops *ops)
+> +{
+> +	int ret = remove_ftrace_ops(list, ops);
+> +	if (!ret && *list == &ftrace_list_end)
+> +		ret = remove_ftrace_ops(&ftrace_ops_list, main_ops);
+> +	return ret;
+> +}
+> +
+>  static int __register_ftrace_function(struct ftrace_ops *ops)
+>  {
+>  	if (ftrace_disabled)
+> @@ -268,15 +324,19 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
+>  	if (WARN_ON(ops->flags & FTRACE_OPS_FL_ENABLED))
+>  		return -EBUSY;
+>  
+> +	if ((ops->flags & FL_GLOBAL_CONTROL) == FL_GLOBAL_CONTROL)
+
+No biggy, but I usually find:
+
+	if (ops->flags & FL_GLOBAL_CONTROL)
+
+more readable. With what you have, I looked at that condition three
+times to figure out what was different between what was '&'d with the
+flags and what was being equal too. Usually the ((flags & X) == Y) is
+done to check if a subset of bits are set within a mask of bits.
+
+
+> +		return -EINVAL;
+> +
+>  	if (!core_kernel_data((unsigned long)ops))
+>  		ops->flags |= FTRACE_OPS_FL_DYNAMIC;
+>  
+>  	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
+> -		int first = ftrace_global_list == &ftrace_list_end;
+> -		add_ftrace_ops(&ftrace_global_list, ops);
+> +		add_ftrace_list_ops(&ftrace_global_list, &global_ops, ops);
+
+Much better and easier to read :)
+
+>  		ops->flags |= FTRACE_OPS_FL_ENABLED;
+> -		if (first)
+> -			add_ftrace_ops(&ftrace_ops_list, &global_ops);
+> +	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
+> +		if (control_ops_alloc(ops))
+> +			return -ENOMEM;
+> +		add_ftrace_list_ops(&ftrace_control_list, &control_ops, ops);
+>  	} else
+>  		add_ftrace_ops(&ftrace_ops_list, ops);
+>  
+
+The rest looks good.
+
+-- Steve
+
+
