@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab1LUSrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:47:05 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:20739 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751525Ab1LUSrD (ORCPT
+	id S1753827Ab1LUSrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:47:16 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44442 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753134Ab1LUSrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:47:03 -0500
-Date: Wed, 21 Dec 2011 10:47:02 -0800 (PST)
-From: Aaron Spear <aspear@vmware.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: devel@driverdev.osuosl.org, Peter Zijlstra <peterz@infradead.org>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <fb3f11b9-d36f-4160-96ff-c4610af742de@aspear-win7>
-In-Reply-To: <20111220110813.GA19105@elte.hu>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [24.8.22.216]
-X-Mailer: Zimbra 7.1.3_GA_3374 (Zimbra Desktop/7.1.2_10978_Windows)
+	Wed, 21 Dec 2011 13:47:05 -0500
+From: Matt Fleming <matt@console-pimps.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        sparclinux@vger.kernel.org
+Subject: [PATCH 1/2] sparc: Make SA_NOMASK a synonym of SA_NODEFER
+Date: Wed, 21 Dec 2011 18:47:00 +0000
+Message-Id: <1324493221-4435-2-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
+References: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+From: Matt Fleming <matt.fleming@intel.com>
 
-> "CTF" was mainly written by yourself, right?
-> 
-> If there's any tool worth caring about that wants to deal in CTF
-> then it can be converted just fine. I don't think it matters
-> nearly as much as you seem to imply, see my reply further below.
+Unlike other architectures, sparc currently has no SA_NODEFER
+definition but only the older SA_NOMASK. Since SA_NOMASK is the
+historical name for SA_NODEFER, add SA_NODEFER and copy what other
+architectures do by making SA_NOMASK a synonym for SA_NODEFER.
 
-Hi Ingo,
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/sparc/include/asm/signal.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I thought it might be a useful point of reference to mention that there is a commitment to CTF for more than just LTTng.  The Multicore Association and member companies including TI, Freescale, Samsung, Mentor Graphics, Wind River Systems, VMware and others intend to use CTF as a lingua franca for correlation of traces taken from different tracing technologies in heterogeneous multi-core systems.  Linux is pivotal here of course, but we are also aggregating various types of hardware traces as well as instrumentation trace from bare metal, RTOS's, and other OS's.  Many of the requirements that went into the draft CTF specification were driven by this working groups experience in the embedded industry and many different legacy tracing technologies.  While Mathieu has been instrumental in creating CTF, he is certainly not the only one with a vested interest in its future.
+diff --git a/arch/sparc/include/asm/signal.h b/arch/sparc/include/asm/signal.h
+index e49b828..aa42fe3 100644
+--- a/arch/sparc/include/asm/signal.h
++++ b/arch/sparc/include/asm/signal.h
+@@ -143,10 +143,11 @@ struct sigstack {
+ #define SA_ONSTACK	_SV_SSTACK
+ #define SA_RESTART	_SV_INTR
+ #define SA_ONESHOT	_SV_RESET
+-#define SA_NOMASK	0x20u
++#define SA_NODEFER	0x20u
+ #define SA_NOCLDWAIT    0x100u
+ #define SA_SIGINFO      0x200u
+ 
++#define SA_NOMASK	SA_NODEFER
+ 
+ #define SIG_BLOCK          0x01	/* for blocking signals */
+ #define SIG_UNBLOCK        0x02	/* for unblocking signals */
+-- 
+1.7.4.4
 
-respectfully,
-Aaron Spear - VMware
-Chairman, Multicore Association Tools Infrastructure Working Group
