@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1LUPW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 10:22:58 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44897 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1LUPW5 convert rfc822-to-8bit (ORCPT
+	id S1753364Ab1LUPXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 10:23:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45081 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab1LUPXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 10:22:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323720569-15435-4-git-send-email-konrad.wilk@oracle.com>
-References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
-	<1323720569-15435-4-git-send-email-konrad.wilk@oracle.com>
-Date: Wed, 21 Dec 2011 10:22:56 -0500
-Message-ID: <CAH3drwaNFCwwfObkWAYP93gZ5Mb7B9D5bP7o3uBNsYS4W1otyQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] drm/ttm/dma: Optimize when free-ing the recycled page pool.
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, thellstrom@vmware.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Dec 2011 10:23:45 -0500
+X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=qLkpjsMThDcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=D19gQVrFAAAA:8 a=20KFwNOVAAAA:8 a=6jxBsJtdXEPMm902llQA:9 a=cdW6xDTV6i2yTHuOpI8A:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324481022.5916.81.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/8] ftrace: Fix possible NULL dereferencing in
+ __ftrace_hash_rec_update
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Wed, 21 Dec 2011 10:23:42 -0500
+In-Reply-To: <1324468136-3997-3-git-send-email-jolsa@redhat.com>
+References: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+	 <1324468136-3997-1-git-send-email-jolsa@redhat.com>
+	 <1324468136-3997-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 3:09 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> We would free the page pool - even if it was for cached pages
-> (which are deleted from the pool - so there are no free pages).
->
-> Also we also missed the opportunity to batch the amount of pages
-> to free (similar to how ttm_page_alloc.c does it). This reintroduces
-> the code that was lost during rebasing.
->
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Wed, 2011-12-21 at 12:48 +0100, Jiri Olsa wrote:
+> We need to check the existence of the other_hash before
+> we touch its count variable.
+> 
+> This issue is hit only when non global ftrace_ops is used.
+> The global ftrace_ops is initialized with empty hashes.
+> 
+
+As this wasn't the first time this bug showed up, I fixed this by this
+patch:
+
+https://lkml.org/lkml/2011/12/21/197
+
+So you can remove this patch as well.
+
+-- Steve
+
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> index e57aa24..156ddcd 100644
-> --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-> @@ -949,7 +949,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
->        struct dma_page *d_page, *next;
->        enum pool_type type;
->        bool is_cached = false;
-> -       unsigned count = 0, i, npages;
-> +       unsigned count = 0, i, npages = 0;
->        unsigned long irq_flags;
->
->        type = ttm_to_type(ttm->page_flags, ttm->caching_state);
-> @@ -971,13 +971,16 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
->        pool->npages_in_use -= count;
->        if (is_cached) {
->                pool->nfrees += count;
-> -               npages = count;
+>  kernel/trace/ftrace.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 09007c0..7eb702f 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1372,7 +1372,8 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
+>  			if (filter_hash && in_hash && !in_other_hash)
+>  				match = 1;
+>  			else if (!filter_hash && in_hash &&
+> -				 (in_other_hash || !other_hash->count))
+> +				 (in_other_hash ||
+> +				  !other_hash || !other_hash->count))
+>  				match = 1;
+>  		}
+>  		if (!match)
 
-See patch 2/3 comment otherwise Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 
->        } else {
->                pool->npages_free += count;
->                list_splice(&ttm_dma->pages_list, &pool->free_list);
->                npages = count;
->                if (pool->npages_free > _manager->options.max_size) {
->                        npages = pool->npages_free - _manager->options.max_size;
-> +                       /* free at least NUM_PAGES_TO_ALLOC number of pages
-> +                        * to reduce calls to set_memory_wb */
-> +                       if (npages < NUM_PAGES_TO_ALLOC)
-> +                               npages = NUM_PAGES_TO_ALLOC;
->                }
->        }
->        spin_unlock_irqrestore(&pool->lock, irq_flags);
-> @@ -1001,7 +1004,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
->                ttm_dma->dma_address[i] = 0;
->        }
->
-> -       /* shrink pool if necessary */
-> +       /* shrink pool if necessary (only on !is_cached pools)*/
->        if (npages)
->                ttm_dma_page_pool_free(pool, npages);
->        ttm->state = tt_unpopulated;
-> --
-> 1.7.7.3
->
