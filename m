@@ -1,132 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1LUKoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:44:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:24681 "EHLO relay.sw.ru"
+	id S1753361Ab1LUKpC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:45:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16855 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab1LUKoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:44:06 -0500
-Message-ID: <4EF1B86D.9030809@openvz.org>
-Date: Wed, 21 Dec 2011 14:43:57 +0400
-From: Andrey Vagin <avagin@openvz.org>
-Reply-To: avagin@openvz.org
+	id S1752636Ab1LUKpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 05:45:00 -0500
+Message-ID: <4EF1B8A4.2050008@redhat.com>
+Date: Wed, 21 Dec 2011 12:44:52 +0200
+From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: Arun Sharma <asharma@fb.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] tracing, sched: Add a new tracepoint for sleeptime
-References: <1324404558-353-1-git-send-email-asharma@fb.com> <1324404558-353-3-git-send-email-asharma@fb.com>
-In-Reply-To: <1324404558-353-3-git-send-email-asharma@fb.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer feature
+ in the absence of in-kernel APIC
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com> <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com> <4EF1B7C0.3080200@siemens.com>
+In-Reply-To: <4EF1B7C0.3080200@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On 12/21/2011 12:41 PM, Jan Kiszka wrote:
+> On 2011-12-21 11:35, Avi Kivity wrote:
+> > On 12/21/2011 12:25 PM, Jan Kiszka wrote:
+> >> We must not report the TSC deadline timer feature on our own when user
+> >> space provides the APIC as we have no clue about its features.
+> > 
+> > We must not report the TSC deadline timer feature on our own, period. 
+> > We should just update the timer mode mask there.  Don't know how this
+> > slipped through review.
+> >
+> > I think your original idea was correct.  Add a new KVM_CAP for the tsc
+> > deadline timer.  Userspace can add the bit to cpuid if either it
+> > implements the feature in a userspace apic, or if it finds the new
+> > capability and uses the kernel apic.
 >
-> +#ifdef CREATE_TRACE_POINTS
-> +static inline u64 trace_get_sleeptime(struct task_struct *tsk)
-> +{
-> +#ifdef CONFIG_SCHEDSTATS
-> +	u64 block, sleep;
-> +
-> +	block = tsk->se.statistics.block_start;
-> +	sleep = tsk->se.statistics.sleep_start;
-Arun, probably you have missed one of my comments.
-block_start and sleep_start should be zeroized here.
-
-tsk->se.statistics.block_start = 0;
-tsk->se.statistics.sleep_start = 0;
-
-The following program provokes this problem:
-
-#include<unistd.h>
-#include<time.h>
-#include<sys/select.h>
-
-int main()
-{
-           struct timespec ts1;
-           struct timeval tv1;
-           int i;
-           long s;
-
-
-           for (i = 0; i<  1000; i++) {
-                   ts1.tv_sec = 0;
-                   ts1.tv_nsec = 1000000;
-                   nanosleep(&ts1, NULL);
-
-                   tv1.tv_sec = 0;
-                   tv1.tv_usec = 4000;
-                   select(0, NULL, NULL, NULL,&tv1);
-                   if (i % 100 == 0) {
-                         s = time(NULL);
-                         while (time(NULL) - s < 4);
-                   }
-           }
-         return 1;
-}
-
-> +
-> +	return block ? block : sleep ? sleep : 0;
-> +#else
-> +	return 0;
-> +#endif
-> +}
-> +#endif
-> +
-> +/*
-> + * Tracepoint for accounting sleeptime (time the task is sleeping
-> + * or waiting for I/O).
-> + */
-> +TRACE_EVENT(sched_stat_sleeptime,
-> +
-> +	TP_PROTO(struct task_struct *tsk, u64 now),
-> +
-> +	TP_ARGS(tsk, now),
-> +
-> +	TP_STRUCT__entry(
-> +		__array( char,	comm,	TASK_COMM_LEN	)
-> +		__field( pid_t,	pid			)
-> +		__field( u64,	sleeptime		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
-> +		__entry->pid		= tsk->pid;
-> +		__entry->sleeptime = trace_get_sleeptime(tsk);
-> +		__entry->sleeptime = __entry->sleeptime ?
-> +				now - __entry->sleeptime : 0;
-> +	)
-> +	TP_perf_assign(
-> +		__perf_count(__entry->sleeptime);
-> +	),
-> +
-> +	TP_printk("comm=%s pid=%d sleeptime=%Lu [ns]",
-> +			__entry->comm, __entry->pid,
-> +			(unsigned long long)__entry->sleeptime)
-> +);
-> +
->   /*
->    * Tracepoint for showing priority inheritance modifying a tasks
->    * priority.
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index ca8fd44..172e6ee 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1899,6 +1899,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->   	local_irq_enable();
->   #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->   	finish_lock_switch(rq, prev);
-> +	trace_sched_stat_sleeptime(current, rq->clock);
+> Right, we do need some control for user space to keep the feature
+> disabled when migrating from an older host.
 >
->   	fire_sched_in_preempt_notifiers(current);
->   	if (mm)
+> However, there is also the timer_mode_mask which requires tuning in
+> addition to the cpuid flag.
+>
+
+timer_mode_mask can just be slaved to the bit (as received by
+KVM_SET_CPUID); that's exactly kvm_update_cpuid()'s role.
+
+-- 
+error compiling committee.c: too many arguments to function
 
