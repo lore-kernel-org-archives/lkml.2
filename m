@@ -1,144 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1LUSh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:37:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1LUShW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:37:22 -0500
-Date: Wed, 21 Dec 2011 18:40:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH for-3.3] mempool: clean up and document synchronization
-	and memory barrier usage
-Message-ID: <20111221174057.GA32347@redhat.com>
-References: <20111220221818.GJ10752@google.com> <20111221145556.GA25657@redhat.com> <20111221163715.GS10752@google.com>
+	id S1753786Ab1LUSla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:41:30 -0500
+Received: from sous-sol.org ([216.99.217.87]:57036 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752126Ab1LUSl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 13:41:27 -0500
+Date: Wed, 21 Dec 2011 10:41:08 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: "Hao, Xudong" <xudong.hao@intel.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH] intel-iommu: Add device info into list before doing
+ context mapping
+Message-ID: <20111221184108.GB961@sequoia.sous-sol.org>
+References: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
+ <20111220160730.GD30205@sequoia.sous-sol.org>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904879BF@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111221163715.GS10752@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E28904879BF@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Hao, Xudong (xudong.hao@intel.com) wrote:
+> Yes, Chris, thanks your comments.
+> How about this one?
 
-On 12/21, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Wed, Dec 21, 2011 at 03:55:56PM +0100, Oleg Nesterov wrote:
-> > > The wmb can be the implied one from unlocking pool->lock and smp_mb()
-> > > in mempool_free() can be replaced with smp_rmb().
-> >
-> > OK... I do not know if this is the bug or not, but I agree this race
-> > is possible.
->
-> I'm not entirely sure whether this is a condition which we need to
-> guarantee but, if the scenario like the above ever happens, it's gonna
-> be a hellish one to track down.
+Yes, it gets the locking right.
 
-Yes, yes, I agree. In fact I was going to remove this sentence after
-I actually read the patch, but forgot.
+Also makes host device and guest assigned device go through the same order:
 
-And in any case, it is very nice to document the barriers.
+alloc_devinfo and init
+lock; place info on lists; unlock
+domain_context_mapping()
 
-> > Not really afaics. unlock() doesn't imply wmb().
-> >
-> > So, if some thread does PTR = mempool_alloc(), the "final" store to PTR
-> > can leak into the critical section, and it can be reordered inside this
-> > section with --curr_nr.
-> >
-> > See the fat comment about set_current_state() in prepare_to_wait().
->
-> Hmmm.... I'm quoting it part here.  (cc'ing David and Paul, hi guys!)
->
-> /*
->  * Note: we use "set_current_state()" _after_ the wait-queue add,
->  * because we need a memory barrier there on SMP, so that any
->  * wake-function that tests for the wait-queue being active
->  * will be guaranteed to see waitqueue addition _or_ subsequent
->  * tests in this thread will see the wakeup having taken place.
->  *
->  * The spin_unlock() itself is semi-permeable and only protects
->  * one way (it only protects stuff inside the critical region and
->  * stops them from bleeding out - it would still allow subsequent
->  * loads to move into the critical region).
->  */
->
-> The first paragraph is saying that at that point full barrier (for
-> both stores and loads) is necessary at that point and the second
-> paragraph is a bit confusing but the last sentence seems to say that
-> only loads after the unlock can creep above unlock,
+The patch itself is whitespace damaged and does not apply.  Please fix
+and feel free to add my:
 
-Probably, this is because the comment tries to explain the possible
-reordering with the subsequent "if (condition)" check, so it only
-mentions loads.
-
-> I think clearer explanation is in memory-barrier.txt.
->
->  (6) UNLOCK operations.
->
->      This also acts as a one-way permeable barrier.  It guarantees that all
->      memory operations before the UNLOCK operation will appear to happen before
->      the UNLOCK operation with respect to the other components of the system.
->
->      Memory operations that occur after an UNLOCK operation may appear to
->      happen before it completes.
->
->      LOCK and UNLOCK operations are guaranteed to appear with respect to each
->      other strictly in the order specified.
->
->      The use of LOCK and UNLOCK operations generally precludes the need for
->      other sorts of memory barrier (but note the exceptions mentioned in the
->      subsection "MMIO write barrier").
->
-> So, in a nutshell, I think it's saying w.r.t. stores is that stores
-> before unlock may not be deferred across the unlock but stores after
-> unlock may creep upwards past unlock, so it acts as one-way write
-> barrier.  And, yeah, that would be the minimal requirement for proper
-> lock operation.  Curious whether any processor implements such fine
-> grained barrier tho, maybe alpha does that too?
->
-> Paul, David, am I understanding it correctly?
->
-> Anyways, yeah, you're right.  We need a smp_wmb() before returning but
-> I think the comment on top of prepare_to_wait() is misleading.
-
-Hmm. I am not sure I understand... Although almost everything written
-in English looks misleading to me ;)
-
-I think that "Memory operations that occur after" above means both
-loads and stores, so the comment is probably fine. set_current_state()
-inserts the barrier between store and load:
-
-
-	__add_wait_queue();
-
-	mb();			// set_current_state()
-
-	unlock();		// can't serialize with LOAD(condition) below
-
-	if (!condition)
-		schedule();
-
-(let's forget about task->state to simplify)
-
-> Great, thanks.  I'll wait a bit for futher comments and repost w/
-> smp_wmb() added.
-
-Well. This is almost off-topic, but perhaps we can add
-smp_mb__after_unlock() ? We already have smp_mb__after_lock.
-Afaics prepare_to_wait() could use it.
-
-I am not talking about perfomance issues, just I think the code
-will be more understandable.
-
-Oleg.
-
+Acked-by: Chris Wright <chrisw@sous-sol.org>
