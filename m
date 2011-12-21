@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab1LUTCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:02:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51555 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab1LUTCt (ORCPT
+	id S1754209Ab1LUTDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:03:32 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57812 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab1LUTD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:02:49 -0500
-Date: Wed, 21 Dec 2011 20:04:33 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Vetter <daniel@ffwll.ch>, linux@arm.linux.org.uk,
-        "Semwal, Sumit" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-Message-ID: <20111221190433.GE3827@phenom.ffwll.local>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>, linux@arm.linux.org.uk,
-	"Semwal, Sumit" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-	linux-mm@kvack.org, Rob Clark <robdclark@gmail.com>,
-	linux-arm-kernel@lists.infradead.org,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
- <CAF6AEGtOjO6Z6yfHz-ZGz3+NuEMH2M-8=20U6+-xt-gv9XtzaQ@mail.gmail.com>
- <20111220171437.GC3883@phenom.ffwll.local>
- <201112211727.17104.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112211727.17104.arnd@arndb.de>
-X-Operating-System: Linux phenom 3.1.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Dec 2011 14:03:29 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: [PATCH 1/2 v3] cgroup: Remove unnecessary task_lock before fetching css_set on migration
+Date: Wed, 21 Dec 2011 20:03:18 +0100
+Message-Id: <1324494199-23928-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1324494199-23928-1-git-send-email-fweisbec@gmail.com>
+References: <1324494199-23928-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 05:27:16PM +0000, Arnd Bergmann wrote:
-> On Tuesday 20 December 2011, Daniel Vetter wrote:
-> > It also sounds like that at least for proper userspace mmap support we'd
-> > need some dma api extensions on at least arm, and that might take a while
-> > ...
-> 
-> I think it's actually the opposite -- you'd need dma api extensions on
-> everything else other than arm, which already has dma_mmap_coherent()
-> and dma_mmap_writecombine() for this purpose.
+When we fetch the css_set of the tasks on cgroup migration, we don't need
+anymore to synchronize against cgroup_exit() that could swap the old one
+with init_css_set. Now that we are using threadgroup_lock() during
+the migrations, we don't need to worry about it anymore.
 
-Yeah, that's actually what I wanted to say, but failed at ... Another
-thing is that at least for i915, _writecombine isn't what we want actually
-because:
-- It won't work anyway cause i915 maps stuff cached and does the flushing
-  itself and x86 PAT doesn't support mixed mappings (kinda like arm).
-- It isn't actually enough, there's another hidden buffer between the
-  memory controller interface and the gpu that i915 manually flushes
-  (because even a readback on a wc mapping doesn't flush things in there).
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Containers <containers@lists.linux-foundation.org>
+Cc: Cgroups <cgroups@vger.kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+---
+ kernel/cgroup.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-So I assume we'll have plenty of funny beating out a good api for cpu
-access ;-)
-
-Cheers, Daniel
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index bc3caff..24f6d6f 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1850,14 +1850,14 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 	struct css_set *newcg;
+ 
+ 	/*
+-	 * get old css_set. we need to take task_lock and refcount it, because
+-	 * an exiting task can change its css_set to init_css_set and drop its
+-	 * old one without taking cgroup_mutex.
++	 * get old css_set. We are synchronized through threadgroup_lock()
++	 * against PF_EXITING setting such that we can't race against
++	 * cgroup_exit() changing the css_set to init_css_set and dropping the
++	 * old one.
+ 	 */
+-	task_lock(tsk);
++	WARN_ON_ONCE(tsk->flags & PF_EXITING);
+ 	oldcg = tsk->cgroups;
+ 	get_css_set(oldcg);
+-	task_unlock(tsk);
+ 
+ 	/* locate or allocate a new css_set for this task. */
+ 	if (guarantee) {
+@@ -1879,9 +1879,7 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 	}
+ 	put_css_set(oldcg);
+ 
+-	/* @tsk can't exit as its threadgroup is locked */
+ 	task_lock(tsk);
+-	WARN_ON_ONCE(tsk->flags & PF_EXITING);
+ 	rcu_assign_pointer(tsk->cgroups, newcg);
+ 	task_unlock(tsk);
+ 
+@@ -2182,11 +2180,13 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		/* nothing to do if this task is already in the cgroup */
+ 		if (tc->cgrp == cgrp)
+ 			continue;
+-		/* get old css_set pointer */
+-		task_lock(tc->task);
++		/*
++		 * get old css_set pointer. threadgroup is locked so this is
++		 * safe against concurrent cgroup_exit() changing this to
++		 * init_css_set.
++		 */
+ 		oldcg = tc->task->cgroups;
+ 		get_css_set(oldcg);
+-		task_unlock(tc->task);
+ 		/* see if the new one for us is already in the list? */
+ 		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
+ 			/* was already there, nothing to do. */
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.5.4
+
