@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1LUEtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 23:49:04 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:14375
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752849Ab1LUEs7 (ORCPT
+	id S1752935Ab1LUEvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 23:51:16 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:46791 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab1LUEvM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 23:48:59 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h944h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 21 Dec 2011 12:58:06 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Chris Ball <cjb@laptop.org>, Artem Bityutskiy <artem.bityutskiy@intel.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>, <linux-mtd@lists.infradead.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/4] Fix the left DMA_NONE from dma_transfer_direction
- migration
-Message-ID: <20111221045805.GE5983@S2101-09.ap.freescale.net>
-References: <1323791286-29574-1-git-send-email-shawn.guo@linaro.org>
- <1324373044.1641.10096.camel@vkoul-udesk3>
- <20111220125401.GA5129@S2101-09.ap.freescale.net>
- <1324440424.1641.10104.camel@vkoul-udesk3>
- <20111221044517.GD5983@S2101-09.ap.freescale.net>
- <1324442451.1641.10109.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1324442451.1641.10109.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Tue, 20 Dec 2011 23:51:12 -0500
+Date: Tue, 20 Dec 2011 23:50:51 -0500 (EST)
+Message-Id: <20111220.235051.89878848481025900.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: rjw@sisk.pl, shaggy@kernel.org, jfs-discussion@lists.sourceforge.net,
+        kernel-testers@vger.kernel.org, linux-kernel@vger.kernel.org,
+        maciej.rutecki@gmail.com, akpm@linux-foundation.org,
+        florian@mickler.org
+Subject: Re: [Resend] 3.2-rc6+: Reported regressions from 3.0 and 3.1
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFzee7ORKzjZ-_PrVy796k2ASyTe_Odz=ji7f1VzToOkKw@mail.gmail.com>
+References: <201112210054.46995.rjw@sisk.pl>
+	<CA+55aFzee7ORKzjZ-_PrVy796k2ASyTe_Odz=ji7f1VzToOkKw@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 20 Dec 2011 20:50:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 10:10:51AM +0530, Vinod Koul wrote:
-> On Wed, 2011-12-21 at 12:45 +0800, Shawn Guo wrote:
-> > > 
-> > The term PIO here may not the one on your mind.  I call it 'mxs-dma
-> > pio'.  In this mode, mxs-dma hardware can write values into mmc
-> > controller register without cpu involved.
-> what do you mean by values here?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 20 Dec 2011 18:31:15 -0800
+
+> On Tue, Dec 20, 2011 at 3:54 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> Subject    : Sparc-32 doesn't work in 3.1.
+>> Submitter  : Rob Landley <rob@landley.net>
+>> Date       : 2011-11-12 11:22
+>> Message-ID : 4EBEAB5A.5020809@landley.net
+>> References : http://www.spinics.net/lists/kernel/msg1260383.html
 > 
-The register values that we want to write to mmc controller registers
-in this case.
+> I'm pretty sure this is fixed by commit b1f44e13a525.
 
--- 
-Regards,
-Shawn
-
+It is.
