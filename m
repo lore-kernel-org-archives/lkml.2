@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab1LUR7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:59:55 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52836 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751595Ab1LUR7x (ORCPT
+	id S1753770Ab1LUSAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:00:09 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52983 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab1LUSAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:59:53 -0500
-Date: Wed, 21 Dec 2011 18:59:45 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20111221175943.GG17668@somewhere>
-References: <20111221034334.GD17668@somewhere>
- <20111221130848.GA19679@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221130848.GA19679@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Dec 2011 13:00:05 -0500
+Message-ID: <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference in
+ ipv6_select_ident
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Wed, 21 Dec 2011 19:00:01 +0100
+In-Reply-To: <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <4EF200BB.7000209@bootc.net>
+	 <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4EF2117F.6000803@bootc.net>
+	 <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
-> On 12/21, Frederic Weisbecker wrote:
-> > - By the time we call cgroup_post_fork(), it is ready to be woken up
-> > and usable by the scheduler.
+Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
+
+> Good point, thats a different problem then, since 3.1 is not supposed to
+> have this bug.
 > 
-> No, the new child can't run until do_fork()->wake_up_new_task().
+> It seems rt->rt6i_peer points to invalid memory in your crash.
+> 
+> (RBX=00000000000001f4)
+> 
+> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
+> 1f4+a4 -> CR2=0000000000000298
+> 
 
-Out of curiosity, why is it not possible for a task to kill and wake up the child
-before that happens?
+It would help if you can confirm latest linux tree can reproduce the
+bug.
 
-Understanding that could potentially let us remove the task_lock() in cgroup_post_fork()
-(although I need to examine that more deeply).
+Thanks !
 
-Thanks!
+
