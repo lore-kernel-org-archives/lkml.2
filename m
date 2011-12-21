@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1LUU4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:56:13 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:64807 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab1LUU4I (ORCPT
+	id S1754000Ab1LUU45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:56:57 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51674 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751481Ab1LUU4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:56:08 -0500
-Message-ID: <4EF24758.5030704@oracle.com>
-Date: Wed, 21 Dec 2011 14:53:44 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        jfs-discussion@lists.sourceforge.net,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org
-Subject: Re: [PATCH v2] vfs: __read_cache_page should use gfp argument rather
- than GFP_KERNEL
-References: <201112210054.46995.rjw@sisk.pl> <CA+55aFzee7ORKzjZ-_PrVy796k2ASyTe_Odz=ji7f1VzToOkKw@mail.gmail.com> <4EF15F42.4070104@oracle.com> <CA+55aFx=B9adsTR=-uYpmfJnQgdGN+1aL0KUabH5bSY6YcwO7Q@mail.gmail.com> <alpine.LSU.2.00.1112202213310.3987@eggly.anvils> <4EF211EC.7090002@oracle.com> <20111221122843.18f673c7.akpm@linux-foundation.org>
-In-Reply-To: <20111221122843.18f673c7.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Dec 2011 15:56:55 -0500
+Subject: Re: [PATCH v2 5/7] MTD: NAND: ams-delta: use GPIO instead of custom
+ I/O
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
+Date: Wed, 21 Dec 2011 22:56:50 +0200
+In-Reply-To: <ebab42f6ddd313afb38b71880ac7865e4e0ceab4.1324331816.git.jkrzyszt@tis.icnet.pl>
+References: <1323634328-856-1-git-send-email-jkrzyszt@tis.icnet.pl>
+	 <ebab42f6ddd313afb38b71880ac7865e4e0ceab4.1324331816.git.jkrzyszt@tis.icnet.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4EF2475E.003D,ss=1,re=0.000,fgs=0
+Message-ID: <1324501012.2110.2.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 02:28 PM, Andrew Morton wrote:
-> On Wed, 21 Dec 2011 11:05:48 -0600
-> Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
+On Tue, 2011-12-20 at 00:08 +0100, Janusz Krzysztofik wrote:
+> Don't use Amstrad Delta custom I/O functions for controlling the device,
+> use GPIO API instead.
 > 
->> [ updated to remove now-obsolete comment in read_cache_page_gfp()]
->>
->> lockdep reports a deadlock in jfs because a special inode's rw semaphore
->> is taken recursively. The mapping's gfp mask is GFP_NOFS, but is not used
->> when __read_cache_page() calls add_to_page_cache_lru().
+> While being at it, add missing gpio_free(AMS_DELTA_GPIO_PIN_NAND_RB).
 > 
-> Well hang on, it's not just a lockdep splat.  The kernel actually will
-> deadlock if we reenter JFS via this GFP_KERNEL allocation attempt, yes?
+> Depends on patch 2/7 "ARM: OMAP1: ams-delta: convert latches to
+> basic_mmio_gpio"
+> 
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Tony Lindgren <tony@atomide.com>
 
-Yes, it could result in a real deadlock.
+Looks good, thanks!
 
-> Was that GFP_NOFS allocation recently added to JFS?  If not then we
-> should backport this deadlock fix into -stable, no?
+Reviewed-by: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
 
-Yes, that would make sense.
-
-Shaggy
