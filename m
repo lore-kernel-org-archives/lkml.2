@@ -1,238 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1LUKJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:09:20 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48221 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab1LUKJR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:09:17 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 21 Dec 2011 19:08:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2] memcg: return -EINTR at bypassing try_charge().
-Message-Id: <20111221190801.5b10e80c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111221095708.GE3870@cmpxchg.org>
-References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111221095708.GE3870@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753079Ab1LUKKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:10:34 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:31511 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829Ab1LUKKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 05:10:31 -0500
+Message-ID: <4EF1B081.3010109@siemens.com>
+Date: Wed, 21 Dec 2011 11:10:09 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>, Avi Kivity <avi@redhat.com>
+CC: Kernel development list <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>
+Subject: [PATCH] KVM: x86: Prevent exposing TSC deadline timer feature in
+ the absence of in-kernel APIC
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <4EF1146D.208@siemens.com>
+In-Reply-To: <4EF1146D.208@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 10:57:08 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> On Wed, Dec 21, 2011 at 05:24:23PM +0900, KAMEZAWA Hiroyuki wrote:
-> > How about this ?
-> > --
-> > >From 6076425613f594d442c58a5d463c09f8309236aa Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Wed, 21 Dec 2011 16:27:25 +0900
-> > Subject: [PATCH] memcg: return -EINTR at bypassing try_charge().
-> > 
-> > This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
-> > When running testprogram and stop it by Ctrl-C, add_lru/del_lru
-> > will find pc->mem_cgroup is NULL and get panic. The reason
-> > is bypass code in try_charge().
-> > 
-> > At try_charge(), it checks the thread is fatal or not as..
-> > fatal_signal_pending() or TIF_MEMDIE. In this case, __try_charge()
-> > returns 0(success) with setting *ptr as NULL.
-> > 
-> > Now, lruvec are deteremined by pc->mem_cgroup. So, it's better
-> > to reset pc->mem_cgroup as root_mem_cgroup. This patch does
-> > following change in try_charge()
-> >   1. return -EINTR at bypassing.
-> >   2. set *ptr = root_mem_cgroup at bypassing.
-> > 
-> > By this change, in page fault / radix-tree-insert path,
-> > the page will be charged against root_mem_cgroup and the thread's
-> > operations will go ahead without trouble. In other path,
-> > migration or move_account etc..., -EINTR will stop the operation.
-> > (may need some cleanup later..)
-> > 
-> > After this change, pc->mem_cgroup will have valid pointer if
-> > the page is used.
-> > 
-> > Changelog: v1 -> v2
-> >  - returns -EINTR at bypassing.
-> >  - change error code handling at callers.
-> >  - changed the name of patch.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   53 +++++++++++++++++++++++++++++++++++++++++------------
-> >  1 files changed, 41 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 9175097..3c6eb7e 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -2185,6 +2185,23 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> >  }
-> >  
-> >  /*
-> > + * __mem_cgroup_try_charge() does
-> > + * 1. detect memcg to be charged against from passed *mm and *ptr,
-> > + * 2. update res_counter
-> > + * 3. call memory reclaim if necessary.
-> > + *
-> > + * In some special case, if the task is fatal, fatal_signal_pending() or
-> > + * TIF_MEMDIE or ->mm is NULL, this functoion returns -EINTR with filling
-> > + * *ptr as root_mem_cgroup. There are 2 reasons for this. 1st is that
-> > + * fatal threads should quit as soon as possible without any hazards.
-> > + * 2nd is that all page should have valid pc->mem_cgroup if it will be
-> > + * used.
-> > + *
-> > + * So, try_charge will return
-> > + *  0       ...  at success. filling *ptr with a valid memcg pointer.
-> > + *  -ENOMEM ...  charge failure because of resource limits.
-> > + *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
-> > + *
-> >   * Unlike exported interface, "oom" parameter is added. if oom==true,
-> >   * oom-killer can be invoked.
-> >   */
-> > @@ -2316,8 +2333,8 @@ nomem:
-> >  	*ptr = NULL;
-> >  	return -ENOMEM;
-> >  bypass:
-> > -	*ptr = NULL;
-> > -	return 0;
-> > +	*ptr = root_mem_cgroup;
-> > +	return -EINTR;
-> >  }
+On 2011-12-21 00:04, Jan Kiszka wrote:
+> On 2011-12-20 19:58, Linus Torvalds wrote:
+>> On Tue, Dec 20, 2011 at 1:51 AM, Alexey Zaytsev
+>> <alexey.zaytsev@gmail.com> wrote:
+>>>
+>>> Let me clarify the situation.
+>>>
+>>> Before this commit, the tsc was advertised in cpuid, and it was
+>>> handled, if I understand things correctly, by qemu.
+>>> After this commit, the tsc is advertised in cpuid, and is handled in
+>>> the kernel, but only after qemu issues KVM_CREATE_IRQCHIP. If it does
+>>> not issue the ioctl, the kernel just discards any wrmsrs done to the
+>>> tsc. This does not look like an Illumos problem to me. Linux guests
+>>> kind of work here, because they are  prepared to work on utterly
+>>> broken hardware. Good for you, but please don't break less-prepared
+>>> guests.
+>>
+>> Yes. This is a regression, and needs to be fixed.
+>>
+>> Liu, if you don't have time to debug it, we'll just revert the commit.
+>> It's that easy. Regressions are not allowed. There are no excuses.
+>>
+>> In particular, saying "just wait for qemu-kvm" is not an acceptable
+>> answer, because the point is that things *used* to work, and they
+>> broke. No "change it to work with the new kernel" allowed, except for
+>> some *very* rare critical circumstances (usually "major security-bug
+>> that we had to fix, and people who relied on it are thus out of
+>> luck").
+>>
+>> Commit a3e06bbe8445 still seems to revert cleanly, so that is the easy option.
+>>
+>> That said, it sounds like maybe another solution is to start with the
+>> TSC_DEADLINE timer bit in cpuid cleared, and only setting it after the
+>> KVM_CREATE_IRQCHIP ioctl.
 > 
-> What about this case:
+> KVM cpuid discovery can (and is) unfortunately be done before user space
+> decides about creating an in-kernel irqchip or not. But the patch in
+> question suggests to user space that it's optimal and perfectly fine to
+> expose TSC_DEADLINE_TIMER to the guest - obviously a wrong suggestion in
+> case user space does not use the in-kernel irqchip and does not
+> implement the deadline timer in its own APIC model.
 > 
-> 	/*
-> 	 * We always charge the cgroup the mm_struct belongs to.
-> 	 * The mm_struct's mem_cgroup changes on task migration if the
-> 	 * thread group leader migrates. It's possible that mm is not
-> 	 * set, if so charge the init_mm (happens for pagecache usage).
-> 	 */
-> 	if (!*ptr && !mm)
-> 		goto bypass;
+> So the only proper solution I see is to drop that feature flag exposure
+> from kvm_update_cpuid. Instead, KVM should indicate to *well informed*
+> (i.e. updated) user space differently that there is now deadline timer
+> support in the in-kernel APIC model. That different channel should be a
+> KVM_CAP flag that user space can easily check and then merge the
+> necessary flag on its own.
 > 
-
-IIUC, task->mm is NULL when the task is about to exit.
-So, charge to root_mem_cgroup will be enough good.
-I'm not sure how 'mm_struct's mem_cgroup changes on.....' cases affect
-this path...
-
-
-
-
-> > @@ -2564,7 +2581,7 @@ static int mem_cgroup_move_parent(struct page *page,
-> >  {
-> >  	struct cgroup *cg = child->css.cgroup;
-> >  	struct cgroup *pcg = cg->parent;
-> > -	struct mem_cgroup *parent;
-> > +	struct mem_cgroup *parent, *ptr;
-> >  	unsigned int nr_pages;
-> >  	unsigned long uninitialized_var(flags);
-> >  	int ret;
-> > @@ -2582,8 +2599,8 @@ static int mem_cgroup_move_parent(struct page *page,
-> >  	nr_pages = hpage_nr_pages(page);
-> >  
-> >  	parent = mem_cgroup_from_cont(pcg);
-> > -	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
-> > -	if (ret || !parent)
-> > +	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &ptr, false);
-> > +	if (ret)
-> >  		goto put_back;
+>>
+>> In fact, the patch is clearly buggy, in that it apparently doesn't
+>> emulate TSC_DEADLINE correctly and natively on its own.
+>>
+>> Jan, Marcelo, Avi - is there a quick fix, or should I just revert?
 > 
-> That doesn't seem right.  That unitilialized ptr is used in
-> try_charge(), so this may crash, and it should really charge against
-> parent.
+> Maybe fixing can be done quickly. In any case, the current ABI should
+> not be exposed to user space, even at the price of postponing it's
+> introduction. Just my 2 cents, though.
 
-Ah, yes. my mistake.
+Was obviously too late for me. Here is a more accurate code analysis and
+fix proposal:
 
+kvm_update_cpuid is not involved in KVM_GET_SUPPORTED_CPUID as I
+thought, thus there is no ABI issue. It should just be trivial bug in
+setting the feature flag. Does this help? Untested!
 
+Jan
 
-> > @@ -2630,9 +2647,9 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
-> >  
-> >  	pc = lookup_page_cgroup(page);
-> >  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
-> > -	if (ret || !memcg)
-> > +	if (ret == -ENOMEM)
-> >  		return ret;
-> > -
-> > +	/* we'll bypass -EINTR case and charge this page to root memcg */
-> >  	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
-> >  	return 0;
-> >  }
-> 
-> This comment is not very useful.  WHY do we do this?  Maybe just copy
-> the comment from try_charge_swapin()?
-> 
-Hmm, ok. I'll remove this comment.
+-------8<-------
 
+We must not report the TSC deadline timer feature on our own when user
+space provides the APIC as we have no clue about its features.
 
-> > @@ -2703,6 +2720,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-> >  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> >  	else { /* page is swapcache/shmem */
-> >  		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-> > +		/* see try_charge_swapi() for -EINTR case */
-> >  		if (!ret)
-> >  			__mem_cgroup_commit_charge_swapin(page, memcg, type);
-> >  	}
-> 
-> Missing n in the comment.
-> 
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/x86/kvm/cpuid.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-will remove this, too.
-
-
-> > @@ -2743,11 +2761,21 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
-> >  	*memcgp = memcg;
-> >  	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
-> >  	css_put(&memcg->css);
-> > +	/*
-> > +	 * If this thread is fatal, charge against root cgroup and allow
-> > +	 * this thread to exit in quick manner. EINTR is not handled
-> > +	 * in page fault path. So, just bypass this.
-> > +	 */
-> > +	if (ret == -EINTR)
-> > +		ret = 0;
-> >  	return ret;
-> >  charge_cur_mm:
-> >  	if (unlikely(!mm))
-> >  		mm = &init_mm;
-> > -	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-> > +	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-> > +	if (ret == -EINTR)
-> > +		ret = 0;
-> > +	return ret;
-> >  }
-> >  
-> >  static void
-> 
-> > @@ -3633,7 +3662,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-> >  		pc = lookup_page_cgroup(page);
-> >  
-> >  		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
-> > -		if (ret == -ENOMEM)
-> > +		if (ret == -ENOMEM || ret == -EINTR)
-> >  			break;
-> 
-> if (ret)
-> 
-
--EBUSY check is below this code.
-
-I'll prepare v3. 
-
-Thanks,
--Kame
-
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 230f713..28615f2 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -40,7 +40,7 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
+ 			best->ecx |= bit(X86_FEATURE_OSXSAVE);
+ 	}
+ 
+-	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
++	if (apic && boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
+ 		best->function == 0x1) {
+ 		best->ecx |= bit(X86_FEATURE_TSC_DEADLINE_TIMER);
+ 		timer_mode_mask = 3 << 17;
+-- 
+1.7.3.4
