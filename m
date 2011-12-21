@@ -1,65 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab1LUJ5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 04:57:21 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55517 "EHLO bear.ext.ti.com"
+	id S1753270Ab1LUJ51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 04:57:27 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:58067 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab1LUJ5O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 04:57:14 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-Subject: RE: [PATCH v2] davinci: DA850 EVM: OHCI platform code
-Thread-Topic: [PATCH v2] davinci: DA850 EVM: OHCI platform code
-Thread-Index: AQHMv7InDpObXctwwU2vJttYJMzT/5XmAl8w
-Date: Wed, 21 Dec 2011 09:56:55 +0000
-Message-ID: <DF0F476B391FA8409C78302C7BA518B6051CB9@DBDE01.ent.ti.com>
-References: <1324452002-8388-1-git-send-email-prakash.pm@ti.com>
-In-Reply-To: <1324452002-8388-1-git-send-email-prakash.pm@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.157.80]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753233Ab1LUJ5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 04:57:19 -0500
+Date: Wed, 21 Dec 2011 10:57:08 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2] memcg: return -EINTR at bypassing try_charge().
+Message-ID: <20111221095708.GE3870@cmpxchg.org>
+References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prakash,
-
-On Wed, Dec 21, 2011 at 12:50:02, Manjunathappa, Prakash wrote:
-> From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+On Wed, Dec 21, 2011 at 05:24:23PM +0900, KAMEZAWA Hiroyuki wrote:
+> How about this ?
+> --
+> >From 6076425613f594d442c58a5d463c09f8309236aa Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 21 Dec 2011 16:27:25 +0900
+> Subject: [PATCH] memcg: return -EINTR at bypassing try_charge().
 > 
-> On this board the OHCI port's power control and over-current signals from
-> TPS2065 power switch are connected via GPIO2[4] and GPIO6[13] respectively,
-> so we can implement the DA8xx OHCI glue layer's hooks for overriding the
-> root hub port's power and over-current status bits.
+> This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
+> When running testprogram and stop it by Ctrl-C, add_lru/del_lru
+> will find pc->mem_cgroup is NULL and get panic. The reason
+> is bypass code in try_charge().
 > 
-> We also have to properly set up the clocking mode in the CFGCHIP2 register,
-> so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB) PHY and
-> its output is used to clock the USB 1.1 (OHCI) PHY...
+> At try_charge(), it checks the thread is fatal or not as..
+> fatal_signal_pending() or TIF_MEMDIE. In this case, __try_charge()
+> returns 0(success) with setting *ptr as NULL.
 > 
-> Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
-> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> Now, lruvec are deteremined by pc->mem_cgroup. So, it's better
+> to reset pc->mem_cgroup as root_mem_cgroup. This patch does
+> following change in try_charge()
+>   1. return -EINTR at bypassing.
+>   2. set *ptr = root_mem_cgroup at bypassing.
+> 
+> By this change, in page fault / radix-tree-insert path,
+> the page will be charged against root_mem_cgroup and the thread's
+> operations will go ahead without trouble. In other path,
+> migration or move_account etc..., -EINTR will stop the operation.
+> (may need some cleanup later..)
+> 
+> After this change, pc->mem_cgroup will have valid pointer if
+> the page is used.
+> 
+> Changelog: v1 -> v2
+>  - returns -EINTR at bypassing.
+>  - change error code handling at callers.
+>  - changed the name of patch.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   53 +++++++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 41 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9175097..3c6eb7e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2185,6 +2185,23 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  }
+>  
+>  /*
+> + * __mem_cgroup_try_charge() does
+> + * 1. detect memcg to be charged against from passed *mm and *ptr,
+> + * 2. update res_counter
+> + * 3. call memory reclaim if necessary.
+> + *
+> + * In some special case, if the task is fatal, fatal_signal_pending() or
+> + * TIF_MEMDIE or ->mm is NULL, this functoion returns -EINTR with filling
+> + * *ptr as root_mem_cgroup. There are 2 reasons for this. 1st is that
+> + * fatal threads should quit as soon as possible without any hazards.
+> + * 2nd is that all page should have valid pc->mem_cgroup if it will be
+> + * used.
+> + *
+> + * So, try_charge will return
+> + *  0       ...  at success. filling *ptr with a valid memcg pointer.
+> + *  -ENOMEM ...  charge failure because of resource limits.
+> + *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
+> + *
+>   * Unlike exported interface, "oom" parameter is added. if oom==true,
+>   * oom-killer can be invoked.
+>   */
+> @@ -2316,8 +2333,8 @@ nomem:
+>  	*ptr = NULL;
+>  	return -ENOMEM;
+>  bypass:
+> -	*ptr = NULL;
+> -	return 0;
+> +	*ptr = root_mem_cgroup;
+> +	return -EINTR;
+>  }
 
-This is the third copy of OHCI platform setup code which is almost
-the same except for the GPIO numbers. Can we attempt to consolidate
-the GPIO case under drivers/usb/host/ohci-da8xx.c glue layer itself?
-Of course, here should be a provision for non-GPIO based implementation
-as well.
+What about this case:
 
-Sergei, any thoughts, comments?
+	/*
+	 * We always charge the cgroup the mm_struct belongs to.
+	 * The mm_struct's mem_cgroup changes on task migration if the
+	 * thread group leader migrates. It's possible that mm is not
+	 * set, if so charge the init_mm (happens for pagecache usage).
+	 */
+	if (!*ptr && !mm)
+		goto bypass;
 
-Thanks,
-Sekhar
+> @@ -2564,7 +2581,7 @@ static int mem_cgroup_move_parent(struct page *page,
+>  {
+>  	struct cgroup *cg = child->css.cgroup;
+>  	struct cgroup *pcg = cg->parent;
+> -	struct mem_cgroup *parent;
+> +	struct mem_cgroup *parent, *ptr;
+>  	unsigned int nr_pages;
+>  	unsigned long uninitialized_var(flags);
+>  	int ret;
+> @@ -2582,8 +2599,8 @@ static int mem_cgroup_move_parent(struct page *page,
+>  	nr_pages = hpage_nr_pages(page);
+>  
+>  	parent = mem_cgroup_from_cont(pcg);
+> -	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
+> -	if (ret || !parent)
+> +	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &ptr, false);
+> +	if (ret)
+>  		goto put_back;
+
+That doesn't seem right.  That unitilialized ptr is used in
+try_charge(), so this may crash, and it should really charge against
+parent.
+
+> @@ -2630,9 +2647,9 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+> -	if (ret || !memcg)
+> +	if (ret == -ENOMEM)
+>  		return ret;
+> -
+> +	/* we'll bypass -EINTR case and charge this page to root memcg */
+>  	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
+>  	return 0;
+>  }
+
+This comment is not very useful.  WHY do we do this?  Maybe just copy
+the comment from try_charge_swapin()?
+
+> @@ -2703,6 +2720,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+>  	else { /* page is swapcache/shmem */
+>  		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+> +		/* see try_charge_swapi() for -EINTR case */
+>  		if (!ret)
+>  			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+>  	}
+
+Missing n in the comment.
+
+> @@ -2743,11 +2761,21 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  	*memcgp = memcg;
+>  	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
+>  	css_put(&memcg->css);
+> +	/*
+> +	 * If this thread is fatal, charge against root cgroup and allow
+> +	 * this thread to exit in quick manner. EINTR is not handled
+> +	 * in page fault path. So, just bypass this.
+> +	 */
+> +	if (ret == -EINTR)
+> +		ret = 0;
+>  	return ret;
+>  charge_cur_mm:
+>  	if (unlikely(!mm))
+>  		mm = &init_mm;
+> -	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
+> +	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
+> +	if (ret == -EINTR)
+> +		ret = 0;
+> +	return ret;
+>  }
+>  
+>  static void
+
+> @@ -3633,7 +3662,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>  		pc = lookup_page_cgroup(page);
+>  
+>  		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
+> -		if (ret == -ENOMEM)
+> +		if (ret == -ENOMEM || ret == -EINTR)
+>  			break;
+
+if (ret)
+
+?
