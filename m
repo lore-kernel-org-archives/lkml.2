@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1LUQ22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 11:28:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	id S1753733Ab1LUQ2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 11:28:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2798 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753669Ab1LUQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 11:28:24 -0500
-Date: Wed, 21 Dec 2011 18:30:22 +0200
+	id S1753669Ab1LUQ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 11:28:29 -0500
+Date: Wed, 21 Dec 2011 18:30:27 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 RFC (repost) 14/16] mn10300: add missing __iomap markers
-Message-ID: <1937e158e890d52d2097360d3270f270bd7e5001.1324484752.git.mst@redhat.com>
+Subject: [PATCHv2 RFC (repost) 16/16] alpha: drop pci_iomap/pci_iounmap from
+ pci-noop.c
+Message-ID: <ef92d191e2ef1a69979aba62cf7643fcad646e82.1324484752.git.mst@redhat.com>
 References: <cover.1324484752.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,57 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MN10300's *ioremap*() collection lacks __iomem markers.
-Fix that.
+Jenkins disables PCI so asm-generic provides inline
+stubs for these, we don't need offline stubs as well.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/mn10300/include/asm/io.h |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ arch/alpha/kernel/pci-noop.c |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
 
-diff --git a/arch/mn10300/include/asm/io.h b/arch/mn10300/include/asm/io.h
-index 787255d..0d6d54f 100644
---- a/arch/mn10300/include/asm/io.h
-+++ b/arch/mn10300/include/asm/io.h
-@@ -251,15 +251,15 @@ static inline void *phys_to_virt(unsigned long address)
- /*
-  * Change "struct page" to physical address.
-  */
--static inline void *__ioremap(unsigned long offset, unsigned long size,
--			      unsigned long flags)
-+static inline void __iomem *__ioremap(unsigned long offset, unsigned long size,
-+				      unsigned long flags)
- {
--	return (void *) offset;
-+	return (void __iomem *) offset;
- }
+diff --git a/arch/alpha/kernel/pci-noop.c b/arch/alpha/kernel/pci-noop.c
+index 246100e..04eea48 100644
+--- a/arch/alpha/kernel/pci-noop.c
++++ b/arch/alpha/kernel/pci-noop.c
+@@ -185,15 +185,3 @@ struct dma_map_ops alpha_noop_ops = {
  
--static inline void *ioremap(unsigned long offset, unsigned long size)
-+static inline void __iomem *ioremap(unsigned long offset, unsigned long size)
- {
--	return (void *) offset;
-+	return (void __iomem *) offset;
- }
- 
- /*
-@@ -267,14 +267,14 @@ static inline void *ioremap(unsigned long offset, unsigned long size)
-  * area.  it's useful if some control registers are in such an area and write
-  * combining or read caching is not desirable:
-  */
--static inline void *ioremap_nocache(unsigned long offset, unsigned long size)
-+static inline void __iomem *ioremap_nocache(unsigned long offset, unsigned long size)
- {
--	return (void *) (offset | 0x20000000);
-+	return (void __iomem *) (offset | 0x20000000);
- }
- 
- #define ioremap_wc ioremap_nocache
- 
--static inline void iounmap(void *addr)
-+static inline void iounmap(void __iomem *addr)
- {
- }
- 
+ struct dma_map_ops *dma_ops = &alpha_noop_ops;
+ EXPORT_SYMBOL(dma_ops);
+-
+-void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+-{
+-	return NULL;
+-}
+-
+-void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
+-{
+-}
+-
+-EXPORT_SYMBOL(pci_iomap);
+-EXPORT_SYMBOL(pci_iounmap);
 -- 
 1.7.8.382.g3daff
-
