@@ -1,77 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1LUIWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:22:55 -0500
-Received: from mga05.intel.com ([192.55.52.89]:30905 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751652Ab1LUIWv convert rfc822-to-8bit (ORCPT
+	id S1752767Ab1LUIZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:25:42 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43770 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab1LUIZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:22:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EF195EE.9010409@tao.ma>
-References: <20111220233117.17757.71139.stgit@localhost6.localdomain6>
-	<4EF17DC4.5010008@tao.ma>
-	<alpine.SOC.1.00.1112210835010.6858@math.ut.ee>
-	<4EF18129.7030407@tao.ma>
-	<CABE8wwtrq=SuuhAvNDjpSbfPGE+N4cWjjmVGWq8UzaH6sM9kRg@mail.gmail.com>
-	<4EF195EE.9010409@tao.ma>
-Date: Wed, 21 Dec 2011 00:22:49 -0800
-Message-ID: <CABE8wwsRDjNs=UjBG071=AF7-h7RB+NNrQzPMREypNwSpYAVPA@mail.gmail.com>
-Subject: Re: [PATCH] block: fix blk_queue_end_tag()
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Tao Ma <tm@tao.ma>
-Cc: Meelis Roos <mroos@linux.ee>, axboe@kernel.dk, Tao Ma <boyu.mt@taobao.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Dec 2011 03:25:38 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Dec 2011 17:24:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH v2] memcg: return -EINTR at bypassing try_charge().
+Message-Id: <20111221172423.5d036cdd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111219165146.4d72f1bb.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 12:16 AM, Tao Ma <tm@tao.ma> wrote:
-> On 12/21/2011 03:30 PM, Williams, Dan J wrote:
->> On Tue, Dec 20, 2011 at 10:48 PM, Tao Ma <tm@tao.ma> wrote:
->>> On 12/21/2011 02:36 PM, Meelis Roos wrote:
->>>>>> -   if (unlikely(tag >= bqt->max_depth)) {
->>>>>> +   if (WARN_ONCE(tag >= bqt->real_max_depth,
->>>>>> +                 "%s: tag %d greater than tag map size: %d\n",
->>>>>> +                 __func__, tag, bqt->real_max_depth)) {
->>>>>>             /*
->>>>>>              * This can happen after tag depth has been reduced.
->>>>> Please also change the comments here since it should never happen in the
->>>>> right workload.
->>>>
->>>> What do you mean by right workload? Normal workload?
->>> yeah, so real_max_depth is the maximum depth we ever have. So in normal
->>> case(shrinking queue depth is also a normal user case), we should never
->>> arrive here. In another word, if tag >= real_max_depth, we should have a
->>> bug in the kernel.
->>
->> So this is what Ed Nadolski suggested, just cut to the chase and do,
->> the following.  Seems like the comment is what got us into trouble in
->> the first place.
->>
->> diff --git a/block/blk-tag.c b/block/blk-tag.c
->> index e74d6d1..e297d9d7 100644
->> --- a/block/blk-tag.c
->> +++ b/block/blk-tag.c
->> @@ -284,16 +284,7 @@ void blk_queue_end_tag(struct request_queue *q,
->> struct request *rq)
->>         struct blk_queue_tag *bqt = q->queue_tags;
->>         int tag = rq->tag;
->>
->> -       BUG_ON(tag == -1);
->> -
->> -       if (unlikely(tag >= bqt->max_depth)) {
->> -               /*
->> -                * This can happen after tag depth has been reduced.
->> -                * But tag shouldn't be larger than real_max_depth.
->> -                */
->> -               WARN_ON(tag >= bqt->real_max_depth);
->> -               return;
->> -       }
->> +       BUG_ON(tag == -1 || tag > bqt->real_max_depth);
-> I guess tag = bqt->real_max_depth should also be a problem.
+How about this ?
+--
+>From 6076425613f594d442c58a5d463c09f8309236aa Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 21 Dec 2011 16:27:25 +0900
+Subject: [PATCH] memcg: return -EINTR at bypassing try_charge().
 
-Yes, sorry, should have been >=
+This patch is a fix for memcg-simplify-lru-handling-by-new-rule.patch
+When running testprogram and stop it by Ctrl-C, add_lru/del_lru
+will find pc->mem_cgroup is NULL and get panic. The reason
+is bypass code in try_charge().
+
+At try_charge(), it checks the thread is fatal or not as..
+fatal_signal_pending() or TIF_MEMDIE. In this case, __try_charge()
+returns 0(success) with setting *ptr as NULL.
+
+Now, lruvec are deteremined by pc->mem_cgroup. So, it's better
+to reset pc->mem_cgroup as root_mem_cgroup. This patch does
+following change in try_charge()
+  1. return -EINTR at bypassing.
+  2. set *ptr = root_mem_cgroup at bypassing.
+
+By this change, in page fault / radix-tree-insert path,
+the page will be charged against root_mem_cgroup and the thread's
+operations will go ahead without trouble. In other path,
+migration or move_account etc..., -EINTR will stop the operation.
+(may need some cleanup later..)
+
+After this change, pc->mem_cgroup will have valid pointer if
+the page is used.
+
+Changelog: v1 -> v2
+ - returns -EINTR at bypassing.
+ - change error code handling at callers.
+ - changed the name of patch.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   53 +++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 41 insertions(+), 12 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9175097..3c6eb7e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2185,6 +2185,23 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ }
+ 
+ /*
++ * __mem_cgroup_try_charge() does
++ * 1. detect memcg to be charged against from passed *mm and *ptr,
++ * 2. update res_counter
++ * 3. call memory reclaim if necessary.
++ *
++ * In some special case, if the task is fatal, fatal_signal_pending() or
++ * TIF_MEMDIE or ->mm is NULL, this functoion returns -EINTR with filling
++ * *ptr as root_mem_cgroup. There are 2 reasons for this. 1st is that
++ * fatal threads should quit as soon as possible without any hazards.
++ * 2nd is that all page should have valid pc->mem_cgroup if it will be
++ * used.
++ *
++ * So, try_charge will return
++ *  0       ...  at success. filling *ptr with a valid memcg pointer.
++ *  -ENOMEM ...  charge failure because of resource limits.
++ *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
++ *
+  * Unlike exported interface, "oom" parameter is added. if oom==true,
+  * oom-killer can be invoked.
+  */
+@@ -2316,8 +2333,8 @@ nomem:
+ 	*ptr = NULL;
+ 	return -ENOMEM;
+ bypass:
+-	*ptr = NULL;
+-	return 0;
++	*ptr = root_mem_cgroup;
++	return -EINTR;
+ }
+ 
+ /*
+@@ -2564,7 +2581,7 @@ static int mem_cgroup_move_parent(struct page *page,
+ {
+ 	struct cgroup *cg = child->css.cgroup;
+ 	struct cgroup *pcg = cg->parent;
+-	struct mem_cgroup *parent;
++	struct mem_cgroup *parent, *ptr;
+ 	unsigned int nr_pages;
+ 	unsigned long uninitialized_var(flags);
+ 	int ret;
+@@ -2582,8 +2599,8 @@ static int mem_cgroup_move_parent(struct page *page,
+ 	nr_pages = hpage_nr_pages(page);
+ 
+ 	parent = mem_cgroup_from_cont(pcg);
+-	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
+-	if (ret || !parent)
++	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &ptr, false);
++	if (ret)
+ 		goto put_back;
+ 
+ 	if (nr_pages > 1)
+@@ -2630,9 +2647,9 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 
+ 	pc = lookup_page_cgroup(page);
+ 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+-	if (ret || !memcg)
++	if (ret == -ENOMEM)
+ 		return ret;
+-
++	/* we'll bypass -EINTR case and charge this page to root memcg */
+ 	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
+ 	return 0;
+ }
+@@ -2703,6 +2720,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+ 	else { /* page is swapcache/shmem */
+ 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
++		/* see try_charge_swapi() for -EINTR case */
+ 		if (!ret)
+ 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+ 	}
+@@ -2743,11 +2761,21 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 	*memcgp = memcg;
+ 	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
+ 	css_put(&memcg->css);
++	/*
++	 * If this thread is fatal, charge against root cgroup and allow
++	 * this thread to exit in quick manner. EINTR is not handled
++	 * in page fault path. So, just bypass this.
++	 */
++	if (ret == -EINTR)
++		ret = 0;
+ 	return ret;
+ charge_cur_mm:
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+-	return __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
++	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
++	if (ret == -EINTR)
++		ret = 0;
++	return ret;
+ }
+ 
+ static void
+@@ -3205,7 +3233,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 	*memcgp = memcg;
+ 	ret = __mem_cgroup_try_charge(NULL, gfp_mask, 1, memcgp, false);
+ 	css_put(&memcg->css);/* drop extra refcnt */
+-	if (ret || *memcgp == NULL) {
++	if (ret) {
+ 		if (PageAnon(page)) {
+ 			lock_page_cgroup(pc);
+ 			ClearPageCgroupMigration(pc);
+@@ -3215,6 +3243,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 			 */
+ 			mem_cgroup_uncharge_page(page);
+ 		}
++		/* we'll need to revisit this error code (we have -EINTR) */
+ 		return -ENOMEM;
+ 	}
+ 	/*
+@@ -3633,7 +3662,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 		pc = lookup_page_cgroup(page);
+ 
+ 		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
+-		if (ret == -ENOMEM)
++		if (ret == -ENOMEM || ret == -EINTR)
+ 			break;
+ 
+ 		if (ret == -EBUSY || ret == -EINVAL) {
+@@ -5091,9 +5120,9 @@ one_by_one:
+ 		}
+ 		ret = __mem_cgroup_try_charge(NULL,
+ 					GFP_KERNEL, 1, &memcg, false);
+-		if (ret || !memcg)
++		if (ret)
+ 			/* mem_cgroup_clear_mc() will do uncharge later */
+-			return -ENOMEM;
++			return ret;
+ 		mc.precharge++;
+ 	}
+ 	return ret;
+-- 
+1.7.4.1
+
+
