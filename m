@@ -1,78 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1LUGpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 01:45:43 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:52456 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1LUGpk (ORCPT
+	id S1751808Ab1LUGqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 01:46:45 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33477 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1LUGql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 01:45:40 -0500
-Date: Wed, 21 Dec 2011 07:45:37 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Florian Mickler <florian@mickler.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: 3.2-rc6+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111221064537.GD1629@x4>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
- <201112210039.14100.linux-pm-bounces@lists.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112210039.14100.linux-pm-bounces@lists.linux-foundation.org>
+	Wed, 21 Dec 2011 01:46:41 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-63-4ef180cfc69c
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Denis Kuzmenko'" <linux@solonet.org.ua>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Joe Perches'" <joe@perches.com>
+References: <4EE7E0E7.1020802@solonet.org.ua>
+In-reply-to: <4EE7E0E7.1020802@solonet.org.ua>
+Subject: RE: [PATCH v4] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
+ gpiolib. Fix error disabling pull during probe.
+Date: Wed, 21 Dec 2011 15:46:37 +0900
+Message-id: <063a01ccbfac$498513c0$dc8f3b40$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acy57/oHPl9XagrtQhqByyRiG8qcewFvAX5g
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.12.21 at 00:54 +0100, Rafael J. Wysocki wrote:
-> Subject    : WARNING: at fs/sysfs/sysfs.h:195 (during boot)
-> Submitter  : Markus Trippelsdorf <markus-xp2qqqlHh3xzoYq+O6RWwA@public.gmane.org>
-> Date       : 2011-11-13 19:24
-> Message-ID : 20111113192417.GA1659-tLCgZGx+iJ+kxVt8IV0GqQ@public.gmane.org
-> References : http://marc.info/?l=linux-kernel&m=132121231921932&w=2
+Denis Kuzmenko wrote:
 > 
-> Subject    : WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-> Submitter  : Markus Trippelsdorf <markus-xp2qqqlHh3xzoYq+O6RWwA@public.gmane.org>
-> Date       : 2011-11-18 7:25
-> Message-ID : 20111118072519.GA1615-tLCgZGx+iJ+kxVt8IV0GqQ@public.gmane.org
-> References : http://marc.info/?l=linux-kernel&m=132160119031794&w=2
+> Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during
+> probe.
+> 
+> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
 
-Both entries were caused by the same Radeon kexec writeback bug. This issue
-will hopefully be fixed in the next release.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-> Subject    : Impossible high cpu-time values for migration threads
-> Submitter  : Markus Trippelsdorf <markus-xp2qqqlHh3xzoYq+O6RWwA@public.gmane.org>
-> Date       : 2011-11-17 22:17
-> Message-ID : 20111117221731.GA9229-tLCgZGx+iJ+kxVt8IV0GqQ@public.gmane.org
-> References : http://marc.info/?l=linux-kernel&m=132156832124314&w=2
+Richard, I think, this should be handled in your tree.
 
-This is a cosmetic issue, but I'm still seeing this after bursts of high
-CPU usage:
+Thanks.
 
- % ps afx -F
-UID        PID  PPID  C    SZ   RSS PSR STIME TTY      STAT   TIME CMD
-root         2     0  0     0     0   1 Dec20 ?        S      0:00 [kthreadd]
-root         3     2  0     0     0   0 Dec20 ?        S      0:01  \_ [ksoftirqd/0]
-root         6     2  0     0     0   0 Dec20 ?        S      0:00  \_ [migration/0]
-root         7     2  0     0     0   1 Dec20 ?        S      0:00  \_ [migration/1]
-root         8     2  0     0     0   1 Dec20 ?        S      0:05  \_ [kworker/1:0]
-root         9     2  0     0     0   1 Dec20 ?        S      0:01  \_ [ksoftirqd/1]
-root        11     2  0     0     0   2 Dec20 ?        S      0:00  \_ [migration/2]
-root        13     2  0     0     0   2 Dec20 ?        S      0:01  \_ [ksoftirqd/2]
-root        14     2 22     0     0   3 Dec20 ?        S    192:21  \_ [migration/3]
-root        16     2  0     0     0   3 Dec20 ?        S      0:01  \_ [ksoftirqd/3]
-root        17     2  0     0     0   2 Dec20 ?        S<     0:00  \_ [khelper]
-...
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
--- 
-Markus
+> ---
+> 
+> There is a comment "no point in having a pull-up if we are always driving"
+> but code was actually enabled pull-resistor for that case probably because
+> of
+> function parameter misunderstanding (1 - disables, 0 - enables). So this
+> was
+> changed to another function which takes alphabetically defined constant as
+> parameter.
+> Tested on Mini2440 board which implements most complex case where both
+> S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set.
+> 
+> Changes v1->v2
+>         Fix typo's and style problems.
+> Changes v2->v3
+>         Remove pull-resistor enabling code for case of
+S3C24XX_LEDF_TRISTATE
+> flag is set
+> Changes v3->v4
+> 	!! approach for XOR operation with (pd->flags & S3C24XX_LEDF_ACTLOW)
+> (otherwise code will became buggy when S3C24XX_LEDF_ACTLOW valu will be
+> changed)
+> 
+> See https://lkml.org/lkml/2011/11/22/42 and
+> https://lkml.org/lkml/2011/12/13/338
+> previous for discussions.
+> 
+> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+> index 29f8b0f..8062664 100644
+> --- a/drivers/leds/leds-s3c24xx.c
+> +++ b/drivers/leds/leds-s3c24xx.c
+> @@ -46,23 +46,29 @@ static void s3c24xx_led_set(struct led_classdev
+> *led_cdev,
+>  	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
+>  	struct s3c24xx_led_platdata *pd = led->pdata;
+> 
+> -	/* there will be a short delay between setting the output and
+> -	 * going from output to input when using tristate. */
+> -
+> -	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+> -			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+> -
+> -	if (pd->flags & S3C24XX_LEDF_TRISTATE)
+> -		s3c2410_gpio_cfgpin(pd->gpio,
+> -			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
+> +	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
+> +		if (value) {
+> +			/* invert value if S3C24XX_LEDF_ACTLOW is set */
+> +			gpio_direction_output(pd->gpio,
+> +				!!value ^ !!(pd->flags &
+S3C24XX_LEDF_ACTLOW));
+> +		} else {
+> +			gpio_direction_input(pd->gpio);
+> +		}
+> +	} else {
+> +		/* invert value if S3C24XX_LEDF_ACTLOW is set */
+> +		gpio_direction_output(pd->gpio,
+> +			!!value ^ !!(pd->flags & S3C24XX_LEDF_ACTLOW));
+> +	}
+> 
+>  }
+> 
+>  static int s3c24xx_led_remove(struct platform_device *dev)
+>  {
+> +	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
+>  	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+> 
+>  	led_classdev_unregister(&led->cdev);
+> +	gpio_free(pdata->gpio);
+>  	kfree(led);
+> 
+>  	return 0;
+> @@ -77,7 +83,8 @@ static int s3c24xx_led_probe(struct platform_device
+*dev)
+>  	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
+>  	if (led == NULL) {
+>  		dev_err(&dev->dev, "No memory for device\n");
+> -		return -ENOMEM;
+> +		ret = -ENOMEM;
+> +		goto err_kzalloc;
+>  	}
+> 
+>  	platform_set_drvdata(dev, led);
+> @@ -89,15 +96,24 @@ static int s3c24xx_led_probe(struct platform_device
+> *dev)
+> 
+>  	led->pdata = pdata;
+> 
+> -	/* no point in having a pull-up if we are always driving */
+> +	ret = gpio_request(pdata->gpio, pdata->name);
+> +	if (ret < 0) {
+> +		dev_err(&dev->dev, "gpio_request failed\n");
+> +		goto err_gpio_request;
+> +	}
+> 
+> +	/* apply GPIO settings and initially turn off the LED */
+>  	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
+> -		s3c2410_gpio_setpin(pdata->gpio, 0);
+> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
+> +		ret = gpio_direction_input(pdata->gpio);
+>  	} else {
+> -		s3c2410_gpio_pullup(pdata->gpio, 0);
+> -		s3c2410_gpio_setpin(pdata->gpio, 0);
+> -		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
+> +		/* no point in having a pull-up as we are always driving */
+> +		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
+> +		ret = gpio_direction_output(pdata->gpio,
+> +				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
+> +	}
+> +	if (ret < 0) {
+> +		dev_err(&dev->dev, "can't set gpio direction\n");
+> +		goto err_gpio_set_direction;
+>  	}
+> 
+>  	/* register our new led device */
+> @@ -105,11 +121,18 @@ static int s3c24xx_led_probe(struct platform_device
+> *dev)
+>  	ret = led_classdev_register(&dev->dev, &led->cdev);
+>  	if (ret < 0) {
+>  		dev_err(&dev->dev, "led_classdev_register failed\n");
+> -		kfree(led);
+> -		return ret;
+> +		goto err_led_classdev_register;
+>  	}
+> 
+>  	return 0;
+> +
+> +err_led_classdev_register:
+> +err_gpio_set_direction:
+> +		gpio_free(pdata->gpio);
+> +err_gpio_request:
+> +		kfree(led);
+> +err_kzalloc:
+> +		return ret;
+>  }
+> 
+>  static struct platform_driver s3c24xx_led_driver = {
+
