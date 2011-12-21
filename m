@@ -1,74 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1LUIQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:16:53 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:56015 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752459Ab1LUIQu (ORCPT
+	id S1752699Ab1LUIRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:17:38 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:65258 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1LUIRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:16:50 -0500
-Message-ID: <4EF195EE.9010409@tao.ma>
-Date: Wed, 21 Dec 2011 16:16:46 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Wed, 21 Dec 2011 03:17:35 -0500
+Date: Wed, 21 Dec 2011 17:17:22 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 0/6][RFC] virtio-blk: Change I/O path from request to BIO
+Message-ID: <20111221081701.GA12472@barrios-laptop.redhat.com>
+References: <1324429254-28383-1-git-send-email-minchan@kernel.org>
+ <1324456132.4579.0.camel@lappy>
 MIME-Version: 1.0
-To: "Williams, Dan J" <dan.j.williams@intel.com>
-CC: Meelis Roos <mroos@linux.ee>, axboe@kernel.dk, Tao Ma <boyu.mt@taobao.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Ed Nadolski <edmund.nadolski@intel.com>
-Subject: Re: [PATCH] block: fix blk_queue_end_tag()
-References: <20111220233117.17757.71139.stgit@localhost6.localdomain6>	<4EF17DC4.5010008@tao.ma>	<alpine.SOC.1.00.1112210835010.6858@math.ut.ee>	<4EF18129.7030407@tao.ma> <CABE8wwtrq=SuuhAvNDjpSbfPGE+N4cWjjmVGWq8UzaH6sM9kRg@mail.gmail.com>
-In-Reply-To: <CABE8wwtrq=SuuhAvNDjpSbfPGE+N4cWjjmVGWq8UzaH6sM9kRg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 121.0.29.114 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324456132.4579.0.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 03:30 PM, Williams, Dan J wrote:
-> On Tue, Dec 20, 2011 at 10:48 PM, Tao Ma <tm@tao.ma> wrote:
->> On 12/21/2011 02:36 PM, Meelis Roos wrote:
->>>>> -   if (unlikely(tag >= bqt->max_depth)) {
->>>>> +   if (WARN_ONCE(tag >= bqt->real_max_depth,
->>>>> +                 "%s: tag %d greater than tag map size: %d\n",
->>>>> +                 __func__, tag, bqt->real_max_depth)) {
->>>>>             /*
->>>>>              * This can happen after tag depth has been reduced.
->>>> Please also change the comments here since it should never happen in the
->>>> right workload.
->>>
->>> What do you mean by right workload? Normal workload?
->> yeah, so real_max_depth is the maximum depth we ever have. So in normal
->> case(shrinking queue depth is also a normal user case), we should never
->> arrive here. In another word, if tag >= real_max_depth, we should have a
->> bug in the kernel.
-> 
-> So this is what Ed Nadolski suggested, just cut to the chase and do,
-> the following.  Seems like the comment is what got us into trouble in
-> the first place.
-> 
-> diff --git a/block/blk-tag.c b/block/blk-tag.c
-> index e74d6d1..e297d9d7 100644
-> --- a/block/blk-tag.c
-> +++ b/block/blk-tag.c
-> @@ -284,16 +284,7 @@ void blk_queue_end_tag(struct request_queue *q,
-> struct request *rq)
->         struct blk_queue_tag *bqt = q->queue_tags;
->         int tag = rq->tag;
-> 
-> -       BUG_ON(tag == -1);
-> -
-> -       if (unlikely(tag >= bqt->max_depth)) {
-> -               /*
-> -                * This can happen after tag depth has been reduced.
-> -                * But tag shouldn't be larger than real_max_depth.
-> -                */
-> -               WARN_ON(tag >= bqt->real_max_depth);
-> -               return;
-> -       }
-> +       BUG_ON(tag == -1 || tag > bqt->real_max_depth);
-I guess tag = bqt->real_max_depth should also be a problem.
+Hi Sasha!
 
-Thanks
-Tao
+On Wed, Dec 21, 2011 at 10:28:52AM +0200, Sasha Levin wrote:
+> On Wed, 2011-12-21 at 10:00 +0900, Minchan Kim wrote:
+> > This patch is follow-up of Christohp Hellwig's work
+> > [RFC: ->make_request support for virtio-blk].
+> > http://thread.gmane.org/gmane.linux.kernel/1199763
+> > 
+> > Quote from hch
+> > "This patchset allows the virtio-blk driver to support much higher IOP
+> > rates which can be driven out of modern PCI-e flash devices.  At this
+> > point it really is just a RFC due to various issues."
+> > 
+> > I fixed race bug and add batch I/O for enhancing sequential I/O,
+> > FLUSH/FUA emulation.
+> > 
+> > I tested this patch on fusion I/O device by aio-stress.
+> > Result is following as.
+> > 
+> > Benchmark : aio-stress (64 thread, test file size 512M, 8K io per IO, O_DIRECT write)
+> > Environment: 8 socket - 8 core, 2533.372Hz, Fusion IO 320G storage
+> > Test repeated by 20 times
+> > Guest I/O scheduler : CFQ
+> > Host I/O scheduler : NOOP
+> > 
+> >             Request            	BIO(patch 1-4)          BIO-batch(patch 1-6)
+> >          (MB/s)  stddev 	(MB/s)  stddev  	(MB/s)  stddev
+> > w        737.820 4.063  	613.735 31.605  	730.288 24.854
+> > rw       208.754 20.450 	314.630 37.352  	317.831 41.719
+> > r        770.974 2.340  	347.483 51.370  	750.324 8.280
+> > rr       250.391 16.910 	350.053 29.986  	325.976 24.846
+> > 
+> > This patch enhances ramdom I/O performance compared to request-based I/O path.
+> > It's still RFC so welcome to any comment and review.
+> 
+> I did a benchmark against a /dev/shm device instead of an actual storage
+> to get rid of any artifacts which are caused by the storage itself, and
+> saw that while there was a nice improvement across the board, the hit
+> against sequential read and write was quite significant.
+
+Hmm, it seems bandwidth test of sequential is bad but io test is still good.
+I don't know how it is possbile that iops is better but bandwidth is bad.
+Anyway, it seems sequential write bw is severe but I think it could be
+better if test makes many lock overhead in vblk->lock because this patch
+is started from the lock overhead.
+
+Thanks for the testing, Sasha!
+
+> 
+> I ran the tests with fio running in KVM tool against a 2G file located
+> in /dev/shm. Here is a summary of the results:
+> 
+> Before:
+> write_iops_seq
+>   write: io=1409.8MB, bw=144217KB/s, iops=36054 , runt= 10010msec
+> write_bw_seq
+>   write: io=7700.0MB, bw=1323.5MB/s, iops=1323 , runt=  5818msec
+> read_iops_seq
+>   read : io=1453.7MB, bw=148672KB/s, iops=37168 , runt= 10012msec
+> read_bw_seq
+>   read : io=7700.0MB, bw=1882.7MB/s, iops=1882 , runt=  4090msec
+> write_iops_rand
+>   write: io=1266.4MB, bw=129479KB/s, iops=32369 , runt= 10015msec
+> write_bw_rand
+>   write: io=7539.0MB, bw=1106.1MB/s, iops=1106 , runt=  6811msec
+> read_iops_rand
+>   read : io=1373.3MB, bw=140475KB/s, iops=35118 , runt= 10010msec
+> read_bw_rand
+>   read : io=7539.0MB, bw=1314.4MB/s, iops=1314 , runt=  5736msec
+> readwrite_iops_seq
+>   read : io=726172KB, bw=72292KB/s, iops=18072 , runt= 10045msec
+>   write: io=726460KB, bw=72321KB/s, iops=18080 , runt= 10045msec
+> readwrite_bw_seq
+>   read : io=3856.0MB, bw=779574KB/s, iops=761 , runt=  5065msec
+>   write: io=3844.0MB, bw=777148KB/s, iops=758 , runt=  5065msec
+> readwrite_iops_rand
+>   read : io=701780KB, bw=70094KB/s, iops=17523 , runt= 10012msec
+>   write: io=706120KB, bw=70527KB/s, iops=17631 , runt= 10012msec
+> readwrite_bw_rand
+>   read : io=3705.0MB, bw=601446KB/s, iops=587 , runt=  6308msec
+>   write: io=3834.0MB, bw=622387KB/s, iops=607 , runt=  6308msec
+> 
+> After:
+> write_iops_seq
+>   write: io=1591.4MB, bw=162626KB/s, iops=40656 , runt= 10020msec
+> write_bw_seq
+>   write: io=7700.0MB, bw=1276.4MB/s, iops=1276 , runt=  6033msec
+> read_iops_seq
+>   read : io=1615.7MB, bw=164680KB/s, iops=41170 , runt= 10046msec
+> read_bw_seq
+>   read : io=7700.0MB, bw=1407.1MB/s, iops=1407 , runt=  5469msec
+> write_iops_rand
+>   write: io=1243.1MB, bw=126304KB/s, iops=31575 , runt= 10085msec
+> write_bw_rand
+>   write: io=7539.0MB, bw=1206.3MB/s, iops=1206 , runt=  6250msec
+> read_iops_rand
+>   read : io=1533.1MB, bw=156795KB/s, iops=39198 , runt= 10018msec
+> read_bw_rand
+>   read : io=7539.0MB, bw=1413.7MB/s, iops=1413 , runt=  5333msec
+> readwrite_iops_seq
+>   read : io=819124KB, bw=81790KB/s, iops=20447 , runt= 10015msec
+>   write: io=823136KB, bw=82190KB/s, iops=20547 , runt= 10015msec
+> readwrite_bw_seq
+>   read : io=3913.0MB, bw=704946KB/s, iops=688 , runt=  5684msec
+>   write: io=3787.0MB, bw=682246KB/s, iops=666 , runt=  5684msec
+> readwrite_iops_rand
+>   read : io=802148KB, bw=80159KB/s, iops=20039 , runt= 10007msec
+>   write: io=801192KB, bw=80063KB/s, iops=20015 , runt= 10007msec
+> readwrite_bw_rand
+>   read : io=3731.0MB, bw=677762KB/s, iops=661 , runt=  5637msec
+>   write: io=3808.0MB, bw=691750KB/s, iops=675 , runt=  5637msec
+> 
+> -- 
+> 
+> Sasha.
+> 
+> 
+
+-- 
+Kind regards,
+Minchan Kim
