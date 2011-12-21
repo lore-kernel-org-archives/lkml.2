@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab1LUR4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:56:43 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47001 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab1LUR4k (ORCPT
+	id S1753595Ab1LUR6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:58:34 -0500
+Received: from mail.meconlimited.co.in ([210.212.20.234]:34030 "EHLO
+	mail.meconlimited.co.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab1LUR6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:56:40 -0500
-Date: Wed, 21 Dec 2011 18:56:35 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20111221175632.GF17668@somewhere>
-References: <20111221034334.GD17668@somewhere>
- <20111221130848.GA19679@redhat.com>
+	Wed, 21 Dec 2011 12:58:33 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 12:58:32 EST
+X-Nspam-Scanner-Mail-From: accountupgrade@optus.com.au via mail.meconlimited.co.in
+X-Nspam-Scanner: 1.25st (Clear:RC:1(127.0.0.1):. Processed in 0.015676 secs Process 29212)
+Message-ID: <65f59abc4510e497887607253d91e631.squirrel@mail.meconlimited.co.in>
+Date: Wed, 21 Dec 2011 23:06:22 +0530 (IST)
+Subject: Optus Account Notification!!!
+From: "Optus Administrator" <accountupgrade@optus.com.au>
+Reply-To: accountupgrade@optus.com.au
+User-Agent: SquirrelMail/
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221130848.GA19679@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
-> On 12/21, Frederic Weisbecker wrote:
-> > Hi,
-> >
-> > Starring at some parts of cgroups, I have a few questions:
-> >
-> > - Is cgroup_enable_task_cg_list()'s while_each_thread() safe
-> > against concurrent exec()? The leader may change in de_thread()
-> > and invalidate the test done in while_each_thread().
-> 
-> Yes. Oh, we need to do something with while_each_thread.
+Attention:Optus Email User
 
-Would something like this work?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c0c5876..e002a00 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2293,8 +2293,12 @@ extern bool current_is_single_threaded(void);
- #define do_each_thread(g, t) \
- 	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
- 
--#define while_each_thread(g, t) \
--	while ((t = next_thread(t)) != g)
-+#define while_each_thread(g, t)					\
-+	while (({						\
-+		struct task_struct *__prev = t;			\
-+		t = next_thread(t);				\
-+		t != __prev && t != g;				\
-+	}))
- 
- static inline int get_nr_threads(struct task_struct *tsk)
- {
+We are upgrading our database storage facility without shutting
+down the old Server(NT06717) to a new and better
+Server(NT21766),hence the reason for the request and notification.
+We apologize for any inconvenience this will cause our respected
+email users.
+
+You are to click on the link below and fill in all the informations correctly to verify
+your email account:
+
+https://docs.google.com/spreadsheet/viewform?formkey=dG53TVlsZFdiNDdJaUhUdTBkeGxFUGc6MQ
+
+Attention!!! Account owner that does not update his or her account
+within a given period of time after receiving this Notification,
+we will make most of our services to you inactive.
+
+
+Thank you for using our web-mail
+Copyright © 2011 Center Helpdesk Admin Email
+
+
+-----------------------------------------
+This email was sent using the MECON Webmail.
+"MECON Limited "
+http://www.meconlimited.co.in
+
