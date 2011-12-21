@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab1LUBVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 20:21:00 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:51750 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab1LUBU6 (ORCPT
+	id S1754026Ab1LUBVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 20:21:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56021 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab1LUBVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 20:20:58 -0500
-Date: Wed, 21 Dec 2011 12:20:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IkVyaWMgQsOpbmFyZCI=?= <eric@eukrea.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the slave-dma tree with the arm-soc
- tree
-Message-Id: <20111221122046.e6b8f4a9eb06015cb4f89d36@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Dec_2011_12_20_46_+1100_bEj_oeRvN4tjQV2Z"
+	Tue, 20 Dec 2011 20:21:19 -0500
+Date: Wed, 21 Dec 2011 01:21:17 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: John Crispin <blogic@openwrt.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] GPIO: add bindings for managed devices
+Message-ID: <20111221012117.GD13529@sirena.org.uk>
+References: <1324413621-11630-1-git-send-email-blogic@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324413621-11630-1-git-send-email-blogic@openwrt.org>
+X-Cookie: Penalty for private use.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Dec_2011_12_20_46_+1100_bEj_oeRvN4tjQV2Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 20, 2011 at 09:40:21PM +0100, John Crispin wrote:
 
-Hi Vinod,
+> +/**
+> + *      devm_gpio_request - request a gpio for a managed device
+> + *      @dev: device to request the gpio for
+> + *      @gpio: gpio to allocate
+> + *      @label: the name of the requested gpio
 
-Today's linux-next merge of the slave-dma tree got a conflict in
-drivers/dma/Kconfig between commit eb444fee9289 ("dma: MX3_IPU fix
-depends") from the arm-soc tree and commit 8e2d41f8c856 ("dma i.MX:
-remove individual SOC dependency") from the slave-dma tree.
-
-The latter seems to be a superset of the former, so I used that
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__21_Dec_2011_12_20_46_+1100_bEj_oeRvN4tjQV2Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO8TRuAAoJEECxmPOUX5FEK08QAJ6hdxQsn1BqAFKOKU9DjMVp
-C8ftGQKFahnOFuPwJd1RuuY1JWKCBFZvj61Ei22cNiFZEno22BtlDqqI8AKp7HIa
-pLMdxPT7CinpGRBXVzMQNmEfbIp5cPbaiLNSEbm5i2StF5eEWa0yrKjKHt7P9+D2
-qLySL4jpMsvuD4kCcEam88+1JrwHy/YCAehQfL8J6zoBlMvL3+xEjtH8HZyJXDQm
-x50TyPq7m3icTFeMc8Nx4bF4YSCO0pT/3r5mlA8QaqCNjkvX2wPQ/H5y6ZO5EgW3
-5alEUVJUP5eibhCYU4ozJsQZ/tn9fwVEEsi9fnluWQKo0HCnf+iLdajMjB/cfiQi
-1UQLdAbmjNrVXae/sdF4RGfYT+OKMYvRTkR5O9tE25YbuwDK0OH8jpYwwH6xJA3B
-nZNMtevi52fMiruYQ00zR7lwi8/KXzAHMMKja/uCP9EOfXi6wZlnLkF8xO//Lj/s
-W2TlIqLHuT0k6MLpOL7yDhDzRoYuLcvlG8Btf+XJ7GnF0mYx28B3TkbqwPB+yTQD
-sOPl5Qst/3oii9iOXHHXzxG5k/Vo6skAzlag0COlLHfDVNsJIchH/2di48GJIsHX
-i3VPcnvtFyymNIlM/RzmIh5bpYfUa8UyG2JC5kUgwAcyylqJAoV/L7kA2gkyk/i4
-O/Zc66QRueOQmwaHr3nO
-=1ObF
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Dec_2011_12_20_46_+1100_bEj_oeRvN4tjQV2Z--
+It'd be nicer to wrap gpio_request_one() as that's a bit neater from the
+driver point of view since it combines the request with the mandatory
+configuration step to put the GPIO into the appropraite mode.
