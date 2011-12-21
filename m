@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab1LULnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:43:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33970 "EHLO
+	id S1753207Ab1LULn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:43:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33983 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1LULnF (ORCPT
+	with ESMTP id S1753154Ab1LULnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:43:05 -0500
-Date: Wed, 21 Dec 2011 03:42:41 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-tsceb6w61q0gakmsccix6xxi@git.kernel.org>
+	Wed, 21 Dec 2011 06:43:53 -0500
+Date: Wed, 21 Dec 2011 03:43:27 -0800
+From: tip-bot for Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Message-ID: <tip-11534ec5b6cea13ae38d31799d2a5290c5d724af@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20111210135925.GA14593@linux.vnet.ibm.com>
+References: <20111210135925.GA14593@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix load-balance lock-breaking
-Git-Commit-ID: a195f004e9496b4d99f471bb96e0a0c1af080909
+Subject: [tip:sched/core] sched:
+  Remove cfs bandwidth period check in tg_set_cfs_period()
+Git-Commit-ID: 11534ec5b6cea13ae38d31799d2a5290c5d724af
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,124 +30,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:42:47 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:43:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a195f004e9496b4d99f471bb96e0a0c1af080909
-Gitweb:     http://git.kernel.org/tip/a195f004e9496b4d99f471bb96e0a0c1af080909
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 22 Sep 2011 15:30:18 +0200
+Commit-ID:  11534ec5b6cea13ae38d31799d2a5290c5d724af
+Gitweb:     http://git.kernel.org/tip/11534ec5b6cea13ae38d31799d2a5290c5d724af
+Author:     Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+AuthorDate: Sat, 10 Dec 2011 19:29:25 +0530
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Dec 2011 10:34:47 +0100
+CommitDate: Wed, 21 Dec 2011 10:34:48 +0100
 
-sched: Fix load-balance lock-breaking
+sched: Remove cfs bandwidth period check in tg_set_cfs_period()
 
-The current lock break relies on contention on the rq locks, something
-which might never come because we've got IRQs disabled. Or will be
-very likely because on anything with more than 2 cpus a synchronized
-load-balance pass will very likely cause contention on the rq locks.
+Remove cfs bandwidth period check from tg_set_cfs_period.
+Invalid bandwidth period's lower/upper limits are denoted
+by min_cfs_quota_period/max_cfs_quota_period repsectively,
+and are checked against valid period in tg_set_cfs_bandwidth().
 
-Also the sched_nr_migrate thing fails when it gets trapped the loops
-of either the cgroup muck in load_balance_fair() or the move_tasks()
-load condition.
+As pjt pointed out, negative input will result in very large unsigned
+numbers and will be caught by the max allowed period test.
 
-Instead, use the new lb_flags field to propagate break/abort
-conditions for all these loops and create a new loop outside the irq
-disabled on the break being required.
-
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Acked-by: Paul Turner <pjt@google.com>
+[ammended changelog to mention negative values]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-tsceb6w61q0gakmsccix6xxi@git.kernel.org
+Link: http://lkml.kernel.org/r/20111210135925.GA14593@linux.vnet.ibm.com
+--
+ kernel/sched/core.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/fair.c |   32 +++++++++++++++++++++++++-------
- 1 files changed, 25 insertions(+), 7 deletions(-)
+ kernel/sched/core.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index be47ce6..cea2fa8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3132,6 +3132,8 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index dba878c..081ece2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7714,9 +7714,6 @@ int tg_set_cfs_period(struct task_group *tg, long cfs_period_us)
+ 	period = (u64)cfs_period_us * NSEC_PER_USEC;
+ 	quota = tg->cfs_bandwidth.quota;
+ 
+-	if (period <= 0)
+-		return -EINVAL;
+-
+ 	return tg_set_cfs_bandwidth(tg, period, quota);
  }
  
- #define LBF_ALL_PINNED	0x01
-+#define LBF_NEED_BREAK	0x02
-+#define LBF_ABORT	0x04
- 
- /*
-  * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-@@ -3237,8 +3239,10 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		goto out;
- 
- 	list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
--		if (loops++ > sysctl_sched_nr_migrate)
-+		if (loops++ > sysctl_sched_nr_migrate) {
-+			*lb_flags |= LBF_NEED_BREAK;
- 			break;
-+		}
- 
- 		if ((p->se.load.weight >> 1) > rem_load_move ||
- 		    !can_migrate_task(p, busiest, this_cpu, sd, idle,
-@@ -3255,8 +3259,10 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		 * kernels will stop after the first task is pulled to minimize
- 		 * the critical section.
- 		 */
--		if (idle == CPU_NEWLY_IDLE)
-+		if (idle == CPU_NEWLY_IDLE) {
-+			*lb_flags |= LBF_ABORT;
- 			break;
-+		}
- #endif
- 
- 		/*
-@@ -3374,6 +3380,9 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		unsigned long busiest_weight = busiest_cfs_rq->load.weight;
- 		u64 rem_load, moved_load;
- 
-+		if (*lb_flags & (LBF_NEED_BREAK|LBF_ABORT))
-+			break;
-+
- 		/*
- 		 * empty group or part of a throttled hierarchy
- 		 */
-@@ -3440,18 +3449,19 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 
- 		total_load_moved += load_moved;
- 
-+		if (*lb_flags & (LBF_NEED_BREAK|LBF_ABORT))
-+			break;
-+
- #ifdef CONFIG_PREEMPT
- 		/*
- 		 * NEWIDLE balancing is a source of latency, so preemptible
- 		 * kernels will stop after the first task is pulled to minimize
- 		 * the critical section.
- 		 */
--		if (idle == CPU_NEWLY_IDLE && this_rq->nr_running)
--			break;
--
--		if (raw_spin_is_contended(&this_rq->lock) ||
--				raw_spin_is_contended(&busiest->lock))
-+		if (idle == CPU_NEWLY_IDLE && this_rq->nr_running) {
-+			*lb_flags |= LBF_ABORT;
- 			break;
-+		}
- #endif
- 	} while (load_moved && max_load_move > total_load_moved);
- 
-@@ -4496,6 +4506,14 @@ redo:
- 		if (ld_moved && this_cpu != smp_processor_id())
- 			resched_cpu(this_cpu);
- 
-+		if (lb_flags & LBF_ABORT)
-+			goto out_balanced;
-+
-+		if (lb_flags & LBF_NEED_BREAK) {
-+			lb_flags &= ~LBF_NEED_BREAK;
-+			goto redo;
-+		}
-+
- 		/* All tasks on this runqueue were pinned by CPU affinity */
- 		if (unlikely(lb_flags & LBF_ALL_PINNED)) {
- 			cpumask_clear_cpu(cpu_of(busiest), cpus);
