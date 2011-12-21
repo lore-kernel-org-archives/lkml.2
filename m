@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1LUJUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 04:20:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab1LUJUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 04:20:18 -0500
-Message-ID: <4EF1A4C5.3010908@redhat.com>
-Date: Wed, 21 Dec 2011 11:20:05 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Garrett D'Amore" <garrett@nexenta.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Regression, bisected] a3e06bbe8445f57eb949e6474c5a9b30f24d2057:
- KVM: emulate lapic tsc deadline timer for guest"
-References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048786C@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <BC00F5384FCFC9499AF06F92E8B78A9E289048786C@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752938Ab1LUJhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 04:37:15 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:52496 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1LUJhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 04:37:09 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-f8-4ef1a8c35a1f
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
+        cbouatmailru@gmail.com, pali.rohar@gmail.com, prakity@marvell.com,
+        broonie@opensource.wolfsonmicro.com, lars@metafoo.de,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        dg77.kim@samsung.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] power: introduce Charger-Manager
+Date: Wed, 21 Dec 2011 18:36:43 +0900
+Message-id: <1324460205-24683-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2011 09:05 PM, Liu, Jinsong wrote:
-> I double checked kvm tsc deadline timer patch, make sure your issue not *directly* related to the patch. I guess it maybe a qemu bug (which not exist at Avi's qemu-kvm).
-> Can you tell me where do you pull qemu? I used Avi's qemu-kvm tree, but can try your environment.
->
->
+Charger Manager provides in-kernel battery charger management that
+requires temperature monitoring during both normal and suspend-to-RAM states
+and where each battery may have multiple chargers attached and the userland
+wants to look at the aggregated information of the multiple chargers.
 
-It should happen in qemu-kvm if you use -no-kvm-irqchip.
+Charger Manager is a platform_driver with power-supply-class entries.
+An instance of Charger Manager (a platform-device created with
+Charger-Manager) represents a battery with chargers. If there are multiple
+batteries with their own chargers acting independently in a system,
+the system may need multiple instances of Charger Manager.
+Multiple chargers (e.g., USB, wireless, and solar panels) may be included
+as pairs of a regulator and a power-supply-class
+per charger.
+
+Charger Manager glues multiple charger-related frameworks (regulators of
+chargers, power-supply-class from chargers and fuel-gauge, RTC,
+suspend-again, ...) together to provide aggregated information and
+transparent battery monitoring to userspace.
+
+For the discussions about the need for in-suspend monitoring, please
+refer to the discussions of suspend-again in PM:
+v1 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031052.html
+v2 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031111.html
+v3 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031267.html
+v4 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031357.html
+v5 (last, applied) https://lists.linux-foundation.org/pipermail/linux-pm/2011-June/031561.html
+
+To see the usage example, please refer to:
+http://git.infradead.org/users/kmpark/linux-2.6-samsung/shortlog/refs/heads/charger-manager
+In this git branch, a test code for Exynos4-NURI is shown.
+
+This patch set supports initial Charger Manager driver.
+---
+Changes for v2:
+    - change symbol type of Kconfig to boolean
+
+Donggeun Kim (2):
+  power: Charger-Manager: add initial Charger-Manager driver
+  power: Charger-Manager: add properties for power-supply-class
+
+ Documentation/power/charger-manager.txt |  164 +++++
+ drivers/power/Kconfig                   |    9 +
+ drivers/power/Makefile                  |    1 +
+ drivers/power/charger-manager.c         | 1064 +++++++++++++++++++++++++++++++
+ include/linux/power/charger-manager.h   |  148 +++++
+ 5 files changed, 1386 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/power/charger-manager.txt
+ create mode 100644 drivers/power/charger-manager.c
+ create mode 100644 include/linux/power/charger-manager.h
 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
 
