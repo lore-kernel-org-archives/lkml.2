@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1LUU2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:28:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1LUU2p (ORCPT
+	id S1754027Ab1LUU3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:29:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60524 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab1LUU26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:28:45 -0500
-Date: Wed, 21 Dec 2011 12:28:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        jfs-discussion@lists.sourceforge.net,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org
-Subject: Re: [PATCH v2] vfs: __read_cache_page should use gfp argument
- rather than GFP_KERNEL
-Message-Id: <20111221122843.18f673c7.akpm@linux-foundation.org>
-In-Reply-To: <4EF211EC.7090002@oracle.com>
-References: <201112210054.46995.rjw@sisk.pl>
-	<CA+55aFzee7ORKzjZ-_PrVy796k2ASyTe_Odz=ji7f1VzToOkKw@mail.gmail.com>
-	<4EF15F42.4070104@oracle.com>
-	<CA+55aFx=B9adsTR=-uYpmfJnQgdGN+1aL0KUabH5bSY6YcwO7Q@mail.gmail.com>
-	<alpine.LSU.2.00.1112202213310.3987@eggly.anvils>
-	<4EF211EC.7090002@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 21 Dec 2011 15:28:58 -0500
+Message-ID: <1324499332.2621.7.camel@edumazet-laptop>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference in
+ ipv6_select_ident
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Wed, 21 Dec 2011 21:28:52 +0100
+In-Reply-To: <4EF23BF2.4000601@bootc.net>
+References: <4EF200BB.7000209@bootc.net>
+	  <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	  <4EF2117F.6000803@bootc.net>
+	  <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4EF23BF2.4000601@bootc.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 11:05:48 -0600
-Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
-
-> [ updated to remove now-obsolete comment in read_cache_page_gfp()]
+Le mercredi 21 décembre 2011 à 20:05 +0000, Chris Boot a écrit :
+> On 21/12/2011 18:00, Eric Dumazet wrote:
+> > Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
+> >
+> >> Good point, thats a different problem then, since 3.1 is not supposed to
+> >> have this bug.
+> >>
+> >> It seems rt->rt6i_peer points to invalid memory in your crash.
+> >>
+> >> (RBX=00000000000001f4)
+> >>
+> >> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
+> >> 1f4+a4 ->  CR2=0000000000000298
+> >>
+> > It would help if you can confirm latest linux tree can reproduce the
+> > bug.
 > 
-> lockdep reports a deadlock in jfs because a special inode's rw semaphore
-> is taken recursively. The mapping's gfp mask is GFP_NOFS, but is not used
-> when __read_cache_page() calls add_to_page_cache_lru().
+> Hi Eric,
+> 
+> I just built a v3.2-rc6-140-gb9e26df with the same config as the Debian 
+> 3.1.0 kernel. I can reproduce the bug just as easily with this kernel as 
+> with the Debian kernel. Unfortunately I wasn't able to get an entire 
+> trace, for some reason it didn't appear to be printed to the serial port 
+> and hung after the (long) list of loaded kernel modules. The crash 
+> happens at the same offset:
+> 
 
-Well hang on, it's not just a lockdep splat.  The kernel actually will
-deadlock if we reenter JFS via this GFP_KERNEL allocation attempt, yes?
+Thanks !
 
-Was that GFP_NOFS allocation recently added to JFS?  If not then we
-should backport this deadlock fix into -stable, no?
+Oh well, br_netfilter fake_rtable strikes again.
+
+I'll cook a patch in a couple of minutes...
 
 
