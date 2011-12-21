@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab1LULZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:25:44 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24634 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1LULZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:25:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6566"; a="146499549"
-Message-ID: <4EF1C230.6060005@codeaurora.org>
-Date: Wed, 21 Dec 2011 16:55:36 +0530
-From: Sujit Reddy Thumma <sthumma@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1752746Ab1LUL2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:28:47 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23199 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427Ab1LUL2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:28:45 -0500
+Message-ID: <4EF1C2DD.8070303@siemens.com>
+Date: Wed, 21 Dec 2011 12:28:29 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-CC: linaro-dev@lists.linaro.org, patches@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: use usleep_range() in mmc_delay()
-References: <4EF18310.6080801@linaro.org>
-In-Reply-To: <4EF18310.6080801@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer feature
+ in the absence of in-kernel APIC
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com> <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com> <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com> <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com> <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com> <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com> <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com> <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com> <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com> <4EF1B7C0.3080200@siemens.com> <4EF1B8A4.2050008@redhat.com>
+In-Reply-To: <4EF1B8A4.2050008@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 12:26 PM, Dmitry Antipov wrote:
->  From f447d78db65c6675e69466e8ed08364ff065ac08 Mon Sep 17 00:00:00 2001
-> From: Dmitry Antipov <dmitry.antipov@linaro.org>
-> Date: Wed, 21 Dec 2011 10:51:03 +0400
-> Subject: [PATCH] mmc: use usleep_range() in mmc_delay()
->
-> ---
-> drivers/mmc/core/core.h | 8 ++------
-> 1 files changed, 2 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
-> index 14664f1..a77851e 100644
-> --- a/drivers/mmc/core/core.h
-> +++ b/drivers/mmc/core/core.h
-> @@ -47,12 +47,8 @@ void mmc_power_off(struct mmc_host *host);
->
-> static inline void mmc_delay(unsigned int ms)
-> {
-> - if (ms < 1000 / HZ) {
-> - cond_resched();
-> - mdelay(ms);
-> - } else {
-> - msleep(ms);
-> - }
-> + unsigned long us = ms * USEC_PER_MSEC;
-> + usleep_range(us, us + 1000);
+On 2011-12-21 11:44, Avi Kivity wrote:
+> On 12/21/2011 12:41 PM, Jan Kiszka wrote:
+>> On 2011-12-21 11:35, Avi Kivity wrote:
+>>> On 12/21/2011 12:25 PM, Jan Kiszka wrote:
+>>>> We must not report the TSC deadline timer feature on our own when user
+>>>> space provides the APIC as we have no clue about its features.
+>>>
+>>> We must not report the TSC deadline timer feature on our own, period. 
+>>> We should just update the timer mode mask there.  Don't know how this
+>>> slipped through review.
+>>>
+>>> I think your original idea was correct.  Add a new KVM_CAP for the tsc
+>>> deadline timer.  Userspace can add the bit to cpuid if either it
+>>> implements the feature in a userspace apic, or if it finds the new
+>>> capability and uses the kernel apic.
+>>
+>> Right, we do need some control for user space to keep the feature
+>> disabled when migrating from an older host.
+>>
+>> However, there is also the timer_mode_mask which requires tuning in
+>> addition to the cpuid flag.
+>>
+> 
+> timer_mode_mask can just be slaved to the bit (as received by
+> KVM_SET_CPUID); that's exactly kvm_update_cpuid()'s role.
 
-I have posted similar patch some time back. 
-http://comments.gmane.org/gmane.linux.ports.arm.msm/2119.
+Like
 
-Would you like to comment on that?
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 230f713..89b02bf 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -27,7 +27,6 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_cpuid_entry2 *best;
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+-	u32 timer_mode_mask;
 
-Thanks,
-Sujit
+ 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
+ 	if (!best)
+@@ -40,15 +39,12 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
+ 			best->ecx |= bit(X86_FEATURE_OSXSAVE);
+ 	}
 
-> }
->
-> void mmc_rescan(struct work_struct *work);
+-	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
+-		best->function == 0x1) {
+-		best->ecx |= bit(X86_FEATURE_TSC_DEADLINE_TIMER);
+-		timer_mode_mask = 3 << 17;
+-	} else
+-		timer_mode_mask = 1 << 17;
+-
+-	if (apic)
+-		apic->lapic_timer.timer_mode_mask = timer_mode_mask;
++	if (apic) {
++		if (best->ecx & bit(X86_FEATURE_TSC_DEADLINE_TIMER))
++			apic->lapic_timer.timer_mode_mask = 3 << 17;
++		else
++			apic->lapic_timer.timer_mode_mask = 1 << 17;
++	}
 
+ 	kvm_pmu_cpuid_update(vcpu);
+ }
+
+
++ the KVM_CAP thing?
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
