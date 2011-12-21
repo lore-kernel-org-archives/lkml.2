@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab1LULJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:09:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55958 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab1LULJq (ORCPT
+	id S1752425Ab1LULSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:18:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45346 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1LULSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:09:46 -0500
-Message-ID: <4EF1BE69.5090300@gmail.com>
-Date: Wed, 21 Dec 2011 19:09:29 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cleanup: mm/migrate.c: cleanup comment for function migration_entry_wait
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Dec 2011 06:18:20 -0500
+Message-Id: <20111221111143.460166212@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Wed, 21 Dec 2011 11:57:42 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 3/7] printk, lockdep: Remove lockdep_off() usage
+References: <20111221105739.798864333@chello.nl>
+Content-Disposition: inline; filename=printk-remove-lockdep_off-4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migration_entry_wait can also be called from hugetlb_fault now.
-Cleanup the comment.
+Now that we've removed all reasons for disabling lockdep in the printk
+code, stop doing so.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- mm/migrate.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ kernel/printk.c |    2 --
+ 1 file changed, 2 deletions(-)
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -884,7 +884,6 @@ asmlinkage int vprintk(const char *fmt, 
+ 		zap_locks();
+ 	}
+ 
+-	lockdep_off();
+ 	raw_spin_lock(&logbuf_lock);
+ 	printk_cpu = this_cpu;
+ 
+@@ -981,7 +980,6 @@ asmlinkage int vprintk(const char *fmt, 
+ 	if (console_trylock_for_printk(this_cpu))
+ 		console_unlock();
+ 
+-	lockdep_on();
+ out_restore_irqs:
+ 	local_irq_restore(flags);
+ 
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 177aca4..640002a 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -181,8 +181,6 @@ static void remove_migration_ptes(struct page *old, struct page *new)
-  * Something used the pte of a page under migration. We need to
-  * get to the page and wait until migration is finished.
-  * When we return from this function the fault will be retried.
-- *
-- * This function is called from do_swap_page().
-  */
- void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
- 				unsigned long address)
--- 
-1.7.1
 
