@@ -1,136 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1LUUSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:18:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35569 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab1LUUSD convert rfc822-to-8bit (ORCPT
+	id S1753708Ab1LUUUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:20:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58122 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab1LUUUF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:18:03 -0500
+	Wed, 21 Dec 2011 15:20:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <4EF16DE1.8010909@canonical.com>
-References: <1324333066-12452-1-git-send-email-keescook@chromium.org>
-	<1324333066-12452-3-git-send-email-keescook@chromium.org>
-	<4EF16DE1.8010909@canonical.com>
-Date: Wed, 21 Dec 2011 12:18:02 -0800
-X-Google-Sender-Auth: SulZm9USRPDDksJmwE0Vwu1K0DM
-Message-ID: <CAGXu5jKDnwTnFb4ziAhPeJ_7qaqfpBEtupSaq0i3jThP9Lhc9A@mail.gmail.com>
-Subject: Re: [kernel-hardening] [PATCH 2/2] security: Yama LSM
-From: Kees Cook <keescook@chromium.org>
-To: John Johansen <john.johansen@canonical.com>
-Cc: kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Roland McGrath <roland@hack.frob.com>,
-        James Morris <jmorris@namei.org>
-X-System-Of-Record: true
+In-Reply-To: <e10be3d24de889e9e80d2fd76de9dcd8@mail.gmail.com>
+References: <1324385081-30824-1-git-send-email-vhtnguyen@apm.com>
+	<CA+5PVA41Haf-_H3UoR1O3VFbC3XtgScyo5hekNjt0VWxunL-fg@mail.gmail.com>
+	<e10be3d24de889e9e80d2fd76de9dcd8@mail.gmail.com>
+Date: Wed, 21 Dec 2011 15:20:03 -0500
+Message-ID: <CA+5PVA4cjiUvn4YavkFs6Jx87YpO8yHZZbm4pcPJQn1r1cggUA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] powerpc/44x: Add support PCI-E for APM821xx SoC and
+ Bluestone board
+From: Josh Boyer <jwboyer@gmail.com>
+To: Vinh Huu Tuong Nguyen <vhtnguyen@apm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Anton Blanchard <anton@samba.org>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Breeds <tony@bakeyournoodle.com>,
+        Rob Herring <rob.herring@calxeda.com>, Jiri Kosina <jkosina@suse.cz>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Ayman El-Khashab <ayman@elkhashab.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 9:25 PM, John Johansen
-<john.johansen@canonical.com> wrote:
-> On 12/19/2011 02:17 PM, Kees Cook wrote:
->> This adds the Yama Linux Security Module to collect DAC security
->> improvements (specifically just ptrace restrictions for now) that have
->> existed in various forms over the years and have been carried outside the
->> mainline kernel by other Linux distributions like Openwall and grsecurity.
+On Tue, Dec 20, 2011 at 11:47 PM, Vinh Huu Tuong Nguyen
+<vhtnguyen@apm.com> wrote:
+>> +
+>> +       mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
+>> +               mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) |
+>> +               (PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTPYN));
+>> +
+>> +       /* Poll for PHY reset */
+>> +       timeout = 0;
+>> +       while ((!(mfdcri(SDR0, PESDR0_460EX_RSTSTA +
+>> +                       (port->index * 0x55)) & 0x1)) &&
+>> +                (timeout < PCIE_PHY_RESET_TIMEOUT)) {
+>> +               udelay(10);
+>> +               timeout++;
+>> +       }
+>> +
+>> +       if (timeout < PCIE_PHY_RESET_TIMEOUT) {
+>> +               mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
+>> +                       (mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) &
+>> +                       ~(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTDL)) |
+>> +                       PESDRx_RCSSET_RSTPYN);
+>> +
+>> +               port->has_ibpre = 1;
+>> +
+>> +               return 0;
+>> +       } else {
+>> +               printk(KERN_INFO "PCIE: Can't reset PHY\n");
+>> +               return -1;
+>> +       }
+>
+> If we can't reset the PHY, does this whole function essentially fail?
+> Do the devices not get renumbered, etc?  If so, you probably want to
+> make that KERN_ERR.
+> [Vinh Nguyen] if we can't reset the PHY, maybe the device can't work
+> properly. I will update codes to return the error in case PHY can't reset.
+
+OK.
+
+>> @@ -1751,9 +1856,9 @@ static void __init
+> ppc4xx_configure_pciex_PIMs(struct ppc4xx_pciex_port *port,
+>>                 * if it works
+>>                 */
+>>                out_le32(mbase + PECFG_PIM0LAL, 0x00000000);
+>> -               out_le32(mbase + PECFG_PIM0LAH, 0x00000000);
+>> +               out_le32(mbase + PECFG_PIM0LAH, 0x00000008); /* Moving
+> on HB */
+>>                out_le32(mbase + PECFG_PIM1LAL, 0x00000000);
+>> -               out_le32(mbase + PECFG_PIM1LAH, 0x00000000);
+>> +               out_le32(mbase + PECFG_PIM1LAH, 0x0000000c); /* Moving
+> on HB */
+>>                out_le32(mbase + PECFG_PIM01SAH, 0xffff0000);
+>>                out_le32(mbase + PECFG_PIM01SAL, 0x00000000);
+>
+> Why are these values changed, and are those changes only needed on
+> APM821xx?
+> [Vinh Nguyen] In system memory map of 460EX chip, we have an "alias DDR
+> SDRAM" area that is Local Memory Alias for HB(high bandwidth), so we tried
+> to initialize it for speedup. For APM821xx, although we didn't mention
+> about this area, this configuration still works well. So we keep it.
+
+This function isn't just called for 460EX or APM821xx SoCs.  It's
+called on any 4xx SoC with PCIe configured.
+Is this change going to work on them all?  If not, it needs to be
+conditionalized.
+
+>> diff --git a/arch/powerpc/sysdev/ppc4xx_pci.h
+> b/arch/powerpc/sysdev/ppc4xx_pci.h
+>> index 32ce763..faf3017 100644
+>> --- a/arch/powerpc/sysdev/ppc4xx_pci.h
+>> +++ b/arch/powerpc/sysdev/ppc4xx_pci.h
+>> @@ -441,6 +441,7 @@
+>>  /*
+>>  * Config space register offsets
+>>  */
+>> +#define PECFG_ECDEVCTL         0x060
+>>  #define PECFG_ECRTCTL          0x074
 >>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>  #define PECFG_BAR0LMPA         0x210
+>> @@ -448,6 +449,7 @@
+>>  #define PECFG_BAR1MPA          0x218
+>>  #define PECFG_BAR2LMPA         0x220
+>>  #define PECFG_BAR2HMPA         0x224
+>> +#define PECFG_ECDEVCAPPA       0x25c
+>>
+>>  #define PECFG_PIMEN            0x33c
+>>  #define PECFG_PIM0LAL          0x340
+>> @@ -494,5 +496,7 @@ enum
+>>        LNKW_X8                 = 0x8
+>>  };
+>>
+>> +/* Timout for reset phy */
+>> +#define PCIE_PHY_RESET_TIMEOUT 10
 >
-> This is looking really good.  I have a few notes inlined below but I didn't
-> find any problems.
->
-> I am happy giving it an
-> Acked-by: John Johansen <john.johansen@canonical.com>
+> Is this value applicable to all the 44x devices with PCI-e?
+> [Vinh Nguyen] At this time, we only checked this on APM821xx chips.
 
-Thanks for the review!
+Then it should probably be conditionalized somehow.  Or put as a
+worst-case value that will work for them all.
 
->> +/**
->> + * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
->> + * @tracer: the task_struct of the process doing the ptrace
->> + * @tracee: the task_struct of the process to be ptraced
->> + *
->> + * Returns 0 if relationship was added, -ve on error.
->> + */
-> It might be good to add a note here, or a more explicit note in the Yama
-> Documentation that a tracee can only have a single tracer (+ its descendants).
-
-Good idea; I've added a note in both places now.
-
->> +static int yama_ptracer_add(struct task_struct *tracer,
->> +                         struct task_struct *tracee)
->> +{
->> +     int rc = 0;
->> +     struct ptrace_relation *added;
->> +     struct ptrace_relation *entry, *relation = NULL;
->> +
->> +     added = kmalloc(sizeof(*added), GFP_KERNEL);
->> +     spin_lock_bh(&ptracer_relations_lock);
->> +     list_for_each_entry(entry, &ptracer_relations, node)
->> +             if (entry->tracee == tracee) {
->> +                     relation = entry;
->> +                     break;
->> +             }
->> +     if (!relation) {
->> +             relation = added;
->> +             if (!relation) {
->> +                     rc = -ENOMEM;
->> +                     goto unlock_out;
->> +             }
->> +             relation->tracee = tracee;
->> +             list_add(&relation->node, &ptracer_relations);
->> +     }
->> +     relation->tracer = tracer;
->> +
->> +unlock_out:
->> +     spin_unlock_bh(&ptracer_relations_lock);
->> +     if (added && added != relation)
->> +             kfree(added);
->> +
->> +     return rc;
->> +}
->> +
-> I think pulling the out of the locking makes the fn a little easier to
-> read.
-
-Agreed, I've done this now. I think my original thought was "why check
-'added' unless we actually need it?" But it just makes the whole thing
-harder to read.
-
->> +     spin_lock_bh(&ptracer_relations_lock);
->> +     list_for_each_safe(list, safe, &ptracer_relations) {
->> +             relation = list_entry(list, struct ptrace_relation, node);
-> You could use list_for_each_entry_safe here
->        list_for_each_entry_safe(relation, safe, &ptracer_relations, node)
-
-Ah! Yes, thanks for catching this.
-
->> + * yama_task_prctl - check for Yama-specific prctl operations
->> + * @option: operation
->> + * @arg2: argument
->> + * @arg3: argument
->> + * @arg4: argument
->> + * @arg5: argument
->> + *
->> + * Return 0 on success, -ve on error.  -ENOSYS is returned when Yama
->> + * does not handle the given option.
->> + */
-> So maybe add a note here about why the tracee is being stored via the
-> group_leader, but that the tracer isn't.  Its not really a problem but I
-> tripped over this at first as I was going through the code.
-
-Yeah, dealing with when a thread might be calling these things lead to
-some confusion. In the end, I have to check group_leader in a few
-places, and this was a seemingly good place too. I might rework this a
-bit, but in the meantime, I've added a comment explaining my
-reasoning.
-
-Thanks!
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+josh
