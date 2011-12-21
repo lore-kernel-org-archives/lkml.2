@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1LUIoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 03:44:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32845 "EHLO
+	id S1753000Ab1LUIpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 03:45:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:32869 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab1LUIoO (ORCPT
+	with ESMTP id S1752146Ab1LUIpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 03:44:14 -0500
-Date: Wed, 21 Dec 2011 00:43:50 -0800
+	Wed, 21 Dec 2011 03:45:03 -0500
+Date: Wed, 21 Dec 2011 00:44:36 -0800
 From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-2b600f9578852d12af59420011e3dadfaa58b043@git.kernel.org>
+Message-ID: <tip-d74c896b7e3250a07f7d0315eecdd2ae1a7bc3c3@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
         namhyung@gmail.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1323703017-6060-3-git-send-email-namhyung@gmail.com>
-References: <1323703017-6060-3-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1323703017-6060-4-git-send-email-namhyung@gmail.com>
+References: <1323703017-6060-4-git-send-email-namhyung@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Get rid of duplicated snprintf()
-Git-Commit-ID: 2b600f9578852d12af59420011e3dadfaa58b043
+Subject: [tip:perf/core] perf symbols: Fix error path on symbol__init()
+Git-Commit-ID: d74c896b7e3250a07f7d0315eecdd2ae1a7bc3c3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,61 +29,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 00:43:55 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 00:44:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b600f9578852d12af59420011e3dadfaa58b043
-Gitweb:     http://git.kernel.org/tip/2b600f9578852d12af59420011e3dadfaa58b043
+Commit-ID:  d74c896b7e3250a07f7d0315eecdd2ae1a7bc3c3
+Gitweb:     http://git.kernel.org/tip/d74c896b7e3250a07f7d0315eecdd2ae1a7bc3c3
 Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Tue, 13 Dec 2011 00:16:51 +0900
+AuthorDate: Tue, 13 Dec 2011 00:16:52 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 20 Dec 2011 13:34:52 -0200
+CommitDate: Tue, 20 Dec 2011 13:40:27 -0200
 
-perf symbols: Get rid of duplicated snprintf()
+perf symbols: Fix error path on symbol__init()
 
-The 'path' variable is set on a upper line, don't need to do it again.
+The order of freeing comm_list and dso_list should be reversed.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1323703017-6060-3-git-send-email-namhyung@gmail.com
+Link: http://lkml.kernel.org/r/1323703017-6060-4-git-send-email-namhyung@gmail.com
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+ tools/perf/util/symbol.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 632b50c..e54b13d 100644
+index e54b13d..215d50f 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -1757,7 +1757,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 		struct stat st;
+@@ -2604,10 +2604,10 @@ int symbol__init(void)
+ 	symbol_conf.initialized = true;
+ 	return 0;
  
- 		/*sshfs might return bad dent->d_type, so we have to stat*/
--		sprintf(path, "%s/%s", dir_name, dent->d_name);
-+		snprintf(path, sizeof(path), "%s/%s", dir_name, dent->d_name);
- 		if (stat(path, &st))
- 			continue;
+-out_free_dso_list:
+-	strlist__delete(symbol_conf.dso_list);
+ out_free_comm_list:
+ 	strlist__delete(symbol_conf.comm_list);
++out_free_dso_list:
++	strlist__delete(symbol_conf.dso_list);
+ 	return -1;
+ }
  
-@@ -1766,8 +1766,6 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			    !strcmp(dent->d_name, ".."))
- 				continue;
- 
--			snprintf(path, sizeof(path), "%s/%s",
--				 dir_name, dent->d_name);
- 			ret = map_groups__set_modules_path_dir(mg, path);
- 			if (ret < 0)
- 				goto out;
-@@ -1788,9 +1786,6 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			if (map == NULL)
- 				continue;
- 
--			snprintf(path, sizeof(path), "%s/%s",
--				 dir_name, dent->d_name);
--
- 			long_name = strdup(path);
- 			if (long_name == NULL) {
- 				ret = -1;
