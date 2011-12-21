@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1LUMZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 07:25:56 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40865 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab1LUMZx (ORCPT
+	id S1753377Ab1LUM02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 07:26:28 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43895 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1LUM00 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 07:25:53 -0500
-Message-ID: <4EF1D011.8060103@mvista.com>
-Date: Wed, 21 Dec 2011 16:24:49 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 21 Dec 2011 07:26:26 -0500
+From: bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Subject: Re: Kerneloops.org defunct?
+Date: Wed, 21 Dec 2011 13:25:52 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Jiri Slaby <jirislaby@gmail.com>, Arjan van de Ven <arjan@linux.intel.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <4DE6264A.2040901@gmail.com> <CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com> <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+In-Reply-To: <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
 MIME-Version: 1.0
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-Subject: Re: [PATCH v2] davinci: DA850 EVM: OHCI platform code
-References: <1324452002-8388-1-git-send-email-prakash.pm@ti.com> <DF0F476B391FA8409C78302C7BA518B6051CB9@DBDE01.ent.ti.com> <4EF1CB8A.10309@mvista.com>
-In-Reply-To: <4EF1CB8A.10309@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201112211325.53648.roucaries.bastien@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Le Wednesday 12 October 2011 14:35:44, Bastien ROUCARIES a écrit :
+> Any news now that the fiasco is going to be resolved.
+> 
+> Bastien
+> 
+> On Wed, Sep 28, 2011 at 10:51 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+> > On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
 
-On 21-12-2011 16:05, I wrote:
+> >> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
+> >>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
+> >>>> Is the code available somewhere, or will it need to be rewritten ?
+> >>> 
+> >>> we have the code on the server/etc... if someone signs up to help he
+> >>> will be on the server of course
+> >> 
+> >> It looks like there are some volunteers. Did you have a chance to talk
+> >> to each other and make any progress?
+> >> 
+> >> If not, may we have at least a backup of the database published, please?
+> >> There are very valuable data you collected over time and I'm sure there
+> >> are more people than me who would appreciate that.
 
->> On Wed, Dec 21, 2011 at 12:50:02, Manjunathappa, Prakash wrote:
->>> From: Ajay Kumar Gupta<ajay.gupta@ti.com>
+Any news of this ?
 
->>> On this board the OHCI port's power control and over-current signals from
->>> TPS2065 power switch are connected via GPIO2[4] and GPIO6[13] respectively,
->>> so we can implement the DA8xx OHCI glue layer's hooks for overriding the
->>> root hub port's power and over-current status bits.
+Can we access to code ? (public git)
 
->>> We also have to properly set up the clocking mode in the CFGCHIP2 register,
->>> so that internal 24 MHz reference clock is fed to the USB 2.0 (MUSB) PHY and
->>> its output is used to clock the USB 1.1 (OHCI) PHY...
+Bastien
 
->>> Signed-off-by: Ajay Kumar Gupta<ajay.gupta@ti.com>
->>> Signed-off-by: Manjunathappa, Prakash<prakash.pm@ti.com>
-
->> This is the third copy of OHCI platform setup code which is almost
->> the same except for the GPIO numbers.
-
-> Well, in my counting, it's only second, DA830 EVM being the first one.
-> What's the third?
-
-    Ah, I missed Hawkboard... :-)
-
- >    I designed the hub interface to be as abstract as I could, and now you're
- > proposing to add GPIO to it? No, I have no clear idea how to keeep it
- > abstract and add GPIO support at the same time. I would have been grateful to
- > TI if I didn't have to invent this at all and they stop saving on OHCI pins.
-
-    Well, I have one idea. We can create a separate module in 
-arch/arm/mach-davinci/, named say ohci.c, put the shared code there and pass 
-to it the GPIOs actually used via a function call. Or maybe use existing 
-arch/arm/mach-davinci/usb.c.
-
-WBR, Sergei
+> >> thanks,
+> >> --
+> >> js
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> >> in the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> > Apparently kerneoops.org is hosted by kernel.org so there will be no
+> > progress until that fiasco is resolved. I'm still up for working on it
+> > if and when the site is back online.
+> > 
+> > --
+> > Josh
