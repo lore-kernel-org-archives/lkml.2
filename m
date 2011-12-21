@@ -1,174 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab1LUFHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 00:07:48 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:22779 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750698Ab1LUFHp (ORCPT
+	id S1751602Ab1LUFLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 00:11:38 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:43996 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab1LUFLe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 00:07:45 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAIZo8U55LL6d/2dsb2JhbABDrBGBBoFyAQEEAScTHCMFCwgDGC4UJQMhE4d6t1ETixljBJR+iRyJKw
-Date: Wed, 21 Dec 2011 16:07:40 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
-Message-ID: <20111221050740.GD23662@dastard>
-References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
+	Wed, 21 Dec 2011 00:11:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK44p232PbvGRXKB7_3TYn0Q3iqgRJg6Qv81W_EwXCHL+79baA@mail.gmail.com>
+References: <1323789196-4942-1-git-send-email-amit.kachhap@linaro.org>
+	<1323789196-4942-2-git-send-email-amit.kachhap@linaro.org>
+	<CAKfTPtCVtWfdUpW=Up6eWTsceBCfER5NcvjF1KRTNcqys2YArQ@mail.gmail.com>
+	<CAK44p232PbvGRXKB7_3TYn0Q3iqgRJg6Qv81W_EwXCHL+79baA@mail.gmail.com>
+Date: Wed, 21 Dec 2011 10:41:33 +0530
+Message-ID: <CAK44p23apXmAUY3DR2rogeAwMQmOEdwW3SZbEpxApVkc9He+kg@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC PATCH 1/2] thermal: Add a new trip type to use
+ cooling device instance number
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 10:41:39PM -0800, Hugh Dickins wrote:
-> Down, down in the deepest depths of GFP_NOIO page reclaim, we have
-> shrink_page_list() calling __remove_mapping() calling __delete_from_
-> swap_cache() or __delete_from_page_cache().
-> 
-> You would not expect those to need much stack, but in fact they call
-> radix_tree_delete(): which declares a 192-byte radix_tree_path array
-> on its stack (to record the node,offsets it visits when descending,
-> in case it needs to ascend to update them).  And if any tag is still
-> set [1], that calls radix_tree_tag_clear(), which declares a further
-> such 192-byte radix_tree_path array on the stack.  (At least we have
-> interrupts disabled here, so won't then be pushing registers too.)
-> 
-> That was probably a good choice when most users were 32-bit (array
-> of half the size), and adding fields to radix_tree_node would have
-> bloated it unnecessarily.  But nowadays many are 64-bit, and each
-> radix_tree_node contains a struct rcu_head, which is only used when
-> freeing; whereas the radix_tree_path info is only used for updating
-> the tree (deleting, clearing tags or setting tags if tagged) when a
-> lock must be held, of no interest when accessing the tree locklessly.
-> 
-> So add a parent pointer to the radix_tree_node, in union with the
-> rcu_head, and remove all uses of the radix_tree_path.  There would
-> be space in that union to save the offset when descending as before
-> (we can argue that a lock must already be held to exclude other users),
-> but recalculating it when ascending is both easy (a constant shift and
-> a constant mask) and uncommon, so it seems better just to do that.
+ Hi Vincent,
 
-Seems sane - any modification of the tree contents or tag has to be
-done under a lock, so we can maintain parent pointers safely. And we
-don't reda them under RCU conditions, so we don't need any special
-handling there, either.
+Thanks for the review.
+Well actually your are correct that current temperature and last
+temperature can be used to increase or decrease the cpu frequency. But
+this has to be done again in cooling devices so to make the cooling
+devices generic and to avoid the temperature comparison again this new
+trip type passes the cooling device instance id.
+Also about your queries that this may add dependency between trip
+index and cooling state. This is actually needed and this dependency
+is created when the cooling device is binded with trip points(For
+cpufreq type cooling device just the instance of cooling device is
+associated with trip points). More over the existing PASSIVE cooling
+trip type does the same thing and iterates across all the cooling
+state.
 
-> Two little optimizations: no need to decrement height when descending,
-> adjusting shift is enough;
-
-*nod*
-
-> and once radix_tree_tag_if_tagged() has set
-> tag on a node and its ancestors, it need not ascend from that node again.
-
-I'm not sure I really follow this. I think I know what you mean, but
-I can't quite get it straight and the comment in the code doesn't
-help me get it straight. Can you describe it a bit more - I think
-I'm just being dense at the moment....
-
-> perf on the radix tree test harness reports radix_tree_insert() as 2%
-> slower (now having to set parent), but radix_tree_delete() 24% faster.
-> Surely that's an exaggeration from rtth's artificially low map shift 3,
-> but forcing it back to 6 still rates radix_tree_delete() 8% faster.
-
-Nice.
-
-> [1] Can a pagecache tag (dirty, writeback or towrite) actually still be
-> set at the time of radix_tree_delete()?  Perhaps not if the filesystem
-> is well-behaved.  But although I've not tracked any stack overflow down
-> to this cause, I have observed a curious case in which a dirty tag is
-> set and left set on tmpfs: page migration's migrate_page_copy() happens
-> to use __set_page_dirty_nobuffers() to set PageDirty on the newpage,
-> and that sets PAGECACHE_TAG_DIRTY as a side-effect - harmless to a
-> filesystem which doesn't use tags, except for this stack depth issue.
-
-Not sure about the page cache, but other users of the radix tree
-definitely do delete objects with tags still set. For example, when
-XFS is reclaiming inodes it will delete the inode from it's internal
-radix trees with the reclaim tag still set on the index. This
-happens for every single inode that is reclaimed, so it's anything
-but seldom and should really be considered a common operation....
-
-Couple more comments below.
-
-> @@ -274,18 +273,23 @@ static int radix_tree_extend(struct radi
->  		if (!(node = radix_tree_node_alloc(root)))
->  			return -ENOMEM;
->  
-> -		/* Increase the height.  */
-> -		node->slots[0] = indirect_to_ptr(root->rnode);
-> -
->  		/* Propagate the aggregated tag info into the new root */
->  		for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
->  			if (root_tag_get(root, tag))
->  				tag_set(node, tag, 0);
->  		}
->  
-> +		/* Increase the height.  */
->  		newheight = root->height+1;
-
-While touching this code, fixing the adjacent whitespace damage
-would be good.
-
->  		node->height = newheight;
->  		node->count = 1;
-> +		node->parent = NULL;
-> +		slot = root->rnode;
-> +		if (newheight > 1) {
-> +			slot = indirect_to_ptr(slot);
-> +			slot->parent = node;
-> +		}
-> +		node->slots[0] = slot;
-
-This would be much more obvious in function if it separated the two
-different cases completely:
-
-		if (newheight > 1) {
-			slot = indirect_to_ptr(root->rnode);
-			slot->parent = node;
-		} else {
-			slot = root->rnode;
-			node->parent = NULL;
-		}
-		node->slots[0] = slot;
-
-> @@ -701,15 +691,21 @@ unsigned long radix_tree_range_tag_if_ta
->  		tag_set(slot, settag, offset);
->  
->  		/* walk back up the path tagging interior nodes */
-> -		pathp = &path[0];
-> -		while (pathp->node) {
-> +		upindex = index;
-> +		while (node) {
-> +			upindex >>= RADIX_TREE_MAP_SHIFT;
-> +			offset = upindex & RADIX_TREE_MAP_MASK;
-> +
->  			/* stop if we find a node with the tag already set */
-> -			if (tag_get(pathp->node, settag, pathp->offset))
-> +			if (tag_get(node, settag, offset))
->  				break;
-> -			tag_set(pathp->node, settag, pathp->offset);
-> -			pathp++;
-> +			tag_set(node, settag, offset);
-> +			node = node->parent;
->  		}
->  
-> +		/* optimization: no need to walk up from this node again */
-> +		node = NULL;
-
-As per my query above: why? That's the question the comment needs to
-answer....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ Thanks,
+ Amit Daniel
+>
+> On 20 December 2011 18:07, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+>>
+>> Hi Amit,
+>>
+>> I'm not sure that using the trip index for setting the state of a
+>> cooling device is a generic solution because you are adding a
+>> dependency between the trip index and the cooling device state that
+>> might be difficult to handle. This dependency implies that a cooling
+>> device like cpufreq_cooling_device must be registered in the 1st trips
+>> of a thermal_zone which is not possible when we want to register 2
+>> cpufreq_cooling_devices in the same thermal_zone.
+>> You should only rely on the current and last temperatures to detect if
+>> a trip_temp has been crossed and you should increase or decrease the
+>> current state of the cooling device accordingly.
+>>
+>> something like below should work with cpufreq_cooling_device and will
+>> not add any constraint on the trip index. The state of a cooling
+>> device is increased/decreased once for each trip
+>>
+>> +               case THERMAL_TRIP_STATE_ACTIVE:
+>> +                       list_for_each_entry(instance, &tz->cooling_devices,
+>> +                                           node) {
+>> +                               if (instance->trip != count)
+>> +                                       continue;
+>> +
+>> +                               cdev = instance->cdev;
+>> +
+>> +                               if ((temp >= trip_temp)
+>> +                                       && (trip_temp > tz->last_temperature)) {
+>> +                                       cdev->ops->get_max_state(cdev,
+>> +                                                       &max_state);
+>> +                                       cdev->ops->get_cur_state(cdev,
+>> +                                                       &current_state);
+>> +                                       if (++current_state <= max_state)
+>> +                                               cdev->ops->set_cur_state(cdev,
+>> +                                                               current_state);
+>> +                               }
+>> +                               else if ((temp < trip_temp)
+>> +                                       && (trip_temp <= tz->last_temperature)) {
+>> +                                       cdev->ops->get_cur_state(cdev,
+>> +                                                       &current_state);
+>> +                                       if (current_state > 0)
+>> +                                               cdev->ops->set_cur_state(cdev,
+>> +                                                               --current_state);
+>> +                       }
+>> +                       break;
+>>
+>> Regards,
+>> Vincent
+>>
+>> On 13 December 2011 16:13, Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
+>> > This patch adds a new trip type THERMAL_TRIP_STATE_ACTIVE. This
+>> > trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
+>> > device instance number. This helps the cooling device registered as
+>> > different instances to perform appropriate cooling action decision in
+>> > the set_cur_state call back function.
+>> >
+>> > Also since the trip temperature's are in ascending order so some logic
+>> > is put in place to skip the un-necessary checks.
+>> >
+>> > Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+>> > ---
+>> >  Documentation/thermal/sysfs-api.txt |    4 ++--
+>> >  drivers/thermal/thermal_sys.c       |   27 ++++++++++++++++++++++++++-
+>> >  include/linux/thermal.h             |    1 +
+>> >  3 files changed, 29 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+>> > index b61e46f..5c1d44e 100644
+>> > --- a/Documentation/thermal/sysfs-api.txt
+>> > +++ b/Documentation/thermal/sysfs-api.txt
+>> > @@ -184,8 +184,8 @@ trip_point_[0-*]_temp
+>> >
+>> >  trip_point_[0-*]_type
+>> >        Strings which indicate the type of the trip point.
+>> > -       E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
+>> > -       thermal zone.
+>> > +       E.g. it can be one of critical, hot, passive, active[0-1],
+>> > +       state-active[0-*] for ACPI thermal zone.
+>> >        RO, Optional
+>> >
+>> >  cdev[0-*]
+>> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+>> > index dd9a574..72b1ab3 100644
+>> > --- a/drivers/thermal/thermal_sys.c
+>> > +++ b/drivers/thermal/thermal_sys.c
+>> > @@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
+>> >                return sprintf(buf, "passive\n");
+>> >        case THERMAL_TRIP_ACTIVE:
+>> >                return sprintf(buf, "active\n");
+>> > +       case THERMAL_TRIP_STATE_ACTIVE:
+>> > +               return sprintf(buf, "state-active\n");
+>> >        default:
+>> >                return sprintf(buf, "unknown\n");
+>> >        }
+>> > @@ -1035,7 +1037,7 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+>> >  void thermal_zone_device_update(struct thermal_zone_device *tz)
+>> >  {
+>> >        int count, ret = 0;
+>> > -       long temp, trip_temp;
+>> > +       long temp, trip_temp, max_state, last_trip_change = 0;
+>> >        enum thermal_trip_type trip_type;
+>> >        struct thermal_cooling_device_instance *instance;
+>> >        struct thermal_cooling_device *cdev;
+>> > @@ -1086,6 +1088,29 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+>> >                                        cdev->ops->set_cur_state(cdev, 0);
+>> >                        }
+>> >                        break;
+>> > +               case THERMAL_TRIP_STATE_ACTIVE:
+>> > +                       list_for_each_entry(instance, &tz->cooling_devices,
+>> > +                                           node) {
+>> > +                               if (instance->trip != count)
+>> > +                                       continue;
+>> > +
+>> > +                               if (temp <= last_trip_change)
+>> > +                                       continue;
+>> > +
+>> > +                               cdev = instance->cdev;
+>> > +                               cdev->ops->get_max_state(cdev, &max_state);
+>> > +
+>> > +                               if ((temp >= trip_temp) &&
+>> > +                                               ((count + 1) <= max_state))
+>> > +                                       cdev->ops->set_cur_state(cdev,
+>> > +                                                               count + 1);
+>> > +                               else if ((temp < trip_temp) &&
+>> > +                                                       (count <= max_state))
+>> > +                                       cdev->ops->set_cur_state(cdev, count);
+>> > +
+>> > +                               last_trip_change = trip_temp;
+>> > +                       }
+>> > +                       break;
+>> >                case THERMAL_TRIP_PASSIVE:
+>> >                        if (temp >= trip_temp || tz->passive)
+>> >                                thermal_zone_device_passive(tz, temp,
+>> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>> > index 47b4a27..d7d0a27 100644
+>> > --- a/include/linux/thermal.h
+>> > +++ b/include/linux/thermal.h
+>> > @@ -42,6 +42,7 @@ enum thermal_trip_type {
+>> >        THERMAL_TRIP_PASSIVE,
+>> >        THERMAL_TRIP_HOT,
+>> >        THERMAL_TRIP_CRITICAL,
+>> > +       THERMAL_TRIP_STATE_ACTIVE,
+>> >  };
+>> >
+>> >  struct thermal_zone_device_ops {
+>> > --
+>> > 1.7.1
+>> >
+>> > _______________________________________________
+>> > linux-pm mailing list
+>> > linux-pm@lists.linux-foundation.org
+>> > https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
+>
+>
