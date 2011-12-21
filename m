@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab1LUJzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 04:55:18 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51952 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab1LUJzO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 04:55:14 -0500
+	id S1753211Ab1LUJzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 04:55:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab1LUJzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 04:55:43 -0500
+Date: Wed, 21 Dec 2011 10:55:20 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf, tool: Add parser generator for events parsing
+Message-ID: <20111221095520.GA1726@m.redhat.com>
+References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
+ <1323963039-7602-2-git-send-email-jolsa@redhat.com>
+ <20111220173721.GB22107@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <4EF1AA8A.8060304@linux.intel.com>
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-	<4EF1A0B4.5080307@linux.intel.com>
-	<CAMbhsRRP7s9xsHqxhb=iMfHAJFcqAea-6CDORZS34RCPNo+UWw@mail.gmail.com>
-	<4EF1AA8A.8060304@linux.intel.com>
-Date: Wed, 21 Dec 2011 01:55:13 -0800
-X-Google-Sender-Auth: GZP-ZDvxH6xj17cEy3GAEURdJgA
-Message-ID: <CAMbhsRSNTUvou9Gf6T4Ggq=jfxsWUcn7M2yNsKQz6aNrt6gLDg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] coupled cpuidle state support
-From: Colin Cross <ccross@android.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111220173721.GB22107@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 1:44 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 12/21/2011 10:40 AM, Colin Cross wrote:
->
->>> this smells fundamentally racey to me; you can get an interrupt one
->>> cycle after you think you're done, but before the last guy enters WFI...
->>>
->>> how do you solve that issue ?
->>
->> All the cpus have interrupts off when they increment the counter, so
->> they cannot receive an interrupt.  If an interrupt is pending on one
->> of those cpus, it will be handled later when WFI aborts due to the
->> pending interrupt.
->
-> ... but this leads to cases where you're aborting before other cpus are
-> entering..... so your "last guy in" doesn't really work, since while cpu
-> 0 thinks it's the last guy, cpu 1 is already on the way out/out
-> already...  (heck it might already be going back to sleep if your idle
-> code can run fast, like in the size of a cache miss)
+On Tue, Dec 20, 2011 at 03:37:22PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Dec 15, 2011 at 04:30:37PM +0100, Jiri Olsa escreveu:
+> > Changing event parsing to use flex/bison parse generator.
+> > The event syntax stays as it is.
+> 
+> Seems really cool, using the right tool for the task, comments:
+> 
+> . Can we avoid more globals? Like that __event_list one.
+ok, looks like there's a way to pass an parameter to the parse function,
+I'll chec and make the change if possible
 
-Once a cpu has incremented the counter, it has no way out unless either
-1: another cpu (that hasn't incremented the counter yet) receives an
-interrupt, aborts idle, and clears its idle flag
-or
-2: all cpus enter the ready counter, and call the cpuidle driver's
-enter function.
 
-In your example, cpu 1 has incremented the counter, so it cannot be on
-the way out unless cpu 0 aborts (in which case it will not increment
-the counter, and the counter will never be equal to the number of
-cpus), or unless cpu 0 turns off its interrupts and incrementes the
-counter (in which case neither cpu can return until after the cpuidle
-driver's enter function has been called on all cpus).
+> . All those ABORT_ON do what? die() like stuff? /me googles YYABORT...
+> 
+> ----
+> YYABORT
+> Return immediately with value 1 (to report failure).
+> ----
+> 
+> 	Ok, so it gets propagated back and hopefully the we die() just
+> back at main() in tools/perf/perf.c, right?
+right, it'll make parse_events_parse return error
+
+> 
+> . make help | perf
+> 
+> 	Then running one of those targets and trying to build perf still
+> works? I guess so, but better check that.
+> 
+> 	Having it added to some new "make perf-test" that does that +
+> 'perf test' too would get you brownie points. Leave it for later/someone
+> else if you're busy/not looking for more work, of course 8-)
+> 
+> . We have some tests to parse events in 'perf test', right? From the top
+> of my head it was even ya that did that, guess those are ok/improved
+> (still need to look at the other patches in the backlog).
+right ;)
+
+thanks,
+jirka
