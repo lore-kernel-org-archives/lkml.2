@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1LUSwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 13:52:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34709 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab1LUSwl (ORCPT
+	id S1753915Ab1LUSyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 13:54:49 -0500
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:56109 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab1LUSyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 13:52:41 -0500
-Date: Wed, 21 Dec 2011 10:52:37 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH for-3.3] mempool: clean up and document synchronization
- and memory barrier usage
-Message-ID: <20111221185237.GI9213@google.com>
-References: <20111220221818.GJ10752@google.com>
- <20111221145556.GA25657@redhat.com>
- <20111221163715.GS10752@google.com>
- <20111221174057.GA32347@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221174057.GA32347@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Dec 2011 13:54:46 -0500
+Date: Wed, 21 Dec 2011 19:54:10 +0100
+From: Udo Steinberg <udo@hypervisor.org>
+To: intel-gfx@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: GPU hung with Linux-3.2-rc6
+Message-ID: <20111221195410.5e4c065a@x220.fritz.box>
+X-Mailer: X-Mailer 5.0 Gold
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/=DvYb=bFa+Xjwb1H/S5kFtg"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Sig_/=DvYb=bFa+Xjwb1H/S5kFtg
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 21, 2011 at 06:40:58PM +0100, Oleg Nesterov wrote:
-> > The first paragraph is saying that at that point full barrier (for
-> > both stores and loads) is necessary at that point and the second
-> > paragraph is a bit confusing but the last sentence seems to say that
-> > only loads after the unlock can creep above unlock,
-> 
-> Probably, this is because the comment tries to explain the possible
-> reordering with the subsequent "if (condition)" check, so it only
-> mentions loads.
+Hi,
 
-Ah, I see.
+With Linux-3.2-rc6 I'm frequently seeing GPU hangs when large amounts of
+text scroll in an xterm, such as when extracting a tar archive. Such as this
+one (note the timestamps):
 
-> > Anyways, yeah, you're right.  We need a smp_wmb() before returning but
-> > I think the comment on top of prepare_to_wait() is misleading.
-> 
-> Hmm. I am not sure I understand... Although almost everything written
-> in English looks misleading to me ;)
+[22865.157750] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed=
+... GPU hung
+[22865.157763] [drm:kick_ring] *ERROR* Kicking stuck semaphore on render ri=
+ng
+[22871.165992] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed=
+... GPU hung
+[22871.166008] [drm:kick_ring] *ERROR* Kicking stuck semaphore on render ri=
+ng
+[22877.417902] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed=
+... GPU hung
+[22877.417915] [drm:kick_ring] *ERROR* Kicking stuck semaphore on render ri=
+ng
+[22883.426132] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed=
+... GPU hung
+[22883.426146] [drm:kick_ring] *ERROR* Kicking stuck semaphore on render ri=
+ng
 
-Amen. :) I missed the context there, so please forget about it.
+These hangs did not occur with Linux 3.1 or they were so infrequent that I
+didn't notice them. The machine is an x220 laptop with SNB CPU. The kernel
+command line contains:
 
-> > Great, thanks.  I'll wait a bit for futher comments and repost w/
-> > smp_wmb() added.
-> 
-> Well. This is almost off-topic, but perhaps we can add
-> smp_mb__after_unlock() ? We already have smp_mb__after_lock.
-> Afaics prepare_to_wait() could use it.
-> 
-> I am not talking about perfomance issues, just I think the code
-> will be more understandable.
+i915.i915_enable_rc6=3D1 i915.i915_enable_fbc=3D1 i915.lvds_downclock=3D1
 
-Hmmm... maybe.  I really don't know.
+Note that VT-d is enabled in the BIOS, but the kernel is compiled without
+IOMMU support. Because the IOMMU is not enabled, I'm inclined to think that
+this problem is not VT-d related.
 
-Thanks.
+Cheers,
 
--- 
-tejun
+	- Udo
+
+--Sig_/=DvYb=bFa+Xjwb1H/S5kFtg
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7yK1MACgkQnhRzXSM7nSmqTQCcDAuSgUe/HJwbdwxoZvJ+dPuy
+yf0An2xY3gA8pZBM+WCGwFxQZJMPqzV7
+=Hyj2
+-----END PGP SIGNATURE-----
+
+--Sig_/=DvYb=bFa+Xjwb1H/S5kFtg--
