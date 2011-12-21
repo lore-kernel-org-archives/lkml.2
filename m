@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1LUWoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:44:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60974 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1LUWow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:44:52 -0500
-Date: Wed, 21 Dec 2011 23:44:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.2-rc6-rt9
-Message-ID: <alpine.LFD.2.02.1112212310390.3020@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753520Ab1LUWtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:49:05 -0500
+Received: from 8bytes.org ([88.198.83.132]:53768 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab1LUWtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 17:49:03 -0500
+Date: Wed, 21 Dec 2011 23:49:00 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        Benjamin Block <bebl@mageta.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111221224900.GD30127@8bytes.org>
+References: <4EEF26F0.1050709@redhat.com> <20111220091511.GB3091@elte.hu> <4EF05996.8030807@redhat.com> <20111220100916.GA20788@elte.hu> <20111220152758.GA30127@8bytes.org> <20111220184004.GE8408@elte.hu> <20111221000716.GB30127@8bytes.org> <20111221123442.GB6071@elte.hu> <4EF1D4B6.3020408@redhat.com> <20111221132233.GB31186@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221132233.GB31186@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Wed, Dec 21, 2011 at 02:22:33PM +0100, Ingo Molnar wrote:
+> 
+> * Avi Kivity <avi@redhat.com> wrote:
+> > I hate to re-enter this thread, but this "niche use case" is 
+> > exactly what LWP is designed for. [...]
+> 
+> It's not the only usecase that it can be used in, and that is 
+> what matters to me.
 
-I'm pleased to announce the 3.2-rc6-rt9 release.
-
-3.2-rc6-rt9 is a not any different from 3.2-rc5-rt8, it merily bumps
-the version numbers.
-
-I leave out the usual pointers. You know where to find it and if not,
-you can just apply the 3.2-rc5-rt8 patch to 3.2-rc6. It won't be any
-different except for the version number. I'll catch you when you send
-bug reports against 3.2-rc6-rt8! :)
-
-The only purpose of this release is to say:
-
-     Thanks! 
-
-Thanks, to all of you who have supported the RT project in the last
-year - be it with patches, bug reports, testing, success stories or
-whatever form of contribution.
-
-As an extra bonus for my beloved roadmap enthusiasts I'm revealing my
-RT plans for the near future:
-
-    RT won't have any further updates before Jan / 9 / 2012
-
-As always, I stronlgy recommend _not_ to put any bets on that. :)
+The really sad thing about it is, that this only matters to you. At
+least I have seen nobody in this thread yet who joined or agreed on your
+line of reasoning. Especially sad is that your NAK based on this also
+prevents that all the people who want to use LWP in the intended way on
+Linux can't use it too.
 
 
-That said, I wish you all a Merry Christmas and a Happy New Year!
+	Joerg
 
-     Thomas
-
----
-
-But I am sure that I have always thought of Christmas time, when it
-has come round... as a good time; a kind, forgiving, charitable,
-pleasant time; the only time I know of, in the long calendar of the
-year, when men and women seem by one consent to open their shut-up
-hearts freely.
-
-       Charles Dickens, A Christmas Carol
