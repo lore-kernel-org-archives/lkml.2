@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab1LULhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:37:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50966 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab1LULhX (ORCPT
+	id S1752636Ab1LULkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:40:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33940 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab1LULko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:37:23 -0500
-Date: Wed, 21 Dec 2011 11:37:04 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Rob Herring <robherring2@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: Re: [PATCH 1/1] dt: fix some code indent issue in of.h
-Message-ID: <20111221113704.GA18598@localhost>
-References: <1324404609-3999-1-git-send-email-b29396@freescale.com>
- <4EF0D6FD.8070406@gmail.com>
- <7FE21149F4667147B645348EC605788505C492@039-SN2MPN1-013.039d.mgd.msft.net>
- <1324436782.14214.8.camel@joe2Laptop>
+	Wed, 21 Dec 2011 06:40:44 -0500
+Date: Wed, 21 Dec 2011 03:40:23 -0800
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-8zpopbny51023rdb0qq67eye@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] lockdep/waitqueues: Add better annotation
+Git-Commit-ID: f07fdec50a13f134ea9608c8fb3f6408c58ef55e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1324436782.14214.8.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:40:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 07:06:22PM -0800, Joe Perches wrote:
-> On Wed, 2011-12-21 at 02:57 +0000, Dong Aisheng-B29396 wrote:
-> > > On 12/20/2011 12:10 PM, Dong Aisheng wrote:
-> > > > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > > > Checkpatch script will report some warnings for the old coding style:
-> > > > WARNING: suspect code indent for conditional statements (8, 0)
-> > > >         for (child = of_get_next_child(parent, NULL); child != NULL; \
-> > > > [...]
-> []
-> > > > diff --git a/include/linux/of.h b/include/linux/of.h index
-> []
-> > > > @@ -163,22 +163,22 @@ extern struct device_node *of_find_node_by_name(struct
-> > > device_node *from,
-> > > >  	const char *name);
-> > > >  #define for_each_node_by_name(dn, name) \
-> > > >  	for (dn = of_find_node_by_name(NULL, name); dn; \
-> > > > -	     dn = of_find_node_by_name(dn, name))
-> > > > +		dn = of_find_node_by_name(dn, name))
-> > > The old way looks fine to me and indenting like this is commonly used in the
-> > > kernel.
-> > Yes, i was also ok without those annoying warning.
-> > Do you think if we need to fix the checkpatch.pl if the it is commonly used
-> > In the kernel?
-> 
-> I don't.  I think it's better for people to realize that
-> checkpatch is and will always be an imperfect tool and
-> that they should learn to ignore inappropriate warnings.
+Commit-ID:  f07fdec50a13f134ea9608c8fb3f6408c58ef55e
+Gitweb:     http://git.kernel.org/tip/f07fdec50a13f134ea9608c8fb3f6408c58ef55e
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 13 Dec 2011 13:20:54 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 21 Dec 2011 10:07:39 +0100
 
-Right.  Checkpatch is simply a helper, if you have checkpatch warnings
-in a patch you are submitting then you need to be able to mentally
-justify them.  It is there to catch the basic stuff that wastes so much
-of the reviewers time and to help you get your patches accepted quicker.
-It is not a substitute for your own common sense.
+lockdep/waitqueues: Add better annotation
 
--apw
+ -> #2 (&tty->write_wait){-.-...}:
+
+is a lot more informative than:
+
+ -> #2 (key#19){-.....}:
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-8zpopbny51023rdb0qq67eye@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/wait.h |    4 ++--
+ kernel/wait.c        |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 3efc9f3..a9ce45e 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -77,13 +77,13 @@ struct task_struct;
+ #define __WAIT_BIT_KEY_INITIALIZER(word, bit)				\
+ 	{ .flags = word, .bit_nr = bit, }
+ 
+-extern void __init_waitqueue_head(wait_queue_head_t *q, struct lock_class_key *);
++extern void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *);
+ 
+ #define init_waitqueue_head(q)				\
+ 	do {						\
+ 		static struct lock_class_key __key;	\
+ 							\
+-		__init_waitqueue_head((q), &__key);	\
++		__init_waitqueue_head((q), #q, &__key);	\
+ 	} while (0)
+ 
+ #ifdef CONFIG_LOCKDEP
+diff --git a/kernel/wait.c b/kernel/wait.c
+index 26fa779..7fdd9ea 100644
+--- a/kernel/wait.c
++++ b/kernel/wait.c
+@@ -10,10 +10,10 @@
+ #include <linux/wait.h>
+ #include <linux/hash.h>
+ 
+-void __init_waitqueue_head(wait_queue_head_t *q, struct lock_class_key *key)
++void __init_waitqueue_head(wait_queue_head_t *q, const char *name, struct lock_class_key *key)
+ {
+ 	spin_lock_init(&q->lock);
+-	lockdep_set_class(&q->lock, key);
++	lockdep_set_class_and_name(&q->lock, key, name);
+ 	INIT_LIST_HEAD(&q->task_list);
+ }
+ 
