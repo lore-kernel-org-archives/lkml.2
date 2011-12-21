@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1LUKr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 05:47:26 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:2774 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab1LUKrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 05:47:24 -0500
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Message-ID: <4EF1B92D.9040405@broadcom.com>
-Date: Wed, 21 Dec 2011 11:47:09 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124
- Thunderbird/8.0
+	id S1753149Ab1LUKvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 05:51:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51752 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab1LUKvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 05:51:40 -0500
+Message-ID: <4EF1BA2F.9090304@ti.com>
+Date: Wed, 21 Dec 2011 11:51:27 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: "Stephen Rothwell" <sfr@canb.auug.org.au>
-cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rusty Russell" <rusty@rustcorp.com.au>,
-        "David Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-Subject: Re: linux-next: manual merge of the wireless-next tree with the
- tree
-References: <20111221124931.992e4e4265f2c3cd1d2e75b4@canb.auug.org.au>
-In-Reply-To: <20111221124931.992e4e4265f2c3cd1d2e75b4@canb.auug.org.au>
-X-Enigmail-Version: 1.4a1pre
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62EF649E3GG11619515-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (mfd
+ tree related)
+References: <20111221173301.1111dc371e11d5c7025f03ea@canb.auug.org.au>
+In-Reply-To: <20111221173301.1111dc371e11d5c7025f03ea@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 02:49 AM, Stephen Rothwell wrote:
-> Hi John,
-> 
-> Today's linux-next merge of the wireless-next tree got a conflict in
-> drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c between commit
-> 3db1cd5c05f3 ("net: fix assignment of 0/1 to bool variables") from the
-> tree and commit 3fb1d8d2dad3 ("brcm80211: fmac: move driver up status to
-> struct brcmf_bus") from the wireless-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-> 
+Hi Stephen,
 
-Thanks, Stephen
+On 12/21/2011 7:33 AM, Stephen Rothwell wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/mfd/twl-core.c: In function 'twl_probe':
+> drivers/mfd/twl-core.c:1212:22: error: 'TWL6030_IRQ_BASE' undeclared (first use in this function)
+> drivers/mfd/twl-core.c:1212:22: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/mfd/twl-core.c:1213:39: error: 'TWL6030_BASE_NR_IRQS' undeclared (first use in this function)
+> drivers/mfd/twl-core.c:1215:22: error: 'TWL4030_IRQ_BASE' undeclared (first use in this function)
+> drivers/mfd/twl-core.c:1216:39: error: 'TWL4030_BASE_NR_IRQS' undeclared (first use in this function)
+> drivers/mfd/twl-core.c:1218:3: error: implicit declaration of function 'irq_domain_add_simple' [-Werror=implicit-function-declaration]
+>
+> Caused by commit 4eea8b1d717d ("mfd: Add initial DT support for
+> twl4030/twl6030").  A missing include?  Or a CONFIG problem?
 
-I noticed Rusty's patch and the use of 0/1 for bool in our tree. Was
-going to fix that, but this fix looks fine.
+Both in fact...
 
-Gr. AvS
+There are some nasty dependencies with that TWL driver and the IRQ 
+defined in OMAP headers only. I was fooled by the name of these macros.
+I naively thought this could be fixed later as written in the comment I 
+added. I appears this is not the case :-(.
+
+> This build does not have CONFIG_IRQ_DOMAIN set.
+
+Ooops, I was not aware of that domain CONFIG. That one is an easy fix.
+
+
+Samuel,
+
+Just let me know if you will have time for an updated version before Xmas.
+I'll try to fix that by using irq_alloc_descs to avoid these hard-coded 
+macros. It might conflict with the still hard coded GPIO IRQs range, but 
+I'll see if it work for DT only at least.
+
+
+Thanks,
+Benoit
 
