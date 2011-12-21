@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1LUR1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:27:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54407 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab1LUR1l (ORCPT
+	id S1753555Ab1LURat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:30:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45248 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab1LURas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:27:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-Date: Wed, 21 Dec 2011 17:27:16 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Rob Clark <robdclark@gmail.com>, "Semwal, Sumit" <sumit.semwal@ti.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <CAF6AEGtOjO6Z6yfHz-ZGz3+NuEMH2M-8=20U6+-xt-gv9XtzaQ@mail.gmail.com> <20111220171437.GC3883@phenom.ffwll.local>
-In-Reply-To: <20111220171437.GC3883@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 21 Dec 2011 12:30:48 -0500
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=m9rXBrEGayMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=zd2uoN0lAAAA:8 a=HQ7H2QLLrSKk408_L_sA:9 a=V6mIvt4C4gx_6XknJHMA:7 a=PUjeQqilurYA:10 a=wu_e27o_rKQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324488646.5916.107.camel@gandalf.stny.rr.com>
+Subject: oprofile patch broke s390 build in tip/perf/core
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Wed, 21 Dec 2011 12:30:46 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112211727.17104.arnd@arndb.de>
-X-Provags-ID: V02:K0:qbDf4igyg0b/TXywmVGD1MpYCUf2n1oLIZLCweXwnvJ
- BL4wlia4prdUTjWVM37uSfZGGkTY8SftCLWr3bUiNcdMlfYvMN
- MSs02F3d/z1reOHnXRn/52AfHU/e0jpnzSR30qp1XZBiGKhokf
- QKE21OxR3K4CWg9B2RYcj9j8VSX/iYE294eW+jodoEcOg0SYlg
- 3DPFQ3Omx5lOUEuLrwYkeg84C+lQxShKy+GuCp38wXdKK+7Ijg
- 0Hk6k+j6RQsdVZIguethCCBjOVvVWl1/z+KlQz4qo3x8Ce3kHH
- lLlbSrnkyWUmR4ktyLqBtgo1r94OjPX0PwVFi8NaDvZhXtjF+x
- f3Hbkx0RSQOq9A4B0pUM=
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 December 2011, Daniel Vetter wrote:
-> > I'm thinking for a first version, we can get enough mileage out of it by saying:
-> > 1) only exporter can mmap to userspace
-> > 2) only importers that do not need CPU access to buffer..
+Hi,
 
-Ok, that sounds possible. The alternative to this would be:
+In doing my tests last night before sending out my patch series this
+morning, I found that s390 build didn't work, but it wasn't due to my
+patches. I removed all my patches and built with latest mainline (which
+builds fine), and then merged the current tip/perf/core. The result
+didn't build.
 
-1) The exporter has to use dma_alloc_coherent() or dma_alloc_writecombine()
-to allocate the buffer
-2. Every user space mapping has to go through dma_mmap_coherent()
-or dma_mmap_writecombine()
+I kicked off a ktest git bisect with last night's Linus tree as good,
+and with the merged in tip/perf/core as bad. It ended up with this patch
+that broke the build (which looks like a likely suspect).
 
-We can extend the rules later to allow either one after we have gained
-some experience using it.
 
-> > This way we can get dmabuf into the kernel, maybe even for 3.3.  I
-> > know there are a lot of interesting potential uses where this stripped
-> > down version is good enough.  It probably isn't the final version,
-> > maybe more features are added over time to deal with importers that
-> > need CPU access to buffer, sync object, etc.  But we have to start
-> > somewhere.
-> 
-> I agree with Rob here - I think especially for the coherency discussion
-> some actual users of dma_buf on a bunch of insane platforms (i915
-> qualifies here too, because we do some cacheline flushing behind everyones
-> back) would massively help in clarifying things.
+The break is this:
 
-Yes, agreed.
+  LD      .tmp_vmlinux1
+arch/s390/oprofile/built-in.o: In function `oprofile_arch_exit':
+(.text+0x3f52): undefined reference to `oprofile_timer_exit'
+make[1]: *** [.tmp_vmlinux1] Error 1
+make: *** [sub-make] Error 2
 
-> It also sounds like that at least for proper userspace mmap support we'd
-> need some dma api extensions on at least arm, and that might take a while
-> ...
+The patch the bisect found that breaks the build is this:
 
-I think it's actually the opposite -- you'd need dma api extensions on
-everything else other than arm, which already has dma_mmap_coherent()
-and dma_mmap_writecombine() for this purpose.
+commit 75c43a20b220f885c39ffa7cdbbb1191e257a9a9
+Author: Robert Richter <robert.richter@amd.com>
+Date:   Fri Oct 14 15:46:10 2011 +0200
 
-	Arnd
+    oprofile: Remove exit function for timer mode
+    
+    Remove exit functions by moving init/exit code to oprofile's setup/
+    shutdown functions. Doing so the oprofile module exit code will be
+    easier and less error-prone.
+    
+    Signed-off-by: Robert Richter <robert.richter@amd.com>
+
+
+-- Steve
+
+
