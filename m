@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab1LUHKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 02:10:54 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53121 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab1LUHKv (ORCPT
+	id S1751764Ab1LUHU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 02:20:56 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:58202 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab1LUHUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 02:10:51 -0500
-Date: Wed, 21 Dec 2011 07:10:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Kleikamp <shaggy@kernel.org>,
-        jfs-discussion@lists.sourceforge.net,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
-        linux-mm@kvack.org
-Subject: Re: [Resend] 3.2-rc6+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111221071039.GH23916@ZenIV.linux.org.uk>
-References: <201112210054.46995.rjw@sisk.pl>
- <CA+55aFzee7ORKzjZ-_PrVy796k2ASyTe_Odz=ji7f1VzToOkKw@mail.gmail.com>
- <4EF15F42.4070104@oracle.com>
- <CA+55aFx=B9adsTR=-uYpmfJnQgdGN+1aL0KUabH5bSY6YcwO7Q@mail.gmail.com>
- <alpine.LSU.2.00.1112202213310.3987@eggly.anvils>
+	Wed, 21 Dec 2011 02:20:53 -0500
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Subject: [PATCH] [boot] Change the WARN to INFO for boot wrapper overlap
+ message
+To: Josh Boyer <jwboyer@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Wed, 21 Dec 2011 12:50:38 +0530
+Message-ID: <20111221072034.12043.62801.stgit@suzukikp.in.ibm.com>
+In-Reply-To: <CA+5PVA7NhzxwxR5WGDmUQ432NehNnzRT+y05wve+FBXHyGaiwA@mail.gmail.com>
+References: <CA+5PVA7NhzxwxR5WGDmUQ432NehNnzRT+y05wve+FBXHyGaiwA@mail.gmail.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1112202213310.3987@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11122107-9574-0000-0000-0000009BF4DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 10:15:00PM -0800, Hugh Dickins wrote:
+commit c55aef0e5bc6 ("powerpc/boot: Change the load address
+for the wrapper to fit the kernel") introduced a WARNING to
+inform the user that the uncompressed kernel would overlap
+the boot uncompressing wrapper code. Change it to an INFO.
 
-> Acked-by: Hugh Dickins <hughd@google.com>
-> 
-> from me (and add_to_page_cache_locked does the masking of inappropriate
-> bits when passing on down, so no need to worry about that aspect).
+I initially thought, this would be a 'WARNING' for the those
+boards, where the link_address should be fixed, so that the
+user can take actions accordingly.
 
-I was grepping for possibilities of that hitting us right now...  OK,
-rigth you are.
+Changing the same to INFO.
 
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+---
+
+ arch/powerpc/boot/wrapper |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/boot/wrapper b/arch/powerpc/boot/wrapper
+index c8d6aaf..2b171cd 100755
+--- a/arch/powerpc/boot/wrapper
++++ b/arch/powerpc/boot/wrapper
+@@ -282,9 +282,9 @@ round_size=0x$(printf "%x" $round_size)
+ link_addr=$(printf "%d" $link_address)
+ 
+ if [ $link_addr -lt $strip_size ]; then
+-    echo "WARN: Uncompressed kernel (size 0x$(printf "%x\n" $strip_size))" \
++    echo "INFO: Uncompressed kernel (size 0x$(printf "%x\n" $strip_size))" \
+ 		"overlaps the address of the wrapper($link_address)"
+-    echo "WARN: Fixing the link_address of wrapper to ($round_size)"
++    echo "INFO: Fixing the link_address of wrapper to ($round_size)"
+     link_address=$round_size
+ fi
+ 
+
