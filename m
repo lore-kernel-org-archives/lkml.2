@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1LUWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:19:28 -0500
-Received: from smtpauth03.mfg.siteprotect.com ([64.26.60.137]:45498 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751764Ab1LUWTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:19:25 -0500
-Date: Wed, 21 Dec 2011 17:19:23 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Vince Weaver <vweaver1@eecs.utk.edu>, mingo@elte.hu,
-        William Cohen <wcohen@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
-In-Reply-To: <1324503667.17070.7.camel@twins>
-Message-ID: <alpine.DEB.2.02.1112211715350.17283@pianoman.cluster.toy>
-References: <20111121145114.049265181@chello.nl>   <alpine.DEB.2.00.1112161731570.6060@cl320.eecs.utk.edu>  <1324472337.10752.11.camel@twins>  <alpine.DEB.2.02.1112210959540.10098@pianoman.cluster.toy>  <alpine.DEB.2.02.1112211622560.16411@pianoman.cluster.toy>
- <1324503667.17070.7.camel@twins>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754387Ab1LUWUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:20:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753520Ab1LUWUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 17:20:41 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 1/4] pagemap: avoid splitting thp when reading /proc/pid/pagemap
+Date: Wed, 21 Dec 2011 17:23:45 -0500
+Message-Id: <1324506228-18327-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011, Peter Zijlstra wrote:
+Thp split is not necessary if we explicitly check whether pmds are
+mapping thps or not. This patch introduces the check and the code
+to generate pagemap entries for pmds mapping thps, which results in
+less performance impact of pagemap on thp.
 
-> On Wed, 2011-12-21 at 16:32 -0500, Vince Weaver wrote:
-> 
-> > * One, is it possible to detect at runtime that rdpmc() is supported?  
-> >   Maybe a field in the mmap'd buffer that can be read?
-> 
-> Ingo suggested a similar thing, will implement (although Christmas might
-> interfere with delivery timelines etc..).
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 
-no rush.
+Changes since v1:
+  - move pfn declaration to the beginning of pagemap_pte_range()
+---
+ fs/proc/task_mmu.c |   49 +++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 43 insertions(+), 6 deletions(-)
 
-> > * Second, if I try a start / run 100M instructions / read
-> >   and measure retired instructions I get:
-> >       281474977711543 instructions
-> >   This is 0x10000000f45b7 which is 1<<48 + 100M.  I guess an artifact
-> >   of how the counters are set up?  Is it possible to have this start
-> >   at 0?  
-> 
-> Its supposed to be 0 based, clearly I messed up something and need to go
-> figure out what. Thanks for reporting.
+diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
+index e418c5a..0df61ab 100644
+--- 3.2-rc5.orig/fs/proc/task_mmu.c
++++ 3.2-rc5/fs/proc/task_mmu.c
+@@ -600,6 +600,9 @@ struct pagemapread {
+ 	u64 *buffer;
+ };
+ 
++#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
++#define PAGEMAP_WALK_MASK	(PMD_MASK)
++
+ #define PM_ENTRY_BYTES      sizeof(u64)
+ #define PM_STATUS_BITS      3
+ #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
+@@ -658,6 +661,22 @@ static u64 pte_to_pagemap_entry(pte_t pte)
+ 	return pme;
+ }
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++{
++	u64 pme = 0;
++	if (pte_present(pte))
++		pme = PM_PFRAME(pte_pfn(pte) + offset)
++			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
++	return pme;
++}
++#else
++static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++{
++	return 0;
++}
++#endif
++
+ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 			     struct mm_walk *walk)
+ {
+@@ -665,14 +684,34 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	pte_t *pte;
+ 	int err = 0;
+-
+-	split_huge_page_pmd(walk->mm, pmd);
++	u64 pfn = PM_NOT_PRESENT;
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+-	for (; addr != end; addr += PAGE_SIZE) {
+-		u64 pfn = PM_NOT_PRESENT;
+ 
++	spin_lock(&walk->mm->page_table_lock);
++	if (pmd_trans_huge(*pmd)) {
++		if (pmd_trans_splitting(*pmd)) {
++			spin_unlock(&walk->mm->page_table_lock);
++			wait_split_huge_page(vma->anon_vma, pmd);
++		} else {
++			for (; addr != end; addr += PAGE_SIZE) {
++				int offset = (addr & ~PAGEMAP_WALK_MASK)
++					>> PAGE_SHIFT;
++				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
++							       offset);
++				err = add_to_pagemap(addr, pfn, pm);
++				if (err)
++					break;
++			}
++			spin_unlock(&walk->mm->page_table_lock);
++			return err;
++		}
++	} else {
++		spin_unlock(&walk->mm->page_table_lock);
++	}
++
++	for (; addr != end; addr += PAGE_SIZE) {
+ 		/* check to see if we've left 'vma' behind
+ 		 * and need a new, higher one */
+ 		if (vma && (addr >= vma->vm_end))
+@@ -754,8 +793,6 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+  * determine which areas of memory are actually mapped and llseek to
+  * skip over unmapped regions.
+  */
+-#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+-#define PAGEMAP_WALK_MASK	(PMD_MASK)
+ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 			    size_t count, loff_t *ppos)
+ {
+-- 
+1.7.7.3
 
-That's on a Nehalem machine, if it matters.
-
-Speaking of bit 48, does your implementation do anything useful about
-the 32/40/48 bit limitation that some processors have with rdpmc?
-Or is the answer that if you might get overflow, then you have to use slow 
-syscall-based read?
-
-perfctr has some pretty clever code that manages to use rdpmc() while 
-avoiding the overflow issue, but it was written at a time when older 
-processors were in use and where this was more of an issue.
-
-Vince
