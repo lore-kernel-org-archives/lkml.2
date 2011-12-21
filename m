@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1LUWIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 17:08:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52944 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1LUWIC (ORCPT
+	id S1754167Ab1LUWJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 17:09:11 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46296 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab1LUWJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 17:08:02 -0500
-Date: Wed, 21 Dec 2011 23:07:58 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 7/7] ftrace, perf: Add filter support for function trace
- event
-Message-ID: <20111221220756.GL17668@somewhere>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-8-git-send-email-jolsa@redhat.com>
+	Wed, 21 Dec 2011 17:09:09 -0500
+Message-ID: <4EF258FE.9030709@gmail.com>
+Date: Thu, 22 Dec 2011 09:09:02 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324493791-5688-8-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 4/4] microblaze: Remove NO_IRQ from architecture
+References: <1324477932-19262-1-git-send-email-monstr@monstr.eu> <1324477932-19262-2-git-send-email-monstr@monstr.eu> <1324477932-19262-3-git-send-email-monstr@monstr.eu> <1324477932-19262-4-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1324477932-19262-4-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 07:56:31PM +0100, Jiri Olsa wrote:
-> Adding support to filter function trace event via perf
-> interface. It is now possible to use filter interface
-> in the perf tool like:
+On 22/12/11 01:32, Michal Simek wrote:
+
+> NO_IRQ shouldn't be used by any driver. All Microblaze
+> drivers are fixed that's why NO_IRQ can be removed.
+
+
+This only describes half of what the patch does. You should also state
+that arch/microblaze/pci/pci-common.c has references to NO_IRQ removed.
+Maybe it' worth splitting this patch in half so the final patch just
+does the removal of the NO_IRQ definition, but maybe that is overkill?
+
+Other than that, for the whole series:
+
+Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+
 > 
->   perf record -e ftrace:function --filter="(ip == mm_*)" ls
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> CC: Grant Likely <grant.likely@secretlab.ca>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Ryan Mallon <rmallon@gmail.com>
+> ---
+>  arch/microblaze/include/asm/irq.h |    2 --
+>  arch/microblaze/pci/pci-common.c  |    4 ++--
+>  2 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> The filter syntax is restricted to the the 'ip' field only,
-> and following operators are accepted '==' '!=' '||', ending
-> up with the filter strings like:
-> 
->   "ip == f1 f2 ..." || "ip != f3 f4 ..." ...
+> diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
+> index b116a82..a175132 100644
+> --- a/arch/microblaze/include/asm/irq.h
+> +++ b/arch/microblaze/include/asm/irq.h
+> @@ -27,8 +27,6 @@ typedef unsigned long irq_hw_number_t;
+>  
+>  extern unsigned int nr_irq;
+>  
+> -#define NO_IRQ 0
+> -
+>  struct pt_regs;
+>  extern void do_IRQ(struct pt_regs *regs);
+>  
+> diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+> index db841c7..0d71b2e 100644
+> --- a/arch/microblaze/pci/pci-common.c
+> +++ b/arch/microblaze/pci/pci-common.c
+> @@ -242,7 +242,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
+>  			 line, pin);
+>  
+>  		virq = irq_create_mapping(NULL, line);
+> -		if (virq != NO_IRQ)
+> +		if (virq)
+>  			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
+>  	} else {
+>  		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
+> @@ -253,7 +253,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
+>  		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
+>  					     oirq.size);
+>  	}
+> -	if (virq == NO_IRQ) {
+> +	if (!virq) {
+>  		pr_debug(" Failed to map !\n");
+>  		return -1;
+>  	}
 
-Having the functions seperated like this sort of violates the
-grammar of the filtering interface.
 
-The typical way to do this would have been to stringify the
-functions: ip == "f1 f2"
-
-I feel a bit uncomfortable with "ip == f1 f2" scheme but perhaps
-we can live with that. Especially as otherwise that would
-require us to type "ip == \"f1 f2\"" for the whole filtering expression.
-
-Thoughts?
