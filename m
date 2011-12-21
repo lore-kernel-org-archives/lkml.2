@@ -1,183 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab1LUTAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 14:00:36 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36759 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab1LUTAe (ORCPT
+	id S1754153Ab1LUTBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 14:01:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48259 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab1LUTBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 14:00:34 -0500
-Date: Wed, 21 Dec 2011 13:59:14 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2011-12-21
-Message-ID: <20111221185914.GD11842@tuxdriver.com>
+	Wed, 21 Dec 2011 14:01:17 -0500
+Date: Wed, 21 Dec 2011 11:01:02 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20111221190102.GE13529@google.com>
+References: <20111221034334.GD17668@somewhere>
+ <20111221130848.GA19679@redhat.com>
+ <20111221175632.GF17668@somewhere>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111221175632.GF17668@somewhere>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
+> > On 12/21, Frederic Weisbecker wrote:
+> > > Hi,
+> > >
+> > > Starring at some parts of cgroups, I have a few questions:
+> > >
+> > > - Is cgroup_enable_task_cg_list()'s while_each_thread() safe
+> > > against concurrent exec()? The leader may change in de_thread()
+> > > and invalidate the test done in while_each_thread().
+> > 
+> > Yes. Oh, we need to do something with while_each_thread.
+> 
+> Would something like this work?
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index c0c5876..e002a00 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2293,8 +2293,12 @@ extern bool current_is_single_threaded(void);
+>  #define do_each_thread(g, t) \
+>  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+>  
+> -#define while_each_thread(g, t) \
+> -	while ((t = next_thread(t)) != g)
+> +#define while_each_thread(g, t)					\
+> +	while (({						\
+> +		struct task_struct *__prev = t;			\
+> +		t = next_thread(t);				\
+> +		t != __prev && t != g;				\
 
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-commit b4949b84567f3ae1227d076fc95bbd8efea06506
+Don't you still have an (highly unlikely) race if you exec
+and then pthread_create()?
 
-Dave,
+Instead of:
 
-A few last(?) fixes intended for 3.2...
+t != __prev && t != g;
 
-The biggest portion are from Gustavo:
+How about:
 
-"3 fixes for 3.2! There one revert that was causing connection issues,
-a RFCOMM fix to a potential kernel panic, and the last on L2CAP to
-a possible access to uninitialized data due to broken remote devices."
+t != t->group_leader;
 
-Also, an iwlwifi fix for a problem causing firmware asserts.
+Regards,
+Mandeep
 
-Please let me know if there are problems!
-
-John
-
----
-
-The following changes since commit cd7816d14953c8af910af5bb92f488b0b277e29d:
-
-  net: have ipconfig not wait if no dev is available (2011-12-20 14:09:15 -=
-0500)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-Emmanuel Grumbach (1):
-      iwlwifi: update SCD BC table for all SCD queues
-
-Gustavo F. Padovan (1):
-      Revert "Bluetooth: Revert: Fix L2CAP connection establishment"
-
-John W. Linville (2):
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Mat Martineau (2):
-      Bluetooth: Prevent uninitialized data access in L2CAP configuration
-      Bluetooth: Clear RFCOMM session timer when disconnecting last channel
-
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c |    4 +---
- net/bluetooth/hci_conn.c                      |    2 +-
- net/bluetooth/l2cap_core.c                    |   12 +++++++++++-
- net/bluetooth/rfcomm/core.c                   |    1 +
- 4 files changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c b/drivers/net/wi=
-reless/iwlwifi/iwl-trans-pcie.c
-index ce91898..5f17ab8 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -1197,9 +1197,7 @@ static int iwl_trans_pcie_tx(struct iwl_trans *trans,=
- struct sk_buff *skb,
- 	iwl_print_hex_dump(trans, IWL_DL_TX, (u8 *)tx_cmd->hdr, hdr_len);
-=20
- 	/* Set up entry for this TFD in Tx byte-count array */
--	if (is_agg)
--		iwl_trans_txq_update_byte_cnt_tbl(trans, txq,
--					       le16_to_cpu(tx_cmd->len));
-+	iwl_trans_txq_update_byte_cnt_tbl(trans, txq, le16_to_cpu(tx_cmd->len));
-=20
- 	dma_sync_single_for_device(bus(trans)->dev, txcmd_phys, firstlen,
- 			DMA_BIDIRECTIONAL);
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index e0af723..c1c597e 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -673,7 +673,7 @@ int hci_conn_security(struct hci_conn *conn, __u8 sec_l=
-evel, __u8 auth_type)
- 		goto encrypt;
-=20
- auth:
--	if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
-+	if (test_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
- 		return 0;
-=20
- 	if (!hci_conn_auth(conn, sec_level, auth_type))
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 5ea94a1..17b5b1c 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -2152,7 +2152,7 @@ static int l2cap_parse_conf_rsp(struct l2cap_chan *ch=
-an, void *rsp, int len, voi
- 	void *ptr =3D req->data;
- 	int type, olen;
- 	unsigned long val;
--	struct l2cap_conf_rfc rfc;
-+	struct l2cap_conf_rfc rfc =3D { .mode =3D L2CAP_MODE_BASIC };
-=20
- 	BT_DBG("chan %p, rsp %p, len %d, req %p", chan, rsp, len, data);
-=20
-@@ -2271,6 +2271,16 @@ static void l2cap_conf_rfc_get(struct l2cap_chan *ch=
-an, void *rsp, int len)
- 		}
- 	}
-=20
-+	/* Use sane default values in case a misbehaving remote device
-+	 * did not send an RFC option.
-+	 */
-+	rfc.mode =3D chan->mode;
-+	rfc.retrans_timeout =3D cpu_to_le16(L2CAP_DEFAULT_RETRANS_TO);
-+	rfc.monitor_timeout =3D cpu_to_le16(L2CAP_DEFAULT_MONITOR_TO);
-+	rfc.max_pdu_size =3D cpu_to_le16(chan->imtu);
-+
-+	BT_ERR("Expected RFC option was not found, using defaults");
-+
- done:
- 	switch (rfc.mode) {
- 	case L2CAP_MODE_ERTM:
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index 4e32e18..2d28dfe 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -1146,6 +1146,7 @@ static int rfcomm_recv_ua(struct rfcomm_session *s, u=
-8 dlci)
- 			if (list_empty(&s->dlcs)) {
- 				s->state =3D BT_DISCONN;
- 				rfcomm_send_disc(s, 0);
-+				rfcomm_session_clear_timer(s);
- 			}
-=20
- 			break;
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---liOOAslEiF7prFVr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO8iyBAAoJEJctW/TcYTgGczsP/10aGT5iebMXycYgtRuvKn5p
-KTAMBk9+oqiK8ac6HGRjztKtZQCm5VhQbXH8W+/mbUzMR/mWFQQYe+yJctWh8QKV
-wk5k4C0E7yaMzu7vuoRo5rRD2c9L20I5I3DybkrrpADQNd6Sbe8R+Wmq1VhBMKTV
-7hTcEy0F0VzS9Zjg4JHNm+E2xTNjZrYSlLR1rjcizuOfPXM2VuJ9sNzyVW5Bfe8S
-tTXfOl03wR24LU6U4Ll/d1iHK9w5/2mRLx1X0y+S37KKLpH2IylfbtkdvIvFQLHk
-c0oxAKmbjf8j02gfGZyDJ82fUIB1AG940IDt2jDbpvTY7qk5DWz4+UJZSNfA1RJ2
-QUbBE5nPcMyCopufI15EY3ciuhrPdxD/nHofhq0kkR5H4T/Lq1Mu1jFvwWZzDsN2
-laUY1MHQiySDOAe6U4P3LyVfBRKXKD7gFCCPexJsasSFwiL+glX0hX54Ph3LtJIo
-qDy3yC3tcxcCcjSN+Ygf+sCgrDuupkttFwkwMPpmSbiBO97TE+kLlqqa1PWOOgZQ
-rIVsKSgmL6ZZxaBJS57RZNgaRJ6RaXiFoKE9LvnhZd6G1QRR58Z/4qTNl2YVJx3n
-LGDgvFophETFsaajxA/8v/OuQSb0jNjFIq5ff/ZoGrd0hNw0zmEJHO2EXrOkUW+a
-WQY5LooUeX57JsyWxokQ
-=b5wA
------END PGP SIGNATURE-----
-
---liOOAslEiF7prFVr--
+> +	}))
+>  
+>  static inline int get_nr_threads(struct task_struct *tsk)
+>  {
