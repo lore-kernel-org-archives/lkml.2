@@ -1,167 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab1LUE7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 23:59:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753008Ab1LUE7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 23:59:13 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v3 2/2] kvm: Device assignment permission checks
-To: avi@redhat.com, kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        levinsasha928@gmail.com
-Date: Tue, 20 Dec 2011 21:59:09 -0700
-Message-ID: <20111221045909.5773.78994.stgit@bling.home>
-In-Reply-To: <20111221045636.5773.11289.stgit@bling.home>
-References: <20111221045636.5773.11289.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1751192Ab1LUFHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 00:07:48 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:22779 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750698Ab1LUFHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 00:07:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAIZo8U55LL6d/2dsb2JhbABDrBGBBoFyAQEEAScTHCMFCwgDGC4UJQMhE4d6t1ETixljBJR+iRyJKw
+Date: Wed, 21 Dec 2011 16:07:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] radix_tree: take radix_tree_path off stack
+Message-ID: <20111221050740.GD23662@dastard>
+References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only allow KVM device assignment to attach to devices which:
+On Sun, Dec 18, 2011 at 10:41:39PM -0800, Hugh Dickins wrote:
+> Down, down in the deepest depths of GFP_NOIO page reclaim, we have
+> shrink_page_list() calling __remove_mapping() calling __delete_from_
+> swap_cache() or __delete_from_page_cache().
+> 
+> You would not expect those to need much stack, but in fact they call
+> radix_tree_delete(): which declares a 192-byte radix_tree_path array
+> on its stack (to record the node,offsets it visits when descending,
+> in case it needs to ascend to update them).  And if any tag is still
+> set [1], that calls radix_tree_tag_clear(), which declares a further
+> such 192-byte radix_tree_path array on the stack.  (At least we have
+> interrupts disabled here, so won't then be pushing registers too.)
+> 
+> That was probably a good choice when most users were 32-bit (array
+> of half the size), and adding fields to radix_tree_node would have
+> bloated it unnecessarily.  But nowadays many are 64-bit, and each
+> radix_tree_node contains a struct rcu_head, which is only used when
+> freeing; whereas the radix_tree_path info is only used for updating
+> the tree (deleting, clearing tags or setting tags if tagged) when a
+> lock must be held, of no interest when accessing the tree locklessly.
+> 
+> So add a parent pointer to the radix_tree_node, in union with the
+> rcu_head, and remove all uses of the radix_tree_path.  There would
+> be space in that union to save the offset when descending as before
+> (we can argue that a lock must already be held to exclude other users),
+> but recalculating it when ascending is both easy (a constant shift and
+> a constant mask) and uncommon, so it seems better just to do that.
 
- - Are not bridges
- - Have BAR resources (assume others are special devices)
- - The user has permissions to use
+Seems sane - any modification of the tree contents or tag has to be
+done under a lock, so we can maintain parent pointers safely. And we
+don't reda them under RCU conditions, so we don't need any special
+handling there, either.
 
-Assigning a bridge is a configuration error, it's not supported, and
-typically doesn't result in the behavior the user is expecting anyway.
-Devices without BAR resources are typically chipset components that
-also don't have host drivers.  We don't want users to hold such devices
-captive or cause system problems by fencing them off into an iommu
-domain.  We determine "permission to use" by testing whether the user
-has access to the PCI sysfs resource files.  By default a normal user
-will not have access to these files, so it provides a good indication
-that an administration agent has granted the user access to the device.
+> Two little optimizations: no need to decrement height when descending,
+> adjusting shift is enough;
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+*nod*
 
- Documentation/virtual/kvm/api.txt |    4 ++
- virt/kvm/assigned-dev.c           |   72 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+), 0 deletions(-)
+> and once radix_tree_tag_if_tagged() has set
+> tag on a node and its ancestors, it need not ascend from that node again.
 
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index ee2c96b..4df9af4 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1154,6 +1154,10 @@ following flags are specified:
- The KVM_DEV_ASSIGN_ENABLE_IOMMU flag is a mandatory option to ensure
- isolation of the device.  Usages not specifying this flag are deprecated.
- 
-+Only PCI header type 0 devices with PCI BAR resources are supported by
-+device assignment.  The user requesting this ioctl must have read/write
-+access to the PCI sysfs resource files associated with the device.
-+
- 4.49 KVM_DEASSIGN_PCI_DEVICE
- 
- Capability: KVM_CAP_DEVICE_DEASSIGNMENT
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index a251a28..da9690e 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -17,6 +17,7 @@
- #include <linux/pci.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/namei.h>
- #include "irq.h"
- 
- static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
-@@ -480,12 +481,71 @@ out:
- 	return r;
- }
- 
-+/* We want to test whether the caller has been granted permissions to
-+ * use this device.  To be able to configure and control the device,
-+ * the user needs access to PCI configuration space and BAR resources.
-+ * These are accessed through PCI sysfs.  PCI config space is often
-+ * passed to the process calling this ioctl via file descriptor, so we
-+ * can't rely on access to that file.  We can check for permissions
-+ * on each of the BAR resource files, which is a pretty clear
-+ * indicator that the user has been granted access to the device. */
-+static int probe_sysfs_permissions(struct pci_dev *dev)
-+{
-+#ifdef CONFIG_SYSFS
-+	int i;
-+	bool bar_found = false;
-+
-+	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
-+		char *kpath, *syspath;
-+		struct path path;
-+		struct inode *inode;
-+		int r;
-+
-+		if (!pci_resource_len(dev, i))
-+			continue;
-+
-+		kpath = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
-+		if (!kpath)
-+			return -ENOMEM;
-+
-+		/* Per sysfs-rules, sysfs is always at /sys */
-+		syspath = kasprintf(GFP_KERNEL, "/sys%s/resource%d", kpath, i);
-+		kfree(kpath);
-+		if (!syspath)
-+			return -ENOMEM;
-+
-+		r = kern_path(syspath, LOOKUP_FOLLOW, &path);
-+		kfree(syspath);
-+		if (r)
-+			return r;
-+
-+		inode = path.dentry->d_inode;
-+
-+		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
-+		path_put(&path);
-+		if (r)
-+			return r;
-+
-+		bar_found = true;
-+	}
-+
-+	/* If no resources, probably something special */
-+	if (!bar_found)
-+		return -EPERM;
-+
-+	return 0;
-+#else
-+	return -EINVAL; /* No way to control the device without sysfs */
-+#endif
-+}
-+
- static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 				      struct kvm_assigned_pci_dev *assigned_dev)
- {
- 	int r = 0, idx;
- 	struct kvm_assigned_dev_kernel *match;
- 	struct pci_dev *dev;
-+	u8 header_type;
- 
- 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
- 		return -EINVAL;
-@@ -516,6 +576,18 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 		r = -EINVAL;
- 		goto out_free;
- 	}
-+
-+	/* Don't allow bridges to be assigned */
-+	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
-+	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
-+		r = -EPERM;
-+		goto out_put;
-+	}
-+
-+	r = probe_sysfs_permissions(dev);
-+	if (r)
-+		goto out_put;
-+
- 	if (pci_enable_device(dev)) {
- 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
- 		r = -EBUSY;
+I'm not sure I really follow this. I think I know what you mean, but
+I can't quite get it straight and the comment in the code doesn't
+help me get it straight. Can you describe it a bit more - I think
+I'm just being dense at the moment....
 
+> perf on the radix tree test harness reports radix_tree_insert() as 2%
+> slower (now having to set parent), but radix_tree_delete() 24% faster.
+> Surely that's an exaggeration from rtth's artificially low map shift 3,
+> but forcing it back to 6 still rates radix_tree_delete() 8% faster.
+
+Nice.
+
+> [1] Can a pagecache tag (dirty, writeback or towrite) actually still be
+> set at the time of radix_tree_delete()?  Perhaps not if the filesystem
+> is well-behaved.  But although I've not tracked any stack overflow down
+> to this cause, I have observed a curious case in which a dirty tag is
+> set and left set on tmpfs: page migration's migrate_page_copy() happens
+> to use __set_page_dirty_nobuffers() to set PageDirty on the newpage,
+> and that sets PAGECACHE_TAG_DIRTY as a side-effect - harmless to a
+> filesystem which doesn't use tags, except for this stack depth issue.
+
+Not sure about the page cache, but other users of the radix tree
+definitely do delete objects with tags still set. For example, when
+XFS is reclaiming inodes it will delete the inode from it's internal
+radix trees with the reclaim tag still set on the index. This
+happens for every single inode that is reclaimed, so it's anything
+but seldom and should really be considered a common operation....
+
+Couple more comments below.
+
+> @@ -274,18 +273,23 @@ static int radix_tree_extend(struct radi
+>  		if (!(node = radix_tree_node_alloc(root)))
+>  			return -ENOMEM;
+>  
+> -		/* Increase the height.  */
+> -		node->slots[0] = indirect_to_ptr(root->rnode);
+> -
+>  		/* Propagate the aggregated tag info into the new root */
+>  		for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
+>  			if (root_tag_get(root, tag))
+>  				tag_set(node, tag, 0);
+>  		}
+>  
+> +		/* Increase the height.  */
+>  		newheight = root->height+1;
+
+While touching this code, fixing the adjacent whitespace damage
+would be good.
+
+>  		node->height = newheight;
+>  		node->count = 1;
+> +		node->parent = NULL;
+> +		slot = root->rnode;
+> +		if (newheight > 1) {
+> +			slot = indirect_to_ptr(slot);
+> +			slot->parent = node;
+> +		}
+> +		node->slots[0] = slot;
+
+This would be much more obvious in function if it separated the two
+different cases completely:
+
+		if (newheight > 1) {
+			slot = indirect_to_ptr(root->rnode);
+			slot->parent = node;
+		} else {
+			slot = root->rnode;
+			node->parent = NULL;
+		}
+		node->slots[0] = slot;
+
+> @@ -701,15 +691,21 @@ unsigned long radix_tree_range_tag_if_ta
+>  		tag_set(slot, settag, offset);
+>  
+>  		/* walk back up the path tagging interior nodes */
+> -		pathp = &path[0];
+> -		while (pathp->node) {
+> +		upindex = index;
+> +		while (node) {
+> +			upindex >>= RADIX_TREE_MAP_SHIFT;
+> +			offset = upindex & RADIX_TREE_MAP_MASK;
+> +
+>  			/* stop if we find a node with the tag already set */
+> -			if (tag_get(pathp->node, settag, pathp->offset))
+> +			if (tag_get(node, settag, offset))
+>  				break;
+> -			tag_set(pathp->node, settag, pathp->offset);
+> -			pathp++;
+> +			tag_set(node, settag, offset);
+> +			node = node->parent;
+>  		}
+>  
+> +		/* optimization: no need to walk up from this node again */
+> +		node = NULL;
+
+As per my query above: why? That's the question the comment needs to
+answer....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
