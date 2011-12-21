@@ -1,108 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab1LUCGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 21:06:03 -0500
-Received: from mga03.intel.com ([143.182.124.21]:29258 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab1LUCGA convert rfc822-to-8bit (ORCPT
+	id S1752400Ab1LUCHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 21:07:31 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54173 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab1LUCHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 21:06:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="87926663"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: Chris Wright <chrisw@sous-sol.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+	Tue, 20 Dec 2011 21:07:30 -0500
+Date: Wed, 21 Dec 2011 06:07:23 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Wed, 21 Dec 2011 10:04:28 +0800
-Subject: RE: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Topic: [PATCH] intel-iommu: Add device info into list before doing
- context mapping
-Thread-Index: Acy/MYdqm31h7YU2TzOuSwADWM3XXgAUriGw
-Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E28904879BF@shsmsx502.ccr.corp.intel.com>
-References: <BC00F5384FCFC9499AF06F92E8B78A9E2890486DD3@shsmsx502.ccr.corp.intel.com>
- <20111220160730.GD30205@sequoia.sous-sol.org>
-In-Reply-To: <20111220160730.GD30205@sequoia.sous-sol.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, tbird20d@gmail.com
+Subject: Re: Android low memory killer vs. memory pressure notifications
+Message-ID: <20111221020723.GA5214@oksana.dev.rtsoft.ru>
+References: <20111219025328.GA26249@oksana.dev.rtsoft.ru>
+ <20111219121255.GA2086@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1112191110060.19949@chino.kir.corp.google.com>
+ <20111220145654.GA26881@oksana.dev.rtsoft.ru>
+ <alpine.DEB.2.00.1112201322170.22077@chino.kir.corp.google.com>
+ <20111221002853.GA11504@oksana.dev.rtsoft.ru>
+ <4EF132EA.7000300@am.sony.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4EF132EA.7000300@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, Chris, thanks your comments.
-How about this one?
-
----
- drivers/iommu/intel-iommu.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index a004c39..0fc5efd 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2264,12 +2264,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
-    if (!info)
-        return -ENOMEM;
-
--   ret = domain_context_mapping(domain, pdev, translation);
--   if (ret) {
--       free_devinfo_mem(info);
--       return ret;
--   }
--
-    info->segment = pci_domain_nr(pdev->bus);
-    info->bus = pdev->bus->number;
-    info->devfn = pdev->devfn;
-@@ -2282,6 +2276,16 @@ static int domain_add_dev_info(struct dmar_domain *domain,
-    pdev->dev.archdata.iommu = info;
-    spin_unlock_irqrestore(&device_domain_lock, flags);
-
-+   ret = domain_context_mapping(domain, pdev, translation);
-+   if (ret) {
-+       spin_lock_irqsave(&device_domain_lock, flags);
-+       list_del(&info->link);
-+       list_del(&info->global);
-+       spin_unlock_irqrestore(&device_domain_lock, flags);
-+       free_devinfo_mem(info);
-+       return ret;
-+   }
-+
-    return 0;
- }
-
-> -----Original Message-----
-> From: Chris Wright [mailto:chrisw@sous-sol.org]
-> Sent: Wednesday, December 21, 2011 12:08 AM
-> To: Hao, Xudong
-> Cc: iommu@lists.linux-foundation.org; dwmw2@infradead.org; Zhang, Xiantao;
-> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
-> Subject: Re: [PATCH] intel-iommu: Add device info into list before doing context
-> mapping
+On Tue, Dec 20, 2011 at 05:14:18PM -0800, Frank Rowand wrote:
+[...]
+> >>> Hm, assuming that metadata is no longer an issue, why do you think avoiding
+> >>> cgroups would be a good idea?
+> >>>
+> >>
+> >> It's helpful for certain end users, particularly those in the embedded 
+> >> world, to be able to disable as many config options as possible to reduce 
+> >> the size of kernel image as much as possible, so they'll want a minimal 
+> >> amount of kernel functionality that allows such notifications.  Keep in 
+> >> mind that CONFIG_CGROUP_MEM_RES_CTLR is not enabled by default because of 
+> >> this (enabling it, CONFIG_RESOURCE_COUNTERS, and CONFIG_CGROUPS increases 
+> >> the size of the kernel text by ~1%),
+> > 
+> > So for 2MB kernel that's about 20KB of an additional text... This seems
+> > affordable, especially as a trade-off for the things that cgroups may
+> > provide.
 > 
-> * Hao, Xudong (xudong.hao@intel.com) wrote:
-> > @@ -2282,6 +2276,14 @@ static int domain_add_dev_info(struct
-> dmar_domain *domain,
-> >  	pdev->dev.archdata.iommu = info;
-> >  	spin_unlock_irqrestore(&device_domain_lock, flags);
-> >
-> > +	ret = domain_context_mapping(domain, pdev, translation);
-> > +	if (ret) {
-> > +		list_del(&info->link);
-> > +		list_del(&info->global);
+> A comment from http://lkml.indiana.edu/hypermail/linux/kernel/1102.1/00412.html:
 > 
-> At the very least, this is not correct locking.
+> "I care about 5K. (But honestly, I don't actively hunt stuff less than
+> 10K in size, because there's too many of them to chase, currently)."
+
+I have just tried to turn off CGROUPS on my qemu test kernels:
+
+$ diff -u cgroups no_cgroups 
+    text           data     bss     dec     hex filename
+-3869810         465976  565248 4901034  4ac8aa vmlinux
++3806374         460544  540672 4807590  495ba6 vmlinux
+
+So, that's actually ~60KB. Which is serious. memcontrol.o text size
+is about 23KB.
+
+And my cgroups setup was just this:
+
+$ cat .config | grep CGRO
+CONFIG_CGROUPS=y
+# CONFIG_CGROUP_DEBUG is not set
+# CONFIG_CGROUP_FREEZER is not set
+# CONFIG_CGROUP_DEVICE is not set
+# CONFIG_CGROUP_CPUACCT is not set
+CONFIG_CGROUP_MEM_RES_CTLR=y
+# CONFIG_CGROUP_PERF is not set
+# CONFIG_CGROUP_SCHED is not set
+# CONFIG_BLK_CGROUP is not set
+
+:-(
+
+> > The fact is, for desktop and server Linux, cgroups slowly becomes a
+> > mandatory thing. And the reason for this is that cgroups mechanism
+> > provides some very useful features (in an extensible way, like plugins),
+> > i.e. a way to manage and track processes and its resources -- which is the
+> > main purpose of cgroups.
 > 
-> > +		free_devinfo_mem(info);
-> > +		return ret;
-> > +	}
-> > +
+> And for embedded and for real-time, some of us do not want cgroups to be
+> a mandatory thing.  We want it to remain configurable.  My personal
+> interest is in keeping the latency of certain critical paths (especially
+> in the scheduler) short and consistent.
+
+Much thanks for your input! That would be quite strong argument for going
+with /dev/mem_notify approach. Do you have any specific numbers how cgroups
+makes scheduler latencies worse?
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
