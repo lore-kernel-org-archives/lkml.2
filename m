@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab1LUFbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 00:31:24 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57413 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750698Ab1LUFbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 00:31:22 -0500
-Message-ID: <1324445481.20505.7.camel@joe2Laptop>
-Subject: Re: [PATCH] vmalloc: remove #ifdef in function body
-From: Joe Perches <joe@perches.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Dec 2011 21:31:21 -0800
-In-Reply-To: <1324444679-9247-1-git-send-email-minchan@kernel.org>
-References: <1324444679-9247-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751848Ab1LUFhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 00:37:54 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:59877 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751050Ab1LUFhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 00:37:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=CG0CvOlL2zeLvPO9WFsL5jIVai7JD6ED
+	K+zIqEUtdH4n6/Yp9+ScgTkqv08zzYa5FgAiPJ+DiNyh4rIp76luoL8XCPj/UNIH
+	t5rU/gp/aVgxIV8XXOFAb61s6X+CumJot/IvfqCGhq/Og9ZTWAGtACP22BeSVBtl
+	yltIWDZUQyo=
+From: Junio C Hamano <gitster@pobox.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] ext4 bugfixes for 3.2-rc5
+References: <E1RauNd-0008W1-02@tytso-glaptop.cam.corp.google.com>
+ <CA+55aFw6n=WaDWRn7NqtBei1x0-w1PkH5x6r3iQSSPZvxYvDhQ@mail.gmail.com>
+ <20111215190846.GA2709@thunk.org> <7vd3biijdc.fsf@alter.siamese.dyndns.org>
+Date: Tue, 20 Dec 2011 21:37:50 -0800
+In-Reply-To: <7vd3biijdc.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
+ message of "Tue, 20 Dec 2011 21:28:15 -0800")
+Message-ID: <7v8vm6iixd.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: EC9C58D4-2B95-11E1-A9BD-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 14:17 +0900, Minchan Kim wrote:
-> We don't like function body which include #ifdef.
-[]
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-[]
-> @@ -505,6 +505,7 @@ static void unmap_vmap_area(struct vmap_area *va)
->  	vunmap_page_range(va->va_start, va->va_end);
->  }
->  
-> +#ifdef CONFIG_DEBUG_PAGEALLOC
->  static void vmap_debug_free_range(unsigned long start, unsigned long end)
->  {
->  	/*
-> @@ -520,11 +521,15 @@ static void vmap_debug_free_range(unsigned long start, unsigned long end)
->  	 * debugging doesn't do a broadcast TLB flush so it is a lot
->  	 * faster).
->  	 */
-> -#ifdef CONFIG_DEBUG_PAGEALLOC
->  	vunmap_page_range(start, end);
->  	flush_tlb_kernel_range(start, end);
-> -#endif
->  }
-> +#else
-> +static inline void vmap_debug_free_range(unsigned long start,
-> +					unsigned long end)
-> +{
-> +}
-> +#endif
+Junio C Hamano <gitster@pobox.com> writes:
 
-I don't like this change.
-I think it's perfectly good style to use:
+> Ted Ts'o <tytso@mit.edu> writes:
+> ...
+>> And this isn't in 1.7.8 yet, right?  I'd have to build version of git
+>> based on the next branch to play with this new signatury goodness?
+>
+> The 'master' branch as of this week has the topic merged.
 
-1	void foo(args...)
-2	{
-3	#ifdef CONFIG_FOO
-4		...
-5	#endif
-6	}
+Also please notice that the original "pull request" said:
 
-instead of
+    Hi Linus,
 
-1	#ifdef CONFIG_FOO
-2	void foo(args...)
-3	{
-4		...
-5	}
-6	#else
-7	void foo(args...)
-8	{
-9	}
-10	#endif
+    There is a signed tag tytso-for-linus-20111214 covering these patches,...
+    Please pull,
 
-The first version is shorter and gcc optimizes
-away the void func just fine.  It also means
-that 2 function prototypes don't need to be
-kept in agreement when someone changes one
-without testing CONFIG_FOO=y and CONFIG_FOO=n.
+                                                    - Ted
 
+    The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
 
+      Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
+
+    are available in the git repository at:
+      git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
+
+    Andrea Arcangeli (1):
+          ext4: avoid hangs in ext4_da_should_update_i_disksize()
+    ... shortlog output ...
+
+that mentions where the work forked, but does _not_ mention what tip
+commit of "dev" branch to expect. Updated "git request-pull" command will
+have that information, and also gives the tag name you already pushed out
+to your publishing repository instead of the branch name "dev" when
+producing the "... available in the git repository at:" information.
