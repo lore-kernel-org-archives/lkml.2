@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1LURNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 12:13:49 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:18874 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab1LURNq (ORCPT
+	id S1752949Ab1LUR0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 12:26:42 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53732 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1LUR0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 12:13:46 -0500
-Message-ID: <4EF213BD.4070107@oracle.com>
-Date: Wed, 21 Dec 2011 11:13:33 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	Wed, 21 Dec 2011 12:26:39 -0500
+Date: Wed, 21 Dec 2011 09:26:32 -0800
+From: Tejun Heo <tj@kernel.org>
+To: tip-bot for Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        pjt@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:sched/core] sched: Fix cgroup movement of forking process
+Message-ID: <20111221172632.GD9213@google.com>
+References: <20111215143655.662676b0.nishimura@mxp.nes.nec.co.jp>
+ <tip-4fc420c91f53e0a9f95665c6b14a1983716081e7@git.kernel.org>
 MIME-Version: 1.0
-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] deadlock: jfs (3.2.0-rc4-00154-g8e8da02)
-References: <20111206100533.GB6161@schottelius.org>
-In-Reply-To: <20111206100533.GB6161@schottelius.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4EF213C0.015B,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-4fc420c91f53e0a9f95665c6b14a1983716081e7@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 04:05 AM, Nico Schottelius wrote:
-> Hello,
-> 
-> my kernel screams for getting unlocked:
-> 
-> [ 6281.127360] ---------------------------------
-> [ 6281.127363] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W}
-> usage.
-> [ 6281.127366] kswapd0/30 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> 
-> This happened after a suspend/resume cycle on the macbookair.
+Hello, guys.
 
-Thanks Nico. I should have added you to the cc. The deadlock is being
-addressed in this thread: https://lkml.org/lkml/2011/12/20/387
+On Wed, Dec 21, 2011 at 03:44:14AM -0800, tip-bot for Daisuke Nishimura wrote:
+> sched: Fix cgroup movement of forking process
+> 
+> There is a small race between task_fork_fair() and sched_move_task(),
+> which is trying to move the parent.
+> 
+>         task_fork_fair()                 sched_move_task()
+> --------------------------------+---------------------------------
+>   cfs_rq = task_cfs_rq(current)
+>     -> cfs_rq is the "old" one.
+>   curr = cfs_rq->curr
+>     -> curr is set to the parent.
+>                                     task_rq_lock()
+>                                     dequeue_task()
+>                                       ->parent.se.vruntime -= (old)cfs_rq->min_vruntime
+>                                     enqueue_task()
+>                                       ->parent.se.vruntime += (new)cfs_rq->min_vruntime
+>                                     task_rq_unlock()
+>   raw_spin_lock_irqsave(rq->lock)
+>   se->vruntime = curr->vruntime
+>     -> vruntime of the child is set to that of the parent
+>        which has already been updated by sched_move_task().
+>   se->vruntime -= (old)cfs_rq->min_vruntime.
+>   raw_spin_unlock_irqrestore(rq->lock)
+> 
+> As a result, vruntime of the child becomes far bigger than expected,
+> if (new)cfs_rq->min_vruntime >> (old)cfs_rq->min_vruntime.
+> 
+> This patch fixes this problem by setting "cfs_rq" and "curr" after
+> holding the rq->lock.
 
-Shaggy
+The race shouldn't happen with threadgroup locking scheduled to be
+merged for the coming merge window.  sched_fork() and cgroup migration
+become exclusive and won't happen concurrently.  Would still make
+sense for -stable tho.
 
-> 
-> dmesg attached.
-> 
-> Cheers,
-> 
-> Nico
-> 
+Thanks.
+
+-- 
+tejun
