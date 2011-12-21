@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1LULqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 06:46:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629Ab1LULqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 06:46:31 -0500
-Date: Wed, 21 Dec 2011 13:46:01 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Joerg Roedel <joro@8bytes.org>, Avi Kivity <avi@redhat.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Benjamin Block <bebl@mageta.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
-        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
-        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
-Message-ID: <20111221114601.GA2446@redhat.com>
-References: <20111219090923.GB16765@erda.amd.com>
- <20111219105429.GC19861@elte.hu>
- <4EEF1C3B.3010307@redhat.com>
- <20111219114023.GB29855@elte.hu>
- <4EEF26F0.1050709@redhat.com>
- <20111220091511.GB3091@elte.hu>
- <4EF05996.8030807@redhat.com>
- <20111220100916.GA20788@elte.hu>
- <20111220152758.GA30127@8bytes.org>
- <20111220184004.GE8408@elte.hu>
+	id S1753431Ab1LULqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 06:46:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34044 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab1LULqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 06:46:52 -0500
+Date: Wed, 21 Dec 2011 03:46:33 -0800
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-dcpi7164djsexmx6ya7lilrc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        asharma@fb.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, asharma@fb.com, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/fast] perf: Update the mmap control page on mmap()
+Git-Commit-ID: 9a0f05cb36888550d1509d60aa55788615abea44
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20111220184004.GE8408@elte.hu>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 21 Dec 2011 03:46:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 07:40:04PM +0100, Ingo Molnar wrote:
-> > The point is, if user-space re-programs LWP it will continue 
-> > to write its samples to the new ring-buffer virtual-address 
-> > set up by user-space. It will still use that virtual address 
-> > in another address-space after a task-switch. This allows 
-> > processes to corrupt memory of other processes. [...]
-> 
-> That's nonsense. As i said it my previous mail the LWPC should 
-> be per task and switched on task switch - just like the DS/PEBS 
-> context is.
-> 
-Is it? Looking at arch/x86/kernel/cpu/perf_event_intel_ds.c it seems
-like DS is per cpu, not per task.
+Commit-ID:  9a0f05cb36888550d1509d60aa55788615abea44
+Gitweb:     http://git.kernel.org/tip/9a0f05cb36888550d1509d60aa55788615abea44
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 21 Nov 2011 15:13:29 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 21 Dec 2011 11:01:05 +0100
 
---
-			Gleb.
+perf: Update the mmap control page on mmap()
+
+Apparently we didn't update the mmap control page right after mmap(),
+which leads to surprises when userspace wants to use it.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Arun Sharma <asharma@fb.com>
+Link: http://lkml.kernel.org/n/tip-dcpi7164djsexmx6ya7lilrc@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/events/core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2f8f3f1..0ca1f64 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3534,6 +3534,8 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	event->mmap_user = get_current_user();
+ 	vma->vm_mm->pinned_vm += event->mmap_locked;
+ 
++	perf_event_update_userpage(event);
++
+ unlock:
+ 	if (!ret)
+ 		atomic_inc(&event->mmap_count);
