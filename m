@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1LUUEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 15:04:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57044 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1LUUEc (ORCPT
+	id S1753877Ab1LUUFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 15:05:12 -0500
+Received: from yuna.grokhost.net ([87.117.228.63]:56497 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1LUUFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 15:04:32 -0500
-Date: Wed, 21 Dec 2011 21:04:24 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20111221200422.GJ17668@somewhere>
-References: <20111221034334.GD17668@somewhere>
- <20111221130848.GA19679@redhat.com>
- <20111221175632.GF17668@somewhere>
- <20111221190102.GE13529@google.com>
- <20111221190817.GI17668@somewhere>
- <20111221192413.GF13529@google.com>
+	Wed, 21 Dec 2011 15:05:10 -0500
+Message-ID: <4EF23BF2.4000601@bootc.net>
+Date: Wed, 21 Dec 2011 20:05:06 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221192413.GF13529@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference in ipv6_select_ident
+References: <4EF200BB.7000209@bootc.net>  <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4EF2117F.6000803@bootc.net>  <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 11:24:13AM -0800, Mandeep Singh Baines wrote:
-> Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > On Wed, Dec 21, 2011 at 11:01:02AM -0800, Mandeep Singh Baines wrote:
-> > > Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > > On Wed, Dec 21, 2011 at 02:08:48PM +0100, Oleg Nesterov wrote:
-> > > > > On 12/21, Frederic Weisbecker wrote:
-> > > > > > Hi,
-> > > > > >
-> > > > > > Starring at some parts of cgroups, I have a few questions:
-> > > > > >
-> > > > > > - Is cgroup_enable_task_cg_list()'s while_each_thread() safe
-> > > > > > against concurrent exec()? The leader may change in de_thread()
-> > > > > > and invalidate the test done in while_each_thread().
-> > > > > 
-> > > > > Yes. Oh, we need to do something with while_each_thread.
-> > > > 
-> > > > Would something like this work?
-> > > > 
-> > > > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > > > index c0c5876..e002a00 100644
-> > > > --- a/include/linux/sched.h
-> > > > +++ b/include/linux/sched.h
-> > > > @@ -2293,8 +2293,12 @@ extern bool current_is_single_threaded(void);
-> > > >  #define do_each_thread(g, t) \
-> > > >  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
-> > > >  
-> > > > -#define while_each_thread(g, t) \
-> > > > -	while ((t = next_thread(t)) != g)
-> > > > +#define while_each_thread(g, t)					\
-> > > > +	while (({						\
-> > > > +		struct task_struct *__prev = t;			\
-> > > > +		t = next_thread(t);				\
-> > > > +		t != __prev && t != g;				\
-> > > 
-> > > Hi,
-> > > 
-> > > Don't you still have an (highly unlikely) race if you exec
-> > > and then pthread_create()?
-> > 
-> > I'm not sure what you mean.
-> 
-> Here is what I'm thinking:
-> 
-> If you call exec from a thread other than g, g is now unlinked. So
-> "t != g" will always be true. If you then pthread_create, you now
-> have two threads so "t != __prev" will also always be true. So
-> you now have an infinite loop.
+On 21/12/2011 18:00, Eric Dumazet wrote:
+> Le mercredi 21 décembre 2011 à 18:36 +0100, Eric Dumazet a écrit :
+>
+>> Good point, thats a different problem then, since 3.1 is not supposed to
+>> have this bug.
+>>
+>> It seems rt->rt6i_peer points to invalid memory in your crash.
+>>
+>> (RBX=00000000000001f4)
+>>
+>> 8b 83 a4 00 00 00       mov    0xa4(%rbx),%eax    p->refcnt
+>> 1f4+a4 ->  CR2=0000000000000298
+>>
+> It would help if you can confirm latest linux tree can reproduce the
+> bug.
 
-Oh you're right.
+Hi Eric,
 
-But then we can't use t != t->group_leader because that assumes while_each_thread()
-started on the leader. Or may be we can take this assumption...
+I just built a v3.2-rc6-140-gb9e26df with the same config as the Debian 
+3.1.0 kernel. I can reproduce the bug just as easily with this kernel as 
+with the Debian kernel. Unfortunately I wasn't able to get an entire 
+trace, for some reason it didn't appear to be printed to the serial port 
+and hung after the (long) list of loaded kernel modules. The crash 
+happens at the same offset:
 
-> 
-> > 
-> > > 
-> > > Instead of:
-> > > 
-> > > t != __prev && t != g;
-> > > 
-> > > How about:
-> > > 
-> > > t != t->group_leader;
-> > 
-> > That might work too but we need a pair of memory barriers.
-> 
-> next_thread() calls list_entry_rcu. Shouldn't that protect against
-> a dereference? You don't need to synchronize group_leader since
-> you are only using it as a value. You don't dereference it.
-> 
-> Regards,
-> Mandeep
+[  356.683420] BUG: unable to handle kernel NULL pointer dereference at 
+0000000000000298
+[  356.691438] IP: [<ffffffff812ea0da>] ipv6_select_ident+0x31/0xa7
+[  356.697633] PGD 425060067 PUD 41de8d067 PMD 0
+[  356.702123] Oops: 0000 [#1] SMP
+[  356.705451] CPU 4
+[  356.707366] Modules linked in: tun sha1_ssse3 sha1_generic hmac 
+sha256_generic dlm configfs ebtable_nat ebtables acpi_cpufreq mperf 
+cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace 
+microcode xt_NOTRACK ip_set_hash_net act_police cls_basic cls_flow 
+cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq 
+xt_realm xt_addrtype xt_connlimit iptable_raw ip_set_hash_ip xt_comment 
+ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN 
+ipt_ecn ipt_CLUSTERIP ipt_ah nf_nat_tftp nf_nat_snmp_basic 
+nf_conntrack_snmp xt_recent nf_nat_sip nf_nat_pptp nf_nat_proto_gre 
+nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ip6_queue xt_set ip_set 
+nf_conntrack_tftp nf_conntrack_sip nf_conntrack_sane 
+nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp 
+nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns 
+nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 
+nf_conntrack_ftp ts_kmp xt_NFLOG nfnetlink_log nf_conntrack_amanda 
+xt_TPROXY nf_tproxy_core xt_time xt_TCPMSS xt_tcpmss xt_sctp xt_policy 
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_multiport xt_mark xt_mac 
+xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp 
+xt_dccp xt_connmark ip6t_LOG xt_CLASSIFY ip6t_REJECT xt_AUDIT 
+nf_conntrack_ipv6
+
+I loaded the kernel in gdb to see where it thought that was:
+
+(gdb) list *ipv6_select_ident+0x31/0xa7
+0xffffffff812ea0a9 is in ipv6_select_ident (net/ipv6/ip6_output.c:602).
+597
+598             return offset;
+599     }
+600
+601     void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
+602     {
+603             static atomic_t ipv6_fragmentation_id;
+604             int old, new;
+605
+606             if (rt) {
+
+HTH,
+Chris
+
+-- 
+Chris Boot
+bootc@bootc.net
+
