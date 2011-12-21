@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab1LUDno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Dec 2011 22:43:44 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:33448 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab1LUDnl (ORCPT
+	id S1751539Ab1LUDyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Dec 2011 22:54:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46549 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750947Ab1LUDyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Dec 2011 22:43:41 -0500
-Date: Wed, 21 Dec 2011 04:43:36 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20111221034334.GD17668@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Dec 2011 22:54:43 -0500
+Message-ID: <1324439664.2844.184.camel@deadeye>
+Subject: [PATCH] firmware: Refer to the co-maintained linux-firmware.git
+ repository
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Dec 2011 03:54:24 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-K9skWnssBZfj1f24dLPs"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Starring at some parts of cgroups, I have a few questions:
+--=-K9skWnssBZfj1f24dLPs
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-- Is cgroup_enable_task_cg_list()'s while_each_thread() safe
-against concurrent exec()? The leader may change in de_thread()
-and invalidate the test done in while_each_thread().
+David and I are sharing maintenance of this repository.  Patches
+should be sent to both of us.
 
-- do_each_thread() also needs RCU and cgroup_enable_task_cg_list()
-seems to remind it. But it seems there is at least one caller that
-doesn't call rcu_read_lock(): update_cpu_mask() -> update_tasks_cpumask() -> cgroup_scan_tasks()
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ firmware/README.AddingFirmware |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-- By the time we call cgroup_post_fork(), it is ready to be woken up
-and usable by the scheduler. I was thinking about a possible race
-where somebody kills the child just before we call cgroup_post_fork()
-and then it ends up calling cgroup_exit(). In this case should we perhaps
-check for PF_EXITING. Of course I'm talking about a race that will certainly
-never happen.
-If I'm mistaken and the task can not exit concurrently, probably we don't need
-the task_lock() there.
-
-- Is the check for use_task_css_set_links in cgroup_post_fork() safe? given
-it is checked outside css_set_lock?
-
-Imagine this:
-
-CPU 0                                                        CPU 1
-----                                                         -----
-
-cgroup_enable_task_cg() {                            
-	uset_tasks_css_set_links = 1
-	for_each_thread() {
-		add tasks in the list
-	}
-}
-                                                           do_fork() {
-                                                               cgroup_post_fork() {
-                                                                     use_tasks_css_set_links appears
-                                                                     to be equal to 0 due to write/read
-                                                                      not flushed. New task won't
-                                                                      appear to the list.
+diff --git a/firmware/README.AddingFirmware b/firmware/README.AddingFirmwar=
+e
+index e24cd89..ea78c3a 100644
+--- a/firmware/README.AddingFirmware
++++ b/firmware/README.AddingFirmware
+@@ -12,7 +12,7 @@ here.
+ This directory is _NOT_ for adding arbitrary new firmware images. The
+ place to add those is the separate linux-firmware repository:
+=20
+-    git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/linux-firmware.git
++    git://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.=
+git
+=20
+ That repository contains all these firmware images which have been
+ extracted from older drivers, as well various new firmware images which
+@@ -22,6 +22,7 @@ been permitted to redistribute under separate cover.
+ To submit firmware to that repository, please send either a git binary
+ diff or preferably a git pull request to:
+       David Woodhouse <dwmw2@infradead.org>
++      Ben Hutchings <ben@decadent.org.uk>
+=20
+ Your commit should include an update to the WHENCE file clearly
+ identifying the licence under which the firmware is available, and
+--=20
+1.7.7.3
 
 
-- Is the read_lock() in cgroup_attach_proc() still necessary? It was added to protect
-against exec() but now I think it is useless. rcu_read_lock() would be necessary to protect
-against group_entry removal though I think.
 
-Thanks.
+--=-K9skWnssBZfj1f24dLPs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATvFYcOe/yOyVhhEJAQqwuA//W0vVhnYBQvTB0Tlm8Z6ltcJClxSLVlg1
+ycR49Rt631P2PxSKPr8us7YUktiSna+l07tLrYhFTikxsGEmlkiPPaOe54yTw0Rc
+g5elH7KDh128HSqhFZ9/DM6Iab5Ak1TMhfgsrbo+H6VBjkYkZD7Q/+OdQ4z+Mumy
+LFGi9MrEwu39umBJNVgZaiXGWVDc3j9/ujXz8HzkbkQQu4ONkli3/lh5nkbRBMSW
+IrMULBTdF+8swu0j4tATsaxwSoqlAo3HsKlQAHym3qh3m+2WkAybz4KFiq1BPUq4
+uOpYkiTJIRCuQ4+9H6KdciLGHSbjqWYV5kWDoIrl17cSgKJfP2MDxhjRfhBOF0Aa
+J7hDNpwQrb2a+O0Y24dBF6pBq1rk4dZzOKHwGqmlUK2xi9aFP//8PIIDgtMoGwzk
+WlBJ6kvWAK8liXP+QGxrJt5tH6i0lYGOPstSdhh6WH+Br2CWdj0orFeSeZlM0KMo
+z7jq2BvX9ARlMtJVLSzryD4lSy49bnQa8b/VZ5tNA5YKbGNgTfYeh21mlGjPnwgW
+jgcPoSN443qCZ8aC88mak5cybesOBk8de0No2x30RvvFtxIABRRQqUsw3pZ4jgyL
+a8yAst+EMS5mENNvzihv1cFQCstaDKh9o3GncvIzTmomlWKhXj+17aU6PAfmLI3w
+1bIfyuzLeO8=
+=i+5b
+-----END PGP SIGNATURE-----
+
+--=-K9skWnssBZfj1f24dLPs--
