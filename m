@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1LVIW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 03:22:26 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47055 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516Ab1LVIWY (ORCPT
+	id S1754888Ab1LVIWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 03:22:46 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:39591 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab1LVIWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 03:22:24 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Date: Thu, 22 Dec 2011 17:22:11 +0900
-From: Yasunori Goto <y-goto@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EF29276.5050309@gmail.com>
-References: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com> <4EF29276.5050309@gmail.com>
-Message-Id: <20111222172211.C6A8.E1E9C6FF@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
+	Thu, 22 Dec 2011 03:22:44 -0500
+Date: Thu, 22 Dec 2011 09:22:43 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than online CPUs
+Message-ID: <20111222082243.GD11715@one.firstfloor.org>
+References: <4EF084A4.3000106@linux.vnet.ibm.com> <20111220140628.GD23916@ZenIV.linux.org.uk> <4EF09D34.1060607@linux.vnet.ibm.com> <20111220175919.GE23916@ZenIV.linux.org.uk> <4EF0DE04.6030604@linux.vnet.ibm.com> <20111220195806.GF23916@ZenIV.linux.org.uk> <4EF24C71.6000609@linux.vnet.ibm.com> <20111221141229.7f691c43.akpm@linux-foundation.org> <20111222070214.GK23916@ZenIV.linux.org.uk> <20111221232047.3c3c63d3.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221232047.3c3c63d3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your response.
-
-
-> > ----
-> > Signed-off-by: Yasunori Goto<y-goto@jp.fujitsu.com>
-> >
-> > ---
-> >   kernel/exit.c |    3 +++
-> >   1 file changed, 3 insertions(+)
-> >
-> > Index: linux-3.2-rc4/kernel/exit.c
-> > ===================================================================
-> > --- linux-3.2-rc4.orig/kernel/exit.c
-> > +++ linux-3.2-rc4/kernel/exit.c
-> > @@ -1038,8 +1038,11 @@ NORET_TYPE void do_exit(long code)
-> >
-> >   	preempt_disable();
-> >   	exit_rcu();
-> > +
-> > +	spin_lock(&tsk->pi_lock, flags);
-> >   	/* causes final put_task_struct in finish_task_switch(). */
-> >   	tsk->state = TASK_DEAD;
-> > +	spin_unlock(&tsk->pi_lock, flags);
-> >   	schedule();
-> >   	BUG();
-> >   	/* Avoid "noreturn function does return".  */
+On Wed, Dec 21, 2011 at 11:20:47PM -0800, Andrew Morton wrote:
+> On Thu, 22 Dec 2011 07:02:15 +0000 Al Viro <viro@ZenIV.linux.org.uk> wrote:
 > 
-> I doubt it is not only TASK_DEAD issue, it is rwsem fundamental issue.
-> Because of, a lot of place assume "current->state = newstate" is safe
-> and don't need any synchronization. So, I'm worry about to lost 
-> TASK_UNINTERRUPTIBLE can make catastrophe like TASK_DEAD.
-
-I don't understand why this is catastrophe.
-I suppose it is just waken up from TASK_UNINTERRUPTIBLE
-by try_to_wake_up() in race condition. It seems to be normal situation.....
-
-But TASK_DEAD status is special. It must not return to TASK_RUNNING state.
-
+> > On Wed, Dec 21, 2011 at 02:12:29PM -0800, Andrew Morton wrote:
+> > > off-topic, but the lockdep stuff in include/linux/lglock.h
+> > > (LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
+> > 
+> > Um?  See ..._lock_init(); it's used there.
 > 
-> How about following patch? anyway, rwsem_down_failed_common() is 
-> definitely slowpath. so killing micro optimization is not so much
-> problem, I guess.
+> oops, I had Andi's patch applied.
 > 
-> 
-> 
-> diff --git a/lib/rwsem.c b/lib/rwsem.c
-> index 410aa11..e2a0c9a 100644
-> --- a/lib/rwsem.c
-> +++ b/lib/rwsem.c
-> @@ -208,9 +208,9 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
-> 
->          /* wait to be given the lock */
->          for (;;) {
-> +               schedule();
->                  if (!waiter.task)
->                          break;
-> -               schedule();
->                  set_task_state(tsk, TASK_UNINTERRUPTIBLE);
->          }
-> 
+> Wanna take a look at it while things are fresh in your mind?
 
-Hmmmmmmm.
-Are you sure there is no route which TASK_DEAD task is waken up like rwsem?
+Double checked: DEFINE_LGLOCK_LOCKDEP is dead now and can be removed.
+The stuff it declared is in the struct lglock now.
 
+I can send a patch for that tomorrow if you haven't done it already.
 
-Thanks.
--- 
-Yasunori Goto 
+LOCKDEP_INIT_MAP should be still used in lg_lock_init() and that
+is called
 
-
+-Andi
