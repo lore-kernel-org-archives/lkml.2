@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab1LVRQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:16:57 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52612 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1LVRQz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 12:16:55 -0500
+	id S1754400Ab1LVRTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:19:31 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:54173 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752810Ab1LVRTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 12:19:30 -0500
+Date: Thu, 22 Dec 2011 17:18:33 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] SCSI: Change size of factor from u64 to unsigned int.
+Message-ID: <20111222171833.GA16435@linux-mips.org>
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvxQ0E+j1LHfN3fCMM_TVqV6QG3B=VQiy1FPGdn5senBDw@mail.gmail.com>
-References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
- <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
- <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com> <CAFLxGvxQ0E+j1LHfN3fCMM_TVqV6QG3B=VQiy1FPGdn5senBDw@mail.gmail.com>
-From: Gaurav Saxena <grvsaxena419@gmail.com>
-Date: Thu, 22 Dec 2011 22:46:24 +0530
-Message-ID: <CAOh0hwPGzx64gt=ohbWQL96F28ZXEy_y4XF1YRHyKEctT1-sCg@mail.gmail.com>
-Subject: Re: Intercepting system calls
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It depends on your application.
-> Samba has vfs_recycle.
-> You can also write a fuse-filesystem.
-> Or use ptrace().
->
-> Select your pain. ;)
->
-I want to monitor whole / and its sub directories for unlink call, if
-there is any call I would save the file, would it be possible with
-FUSE? It would require remounting of file system ? I don't think
-ptrace would be of help as applications are not under my control.
-> --
-> Thanks,
-> //richard
+Struct scsi_device.sector_size is unsigned int, so the value of factor
+can have at most 23 significant bits.
 
+Adding a type check to do_div() caught these two do_div as the only
+invocations in the kernel passing a non-32-bit divisor.
 
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/sd.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
--- 
-Thanks and Regards ,
-Gaurav
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index fa3a591..42a1ff6 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1335,8 +1335,7 @@ static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
+ 		start_lba <<= 1;
+ 		end_lba <<= 1;
+ 	} else {
+-		/* be careful ... don't want any overflows */
+-		u64 factor = scmd->device->sector_size / 512;
++		unsigned int factor = scmd->device->sector_size / 512;
+ 		do_div(start_lba, factor);
+ 		do_div(end_lba, factor);
+ 	}
