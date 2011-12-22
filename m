@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1LVIGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 03:06:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44690 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1LVIGg (ORCPT
+	id S1753728Ab1LVIJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 03:09:11 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49415 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab1LVIJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 03:06:36 -0500
-Message-ID: <4EF2E50A.7040506@monstr.eu>
-Date: Thu, 22 Dec 2011 09:06:34 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 22 Dec 2011 03:09:09 -0500
+Date: Thu, 22 Dec 2011 08:08:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-ID: <20111222080856.GM23916@ZenIV.linux.org.uk>
+References: <4EF084A4.3000106@linux.vnet.ibm.com>
+ <20111220140628.GD23916@ZenIV.linux.org.uk>
+ <4EF09D34.1060607@linux.vnet.ibm.com>
+ <20111220175919.GE23916@ZenIV.linux.org.uk>
+ <4EF0DE04.6030604@linux.vnet.ibm.com>
+ <20111220195806.GF23916@ZenIV.linux.org.uk>
+ <4EF24C71.6000609@linux.vnet.ibm.com>
+ <20111221141229.7f691c43.akpm@linux-foundation.org>
+ <20111222070214.GK23916@ZenIV.linux.org.uk>
+ <20111221232047.3c3c63d3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Ryan Mallon <rmallon@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 4/4] microblaze: Remove NO_IRQ from architecture
-References: <1324477932-19262-1-git-send-email-monstr@monstr.eu> <1324477932-19262-2-git-send-email-monstr@monstr.eu> <1324477932-19262-3-git-send-email-monstr@monstr.eu> <1324477932-19262-4-git-send-email-monstr@monstr.eu> <4EF258FE.9030709@gmail.com>
-In-Reply-To: <4EF258FE.9030709@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221232047.3c3c63d3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ryan Mallon wrote:
-> On 22/12/11 01:32, Michal Simek wrote:
+On Wed, Dec 21, 2011 at 11:20:47PM -0800, Andrew Morton wrote:
+> On Thu, 22 Dec 2011 07:02:15 +0000 Al Viro <viro@ZenIV.linux.org.uk> wrote:
 > 
->> NO_IRQ shouldn't be used by any driver. All Microblaze
->> drivers are fixed that's why NO_IRQ can be removed.
+> > On Wed, Dec 21, 2011 at 02:12:29PM -0800, Andrew Morton wrote:
+> > > off-topic, but the lockdep stuff in include/linux/lglock.h
+> > > (LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
+> > 
+> > Um?  See ..._lock_init(); it's used there.
 > 
+> oops, I had Andi's patch applied.
 > 
-> This only describes half of what the patch does. You should also state
-> that arch/microblaze/pci/pci-common.c has references to NO_IRQ removed.
-> Maybe it' worth splitting this patch in half so the final patch just
-> does the removal of the NO_IRQ definition, but maybe that is overkill?
+> Wanna take a look at it while things are fresh in your mind?
 
-I have decided to remove NO_IRQ from arch/microblaze in one patch.
-It is less painful because if there is any problem with PCI you can revert
-just one patch instead of two.
+a) tons of trivial conflicts with fs/namespace.c changes in my tree
+b) more seriously, the question of overhead - see the mail you replied
+to.
 
-Drivers out of arch/microblaze must be in separate patches.
-
-
-> Other than that, for the whole series:
-> 
-> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+I really, really don't like templates, so in general I would prefer to do
+something fairly close to what Andi seems to have done in that patch.
+However, we *are* talking about some fairly hot paths and I'm really not
+comfortable with doing that kind of changes that late in the cycle.
+If somebody cares to take Andi's patch and see what it does to overhead,
+I'd love to see the results; we might do that in the next merge window.
+Again, the idea itself is obviously OK; the only problem is with the
+performance issues.
