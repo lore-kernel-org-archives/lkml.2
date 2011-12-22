@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1LVApw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:45:52 -0500
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:60962 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab1LVApu (ORCPT
+	id S1754560Ab1LVAqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:46:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59028 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab1LVAqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:45:50 -0500
-Date: Thu, 22 Dec 2011 01:45:20 +0100
-From: Udo Steinberg <udo@hypervisor.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: GPU hung with Linux-3.2-rc6
-Message-ID: <20111222014520.7ace1ab2@x220.fritz.box>
-In-Reply-To: <861urxy1pw.fsf@sumi.keithp.com>
-References: <20111221195410.5e4c065a@x220.fritz.box>
-	<864nwty9sq.fsf@sumi.keithp.com>
-	<20111221222626.0b8c3a30@x220.fritz.box>
-	<861urxy1pw.fsf@sumi.keithp.com>
-X-Mailer: X-Mailer 5.0 Gold
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/cZkCAJTKMnGlTYL2RAqO5pb"; protocol="application/pgp-signature"
+	Wed, 21 Dec 2011 19:46:34 -0500
+Date: Wed, 21 Dec 2011 16:46:29 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH UPDATED 2/2] mempool: fix first round failure behavior
+Message-ID: <20111222004629.GO9213@google.com>
+References: <20111222001800.GL9213@google.com>
+ <20111222001939.GM9213@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222001939.GM9213@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cZkCAJTKMnGlTYL2RAqO5pb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+mempool modifies gfp_mask so that the backing allocator doesn't try
+too hard or trigger warning message when there's pool to fall back on.
+In addition, for the first try, it removes __GFP_WAIT and IO, so that
+it doesn't trigger reclaim or wait when allocation can be fulfilled
+from pool; however, when that allocation fails and pool is empty too,
+it waits for the pool to be replenished before retrying.
 
-On Wed, 21 Dec 2011 14:55:07 -0800 Keith Packard (KP) wrote:
+Allocation which could have succeeded after a bit of reclaim has to
+wait on the reserved items and it's not like mempool doesn't retry
+with __GFP_WAIT and IO.  It just does that *after* someone returns an
+element, pointlessly delaying things.
 
-KP> On Wed, 21 Dec 2011 22:26:26 +0100, Udo Steinberg <udo@hypervisor.org> =
-wrote:
-KP>=20
-KP> > That makes the problem go away. If you need more help tracking down t=
-he
-KP> > problem, then let me know. I can reproduce it fairly easily with some=
-thing
-KP> > as simple as:
-KP> >=20
-KP> > 	while true; do dmesg; done
-KP>=20
-KP> Are you using SNA?
+Fix it by retrying immediately if the first round of allocation
+attempts w/o __GFP_WAIT and IO fails.
 
-I don't think so. I'm using the following packages:
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+The code hasn't changed.  Only the description and comment are
+updated.  It doesn't affect anything regarding emergency pool.  It
+just changes when the first retry happens.
 
-xorg-server-1.9.5
-xf86-video-intel-2.15.0
-libdrm-2.4.25
-mesa-7.10.2
+That said, I still find it a bit unsettling that a GFP_ATOMIC
+allocation which would otherwise succeed may fail when issued through
+mempool.  Maybe the RTTD is clearing __GFP_NOMEMALLOC on retry if the
+gfp requsted by the caller is !__GFP_WAIT && !__GFP_NOMEMALLOC?
 
-I quick google search suggests that at least some of them are too old to
-support SNA.
+Thanks.
 
-Cheers,
+ mm/mempool.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-	- Udo
-
---Sig_/cZkCAJTKMnGlTYL2RAqO5pb
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7yfaAACgkQnhRzXSM7nSlqvQCfS9ep7C6UoULuICAXs4cxZNhB
-z10AnRToKYBVHe31t8GRfvXux48O7zyT
-=X/UP
------END PGP SIGNATURE-----
-
---Sig_/cZkCAJTKMnGlTYL2RAqO5pb--
+Index: work/mm/mempool.c
+===================================================================
+--- work.orig/mm/mempool.c
++++ work/mm/mempool.c
+@@ -221,14 +221,23 @@ repeat_alloc:
+ 		return element;
+ 	}
+ 
+-	/* We must not sleep in the GFP_ATOMIC case */
++	/*
++	 * We use gfp mask w/o __GFP_WAIT or IO for the first round.  If
++	 * alloc failed with that and @pool was empty, retry immediately.
++	 */
++	if (gfp_temp != gfp_mask) {
++		gfp_temp = gfp_mask;
++		spin_unlock_irqrestore(&pool->lock, flags);
++		goto repeat_alloc;
++	}
++
++	/* We must not sleep if !__GFP_WAIT */
+ 	if (!(gfp_mask & __GFP_WAIT)) {
+ 		spin_unlock_irqrestore(&pool->lock, flags);
+ 		return NULL;
+ 	}
+ 
+ 	/* Let's wait for someone else to return an element to @pool */
+-	gfp_temp = gfp_mask;
+ 	init_wait(&wait);
+ 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
+ 
