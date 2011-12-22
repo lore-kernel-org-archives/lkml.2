@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1LVOoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 09:44:15 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45202 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab1LVOoK convert rfc822-to-8bit (ORCPT
+	id S1753154Ab1LVOoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 09:44:34 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:45969 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752615Ab1LVOod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 09:44:10 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=7TnqBhP1msi30018U2AA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324565048.5916.139.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.0.14-rt31
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Georgiewskiy Yuriy <bottleman@icf.org.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
-Date: Thu, 22 Dec 2011 09:44:08 -0500
-In-Reply-To: <alpine.DEB.2.02.1112221759480.6601@icf.org.ru>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.02.1112221759480.6601@icf.org.ru>
-Content-Type: text/plain; charset=US-ASCII
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7BIT
-Mime-Version: 1.0
+	Thu, 22 Dec 2011 09:44:33 -0500
+Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct xenbus_driver
+ instantiation
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Jan Beulich <JBeulich@suse.com>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Jens Axboe <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
+	 <1324547820.7877.71.camel@zakaz.uk.xensource.com>
+	 <4EF327E2020000780006993E@nat28.tlf.novell.com>
+	 <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Thu, 22 Dec 2011 14:44:27 +0000
+Message-ID: <1324565067.2897.2.camel@bwh-desktop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18598.006
+X-TM-AS-Result: No--22.548800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 18:00 +0400, Georgiewskiy Yuriy wrote:
-> On 2011-12-21 22:40 -0500, Steven Rostedt wrote LKML and RT:
+On Thu, 2011-12-22 at 11:57 +0000, Ian Campbell wrote:
+> On Thu, 2011-12-22 at 11:51 +0000, Jan Beulich wrote:
+> > >>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > > On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
+> > >> The 'name', 'owner', and 'mod_name' members are redundant with the
+> > >> identically named fields in the 'driver' sub-structure. Rather than
+> > >> switching each instance to specify these fields explicitly, introduce
+> > >> a macro to simplify this.
+> > >> 
+> > >> Eliminate further redundancy by allowing the drvname argument to
+> > >> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
+> > >> the ID table will be used for .driver.name).
+> > > 
+> > > Any reason not to always use DRV_NAME here (which is generally a bit
+> > > more specific e.g. "xen-foofront" rather than "foo") and rely on the id
+> > > table for the shorter names used in xenstore?
+> > 
+> > That would imply that DRV_NAME is always defined, but I don't
+> > see this being the case.
 > 
-> 
-> there is steel a bug in acpi:
-> 
-> [  251.152035] BUG: scheduling while atomic: irq/9-acpi/14/0x00000002
-> [  251.152038] Modules linked in: xt_TCPMSS xt_tcpudp iptable_mangle ip_tables x_tables ipv6 pci_slot pktcdvd tcp_cubic microcode fuse hso pata_pcmcia firewire_net firewire_ohci firewire_core crc_itu_t tcp_hybla cdc_acm usbmouse usb_storage usb_libusual usbhid uhci_hcd ohci_hcd ehci_hcd usbcore snd_mpu401_uart snd_seq_dummy snd_seq_oss snd_seq_midi snd_seq_midi_event snd_seq snd_rawmidi snd_seq_device cpufreq_userspace acpi_cpufreq mperf msr cpuid nvram arc4 joydev snd_intel8x0m mousedev 8250_pci 8250_pnp snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm_oss snd_mixer_oss snd_pcm snd_timer psmouse snd_page_alloc serio_raw pcmcia radeon ttm drm_kms_helper drm backlight i2c_algo_bit ath9k mac80211 ath9k_common ath9k_hw ath cfg80211 i2c_core cfbcopyarea cfbimgblt rfkill cfbfillrect processor pcspkr battery ac intel_agp intel_gtt agpgart yenta_socket pcmcia_rsrc pcmcia_core button power_supply 8250 serial_core evdev raid0 btrfs crc32c libcrc32c sr_mod cdrom atkbd thermal thermal_sys hwmon 8139too [last unloaded: scsi_wait_scan]
-> [  251.152105] Pid: 14, comm: irq/9-acpi Not tainted 3.0.14-rt31-r235 #1
-> [  251.152108] Call Trace:
-> [  251.152112]  [<792d784d>] ? 0x792d784d
-> [  251.152114]  [<79022284>] ? 0x79022284
-> [  251.152116]  [<79020547>] ? 0x79020547
-> [  251.152117]  [<7902253e>] ? 0x7902253e
-> [  251.152119]  [<79022e59>] ? 0x79022e59
-> [  251.152121]  [<792d7a4f>] ? 0x792d7a4f
-> [  251.152123]  [<792d8a55>] ? 0x792d8a55
-> [  251.152125]  [<79020bfc>] ? 0x79020bfc
-> [  251.152127]  [<7918d60c>] ? 0x7918d60c
-> [  251.152128]  [<79196f09>] ? 0x79196f09
-> [  251.152130]  [<7919e374>] ? 0x7919e374
-> [  251.152132]  [<791971ab>] ? 0x791971ab
-> [  251.152134]  [<79195c33>] ? 0x79195c33
-> [  251.152136]  [<79188cb7>] ? 0x79188cb7
-> [  251.152137]  [<7905dab0>] ? 0x7905dab0
-> [  251.152139]  [<7905d92d>] ? 0x7905d92d
-> [  251.152141]  [<7905da90>] ? 0x7905da90
-> [  251.152143]  [<7905d810>] ? 0x7905d810
-> [  251.152144]  [<7903eb24>] ? 0x7903eb24
-> [  251.152146]  [<7903eab0>] ? 0x7903eab0
-> [  251.152148]  [<792d9e3e>] ? 0x792d9e3e
+> My mistake, I thought it was a Kbuild thing.
 
-Strange, this stack trace is all in userspace.
+You're maybe thinking of KBUILD_MODNAME.
 
-Could you send me your config.
+Ben.
 
-Thanks,
-
--- Steve
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
