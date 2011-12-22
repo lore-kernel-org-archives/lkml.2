@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1LVSac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 13:30:32 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51735 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1LVSaU (ORCPT
+	id S1753510Ab1LVSbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 13:31:18 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:36810 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab1LVSbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 13:30:20 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/3] perf script: look up thread using tid instead of pid
-Date: Thu, 22 Dec 2011 11:30:03 -0700
-Message-Id: <1324578603-12762-4-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1324578603-12762-1-git-send-email-dsahern@gmail.com>
-References: <1324578603-12762-1-git-send-email-dsahern@gmail.com>
+	Thu, 22 Dec 2011 13:31:15 -0500
+Date: Thu, 22 Dec 2011 13:29:50 -0500 (EST)
+Message-Id: <20111222.132950.2105811163837575839.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: bootc@bootc.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        steffen.klassert@secunet.com
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference in
+ ipv6_select_ident
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1324575692.2586.6.camel@edumazet-laptop>
+References: <1324563353.2153.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<4EF352A2.2090604@bootc.net>
+	<1324575692.2586.6.camel@edumazet-laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Dec 2011 10:30:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the thread name to be dispalyed when dumping
-events:
-           myapp 25118 [000] 450385.538815: context-switches ...
-    myapp:worker 25119 [000] 450385.538894: context-switches ...
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 22 Dec 2011 18:41:32 +0100
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-script.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> IPv6 needs multicast capabilities, so maybe balance-rr bonding mode is
+> not propagating multicat filters properly on both nics.
+> 
+> It might be a problem on one of your NIC.
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ea71c5e..d71b745 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -443,7 +443,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 				struct machine *machine)
- {
- 	struct addr_location al;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, event->ip.tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
--- 
-1.7.7.4
-
+This is my impression too, definitely some kind of multicast problem.
