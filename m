@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1LVIJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 03:09:11 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49415 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab1LVIJJ (ORCPT
+	id S1754036Ab1LVIK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 03:10:29 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59656 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab1LVIKZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 03:09:09 -0500
-Date: Thu, 22 Dec 2011 08:08:56 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111222080856.GM23916@ZenIV.linux.org.uk>
-References: <4EF084A4.3000106@linux.vnet.ibm.com>
- <20111220140628.GD23916@ZenIV.linux.org.uk>
- <4EF09D34.1060607@linux.vnet.ibm.com>
- <20111220175919.GE23916@ZenIV.linux.org.uk>
- <4EF0DE04.6030604@linux.vnet.ibm.com>
- <20111220195806.GF23916@ZenIV.linux.org.uk>
- <4EF24C71.6000609@linux.vnet.ibm.com>
- <20111221141229.7f691c43.akpm@linux-foundation.org>
- <20111222070214.GK23916@ZenIV.linux.org.uk>
- <20111221232047.3c3c63d3.akpm@linux-foundation.org>
+	Thu, 22 Dec 2011 03:10:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221232047.3c3c63d3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111222005816.GB27144@opensource.wolfsonmicro.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1324349144-12784-3-git-send-email-tomoya.rohm@gmail.com>
+	<20111220132314.GQ2866@opensource.wolfsonmicro.com>
+	<CANKRQng8N3oS2o17HPUZeonXB3KLBK9oNQj-zd9+aUUvWcTo0A@mail.gmail.com>
+	<20111222005816.GB27144@opensource.wolfsonmicro.com>
+Date: Thu, 22 Dec 2011 17:10:24 +0900
+Message-ID: <CANKRQnjCTAX02wJt7StjB0rXkg3Q6bPBRYCbkgq6vS5NFd97Fg@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v2] sound/soc/lapis: add platform driver for ML7213
+ IOH I2S
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 11:20:47PM -0800, Andrew Morton wrote:
-> On Thu, 22 Dec 2011 07:02:15 +0000 Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> 
-> > On Wed, Dec 21, 2011 at 02:12:29PM -0800, Andrew Morton wrote:
-> > > off-topic, but the lockdep stuff in include/linux/lglock.h
-> > > (LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
-> > 
-> > Um?  See ..._lock_init(); it's used there.
-> 
-> oops, I had Andi's patch applied.
-> 
-> Wanna take a look at it while things are fresh in your mind?
+2011/12/22 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Dec 21, 2011 at 08:22:56PM +0900, Tomoya MORINAGA wrote:
+>> 2011/12/20 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>> > On Tue, Dec 20, 2011 at 11:45:44AM +0900, Tomoya MORINAGA wrote:
+>
+>> >> +     iowrite32(I2S_TX_FINT | I2S_TX_AFINT | I2S_TX_EINT | I2S_TX_AEINT,
+>> >> +             i2s_data->iobase + I2SISTTX_OFFSET + offset);
+>
+>> > This appears to unconditionally acknowledge all interrupts, generally
+>> > you should only acknowledge interrupts that have been handled.
+>> > Otherwise it's possible that interrupts may be dropped if they're
+>> > flagged between the status read and acknowledgement write.
+>
+>> I can understand your saying.
+>> If following your saying, only called by i2s_dma_tx_complete is enough.
+>
+>> However I think adding clearing interrupt status at both before and
+>> after i2s communicating start/finish is better.
+>
+> No, the issue is that you're acknowleding a hard coded set of
+> interrupts, not the interrupts that were actually handled.  The ordering
+> isn't really the issue, the issue is that you could acknowledge things
+> that weren't handled.  For example:
+>
+>   1. ISR runs, reads status A
+>   2. Condition B happens
+>   3. ISR handles condition A.
+>   4. ISR acknowledges both A and B.
+>
+> would mean that B would just get ignored.
+I can understand your saying.
+However, in case of Tx interrupt, only ALMOST-EMPTY occurs. in case of
+Rx, only Rx ALMOST-FULL occurs.
+So as long as a user uses ML7213 I2S, your mentioned behavior is never happened.
 
-a) tons of trivial conflicts with fs/namespace.c changes in my tree
-b) more seriously, the question of overhead - see the mail you replied
-to.
 
-I really, really don't like templates, so in general I would prefer to do
-something fairly close to what Andi seems to have done in that patch.
-However, we *are* talking about some fairly hot paths and I'm really not
-comfortable with doing that kind of changes that late in the cycle.
-If somebody cares to take Andi's patch and see what it does to overhead,
-I'd love to see the results; we might do that in the next merge window.
-Again, the idea itself is obviously OK; the only problem is with the
-performance issues.
+>
+>> >> +static bool filter(struct dma_chan *chan, void *slave)
+>
+>> > This needs a better name.  It's not namespaced and it's not clear what
+>> > it's filtering.
+>
+>> In case of using Linux standard DMA API, function "filter" is the most
+>> popular name.
+>> Almost drivers which use standard use "filter".
+>
+> I suspect they may have the filter immediately next to the code that
+> uses it, which certainly isn't the case here.
+They have the "filter" function immediately next to the code uses
+"dma_request_channel".
+Anyway, if you want me to change the name, I can change the name.
+Please decide it.
+
+>
+>> >> +ioh_i2s_write(struct snd_pcm_substream *substream, const void *data, int len)
+>> >> +{
+>> >> +     int rem1;
+>> >> +     int rem2;
+>
+>> > What is this supposed to do?  There's an awful lot of it, and it looks
+>> > like it's supposed to be rewriting the data format for some reason which
+>> > isn't something that a driver ought to be doing (apart from anything
+>> > else it does rather defeat the point of DMA).
+>
+>> This driver has buffer which is for preventing noisy sound  by jitter
+>> So, this buffer is variable.
+>
+> You're implementing some sort of custom buffering in your driver?  That
+> sounds terribly unidiomatic - pretty much all DMA drivers are very thin
+> and manage to work well, I'd expect this is masking some problems in the
+> code rather than anything else.  Can you provide more detail on what
+> this is working around?
+Not sorted but queuing only.
+In sound/voice control system, queuing is not rare, I think.
+If necessary, though this method is very common, I can send the method
+of the queue.
+
+>
+>> >> +     num = ((int)dma->tx_avail) / (I2S_AEMPTY_THRESH * 4);
+>
+>> > That case looks *very* suspect.
+>
+>> This is correct.
+>> Why do you think so ?
+>
+> I can't tell what it's supposed to do, and casting that isn't super
+> clear especially casting to integer types tends to be a big red flag.
+
+Currently, "tx_avail" is "int" type. So, "(int)" is redundant.
+Maybe, once type of "tx_avail" is not "int" but something pointer type.
+I'll modify like below.
+num = dma->tx_avail / (I2S_AEMPTY_THRESH * 4);
+
+
+thanks,
+tomoya
