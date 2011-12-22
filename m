@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab1LVKvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:51:01 -0500
-Received: from 72.155.broadband6.iol.cz ([88.101.155.72]:49663 "EHLO
-	eagle.danny.cz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752416Ab1LVKu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:50:58 -0500
-X-Greylist: delayed 1578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Dec 2011 05:50:58 EST
-From: =?UTF-8?q?Dan=20Hor=C3=A1k?= <dan@danny.cz>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] prefetch() not declared in net/ipv4/route.c on s390x
-Date: Thu, 22 Dec 2011 11:50:56 +0100
-Message-Id: <1324551056-28486-1-git-send-email-dan@danny.cz>
-X-Mailer: git-send-email 1.7.4.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755180Ab1LVKyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:54:39 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32912 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753785Ab1LVKyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 05:54:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99203889"
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: [PATCH v3 1/1] vfs: iversion truncate bug fix
+Date: Thu, 22 Dec 2011 12:54:28 +0200
+Message-Id: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent commit (9f28a2fc0bd77511f649c0a788c7bf9a5fd04edb) to route.c
-breaks build on s390x because it leaves prefetch() undeclared.
+When a file is truncated with truncate()/ftruncate() and then closed,
+iversion is not updated. This patch uses ATTR_SIZE flag as an indication
+to increment iversion.
 
-net/ipv4/route.c: In function 'rt_check_expire':
-net/ipv4/route.c:874:4: error: implicit declaration of function 'prefetch' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[2]: *** [net/ipv4/route.o] Error 1
-
-Signed-off-by: Dan Horák <dan@danny.cz>
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- net/ipv4/route.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/attr.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 252c512..85cc053 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -91,6 +91,7 @@
- #include <linux/rcupdate.h>
- #include <linux/times.h>
- #include <linux/slab.h>
-+#include <linux/prefetch.h>
- #include <net/dst.h>
- #include <net/net_namespace.h>
- #include <net/protocol.h>
+diff --git a/fs/attr.c b/fs/attr.c
+index 7ee7ba4..b8f55c4 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
+ 			return -EPERM;
+ 	}
+ 
++	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
++		if (attr->ia_size != inode->i_size)
++			inode_inc_iversion(inode);
++	}
++
+ 	if ((ia_valid & ATTR_MODE)) {
+ 		mode_t amode = attr->ia_mode;
+ 		/* Flag setting protected by i_mutex */
 -- 
-1.7.4.4
+1.7.4.1
 
