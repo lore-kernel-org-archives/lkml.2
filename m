@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab1LVQE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 11:04:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40432 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab1LVQEY (ORCPT
+	id S1754699Ab1LVQFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 11:05:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43211 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab1LVQFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 11:04:24 -0500
-Message-ID: <1324569962.1165.6.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] [RFC] ubi: Make vid_hdr non-static
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <rw@linutronix.de>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Date: Thu, 22 Dec 2011 18:06:02 +0200
-In-Reply-To: <1324566777-1918-1-git-send-email-rw@linutronix.de>
-References: <1324566777-1918-1-git-send-email-rw@linutronix.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-960mFQsGEXaWzZzZl1Fb"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	Thu, 22 Dec 2011 11:05:06 -0500
+Date: Thu, 22 Dec 2011 08:05:01 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
+Message-ID: <20111222160501.GD17084@google.com>
+References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
+ <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
+ <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
+ <20111220162315.GC10752@google.com>
+ <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
+ <20111220202854.GH10752@google.com>
+ <alpine.DEB.2.00.1112210851230.9601@router.home>
+ <20111221170535.GB9213@google.com>
+ <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Linus.
 
---=-960mFQsGEXaWzZzZl1Fb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 21, 2011 at 06:19:34PM -0800, Linus Torvalds wrote:
+> On Wed, Dec 21, 2011 at 9:05 AM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > machines.  (cc'ing arch) Does anyone have better insight here?  How
+> > much more expensive are local irq save/restore compared to inc/dec'ing
+> > preempt count on various archs?
+> 
+> I think powerpc does sw irq disable, so it's pretty much the same.
+> 
+> However, on *most* architectures, if the stupid generic "disable
+> interrupts and then do the op" is too expensive, they could easily
+> just do an architecture-specific "safe" version. Especially if they
+> only need to do cmpxchg and add.
+> 
+> Many architectures can do those safely with load-locked,
+> store-conditional (ie atomic_add), and do so quickly. Sure, there are
+> broken cases wher ethat is really slow (original alpha is an example
+> of that), but I think it's fairly rare.
+>
+> So both arm (in v6+) and powerpc should be able to just use the
+> "atomic_add" version, with no real downside.
 
-On Thu, 2011-12-22 at 16:12 +0100, Richard Weinberger wrote:
-> There is no reason to have vid_hdr static.
->=20
-> Signed-off-by: Richard Weinberger <rw@linutronix.de>
-> ---
->  drivers/mtd/ubi/vtbl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/mtd/ubi/vtbl.c b/drivers/mtd/ubi/vtbl.c
-> index 9ad18da..890754c 100644
-> --- a/drivers/mtd/ubi/vtbl.c
-> +++ b/drivers/mtd/ubi/vtbl.c
-> @@ -306,7 +306,7 @@ static int create_vtbl(struct ubi_device *ubi, struct=
- ubi_scan_info *si,
->  		       int copy, void *vtbl)
->  {
->  	int err, tries =3D 0;
-> -	static struct ubi_vid_hdr *vid_hdr;
-> +	struct ubi_vid_hdr *vid_hdr;
->  	struct ubi_scan_leb *new_seb;
+Hmmm... right, if actual atomic ops are used we don't need to
+guarantee that percpu address translation and operation happen on the
+same CPU.  The end result would be correct regardless.  Atomic ops
+wouldn't be as efficient as local single op as in x86 but it shouldn't
+be too expensive when vast majority of operations are happening on
+cachelines which are already exclusively owned.
 
-Hmm, this shouldn't be [RFC] - this a bugfix, I'll merge it, thanks!
+> So I really suspect that we could just say: "make the irq-safe version
+> be the *only* version", and no architecture will really care. Sure, it
+> can be more expensive, but it usually isn't. Only when done badly and
+> stupidly is it nasty.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Yeah, I don't think there's any cross-architecture way of making
+this_cpu ops universally faster than explicit irq/preempt_disable -
+get_addr - do one or more ops - irq/preempt_enable.  Many archs can't
+even load address offset with single instruction after all.  Even on
+x86, with enough number of ops, the segment prefix and full address on
+each op would become more expensive than explicit sequence.  Given
+that, I think just providing irqsafe version and let all other cases
+use the explicit ones is a good tradeoff.
 
---=-960mFQsGEXaWzZzZl1Fb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Alright, I'll do that for the 3.4 merge window.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks.
 
-iQIcBAABAgAGBQJO81VqAAoJECmIfjd9wqK054QQAJobo5sDHvaZOldepI0DOM6v
-loXUgTLo6gYKybyA7GUZMc+8gB1ckIRmjpSXkDYM97kRR9OzAkC2IXmurxs+7qth
-Zjnngekw/BIWtwOTNdlafzOheLsQ1gswOBB4R5uOozUpd9p6ZiAetJoIdwzPPWO3
-2bErHBhN3iXuRlxGT6kXED1jWcJEbvS3z4pmTFHzbImrA4FX2P6vjTUOrjTs26N/
-SfOoEPTmL5ggTbytvEhvRmdd8Yraiyw4sMLP7P0stfqUw6bwkfes6urCnmkvLiEo
-knTzLEjhKQ9Az5370SbVtm9OrR6ahFQFAFv7+0ATzv78qBwEY/85560rQqUI0fax
-9poMDVeInqR6n6J+Mxl6odRPuQoZlWroX7HRLKrWOU9o+Rm+jpHKMnaS73T5LPtK
-esves9Z4N3ZE0iMkXMWGdngkJp/dMRYpxmpYmECfLOXOQtXkK0ECKeyt3U5/vyZc
-WBqXQ6EuTlxkimIpQrUqu23ohT2wT0OMsKl7QkMwWhu6TZ6Zl+KTxgaWFTsVBvna
-JlkS31Dju+N/Xlm1uT9c8w/asAMsqmfkf5FSrXrDhCbujgHRk1Ck47zVSI4JNcOn
-1/oSxBnjuboQ90t0D3r/VI2wrSYVbm/W2mSYaizPiSLkML4efEKk7F1/+n0j2/1v
-PxQzw3OhQ2x9P/ghQw/0
-=/X2Z
------END PGP SIGNATURE-----
-
---=-960mFQsGEXaWzZzZl1Fb--
-
+-- 
+tejun
