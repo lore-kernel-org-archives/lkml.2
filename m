@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1LVJaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 04:30:10 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:38097 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab1LVJaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 04:30:06 -0500
-Date: Thu, 22 Dec 2011 03:30:04 -0600
-From: Robin Holt <holt@sgi.com>
-To: Kay Sievers <kay.sievers@vrfy.org>, Jack Steiner <steiner@sgi.com>,
-        Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>, Greg Kroah-Hartmann <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: question about link_mem_sections()
-Message-ID: <20111222093004.GH2547@sgi.com>
-References: <CAPXgP10gRKAgo1ExkvLyNqceKpGujcov90umPQCRiNJ=qTwU_A@mail.gmail.com>
- <20111212124538.GC2547@sgi.com>
- <CAPXgP10SU77-S9kerb5UwhNB3yAgg_6zAmeLpDpGFTq+yTbY=w@mail.gmail.com>
- <20111212134937.GE2547@sgi.com>
- <CAPXgP11EBq-b1n7GS4qwS=Kco8yKsy2cRXJ7=iWO=z_GeJN9og@mail.gmail.com>
+	id S1755031Ab1LVJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:30:59 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:41428 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754890Ab1LVJa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 04:30:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP11EBq-b1n7GS4qwS=Kco8yKsy2cRXJ7=iWO=z_GeJN9og@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EF2F01E.8060307@linux.intel.com>
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
+ <4EF1A0B4.5080307@linux.intel.com> <CAMbhsRRP7s9xsHqxhb=iMfHAJFcqAea-6CDORZS34RCPNo+UWw@mail.gmail.com>
+ <4EF1AA8A.8060304@linux.intel.com> <CAMbhsRSNTUvou9Gf6T4Ggq=jfxsWUcn7M2yNsKQz6aNrt6gLDg@mail.gmail.com>
+ <4EF1CD49.9020800@linux.intel.com> <CAMbhsRRnKoR3YPWrZzVynVe+dcuU5v0siYvmp2vbBcS1hquC7Q@mail.gmail.com>
+ <4EF2352C.3060102@linux.intel.com> <CAMbhsRSPCo9MSGp57Fv0sRdYUFcdwx8jEz1-CfX8LdKf8X4MVg@mail.gmail.com>
+ <CAMQu2gxws83BUdj_eMbF0xpA1Mo_OA_MswE7KUm5pvbn3YbMuQ@mail.gmail.com> <4EF2F01E.8060307@linux.intel.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 22 Dec 2011 15:00:34 +0530
+Message-ID: <CAMQu2gxq26=pNA3L8aXUbLR4ZAT5RqyNawtm2qsPVc5cJCdOLg@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/3] coupled cpuidle state support
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-tegra@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 02:18:47AM +0100, Kay Sievers wrote:
-> On Mon, Dec 12, 2011 at 14:49, Robin Holt <holt@sgi.com> wrote:
-> > On Mon, Dec 12, 2011 at 02:11:28PM +0100, Kay Sievers wrote:
-> 
-> > If you do decide to rework that logic, we can retest for the next couple
-> > months.  We do not normally have a 16TB test machine lying around (IIRC,
-> > the memory in something like that costs a couple million dollars), but we
-> > do fortunately have one right now until the latter part of next quarter.
-> 
-> The rework of the sys_devices with the goal to finally removal of all
-> sysdev stuff is in Greg's tree now:
->   http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
-> It will be available in linux-next.
-> 
-> The hinted search moved from the 'kobject' to the 'bus' as:
->   dev = subsys_find_device_by_id(&memory_subsys, block_id, hintdev);
-> 
-> Would be nice if you can eventually give it a try, on the big box, to
-> make sure we didn't break anything.
+On Thu, Dec 22, 2011 at 2:23 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 12/22/2011 9:35 AM, Shilimkar, Santosh wrote:
+>
+>> Indeed. The SOCs, Arch's which does support low power
+>> state independently and doesn't need any co-ordination between CPU's
+>> will continue to work same way as before with this series.
+>
+> btw I think you misunderstand; I don't object to a need for something
+> like this,
+I did. Thanks for clarification.
 
-If it is in linux-next, we may already have it.
+> I am just very concerned that this may not be possible to be
+> done in a race-free way.
+>
+I agree to those races but may be they are harmless.
+Also the safe state need not be just WFI and can be bit deeper
+where the co-ordination between isn't necessary. So that should
+still not burn the power that much.
 
-Russ or Jack, IIRC, you had been doing some testing with linux-next
-on the 16TB machine.  Is that correct?  If so, do you happen to have a
-timed boot log that we could look at?
+For simplicity let's assume a two CPU scenario.
+Ideal scenario:
+CPU 1 has entered idle and incremented counter for the
+co-ordinated C state. CPU0 also enter and increments the
+counter and now the subsystem and interconnect can go
+down along with CPU cluster.
 
-Thanks,
-Robin
+Few of the race conditions will possibly lead to void
+the above conditions  and in that case the counter would
+reflect that and such a C-state won't be attempted and
+a safe C-state would be attempted. That should still work
+fine.
+
+Some how this hardware/security restriction is bit stupid
+and likely going against the existing CPUIDLE design
+which expect that a CPUIDLE thread are per CPU and it should
+be independent and local to that CPU.
+
+Regards
+Santosh
