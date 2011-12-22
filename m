@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab1LVVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:45:57 -0500
+	id S1756074Ab1LVVpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:45:53 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:37320 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab1LVVpr (ORCPT
+	with ESMTP id S1756013Ab1LVVph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:45:47 -0500
+	Thu, 22 Dec 2011 16:45:37 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org, avi@redhat.com, nate@cpanel.net,
         cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
         vgoyal@redhat.com
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] mempool, percpu: implement percpu mempool
-Date: Thu, 22 Dec 2011 13:45:25 -0800
-Message-Id: <1324590326-10135-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/7] mempool: drop unnecessary and incorrect BUG_ON() from mempool_destroy()
+Date: Thu, 22 Dec 2011 13:45:21 -0800
+Message-Id: <1324590326-10135-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1324590326-10135-1-git-send-email-tj@kernel.org>
 References: <1324590326-10135-1-git-send-email-tj@kernel.org>
@@ -22,254 +22,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements mempool for percpu memory areas.  Percpu mempool
-is mostly identical to regular mempool and shares most of code but has
-some peculiarities.
+mempool_destroy() is a thin wrapper around free_pool().  The only
+thing it adds is BUG_ON(pool->curr_nr != pool->min_nr).  The intention
+seems to be to enforce that all allocated elements are freed; however,
+the BUG_ON() can't achieve that (it doesn't know anything about
+objects above min_nr) and incorrect as mempool_resize() is allowed to
+leave the pool extended but not filled.  Furthermore, panicking is way
+worse than any memory leak and there are better debug tools to track
+memory leaks.
 
-Percpu memory allocator requires %GFP_KERNEL during allocation, which
-comes from its on-demand nature and vmalloc area usage.  In most
-cases, it's not a good idea to allocate percpu memory from more
-constricted context and this doesn't cause a problem; however, there
-are rare cases where opportunistic allocation from NOIO path makes
-sense.
-
-To ease such use cases, percpu mempool comes with refill mechanism
-which can behave both synchronously and asynchronously depending on
-the specified gfp mask.
+Drop the BUG_ON() from mempool_destory() and as that leaves the
+function identical to free_pool(), replace it.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/mempool.h |   80 ++++++++++++++++++++++++++++++++++
- mm/mempool.c            |  111 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 191 insertions(+), 0 deletions(-)
+ mm/mempool.c |   30 +++++++++++-------------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/mempool.h b/include/linux/mempool.h
-index 7c08052..129acbe 100644
---- a/include/linux/mempool.h
-+++ b/include/linux/mempool.h
-@@ -5,6 +5,7 @@
- #define _LINUX_MEMPOOL_H
- 
- #include <linux/wait.h>
-+#include <linux/workqueue.h>
- 
- struct kmem_cache;
- 
-@@ -70,4 +71,83 @@ static inline mempool_t *mempool_create_page_pool(int min_nr, int order)
- 			      (void *)(long)order);
- }
- 
-+/*
-+ * Percpu mempool - mempool backed by percpu memory allocator.
-+ *
-+ * Along with the usual mempool role, because percpu allocator doesn't
-+ * support NOIO allocations, percpu mempool is useful as allocation buffer
-+ * which is filled from IO context and consumed from atomic or non-IO one.
-+ * To help this usage, percpu_mempool has built-in mechanism to refill the
-+ * pool which supports both sync and async operations.  Refer to
-+ * percpu_mempool_refill() for details.
-+ */
-+struct percpu_mempool {
-+	mempool_t		pool;
-+	size_t			size;		/* size of elements */
-+	size_t			align;		/* align of elements */
-+	struct work_struct	refill_work;	/* work item for async refill */
-+};
-+
-+struct percpu_mempool *percpu_mempool_create(int min_nr, size_t size,
-+					     size_t align);
-+int percpu_mempool_refill(struct percpu_mempool *pcpu_pool, gfp_t gfp_mask);
-+void percpu_mempool_destroy(struct percpu_mempool *pcpu_pool);
-+
-+/**
-+ * percpu_mempool_resize - resize an existing percpu mempool
-+ * @pcpu_pool:	percpu mempool to resize
-+ * @new_min_nr:	new minimum number of elements guaranteed to be allocated
-+ * @gfp_mask:	allocation mask to use
-+ *
-+ * Counterpart of mempool_resize().  If @gfp_mask doesn't contain
-+ * %__GFP_IO, resizing itself may succeed but the implied filling (if
-+ * necessary) will fail.
-+ */
-+static inline int percpu_mempool_resize(struct percpu_mempool *pcpu_pool,
-+					int new_min_nr, gfp_t gfp_mask)
-+{
-+	return mempool_resize(&pcpu_pool->pool, new_min_nr, gfp_mask);
-+}
-+
-+/**
-+ * percpu_mempool_alloc - allocate an element from a percpu mempool
-+ * @pcpu_pool:	percpu mempool to allocate from
-+ * @gfp_mask:	allocation mask to use
-+ *
-+ * Counterpart of mempool_alloc().  If @gfp_mask doesn't contain %__GFP_IO,
-+ * allocation is always from the reserved pool.
-+ */
-+static inline void __percpu *
-+percpu_mempool_alloc(struct percpu_mempool *pcpu_pool, gfp_t gfp_mask)
-+{
-+	void *p = mempool_alloc(&pcpu_pool->pool, gfp_mask);
-+
-+	return (void __percpu __force *)p;
-+}
-+
-+/**
-+ * percpu_mempool_free - free an element to a percpu mempool
-+ * @elem:	element being freed
-+ * @pcpu_pool:	percpu mempool to free to
-+ */
-+static inline void percpu_mempool_free(void __percpu *elem,
-+				       struct percpu_mempool *pcpu_pool)
-+{
-+	void *p = (void __kernel __force *)elem;
-+
-+	mempool_free(p, &pcpu_pool->pool);
-+}
-+
-+/**
-+ * percpu_mempool_nr_elems - return nr of reserved elems in a percpu mempool
-+ * @pcpu_pool:	percpu mempool of interest
-+ *
-+ * Returns the number of reserved elements in @pcpu_pool.  Mostly useful
-+ * for deciding when to refill.
-+ */
-+static inline int percpu_mempool_nr_elems(struct percpu_mempool *pcpu_pool)
-+{
-+	return pcpu_pool->pool.curr_nr;
-+}
-+
- #endif /* _LINUX_MEMPOOL_H */
 diff --git a/mm/mempool.c b/mm/mempool.c
-index 85e2c28..f25f731 100644
+index 11f0d0a..e3a802a 100644
 --- a/mm/mempool.c
 +++ b/mm/mempool.c
-@@ -14,6 +14,7 @@
- #include <linux/mempool.h>
- #include <linux/blkdev.h>
- #include <linux/writeback.h>
-+#include <linux/percpu.h>
- 
- static void add_element(mempool_t *pool, void *element)
- {
-@@ -398,3 +399,113 @@ void mempool_free_pages(void *element, void *pool_data)
- 	__free_pages(element, order);
+@@ -27,7 +27,15 @@ static void *remove_element(mempool_t *pool)
+ 	return pool->elements[--pool->curr_nr];
  }
- EXPORT_SYMBOL(mempool_free_pages);
-+
-+/*
-+ * Mempool for percpu memory.
-+ */
-+static void *percpu_mempool_alloc_fn(gfp_t gfp_mask, void *data)
-+{
-+	struct percpu_mempool *pcpu_pool = data;
-+	void __percpu *p;
-+
-+	/*
-+	 * Percpu allocator doesn't do NOIO.  This makes percpu mempool
-+	 * always try reserved elements first, which isn't such a bad idea
-+	 * given that percpu allocator is pretty heavy and percpu areas are
-+	 * expensive.
-+	 */
-+	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
-+		return NULL;
-+
-+	p = __alloc_percpu(pcpu_pool->size, pcpu_pool->align);
-+	return (void __kernel __force *)p;
-+}
-+
-+static void percpu_mempool_free_fn(void *elem, void *data)
-+{
-+	void __percpu *p = (void __percpu __force *)elem;
-+
-+	free_percpu(p);
-+}
-+
-+static void percpu_mempool_refill_workfn(struct work_struct *work)
-+{
-+	struct percpu_mempool *pcpu_pool =
-+		container_of(work, struct percpu_mempool, refill_work);
-+
-+	percpu_mempool_refill(pcpu_pool, GFP_KERNEL);
-+}
-+
+ 
+-static void free_pool(mempool_t *pool)
 +/**
-+ * percpu_mempool_create - create mempool for percpu memory
-+ * @min_nr:	the minimum number of elements guaranteed to be
-+ *		allocated for this pool.
-+ * @size:	size of percpu memory areas in this pool
-+ * @align:	alignment of percpu memory areas in this pool
++ * mempool_destroy - deallocate a memory pool
++ * @pool:      pointer to the memory pool which was allocated via
++ *             mempool_create().
 + *
-+ * This is counterpart of mempool_create() for percpu memory areas.
-+ * Allocations from the pool will return @size bytes percpu memory areas
-+ * aligned at @align bytes.
++ * Free all reserved elements in @pool and @pool itself.  This function
++ * only sleeps if the free_fn() function sleeps.
 + */
-+struct percpu_mempool *percpu_mempool_create(int min_nr, size_t size,
-+					     size_t align)
-+{
-+	struct percpu_mempool *pcpu_pool;
-+	mempool_t *pool;
-+
-+	BUILD_BUG_ON(offsetof(struct percpu_mempool, pool));
-+
-+	pool = __mempool_create(min_nr, percpu_mempool_alloc_fn,
-+				percpu_mempool_free_fn, NULL, NUMA_NO_NODE,
-+				sizeof(*pcpu_pool));
-+	if (!pool)
-+		return NULL;
-+
-+	/* fill in pcpu_pool part and set pool_data to self */
-+	pcpu_pool = container_of(pool, struct percpu_mempool, pool);
-+	pcpu_pool->size = size;
-+	pcpu_pool->align = align;
-+	INIT_WORK(&pcpu_pool->refill_work, percpu_mempool_refill_workfn);
-+	pcpu_pool->pool.pool_data = pcpu_pool;
-+
-+	/* Pre-allocate the guaranteed number of buffers */
-+	if (mempool_fill(&pcpu_pool->pool, GFP_KERNEL)) {
-+		mempool_destroy(&pcpu_pool->pool);
-+		return NULL;
-+	}
-+
-+	return pcpu_pool;
-+}
-+EXPORT_SYMBOL_GPL(percpu_mempool_create);
-+
-+/**
-+ * percpu_mempool_refill - refill a percpu mempool
-+ * @pcpu_pool:	percpu mempool to refill
-+ * @gfp_mask:	allocation mask to use
-+ *
-+ * Refill @pcpu_pool upto the configured min_nr using @gfp_mask.
-+ *
-+ * Percpu memory allocation depends on %GFP_KERNEL.  If @gfp_mask doesn't
-+ * contain it, this function will schedule a work item to refill the pool
-+ * and return -%EAGAIN indicating refilling is in progress.
-+ */
-+int percpu_mempool_refill(struct percpu_mempool *pcpu_pool, gfp_t gfp_mask)
-+{
-+	if ((gfp_mask & GFP_KERNEL) == GFP_KERNEL)
-+		return mempool_fill(&pcpu_pool->pool, gfp_mask);
-+
-+	schedule_work(&pcpu_pool->refill_work);
-+	return -EAGAIN;
-+}
-+EXPORT_SYMBOL_GPL(percpu_mempool_refill);
-+
-+/**
-+ * percpu_mempool_destroy - destroy a percpu mempool
-+ * @pcpu_pool:	percpu mempool to destroy
-+ */
-+void percpu_mempool_destroy(struct percpu_mempool *pcpu_pool)
-+{
-+	cancel_work_sync(&pcpu_pool->refill_work);
-+	mempool_destroy(&pcpu_pool->pool);
-+}
-+EXPORT_SYMBOL_GPL(percpu_mempool_destroy);
++void mempool_destroy(mempool_t *pool)
+ {
+ 	while (pool->curr_nr) {
+ 		void *element = remove_element(pool);
+@@ -36,6 +44,7 @@ static void free_pool(mempool_t *pool)
+ 	kfree(pool->elements);
+ 	kfree(pool);
+ }
++EXPORT_SYMBOL(mempool_destroy);
+ 
+ /**
+  * mempool_create - create a memory pool
+@@ -86,7 +95,7 @@ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+ 
+ 		element = pool->alloc(GFP_KERNEL, pool->pool_data);
+ 		if (unlikely(!element)) {
+-			free_pool(pool);
++			mempool_destroy(pool);
+ 			return NULL;
+ 		}
+ 		add_element(pool, element);
+@@ -172,23 +181,6 @@ out:
+ EXPORT_SYMBOL(mempool_resize);
+ 
+ /**
+- * mempool_destroy - deallocate a memory pool
+- * @pool:      pointer to the memory pool which was allocated via
+- *             mempool_create().
+- *
+- * this function only sleeps if the free_fn() function sleeps. The caller
+- * has to guarantee that all elements have been returned to the pool (ie:
+- * freed) prior to calling mempool_destroy().
+- */
+-void mempool_destroy(mempool_t *pool)
+-{
+-	/* Check for outstanding elements */
+-	BUG_ON(pool->curr_nr != pool->min_nr);
+-	free_pool(pool);
+-}
+-EXPORT_SYMBOL(mempool_destroy);
+-
+-/**
+  * mempool_alloc - allocate an element from a specific memory pool
+  * @pool:      pointer to the memory pool which was allocated via
+  *             mempool_create().
 -- 
 1.7.3.1
 
