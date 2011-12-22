@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab1LVU4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 15:56:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56438 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab1LVU4c (ORCPT
+	id S1755972Ab1LVU71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 15:59:27 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:46903 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752945Ab1LVU7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 15:56:32 -0500
-Date: Thu, 22 Dec 2011 14:56:26 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: [GIT PULL] eCryptfs fix for 3.2-rc7
-Message-ID: <20111222205626.GB1927@boyd>
+	Thu, 22 Dec 2011 15:59:25 -0500
+X-Sasl-enc: 94ILx5hh2+OpsCAhV/AOg9YISeEAJHkGbmwHzqhw4HVN 1324587564
+Date: Thu, 22 Dec 2011 12:58:37 -0800
+From: Greg KH <greg@kroah.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg KH <gregkh@suse.de>, stable@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Subject: Re: [GIT PULL] ibft fix for 3.2-rc6
+Message-ID: <20111222205837.GA30956@kroah.com>
+References: <20111215210538.GA12248@konrad-lan>
+ <CAE9FiQXFgOU3c9Ej-B_sZfhs5sRN87xE93BtZoU2K=M6=_O9YA@mail.gmail.com>
+ <20111216000716.GA14822@suse.de>
+ <CAE9FiQWufpJ7LwNiBnpS9bR_Sk4e5=wNZp2NmKp117+i56h=Sg@mail.gmail.com>
+ <CAE9FiQXsnc5FqbhPaZLsFbZa1zz44M8k-9yP-ow814oPEEDhjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQXsnc5FqbhPaZLsFbZa1zz44M8k-9yP-ow814oPEEDhjQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 16, 2011 at 04:40:34PM -0800, Yinghai Lu wrote:
+> On Thu, Dec 15, 2011 at 4:37 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Thu, Dec 15, 2011 at 4:07 PM, Greg KH <gregkh@suse.de> wrote:
+> >
+> >> The patch as-is does not apply to 2.6.32, so I can't apply it there.  If
+> >> you want it applied there, please provide the backport to the above
+> >> mentioned email address.
+> 
+> please check back ported patch for 2.6.36 to 2.6.39
 
---GRPZ8SYKNexpdSJ7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks, but I don't think these kernel versions are maintained by anyone
+anymore, sorry.
 
-Hi Linus - Here is a fix for ecryptfs_statfs(). It had simply deferred
-to the lower filesystem's statfs(), but the filename encryption feature
-significantly reduces the max filename length. There are a few
-applications that have trouble with the filename length limitation and I
-think exposing the maximum length in statfs() calls is the first step in
-improving the situation.
+> We don't need to this one for 2.6.32, because EFI/ACPI ibft detecting
+> is only added from 2.6.36.
+> 
+> but 2.6.32 base kernel still could take iscsi_ibft.c related changes
+> in the patch, and ignore conflicts with iscs_ibft_find.c.
+> but that will add new feature to 2.6.32. Not sure if stable tree
+> should take that kind of change.
 
-I'm a little torn on whether the fix needs to go in so late in the
-cycle, but I feel it is low risk. If you disagree, I have no problem
-waiting for 3.3.
+No it will not, sorry.
 
-The other patch is an update to Dustin's email address in MAINTAINERS.
-
-The following changes since commit 511585a28e5b5fd1cac61e601e42efc4c5dd64b5:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2011-12-19 15:13:53 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git for-linus
-
-Dustin Kirkland (1):
-      MAINTAINERS: Update eCryptfs maintainer address
-
-Tyler Hicks (1):
-      eCryptfs: Improve statfs reporting
-
- MAINTAINERS                   |    2 +-
- fs/ecryptfs/crypto.c          |   68 ++++++++++++++++++++++++++++++++++++----
- fs/ecryptfs/ecryptfs_kernel.h |    5 +++
- fs/ecryptfs/keystore.c        |    9 ++---
- fs/ecryptfs/super.c           |   14 ++++++++-
- 5 files changed, 83 insertions(+), 15 deletions(-)
-
---GRPZ8SYKNexpdSJ7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJO85l6AAoJENaSAD2qAscKUqkQAMI9i7VPwwRI1aZBBqKkT2iF
-8/1U27QTC9GBmwHodYMXpfaydfK674/avjmXiyuyeDClpzZKuW8EXKT0gA3cip31
-rRZaIR39myEN0iYm8KnkiIeIbrArSo12pX3u82zguudVYGc6X3TBtwj2noew88E6
-eBabqAUjO0hd5fxgAG9Cm5I5dyWyfx5xoFa1MAGM3END+DhisY7eorQJmusLsJi+
-KphOOt8jOfTEesTwvOLwOregNc+mm1TT7beml2+0sBjckMQa/R/0/lvSWCIO2vRN
-YBzjIcOLVfGfNlLnF9s0Lfps3Y1vJPa0x2kNpmUMUyi7NjHZzdvHBDYM37nOf2Gq
-CszdYmy4jaeshoa1ChdtBE+GRN0MoV4nHvgT8igNa/s4Ai6KP7FwcQmo0fyCXPCu
-P+BdWQcvsL34HJEckW+RtkJZlUOluHubrwr3vStVnA9YmT2uDElF3h0PY4BbCzg5
-/9XVoUakJfr00hz0TW6AFMRG0NGZSu3P+buYEePwHhzbtzl2Hyf4QYDbYbl0+bVn
-PQpmvPugSjpyhHy369zIg2i8jRY6/SldoZdEnmNBPZ76TbnVOhKyCaexYmQ9VRpF
-djv20QsZcxx4D3cZrOl2XGB6yZRRvvx4EibGkOeFyz8ISObYBsIMl09oaBKGv7uB
-WXWBvHiYAuP9ucYrm0vo
-=farI
------END PGP SIGNATURE-----
-
---GRPZ8SYKNexpdSJ7--
+greg k-h
