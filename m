@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab1LVJKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 04:10:32 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57887 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1LVJK3 (ORCPT
+	id S1754989Ab1LVJOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:14:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58319 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab1LVJOS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 04:10:29 -0500
-Date: Thu, 22 Dec 2011 09:10:22 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/2] vfs: truncate bug fixes
-Message-ID: <20111222091022.GO23916@ZenIV.linux.org.uk>
-References: <cover.1324543719.git.dmitry.kasatkin@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1324543719.git.dmitry.kasatkin@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Dec 2011 04:14:18 -0500
+Message-ID: <1324545242.24803.11.camel@twins>
+Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Dec 2011 10:14:02 +0100
+In-Reply-To: <20111222090352.GA11831@elte.hu>
+References: <20111221105739.798864333@chello.nl>
+	 <20111221111143.620776435@chello.nl>
+	 <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
+	 <20111222070212.GA9593@elte.hu> <1324543413.24803.7.camel@twins>
+	 <20111222090352.GA11831@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 10:55:24AM +0200, Dmitry Kasatkin wrote:
-> When a file is opened with O_TRUNC or truncated with truncate()/ftruncate(),
-> and then closed, iversion is not updated. This patch uses ATTR_OPEN flag,
-> which is currently used to identify files opened with O_TRUNC,
-> as an indication to increment iversion.
-> Also it adds passing of this flag from do_sys_truncate and do_sys_ftruncate.
-> To reflect real meaning, ATTR_OPEN is suggested to be renamed to ATTR_TRUNC.
+On Thu, 2011-12-22 at 10:03 +0100, Ingo Molnar wrote:
 
-Um...  Is there any difference left between that and ATTR_SIZE, then?
+> Could be made part of the locking self-tests - that way it does 
+> not add an extra config option! ;-)
+
+Fair chance it will blow up and disable lockdep for pretty much every
+console implementation out there, except 8250serial when used in
+conjunction with all patches in this thread.
+
+Maybe not the normal vga console, but I haven't tried on a machine that
+has a monitor attached yet (they're usually not on remote power switches
+and I'm too lazy to reach over and press reset).
+
+
