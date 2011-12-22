@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab1LVAtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:49:19 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54860 "EHLO e5.ny.us.ibm.com"
+	id S1754612Ab1LVAuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:50:06 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:58875 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab1LVAtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:49:14 -0500
-Message-ID: <1324514820.30527.148.camel@work-vm>
+	id S1752833Ab1LVAuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 19:50:04 -0500
+Message-ID: <1324514996.30527.150.camel@work-vm>
 Subject: Re: RFC: android logger feedback request
 From: john stultz <johnstul@us.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Tim Bird <tim.bird@am.sony.com>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Greg KH <gregkh@suse.de>, linux-embedded <linux-embedded@vger.kernel.org>,
         linux kernel <linux-kernel@vger.kernel.org>,
         Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
         Kay Sievers <kay.sievers@vrfy.org>,
         Lennart Poettering <lennart@poettering.net>
-Date: Wed, 21 Dec 2011 16:47:00 -0800
-In-Reply-To: <20111222002719.GA18361@suse.de>
+Date: Wed, 21 Dec 2011 16:49:56 -0800
+In-Reply-To: <4EF27CDD.9060801@am.sony.com>
 References: <4EF264C3.6000104@am.sony.com> <20111221231956.GB23859@suse.de>
-	 <1324513091.30527.139.camel@work-vm> <20111222002719.GA18361@suse.de>
+	 <1324513091.30527.139.camel@work-vm> <4EF27CDD.9060801@am.sony.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-x-cbid: 11122200-5930-0000-0000-0000036A3695
+x-cbid: 11122200-8974-0000-0000-0000047CA242
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 16:27 -0800, Greg KH wrote:
-> On Wed, Dec 21, 2011 at 04:18:11PM -0800, john stultz wrote:
+On Wed, 2011-12-21 at 16:42 -0800, Tim Bird wrote:
+> On 12/21/2011 04:18 PM, john stultz wrote:
 > > On Wed, 2011-12-21 at 15:19 -0800, Greg KH wrote:
-> > > What way is it superior?  Again, why not extend syslog?  Why not "fix"
-> > > syslog if this really is a superior thing?  How does this tie into Kay
-> > > and Lennard's proposal for work in this area?
+> >> On Wed, Dec 21, 2011 at 02:59:15PM -0800, Tim Bird wrote:
+> >>> Hi all,
+> >>>
+> >>> I'm looking for feedback on the Android logger code, to see what
+> >>> it would take to make this code acceptable for inclusion in
+> >>> the mainline kernel.
+> >>>
+> >>> Information about the features of Android logging system
+> >>> can be found at: http://elinux.org/Android_Logging_System
+> >>>
+> >>> This system creates a new system-wide logging service, in
+> >>> the kernel, for user-space message.  It is more comparable
+> >>> to syslog than to the kernel log buffer, as it holds only
+> >>> user-space messages.  It is optimized for write
+> >>> performance, since most of the time the log is written to
+> >>> and never read.  It creates multiple log channels, to prevent
+> >>> an abundance of log messages in one channel from overwriting
+> >>> messages in another channel.  The log channels have sizes
+> >>> fixed at kernel compile-time.
+> >>>
+> >>> Log messages are stored in very simple in-kernel buffers, that
+> >>> overflow old messages upon wrapping.  A fixed set of attributes
+> >>> (pid, tid, timestamp and message), is kept for each message.
+> >>> By convention, Android puts a message priority and context tag
+> >>> into each message.
+> >>>
+> >>> In Android, this system uses a fixed set of device nodes with
+> >>> well-known names: /dev/log/main, /dev/log/events, /dev/log/radio
+> >>> and /dev/log/system.
+> >>>
+> >>> Operations on the log are done via a character device, using
+> >>> standard file operations and some ioctls.
+> >>>
+> >>> The code for this is below (I've moved it from linux-next
+> >>> drivers/staging/android for my own testing).
+> >>>
+> >>> Please let me know what issues you see with this code.
+> >>
+> >> That all describes the current code, but you haven't described what's
+> >> wrong with the existing syslog interface that requires this new driver
+> >> to be written.  And why can't the existing interface be fixed to address
+> >> these (potential) shortcomings?
+> >>
+> >>> One specific question I have is where is the most appropriate
+> >>> place for this code to live, in the kernel source tree?
+> >>> Other embedded systems might want to use this system (it
+> >>> is simpler than syslog, and superior in some ways), so I don't
+> >>> think it should remain in an android-specific directory.
+> >>
+> >> What way is it superior?  Again, why not extend syslog?  Why not "fix"
+> >> syslog if this really is a superior thing?  How does this tie into Kay
+> >> and Lennard's proposal for work in this area?
 > > 
 > > There is also some overlap functionality wise with pstore as well, as I
 > > believe the logger is used as a known location in memory where messages
 > > can be fetched from after a kernel panic or crash.
 > 
-> That sounds like a major overlap, can't pstore be used for this
-> functionality today instead of the logger code?
+> I don't know if that's true or not.  I think you may be thinking
+> of Android's RAM console feature.  If there's a way to save
+> application messages over a reboot using the logger buffers, I'm
+> unfamiliar with it.
 
-It may be able to suffice for some portion of the functionality, it was
-suggested that we consider doing something like try to make logger use
-pstore as a backend.  I'm not really familiar with pstore, but I don't
-know if its able to preserve messages from userland, so it may not
-really be sufficient in of itself.
-
-Also, if I understand correctly, logger also is able to store messages
-from hardware modems or other hardware that run their own micro-os in a
-central location. This may be closer to the pstore mce bits, but its not
-clear yet to me how much overlap is there.
-
-But I've not yet really spent too much time looking at logger yet, so I
-can't really comment too strongly here. Just wanted to make sure folks
-have looked at all the other similar work.
+I may very well be confusing things. I had thought apanic pulled the
+logger data, but maybe I'm wrong.
 
 thanks
 -john
+
 
