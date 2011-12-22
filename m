@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1LVKTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:19:19 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:53437 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab1LVKTQ (ORCPT
+	id S1755087Ab1LVKUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:20:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51471 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab1LVKUO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:19:16 -0500
-X-Auth-Info: jCmiTrVC4lGwy/ex6mpLJk//xBjfCHEweRBLCfCQUNE=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        "Artem S. Tashkinov" <t.artem@mailcity.com>,
-        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [resend PATCH for 3.2] procfs: do not confuse jiffies with cputime64_t
-References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
-	<m21usavwi0.fsf_-_@igel.home>
-	<20111212124333.GC14720@tiehlicka.suse.cz>
-	<m2wra2uedy.fsf_-_@igel.home>
-	<20111212131218.GD14720@tiehlicka.suse.cz>
-	<20111221100334.GD27137@tiehlicka.suse.cz>
-	<20111221115919.6beac46f.akpm@linux-foundation.org>
-X-Yow: DON'T go!!  I'm not HOWARD COSELL!!  I know POLISH JOKES...  WAIT!!
- Don't go!!  I AM Howard Cosell!...  And I DON'T know Polish jokes!!
-Date: Thu, 22 Dec 2011 11:19:12 +0100
-In-Reply-To: <20111221115919.6beac46f.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 21 Dec 2011 11:59:19 -0800")
-Message-ID: <m2vcp852ov.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 22 Dec 2011 05:20:14 -0500
+Message-ID: <1324549195.24803.13.camel@twins>
+Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Dec 2011 11:19:55 +0100
+In-Reply-To: <20111222101556.GA12976@elte.hu>
+References: <20111221105739.798864333@chello.nl>
+	 <20111221111143.620776435@chello.nl>
+	 <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
+	 <20111222070212.GA9593@elte.hu> <1324543413.24803.7.camel@twins>
+	 <20111222090352.GA11831@elte.hu> <1324545242.24803.11.camel@twins>
+	 <20111222101556.GA12976@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, 2011-12-22 at 11:15 +0100, Ingo Molnar wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > On Thu, 2011-12-22 at 10:03 +0100, Ingo Molnar wrote:
+> > 
+> > > Could be made part of the locking self-tests - that way it 
+> > > does not add an extra config option! ;-)
+> > 
+> > Fair chance it will blow up and disable lockdep for pretty 
+> > much every console implementation out there, except 8250serial 
+> > when used in conjunction with all patches in this thread.
+> 
+> If it blows up without being fixed then it's not a good idea.
 
-> From: Andreas Schwab <schwab@linux-m68k.org>
-> Subject: procfs: do not confuse jiffies with cputime64_t
->
-> get_{idle,iowait}_time are supposed to return cputime64_t values, not
-> jiffies.  Add usecs_to_cputime64 for this.
+Right, and we can't fix them, its 'allowed'. I just wanted to make sure
+I had the debug option so that I can debug my own serial consoles to
+make sure they do behave nicely.
 
-Subject: procfs: do not confuse jiffies with cputime64_t
+> > Maybe not the normal vga console, but I haven't tried on a 
+> > machine that has a monitor attached yet (they're usually not 
+> > on remote power switches and I'm too lazy to reach over and 
+> > press reset).
+> 
+> The VGA console does not require a monitor attached.
 
-Commit 2a95ea6c0d129b4568fb64e1deda16ceb20e6636 ("procfs: do not
-overflow get_{idle,iowait}_time for nohz") did not take into account
-that one some architectures jiffies and cputime use different units.
-Instead of converting the usec value returned by
-get_cpu_{idle,iowait}_time_us to units of jiffies, use the new function
-usecs_to_cputime64 to convert it to the correct unit of cputime64_t.
-
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Ah, right, I could just add it to the console list together with the
+serial thing.
