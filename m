@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab1LVA6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:58:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53740 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752985Ab1LVA6T (ORCPT
+	id S1754052Ab1LVBAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:00:01 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44044 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab1LVA76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:58:19 -0500
-Date: Thu, 22 Dec 2011 00:58:16 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 3/3 v2] sound/soc/lapis: add platform driver for ML7213
-	IOH I2S
-Message-ID: <20111222005816.GB27144@opensource.wolfsonmicro.com>
-References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com> <1324349144-12784-3-git-send-email-tomoya.rohm@gmail.com> <20111220132314.GQ2866@opensource.wolfsonmicro.com> <CANKRQng8N3oS2o17HPUZeonXB3KLBK9oNQj-zd9+aUUvWcTo0A@mail.gmail.com>
+	Wed, 21 Dec 2011 19:59:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6567"; a="146755371"
+Date: Wed, 21 Dec 2011 16:59:56 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Greg KH <gregkh@suse.de>, Brian Swetland <swetland@google.com>
+Subject: Re: RFC: android logger feedback request
+Message-ID: <20111222005956.GA4862@codeaurora.org>
+References: <4EF264C3.6000104@am.sony.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANKRQng8N3oS2o17HPUZeonXB3KLBK9oNQj-zd9+aUUvWcTo0A@mail.gmail.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4EF264C3.6000104@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 08:22:56PM +0900, Tomoya MORINAGA wrote:
-> 2011/12/20 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> > On Tue, Dec 20, 2011 at 11:45:44AM +0900, Tomoya MORINAGA wrote:
+On Wed, Dec 21, 2011 at 02:59:15PM -0800, Tim Bird wrote:
 
-> >> +     iowrite32(I2S_TX_FINT | I2S_TX_AFINT | I2S_TX_EINT | I2S_TX_AEINT,
-> >> +             i2s_data->iobase + I2SISTTX_OFFSET + offset);
+> In Android, this system uses a fixed set of device nodes with
+> well-known names: /dev/log/main, /dev/log/events, /dev/log/radio
+> and /dev/log/system.
 
-> > This appears to unconditionally acknowledge all interrupts, generally
-> > you should only acknowledge interrupts that have been handled.
-> > Otherwise it's possible that interrupts may be dropped if they're
-> > flagged between the status read and acknowledgement write.
+These names seem very specific to Android's use case.  Would we want
+the mechanism to be more general, or configurable, so that another
+embedded-type system would be able to have their own log types.
 
-> I can understand your saying.
-> If following your saying, only called by i2s_dma_tx_complete is enough.
+But, the biggest question I have is to understand why this is a kernel
+driver.  In essence, it is just shuttling data from various processes
+to something that eventually needs to read that data.  In other words,
+it is doing a subset of what syslog does.  If the concern is about a
+userspace program crashing, wouldn't the userspace tool that reads
+this data also be able to crash?
 
-> However I think adding clearing interrupt status at both before and
-> after i2s communicating start/finish is better.
+The driver clearly has no kernel API, since it exports no symbols.  I
+could see more of an argument for it if certain kernel things were
+able to write to the log, but then we are also duplicating other
+functionality.
 
-No, the issue is that you're acknowleding a hard coded set of
-interrupts, not the interrupts that were actually handled.  The ordering
-isn't really the issue, the issue is that you could acknowledge things
-that weren't handled.  For example:
+David
 
-   1. ISR runs, reads status A
-   2. Condition B happens
-   3. ISR handles condition A.
-   4. ISR acknowledges both A and B.
-
-would mean that B would just get ignored.
-
-> >> +static bool filter(struct dma_chan *chan, void *slave)
-
-> > This needs a better name.  It's not namespaced and it's not clear what
-> > it's filtering.
-
-> In case of using Linux standard DMA API, function "filter" is the most
-> popular name.
-> Almost drivers which use standard use "filter".
-
-I suspect they may have the filter immediately next to the code that
-uses it, which certainly isn't the case here.
-
-> >> +ioh_i2s_write(struct snd_pcm_substream *substream, const void *data, int len)
-> >> +{
-> >> +     int rem1;
-> >> +     int rem2;
-
-> > What is this supposed to do?  There's an awful lot of it, and it looks
-> > like it's supposed to be rewriting the data format for some reason which
-> > isn't something that a driver ought to be doing (apart from anything
-> > else it does rather defeat the point of DMA).
-
-> This driver has buffer which is for preventing noisy sound  by jitter
-> So, this buffer is variable.
-
-You're implementing some sort of custom buffering in your driver?  That
-sounds terribly unidiomatic - pretty much all DMA drivers are very thin
-and manage to work well, I'd expect this is masking some problems in the
-code rather than anything else.  Can you provide more detail on what
-this is working around?
-
-> >> +     num = ((int)dma->tx_avail) / (I2S_AEMPTY_THRESH * 4);
-
-> > That case looks *very* suspect.
-
-> This is correct.
-> Why do you think so ?
-
-I can't tell what it's supposed to do, and casting that isn't super
-clear especially casting to integer types tends to be a big red flag.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
