@@ -1,56 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab1LVNTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 08:19:18 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:4787 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab1LVNTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 08:19:15 -0500
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Message-ID: <4EF32E4B.7050307@broadcom.com>
-Date: Thu, 22 Dec 2011 14:19:07 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124
- Thunderbird/8.0
+	id S1752146Ab1LVNYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 08:24:22 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36954 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab1LVNYV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 08:24:21 -0500
+Date: Thu, 22 Dec 2011 17:24:15 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 0/4] kernel generic object IDs series
+Message-ID: <20111222132415.GS12782@moon>
+References: <20111222125639.360640574@openvz.org>
 MIME-Version: 1.0
-To: "Nico Schottelius" <nico-linux-20111201@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        b43-dev@lists.infradead.org, "Greg KH" <gregkh@suse.de>
-Subject: Re: BCM43224 hanging [3.2.0-rc5]
-References: <20111201224851.GB20536@ethz.ch>
- <4ED8B610.2010703@broadcom.com> <20111202150128.GC3096@schottelius.org>
- <20111207190821.GA1775@schottelius.org>
- <20111212181619.GD1975@schottelius.org> <20111214112148.GE3191@ethz.ch>
- <20111222102408.GA2643@schottelius.org>
-In-Reply-To: <20111222102408.GA2643@schottelius.org>
-X-Enigmail-Version: 1.4a1pre
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62EDEFB93GG12015543-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222125639.360640574@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 11:24 AM, Nico Schottelius wrote:
-> Update:
+On Thu, Dec 22, 2011 at 04:56:39PM +0400, Cyrill Gorcunov wrote:
+...
 > 
-> - dmesg with hanging logs
-> - The hang problem seems to happen ONLY with a specific access point: c8:6c:87:a9:df:a9
->   -> this is a zyxel P-2802HWL-I1, running at channel 13, with WPA2-PSK.
->   -> If you need more information, just let me know
-> - Using wlan with the Samsung S2 as access point seems to work fine
-
-Is the Samsung AP also on channel 13? If not, could you try it?
-
-> So this is now a rather specific issue, but I guess others will run into
-> this sooner or later as well.
+> Any kind of comments and especially complains (!) are very appreciated!
 > 
-> Attached dmesg with hanging processes including traceback.
-> 
-> Nico
+> Cyrill
 > 
 
-Gr. AvS
+Because of "CLONE_XXX" in subject, LKML dropped the fourth patch, so I
+renamed it and put it here. Sorry for inconvenince.
 
+	Cyrill
+---
+proc: Show IDs of objects cloned with CLONE_ in proc
+
+An example of output is
+
+	# cat /proc/2332/objects 
+	VM        :445332486314238977
+	FILES     :16574420397857109505
+	FS        :7421276367695228033
+	SIGHAND   :9517130248188834433
+	IO        :9605099974489260945
+	SYSVSEM   :0
+
+each one represents an ID of appropriate resource used
+by a task -- memory, signals, fs and etc.
+
+Based-on-patch-from: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Glauber Costa <glommer@parallels.com>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ Documentation/filesystems/proc.txt |   18 ++++++++++++++++++
+ fs/proc/base.c                     |   29 +++++++++++++++++++++++++++++
+ include/linux/mm.h                 |    6 ++++++
+ 3 files changed, 53 insertions(+)
+
+Index: linux-2.6.git/Documentation/filesystems/proc.txt
+===================================================================
+--- linux-2.6.git.orig/Documentation/filesystems/proc.txt
++++ linux-2.6.git/Documentation/filesystems/proc.txt
+@@ -41,6 +41,7 @@ Table of Contents
+   3.5	/proc/<pid>/mountinfo - Information about mounts
+   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
+   3.7	/proc/<pid>/ns - Information about namespaces
++  3.8	/proc/<pid>/objects - Information about generic objects
+ 
+ 
+ ------------------------------------------------------------------------------
+@@ -1569,3 +1570,20 @@ obtained from another <pid>.
+ Moreover, a safe approach is to remember it as a string, since format may
+ change in future and id would be not a long integer value, but something
+ else, say SHA1/2 or even uuid encoded stream.
++
++3.8	/proc/<pid>/objects - Information about generic objects
++---------------------------------------------------------------
++
++Similar to /proc/<pid>/ns this file provide generic object ids by
++the following format (better to illustrate with example)
++
++VM        :445332486300860161
++FILES     :16574420397866995457
++FS        :7421276367693613825
++SIGHAND   :9517130248196786369
++IO        :0
++SYSVSEM   :0
++
++The first column is an object name, the second -- object ID number.
++As being mentioned in 3.7 one should carry them as a string to be
++on a safe side.
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -312,6 +312,32 @@ out:
+ 	return res;
+ }
+ 
++#ifdef CONFIG_GENERIC_OBJECT_IDS
++static int proc_pid_objs(struct task_struct *task, char * buffer)
++{
++	int ret = 0;
++
++#define SHOW_PID_OBJ(__type, __field)					\
++	do {								\
++		ret += sprintf(buffer + ret, "%-10s:%lu\n",		\
++				#__type,				\
++				gen_obj_id(task->__field,		\
++					GEN_OBJ_ID_##__type));		\
++	} while (0)
++
++	SHOW_PID_OBJ(VM, mm);
++	SHOW_PID_OBJ(FILES, files);
++	SHOW_PID_OBJ(FS, fs);
++	SHOW_PID_OBJ(SIGHAND, sighand);
++	SHOW_PID_OBJ(IO, io_context);
++	SHOW_PID_OBJ(SYSVSEM, sysvsem.undo_list);
++
++#undef SHOW_PID_OBJ
++
++	return ret;
++}
++#endif
++
+ static int proc_pid_auxv(struct task_struct *task, char *buffer)
+ {
+ 	struct mm_struct *mm = mm_for_maps(task);
+@@ -3172,6 +3198,9 @@ static const struct pid_entry tgid_base_
+ 	INF("syscall",    S_IRUGO, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
++#ifdef CONFIG_GENERIC_OBJECT_IDS
++	INF("objects",    S_IRUGO, proc_pid_objs),
++#endif
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+ 	ONE("statm",      S_IRUGO, proc_pid_statm),
+ 	REG("maps",       S_IRUGO, proc_maps_operations),
+Index: linux-2.6.git/include/linux/mm.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/mm.h
++++ linux-2.6.git/include/linux/mm.h
+@@ -1643,6 +1643,12 @@ extern void copy_user_huge_page(struct p
+ enum {
+ 	GEN_OBJ_ID_NS,
+ 	GEN_OBJ_ID_FILE,
++	GEN_OBJ_ID_VM,
++	GEN_OBJ_ID_FILES,
++	GEN_OBJ_ID_FS,
++	GEN_OBJ_ID_SIGHAND,
++	GEN_OBJ_ID_IO,
++	GEN_OBJ_ID_SYSVSEM,
+ 	GEN_OBJ_ID_TYPES,
+ };
+ 
