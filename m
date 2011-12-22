@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab1LVPko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 10:40:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45401 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1LVPkn (ORCPT
+	id S1754572Ab1LVPmB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 10:42:01 -0500
+Received: from mga14.intel.com ([143.182.124.37]:29615 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753060Ab1LVPl7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 10:40:43 -0500
-Date: Thu, 22 Dec 2011 07:40:37 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Mandeep Singh Baines <msb@chromium.org>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 4/4] cgroup: remove extra calls to find_existing_css_set
-Message-ID: <20111222154037.GC17084@google.com>
-References: <1324527518-24461-1-git-send-email-msb@chromium.org>
- <1324527518-24461-4-git-send-email-msb@chromium.org>
- <4EF2C536.7070408@cn.fujitsu.com>
- <20111222094437.GO17668@somewhere>
+	Thu, 22 Dec 2011 10:41:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="88594398"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>
+Subject: RE: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
+ feature in the absence of in-kernel APIC
+Thread-Topic: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
+ feature in the absence of in-kernel APIC
+Thread-Index: Acy/zE6Paf4Mgs56SzO3RWncPv2EjgA7DgCw
+Date: Thu, 22 Dec 2011 15:41:52 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923358DEA@SHSMSX101.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
+ <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com>
+ <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com>
+In-Reply-To: <4EF1B67D.7010603@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222094437.GO17668@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 10:44:39AM +0100, Frederic Weisbecker wrote:
-> > >  		if (ent.cgrp == cgrp)
-> > >  			continue;
-> > > +		ent.cg = find_css_set(tsk->cgroups, cgrp);
-> > 
-> > unfortunately This won't work, because we are holding tasklist_lock.
+Avi Kivity wrote:
+> On 12/21/2011 12:25 PM, Jan Kiszka wrote:
+>> We must not report the TSC deadline timer feature on our own when
+>> user space provides the APIC as we have no clue about its features.
 > 
-> I believe we can remove tasklist_lock now (in a seperate patch).
+> We must not report the TSC deadline timer feature on our own, period.
+> We should just update the timer mode mask there.  Don't know how this
+> slipped through review.
 > 
-> It was there in order to protect while_each_thread() against exec but
-> now we have threadgroup_lock().
-> 
-> I think we only need to use rcu_read_lock() to protect against concurrent
-> removal in exit.
+> I think your original idea was correct.  Add a new KVM_CAP for the tsc
+> deadline timer.  Userspace can add the bit to cpuid if either it
+> implements the feature in a userspace apic, or if it finds the new
+> capability and uses the kernel apic.
 
-Yeah, that should work and I really like this patch.
+Is it necessary to use KVM_CAP? If I didn't misunderstand, the KVM_CAP sulotion would be:
+1. qemu get kvm tsc deadline timer capability by KVM_CAP_...;
+2. qemu add cpuid bit
+        if ((guest use qemu apic && qemu emualte tsc deadline timer) || 
+           (guest use kvm apic && kvm emulate tsc deadline timer (KVM_CAP)))
+3. qemu ioctl KVM_SET_CPUID2
+4. kvm expose the feature to guest by saving it at vcpu->arch.cpuid_entries, 
+seems it's logically redundant.
 
- kernel/cgroup.c |  152 ++++++++++++-------------------------------------------
- 1 files changed, 32 insertions(+), 120 deletions(-)
+Jan's patch v2 is a straight forward and simple fix. in the patch
+    if (apic) { ... }
+means apic (and then its sub-logic tsc deadline timer) emulated by kvm, that's enough:
+if quest use kvm apic, it's OK to add cpuid bit and expose to guest;
+if guest don't use kvm apic, it will not touch cpuid bit;
 
-Let's get it working. :)
-
-Thanks.
-
--- 
-tejun
+Thanks,
+Jinsong
