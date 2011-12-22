@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab1LVLah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:30:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17384 "EHLO mx1.redhat.com"
+	id S1755388Ab1LVLbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:31:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25320 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755217Ab1LVL25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:28:57 -0500
+	id S1755239Ab1LVL2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:28:52 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v6 05/11] virtio: blk: Move vq initialization to separate function
-Date: Thu, 22 Dec 2011 16:58:29 +0530
-Message-Id: <4a2778050e36f8e6ddf6965cd1a45a62cdc13dfc.1324553223.git.amit.shah@redhat.com>
+Subject: [PATCH v6 03/11] virtio: console: Move vq and vq buf removal into separate functions
+Date: Thu, 22 Dec 2011 16:58:27 +0530
+Message-Id: <90803fb98bc8c2fb9b2c75c645b9dfe6ec792f54.1324553223.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
 References: <cover.1324553223.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
@@ -22,51 +22,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe and PM restore functions will share this code.
+This common code will be shared with the PM freeze function.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/block/virtio_blk.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+ drivers/char/virtio_console.c |   68 ++++++++++++++++++++++++-----------------
+ 1 files changed, 40 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 34633f3..86c9c5b 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -362,6 +362,18 @@ static void virtblk_config_changed(struct virtio_device *vdev)
- 	queue_work(virtblk_wq, &vblk->config_work);
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 8e3c46d..e14f5aa 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1271,6 +1271,20 @@ static void remove_port(struct kref *kref)
+ 	kfree(port);
  }
  
-+static int init_vq(struct virtio_blk *vblk)
++static void remove_port_data(struct port *port)
 +{
-+	int err = 0;
++	struct port_buffer *buf;
 +
-+	/* We expect one virtqueue, for output. */
-+	vblk->vq = virtio_find_single_vq(vblk->vdev, blk_done, "requests");
-+	if (IS_ERR(vblk->vq))
-+		err = PTR_ERR(vblk->vq);
++	/* Remove unused data this port might have received. */
++	discard_port_data(port);
 +
-+	return err;
++	reclaim_consumed_buffers(port);
++
++	/* Remove buffers we queued up for the Host to send us data in. */
++	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
++		free_buf(buf);
 +}
 +
- static int __devinit virtblk_probe(struct virtio_device *vdev)
+ /*
+  * Port got unplugged.  Remove port from portdev's list and drop the
+  * kref reference.  If no userspace has this port opened, it will
+@@ -1278,8 +1292,6 @@ static void remove_port(struct kref *kref)
+  */
+ static void unplug_port(struct port *port)
  {
- 	struct virtio_blk *vblk;
-@@ -405,12 +417,9 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
- 	vblk->config_enable = true;
+-	struct port_buffer *buf;
+-
+ 	spin_lock_irq(&port->portdev->ports_lock);
+ 	list_del(&port->list);
+ 	spin_unlock_irq(&port->portdev->ports_lock);
+@@ -1300,14 +1312,7 @@ static void unplug_port(struct port *port)
+ 		hvc_remove(port->cons.hvc);
+ 	}
  
--	/* We expect one virtqueue, for output. */
--	vblk->vq = virtio_find_single_vq(vdev, blk_done, "requests");
--	if (IS_ERR(vblk->vq)) {
--		err = PTR_ERR(vblk->vq);
-+	err = init_vq(vblk);
-+	if (err)
- 		goto out_free_vblk;
+-	/* Remove unused data this port might have received. */
+-	discard_port_data(port);
+-
+-	reclaim_consumed_buffers(port);
+-
+-	/* Remove buffers we queued up for the Host to send us data in. */
+-	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+-		free_buf(buf);
++	remove_port_data(port);
+ 
+ 	/*
+ 	 * We should just assume the device itself has gone off --
+@@ -1659,6 +1664,28 @@ static const struct file_operations portdev_fops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
++static void remove_vqs(struct ports_device *portdev)
++{
++	portdev->vdev->config->del_vqs(portdev->vdev);
++	kfree(portdev->in_vqs);
++	kfree(portdev->out_vqs);
++}
++
++static void remove_controlq_data(struct ports_device *portdev)
++{
++	struct port_buffer *buf;
++	unsigned int len;
++
++	if (!use_multiport(portdev))
++		return;
++
++	while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
++		free_buf(buf);
++
++	while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
++		free_buf(buf);
++}
++
+ /*
+  * Once we're further in boot, we get probed like any other virtio
+  * device.
+@@ -1764,9 +1791,7 @@ free_vqs:
+ 	/* The host might want to notify mgmt sw about device add failure */
+ 	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
+ 			   VIRTIO_CONSOLE_DEVICE_READY, 0);
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
++	remove_vqs(portdev);
+ free_chrdev:
+ 	unregister_chrdev(portdev->chr_major, "virtio-portsdev");
+ free:
+@@ -1804,21 +1829,8 @@ static void virtcons_remove(struct virtio_device *vdev)
+ 	 * have to just stop using the port, as the vqs are going
+ 	 * away.
+ 	 */
+-	if (use_multiport(portdev)) {
+-		struct port_buffer *buf;
+-		unsigned int len;
+-
+-		while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
+-			free_buf(buf);
+-
+-		while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
+-			free_buf(buf);
 -	}
+-
+-	vdev->config->del_vqs(vdev);
+-	kfree(portdev->in_vqs);
+-	kfree(portdev->out_vqs);
+-
++	remove_controlq_data(portdev);
++	remove_vqs(portdev);
+ 	kfree(portdev);
+ }
  
- 	vblk->pool = mempool_create_kmalloc_pool(1,sizeof(struct virtblk_req));
- 	if (!vblk->pool) {
 -- 
 1.7.7.4
 
