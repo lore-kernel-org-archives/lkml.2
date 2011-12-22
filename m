@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab1LVVjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:39:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23833 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab1LVVjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:39:33 -0500
-Date: Thu, 22 Dec 2011 16:39:30 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [rfc] disable scheduler warnings during oopses.
-Message-ID: <20111222213929.GA4722@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755830Ab1LVVjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:39:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45143 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab1LVVji (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 16:39:38 -0500
+From: Eric Miao <eric.miao@linaro.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Eric Miao <eric.miao@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] tty: serial: imx: move del_timer_sync() to avoid potential deadlock
+Date: Fri, 23 Dec 2011 05:39:27 +0800
+Message-Id: <1324589967-25365-1-git-send-email-eric.miao@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The panic-on-framebuffer code seems to cause a schedule
-to occur during an oops. This causes a bunch of extra
-spew as can be seen in https://bugzilla.redhat.com/attachment.cgi?id=549230
+del_timer_sync() acquires its own lock and doesn't have to be nested
+within the spinlock of sport->port.lock in imx_set_termios(),  which
+will cause potential deadlock.  Fix this by moving it outside.
 
-Would this (untested) patch be sufficient here, or does the drm
-code need rearchitecting to not perform allocations during panic ?
+Cc: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Eric Miao <eric.miao@linaro.org>
+---
+ drivers/tty/serial/imx.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d6b149c..627f788 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4321,6 +4321,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
- {
- 	struct pt_regs *regs = get_irq_regs();
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 39bbce4..0f4ba21 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -904,6 +904,8 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 			ucr2 |= UCR2_PROE;
+ 	}
  
-+	if (oops_in_progress)
-+		return;
++	del_timer_sync(&sport->timer);
 +
- 	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
- 		prev->comm, prev->pid, preempt_count());
+ 	/*
+ 	 * Ask the core to calculate the divisor for us.
+ 	 */
+@@ -934,8 +936,6 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 			sport->port.ignore_status_mask |= URXD_OVRRUN;
+ 	}
  
+-	del_timer_sync(&sport->timer);
+-
+ 	/*
+ 	 * Update the per-port timeout.
+ 	 */
+-- 
+1.7.5.4
+
