@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1LVDko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 22:40:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61359 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1LVDkm (ORCPT
+	id S1754692Ab1LVDob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 22:44:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49743 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab1LVDo3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 22:40:42 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=C3mFA74TiAw2U0iY504A:9 a=PUjeQqilurYA:10 a=_mwduU7UExTc1T6OJ7sA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324525237.5916.114.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.14-rt31
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <williams@redhat.com>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 21 Dec 2011 22:40:37 -0500
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-htTxv/uGNZ57wdpXou9J"
-X-Mailer: Evolution 3.0.3-3 
-Mime-Version: 1.0
+	Wed, 21 Dec 2011 22:44:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF29217.7040408@am.sony.com>
+References: <4EF264C3.6000104@am.sony.com> <20111221231956.GB23859@suse.de>
+ <4EF27B85.9080801@am.sony.com> <20111222005114.GA22541@suse.de>
+ <4EF288B4.1070601@am.sony.com> <20111222014718.GA13085@suse.de> <4EF29217.7040408@am.sony.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 22 Dec 2011 04:44:08 +0100
+Message-ID: <CAPXgP13eh9ibYBq4vFo21TrQiu5gvaZtOX4J3AscPHZix6BVSg@mail.gmail.com>
+Subject: Re: RFC: android logger feedback request
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Greg KH <gregkh@suse.de>, linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 22, 2011 at 03:12, Tim Bird <tim.bird@am.sony.com> wrote:
+> On 12/21/2011 05:47 PM, Greg KH wrote:
 
---=-htTxv/uGNZ57wdpXou9J
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+>> Again, please see what we are already doing in the kernel and userspace,
+>> I think a lot of the above is already implemented.
+>
+> I don't know what systemd has got going on in user-space.  I'm looking
+> at a very recent kernel, and I see no support for multiple log channels,
+> or an optimized open/write path.
 
+> How does current systemd prevent user-space messages from crowding
+> out kernel messages?  (or vice-versa).
 
-Dear RT Folks,
+It intentionally doesn't. Splitting messages in separate stores is not
+what we want in the general use case.
 
-I'm pleased to announce the 3.0.14-rt31 stable release.
+Syslog has the 'facility' for that, and it works just good enough. We
+think that filtering in the receiver is more flexible and useful, than
+to have multiple stores of pretty much the same type.
 
+If you have multiple stores, you always have to fight the ordering
+problem, and that really creates problems sometimes.
 
-This release is just an update to the new stable 3.0.14 version
-and no RT specific changes have been made.
+We are very convinced, that there should be a single entry only for
+logging, and not multiple, and the filtering should happen on the
+receiver side.
 
+> Since you've been doing
+> a lot of work on logging, do you have any existing metrics for logging
+> overhead via the kernel log buffer?
 
-You can get this release via the git tree at:
+Which overhead? I don't really think that is too interesting. Writing
+to a device node or socket and copy it to the kernel's ring buffer,
+not sure if it has an interesting potential of being optimized, if you
+don't use fancy consoles and such.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+We have no numbers, but until I see numbers of a real world problem, I
+would expect there is no actual problem.
 
-  Head SHA1: 6aaac97b2b5e0750a2739c3a247d79d4fadac43e
+>> Which brings me back to my original question, what does this code do,
+>> that is not already present in the kernel, and why is a totally new
+>> interface being proposed for it?
+>
+> At the least, it supports multiple log channels.  Quite frankly my mind
+> has been blown a bit by the suggestion to overload the kernel log buffer
+> with user-space messages.  I would never have gone that route. But I'll have
+> to find out more about this systemd thing to answer your question.
 
+It's just fine. And honestly, for early boot and debugging
+interleaving is exactly what you want, because userspace is triggering
+the actions in the kernel, and you want to see that in the same
+channel.
 
-Or to build 3.0.14-rt31 directly, the following patches should be applied:
+Also you can use netconsole and all the weird stuff people support for
+the kernel and get the messages from early boot userspace including
+intramfs there.
 
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+> Secondly, this is not a particularly new or radical interface. It is new
+> to legacy Linux, but it's been in the Android Linux kernel for some years
+> now, and it has worked well.
 
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.14.xz
+Sure, it's understandable, it sounds like something that made sense
+when it was invented, and which probably still make a lot of sense for
+Android today. But I don't think it should be discussed as a general
+purpose Linux use case, or something that replaces kmsg. It does not
+look like too interesting for general needs today outside of Android.
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.14-rt31.=
-patch.xz
+We probably just want the simple stuff we have today, or something
+that really solves the structured logging problem in a proper way.
+Something slightly better, with almost the same model and limitations,
+than what we have already, is probably not that important enough to
+make changes.
 
-
-The broken out patches are available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patches-3.0.14-rt3=
-1.tar.xz
-
-Enjoy,
-
--- Steve
-
-
-
---=-htTxv/uGNZ57wdpXou9J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJO8qa1AAoJEIy3vGnGbaoAEdsP/2ZxYkwQwLXCZjlA87oJ2VsP
-cuF7B7xulhKXcuC9dn4+5opg4THBuOnpvao1pQheFYOOTm9kKsj0homhqUCValmJ
-4ZK4TXh52kOFEbCne5FJx60f7kruFuiqoPkibn09eclD6mEXkI3B56ipuWVQqAgl
-5jVtfqI5Cmm7iQcqEsshk6s2ZylWQwbaynu9fv+XLFlFJBFIfrd7YbY0IXiCzxym
-uUxIlmbsHM6+7yQSpHr79nXDfw1WRfGYZhYTfWbiSShLzWacKPIl1DJsIzOpwrjP
-CayfnUZ2OnS5+CO5+8bxl9kOvZqIj4sn5aNoSDxXCK1HPkgeM0mr1xlJH6nxZc1l
-wTrsl/G8e5GOUmX7qDYWi5ud829NxH1/PoTpNTouktJTl1XnTTkA4VMmMKlhwSON
-SzJ/BfDMzrp8oJghfyHi+HEfygHqOlVlidzTWzi4xBkI+mNQq222oEnAvATmBpNG
-I4Bab3HsYyJkRQuQ+aDejDQeKRPv8j9ACG5Ccisaq4Tp4hxq61PqxpE8yrRJwgmj
-w3yjSz4Xr8ZRj144G/xYwMmQJlo6Smz1iZupqW+UutLsrmUc/PRnYxmQrads4Xr+
-aYQPwiBZLr7QGz2E51ppSVSnWQv4yLjMCGnxzCQZTI4nj8Y6ZKNitTOH2BiKD3Mr
-CVR2hu9NXjRbvyoZXGmW
-=etIN
------END PGP SIGNATURE-----
-
---=-htTxv/uGNZ57wdpXou9J--
-
+Thanks,
+Kay
