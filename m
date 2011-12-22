@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab1LVK3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:29:55 -0500
-Received: from mga07.intel.com ([143.182.124.22]:17413 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753567Ab1LVK3v convert rfc822-to-8bit (ORCPT
+	id S1755077Ab1LVKjx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:39:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58327 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753785Ab1LVKjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:29:51 -0500
+	Thu, 22 Dec 2011 05:39:51 -0500
+Date: Thu, 22 Dec 2011 10:39:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 3/3 v2] sound/soc/lapis: add platform driver for ML7213
+ IOH I2S
+Message-ID: <20111222103946.GA4546@opensource.wolfsonmicro.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+ <1324349144-12784-3-git-send-email-tomoya.rohm@gmail.com>
+ <20111220132314.GQ2866@opensource.wolfsonmicro.com>
+ <CANKRQng8N3oS2o17HPUZeonXB3KLBK9oNQj-zd9+aUUvWcTo0A@mail.gmail.com>
+ <20111222005816.GB27144@opensource.wolfsonmicro.com>
+ <CANKRQnjCTAX02wJt7StjB0rXkg3Q6bPBRYCbkgq6vS5NFd97Fg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111222091022.GO23916@ZenIV.linux.org.uk>
-References: <cover.1324543719.git.dmitry.kasatkin@intel.com>
-	<20111222091022.GO23916@ZenIV.linux.org.uk>
-Date: Thu, 22 Dec 2011 12:29:49 +0200
-Message-ID: <CALLzPKYNGbksuMNKPBr-G-YVW8by3QQfx1rudf8pwqMxs=fotA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] vfs: truncate bug fixes
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        zohar@linux.vnet.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANKRQnjCTAX02wJt7StjB0rXkg3Q6bPBRYCbkgq6vS5NFd97Fg@mail.gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 11:10 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Dec 22, 2011 at 10:55:24AM +0200, Dmitry Kasatkin wrote:
->> When a file is opened with O_TRUNC or truncated with truncate()/ftruncate(),
->> and then closed, iversion is not updated. This patch uses ATTR_OPEN flag,
->> which is currently used to identify files opened with O_TRUNC,
->> as an indication to increment iversion.
->> Also it adds passing of this flag from do_sys_truncate and do_sys_ftruncate.
->> To reflect real meaning, ATTR_OPEN is suggested to be renamed to ATTR_TRUNC.
->
-> Um... Â Is there any difference left between that and ATTR_SIZE, then?
+On Thu, Dec 22, 2011 at 05:10:24PM +0900, Tomoya MORINAGA wrote:
 
-Oops. Indeed. It becomes simpler..
+> I can understand your saying.
+> However, in case of Tx interrupt, only ALMOST-EMPTY occurs. in case of
+> Rx, only Rx ALMOST-FULL occurs.
+> So as long as a user uses ML7213 I2S, your mentioned behavior is never happened.
 
-Comments and using ATTR_OPEN in fs/fuse/dir.c confused me.
+That's not what your code says...  it may be that the other interrupts
+are very rare but that's not the same thing.
 
-update_mtime()
-{
-	/* If it's an open(O_TRUNC) or an ftruncate(), don't update */
-	if ((ivalid & ATTR_SIZE) && (ivalid & (ATTR_OPEN | ATTR_FILE)))
-}
+> They have the "filter" function immediately next to the code uses
+> "dma_request_channel".
 
-do_sys_truncate() calls do_truncate(path.dentry, length, 0, NULL);
-while do_sys_ftruncate calls do_truncate(dentry, length,
-ATTR_MTIME|ATTR_CTIME, file);
+That's a rather large function...
 
-Notice the last file parameter... NULL or file..
+> Anyway, if you want me to change the name, I can change the name.
+> Please decide it.
 
-As truncate and ftruncate syscalls should do the same job as fstat or stat.
-It will lead to different results for FUSE.
-Following will be 0: (ivalid & (ATTR_OPEN | ATTR_FILE)
+Rename.
 
-FUSE comments says.. OR
-/* If it's an open(O_TRUNC) or an ftruncate(), don't update */
+> > You're implementing some sort of custom buffering in your driver?  That
+> > sounds terribly unidiomatic - pretty much all DMA drivers are very thin
+> > and manage to work well, I'd expect this is masking some problems in the
+> > code rather than anything else.  Can you provide more detail on what
+> > this is working around?
 
-Will make new version..
+> Not sorted but queuing only.
+> In sound/voice control system, queuing is not rare, I think.
+> If necessary, though this method is very common, I can send the method
+> of the queue.
 
-- Dmitry
+No, please describe the problem you're trying to fix.  If nothing else
+think about what you're saying here - if this is a common need then it's
+something that's going to be handled in generic code, not open coded in
+individual drivers.  Like I say I would expect that you have problems
+elsewhere in your code which you are masking with this.
