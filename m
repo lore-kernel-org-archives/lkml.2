@@ -1,112 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab1LVASJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:18:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41572 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab1LVASF (ORCPT
+	id S1754518Ab1LVAS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:18:28 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:32980 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754392Ab1LVAS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:18:05 -0500
-Date: Wed, 21 Dec 2011 16:18:00 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mempool: drop unnecessary and incorrect BUG_ON() from
- mempool_destroy()
-Message-ID: <20111222001800.GL9213@google.com>
+	Wed, 21 Dec 2011 19:18:26 -0500
+Message-ID: <4EF2773E.4070308@fb.com>
+Date: Wed, 21 Dec 2011 16:18:06 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: <avagin@openvz.org>
+CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 2/2] tracing, sched: Add a new tracepoint for sleeptime
+References: <1324404558-353-1-git-send-email-asharma@fb.com> <1324404558-353-3-git-send-email-asharma@fb.com> <4EF1B86D.9030809@openvz.org>
+In-Reply-To: <4EF1B86D.9030809@openvz.org>
+Content-Type: text/plain; charset="KOI8-R"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-21_08:2011-12-21,2011-12-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mempool_destroy() is a thin wrapper around free_pool().  The only
-thing it adds is BUG_ON(pool->curr_nr != pool->min_nr).  The intention
-seems to be to enforce that all allocated elements are freed; however,
-the BUG_ON() can't achieve that (it doesn't know anything about
-objects above min_nr) and incorrect as mempool_resize() is allowed to
-leave the pool extended but not filled.  Furthermore, panicking is way
-worse than any memory leak and there are better debug tools to track
-memory leaks.
+On 12/21/11 2:43 AM, Andrey Vagin wrote:
 
-Drop the BUG_ON() from mempool_destory() and as that leaves the
-function identical to free_pool(), replace it.
+> Arun, probably you have missed one of my comments.
+> block_start and sleep_start should be zeroized here.
+>
+> tsk->se.statistics.block_start = 0;
+> tsk->se.statistics.sleep_start = 0;
+>
+> The following program provokes this problem:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@kernel.org
----
-These patches are on top of "mempool: fix and document synchronization
-and memory barrier usage" patch[1].  Both are fixes and it probably is
-a good idea to forward to -stable.
+Yes - I overlooked the comment. Thanks for bringing it up (especially 
+the test program). Fixed in v3.
 
-[1] http://thread.gmane.org/gmane.linux.kernel/1231609/focus=1232127
-
- mm/mempool.c |   30 +++++++++++-------------------
- 1 file changed, 11 insertions(+), 19 deletions(-)
-
-Index: work/mm/mempool.c
-===================================================================
---- work.orig/mm/mempool.c
-+++ work/mm/mempool.c
-@@ -27,7 +27,15 @@ static void *remove_element(mempool_t *p
- 	return pool->elements[--pool->curr_nr];
- }
- 
--static void free_pool(mempool_t *pool)
-+/**
-+ * mempool_destroy - deallocate a memory pool
-+ * @pool:      pointer to the memory pool which was allocated via
-+ *             mempool_create().
-+ *
-+ * Free all reserved elements in @pool and @pool itself.  This function
-+ * only sleeps if the free_fn() function sleeps.
-+ */
-+void mempool_destroy(mempool_t *pool)
- {
- 	while (pool->curr_nr) {
- 		void *element = remove_element(pool);
-@@ -36,6 +44,7 @@ static void free_pool(mempool_t *pool)
- 	kfree(pool->elements);
- 	kfree(pool);
- }
-+EXPORT_SYMBOL(mempool_destroy);
- 
- /**
-  * mempool_create - create a memory pool
-@@ -86,7 +95,7 @@ mempool_t *mempool_create_node(int min_n
- 
- 		element = pool->alloc(GFP_KERNEL, pool->pool_data);
- 		if (unlikely(!element)) {
--			free_pool(pool);
-+			mempool_destroy(pool);
- 			return NULL;
- 		}
- 		add_element(pool, element);
-@@ -172,23 +181,6 @@ out:
- EXPORT_SYMBOL(mempool_resize);
- 
- /**
-- * mempool_destroy - deallocate a memory pool
-- * @pool:      pointer to the memory pool which was allocated via
-- *             mempool_create().
-- *
-- * this function only sleeps if the free_fn() function sleeps. The caller
-- * has to guarantee that all elements have been returned to the pool (ie:
-- * freed) prior to calling mempool_destroy().
-- */
--void mempool_destroy(mempool_t *pool)
--{
--	/* Check for outstanding elements */
--	BUG_ON(pool->curr_nr != pool->min_nr);
--	free_pool(pool);
--}
--EXPORT_SYMBOL(mempool_destroy);
--
--/**
-  * mempool_alloc - allocate an element from a specific memory pool
-  * @pool:      pointer to the memory pool which was allocated via
-  *             mempool_create().
+  -Arun
