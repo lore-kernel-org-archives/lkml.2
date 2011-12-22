@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab1LVL1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:27:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59624 "EHLO mx1.redhat.com"
+	id S1755230Ab1LVL2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:28:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161Ab1LVL1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:27:53 -0500
-Date: Thu, 22 Dec 2011 06:27:21 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
-        Belisko Marek <marek.belisko@gmail.com>, awilliam@redhat.com,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [Resend] 3.2-rc6+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111222062721.4f4290ab@tlielax.poochiereds.net>
-In-Reply-To: <4EF30D4B.9060906@linux.vnet.ibm.com>
-References: <201112210054.46995.rjw@sisk.pl>
-	<4EF30D4B.9060906@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752161Ab1LVL2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:28:46 -0500
+From: Amit Shah <amit.shah@redhat.com>
+To: Virtualization List <virtualization@lists.linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH v6 00/11] virtio: s4 support
+Date: Thu, 22 Dec 2011 16:58:24 +0530
+Message-Id: <cover.1324553223.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 16:28:19 +0530
-"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+Hi,
 
-> On 12/21/2011 05:24 AM, Rafael J. Wysocki wrote:
-> 
-> > [Evidently, vger has blocked the previous attempts to post this message
-> > for some reason.  I wonder why?]
-> > 
-> > This message contains a list of some regressions from 3.0 and 3.1
-> > for which there are no fixes in the mainline known to the tracking team.
-> > If any of them have been fixed already, please let us know.
-> > 
-> > If you know of any other unresolved regressions from 3.0 and 3.1, please let us
-> > know either and we'll add them to the list.  Also, please let us know if any of
-> > the entries below are invalid.
-> > 
-> > The entries below are simplified and the statistics are not present due to the
-> > continuing Bugzilla outage.
-> > 
-> 
-> [...]
-> 
-> > 
-> > Subject    : Freezing of tasks failed after 20.01 seconds in kernel 3.2.0-rc2
-> > Submitter  : Belisko Marek <marek.belisko@gmail.com>
-> > Date       : 2011-11-22 21:20
-> > Message-ID : 
-> > CAAfyv36nxYq1EA2pcHi5WR1BdWYHp2sQTY1mMA4Q3JjcOG5RDw@mail.gmail.com
-> > References : http://marc.info/?l=linux-kernel&m=132199691706100&w=2
-> > 
-> >
-> 
-> 
-> I believe we already have a fix for this, but not yet in mainline:
-> http://thread.gmane.org/gmane.linux.nfs/45336
-> 
+These patches add support for S4 to virtio (pci) and all drivers.
 
-I don't believe this is a regression at all. As far as I know, It's
-always been the case that these sleeps weren't freezable. I even have
-a similar bug open for RHEL6 which has a 2.6.32-based kernel...
+For each driver, all vqs are removed before hibernation, and then
+re-created after restore.  Some driver-specific uninit and init work
+is also done in the freeze and restore functions.
 
-If people are seeing this more now, then it might be some subtle
-difference in timing or differences in what userspace is doing at the
-time the freezer runs.
+All the drivers in testing work fine:
 
-In any case, the final fix didn't make 3.2, but should go in early for
-3.3.
+* virtio-blk is used for the only disk in the VM, IO works fine before
+  and after.  'dd if=/dev/zero of=/tmp/bigfile bs=1024 count=200000'
+  across S4 gives same sha1sum for the file in the guest as well as
+  one that's created without invoking S4.
+
+* virtio-console: port IO keeps working fine before and after.
+  * If a port is waiting for data from the host (blocking read(2)
+    call), this works fine in both the cases: host-side connection is
+    available or unavailable after resume.  In case the host-side
+    connection isn't available, the blocking call is terminated.  If
+    it is available, the call continues to remain in blocked state
+    till further data arrives.
+
+* virtio-net: ping remains active across S4.
+
+* virtio-balloon: Works fine before and after.  Forgets the ballooned
+  value across S4 (see details in commit log). Maintains ballooned
+  value on failed freeze.
+
+All of these tests are run in parallel.
+
+v6:
+ - Based on top of block and net module remove race fix patches
+
+v5:
+ - Enable virtio device after the driver-specific restore/thaw
+   callbacks are completed.
+ - Balloon: Don't exit kthread on freeze.  It's already frozen by the
+   PM API before invoking the freeze callback, so exiting is pointless.
+
+v4:
+ - Disable / enable napi across S4 (Michael S. Tsirkin)
+ - Balloon: lots of improvements (I had neglected this driver thinking
+   it was a simple one, but this one needed the most thought!  Check
+   the commit log for patch 12 for details.)
+ - Net, Blk: Reset device as the first operation on freeze
+
+v3:
+ - Reset vqs before deleting them (Sasha Levin)
+ - Flush block queue before freeze (Rusty)
+ - Detach netdev before freeze (Michael S. Tsirkin)
+
+v2:
+ - fix checkpatch errors/warnings
+
+Amit Shah (11):
+  virtio: pci: switch to new PM API
+  virtio: pci: add PM notification handlers for restore, freeze, thaw,
+    poweroff
+  virtio: console: Move vq and vq buf removal into separate functions
+  virtio: console: Add freeze and restore handlers to support S4
+  virtio: blk: Move vq initialization to separate function
+  virtio: blk: Add freeze, restore handlers to support S4
+  virtio: net: Move vq initialization into separate function
+  virtio: net: Move vq and vq buf removal into separate function
+  virtio: net: Add freeze, restore handlers to support S4
+  virtio: balloon: Move vq initialization into separate function
+  virtio: balloon: Add freeze, restore handlers to support S4
+
+ drivers/block/virtio_blk.c      |   63 ++++++++++++++++++--
+ drivers/char/virtio_console.c   |  126 ++++++++++++++++++++++++++++++---------
+ drivers/net/virtio_net.c        |  113 ++++++++++++++++++++++++++--------
+ drivers/virtio/virtio_balloon.c |   95 ++++++++++++++++++++++++------
+ drivers/virtio/virtio_pci.c     |  106 +++++++++++++++++++++++++++++++-
+ include/linux/virtio.h          |    5 ++
+ 6 files changed, 426 insertions(+), 82 deletions(-)
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.7.4
+
