@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab1LVXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 18:00:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43343 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab1LVXAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 18:00:52 -0500
-Date: Thu, 22 Dec 2011 15:00:47 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20111222230047.GN17084@google.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
- <20111222135925.de3221c8.akpm@linux-foundation.org>
- <20111222220911.GK17084@google.com>
- <20111222142058.41316ee0.akpm@linux-foundation.org>
- <20111222224117.GL17084@google.com>
- <20111222145426.5844df96.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222145426.5844df96.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756071Ab1LVXCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 18:02:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51998 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044Ab1LVXCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 18:02:43 -0500
+Date: Fri, 23 Dec 2011 10:02:29 +1100
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PULL REQUEST]  md bug fixes for 3.2
+Message-ID: <20111223100229.1911a54b@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/SXWfCFzMOr04h7CbfWVc55U"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+--Sig_/SXWfCFzMOr04h7CbfWVc55U
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Dec 22, 2011 at 02:54:26PM -0800, Andrew Morton wrote:
-> > These stats are userland visible and quite useful ones if blkcg is in
-> > use.  I don't really see how these can be removed.
-> 
-> What stats?
 
-The ones allocated in the last patch.  blk_group_cpu_stats.
+Hi Linus,
+ please pull these 4 patches for md into 3.2
+There are fairly simply bug fixes.
 
-> And why are we doing percpu *allocation* so deep in the code?  You mean
-> we're *creating* stats counters on an IO path?  Sounds odd.  Where is
-> this code?
+Thanks,
+NeilBrown
 
-Please read below.
 
-> > > > > Or how about we fix the percpu memory allocation code so that it
-> > > > > propagates the gfp flags, then delete this patchset?
-> > > > 
-> > > > Oh, no, this is gonna make things *way* more complex.  I tried.
-> > > 
-> > > But there's a difference between fixing a problem and working around it.
-> > 
-> > Yeah, that was my first direction too.  The reason why percpu can't do
-> > NOIO is the same one why vmalloc can't do it.  It reaches pretty deep
-> > into page table code and I don't think doing all that churning is
-> > worthwhile or even desirable.  An altnernative approach would be
-> > implementing transparent front buffer to percpu allocator, which I
-> > *might* do if there really are more of these users, but I think
-> > keeping percpu allocator painful to use from reclaim context isn't
-> > such a bad idea.
-> > 
-> > There have been multiple requests for atomic allocation and they all
-> > have been successfully pushed back, but IMHO this is a valid one and I
-> > don't see a better way around the problem, so while I agree using
-> > mempool for this is a workaround, I think it is a right choice, for
-> > now, anyway.
-> 
-> For starters, doing pagetable allocation on the I/O path sounds nutty.
-> 
-> Secondly, GFP_NOIO is a *weaker* allocation mode than GFP_KERNEL.  By
-> permitting it with this patchset, we have a kernel which is more likely
-> to get oom failures.  Fixing the kernel to not perform GFP_NOIO
-> allocations for these counters will result in a more robust kernel. 
-> This is a good thing, which improves the kernel while avoiding adding
-> more compexity elsewhere.
-> 
-> This patchset is the worst option and we should try much harder to avoid
-> applying it!
+The following changes since commit 384703b8e6cd4c8ef08512e596024e028c91c339:
 
-The stats are per cgroup - request_queue pair.  We don't want to
-allocate for all of them for each combination as there are
-configurations with stupid number of request_queues and silly many
-cgroups and #cgroups * #request_queue * #cpus can be huge.  So, we
-want on-demand allocation.  While the stats are important, they are
-not critical and allocations can be opportunistic.  If the allocation
-fails this time, we can try it for the next time.
+  Linux 3.2-rc6 (2011-12-16 18:36:26 -0800)
 
-So, yeah, the suggested solution fits the problem.  If you have a
-better idea, please don't be shy.
+are available in the git repository at:
+  git://neil.brown.name/md/ for-linus
 
-> > Yeah, some of PF_* flags already carry related role information.  I'm
-> > not too sure how much pushing the whole thing into task_struct would
-> > change tho.  We would need push/popping.  It could be simpler in some
-> > cases but in essence wouldn't we have just relocated the position of
-> > parameter?
-> 
-> The code would get considerably simpler.  The big benefit comes when
-> you have deep call stacks - we're presently passing a gfp_t down five
-> layers of function call while none of the intermediate functions even
-> use the thing - they just pass it on to the next guy.  Pass it via the
-> task_struct and all that goes away.  It would make maintenance a lot
-> easier - at present if you want to add a new kmalloc() to a leaf
-> function you need to edit all five layers of caller functions.
+  last commit being 961902c0f8240175729274cd14198872f42072b7
 
-Hmmm... yeah, the relocation could save a lot of hassle, I suppose.
+NeilBrown (4):
+      md/linear: fix hot-add of devices to linear arrays.
+      md/raid5: ensure correct assessment of drives during degraded reshape.
+      md: don't give up looking for spares on first failure-to-add
+      md/bitmap: It is OK to clear bits during recovery.
 
-Thanks.
+ drivers/md/bitmap.c |    5 +----
+ drivers/md/linear.c |    1 +
+ drivers/md/md.c     |    3 +--
+ drivers/md/raid5.c  |   14 ++++++++++----
+ 4 files changed, 13 insertions(+), 10 deletions(-)
 
--- 
-tejun
+--Sig_/SXWfCFzMOr04h7CbfWVc55U
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTvO3BTnsnt1WYoG5AQIFJBAArV82YKlkeqbc374oWASzk1pSHbfxQq2c
+9Al34kMHxUDXo4+9kIdryL1tBCEdcKn+xAPVNhJWlheEG5zfnSXFTXbJo9qOz7vd
+Lfvo8MNscuLQYxv3+LMzk/qvKMdpKqDXeLuL4owYBHXuHYJL3JdgkXOlFrXNGsUE
+skZHeXC++b9wXhRN0KsqmUHAZfoqhFtPhPkptMAze1FtVWZJDpNiIDod+PYQ/n3e
+TPAK77xbUMQZQTfmYCb9IcGmOOkeObbNJ8wiOwlQyrqrWsvXfJ8piLUBdoc3NveC
+sBSrb/B9mzSbtBWO1GvAxN+dDLpjIlqCt49Tf33yeNAR5mwMyO1MtFBiNUMX954b
+3Wq4dCkqTg4TGRlOvsvW+dmSPr9TSVR9vzlYWTvbm09rrmGLqsS/trjuaBX2IXYU
+duPqofHCvKYmmRXEA9un0OlcKRKso6JWXNjxu0FSkhG1TUdZBs/SBxtvf3pa1G+V
+P7s2VViV7u5P1UjniNDR53JMj8gL4rAdkrLb3fL8DDTTpZvLFrDtEk+L2jMuy+F7
+rw2EO9yLAW7nQiBzq2Bw4zduedCp10cal6mWqL/+z3mok86LseK33IsIX+K8hNpV
+hL/b1TfW/W9i163nHKsjE10pbnbdptQDLbL+X+acU3DRTBmIdwBsTYGytmEOL8w6
+E50RD3MQb7M=
+=VN/X
+-----END PGP SIGNATURE-----
+
+--Sig_/SXWfCFzMOr04h7CbfWVc55U--
