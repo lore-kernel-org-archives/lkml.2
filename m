@@ -1,172 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1LVNYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 08:24:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36954 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1LVNYV (ORCPT
+	id S1752433Ab1LVN3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 08:29:22 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:55888 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab1LVN3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 08:24:21 -0500
-Date: Thu, 22 Dec 2011 17:24:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 0/4] kernel generic object IDs series
-Message-ID: <20111222132415.GS12782@moon>
-References: <20111222125639.360640574@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222125639.360640574@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Dec 2011 08:29:19 -0500
+Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 Dec 2011 08:26:30 -0500
+In-Reply-To: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
+References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1324560391.1964.8.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 11122213-1780-0000-0000-000001D29377
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000242; HX=3.00000180; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00098310; UDB=6.00025448; UTC=2011-12-22
+ 13:29:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:56:39PM +0400, Cyrill Gorcunov wrote:
-...
+On Thu, 2011-12-22 at 12:54 +0200, Dmitry Kasatkin wrote:
+> When a file is truncated with truncate()/ftruncate() and then closed,
+> iversion is not updated. This patch uses ATTR_SIZE flag as an indication
+> to increment iversion.
 > 
-> Any kind of comments and especially complains (!) are very appreciated!
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+
+Acked-by: Mimi Zohar <zohar@us.ibm.com> 
+(Stable should be cc'ed on this patch.)
+
+thanks,
+
+Mimi
+
+> ---
+>  fs/attr.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> Cyrill
+> diff --git a/fs/attr.c b/fs/attr.c
+> index 7ee7ba4..b8f55c4 100644
+> --- a/fs/attr.c
+> +++ b/fs/attr.c
+> @@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
+>  			return -EPERM;
+>  	}
 > 
+> +	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
+> +		if (attr->ia_size != inode->i_size)
+> +			inode_inc_iversion(inode);
+> +	}
+> +
+>  	if ((ia_valid & ATTR_MODE)) {
+>  		mode_t amode = attr->ia_mode;
+>  		/* Flag setting protected by i_mutex */
 
-Because of "CLONE_XXX" in subject, LKML dropped the fourth patch, so I
-renamed it and put it here. Sorry for inconvenince.
 
-	Cyrill
----
-proc: Show IDs of objects cloned with CLONE_ in proc
-
-An example of output is
-
-	# cat /proc/2332/objects 
-	VM        :445332486314238977
-	FILES     :16574420397857109505
-	FS        :7421276367695228033
-	SIGHAND   :9517130248188834433
-	IO        :9605099974489260945
-	SYSVSEM   :0
-
-each one represents an ID of appropriate resource used
-by a task -- memory, signals, fs and etc.
-
-Based-on-patch-from: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Glauber Costa <glommer@parallels.com>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Matt Helsley <matthltc@us.ibm.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- Documentation/filesystems/proc.txt |   18 ++++++++++++++++++
- fs/proc/base.c                     |   29 +++++++++++++++++++++++++++++
- include/linux/mm.h                 |    6 ++++++
- 3 files changed, 53 insertions(+)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -41,6 +41,7 @@ Table of Contents
-   3.5	/proc/<pid>/mountinfo - Information about mounts
-   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
-   3.7	/proc/<pid>/ns - Information about namespaces
-+  3.8	/proc/<pid>/objects - Information about generic objects
- 
- 
- ------------------------------------------------------------------------------
-@@ -1569,3 +1570,20 @@ obtained from another <pid>.
- Moreover, a safe approach is to remember it as a string, since format may
- change in future and id would be not a long integer value, but something
- else, say SHA1/2 or even uuid encoded stream.
-+
-+3.8	/proc/<pid>/objects - Information about generic objects
-+---------------------------------------------------------------
-+
-+Similar to /proc/<pid>/ns this file provide generic object ids by
-+the following format (better to illustrate with example)
-+
-+VM        :445332486300860161
-+FILES     :16574420397866995457
-+FS        :7421276367693613825
-+SIGHAND   :9517130248196786369
-+IO        :0
-+SYSVSEM   :0
-+
-+The first column is an object name, the second -- object ID number.
-+As being mentioned in 3.7 one should carry them as a string to be
-+on a safe side.
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -312,6 +312,32 @@ out:
- 	return res;
- }
- 
-+#ifdef CONFIG_GENERIC_OBJECT_IDS
-+static int proc_pid_objs(struct task_struct *task, char * buffer)
-+{
-+	int ret = 0;
-+
-+#define SHOW_PID_OBJ(__type, __field)					\
-+	do {								\
-+		ret += sprintf(buffer + ret, "%-10s:%lu\n",		\
-+				#__type,				\
-+				gen_obj_id(task->__field,		\
-+					GEN_OBJ_ID_##__type));		\
-+	} while (0)
-+
-+	SHOW_PID_OBJ(VM, mm);
-+	SHOW_PID_OBJ(FILES, files);
-+	SHOW_PID_OBJ(FS, fs);
-+	SHOW_PID_OBJ(SIGHAND, sighand);
-+	SHOW_PID_OBJ(IO, io_context);
-+	SHOW_PID_OBJ(SYSVSEM, sysvsem.undo_list);
-+
-+#undef SHOW_PID_OBJ
-+
-+	return ret;
-+}
-+#endif
-+
- static int proc_pid_auxv(struct task_struct *task, char *buffer)
- {
- 	struct mm_struct *mm = mm_for_maps(task);
-@@ -3172,6 +3198,9 @@ static const struct pid_entry tgid_base_
- 	INF("syscall",    S_IRUGO, proc_pid_syscall),
- #endif
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
-+#ifdef CONFIG_GENERIC_OBJECT_IDS
-+	INF("objects",    S_IRUGO, proc_pid_objs),
-+#endif
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
- 	REG("maps",       S_IRUGO, proc_maps_operations),
-Index: linux-2.6.git/include/linux/mm.h
-===================================================================
---- linux-2.6.git.orig/include/linux/mm.h
-+++ linux-2.6.git/include/linux/mm.h
-@@ -1643,6 +1643,12 @@ extern void copy_user_huge_page(struct p
- enum {
- 	GEN_OBJ_ID_NS,
- 	GEN_OBJ_ID_FILE,
-+	GEN_OBJ_ID_VM,
-+	GEN_OBJ_ID_FILES,
-+	GEN_OBJ_ID_FS,
-+	GEN_OBJ_ID_SIGHAND,
-+	GEN_OBJ_ID_IO,
-+	GEN_OBJ_ID_SYSVSEM,
- 	GEN_OBJ_ID_TYPES,
- };
- 
