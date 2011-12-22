@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1LVDd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 22:33:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62464 "EHLO
+	id S1754664Ab1LVDgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 22:36:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50480 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab1LVDdY (ORCPT
+	with ESMTP id S1753238Ab1LVDgm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 22:33:24 -0500
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] Change void* into explict vm_struct*
-Date: Thu, 22 Dec 2011 12:33:13 +0900
-Message-Id: <1324524793-14049-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.6.4
+	Wed, 21 Dec 2011 22:36:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF2A410.6020400@cn.fujitsu.com>
+References: <alpine.LSU.2.00.1112182234310.1503@eggly.anvils>
+	<20111221050740.GD23662@dastard>
+	<alpine.LSU.2.00.1112202218490.4026@eggly.anvils>
+	<20111221221527.GE23662@dastard>
+	<alpine.LSU.2.00.1112211555430.25868@eggly.anvils>
+	<4EF2A0ED.8080308@gmail.com>
+	<4EF2A410.6020400@cn.fujitsu.com>
+Date: Thu, 22 Dec 2011 11:36:41 +0800
+Message-ID: <CAPQyPG4h-uLhEGMGHYoBCVh-zoS7GBWDsnCQ3h6_nqAPkoE2xw@mail.gmail.com>
+Subject: Re: [PATCH] radix_tree: delete orphaned macro radix_tree_indirect_to_ptr
+From: Nai Xia <nai.xia@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, vmap_area->private is void* but we don't use the field
-for various purpose but use only for vm_struct.
-So change it with vm_struct* with naming and it's more good
-for readability and type checking.
+On Thu, Dec 22, 2011 at 11:29 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> nai.xia wrote:
+>> Seems nobody has been using the macro radix_tree_indirect_to_ptr()
+>> since long time ago. Delete it.
+>>
+>
+> Someone else has already posted the same patch.
+>
+> https://lkml.org/lkml/2011/12/16/118
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/vmalloc.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Oh,yes!  This thread just suddenly reminds me of that long time
+noop line. I should have searched recent patch submission. :)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index e1fa5a6..6e3945d 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -256,7 +256,7 @@ struct vmap_area {
- 	struct rb_node rb_node;		/* address sorted rbtree */
- 	struct list_head list;		/* address sorted list */
- 	struct list_head purge_list;	/* "lazy purge" list */
--	void *private;
-+	struct vm_struct *vm;
- 	struct rcu_head rcu_head;
- };
- 
-@@ -1265,7 +1265,7 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 	vm->addr = (void *)va->va_start;
- 	vm->size = va->va_end - va->va_start;
- 	vm->caller = caller;
--	va->private = vm;
-+	va->vm = vm;
- 	va->flags |= VM_VM_AREA;
- }
- 
-@@ -1388,7 +1388,7 @@ static struct vm_struct *find_vm_area(const void *addr)
- 
- 	va = find_vmap_area((unsigned long)addr);
- 	if (va && va->flags & VM_VM_AREA)
--		return va->private;
-+		return va->vm;
- 
- 	return NULL;
- }
-@@ -1407,7 +1407,7 @@ struct vm_struct *remove_vm_area(const void *addr)
- 
- 	va = find_vmap_area((unsigned long)addr);
- 	if (va && va->flags & VM_VM_AREA) {
--		struct vm_struct *vm = va->private;
-+		struct vm_struct *vm = va->vm;
- 
- 		if (!(vm->flags & VM_UNLIST)) {
- 			struct vm_struct *tmp, **p;
--- 
-1.7.6.4
-
+>
+>> Signed-off-by: Nai Xia <nai.xia@gmail.com>
+>> ---
+>>  include/linux/radix-tree.h |    3 ---
+>>  1 files changed, 0 insertions(+), 3 deletions(-)
+>>
+>> --- a/include/linux/radix-tree.h
+>> +++ b/include/linux/radix-tree.h
+>> @@ -49,9 +49,6 @@
+>>  #define RADIX_TREE_EXCEPTIONAL_ENTRY    2
+>>  #define RADIX_TREE_EXCEPTIONAL_SHIFT    2
+>>
+>> -#define radix_tree_indirect_to_ptr(ptr) \
+>> -    radix_tree_indirect_to_ptr((void __force *)(ptr))
+>> -
+>>  static inline int radix_tree_is_indirect_ptr(void *ptr)
+>>  {
+>>      return (int)((unsigned long)ptr & RADIX_TREE_INDIRECT_PTR);
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
