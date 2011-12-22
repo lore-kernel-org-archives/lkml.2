@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab1LVBUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 20:20:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51073 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab1LVBUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 20:20:45 -0500
-Date: Thu, 22 Dec 2011 12:20:26 +1100
-From: NeilBrown <neilb@suse.de>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Greg KH <gregkh@suse.de>, linux-embedded <linux-embedded@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: RFC: android logger feedback request
-Message-ID: <20111222122026.3a0fae36@notabene.brown>
-In-Reply-To: <4EF27B85.9080801@am.sony.com>
-References: <4EF264C3.6000104@am.sony.com>
-	<20111221231956.GB23859@suse.de>
-	<4EF27B85.9080801@am.sony.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/DnZpY_OObHsv6b_bQnECVqR"; protocol="application/pgp-signature"
+	id S1754625Ab1LVBXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:23:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45661 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1LVBXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 20:23:17 -0500
+Date: Wed, 21 Dec 2011 17:23:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 2/2] mempool: fix first round failure behavior
+Message-ID: <20111222012312.GP9213@google.com>
+References: <20111222001800.GL9213@google.com>
+ <20111222001939.GM9213@google.com>
+ <20111222004629.GO9213@google.com>
+ <20111221170919.f7d49fc6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221170919.f7d49fc6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/DnZpY_OObHsv6b_bQnECVqR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello, Andrew.
 
-On Wed, 21 Dec 2011 16:36:21 -0800 Tim Bird <tim.bird@am.sony.com> wrote:
+On Wed, Dec 21, 2011 at 05:09:19PM -0800, Andrew Morton wrote:
+> If the pool is empty and the memory allocator is down into its
+> emergency reserves then we have:
+> 
+> Old behaviour: Wait for someone to return an item, then retry
+> 
+> New behaviour: enable page reclaim in gfp_mask, retry a
+>                single time then wait for someone to return an item.
+> 
+> So what we can expect to see is that in this low-memory situation,
+> mempool_alloc() will perform a lot more page reclaim, and more mempool
+> items will be let loose into the kernel.
+> 
+> I'm not sure what the effects of this will be.  I can't immediately
+> point at any bad ones.  Probably not much, as the mempool_alloc()
+> caller will probably be doing other allocations, using the
+> reclaim-permitting gfp_mask.
+> 
+> But I have painful memories of us (me and Jens, iirc) churning this
+> code over and over again until it stopped causing problems.  Some were
+> subtle and nasty.  Much dumpster diving into the pre-git changelogs
+> should be done before changing it, lest we rediscover long-fixed
+> problems :(
 
-> On 12/21/2011 03:19 PM, Greg KH wrote:
-> > That all describes the current code, but you haven't described what's
-> > wrong with the existing syslog interface that requires this new driver
-> > to be written.  And why can't the existing interface be fixed to address
-> > these (potential) shortcomings?
->=20
->=20
-> >> One specific question I have is where is the most appropriate
-> >> place for this code to live, in the kernel source tree?
-> >> Other embedded systems might want to use this system (it
-> >> is simpler than syslog, and superior in some ways), so I don't
-> >> think it should remain in an android-specific directory.
-> >=20
-> > What way is it superior?
->=20
-> Here are some ways that this code is superior to syslog:
+I see.  It just seemed like a weird behavior and looking at the commit
+log, there was originally code to kick reclaim there, so the sequence
+made sense - first try w/o reclaim, look at the mempool, kick reclaim
+and retry w/ GFP_WAIT and then wait for someone else to free.  That
+part was removed by 20a77776c24 "[PATCH] mempool: simplify alloc" back
+in 05.  In the process, it also lost retry w/ reclaim before waiting
+for mempool reserves.
 
-It is certainly nice and simple.  It really looks more like a filesystem th=
-an
-a char device though...  though they aren't really files so much as lossy
-pipes.  I don't think that's a problem though, lots of things in filesystems
-don't behave exactly like files.
+I was trying to add percpu mempool and this bit me as percpu allocator
+can't to NOIO and the above delayed retry logic ended up adding random
+5s delay (or until the next free).
 
-If you created a 'logbuf' filesystem that used libfs to provide a single
-directory in which privileged processes could create files then you wouldn't
-need the kernel to "know" the allowed logs: radio, events, main, system.
-The size could be set by ftruncate() (by privileged used again) rather than
-being hardcoded.
+> > That said, I still find it a bit unsettling that a GFP_ATOMIC
+> > allocation which would otherwise succeed may fail when issued through
+> > mempool.
+> 
+> Spose so.  It would be strange to call mempool_alloc() with GFP_ATOMIC.
+> Because "wait for an item to be returned" is the whole point of the
+> thing.
 
-You would defined 'read' and 'write' much like you currently do to create a=
- list of
-datagrams in a circular buffer and replace the ioctls by more standard
-interfaces:
+Yeah but the pool can be used from multiple code paths and I think it
+plausible to use it that way and expect at least the same or better
+alloc behavior as not using mempool.  Eh... this doesn't really affect
+correctness, so not such a big deal but still weird.
 
-LOGGER_GET_LOG_BUG_SIZE would use 'stat' and the st_blocks field
-LOGGER_GET_LOG_LEN would use 'stat' and the st_size field
-LOGGER_GET_NEXT_ENTRY_LEN could use the FIONREAD ioctl
-LOGGER_FLUSH_LOG could use ftruncate
+> > Maybe the RTTD is clearing __GFP_NOMEMALLOC on retry if the
+> > gfp requsted by the caller is !__GFP_WAIT && !__GFP_NOMEMALLOC?
+> 
+> What the heck is an RTTD?
 
-The result would be much the same amount of code, but an interface which has
-fewer details hard-coded and is generally more versatile and accessible.
+Right thing to do?  Hmmm... I thought other people were using it too.
+It's quite possible that I just dreamed it up tho.
 
-NeilBrown
+> > +	/*
+> > +	 * We use gfp mask w/o __GFP_WAIT or IO for the first round.  If
+> > +	 * alloc failed with that and @pool was empty, retry immediately.
+> > +	 */
+> > +	if (gfp_temp != gfp_mask) {
+> > +		gfp_temp = gfp_mask;
+> > +		spin_unlock_irqrestore(&pool->lock, flags);
+> > +		goto repeat_alloc;
+> > +	}
+> > +
+> 
+> Here, have a faster kernel ;)
 
+;)
 
---Sig_/DnZpY_OObHsv6b_bQnECVqR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTvKF2jnsnt1WYoG5AQKT6RAAq4+T3Wnaw+mQW/hJcBwjATRzhRbfh238
-lm7RYzpnAybVuDsF8Poy9v3tziCsjWxL22gC6QMsgAP3oOQgi4NJIaXKFXX5YwsM
-IoOYVTzjDsAjp0+9OW8UJrQhrI//toI8Mf82bazp2DU1Xvargz2yP/+xp6XWX3q9
-plVAazwYosGXY2EP+dj46ojnrwt9q3fsyq6bkIPuHC1oV3zrnirCexkJYmJP/n6j
-/z1Tl2nWNZocaUSQW4oMlq2MjNt8deSZmCS/5Ou/6sK7JSooEIhXuW1I9Nqkke92
-fQJVECD+SRB5AOeiZEXo0RjadV9TsMLFesB5aZpqHrGJzIQhfghnB3fLVaEGVzbZ
-P/273sNWcKASQmgPx0OxGiqGoocJBTX5ccHbk8L6gpVlwsUhD9QNoEulZ3J/qEKh
-Qyg5fB1x8MbDJkBXd9LpoHvYSZS3Mb78D3hnsu5JzCAR+qL96FAONA7mLtcQrHNu
-u2QKwdRRbJyxVd+d82SxYfktJUlEqFGHW8i6L0sWqcZf1pRNVYbn39COKxzCndQb
-tJ6NJck2s/65XCpqV+BoGbPDknIKO8EZQ5uUGcdAZ7tAaDe39zANRNnEfeIoFzZv
-txJCiIYdKQ+yoKIt6hX58dof7VuHNtYUBuMWfYduluOLPfs2Gau6jqY1yW3Pv4ar
-t1g88+lCsfg=
-=sE2h
------END PGP SIGNATURE-----
-
---Sig_/DnZpY_OObHsv6b_bQnECVqR--
+-- 
+tejun
