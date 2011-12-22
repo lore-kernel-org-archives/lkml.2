@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab1LVL3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:29:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27480 "EHLO mx1.redhat.com"
+	id S1755368Ab1LVL3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:29:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161Ab1LVL2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:28:55 -0500
+	id S1755341Ab1LVL3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:29:09 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v6 04/11] virtio: console: Add freeze and restore handlers to support S4
-Date: Thu, 22 Dec 2011 16:58:28 +0530
-Message-Id: <3b3b6e5e59e83b7869a3bd72d300ed3775901d15.1324553223.git.amit.shah@redhat.com>
+Subject: [PATCH v6 09/11] virtio: net: Add freeze, restore handlers to support S4
+Date: Thu, 22 Dec 2011 16:58:33 +0530
+Message-Id: <f84fa9fdc9f5629e711cbb89a2e7efbb289d72fa.1324553223.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
 References: <cover.1324553223.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
@@ -22,93 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all vqs and associated buffers in the freeze callback which
-prepares us to go into hibernation state.  On restore, re-create all the
-vqs and populate the input vqs with buffers to get to the pre-hibernate
-state.
+Remove all the vqs, disable napi and detach from the netdev on
+hibernation.
 
-Note: Any outstanding unconsumed buffers are discarded; which means
-there's a possibility of data loss in case the host or the guest didn't
-consume any data already present in the vqs.  This can be addressed in a
-later patch series, perhaps in virtio common code.
+Re-create vqs after restoring from a hibernated image, re-enable napi
+and re-attach the netdev.  This keeps networking working across
+hibernation.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/char/virtio_console.c |   58 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 58 insertions(+), 0 deletions(-)
+ drivers/net/virtio_net.c |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index e14f5aa..fd2fd6f 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1844,6 +1844,60 @@ static unsigned int features[] = {
- 	VIRTIO_CONSOLE_F_MULTIPORT,
- };
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 7a2a5bf..b31670f 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1159,6 +1159,48 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+ 	free_netdev(vi->dev);
+ }
  
 +#ifdef CONFIG_PM
-+static int virtcons_freeze(struct virtio_device *vdev)
++static int virtnet_freeze(struct virtio_device *vdev)
 +{
-+	struct ports_device *portdev;
-+	struct port *port;
++	struct virtnet_info *vi = vdev->priv;
 +
-+	portdev = vdev->priv;
++	virtqueue_disable_cb(vi->rvq);
++	virtqueue_disable_cb(vi->svq);
++	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
++		virtqueue_disable_cb(vi->cvq);
 +
-+	vdev->config->reset(vdev);
++	netif_device_detach(vi->dev);
++	cancel_delayed_work_sync(&vi->refill);
 +
-+	cancel_work_sync(&portdev->control_work);
-+	remove_controlq_data(portdev);
++	if (netif_running(vi->dev))
++		napi_disable(&vi->napi);
 +
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		/*
-+		 * We'll ask the host later if the new invocation has
-+		 * the port opened or closed.
-+		 */
-+		port->host_connected = false;
-+		remove_port_data(port);
-+	}
-+	remove_vqs(portdev);
++	remove_vq_common(vi);
 +
 +	return 0;
 +}
 +
-+static int virtcons_restore(struct virtio_device *vdev)
++static int virtnet_restore(struct virtio_device *vdev)
 +{
-+	struct ports_device *portdev;
-+	struct port *port;
-+	int ret;
++	struct virtnet_info *vi = vdev->priv;
++	int err;
 +
-+	portdev = vdev->priv;
++	err = init_vqs(vi);
++	if (err)
++		return err;
 +
-+	ret = init_vqs(portdev);
-+	if (ret)
-+		return ret;
++	if (netif_running(vi->dev))
++		virtnet_napi_enable(vi);
 +
-+	if (use_multiport(portdev))
-+		fill_queue(portdev->c_ivq, &portdev->cvq_lock);
++	netif_device_attach(vi->dev);
 +
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		port->in_vq = portdev->in_vqs[port->id];
-+		port->out_vq = portdev->out_vqs[port->id];
++	if (!try_fill_recv(vi, GFP_KERNEL))
++		schedule_delayed_work(&vi->refill, 0);
 +
-+		fill_queue(port->in_vq, &port->inbuf_lock);
-+
-+		/* Get port open/close status on the host */
-+		send_control_msg(port, VIRTIO_CONSOLE_PORT_READY, 1);
-+	}
 +	return 0;
 +}
 +#endif
 +
- static struct virtio_driver virtio_console = {
- 	.feature_table = features,
- 	.feature_table_size = ARRAY_SIZE(features),
-@@ -1853,6 +1907,10 @@ static struct virtio_driver virtio_console = {
- 	.probe =	virtcons_probe,
- 	.remove =	virtcons_remove,
- 	.config_changed = config_intr,
+ static struct virtio_device_id id_table[] = {
+ 	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
+ 	{ 0 },
+@@ -1183,6 +1225,10 @@ static struct virtio_driver virtio_net_driver = {
+ 	.probe =	virtnet_probe,
+ 	.remove =	__devexit_p(virtnet_remove),
+ 	.config_changed = virtnet_config_changed,
 +#ifdef CONFIG_PM
-+	.freeze =	virtcons_freeze,
-+	.restore =	virtcons_restore,
++	.freeze =	virtnet_freeze,
++	.restore =	virtnet_restore,
 +#endif
  };
  
