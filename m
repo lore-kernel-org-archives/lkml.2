@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1LVHER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 02:04:17 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:59752 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab1LVHEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 02:04:14 -0500
-Date: Thu, 22 Dec 2011 02:01:59 -0500 (EST)
-Message-Id: <20111222.020159.138601584172644611.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        eric.dumazet@gmail.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111222170726.b16565ef7d1434cc4ec170d7@canb.auug.org.au>
-References: <20111222170726.b16565ef7d1434cc4ec170d7@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 21 Dec 2011 23:02:04 -0800 (PST)
+	id S1752908Ab1LVHF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 02:05:29 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:57762 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab1LVHF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 02:05:26 -0500
+Date: Thu, 22 Dec 2011 08:05:18 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Chris Boot <bootc@bootc.net>, David Miller <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] bridge: provide a mtu() method for fake_dst_ops
+Message-ID: <20111222070518.GQ6348@secunet.com>
+References: <4EF2117F.6000803@bootc.net>
+ <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <4EF23BF2.4000601@bootc.net>
+ <1324499332.2621.7.camel@edumazet-laptop>
+ <1324500775.2621.9.camel@edumazet-laptop>
+ <4EF2568C.6040006@bootc.net>
+ <AEC29013-98F3-4A16-A88B-AD31C9E88EB8@bootc.net>
+ <1324528656.2621.19.camel@edumazet-laptop>
+ <1324533632.2621.35.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324533632.2621.35.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 22 Dec 2011 07:05:18.0849 (UTC) FILETIME=[10455710:01CCC078]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 22 Dec 2011 17:07:26 +1100
+On Thu, Dec 22, 2011 at 07:00:32AM +0100, Eric Dumazet wrote:
+> Commit 618f9bc74a039da76 (net: Move mtu handling down to the protocol
+> depended handlers) forgot the bridge netfilter case, adding a NULL
+> dereference in ip_fragment().
+> 
+> Reported-by: Chris Boot <bootc@bootc.net>
+> CC: Steffen Klassert <steffen.klassert@secunet.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-> After merging the final tree, today's linux-next build (sparc32 defconfig)
-> failed like this:
-> 
-> net/ipv4/route.c: In function 'rt_check_expire':
-> net/ipv4/route.c:873:4: error: implicit declaration of function 'prefetch' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit 9f28a2fc0bd7 ("ipv4: reintroduce route cache garbage
-> collector").
-> 
-> Linus, that commit is in the latest pull request you have from Dave ...
+As I said in the other mail, the bug is probaply arround
+for longer. Anyway,
 
-Sorry, that was just reinstating code that got removed but we forgot
-the prefetch.h header.  Both Eric and I test built this as well as did
-run time testing on the fix.
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 
-Linus, could you just apply this obvious fix directly?  Sorry for the
-trouble.
-
-Thanks.
-
-> I applied the following patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 22 Dec 2011 17:03:29 +1100
-> Subject: [PATCH] ipv4: using prefetch requires including prefetch.h
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  net/ipv4/route.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-> index 7460483..9c01f56 100644
-> --- a/net/ipv4/route.c
-> +++ b/net/ipv4/route.c
-> @@ -91,6 +91,7 @@
->  #include <linux/rcupdate.h>
->  #include <linux/times.h>
->  #include <linux/slab.h>
-> +#include <linux/prefetch.h>
->  #include <net/dst.h>
->  #include <net/net_namespace.h>
->  #include <net/protocol.h>
-> -- 
-> 1.7.8.197.g73c6b
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+Thanks!
