@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1LVR4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:56:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753080Ab1LVR4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 12:56:53 -0500
-Date: Thu, 22 Dec 2011 18:51:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 0/2] block_sigmask() helper function
-Message-ID: <20111222175123.GA4895@redhat.com>
-References: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
+	id S1755556Ab1LVR52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:57:28 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:2848 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753000Ab1LVR51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 12:57:27 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Dec 2011 12:57:26 EST
+Message-ID: <4EF36E10.7070601@gmail.com>
+Date: Thu, 22 Dec 2011 18:51:12 +0100
+From: Gertjan van Wingerde <gwingerde@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324493221-4435-1-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+CC: Stanislaw Gruszka <sgruszka@redhat.com>, users@rt2x00.serialmonkey.com,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Robert Hancock <hancockrwd@gmail.com>
+Subject: Re: [rt2x00-users] Poor performance and lockup with rt2800usb and
+ Asus USB-N13 adapter
+References: <4ED43A5C.9000102@gmail.com> <20111129114603.GB7299@redhat.com> <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com> <20111220144317.GA6027@redhat.com> <20111222161810.GB13554@redhat.com> <201112221731.pBMHVScq005421@mail.maya.org>
+In-Reply-To: <201112221731.pBMHVScq005421@mail.maya.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Dec 2011 17:51:13.0036 (UTC) FILETIME=[4B90FCC0:01CCC0D2]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21, Matt Fleming wrote:
+Hi Andreas,
+
+On 12/22/11 18:31, Andreas Hartmann wrote:
 >
-> Hi Andrew,
+> BTW: The patch in [1] breaks the driver completely (tested with
+> compat-wireless 3.1rc1).
 >
-> Oleg doesn't have a repo on kernel.org yet and suggested that you
-> might take these patches through your -mm tree?
+> [1]
+> http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2011-December/004345.html
+>
 
-Yes, could you take this please? I have no idea when I will restore
-my korg account. If ever :/
+I haven't reviewed these patches yet, but did you apply both patches 
+that were sent out earlier today (which replace the one you mention here)?
 
-> Ideally I'd like to
-> get these two in for the 3.3 merge window because I've got a bunch of
-> other patches that can go through the respective maintainers' trees
-> once these two have been merged.
+Also, can you elaborate (preferably as a response to the actual patches) 
+what exactly breaks with these patches? We need that kind of feedback to 
+determine if we should apply these patches, as we (the maintainers) 
+cannot always test and extensively review the patches in a short time.
 
-I was surpised by how many bugs there are in arch/ signal code, this
-patch helps to factor out the code in the signal-deliver paths.
-
-Oleg.
-
+---
+Gertjan
