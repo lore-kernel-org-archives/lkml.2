@@ -1,143 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1LVAnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:43:14 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39586 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab1LVAnM (ORCPT
+	id S1754588Ab1LVAo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:44:29 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63997 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab1LVAo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:43:12 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Date: Thu, 22 Dec 2011 09:42:41 +0900
-From: Yasunori Goto <y-goto@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [BUG] TASK_DEAD task is able to be woken up in special condition
-Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Message-Id: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com>
+	Wed, 21 Dec 2011 19:44:27 -0500
+Message-ID: <4EF27C76.3020805@solonet.org.ua>
+Date: Thu, 22 Dec 2011 02:40:22 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+Subject: Re: [PATCHv2 resend] Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ selected.
+References: <4EE7BE5F.8020108@solonet.org.ua> <064501ccbfae$cf1e5cb0$6d5b1610$%kim@samsung.com> <4EF23852.1050304@solonet.org.ua> <06fa01ccc02c$828b6810$87a23830$%kim@samsung.com>
+In-Reply-To: <06fa01ccc02c$828b6810$87a23830$%kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/22/2011 12:04 AM, Kukjin Kim wrote:
+> Denis Kuzmenko wrote:
+>>
+>> On 12/21/2011 09:04 AM, Kukjin Kim wrote:
+>>> Denis Kuzmenko wrote:
+>>>>
+>>>> Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+>>>>
+>>>> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+>>>> ---
+>>>>
+>>>> Patch is against 3.2-rc4.
+>>>> CONFIG_S3C2410_IOTIMING is not selected for MACH_MINI2440. Because of
+>> this
+>>>> the
+>>>> file s3c2410-iotiming.c is not ever compiled and enabling
+>>>> CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined reference to
+>>>> function
+>>>> s3c2410_iotiming_debugfs defined in that file. s3c2410_iotiming_debugfs
+>>>> defined
+>>>> as NULL for this case.
+>>>>
+>>> Hi Denis,
+>>>
+>>> Well, there is no error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected in
+>> my
+>>> case and s3c2410-iotiming.c is built...when is it happened? I just
+>> selected
+>>> every regarding configuration in kernel menuconfig...
+>>
+>> Please, try attached config (it's still failing in v3.2-rc6).
+>>
+> Hi Denis,
+> 
+> Yes, when s3c2410 stuff is not selected, it happened.
+> Look at me soon and thanks.
+Hi, Kukjin,
 
-Hello
-
-I found TASK_DEAD task is able to be woken up in special condition.
-I would like to report this bug. Please check it.
-
-Here is the sequence how it occurs.
-
-----------------------------------+-----------------------------
-                                  |
-           CPU A                  |             CPU B
-----------------------------------+-----------------------------
-TASK A calls exit()....
-
-do_exit()
-
-  exit_mm()
-    down_read(mm->mmap_sem);
-    
-    rwsem_down_failed_common()
-
-      set TASK_UNINTERRUPTIBLE
-      set waiter.task <= task A
-      list_add to sem->wait_list
-           :
-      raw_spin_unlock_irq()
-      (I/O interruption occured)
-
-                                      __rwsem_do_wake(mmap_sem)
-
-                                        list_del(&waiter->list);
-                                        waiter->task = NULL
-                                        wake_up_process(task A)
-                                          try_to_wake_up()
-                                             (task is still
-                                               TASK_UNINTERRUPTIBLE)
-                                              p->on_rq is still 1.)
-
-                                              ttwu_do_wakeup()
-                                                 (*A)
-                                                   :
-     (I/O interruption handler finished)
-
-      if (!waiter.task) 
-          schedule() is not called
-          due to waiter.task is NULL.
-      
-      tsk->state = TASK_RUNNING
-
-          :
-                                              check_preempt_curr();
-                                                  :
-  task->state = TASK_DEAD
-                                              (*B)
-                                        <---    set TASK_RUNNING (*C)
-
-
-
-     schedule()
-     (exit task is running again)
-     BUG_ON() is called!
---------------------------------------------------------
-
-
-You probably think that execution time between (*A) and (*B) is very short,
-because the interruption is disabled, and setting TASK_RUNNING at (*C)
-must be executed before setting TASK_DEAD.
-
-
-HOWEVER, if SMI is interrupted between (*A) and (*B), 
-(*C) is able to execute AFTER setting TASK_DEAD!
-Then, exited task is scheduled again, and BUG_ON() is called....
-
-This is very bad senario.
-But, I suppose this phenomenon is able to occur on a guest system of
-virtual machine too.
-
-Please fix it.
-
-I suppose task->pi_lock should be held when task->state is changed to 
-TASK_DEAD like the following patch (not tested yet).
-Because try_to_wake_up() hold it before checking task state.
-
-
-Thanks, 
-
-----
-Signed-off-by: Yasunori Goto <y-goto@jp.fujitsu.com>
-
----
- kernel/exit.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-3.2-rc4/kernel/exit.c
-===================================================================
---- linux-3.2-rc4.orig/kernel/exit.c
-+++ linux-3.2-rc4/kernel/exit.c
-@@ -1038,8 +1038,11 @@ NORET_TYPE void do_exit(long code)
- 
- 	preempt_disable();
- 	exit_rcu();
-+
-+	spin_lock(&tsk->pi_lock, flags);
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
-+	spin_unlock(&tsk->pi_lock, flags);
- 	schedule();
- 	BUG();
- 	/* Avoid "noreturn function does return".  */
-
-
-
+Sorry, can you please explain as I can't understand. Especially second
+sentence.
 
 -- 
-Yasunori Goto 
-
-
+Best regards, Denis Kuzmenko.
