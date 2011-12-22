@@ -1,107 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab1LVJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 04:34:09 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57495 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab1LVJeB (ORCPT
+	id S1755071Ab1LVJfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:35:41 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52316 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab1LVJfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 04:34:01 -0500
-Date: Thu, 22 Dec 2011 10:33:54 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [RFC PATCH] cgroup: Remove task_lock() from cgroup_post_fork()
-Message-ID: <20111222093351.GN17668@somewhere>
-References: <1324516711-26913-1-git-send-email-fweisbec@gmail.com>
- <4EF2F095.90207@cn.fujitsu.com>
+	Thu, 22 Dec 2011 04:35:38 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4EF2F9EB.7000006@jp.fujitsu.com>
+Date: Thu, 22 Dec 2011 18:35:39 +0900
+From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EF2F095.90207@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] mm: mmap system call does not return EOVERFLOW
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:55:49PM +0800, Li Zefan wrote:
-> Frederic Weisbecker wrote:
-> > cgroup_post_fork() is protected between threadgroup_change_begin()
-> > and threadgroup_change_end() against concurrent changes of the
-> > child's css_set in cgroup_task_migrate(). Also the child can't
-> > exit and call cgroup_exit() at this stage, this means it's css_set
-> > can't be changed with init_css_set concurrently.
-> > 
-> > For these reasons, we don't need to hold task_lock() on the child
-> > because it's css_set can only remain stable in this place.
-> > 
-> > Let's remove the lock there.
-> > 
-> > NOTE: We could do something else: move threadgroup_change_end()
-> > before cgroup_post_fork() and keep the task_lock() which, combined
-> > with the css_set_lock, would be enough to synchronize against
-> > cgroup_task_migrate()'s change on child->cgroup and its cglist.
-> > Because outside that, the threadgroup lock doesn't appear to be
-> > needed on cgroup_post_fork().
-> > 
-> 
-> To narrow the scope of the threadgroup lock? I think it's preferable to keep
-> cgroup_post_fork() inside the lock, to make things simpler and we have
-> the same lock rule for both cgroup_fork() and cgroup_post_fork().
+In the system call mmap(), if the value of "offset" plus "length"
+exceeds the offset maximum of "off_t", the error EOVERFLOW should be
+returned.
 
-Ok!
+------------------------------------------------------------------------
+void *mmap(void *addr, size_t length, int prot, int flags,
+       	   int fd, off_t offset)
+------------------------------------------------------------------------
+
+Here is the detail how EOVERFLOW is returned:
+
+The argument "offset" is shifted right by PAGE_SHIFT bits
+in sys_mmap(mmap systemcall).
+
+------------------------------------------------------------------------
+sys_mmap(unsigned long addr, unsigned long len,
+	unsigned long prot, unsigned long flags,
+	unsigned long fd, unsigned long off)
+{
+	error = sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
+}
+------------------------------------------------------------------------
+
+In sys_mmap_pgoff(addr, len, prot, flags, fd, pgoff), do_mmap_pgoff()
+is called as follows:
+
+------------------------------------------------------------------------
+sys_mmap_pgoff(unsigned long addr, unsigned long len,
+		unsigned long prot, unsigned long flags,
+		unsigned long fd, unsigned long pgoff)
+{
+	retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+}
+------------------------------------------------------------------------
+
+In do_mmap_pgoff(file, addr, len, prot, flags, pgoff),
+the code path which returns with the error EOVERFLOW exists already.
+
+------------------------------------------------------------------------
+do_mmap_pgoff(struct file *file, unsigned long addr,
+		unsigned long len, unsigned long prot,
+		unsigned long flags, unsigned long pgoff)
+{
+	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
+		return -EOVERFLOW;
+}
+------------------------------------------------------------------------
+
+However, in this case, giving off=0xfffffffffffff000 and
+len=0xfffffffffffff000 on x86_64 arch, EOVERFLOW is not
+returned. It is because the argument, "off" and "len" are shifted right
+by PAGE_SHIFT bits and thus the condition "(pgoff + (len >> PAGE_SHIFT)) < pgoff"
+never becomes true.
+
+To fix this bug, it is necessary to compare "off" plus "len"
+with "off" by units of "off_t". The patch is here:
+
+Signed-off-by: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+---
+ mm/mmap.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index eae90af..e74e736 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -948,6 +948,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+        vm_flags_t vm_flags;
+        int error;
+        unsigned long reqprot = prot;
++       off_t off = pgoff << PAGE_SHIFT;
  
-> > Let's debate!
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Containers <containers@lists.linux-foundation.org>
-> > Cc: Cgroups <cgroups@vger.kernel.org>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Paul Menage <paul@paulmenage.org>
-> > Cc: Mandeep Singh Baines <msb@chromium.org>
-> > ---
-> >  kernel/cgroup.c |   11 ++++++++---
-> >  1 files changed, 8 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > index 4936d88..d0dbf72 100644
-> > --- a/kernel/cgroup.c
-> > +++ b/kernel/cgroup.c
-> > @@ -4622,10 +4622,15 @@ void cgroup_post_fork(struct task_struct *child)
-> >  {
-> >  	if (use_task_css_set_links) {
-> >  		write_lock(&css_set_lock);
-> > -		task_lock(child);
-> > -		if (list_empty(&child->cg_list))
-> > +		if (list_empty(&child->cg_list)) {
-> > +			/*
-> > +			 * It's safe to use child->cgroups without task_lock()
-> > +			 * here because we are protected through
-> > +			 * threadgroup_change_begin() against concurrent
-> > +			 * css_set change in cgroup_task_migrate()
-> > +			 */
-> 
-> Also explain why it won't race with cgroup_exit()? You were not quite confident
-> about that before Oleg's explanation. ;)
+        /*
+         * Does the application expect PROT_READ to imply PROT_EXEC?
+@@ -971,7 +972,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+                return -ENOMEM;
+ 
+        /* offset overflow? */
+-       if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
++       if ((off + len) < off)
+                return -EOVERFLOW;
+ 
+        /* Too many mappings? */
+-- 
+1.7.7.4
+---
 
-hehe indeed :)
-
-Will update, thanks!
-
-> >  			list_add(&child->cg_list, &child->cgroups->tasks);
-> > -		task_unlock(child);
-> > +		}
-> >  		write_unlock(&css_set_lock);
-> >  	}
-> >  }
