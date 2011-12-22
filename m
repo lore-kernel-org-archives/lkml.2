@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab1LVLub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:50:31 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62047 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab1LVLuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:50:21 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=bSSgsQw5cEFz1OcLzhcA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [ANNOUNCE] 3.0.14-rt31
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Raz <raziebe@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
-In-Reply-To: <CAPB=Z-rrMLyFAJXUBC+BCqegr2bNB4on0gNaTWY-ddMWsMGJpA@mail.gmail.com>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
-	 <CAPB=Z-rrMLyFAJXUBC+BCqegr2bNB4on0gNaTWY-ddMWsMGJpA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Dec 2011 06:50:20 -0500
-Message-ID: <1324554620.8892.1.camel@acer.local.home>
+	id S1755210Ab1LVLu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:50:57 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34228 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab1LVLuz convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Thu, 22 Dec 2011 06:50:55 -0500
+Message-Id: <4EF327E2020000780006993E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 22 Dec 2011 11:51:46 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ian Campbell" <Ian.Campbell@citrix.com>
+Cc: "Konrad Rzeszutek Wilk" <konrad@darnok.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Jens Axboe" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct
+ xenbus_driver instantiation
+References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
+ <1324547820.7877.71.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1324547820.7877.71.camel@zakaz.uk.xensource.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 13:08 +0200, Raz wrote:
-> Hey steven
+>>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
+>> The 'name', 'owner', and 'mod_name' members are redundant with the
+>> identically named fields in the 'driver' sub-structure. Rather than
+>> switching each instance to specify these fields explicitly, introduce
+>> a macro to simplify this.
+>> 
+>> Eliminate further redundancy by allowing the drvname argument to
+>> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
+>> the ID table will be used for .driver.name).
 > 
-> what is the relation between 3.2 rt patches and 3.0 rt patches ? back
-> portability or anything else ?
+> Any reason not to always use DRV_NAME here (which is generally a bit
+> more specific e.g. "xen-foofront" rather than "foo") and rely on the id
+> table for the shorter names used in xenstore?
 
-3.0-rt is the stable release. 3.2-rt is active development. Only fixes
-go into 3.0-rt.
+That would imply that DRV_NAME is always defined, but I don't
+see this being the case.
 
--- Steve
-
+Jan
 
