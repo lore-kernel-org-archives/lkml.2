@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1LVRzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:55:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab1LVRzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 12:55:21 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Andi Kleen <ak@linux.intel.com>, kay.sievers@vrfy.org
-Subject: [PATCH] X86: Introduce HW-Pstate scattered cpuid feature
-Date: Thu, 22 Dec 2011 18:55:16 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-References: <1324338394-4670-1-git-send-email-andi@firstfloor.org> <4EF27517.6010609@zytor.com> <20111222001441.GB10955@alboin.amr.corp.intel.com>
-In-Reply-To: <20111222001441.GB10955@alboin.amr.corp.intel.com>
+	id S1755538Ab1LVR4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:56:14 -0500
+Received: from stl-smtpout-01.boeing.com ([130.76.96.56]:60304 "EHLO
+	stl-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab1LVR4M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 12:56:12 -0500
+From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Thu, 22 Dec 2011 11:55:56 -0600
+Subject: Re: Driver core support for early platform devices
+Thread-Topic: Driver core support for early platform devices
+Thread-Index: AczA0vVrZlAEiulvTp63rQuHtYDz5Q==
+Message-ID: <99F3E881-FB9E-4D49-9A91-793FDD04795D@boeing.com>
+References: <0282FD61-7E73-45CE-8EC8-32BF411C7619@boeing.com>
+ <20111222174521.GA29144@suse.de>
+In-Reply-To: <20111222174521.GA29144@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112221855.17243.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 22, 2011 01:14:41 AM Andi Kleen wrote:
-> > So this should be:
-> > 
-> > 1. added to the scattered CPUID features list;
-> > 2. artificially set in the AMD-specific initialization code for the
-> > older CPUs.
+On Dec 22, 2011, at 12:45, Greg KH wrote:
+> On Thu, Dec 22, 2011 at 11:15:06AM -0600, Moffett, Kyle D wrote:
+>> Hi,
+>> 
+>> I'm tinkering with some improvements to the way that OpenPIC/MPIC are
+>> detected and loaded on PowerPC platforms, and it seems like I am trying
+>> to use the driver model before it is fully initialized.
+>> 
+>> In particular, it seems like it should be possible to simply declare an
+>> OpenPIC in the device-tree and have it automatically bound to a platform
+>> driver declaring the right OpenFirmware match strings.
+>> 
+>> Unfortunately, it needs to be bound by init_IRQ() time, while the driver
+>> model does not get initialized until much later (after the scheduler is
+>> up and running).
+>> 
+>> As far as I can tell, there seem to be 2 possible approaches to making
+>> that possible:
+>> 
+>> (1) Split the driver-model initialization into "early" and "late" phases
+>>    so that drivers can be registered and devices probed very early on
+>>    and then replay the necessary scheduler-dependent things after the
+>>    system is mostly started up (IE: devtmpfs, etc).
 > 
-> Not sure (2) is correct. As far as I understand it's actually different
-> mechanisms, just implemented by the same driver.
-> 
-> Keeping the list for old CPUs is not a big issue anyways.
-> 
-> Agreed with (1)
+> We already have that today with the "early_platform*" functions, right?
+> Will those work for you, or do you need this for a bus you are creating
+> and not using the platform bus?
 
-This would be the hw-pstate feature patch to avoid
-mainting families for autoloading, etc.
+Well, I can't figure out how "early_platform" is actually supposed to
+integrate with the platform bus itself.  It seems designed mostly for
+drivers like "earlyprintk" et. al. for which loading is controlled by
+a kernel parameter.
 
-It should be in powernow-k8 then:
-        /* IO-Based switching */
-        { X86_VENDOR_AMD, 0xf, },
-        /* Future models support MSR based switching and a cpuid bit for it */
-        { X86_VENDOR_AMD, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_HW_PSTATE },
+Specifically, I don't see any "early_platform" logic to match devices in
+the OF device-tree based on the driver "of_match" parameters, just based
+on text strings in early_param().
 
-Something does not work and I need to re-test and dig.
-I'll embed this one into the others from Andi and will resend the next days.
+Furthermore, if I register an "early_platform" device, it seems to get
+unregistered when the normal driver model is brought up, instead of
+being sucked in and promoted to a normal platform_device.  That code is
+pretty poorly documented and only used in a couple places right now,
+though, so it's possible I am misreading it.
 
-    Thomas
-
----
-X86: Introduce HW-Pstate scattered cpuid feature
-
-It is rather similar to CPB (boot capability) feature
-and exists since fam10h (can be looked up in AMD's BKDG).
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-
----
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/scattered.c   |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index f3444f7..7a1003d 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -176,6 +176,7 @@
- #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
- #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
- #define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
-+#define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD HW-PState */
- 
- /* Virtualization flags: Linux defined, word 8 */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
-index c7f64e6..addf9e8 100644
---- a/arch/x86/kernel/cpu/scattered.c
-+++ b/arch/x86/kernel/cpu/scattered.c
-@@ -40,6 +40,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
- 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
- 		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
- 		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
-+		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
- 		{ X86_FEATURE_NPT,		CR_EDX, 0, 0x8000000a, 0 },
- 		{ X86_FEATURE_LBRV,		CR_EDX, 1, 0x8000000a, 0 },
- 		{ X86_FEATURE_SVML,		CR_EDX, 2, 0x8000000a, 0 },
+Cheers,
+Kyle Moffett
