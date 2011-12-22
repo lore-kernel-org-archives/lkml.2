@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1LVBtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 20:49:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48400 "EHLO mga09.intel.com"
+	id S1754748Ab1LVBut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:50:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51536 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab1LVBs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 20:48:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="89148278"
-Subject: Re: [PATCH -v8] x86: Disable x2apic if nox2apic is specified or
- intr-remap can not be enabled
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Dec 2011 17:54:00 -0800
-In-Reply-To: <CAE9FiQXodjK=GRO2ut4fGS=wXBc59+rov-BVKXhDGK8vJVBHhQ@mail.gmail.com>
-References: <1324083546-1003-1-git-send-email-yinghai@kernel.org>
-	 <1324363882.2286.23.camel@sbsiddha-mobl2>
-	 <CAE9FiQU__U0CCiyzF9kDC1Z=PUEoTe1Jm-M97EbCO440Vm9P_A@mail.gmail.com>
-	 <CAE9FiQXodjK=GRO2ut4fGS=wXBc59+rov-BVKXhDGK8vJVBHhQ@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1324518840.21294.14.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1753218Ab1LVBuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 20:50:46 -0500
+Date: Wed, 21 Dec 2011 17:49:55 -0800
+From: Greg KH <gregkh@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Tim Bird <tim.bird@am.sony.com>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: RFC: android logger feedback request
+Message-ID: <20111222014955.GB13085@suse.de>
+References: <4EF264C3.6000104@am.sony.com>
+ <20111221231956.GB23859@suse.de>
+ <4EF27B85.9080801@am.sony.com>
+ <20111222122026.3a0fae36@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222122026.3a0fae36@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-20 at 18:24 -0800, Yinghai Lu wrote:
-> put your updated version as v9.
+On Thu, Dec 22, 2011 at 12:20:26PM +1100, NeilBrown wrote:
+> On Wed, 21 Dec 2011 16:36:21 -0800 Tim Bird <tim.bird@am.sony.com> wrote:
 > 
-> like to let ingo or hpa or thomas to decide v8 or v9 to be used.
+> > On 12/21/2011 03:19 PM, Greg KH wrote:
+> > > That all describes the current code, but you haven't described what's
+> > > wrong with the existing syslog interface that requires this new driver
+> > > to be written.  And why can't the existing interface be fixed to address
+> > > these (potential) shortcomings?
+> > 
+> > 
+> > >> One specific question I have is where is the most appropriate
+> > >> place for this code to live, in the kernel source tree?
+> > >> Other embedded systems might want to use this system (it
+> > >> is simpler than syslog, and superior in some ways), so I don't
+> > >> think it should remain in an android-specific directory.
+> > > 
+> > > What way is it superior?
+> > 
+> > Here are some ways that this code is superior to syslog:
 > 
->         Changes:
->                  1. clear x2apic cpu features
->                  2. disable x2apic later instead of check_x2apic()
+> It is certainly nice and simple.  It really looks more like a filesystem than
+> a char device though...  though they aren't really files so much as lossy
+> pipes.  I don't think that's a problem though, lots of things in filesystems
+> don't behave exactly like files.
+> 
+> If you created a 'logbuf' filesystem that used libfs to provide a single
+> directory in which privileged processes could create files then you wouldn't
+> need the kernel to "know" the allowed logs: radio, events, main, system.
+> The size could be set by ftruncate() (by privileged used again) rather than
+> being hardcoded.
+> 
+> You would defined 'read' and 'write' much like you currently do to create a list of
+> datagrams in a circular buffer and replace the ioctls by more standard
+> interfaces:
+> 
+> LOGGER_GET_LOG_BUG_SIZE would use 'stat' and the st_blocks field
+> LOGGER_GET_LOG_LEN would use 'stat' and the st_size field
+> LOGGER_GET_NEXT_ENTRY_LEN could use the FIONREAD ioctl
+> LOGGER_FLUSH_LOG could use ftruncate
+> 
+> The result would be much the same amount of code, but an interface which has
+> fewer details hard-coded and is generally more versatile and accessible.
 
-Yinghai, It is not the question of just cleanup. changing the apic mode
-has to follow some sequence.
+But, almost all of this is already in the syslog system call today,
+right?  So why create a new user api for something we have?
 
-Anyways, I have done all the changes and other minor cleanups. Also
-split up your patch into multiple patches and posted it now.
-
-Please let me know if you see any issue.
-
-thanks,
-suresh
-
-
-
+greg k-h
