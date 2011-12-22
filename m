@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1LVLI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:08:57 -0500
-Received: from bitmer.com ([213.157.87.50]:42530 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149Ab1LVLI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:08:56 -0500
-Message-ID: <4EF30F9C.7030708@bitmer.com>
-Date: Thu, 22 Dec 2011 13:08:12 +0200
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1755288Ab1LVLJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:09:09 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52918 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab1LVLJE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:09:04 -0500
 MIME-Version: 1.0
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 1/7 v2] ARM: OMAP1: ams-delta: register latch dependent
- devices later
-References: <201112200028.32947.jkrzyszt@tis.icnet.pl> <201112212051.13113.jkrzyszt@tis.icnet.pl> <20111221200728.GG24444@atomide.com> <201112221139.16317.jkrzyszt@tis.icnet.pl>
-In-Reply-To: <201112221139.16317.jkrzyszt@tis.icnet.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1324525237.5916.114.camel@gandalf.stny.rr.com>
+References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
+From: Raz <raziebe@gmail.com>
+Date: Thu, 22 Dec 2011 13:08:40 +0200
+Message-ID: <CAPB=Z-rrMLyFAJXUBC+BCqegr2bNB4on0gNaTWY-ddMWsMGJpA@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.0.14-rt31
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 12:39 PM, Janusz Krzysztofik wrote:
+Hey steven
 
->>> Don't we need Jarkko's or Mark's or Liam's ack as well for the change to
->>> the sound/soc/omap/ams-delta.c file?
->>
->> Yes, you're right.
->
-> Jarkko, Mark or Liam, care to ack this change, moving the Amstrad Delta
-> sound card registration to late_initcall?
->
-Unfortunately I haven't had time to look at the series but I'm fine with 
-sound/soc/omap/ams-delta.c change.
+what is the relation between 3.2 rt patches and 3.0 rt patches ? back
+portability or anything else ?
 
--- 
-Jarkko
+On Thu, Dec 22, 2011 at 5:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.0.14-rt31 stable release.
+>
+>
+> This release is just an update to the new stable 3.0.14 version
+> and no RT specific changes have been made.
+>
+>
+> You can get this release via the git tree at:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+>
+>  Head SHA1: 6aaac97b2b5e0750a2739c3a247d79d4fadac43e
+>
+>
+> Or to build 3.0.14-rt31 directly, the following patches should be applied:
+>
+>  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+>
+>  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.14.xz
+>
+>  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.14-rt31.patch.xz
+>
+>
+> The broken out patches are available at:
+>
+>  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patches-3.0.14-rt31.tar.xz
+>
+> Enjoy,
+>
+> -- Steve
+>
+>
