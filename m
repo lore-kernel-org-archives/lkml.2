@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab1LVKyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:54:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:32912 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab1LVKyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:54:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99203889"
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: [PATCH v3 1/1] vfs: iversion truncate bug fix
-Date: Thu, 22 Dec 2011 12:54:28 +0200
-Message-Id: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755168Ab1LVK6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:58:41 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:40156 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab1LVK6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 05:58:40 -0500
+Message-ID: <4EF30D4B.9060906@linux.vnet.ibm.com>
+Date: Thu, 22 Dec 2011 16:28:19 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, awilliam@redhat.com,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Resend] 3.2-rc6+: Reported regressions from 3.0 and 3.1
+References: <201112210054.46995.rjw@sisk.pl>
+In-Reply-To: <201112210054.46995.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11122200-5140-0000-0000-000000753013
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a file is truncated with truncate()/ftruncate() and then closed,
-iversion is not updated. This patch uses ATTR_SIZE flag as an indication
-to increment iversion.
+On 12/21/2011 05:24 AM, Rafael J. Wysocki wrote:
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
----
- fs/attr.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> [Evidently, vger has blocked the previous attempts to post this message
+> for some reason.  I wonder why?]
+> 
+> This message contains a list of some regressions from 3.0 and 3.1
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
+> 
+> If you know of any other unresolved regressions from 3.0 and 3.1, please let us
+> know either and we'll add them to the list.  Also, please let us know if any of
+> the entries below are invalid.
+> 
+> The entries below are simplified and the statistics are not present due to the
+> continuing Bugzilla outage.
+> 
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 7ee7ba4..b8f55c4 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
- 			return -EPERM;
- 	}
- 
-+	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
-+		if (attr->ia_size != inode->i_size)
-+			inode_inc_iversion(inode);
-+	}
-+
- 	if ((ia_valid & ATTR_MODE)) {
- 		mode_t amode = attr->ia_mode;
- 		/* Flag setting protected by i_mutex */
--- 
-1.7.4.1
+[...]
+
+> 
+> Subject    : Freezing of tasks failed after 20.01 seconds in kernel 3.2.0-rc2
+> Submitter  : Belisko Marek <marek.belisko@gmail.com>
+> Date       : 2011-11-22 21:20
+> Message-ID : 
+> CAAfyv36nxYq1EA2pcHi5WR1BdWYHp2sQTY1mMA4Q3JjcOG5RDw@mail.gmail.com
+> References : http://marc.info/?l=linux-kernel&m=132199691706100&w=2
+> 
+>
+
+
+I believe we already have a fix for this, but not yet in mainline:
+http://thread.gmane.org/gmane.linux.nfs/45336
+
+Regards,
+Srivatsa S. Bhat
 
