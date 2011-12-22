@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1LVCVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:21:36 -0500
+	id S1754827Ab1LVCV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:21:56 -0500
 Received: from [12.239.217.82] ([12.239.217.82]:9459 "EHLO venom.synaptics.com"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754667Ab1LVCUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:20:49 -0500
+	id S1754677Ab1LVCUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:20:44 -0500
 X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 21:20:28 EST
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -16,9 +16,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Joerie de Gram <j.de.gram@gmail.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 10/11] input: RMI4 F19 - capacitive buttons
-Date: Wed, 21 Dec 2011 18:10:01 -0800
-Message-Id: <1324519802-23894-11-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 3/11] input: RMI4 physical layer drivers for I2C and SPI
+Date: Wed, 21 Dec 2011 18:09:54 -0800
+Message-Id: <1324519802-23894-4-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
 References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
@@ -35,17 +35,453 @@ Cc: Joeri de Gram <j.de.gram@gmail.com>
 
 ---
 
- drivers/input/rmi4/rmi_f19.c | 1571 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 1571 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_i2c.c |  428 +++++++++++++++++++++
+ drivers/input/rmi4/rmi_spi.c |  875 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 1303 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_f19.c b/drivers/input/rmi4/rmi_f19.c
+diff --git a/drivers/input/rmi4/rmi_i2c.c b/drivers/input/rmi4/rmi_i2c.c
 new file mode 100644
-index 0000000..a678f30
+index 0000000..88b4a11
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_f19.c
-@@ -0,0 +1,1571 @@
++++ b/drivers/input/rmi4/rmi_i2c.c
+@@ -0,0 +1,428 @@
 +/*
 + * Copyright (c) 2011 Synaptics Incorporated
++ * Copyright (c) 2011 Unixphere
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/lockdep.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/gpio.h>
++#include <linux/rmi.h>
++
++#define COMMS_DEBUG 0
++
++#define IRQ_DEBUG 0
++
++#define RMI_PAGE_SELECT_REGISTER 0xff
++#define RMI_I2C_PAGE(addr) (((addr) >> 8) & 0xff)
++
++static char *phys_proto_name = "i2c";
++
++struct rmi_i2c_data {
++	struct mutex page_mutex;
++	int page;
++	int enabled;
++	int irq;
++	int irq_flags;
++	struct rmi_phys_device *phys;
++};
++
++static irqreturn_t rmi_i2c_irq_thread(int irq, void *p)
++{
++	struct rmi_phys_device *phys = p;
++	struct rmi_device *rmi_dev = phys->rmi_dev;
++	struct rmi_driver *driver = rmi_dev->driver;
++	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
++
++#if IRQ_DEBUG
++	dev_dbg(phys->dev, "ATTN gpio, value: %d.\n",
++			gpio_get_value(pdata->attn_gpio));
++#endif
++	if (gpio_get_value(pdata->attn_gpio) == pdata->attn_polarity) {
++		phys->info.attn_count++;
++		if (driver && driver->irq_handler && rmi_dev)
++			driver->irq_handler(rmi_dev, irq);
++	}
++
++	return IRQ_HANDLED;
++}
++
++/*
++ * rmi_set_page - Set RMI page
++ * @phys: The pointer to the rmi_phys_device struct
++ * @page: The new page address.
++ *
++ * RMI devices have 16-bit addressing, but some of the physical
++ * implementations (like SMBus) only have 8-bit addressing. So RMI implements
++ * a page address at 0xff of every page so we can reliable page addresses
++ * every 256 registers.
++ *
++ * The page_mutex lock must be held when this function is entered.
++ *
++ * Returns zero on success, non-zero on failure.
++ */
++static int rmi_set_page(struct rmi_phys_device *phys, unsigned int page)
++{
++	struct i2c_client *client = to_i2c_client(phys->dev);
++	struct rmi_i2c_data *data = phys->data;
++	char txbuf[2] = {RMI_PAGE_SELECT_REGISTER, page};
++	int retval;
++
++#if COMMS_DEBUG
++	dev_dbg(&client->dev, "RMI4 I2C writes 3 bytes: %02x %02x\n",
++		txbuf[0], txbuf[1]);
++#endif
++	phys->info.tx_count++;
++	phys->info.tx_bytes += sizeof(txbuf);
++	retval = i2c_master_send(client, txbuf, sizeof(txbuf));
++	if (retval != sizeof(txbuf)) {
++		phys->info.tx_errs++;
++		dev_err(&client->dev,
++			"%s: set page failed: %d.", __func__, retval);
++		return (retval < 0) ? retval : -EIO;
++	}
++	data->page = page;
++	return 0;
++}
++
++static int rmi_i2c_write_block(struct rmi_phys_device *phys, u16 addr, u8 *buf,
++			       int len)
++{
++	struct i2c_client *client = to_i2c_client(phys->dev);
++	struct rmi_i2c_data *data = phys->data;
++	u8 txbuf[len + 1];
++	int retval;
++#if	COMMS_DEBUG
++	int i;
++#endif
++
++	txbuf[0] = addr & 0xff;
++	memcpy(txbuf + 1, buf, len);
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_I2C_PAGE(addr) != data->page) {
++		retval = rmi_set_page(phys, RMI_I2C_PAGE(addr));
++		if (retval < 0)
++			goto exit;
++	}
++
++#if COMMS_DEBUG
++	dev_dbg(&client->dev, "RMI4 I2C writes %d bytes: ", sizeof(txbuf));
++	for (i = 0; i < sizeof(txbuf); i++)
++		dev_dbg(&client->dev, "%02x ", txbuf[i]);
++	dev_dbg(&client->dev, "\n");
++#endif
++
++	phys->info.tx_count++;
++	phys->info.tx_bytes += sizeof(txbuf);
++	retval = i2c_master_send(client, txbuf, sizeof(txbuf));
++	if (retval < 0)
++		phys->info.tx_errs++;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return retval;
++}
++
++static int rmi_i2c_write(struct rmi_phys_device *phys, u16 addr, u8 data)
++{
++	int retval = rmi_i2c_write_block(phys, addr, &data, 1);
++	return (retval < 0) ? retval : 0;
++}
++
++static int rmi_i2c_read_block(struct rmi_phys_device *phys, u16 addr, u8 *buf,
++			      int len)
++{
++	struct i2c_client *client = to_i2c_client(phys->dev);
++	struct rmi_i2c_data *data = phys->data;
++	u8 txbuf[1] = {addr & 0xff};
++	int retval;
++#if	COMMS_DEBUG
++	int i;
++#endif
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_I2C_PAGE(addr) != data->page) {
++		retval = rmi_set_page(phys, RMI_I2C_PAGE(addr));
++		if (retval < 0)
++			goto exit;
++	}
++
++#if COMMS_DEBUG
++	dev_dbg(&client->dev, "RMI4 I2C writes 1 bytes: %02x\n", txbuf[0]);
++#endif
++	phys->info.tx_count++;
++	phys->info.tx_bytes += sizeof(txbuf);
++	retval = i2c_master_send(client, txbuf, sizeof(txbuf));
++	if (retval != sizeof(txbuf)) {
++		phys->info.tx_errs++;
++		retval = (retval < 0) ? retval : -EIO;
++		goto exit;
++	}
++
++	retval = i2c_master_recv(client, buf, len);
++
++	phys->info.rx_count++;
++	phys->info.rx_bytes += len;
++	if (retval < 0)
++		phys->info.rx_errs++;
++#if COMMS_DEBUG
++	else {
++		dev_dbg(&client->dev, "RMI4 I2C received %d bytes: ", len);
++		for (i = 0; i < len; i++)
++			dev_dbg(&client->dev, "%02x ", buf[i]);
++		dev_dbg(&client->dev, "\n");
++	}
++#endif
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return retval;
++}
++
++static int rmi_i2c_read(struct rmi_phys_device *phys, u16 addr, u8 *buf)
++{
++	int retval = rmi_i2c_read_block(phys, addr, buf, 1);
++	return (retval < 0) ? retval : 0;
++}
++
++
++static int acquire_attn_irq(struct rmi_i2c_data *data)
++{
++	return request_threaded_irq(data->irq, NULL, rmi_i2c_irq_thread,
++			data->irq_flags, dev_name(data->phys->dev), data->phys);
++}
++
++static int enable_device(struct rmi_phys_device *phys)
++{
++	int retval = 0;
++
++	struct rmi_i2c_data *data = phys->data;
++
++	if (data->enabled)
++		return 0;
++
++	retval = acquire_attn_irq(data);
++	if (retval)
++		goto error_exit;
++
++	data->enabled = true;
++	dev_dbg(phys->dev, "Physical device enabled.\n");
++	return 0;
++
++error_exit:
++	dev_err(phys->dev, "Failed to enable physical device. Code=%d.\n",
++		retval);
++	return retval;
++}
++
++
++static void disable_device(struct rmi_phys_device *phys)
++{
++	struct rmi_i2c_data *data = phys->data;
++
++	if (!data->enabled)
++		return;
++
++	disable_irq(data->irq);
++	free_irq(data->irq, data->phys);
++
++	dev_dbg(phys->dev, "Physical device disabled.\n");
++	data->enabled = false;
++}
++
++
++static int __devinit rmi_i2c_probe(struct i2c_client *client,
++				  const struct i2c_device_id *id)
++{
++	struct rmi_phys_device *rmi_phys;
++	struct rmi_i2c_data *data;
++	struct rmi_device_platform_data *pdata = client->dev.platform_data;
++	int error;
++
++	if (!pdata) {
++		dev_err(&client->dev, "no platform data\n");
++		return -EINVAL;
++	}
++	pr_info("%s: Probing %s (IRQ %d).\n", __func__,
++		pdata->sensor_name ? pdata->sensor_name : "-no name-",
++		pdata->attn_gpio);
++
++	error = i2c_check_functionality(client->adapter, I2C_FUNC_I2C);
++	if (!error) {
++		dev_err(&client->dev, "i2c_check_functionality error %d.\n",
++			error
++		);
++		return error;
++	}
++
++	rmi_phys = kzalloc(sizeof(struct rmi_phys_device), GFP_KERNEL);
++	if (!rmi_phys)
++		return -ENOMEM;
++
++	data = kzalloc(sizeof(struct rmi_i2c_data), GFP_KERNEL);
++	if (!data) {
++		error = -ENOMEM;
++		goto err_phys;
++	}
++
++	data->enabled = true;	/* We plan to come up enabled. */
++	data->irq = gpio_to_irq(pdata->attn_gpio);
++	data->irq_flags = (pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH) ?
++		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
++	data->phys = rmi_phys;
++
++	rmi_phys->data = data;
++	rmi_phys->dev = &client->dev;
++
++	rmi_phys->write = rmi_i2c_write;
++	rmi_phys->write_block = rmi_i2c_write_block;
++	rmi_phys->read = rmi_i2c_read;
++	rmi_phys->read_block = rmi_i2c_read_block;
++	rmi_phys->enable_device = enable_device;
++	rmi_phys->disable_device = disable_device;
++
++	rmi_phys->info.proto = phys_proto_name;
++
++	mutex_init(&data->page_mutex);
++
++	/* Setting the page to zero will (a) make sure the PSR is in a
++	 * known state, and (b) make sure we can talk to the device.
++	 */
++	error = rmi_set_page(rmi_phys, 0);
++	if (error) {
++		dev_err(&client->dev, "Failed to set page select to 0.\n");
++		goto err_data;
++	}
++
++	if (pdata->gpio_config) {
++		error = pdata->gpio_config(pdata->gpio_data, true);
++		if (error < 0) {
++			dev_err(&client->dev, "failed to setup irq %d\n",
++				pdata->attn_gpio);
++			goto err_data;
++		}
++	}
++
++	error = rmi_register_phys_device(rmi_phys);
++	if (error) {
++		dev_err(&client->dev,
++			"failed to register physical driver at 0x%.2X.\n",
++			client->addr);
++		goto err_data;
++	}
++	i2c_set_clientdata(client, rmi_phys);
++
++	if (pdata->attn_gpio > 0) {
++		error = acquire_attn_irq(data);
++		if (error < 0) {
++			dev_err(&client->dev,
++				"request_threaded_irq failed %d\n",
++				pdata->attn_gpio);
++			goto err_unregister;
++		}
++	}
++
++#if defined(CONFIG_RMI4_DEV)
++	error = gpio_export(pdata->attn_gpio, false);
++	if (error) {
++		dev_warn(&client->dev, "%s: WARNING: Failed to "
++				 "export ATTN gpio!\n", __func__);
++		error = 0;
++	} else {
++		error = gpio_export_link(&(rmi_phys->rmi_dev->dev), "attn",
++					pdata->attn_gpio);
++		if (error) {
++			dev_warn(&(rmi_phys->rmi_dev->dev), "%s: WARNING: "
++				"Failed to symlink ATTN gpio!\n", __func__);
++			error = 0;
++		} else {
++			dev_info(&(rmi_phys->rmi_dev->dev),
++				"%s: Exported GPIO %d.", __func__,
++				pdata->attn_gpio);
++		}
++	}
++#endif /* CONFIG_RMI4_DEV */
++
++	dev_info(&client->dev, "registered rmi i2c driver at 0x%.2X.\n",
++			client->addr);
++	return 0;
++
++err_unregister:
++	rmi_unregister_phys_device(rmi_phys);
++err_data:
++	kfree(data);
++err_phys:
++	kfree(rmi_phys);
++	return error;
++}
++
++static int __devexit rmi_i2c_remove(struct i2c_client *client)
++{
++	struct rmi_phys_device *phys = i2c_get_clientdata(client);
++	struct rmi_device_platform_data *pd = client->dev.platform_data;
++
++	rmi_unregister_phys_device(phys);
++	kfree(phys->data);
++	kfree(phys);
++
++	if (pd->gpio_config)
++		pd->gpio_config(&client->dev, false);
++
++	return 0;
++}
++
++static const struct i2c_device_id rmi_id[] = {
++	{ "rmi", 0 },
++	{ "rmi-i2c", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, rmi_id);
++
++static struct i2c_driver rmi_i2c_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "rmi-i2c"
++	},
++	.id_table	= rmi_id,
++	.probe		= rmi_i2c_probe,
++	.remove		= __devexit_p(rmi_i2c_remove),
++};
++
++static int __init rmi_i2c_init(void)
++{
++	return i2c_add_driver(&rmi_i2c_driver);
++}
++
++static void __exit rmi_i2c_exit(void)
++{
++	i2c_del_driver(&rmi_i2c_driver);
++}
++
++MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
++MODULE_DESCRIPTION("RMI I2C driver");
++MODULE_LICENSE("GPL");
++
++module_init(rmi_i2c_init);
++module_exit(rmi_i2c_exit);
+diff --git a/drivers/input/rmi4/rmi_spi.c b/drivers/input/rmi4/rmi_spi.c
+new file mode 100644
+index 0000000..725c8f1
+--- /dev/null
++++ b/drivers/input/rmi4/rmi_spi.c
+@@ -0,0 +1,875 @@
++/*
++ * Copyright (c) 2011 Synaptics Incorporated
++ * Copyright (c) 2011 Unixphere
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -62,1556 +498,859 @@ index 0000000..a678f30
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +#include <linux/kernel.h>
-+#include <linux/rmi.h>
-+#include <linux/input.h>
++#include <linux/module.h>
++#include <linux/spi/spi.h>
++#include <linux/delay.h>
 +#include <linux/slab.h>
++#include <linux/completion.h>
++#include <linux/sched.h>
++#include <linux/gpio.h>
++#include <linux/rmi.h>
 +
-+#define QUERY_BASE_INDEX 1
-+#define MAX_LEN 256
++#define COMMS_DEBUG 0
 +
-+struct f19_0d_query {
-+	union {
-+		struct {
-+			u8 configurable:1;
-+			u8 has_sensitivity_adjust:1;
-+			u8 has_hysteresis_threshold:1;
-+		};
-+		u8 f19_0d_query0;
-+	};
-+	u8 f19_0d_query1:5;
++#define RMI_PROTOCOL_VERSION_ADDRESS	0xa0fd
++#define SPI_V2_UNIFIED_READ		0xc0
++#define SPI_V2_WRITE			0x40
++#define SPI_V2_PREPARE_SPLIT_READ	0xc8
++#define SPI_V2_EXECUTE_SPLIT_READ	0xca
++
++#define RMI_SPI_BLOCK_DELAY_US		65
++#define RMI_SPI_BYTE_DELAY_US		65
++#define RMI_SPI_WRITE_DELAY_US		0
++
++#define RMI_V1_READ_FLAG		0x80
++
++#define RMI_PAGE_SELECT_REGISTER 0x00FF
++#define RMI_SPI_PAGE(addr) (((addr) >> 8) & 0x80)
++
++#define DEFAULT_POLL_INTERVAL_MS	13
++
++static char *spi_v1_proto_name = "spi";
++static char *spi_v2_proto_name = "spiv2";
++
++struct rmi_spi_data {
++	struct mutex page_mutex;
++	int page;
++	int (*set_page) (struct rmi_phys_device *phys, u8 page);
++	bool split_read_pending;
++	int enabled;
++	int irq;
++	int irq_flags;
++	struct rmi_phys_device *phys;
++	struct completion irq_comp;
++
++	/* Following are used when polling. */
++	struct hrtimer poll_timer;
++	struct work_struct poll_work;
++	int poll_interval;
++
 +};
 +
-+struct f19_0d_control_0 {
-+	union {
-+		struct {
-+			u8 button_usage:2;
-+			u8 filter_mode:2;
-+		};
-+		u8 f19_0d_control0;
-+	};
-+};
-+
-+struct f19_0d_control_1 {
-+	u8 int_enabled_button;
-+};
-+
-+struct f19_0d_control_2 {
-+	u8 single_button;
-+};
-+
-+struct f19_0d_control_3_4 {
-+	u8 sensor_map_button:7;
-+	/*u8 sensitivity_button;*/
-+};
-+
-+struct f19_0d_control_5 {
-+	u8 sensitivity_adj;
-+};
-+struct f19_0d_control_6 {
-+	u8 hysteresis_threshold;
-+};
-+
-+struct f19_0d_control {
-+	struct f19_0d_control_0 *general_control;
-+	struct f19_0d_control_1 *button_int_enable;
-+	struct f19_0d_control_2 *single_button_participation;
-+	struct f19_0d_control_3_4 *sensor_map;
-+	struct f19_0d_control_5 *all_button_sensitivity_adj;
-+	struct f19_0d_control_6 *all_button_hysteresis_threshold;
-+};
-+/* data specific to fn $19 that needs to be kept around */
-+struct f19_data {
-+	struct f19_0d_control *button_control;
-+	struct f19_0d_query button_query;
-+	u8 button_rezero;
-+	bool *button_down;
-+	unsigned char button_count;
-+	unsigned char button_data_buffer_size;
-+	unsigned char *button_data_buffer;
-+	unsigned char *button_map;
-+	char input_name[MAX_LEN];
-+	char input_phys[MAX_LEN];
-+	struct input_dev *input;
-+};
-+
-+static ssize_t rmi_f19_button_count_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+
-+static ssize_t rmi_f19_button_map_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f19_button_map_store(struct device *dev,
-+				       struct device_attribute *attr,
-+				       const char *buf, size_t count);
-+static ssize_t rmi_f19_rezero_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_rezero_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_has_hysteresis_threshold_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+static ssize_t rmi_f19_has_sensitivity_adjust_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+static ssize_t rmi_f19_configurable_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+static ssize_t rmi_f19_filter_mode_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_filter_mode_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_button_usage_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_button_usage_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_interrupt_enable_button_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_interrupt_enable_button_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_single_button_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_single_button_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_sensor_map_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_sensor_map_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_sensitivity_adjust_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_sensitivity_adjust_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t rmi_f19_hysteresis_threshold_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t rmi_f19_hysteresis_threshold_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+
-+
-+
-+static inline int rmi_f19_alloc_memory(struct rmi_function_container *fc);
-+
-+static inline void rmi_f19_free_memory(struct rmi_function_container *fc);
-+
-+static inline int rmi_f19_initialize(struct rmi_function_container *fc);
-+
-+static inline int rmi_f19_register_device(struct rmi_function_container *fc);
-+
-+static inline int rmi_f19_create_sysfs(struct rmi_function_container *fc);
-+
-+static int rmi_f19_config(struct rmi_function_container *fc);
-+
-+static int rmi_f19_reset(struct rmi_function_container *fc);
-+
-+static struct device_attribute attrs[] = {
-+	__ATTR(button_count, RMI_RO_ATTR,
-+		rmi_f19_button_count_show, rmi_store_error),
-+	__ATTR(button_map, RMI_RW_ATTR,
-+		rmi_f19_button_map_show, rmi_f19_button_map_store),
-+	__ATTR(rezero, RMI_RW_ATTR,
-+		rmi_f19_rezero_show, rmi_f19_rezero_store),
-+	__ATTR(has_hysteresis_threshold, RMI_RO_ATTR,
-+		rmi_f19_has_hysteresis_threshold_show, rmi_store_error),
-+	__ATTR(has_sensitivity_adjust, RMI_RO_ATTR,
-+		rmi_f19_has_sensitivity_adjust_show, rmi_store_error),
-+	__ATTR(configurable, RMI_RO_ATTR,
-+		rmi_f19_configurable_show, rmi_store_error),
-+	__ATTR(filter_mode, RMI_RW_ATTR,
-+		rmi_f19_filter_mode_show, rmi_f19_filter_mode_store),
-+	__ATTR(button_usage, RMI_RW_ATTR,
-+		rmi_f19_button_usage_show, rmi_f19_button_usage_store),
-+	__ATTR(interrupt_enable_button, RMI_RW_ATTR,
-+		rmi_f19_interrupt_enable_button_show,
-+		rmi_f19_interrupt_enable_button_store),
-+	__ATTR(single_button, RMI_RW_ATTR,
-+		rmi_f19_single_button_show, rmi_f19_single_button_store),
-+	__ATTR(sensor_map, RMI_RW_ATTR,
-+		rmi_f19_sensor_map_show, rmi_f19_sensor_map_store),
-+	__ATTR(sensitivity_adjust, RMI_RW_ATTR,
-+		rmi_f19_sensitivity_adjust_show,
-+		rmi_f19_sensitivity_adjust_store),
-+	__ATTR(hysteresis_threshold, RMI_RW_ATTR,
-+		rmi_f19_hysteresis_threshold_show,
-+		rmi_f19_hysteresis_threshold_store)
-+};
-+
-+
-+int rmi_f19_read_control_parameters(struct rmi_device *rmi_dev,
-+	struct f19_0d_control *button_control,
-+	unsigned char button_count,
-+	unsigned char int_button_enabled_count,
-+	u8 ctrl_base_addr)
++static irqreturn_t rmi_spi_hard_irq(int irq, void *p)
 +{
-+	int error = 0;
++	struct rmi_phys_device *phys = p;
++	struct rmi_spi_data *data = phys->data;
++	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
++
++	if (data->split_read_pending &&
++		      gpio_get_value(pdata->attn_gpio) ==
++		      pdata->attn_polarity) {
++		phys->info.attn_count++;
++		complete(&data->irq_comp);
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_WAKE_THREAD;
++}
++
++static irqreturn_t rmi_spi_irq_thread(int irq, void *p)
++{
++	struct rmi_phys_device *phys = p;
++	struct rmi_device *rmi_dev = phys->rmi_dev;
++	struct rmi_driver *driver = rmi_dev->driver;
++	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
++
++	if (gpio_get_value(pdata->attn_gpio) == pdata->attn_polarity) {
++		phys->info.attn_count++;
++		if (driver && driver->irq_handler)
++			driver->irq_handler(rmi_dev, irq);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static void spi_poll_work(struct work_struct *work)
++{
++	struct rmi_spi_data *data =
++			container_of(work, struct rmi_spi_data, poll_work);
++	struct rmi_device *rmi_dev = data->phys->rmi_dev;
++	struct rmi_driver *driver = rmi_dev->driver;
++
++	if (driver && driver->irq_handler)
++		driver->irq_handler(rmi_dev, 0);
++}
++
++/* This is the timer function for polling - it simply has to schedule work
++ * and restart the timer. */
++static enum hrtimer_restart spi_poll_timer(struct hrtimer *timer)
++{
++	struct rmi_spi_data *data =
++			container_of(timer, struct rmi_spi_data, poll_timer);
++
++	if (!work_pending(&data->poll_work))
++		schedule_work(&data->poll_work);
++	hrtimer_start(&data->poll_timer, ktime_set(0, data->poll_interval),
++		      HRTIMER_MODE_REL);
++	return HRTIMER_NORESTART;
++}
++
++
++
++static int rmi_spi_xfer(struct rmi_phys_device *phys,
++		    const u8 *txbuf, unsigned n_tx, u8 *rxbuf, unsigned n_rx)
++{
++	struct spi_device *client = to_spi_device(phys->dev);
++	struct rmi_spi_data *v2_data = phys->data;
++	struct rmi_device_platform_data *pdata = phys->dev->platform_data;
++	int status;
++	struct spi_message message;
++	struct spi_transfer *xfers;
++	int total_bytes = n_tx + n_rx;
++	u8 local_buf[total_bytes];
++	int xfer_count = 0;
++	int xfer_index = 0;
++	int block_delay = n_rx > 0 ? pdata->spi_data.block_delay_us : 0;
++	int byte_delay = n_rx > 1 ? pdata->spi_data.read_delay_us : 0;
++	int write_delay = n_tx > 1 ? pdata->spi_data.write_delay_us : 0;
++#if COMMS_DEBUG
 +	int i;
++#endif
 +
-+	if (button_control->general_control) {
-+		error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+				(u8 *)button_control->general_control,
-+				sizeof(struct f19_0d_control_0));
-+		if (error < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read f19_0d_control_0, code:"
-+				" %d.\n", error);
-+			return error;
-+		}
-+		ctrl_base_addr = ctrl_base_addr +
-+				sizeof(struct f19_0d_control_0);
++	if (v2_data->split_read_pending) {
++		block_delay =
++		    n_rx > 0 ? pdata->spi_data.split_read_block_delay_us : 0;
++		byte_delay =
++		    n_tx > 1 ? pdata->spi_data.split_read_byte_delay_us : 0;
++		write_delay = 0;
 +	}
 +
-+	if (button_control->button_int_enable) {
-+		for (i = 0; i < int_button_enabled_count; i++) {
-+			error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+				(u8 *)&button_control->button_int_enable[i],
-+				sizeof(struct f19_0d_control_1));
-+			if (error < 0) {
-+				dev_err(&rmi_dev->dev,
-+					"Failed to read f19_0d_control_2,"
-+					" code: %d.\n", error);
-+				return error;
++	if (n_tx) {
++		phys->info.tx_count++;
++		phys->info.tx_bytes += n_tx;
++		if (write_delay)
++			xfer_count += n_tx;
++		else
++			xfer_count += 1;
++	}
++
++	if (n_rx) {
++		phys->info.rx_count++;
++		phys->info.rx_bytes += n_rx;
++		if (byte_delay)
++			xfer_count += n_rx;
++		else
++			xfer_count += 1;
++	}
++
++	xfers = kcalloc(xfer_count,
++			    sizeof(struct spi_transfer), GFP_KERNEL);
++	if (!xfers)
++		return -ENOMEM;
++
++	spi_message_init(&message);
++
++	if (n_tx) {
++		if (write_delay) {
++			for (xfer_index = 0; xfer_index < n_tx;
++					xfer_index++) {
++				memset(&xfers[xfer_index], 0,
++				       sizeof(struct spi_transfer));
++				xfers[xfer_index].len = 1;
++				xfers[xfer_index].delay_usecs = write_delay;
++				xfers[xfer_index].tx_buf = txbuf + xfer_index;
++				spi_message_add_tail(&xfers[xfer_index],
++						     &message);
 +			}
-+			ctrl_base_addr = ctrl_base_addr +
-+				sizeof(struct f19_0d_control_1);
-+		}
-+	}
-+
-+	if (button_control->single_button_participation) {
-+		for (i = 0; i < int_button_enabled_count; i++) {
-+			error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+					(u8 *)&button_control->
-+						single_button_participation[i],
-+					sizeof(struct f19_0d_control_2));
-+			if (error < 0) {
-+				dev_err(&rmi_dev->dev,
-+					"Failed to read f19_0d_control_2,"
-+					" code: %d.\n", error);
-+				return error;
-+			}
-+			ctrl_base_addr = ctrl_base_addr +
-+				sizeof(struct f19_0d_control_2);
-+		}
-+	}
-+
-+	if (button_control->sensor_map) {
-+		for (i = 0; i < button_count; i++) {
-+			error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+					(u8 *)&button_control->sensor_map[i],
-+					sizeof(struct f19_0d_control_3_4));
-+			if (error < 0) {
-+				dev_err(&rmi_dev->dev,
-+				"Failed to read f19_0d_control_3_4,"
-+				" code: %d.\n", error);
-+				return error;
-+			}
-+			ctrl_base_addr = ctrl_base_addr +
-+				sizeof(struct f19_0d_control_3_4);
-+		}
-+	}
-+
-+	if (button_control->all_button_sensitivity_adj) {
-+		error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+				(u8 *)button_control->
-+					all_button_sensitivity_adj,
-+				sizeof(struct f19_0d_control_5));
-+		if (error < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read f19_0d_control_5,"
-+				" code: %d.\n", error);
-+			return error;
-+		}
-+		ctrl_base_addr = ctrl_base_addr +
-+			sizeof(struct f19_0d_control_5);
-+	}
-+
-+	if (button_control->all_button_hysteresis_threshold) {
-+		error = rmi_read_block(rmi_dev, ctrl_base_addr,
-+				(u8 *)button_control->
-+					all_button_hysteresis_threshold,
-+				sizeof(struct f19_0d_control_6));
-+		if (error < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read f19_0d_control_6,"
-+				" code: %d.\n", error);
-+			return error;
-+		}
-+		ctrl_base_addr = ctrl_base_addr +
-+			sizeof(struct f19_0d_control_6);
-+	}
-+	return 0;
-+}
-+
-+
-+static int rmi_f19_init(struct rmi_function_container *fc)
-+{
-+	int rc;
-+
-+	rc = rmi_f19_alloc_memory(fc);
-+	if (rc < 0)
-+		goto err_free_data;
-+
-+	rc = rmi_f19_initialize(fc);
-+	if (rc < 0)
-+		goto err_free_data;
-+
-+	rc = rmi_f19_register_device(fc);
-+	if (rc < 0)
-+		goto err_free_data;
-+
-+	rc = rmi_f19_create_sysfs(fc);
-+	if (rc < 0)
-+		goto err_free_data;
-+
-+	return 0;
-+
-+err_free_data:
-+	rmi_f19_free_memory(fc);
-+
-+	return rc;
-+}
-+
-+
-+static inline int rmi_f19_alloc_memory(struct rmi_function_container *fc)
-+{
-+	struct f19_data *f19;
-+	int rc;
-+
-+	f19 = kzalloc(sizeof(struct f19_data), GFP_KERNEL);
-+	if (!f19) {
-+		dev_err(&fc->dev, "Failed to allocate function data.\n");
-+		return -ENOMEM;
-+	}
-+	fc->data = f19;
-+
-+	rc = rmi_read_block(fc->rmi_dev,
-+						fc->fd.query_base_addr,
-+						(u8 *)&f19->button_query,
-+						sizeof(struct f19_0d_query));
-+	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to read query register.\n");
-+		return rc;
-+	}
-+
-+	f19->button_count = f19->button_query.f19_0d_query1;
-+
-+	f19->button_down = kcalloc(f19->button_count,
-+			sizeof(bool), GFP_KERNEL);
-+	if (!f19->button_down) {
-+		dev_err(&fc->dev, "Failed to allocate button state buffer.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_data_buffer_size = (f19->button_count + 7) / 8;
-+	f19->button_data_buffer =
-+	    kcalloc(f19->button_data_buffer_size,
-+		    sizeof(unsigned char), GFP_KERNEL);
-+	if (!f19->button_data_buffer) {
-+		dev_err(&fc->dev, "Failed to allocate button data buffer.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_map = kcalloc(f19->button_count,
-+				sizeof(unsigned char), GFP_KERNEL);
-+	if (!f19->button_map) {
-+		dev_err(&fc->dev, "Failed to allocate button map.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control = kzalloc(sizeof(struct f19_0d_control),
-+				GFP_KERNEL);
-+	if (!f19->button_control) {
-+		dev_err(&fc->dev, "Failed to allocate button_control.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->general_control =
-+		kzalloc(sizeof(struct f19_0d_control_0), GFP_KERNEL);
-+	if (!f19->button_control->general_control) {
-+		dev_err(&fc->dev, "Failed to allocate"
-+				" f19_0d_control_0.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->button_int_enable =
-+		kzalloc(f19->button_data_buffer_size *
-+			sizeof(struct f19_0d_control_2), GFP_KERNEL);
-+	if (!f19->button_control->button_int_enable) {
-+		dev_err(&fc->dev, "Failed to allocate f19_0d_control_1.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->single_button_participation =
-+		kzalloc(f19->button_data_buffer_size *
-+			sizeof(struct f19_0d_control_2), GFP_KERNEL);
-+	if (!f19->button_control->single_button_participation) {
-+		dev_err(&fc->dev, "Failed to allocate"
-+			" f19_0d_control_2.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->sensor_map =
-+		kzalloc(f19->button_count *
-+			sizeof(struct f19_0d_control_3_4), GFP_KERNEL);
-+	if (!f19->button_control->sensor_map) {
-+		dev_err(&fc->dev, "Failed to allocate"
-+			" f19_0d_control_3_4.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->all_button_sensitivity_adj =
-+		kzalloc(sizeof(struct f19_0d_control_5), GFP_KERNEL);
-+	if (!f19->button_control->all_button_sensitivity_adj) {
-+		dev_err(&fc->dev, "Failed to allocate"
-+			" f19_0d_control_5.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->button_control->all_button_hysteresis_threshold =
-+		kzalloc(sizeof(struct f19_0d_control_6), GFP_KERNEL);
-+	if (!f19->button_control->all_button_hysteresis_threshold) {
-+		dev_err(&fc->dev, "Failed to allocate"
-+			" f19_0d_control_6.\n");
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+
-+static inline void rmi_f19_free_memory(struct rmi_function_container *fc)
-+{
-+	struct f19_data *f19 = fc->data;
-+
-+	if (f19) {
-+		kfree(f19->button_down);
-+		kfree(f19->button_data_buffer);
-+		kfree(f19->button_map);
-+		if (f19->button_control) {
-+			kfree(f19->button_control->general_control);
-+			kfree(f19->button_control->button_int_enable);
-+			kfree(f19->button_control->single_button_participation);
-+			kfree(f19->button_control->sensor_map);
-+			kfree(f19->button_control->all_button_sensitivity_adj);
-+			kfree(f19->button_control->
-+				  all_button_hysteresis_threshold);
-+			kfree(f19->button_control);
-+		}
-+		kfree(f19);
-+		fc->data = NULL;
-+	}
-+}
-+
-+
-+static inline int rmi_f19_initialize(struct rmi_function_container *fc)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_device_platform_data *pdata;
-+	struct f19_data *f19 = fc->data;
-+	int i;
-+	int rc;
-+
-+	dev_info(&fc->dev, "Intializing F19 values.");
-+
-+	/* initial all default values for f19 data here */
-+	rc = rmi_read(rmi_dev, fc->fd.command_base_addr,
-+		(u8 *)&f19->button_rezero);
-+	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to read command register.\n");
-+		return rc;
-+	}
-+	f19->button_rezero = f19->button_rezero & 1;
-+
-+	pdata = to_rmi_platform_data(rmi_dev);
-+	if (pdata) {
-+		if (!pdata->button_map) {
-+			dev_warn(&fc->dev, "%s - button_map is NULL", __func__);
-+		} else if (pdata->button_map->nbuttons != f19->button_count) {
-+			dev_warn(&fc->dev,
-+				"Platformdata button map size (%d) != number "
-+				"of buttons on device (%d) - ignored.\n",
-+				pdata->button_map->nbuttons,
-+				f19->button_count);
-+		} else if (!pdata->button_map->map) {
-+			dev_warn(&fc->dev,
-+				 "Platformdata button map is missing!\n");
 +		} else {
-+			for (i = 0; i < pdata->button_map->nbuttons; i++)
-+				f19->button_map[i] = pdata->button_map->map[i];
++			memset(&xfers[0], 0, sizeof(struct spi_transfer));
++			xfers[0].len = n_tx;
++			spi_message_add_tail(&xfers[0], &message);
++			memcpy(local_buf, txbuf, n_tx);
++			xfers[0].tx_buf = local_buf;
++			xfer_index++;
++		}
++		if (block_delay)
++			xfers[xfer_index-1].delay_usecs = block_delay;
++	}
++	if (n_rx) {
++		if (byte_delay) {
++			int buffer_offset = n_tx;
++			for (; xfer_index < xfer_count; xfer_index++) {
++				memset(&xfers[xfer_index], 0,
++				       sizeof(struct spi_transfer));
++				xfers[xfer_index].len = 1;
++				xfers[xfer_index].delay_usecs = byte_delay;
++				xfers[xfer_index].rx_buf =
++				    local_buf + buffer_offset;
++				buffer_offset++;
++				spi_message_add_tail(&xfers[xfer_index],
++						     &message);
++			}
++		} else {
++			memset(&xfers[xfer_index], 0,
++			       sizeof(struct spi_transfer));
++			xfers[xfer_index].len = n_rx;
++			xfers[xfer_index].rx_buf = local_buf + n_tx;
++			spi_message_add_tail(&xfers[xfer_index], &message);
++			xfer_index++;
 +		}
 +	}
 +
-+	rc = rmi_f19_read_control_parameters(rmi_dev,
-+						  f19->button_control,
-+						  f19->button_count,
-+						  f19->button_data_buffer_size,
-+						  fc->fd.control_base_addr);
-+	if (rc < 0) {
-+		dev_err(&fc->dev,
-+			"Failed to initialize F19 control params.\n");
-+		return rc;
++#if COMMS_DEBUG
++	if (n_tx) {
++		dev_dbg(&client->dev, "SPI sends %d bytes: ", n_tx);
++		for (i = 0; i < n_tx; i++)
++			dev_dbg(&client->dev, "%02X ", txbuf[i]);
++		dev_dbg(&client->dev, "\n");
++	}
++#endif
++
++	/* do the i/o */
++	if (pdata->spi_data.cs_assert) {
++		status = pdata->spi_data.cs_assert(
++			pdata->spi_data.cs_assert_data, true);
++		if (!status) {
++			dev_err(phys->dev, "Failed to assert CS.");
++			/* nonzero means error */
++			status = -1;
++			goto error_exit;
++		} else
++			status = 0;
 +	}
 +
-+	return 0;
++	if (pdata->spi_data.pre_delay_us)
++		udelay(pdata->spi_data.pre_delay_us);
++
++	status = spi_sync(client, &message);
++
++	if (pdata->spi_data.post_delay_us)
++		udelay(pdata->spi_data.post_delay_us);
++
++	if (pdata->spi_data.cs_assert) {
++		status = pdata->spi_data.cs_assert(
++			pdata->spi_data.cs_assert_data, false);
++		if (!status) {
++			dev_err(phys->dev, "Failed to deassert CS.");
++			/* nonzero means error */
++			status = -1;
++			goto error_exit;
++		} else
++			status = 0;
++	}
++
++	if (status == 0) {
++		memcpy(rxbuf, local_buf + n_tx, n_rx);
++		status = message.status;
++	} else {
++		phys->info.tx_errs++;
++		phys->info.rx_errs++;
++		dev_err(phys->dev, "spi_sync failed with error code %d.",
++		       status);
++	}
++
++#if COMMS_DEBUG
++	if (n_rx) {
++		dev_dbg(&client->dev, "SPI received %d bytes: ", n_rx);
++		for (i = 0; i  n_rx; i++)
++			dev_dbg(&client->dev, "%02X ", rxbuf[i]);
++		dev_dbg(&client->dev, "\n");
++	}
++#endif
++
++error_exit:
++	kfree(xfers);
++	return status;
++}
++
++static int rmi_spi_v2_write_block(struct rmi_phys_device *phys, u16 addr,
++				  u8 *buf, int len)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[len + 4];
++	int error;
++
++	txbuf[0] = SPI_V2_WRITE;
++	txbuf[1] = (addr >> 8) & 0x00FF;
++	txbuf[2] = addr & 0x00FF;
++	txbuf[3] = len;
++
++	memcpy(&txbuf[4], buf, len);
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_SPI_PAGE(addr) != data->page) {
++		error = data->set_page(phys, RMI_SPI_PAGE(addr));
++		if (error < 0)
++			goto exit;
++	}
++
++	error = rmi_spi_xfer(phys, buf, len + 4, NULL, 0);
++	if (error < 0)
++		goto exit;
++	error = len;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return error;
++}
++
++static int rmi_spi_v2_write(struct rmi_phys_device *phys, u16 addr, u8 data)
++{
++	int error = rmi_spi_v2_write_block(phys, addr, &data, 1);
++
++	return (error == 1) ? 0 : error;
++}
++
++static int rmi_spi_v1_write_block(struct rmi_phys_device *phys, u16 addr,
++				  u8 *buf, int len)
++{
++	struct rmi_spi_data *data = phys->data;
++	unsigned char txbuf[len + 2];
++	int error;
++
++	txbuf[0] = addr >> 8;
++	txbuf[1] = addr;
++	memcpy(txbuf+2, buf, len);
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_SPI_PAGE(addr) != data->page) {
++		error = data->set_page(phys, RMI_SPI_PAGE(addr));
++		if (error < 0)
++			goto exit;
++	}
++
++	error = rmi_spi_xfer(phys, txbuf, len + 2, NULL, 0);
++	if (error < 0)
++		goto exit;
++	error = len;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return error;
++}
++
++static int rmi_spi_v1_write(struct rmi_phys_device *phys, u16 addr, u8 data)
++{
++	int error = rmi_spi_v1_write_block(phys, addr, &data, 1);
++
++	return (error == 1) ? 0 : error;
++}
++
++static int rmi_spi_v2_split_read_block(struct rmi_phys_device *phys, u16 addr,
++				       u8 *buf, int len)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[4];
++	u8 rxbuf[len + 1]; /* one extra byte for read length */
++	int error;
++
++	txbuf[0] = SPI_V2_PREPARE_SPLIT_READ;
++	txbuf[1] = (addr >> 8) & 0x00FF;
++	txbuf[2] = addr & 0x00ff;
++	txbuf[3] = len;
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_SPI_PAGE(addr) != data->page) {
++		error = data->set_page(phys, RMI_SPI_PAGE(addr));
++		if (error < 0)
++			goto exit;
++	}
++
++	data->split_read_pending = true;
++
++	error = rmi_spi_xfer(phys, txbuf, 4, NULL, 0);
++	if (error < 0) {
++		data->split_read_pending = false;
++		goto exit;
++	}
++
++	wait_for_completion(&data->irq_comp);
++
++	txbuf[0] = SPI_V2_EXECUTE_SPLIT_READ;
++	txbuf[1] = 0;
++
++	error = rmi_spi_xfer(phys, txbuf, 2, rxbuf, len + 1);
++	data->split_read_pending = false;
++	if (error < 0)
++		goto exit;
++
++	/* first byte is length */
++	if (rxbuf[0] != len) {
++		error = -EIO;
++		goto exit;
++	}
++
++	memcpy(buf, rxbuf + 1, len);
++	error = len;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return error;
++}
++
++static int rmi_spi_v2_read_block(struct rmi_phys_device *phys, u16 addr,
++				 u8 *buf, int len)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[4];
++	int error;
++
++	txbuf[0] = SPI_V2_UNIFIED_READ;
++	txbuf[1] = (addr >> 8) & 0x00FF;
++	txbuf[2] = addr & 0x00ff;
++	txbuf[3] = len;
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_SPI_PAGE(addr) != data->page) {
++		error = data->set_page(phys, RMI_SPI_PAGE(addr));
++		if (error < 0)
++			goto exit;
++	}
++
++	error = rmi_spi_xfer(phys, txbuf, 4, buf, len);
++	if (error < 0)
++		goto exit;
++	error = len;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return error;
++}
++
++static int rmi_spi_v2_read(struct rmi_phys_device *phys, u16 addr, u8 *buf)
++{
++	int error = rmi_spi_v2_read_block(phys, addr, buf, 1);
++
++	return (error == 1) ? 0 : error;
++}
++
++static int rmi_spi_v1_read_block(struct rmi_phys_device *phys, u16 addr,
++				 u8 *buf, int len)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[2];
++	int error;
++
++	txbuf[0] = (addr >> 8) | RMI_V1_READ_FLAG;
++	txbuf[1] = addr;
++
++	mutex_lock(&data->page_mutex);
++
++	if (RMI_SPI_PAGE(addr) != data->page) {
++		error = data->set_page(phys, RMI_SPI_PAGE(addr));
++		if (error < 0)
++			goto exit;
++	}
++
++	error = rmi_spi_xfer(phys, txbuf, 2, buf, len);
++	if (error < 0)
++		goto exit;
++	error = len;
++
++exit:
++	mutex_unlock(&data->page_mutex);
++	return error;
++}
++
++static int rmi_spi_v1_read(struct rmi_phys_device *phys, u16 addr, u8 *buf)
++{
++	int error = rmi_spi_v1_read_block(phys, addr, buf, 1);
++
++	return (error == 1) ? 0 : error;
++}
++
++#define RMI_SPI_PAGE_SELECT_WRITE_LENGTH 1
++
++static int rmi_spi_v1_set_page(struct rmi_phys_device *phys, u8 page)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[] = {RMI_PAGE_SELECT_REGISTER >> 8,
++		RMI_PAGE_SELECT_REGISTER & 0xFF, page};
++	int error;
++
++	error = rmi_spi_xfer(phys, txbuf, sizeof(txbuf), NULL, 0);
++	if (error < 0) {
++		dev_err(phys->dev, "Failed to set page select, code: %d.\n",
++			error);
++		return error;
++	}
++
++	data->page = page;
++
++	return RMI_SPI_PAGE_SELECT_WRITE_LENGTH;
++}
++
++static int rmi_spi_v2_set_page(struct rmi_phys_device *phys, u8 page)
++{
++	struct rmi_spi_data *data = phys->data;
++	u8 txbuf[] = {SPI_V2_WRITE, RMI_PAGE_SELECT_REGISTER >> 8,
++		RMI_PAGE_SELECT_REGISTER & 0xFF,
++		RMI_SPI_PAGE_SELECT_WRITE_LENGTH, page};
++	int error;
++
++	error = rmi_spi_xfer(phys, txbuf, sizeof(txbuf), NULL, 0);
++	if (error < 0) {
++		dev_err(phys->dev, "Failed to set page select, code: %d.\n",
++			error);
++		return error;
++	}
++
++	data->page = page;
++
++	return RMI_SPI_PAGE_SELECT_WRITE_LENGTH;
 +}
 +
 +
-+
-+static inline int rmi_f19_register_device(struct rmi_function_container *fc)
++static int acquire_attn_irq(struct rmi_spi_data *data)
 +{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct input_dev *input_dev;
-+	struct f19_data *f19 = fc->data;
-+	int i;
-+	int rc;
-+
-+	input_dev = input_allocate_device();
-+	if (!input_dev) {
-+		dev_err(&fc->dev, "Failed to allocate input device.\n");
-+		return -ENOMEM;
-+	}
-+
-+	f19->input = input_dev;
-+	snprintf(f19->input_name, MAX_LEN, "%sfn%02x", dev_name(&rmi_dev->dev),
-+		fc->fd.function_number);
-+	input_dev->name = f19->input_name;
-+	snprintf(f19->input_phys, MAX_LEN, "%s/input0", input_dev->name);
-+	input_dev->phys = f19->input_phys;
-+	input_dev->dev.parent = &rmi_dev->dev;
-+	input_set_drvdata(input_dev, f19);
-+
-+	/* Set up any input events. */
-+	set_bit(EV_SYN, input_dev->evbit);
-+	set_bit(EV_KEY, input_dev->evbit);
-+	/* set bits for each button... */
-+	for (i = 0; i < f19->button_count; i++)
-+		set_bit(f19->button_map[i], input_dev->keybit);
-+	rc = input_register_device(input_dev);
-+	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to register input device.\n");
-+		goto error_free_device;
-+	}
-+
-+	return 0;
-+
-+error_free_device:
-+	input_free_device(input_dev);
-+
-+	return rc;
-+}
-+
-+
-+static inline int rmi_f19_create_sysfs(struct rmi_function_container *fc)
-+{
-+	int attr_count = 0;
-+	int rc;
-+
-+	dev_dbg(&fc->dev, "Creating sysfs files.\n");
-+	/* Set up sysfs device attributes. */
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-+		if (sysfs_create_file
-+		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
-+			dev_err(&fc->dev,
-+				"Failed to create sysfs file for %s.",
-+				attrs[attr_count].attr.name);
-+			rc = -ENODEV;
-+			goto err_remove_sysfs;
-+		}
-+	}
-+
-+	return 0;
-+
-+err_remove_sysfs:
-+	for (attr_count--; attr_count >= 0; attr_count--)
-+		sysfs_remove_file(&fc->dev.kobj,
-+						  &attrs[attr_count].attr);
-+	return rc;
-+
-+}
-+
-+
-+
-+static int rmi_f19_config(struct rmi_function_container *fc)
-+{
-+	struct f19_data *data;
 +	int retval;
-+	int ctrl_base_addr;
-+	int button_reg;
++	struct rmi_phys_device *rmi_phys = data->phys;
 +
-+	data = fc->data;
-+
-+	ctrl_base_addr = fc->fd.control_base_addr;
-+
-+	button_reg = (data->button_count / 7) + 1;
-+
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->general_control,
-+			sizeof(struct f19_0d_control_0));
++	retval = request_threaded_irq(data->irq, rmi_spi_hard_irq,
++				rmi_spi_irq_thread, data->irq_flags,
++				dev_name(rmi_phys->dev), rmi_phys);
 +	if (retval < 0) {
-+		dev_err(&fc->dev, "%s : Could not write general_control to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return retval;
++		dev_err(&(rmi_phys->rmi_dev->dev), "request_threaded_irq "
++			"failed, code: %d.\n", retval);
 +	}
-+
-+	ctrl_base_addr += sizeof(struct f19_0d_control_0);
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->button_int_enable,
-+			sizeof(struct f19_0d_control_1)*(button_reg + 1));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "%s : Could not write interrupt_enable_store"
-+			" to 0x%x\n", __func__, ctrl_base_addr);
-+		return retval;
-+	}
-+
-+	ctrl_base_addr += sizeof(struct f19_0d_control_2)*(button_reg + 1);
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->single_button_participation,
-+			sizeof(struct f19_0d_control_2)*(button_reg + 1));
-+	if (retval < 0) {
-+		dev_err(&fc->dev,
-+				"%s : Could not write interrupt_enable_store to"
-+				" 0x%x\n", __func__, ctrl_base_addr);
-+		return -EINVAL;
-+	}
-+
-+	ctrl_base_addr = fc->fd.control_base_addr +
-+		sizeof(struct f19_0d_control_0) +
-+		sizeof(struct f19_0d_control_1)*button_reg +
-+		sizeof(struct f19_0d_control_2)*button_reg;
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->sensor_map,
-+			sizeof(struct f19_0d_control_3_4)*data->button_count);
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "%s : Could not sensor_map_store to 0x%x\n",
-+				__func__, ctrl_base_addr);
-+		return -EINVAL;
-+	}
-+		/* write back to the control register */
-+	ctrl_base_addr += sizeof(struct f19_0d_control_3_4)*data->button_count;
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->all_button_sensitivity_adj,
-+			sizeof(struct f19_0d_control_5));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "%s : Could not sensitivity_adjust_store to"
-+			" 0x%x\n", __func__, ctrl_base_addr);
-+		return retval;
-+	}
-+
-+	ctrl_base_addr += sizeof(struct f19_0d_control_5);
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_base_addr,
-+		(u8 *)data->button_control->all_button_sensitivity_adj,
-+			sizeof(struct f19_0d_control_6));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "%s : Could not write all_button hysteresis "
-+			"threshold to 0x%x\n", __func__, ctrl_base_addr);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+static int rmi_f19_reset(struct rmi_function_container *fc)
-+{
-+	/* we do nnothing here */
-+	return 0;
-+}
-+
-+
-+static void rmi_f19_remove(struct rmi_function_container *fc)
-+{
-+	struct f19_data *f19 = fc->data;
-+	int attr_count = 0;
-+
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
-+		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+
-+	input_unregister_device(f19->input);
-+
-+	rmi_f19_free_memory(fc);
-+}
-+
-+int rmi_f19_attention(struct rmi_function_container *fc, u8 *irq_bits)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct f19_data *f19 = fc->data;
-+	u8 data_base_addr = fc->fd.data_base_addr;
-+	int error;
-+	int button;
-+
-+	/* Read the button data. */
-+
-+	error = rmi_read_block(rmi_dev, data_base_addr, f19->button_data_buffer,
-+			f19->button_data_buffer_size);
-+	if (error < 0) {
-+		dev_err(&fc->dev, "%s: Failed to read button data registers.\n",
-+			__func__);
-+		return error;
-+	}
-+
-+	/* Generate events for buttons that change state. */
-+	for (button = 0; button < f19->button_count;
-+	     button++) {
-+		int button_reg;
-+		int button_shift;
-+		bool button_status;
-+
-+		/* determine which data byte the button status is in */
-+		button_reg = button / 7;
-+		/* bit shift to get button's status */
-+		button_shift = button % 8;
-+		button_status =
-+		    ((f19->button_data_buffer[button_reg] >> button_shift)
-+			& 0x01) != 0;
-+
-+		/* if the button state changed from the last time report it
-+		 * and store the new state */
-+		if (button_status != f19->button_down[button]) {
-+			dev_dbg(&fc->dev, "%s: Button %d (code %d) -> %d.\n",
-+				__func__, button, f19->button_map[button],
-+				 button_status);
-+			/* Generate an event here. */
-+			input_report_key(f19->input, f19->button_map[button],
-+					 button_status);
-+			f19->button_down[button] = button_status;
-+		}
-+	}
-+
-+	input_sync(f19->input); /* sync after groups of events */
-+	return 0;
-+}
-+
-+static struct rmi_function_handler function_handler = {
-+	.func = 0x19,
-+	.init = rmi_f19_init,
-+	.config = rmi_f19_config,
-+	.reset = rmi_f19_reset,
-+	.attention = rmi_f19_attention,
-+	.remove = rmi_f19_remove
-+};
-+
-+static int __init rmi_f19_module_init(void)
-+{
-+	int error;
-+
-+	error = rmi_register_function_driver(&function_handler);
-+	if (error < 0) {
-+		pr_err("%s: register failed!\n", __func__);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+static void rmi_f19_module_exit(void)
-+{
-+	rmi_unregister_function_driver(&function_handler);
-+}
-+
-+static ssize_t rmi_f19_filter_mode_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_control->general_control->filter_mode);
-+
-+}
-+
-+static ssize_t rmi_f19_filter_mode_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int new_value;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u", &new_value) != 1) {
-+		dev_err(dev,
-+		"%s: Error - filter_mode_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_value < 0 || new_value > 4) {
-+		dev_err(dev, "%s: Error - filter_mode_store has an "
-+		"invalid value %d.\n",
-+		__func__, new_value);
-+		return -EINVAL;
-+	}
-+	data->button_control->general_control->filter_mode = new_value;
-+	result = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
-+		(u8 *)data->button_control->general_control,
-+			sizeof(struct f19_0d_control_0));
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write filter_mode_store to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_button_usage_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_control->general_control->button_usage);
-+
-+}
-+
-+static ssize_t rmi_f19_button_usage_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int new_value;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u", &new_value) != 1) {
-+		dev_err(dev,
-+		"%s: Error - button_usage_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_value < 0 || new_value > 4) {
-+		dev_err(dev, "%s: Error - button_usage_store has an "
-+		"invalid value %d.\n",
-+		__func__, new_value);
-+		return -EINVAL;
-+	}
-+	data->button_control->general_control->button_usage = new_value;
-+	result = rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr,
-+		(u8 *)data->button_control->general_control,
-+			sizeof(struct f19_0d_control_0));
-+	if (result < 0) {
-+		dev_err(dev, "%s: Could not write button_usage_store to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+
-+}
-+
-+static ssize_t rmi_f19_interrupt_enable_button_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i, len, total_len = 0;
-+	char *current_buf = buf;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	/* loop through each button map value and copy its
-+	 * string representation into buf */
-+	for (i = 0; i < data->button_count; i++) {
-+		int button_reg;
-+		int button_shift;
-+		int interrupt_button;
-+
-+		button_reg = i / 7;
-+		button_shift = i % 8;
-+		interrupt_button =
-+		    ((data->button_control->
-+			button_int_enable[button_reg].int_enabled_button >>
-+				button_shift) & 0x01);
-+
-+		/* get next button mapping value and write it to buf */
-+		len = snprintf(current_buf, PAGE_SIZE - total_len,
-+			"%u ", interrupt_button);
-+		/* bump up ptr to next location in buf if the
-+		 * snprintf was valid.  Otherwise issue an error
-+		 * and return. */
-+		if (len > 0) {
-+			current_buf += len;
-+			total_len += len;
-+		} else {
-+			dev_err(dev, "%s: Failed to build interrupt button"
-+				" buffer, code = %d.\n", __func__, len);
-+			return snprintf(buf, PAGE_SIZE, "unknown\n");
-+		}
-+	}
-+	len = snprintf(current_buf, PAGE_SIZE - total_len, "\n");
-+	if (len > 0)
-+		total_len += len;
-+	else
-+		dev_warn(dev, "%s: Failed to append carriage return.\n",
-+			 __func__);
-+	return total_len;
-+
-+}
-+
-+static ssize_t rmi_f19_interrupt_enable_button_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i;
-+	int button_count = 0;
-+	int retval = count;
-+	int button_reg = 0;
-+	int ctrl_bass_addr;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	for (i = 0; i < data->button_count && *buf != 0;
-+	     i++) {
-+		int button_shift;
-+		int button;
-+
-+		button_reg = i / 7;
-+		button_shift = i % 8;
-+		/* get next button mapping value and store and bump up to
-+		 * point to next item in buf */
-+		sscanf(buf, "%u", &button);
-+
-+		if (button != 0 && button != 1) {
-+			dev_err(dev,
-+				"%s: Error - interrupt enable button for"
-+				" button %d is not a valid value 0x%x.\n",
-+				__func__, i, button);
-+			return -EINVAL;
-+		}
-+
-+		if (button_shift == 0)
-+			data->button_control->button_int_enable[button_reg].
-+				int_enabled_button = 0;
-+		data->button_control->button_int_enable[button_reg].
-+			int_enabled_button |= (button << button_shift);
-+		button_count++;
-+		/* bump up buf to point to next item to read */
-+		while (*buf != 0) {
-+			buf++;
-+			if (*(buf - 1) == ' ')
-+				break;
-+		}
-+	}
-+
-+	/* Make sure the button count matches */
-+	if (button_count != data->button_count) {
-+		dev_err(dev,
-+			"%s: Error - interrupt enable button count of %d"
-+			" doesn't match device button count of %d.\n",
-+			 __func__, button_count, data->button_count);
-+		return -EINVAL;
-+	}
-+
-+	/* write back to the control register */
-+	ctrl_bass_addr = fc->fd.control_base_addr +
-+			sizeof(struct f19_0d_control_0);
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_bass_addr,
-+		(u8 *)data->button_control->button_int_enable,
-+			sizeof(struct f19_0d_control_1)*(button_reg + 1));
-+	if (retval < 0) {
-+		dev_err(dev, "%s : Could not write interrupt_enable_store"
-+			" to 0x%x\n", __func__, ctrl_bass_addr);
-+		return retval;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_single_button_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i, len, total_len = 0;
-+	char *current_buf = buf;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	/* loop through each button map value and copy its
-+	 * string representation into buf */
-+	for (i = 0; i < data->button_count; i++) {
-+		int button_reg;
-+		int button_shift;
-+		int single_button;
-+
-+		button_reg = i / 7;
-+		button_shift = i % 8;
-+		single_button = ((data->button_control->
-+			single_button_participation[button_reg].single_button
-+			>> button_shift) & 0x01);
-+
-+		/* get next button mapping value and write it to buf */
-+		len = snprintf(current_buf, PAGE_SIZE - total_len,
-+			"%u ", single_button);
-+		/* bump up ptr to next location in buf if the
-+		 * snprintf was valid.  Otherwise issue an error
-+		 * and return. */
-+		if (len > 0) {
-+			current_buf += len;
-+			total_len += len;
-+		} else {
-+			dev_err(dev, "%s: Failed to build signle button buffer"
-+				", code = %d.\n", __func__, len);
-+			return snprintf(buf, PAGE_SIZE, "unknown\n");
-+		}
-+	}
-+	len = snprintf(current_buf, PAGE_SIZE - total_len, "\n");
-+	if (len > 0)
-+		total_len += len;
-+	else
-+		dev_warn(dev, "%s: Failed to append carriage return.\n",
-+			 __func__);
-+
-+	return total_len;
-+
-+}
-+
-+static ssize_t rmi_f19_single_button_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i;
-+	int button_count = 0;
-+	int retval = count;
-+	int ctrl_bass_addr;
-+	int button_reg = 0;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	for (i = 0; i < data->button_count && *buf != 0;
-+	     i++) {
-+		int button_shift;
-+		int button;
-+
-+		button_reg = i / 7;
-+		button_shift = i % 8;
-+		/* get next button mapping value and store and bump up to
-+		 * point to next item in buf */
-+		sscanf(buf, "%u", &button);
-+
-+		if (button != 0 && button != 1) {
-+			dev_err(dev,
-+				"%s: Error - single button for button %d"
-+				" is not a valid value 0x%x.\n",
-+				__func__, i, button);
-+			return -EINVAL;
-+		}
-+		if (button_shift == 0)
-+			data->button_control->
-+				single_button_participation[button_reg].
-+				single_button = 0;
-+		data->button_control->single_button_participation[button_reg].
-+			single_button |=  (button << button_shift);
-+		button_count++;
-+		/* bump up buf to point to next item to read */
-+		while (*buf != 0) {
-+			buf++;
-+			if (*(buf - 1) == ' ')
-+				break;
-+		}
-+	}
-+
-+	/* Make sure the button count matches */
-+	if (button_count != data->button_count) {
-+		dev_err(dev,
-+		    "%s: Error - single button count of %d doesn't match"
-+		     " device button count of %d.\n", __func__, button_count,
-+		     data->button_count);
-+		return -EINVAL;
-+	}
-+	/* write back to the control register */
-+	ctrl_bass_addr = fc->fd.control_base_addr +
-+		sizeof(struct f19_0d_control_0) +
-+		sizeof(struct f19_0d_control_2)*(button_reg + 1);
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_bass_addr,
-+		(u8 *)data->button_control->single_button_participation,
-+			sizeof(struct f19_0d_control_2)*(button_reg + 1));
-+	if (retval < 0) {
-+		dev_err(dev, "%s : Could not write interrupt_enable_store to"
-+			" 0x%x\n", __func__, ctrl_bass_addr);
-+		return -EINVAL;
-+	}
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_sensor_map_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i, len, total_len = 0;
-+	char *current_buf = buf;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	for (i = 0; i < data->button_count; i++) {
-+		len = snprintf(current_buf, PAGE_SIZE - total_len,
-+			"%u ", data->button_control->sensor_map[i].
-+			sensor_map_button);
-+		/* bump up ptr to next location in buf if the
-+		 * snprintf was valid.  Otherwise issue an error
-+		 * and return. */
-+		if (len > 0) {
-+			current_buf += len;
-+			total_len += len;
-+		} else {
-+			dev_err(dev, "%s: Failed to build sensor map buffer, "
-+				"code = %d.\n", __func__, len);
-+			return snprintf(buf, PAGE_SIZE, "unknown\n");
-+		}
-+	}
-+	len = snprintf(current_buf, PAGE_SIZE - total_len, "\n");
-+	if (len > 0)
-+		total_len += len;
-+	else
-+		dev_warn(dev, "%s: Failed to append carriage return.\n",
-+			 __func__);
-+	return total_len;
-+
-+
-+}
-+
-+static ssize_t rmi_f19_sensor_map_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int sensor_map;
-+	int i;
-+	int retval = count;
-+	int button_count = 0;
-+	int ctrl_bass_addr;
-+	int button_reg;
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	if (data->button_query.configurable == 0) {
-+		dev_err(dev,
-+			"%s: Error - sensor map is not configuralbe at"
-+			" run-time", __func__);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < data->button_count && *buf != 0; i++) {
-+		/* get next button mapping value and store and bump up to
-+		 * point to next item in buf */
-+		sscanf(buf, "%u", &sensor_map);
-+
-+		/* Make sure the key is a valid key */
-+		if (sensor_map < 0 || sensor_map > 127) {
-+			dev_err(dev,
-+				"%s: Error - sensor map for button %d is"
-+				" not a valid value 0x%x.\n",
-+				__func__, i, sensor_map);
-+			return -EINVAL;
-+		}
-+
-+		data->button_control->sensor_map[i].sensor_map_button =
-+			sensor_map;
-+		button_count++;
-+
-+		/* bump up buf to point to next item to read */
-+		while (*buf != 0) {
-+			buf++;
-+			if (*(buf - 1) == ' ')
-+				break;
-+		}
-+	}
-+
-+	if (button_count != data->button_count) {
-+		dev_err(dev,
-+		    "%s: Error - button map count of %d doesn't match device "
-+		     "button count of %d.\n", __func__, button_count,
-+		     data->button_count);
-+		return -EINVAL;
-+	}
-+
-+	/* write back to the control register */
-+	button_reg = (button_count / 7) + 1;
-+	ctrl_bass_addr = fc->fd.control_base_addr +
-+		sizeof(struct f19_0d_control_0) +
-+		sizeof(struct f19_0d_control_1)*button_reg +
-+		sizeof(struct f19_0d_control_2)*button_reg;
-+	retval = rmi_write_block(fc->rmi_dev, ctrl_bass_addr,
-+		(u8 *)data->button_control->sensor_map,
-+			sizeof(struct f19_0d_control_3_4)*button_count);
-+	if (retval < 0) {
-+		dev_err(dev, "%s : Could not sensor_map_store to 0x%x\n",
-+				__func__, ctrl_bass_addr);
-+		return -EINVAL;
-+	}
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_sensitivity_adjust_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", data->button_control->
-+		all_button_sensitivity_adj->sensitivity_adj);
-+
-+}
-+
-+static ssize_t rmi_f19_sensitivity_adjust_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int new_value;
-+	int len;
-+	int ctrl_bass_addr;
-+	int button_reg;
-+
-+	fc = to_rmi_function_container(dev);
-+
-+	data = fc->data;
-+
-+	if (data->button_query.configurable == 0) {
-+		dev_err(dev,
-+			"%s: Error - sensitivity_adjust is not"
-+			" configuralbe at run-time", __func__);
-+		return -EINVAL;
-+	}
-+
-+	len = sscanf(buf, "%u", &new_value);
-+	if (new_value < 0 || new_value > 31)
-+		return -EINVAL;
-+
-+	data->button_control->all_button_sensitivity_adj->sensitivity_adj =
-+		 new_value;
-+	/* write back to the control register */
-+	button_reg = (data->button_count / 7) + 1;
-+	ctrl_bass_addr = fc->fd.control_base_addr +
-+		sizeof(struct f19_0d_control_0) +
-+		sizeof(struct f19_0d_control_1)*button_reg +
-+		sizeof(struct f19_0d_control_2)*button_reg +
-+		sizeof(struct f19_0d_control_3_4)*data->button_count;
-+	len = rmi_write_block(fc->rmi_dev, ctrl_bass_addr,
-+		(u8 *)data->button_control->all_button_sensitivity_adj,
-+			sizeof(struct f19_0d_control_5));
-+	if (len < 0) {
-+		dev_err(dev, "%s : Could not sensitivity_adjust_store to"
-+			" 0x%x\n", __func__, ctrl_bass_addr);
-+		return len;
-+	}
-+
-+	return len;
-+}
-+
-+static ssize_t rmi_f19_hysteresis_threshold_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", data->button_control->
-+		all_button_hysteresis_threshold->hysteresis_threshold);
-+
-+}
-+static ssize_t rmi_f19_hysteresis_threshold_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int new_value;
-+	int len;
-+	int ctrl_bass_addr;
-+	int button_reg;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	len = sscanf(buf, "%u", &new_value);
-+	if (new_value < 0 || new_value > 15) {
-+		dev_err(dev, "%s: Error - hysteresis_threshold_store has an "
-+		"invalid value %d.\n",
-+		__func__, new_value);
-+		return -EINVAL;
-+	}
-+	data->button_control->all_button_hysteresis_threshold->
-+		hysteresis_threshold = new_value;
-+	/* write back to the control register */
-+	button_reg = (data->button_count / 7) + 1;
-+	ctrl_bass_addr = fc->fd.control_base_addr +
-+		sizeof(struct f19_0d_control_0) +
-+		sizeof(struct f19_0d_control_1)*button_reg +
-+		sizeof(struct f19_0d_control_2)*button_reg +
-+		sizeof(struct f19_0d_control_3_4)*data->button_count+
-+		sizeof(struct f19_0d_control_5);
-+	len = rmi_write_block(fc->rmi_dev, ctrl_bass_addr,
-+		(u8 *)data->button_control->all_button_sensitivity_adj,
-+			sizeof(struct f19_0d_control_6));
-+	if (len < 0) {
-+		dev_err(dev, "%s : Could not write all_button hysteresis "
-+			"threshold to 0x%x\n", __func__, ctrl_bass_addr);
-+		return -EINVAL;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_has_hysteresis_threshold_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_query.has_hysteresis_threshold);
-+}
-+
-+static ssize_t rmi_f19_has_sensitivity_adjust_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_query.has_sensitivity_adjust);
-+}
-+
-+static ssize_t rmi_f19_configurable_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_query.configurable);
-+}
-+
-+static ssize_t rmi_f19_rezero_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_rezero);
-+
-+}
-+
-+static ssize_t rmi_f19_rezero_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf,
-+					 size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int new_value;
-+	int len;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	len = sscanf(buf, "%u", &new_value);
-+	if (new_value != 0 && new_value != 1) {
-+		dev_err(dev,
-+			"%s: Error - rezero is not a "
-+			"valid value 0x%x.\n",
-+			__func__, new_value);
-+		return -EINVAL;
-+	}
-+	data->button_rezero = new_value & 1;
-+	len = rmi_write(fc->rmi_dev, fc->fd.command_base_addr,
-+		data->button_rezero);
-+
-+	if (len < 0) {
-+		dev_err(dev, "%s : Could not write rezero to 0x%x\n",
-+				__func__, fc->fd.command_base_addr);
-+		return -EINVAL;
-+	}
-+	return count;
-+}
-+
-+static ssize_t rmi_f19_button_count_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->button_count);
-+}
-+
-+static ssize_t rmi_f19_button_map_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	int i, len, total_len = 0;
-+	char *current_buf = buf;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	/* loop through each button map value and copy its
-+	 * string representation into buf */
-+	for (i = 0; i < data->button_count; i++) {
-+		/* get next button mapping value and write it to buf */
-+		len = snprintf(current_buf, PAGE_SIZE - total_len,
-+			"%u ", data->button_map[i]);
-+		/* bump up ptr to next location in buf if the
-+		 * snprintf was valid.  Otherwise issue an error
-+		 * and return. */
-+		if (len > 0) {
-+			current_buf += len;
-+			total_len += len;
-+		} else {
-+			dev_err(dev, "%s: Failed to build button map buffer, "
-+				"code = %d.\n", __func__, len);
-+			return snprintf(buf, PAGE_SIZE, "unknown\n");
-+		}
-+	}
-+	len = snprintf(current_buf, PAGE_SIZE - total_len, "\n");
-+	if (len > 0)
-+		total_len += len;
-+	else
-+		dev_warn(dev, "%s: Failed to append carriage return.\n",
-+			 __func__);
-+	return total_len;
-+}
-+
-+static ssize_t rmi_f19_button_map_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf,
-+				size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct f19_data *data;
-+	unsigned int button;
-+	int i;
-+	int retval = count;
-+	int button_count = 0;
-+	unsigned char temp_button_map[KEY_MAX];
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	/* Do validation on the button map data passed in.  Store button
-+	 * mappings into a temp buffer and then verify button count and
-+	 * data prior to clearing out old button mappings and storing the
-+	 * new ones. */
-+	for (i = 0; i < data->button_count && *buf != 0;
-+	     i++) {
-+		/* get next button mapping value and store and bump up to
-+		 * point to next item in buf */
-+		sscanf(buf, "%u", &button);
-+
-+		/* Make sure the key is a valid key */
-+		if (button > KEY_MAX) {
-+			dev_err(dev,
-+				"%s: Error - button map for button %d is not a"
-+				" valid value 0x%x.\n", __func__, i, button);
-+			retval = -EINVAL;
-+			goto err_ret;
-+		}
-+
-+		temp_button_map[i] = button;
-+		button_count++;
-+
-+		/* bump up buf to point to next item to read */
-+		while (*buf != 0) {
-+			buf++;
-+			if (*(buf - 1) == ' ')
-+				break;
-+		}
-+	}
-+
-+	/* Make sure the button count matches */
-+	if (button_count != data->button_count) {
-+		dev_err(dev,
-+		    "%s: Error - button map count of %d doesn't match device "
-+		     "button count of %d.\n", __func__, button_count,
-+		     data->button_count);
-+		retval = -EINVAL;
-+		goto err_ret;
-+	}
-+
-+	/* Clear the key bits for the old button map. */
-+	for (i = 0; i < button_count; i++)
-+		clear_bit(data->button_map[i], data->input->keybit);
-+
-+	/* Switch to the new map. */
-+	memcpy(data->button_map, temp_button_map,
-+	       data->button_count);
-+
-+	/* Loop through the key map and set the key bit for the new mapping. */
-+	for (i = 0; i < button_count; i++)
-+		set_bit(data->button_map[i], data->input->keybit);
-+
-+err_ret:
 +	return retval;
 +}
 +
-+module_init(rmi_f19_module_init);
-+module_exit(rmi_f19_module_exit);
++static int setup_attn(struct rmi_spi_data *data)
++{
++	int retval;
++	struct rmi_phys_device *rmi_phys = data->phys;
++	struct rmi_device_platform_data *pdata = rmi_phys->dev->platform_data;
 +
-+MODULE_AUTHOR("Vivian Ly <vly@synaptics.com>");
-+MODULE_DESCRIPTION("RMI F19 module");
++	retval = acquire_attn_irq(data);
++	if (retval < 0)
++		return retval;
++
++#if defined(CONFIG_RMI4_DEV)
++	retval = gpio_export(pdata->attn_gpio, false);
++	if (retval) {
++		dev_warn(&(rmi_phys->rmi_dev->dev),
++			 "WARNING: Failed to export ATTN gpio!\n");
++		retval = 0;
++	} else {
++		retval = gpio_export_link(&(rmi_phys->rmi_dev->dev), "attn",
++					pdata->attn_gpio);
++		if (retval) {
++			dev_warn(&(rmi_phys->rmi_dev->dev), "WARNING: "
++				"Failed to symlink ATTN gpio!\n");
++			retval = 0;
++		} else {
++			dev_info(&(rmi_phys->rmi_dev->dev),
++				"%s: Exported GPIO %d.", __func__,
++				pdata->attn_gpio);
++		}
++	}
++#endif /* CONFIG_RMI4_DEV */
++
++	return retval;
++}
++
++static int setup_polling(struct rmi_spi_data *data)
++{
++	INIT_WORK(&data->poll_work, spi_poll_work);
++	hrtimer_init(&data->poll_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	data->poll_timer.function = spi_poll_timer;
++	hrtimer_start(&data->poll_timer, ktime_set(1, 0), HRTIMER_MODE_REL);
++
++	return 0;
++}
++
++static int enable_device(struct rmi_phys_device *phys)
++{
++	int retval = 0;
++
++	struct rmi_spi_data *data = phys->data;
++
++	if (data->enabled) {
++		dev_dbg(phys->dev, "Physical device already enabled.\n");
++		return 0;
++	}
++
++	retval = acquire_attn_irq(data);
++	if (retval)
++		goto error_exit;
++
++	data->enabled = true;
++	dev_dbg(phys->dev, "Physical device enabled.\n");
++	return 0;
++
++error_exit:
++	dev_err(phys->dev, "Failed to enable physical device. Code=%d.\n",
++		retval);
++	return retval;
++}
++
++static void disable_device(struct rmi_phys_device *phys)
++{
++	struct rmi_spi_data *data = phys->data;
++
++	if (!data->enabled) {
++		dev_warn(phys->dev, "Physical device already disabled.\n");
++		return;
++	}
++	disable_irq(data->irq);
++	free_irq(data->irq, data->phys);
++
++	dev_dbg(phys->dev, "Physical device disabled.\n");
++	data->enabled = false;
++}
++
++#define DUMMY_READ_SLEEP_US 10
++
++static int rmi_spi_check_device(struct rmi_phys_device *rmi_phys)
++{
++	u8 buf[6];
++	int error;
++	int i;
++
++	/* Some SPI subsystems return 0 for the very first read you do.  So
++	 * we use this dummy read to get that out of the way.
++	 */
++	error = rmi_spi_v1_read_block(rmi_phys, PDT_START_SCAN_LOCATION,
++				      buf, sizeof(buf));
++	if (error < 0) {
++		dev_err(rmi_phys->dev, "dummy read failed with %d.\n", error);
++		return error;
++	}
++	udelay(DUMMY_READ_SLEEP_US);
++
++	/* Force page select to 0.
++	 */
++	error = rmi_spi_v1_set_page(rmi_phys, 0x00);
++	if (error < 0)
++		return error;
++
++	/* Now read the first PDT entry.  We know where this is, and if the
++	 * RMI4 device is out there, these 6 bytes will be something other
++	 * than all 0x00 or 0xFF.  We need to check for 0x00 and 0xFF,
++	 * because many (maybe all) SPI implementations will return all 0x00
++	 * or all 0xFF on read if the device is not connected.
++	 */
++	error = rmi_spi_v1_read_block(rmi_phys, PDT_START_SCAN_LOCATION,
++				      buf, sizeof(buf));
++	if (error < 0) {
++		dev_err(rmi_phys->dev, "probe read failed with %d.\n", error);
++		return error;
++	}
++	for (i = 0; i < sizeof(buf); i++) {
++		if (buf[i] != 0x00 && buf[i] != 0xFF)
++			return error;
++	}
++
++	dev_err(rmi_phys->dev, "probe read returned invalid block.\n");
++	return -ENODEV;
++}
++
++
++static int __devinit rmi_spi_probe(struct spi_device *spi)
++{
++	struct rmi_phys_device *rmi_phys;
++	struct rmi_spi_data *data;
++	struct rmi_device_platform_data *pdata = spi->dev.platform_data;
++	u8 buf[2];
++	int retval;
++
++	if (!pdata) {
++		dev_err(&spi->dev, "no platform data\n");
++		return -EINVAL;
++	}
++
++	if (spi->master->flags & SPI_MASTER_HALF_DUPLEX)
++		return -EINVAL;
++
++	spi->bits_per_word = 8;
++	spi->mode = SPI_MODE_3;
++	retval = spi_setup(spi);
++	if (retval < 0) {
++		dev_err(&spi->dev, "spi_setup failed!\n");
++		return retval;
++	}
++
++	rmi_phys = kzalloc(sizeof(struct rmi_phys_device), GFP_KERNEL);
++	if (!rmi_phys)
++		return -ENOMEM;
++
++	data = kzalloc(sizeof(struct rmi_spi_data), GFP_KERNEL);
++	if (!data) {
++		retval = -ENOMEM;
++		goto err_phys;
++	}
++	data->enabled = true;	/* We plan to come up enabled. */
++	data->irq = gpio_to_irq(pdata->attn_gpio);
++	data->irq_flags = (pdata->attn_polarity == RMI_ATTN_ACTIVE_HIGH) ?
++		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
++	data->phys = rmi_phys;
++
++	rmi_phys->data = data;
++	rmi_phys->dev = &spi->dev;
++
++	rmi_phys->write = rmi_spi_v1_write;
++	rmi_phys->write_block = rmi_spi_v1_write_block;
++	rmi_phys->read = rmi_spi_v1_read;
++	rmi_phys->read_block = rmi_spi_v1_read_block;
++	rmi_phys->enable_device = enable_device;
++	rmi_phys->disable_device = disable_device;
++	data->set_page = rmi_spi_v1_set_page;
++
++	rmi_phys->info.proto = spi_v1_proto_name;
++
++	mutex_init(&data->page_mutex);
++
++	dev_set_drvdata(&spi->dev, rmi_phys);
++
++	pdata->spi_data.block_delay_us = pdata->spi_data.block_delay_us ?
++			pdata->spi_data.block_delay_us : RMI_SPI_BLOCK_DELAY_US;
++	pdata->spi_data.read_delay_us = pdata->spi_data.read_delay_us ?
++			pdata->spi_data.read_delay_us : RMI_SPI_BYTE_DELAY_US;
++	pdata->spi_data.write_delay_us = pdata->spi_data.write_delay_us ?
++			pdata->spi_data.write_delay_us : RMI_SPI_BYTE_DELAY_US;
++	pdata->spi_data.split_read_block_delay_us =
++			pdata->spi_data.split_read_block_delay_us ?
++			pdata->spi_data.split_read_block_delay_us :
++			RMI_SPI_BLOCK_DELAY_US;
++	pdata->spi_data.split_read_byte_delay_us =
++			pdata->spi_data.split_read_byte_delay_us ?
++			pdata->spi_data.split_read_byte_delay_us :
++			RMI_SPI_BYTE_DELAY_US;
++
++	if (pdata->gpio_config) {
++		retval = pdata->gpio_config(pdata->gpio_data, true);
++		if (retval < 0) {
++			dev_err(&spi->dev, "Failed to setup GPIOs, code: %d.\n",
++				retval);
++			goto err_data;
++		}
++	}
++
++	retval = rmi_spi_check_device(rmi_phys);
++	if (retval < 0)
++		goto err_data;
++
++	/* check if this is an SPI v2 device */
++	retval = rmi_spi_v1_read_block(rmi_phys, RMI_PROTOCOL_VERSION_ADDRESS,
++				      buf, 2);
++	if (retval < 0) {
++		dev_err(&spi->dev, "failed to get SPI version number!\n");
++		goto err_data;
++	}
++	dev_dbg(&spi->dev, "SPI version is %d", buf[0]);
++
++	if (buf[0] == 1) {
++		/* SPIv2 */
++		rmi_phys->write		= rmi_spi_v2_write;
++		rmi_phys->write_block	= rmi_spi_v2_write_block;
++		rmi_phys->read		= rmi_spi_v2_read;
++		data->set_page		= rmi_spi_v2_set_page;
++
++		rmi_phys->info.proto = spi_v2_proto_name;
++
++		if (pdata->attn_gpio > 0) {
++			init_completion(&data->irq_comp);
++			rmi_phys->read_block = rmi_spi_v2_split_read_block;
++		} else {
++			dev_warn(&spi->dev, "WARNING: SPI V2 detected, but no "
++				"attention GPIO was specified. This is unlikely"
++				" to work well.\n");
++			rmi_phys->read_block = rmi_spi_v2_read_block;
++		}
++	} else if (buf[0] != 0) {
++		dev_err(&spi->dev, "Unrecognized SPI version %d.\n", buf[0]);
++		retval = -ENODEV;
++		goto err_data;
++	}
++
++	retval = rmi_register_phys_device(rmi_phys);
++	if (retval) {
++		dev_err(&spi->dev, "failed to register physical driver\n");
++		goto err_data;
++	}
++
++	if (pdata->attn_gpio > 0) {
++		retval = setup_attn(data);
++		if (retval < 0)
++			goto err_unregister;
++	} else {
++		retval = setup_polling(data);
++		if (retval < 0)
++			goto err_unregister;
++	}
++
++	dev_info(&spi->dev, "registered RMI SPI driver\n");
++	return 0;
++
++err_unregister:
++	rmi_unregister_phys_device(rmi_phys);
++err_data:
++	kfree(data);
++err_phys:
++	kfree(rmi_phys);
++	return retval;
++}
++
++static int __devexit rmi_spi_remove(struct spi_device *spi)
++{
++	struct rmi_phys_device *phys = dev_get_drvdata(&spi->dev);
++	struct rmi_device_platform_data *pd = spi->dev.platform_data;
++
++	rmi_unregister_phys_device(phys);
++	kfree(phys->data);
++	kfree(phys);
++
++	if (pd->gpio_config)
++		pd->gpio_config(&spi->dev, false);
++
++	return 0;
++}
++
++static const struct spi_device_id rmi_id[] = {
++	{ "rmi", 0 },
++	{ "rmi-spi", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(spi, rmi_id);
++
++static struct spi_driver rmi_spi_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "rmi-spi",
++	},
++	.id_table	= rmi_id,
++	.probe		= rmi_spi_probe,
++	.remove		= __devexit_p(rmi_spi_remove),
++};
++
++static int __init rmi_spi_init(void)
++{
++	return spi_register_driver(&rmi_spi_driver);
++}
++
++static void __exit rmi_spi_exit(void)
++{
++	spi_unregister_driver(&rmi_spi_driver);
++}
++
++MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
++MODULE_DESCRIPTION("RMI SPI driver");
 +MODULE_LICENSE("GPL");
 +
++module_init(rmi_spi_init);
++module_exit(rmi_spi_exit);
