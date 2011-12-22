@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1LVDVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 22:21:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37183 "EHLO
+	id S1754834Ab1LVDVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 22:21:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51590 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1LVDTy (ORCPT
+	with ESMTP id S1753197Ab1LVDTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 22:19:54 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=9YylKYydQCUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=nVI_mnzzUJ0xBcMVdE8A:9 a=2R4oPsScBZbIOtX69w8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=wqQ_BHrgWXy0MCUzyJEA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 21 Dec 2011 22:19:53 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=Mgm7jKRx85EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=a8jRQv5W5aWhhUlY0_oA:9 a=HPBRQbDe49wkOcnyWS8A:7 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=ovoLPEPDs08d-ujfI44A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111222031951.958507035@goodmis.org>
+Message-Id: <20111222031949.957412785@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 21 Dec 2011 22:14:01 -0500
+Date: Wed, 21 Dec 2011 22:13:58 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,10 +22,12 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 4/6 v3] x86: Keep current stack in NMI breakpoints
+        Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Paul Turner <pjt@google.com>
+Subject: [PATCH 1/6 v3] x86: Do not schedule while still in NMI context
 References: <20111222031357.120841629@goodmis.org>
-Content-Disposition: inline; filename=0004-x86-Keep-current-stack-in-NMI-breakpoints.patch
+Content-Disposition: inline; filename=0001-x86-Do-not-schedule-while-still-in-NMI-context.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,205 +37,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-We want to allow NMI handlers to have breakpoints to be able to
-remove stop_machine from ftrace, kprobes and jump_labels. But if
-an NMI interrupts a current breakpoint, and then it triggers a
-breakpoint itself, it will switch to the breakpoint stack and
-corrupt the data on it for the breakpoint processing that it
-interrupted.
+The NMI handler uses the paranoid_exit routine that checks the
+NEED_RESCHED flag, and if it is set and the return is for userspace,
+then interrupts are enabled, the stack is swapped to the thread's stack,
+and schedule is called. The problem with this is that we are still in an
+NMI context until an iret is executed. This means that any new NMIs are
+now starved until an interrupt or exception occurs and does the iret.
 
-Instead, have the NMI check if it interrupted breakpoint processing
-by checking if the stack that is currently used is a breakpoint
-stack. If it is, then load a special IDT that changes the IST
-for the debug exception to keep the same stack in kernel context.
-When the NMI is done, it puts it back.
+As NMIs can not be masked and can interrupt any location, they are
+treated as a special case. NEED_RESCHED should not be set in an NMI
+handler. The interruption by the NMI should not disturb the work flow
+for scheduling. Any IPI sent to a processor after sending the
+NEED_RESCHED would have to wait for the NMI anyway, and after the IPI
+finishes the schedule would be called as required.
 
-This way, if the NMI does trigger a breakpoint, it will keep
-using the same stack and not stomp on the breakpoint data for
-the breakpoint it interrupted.
+There is no reason to do anything special leaving an NMI. Remove the
+call to paranoid_exit and do a simple return. This not only fixes the
+bug of starved NMIs, but it also cleans up the code.
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/CA+55aFzgM55hXTs4griX5e9=3Dv_O+=3Due+7Rj0PTD=
+=3DM7hFYpyULQ@mail.gmail.com
+
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Turner <pjt@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/desc.h      |   12 ++++++++++++
- arch/x86/include/asm/processor.h |    6 ++++++
- arch/x86/kernel/cpu/common.c     |   22 ++++++++++++++++++++++
- arch/x86/kernel/head_64.S        |    4 ++++
- arch/x86/kernel/nmi.c            |   15 +++++++++++++++
- arch/x86/kernel/traps.c          |    6 ++++++
- 6 files changed, 65 insertions(+), 0 deletions(-)
+ arch/x86/kernel/entry_64.S |   32 --------------------------------
+ 1 files changed, 0 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 41935fa..e95822d 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -35,6 +35,8 @@ static inline void fill_ldt(struct desc_struct *desc, con=
-st struct user_desc *in
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index faf8d5e..3819ea9 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1489,46 +1489,14 @@ ENTRY(nmi)
+ 	movq %rsp,%rdi
+ 	movq $-1,%rsi
+ 	call do_nmi
+-#ifdef CONFIG_TRACE_IRQFLAGS
+-	/* paranoidexit; without TRACE_IRQS_OFF */
+-	/* ebx:	no swapgs flag */
+-	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	testl %ebx,%ebx				/* swapgs needed? */
+ 	jnz nmi_restore
+-	testl $3,CS(%rsp)
+-	jnz nmi_userspace
+ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
+ 	RESTORE_ALL 8
+ 	jmp irq_return
+-nmi_userspace:
+-	GET_THREAD_INFO(%rcx)
+-	movl TI_flags(%rcx),%ebx
+-	andl $_TIF_WORK_MASK,%ebx
+-	jz nmi_swapgs
+-	movq %rsp,%rdi			/* &pt_regs */
+-	call sync_regs
+-	movq %rax,%rsp			/* switch stack for scheduling */
+-	testl $_TIF_NEED_RESCHED,%ebx
+-	jnz nmi_schedule
+-	movl %ebx,%edx			/* arg3: thread flags */
+-	ENABLE_INTERRUPTS(CLBR_NONE)
+-	xorl %esi,%esi 			/* arg2: oldset */
+-	movq %rsp,%rdi 			/* arg1: &pt_regs */
+-	call do_notify_resume
+-	DISABLE_INTERRUPTS(CLBR_NONE)
+-	jmp nmi_userspace
+-nmi_schedule:
+-	ENABLE_INTERRUPTS(CLBR_ANY)
+-	call schedule
+-	DISABLE_INTERRUPTS(CLBR_ANY)
+-	jmp nmi_userspace
+ 	CFI_ENDPROC
+-#else
+-	jmp paranoid_exit
+-	CFI_ENDPROC
+-#endif
+ END(nmi)
 =20
- extern struct desc_ptr idt_descr;
- extern gate_desc idt_table[];
-+extern struct desc_ptr nmi_idt_descr;
-+extern gate_desc nmi_idt_table[];
-=20
- struct gdt_page {
- 	struct desc_struct gdt[GDT_ENTRIES];
-@@ -307,6 +309,16 @@ static inline void set_desc_limit(struct desc_struct *=
-desc, unsigned long limit)
- 	desc->limit =3D (limit >> 16) & 0xf;
- }
-=20
-+#ifdef CONFIG_X86_64
-+static inline void set_nmi_gate(int gate, void *addr)
-+{
-+	gate_desc s;
-+
-+	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
-+	write_idt_entry(nmi_idt_table, gate, &s);
-+}
-+#endif
-+
- static inline void _set_gate(int gate, unsigned type, void *addr,
- 			     unsigned dpl, unsigned ist, unsigned seg)
- {
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/proces=
-sor.h
-index b650435..4b39d6d 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -402,6 +402,9 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
- DECLARE_PER_CPU(unsigned int, irq_count);
- extern unsigned long kernel_eflags;
- extern asmlinkage void ignore_sysret(void);
-+int is_debug_stack(unsigned long addr);
-+void debug_stack_set_zero(void);
-+void debug_stack_reset(void);
- #else	/* X86_64 */
- #ifdef CONFIG_CC_STACKPROTECTOR
- /*
-@@ -416,6 +419,9 @@ struct stack_canary {
- };
- DECLARE_PER_CPU_ALIGNED(struct stack_canary, stack_canary);
- #endif
-+static inline int is_debug_stack(unsigned long addr) { return 0; }
-+static inline void debug_stack_set_zero(void) { }
-+static inline void debug_stack_reset(void) { }
- #endif	/* X86_64 */
-=20
- extern unsigned int xstate_size;
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index aa003b1..caa4045 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1026,6 +1026,8 @@ __setup("clearcpuid=3D", setup_disablecpuid);
-=20
- #ifdef CONFIG_X86_64
- struct desc_ptr idt_descr =3D { NR_VECTORS * 16 - 1, (unsigned long) idt_t=
-able };
-+struct desc_ptr nmi_idt_descr =3D { NR_VECTORS * 16 - 1,
-+				    (unsigned long) nmi_idt_table };
-=20
- DEFINE_PER_CPU_FIRST(union irq_stack_union,
- 		     irq_stack_union) __aligned(PAGE_SIZE);
-@@ -1090,6 +1092,24 @@ unsigned long kernel_eflags;
-  */
- DEFINE_PER_CPU(struct orig_ist, orig_ist);
-=20
-+static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
-+
-+int is_debug_stack(unsigned long addr)
-+{
-+	return addr <=3D __get_cpu_var(debug_stack_addr) &&
-+		addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ);
-+}
-+
-+void debug_stack_set_zero(void)
-+{
-+	load_idt((const struct desc_ptr *)&nmi_idt_descr);
-+}
-+
-+void debug_stack_reset(void)
-+{
-+	load_idt((const struct desc_ptr *)&idt_descr);
-+}
-+
- #else	/* CONFIG_X86_64 */
-=20
- DEFINE_PER_CPU(struct task_struct *, current_task) =3D &init_task;
-@@ -1208,6 +1228,8 @@ void __cpuinit cpu_init(void)
- 			estacks +=3D exception_stack_sizes[v];
- 			oist->ist[v] =3D t->x86_tss.ist[v] =3D
- 					(unsigned long)estacks;
-+			if (v =3D=3D DEBUG_STACK-1)
-+				per_cpu(debug_stack_addr, cpu) =3D (unsigned long)estacks;
- 		}
- 	}
-=20
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index e11e394..40f4eb3 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -417,6 +417,10 @@ ENTRY(phys_base)
- ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
-=20
-+	.align L1_CACHE_BYTES
-+ENTRY(nmi_idt_table)
-+	.skip IDT_ENTRIES * 16
-+
- 	__PAGE_ALIGNED_BSS
- 	.align PAGE_SIZE
- ENTRY(empty_zero_page)
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index e88f37b..de8d4b3 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -408,6 +408,18 @@ static notrace __kprobes void default_do_nmi(struct pt=
-_regs *regs)
- dotraplinkage notrace __kprobes void
- do_nmi(struct pt_regs *regs, long error_code)
- {
-+	int update_debug_stack =3D 0;
-+
-+	/*
-+	 * If we interrupted a breakpoint, it is possible that
-+	 * the nmi handler will have breakpoints too. We need to
-+	 * change the IDT such that breakpoints that happen here
-+	 * continue to use the NMI stack.
-+	 */
-+	if (unlikely(is_debug_stack(regs->sp))) {
-+		debug_stack_set_zero();
-+		update_debug_stack =3D 1;
-+	}
- 	nmi_enter();
-=20
- 	inc_irq_stat(__nmi_count);
-@@ -416,6 +428,9 @@ do_nmi(struct pt_regs *regs, long error_code)
- 		default_do_nmi(regs);
-=20
- 	nmi_exit();
-+
-+	if (unlikely(update_debug_stack))
-+		debug_stack_reset();
- }
-=20
- void stop_nmi(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a8e3eb8..a93c5ca 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -723,4 +723,10 @@ void __init trap_init(void)
- 	cpu_init();
-=20
- 	x86_init.irqs.trap_init();
-+
-+#ifdef CONFIG_X86_64
-+	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
-+	set_nmi_gate(1, &debug);
-+	set_nmi_gate(3, &int3);
-+#endif
- }
+ ENTRY(ignore_sysret)
 --=20
 1.7.7.3
 
@@ -246,19 +136,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO8qHYAAoJEIy3vGnGbaoA4pgP/i2GL0c9hOs27gHAdFxDx+jr
-xy4+3HWcjwzVCRRnDDG/rqD6iguyQ0mMds55+Uz/CohrMWGHL69ROPJgOqQfS9b5
-2oBBle5QvZiBgH1CZkcow/lgDtsNZuZRtPnGUkDtAq4EbggjgAk4kMOoi/XjlDb5
-ntZ0JWCL5FTty+1YxTX2GKAv+a6kBzPuhO8xja6YXEpo12ECU783MLvJEdwCRU2+
-PMhfvslEvQKEmgr7xvJC2PjnZVZZOqA8fZpfd3LX6ZFKz4q88peILUvfH/2T6RcZ
-VJ6i8TxhZgfPr/izt45dOzweJup8vqVxijrv3/sOOMLXK7kNXuzvezw9+e9QAObc
-WALYKLpAL5iAzBUdM6rCI4nsx2dkCtd9GQcGNeTD0DMwWPofxBkgbLdJ58snFdHN
-liNmDES7Bq9bjsFabVOBZcN1RuFSqWCvYpE8fnFSyD7GBTW8oKyPVwIj8z6ooYGO
-ekIjJBXXC/XETRa5VfrG25zGdnHwwobVw1teQkeu6P531biZQadxH3yXFDfaXdDg
-xUZE9uDZ5sigU7sMQYzq0wtL7OT6lfkiMjx6WF8uCUzKfMKyWEI7xuNOlS533N2G
-TtvMv9Ij3t2Mni+SXcvNAvfQhrXWMv03qp66S0L1gQ3ikskAswHPRw89CW/FxLcF
-X8owg3iwkm6ZolKoCtLV
-=UwxY
+iQIcBAABAgAGBQJO8qHWAAoJEIy3vGnGbaoA96oP/18fxxPMlFGGbLpt5oS9zUPc
+87msmW/s6cctkj+RwspsPyYTBGpw1D5M+F2CQjinc3bjBIp0cylholUYbQP0IpmP
+HaP40M91a6FpaleVdtYVDWkWiijs29odlDPDzog+1YFjqfzPNB1Jl3qHH8qSRTJM
+4vH2sVZztIWYekIENJy0AFliH/Uxgxx7P/q9H/HhgKDhtuP7puQSnCDcCyXEeiyx
+79cJUKeHnqaRa5Jl6w7xtzRzKLlS3Vu67OaKpMDM3Xuvc/93iIGTqWt2LXW+F1pn
+eG5z64Hc5YahFKYPyMZWIKQd+sPIC2dOxXL3XTchniwY99x1YC5/i99yIJIA/Ouh
+8xD6nVU0Dm9FaduNXG6GGdbWJPEUOx8/W3G1xooqHx/UzqQwy14/YLv3Q3ieBf1U
+BtmbpU8w3KwZwd0e/wEXST9M4LSU1c3Hw9+Jzs8y881HhMXzGAgHnLdNS/6Mw343
+AH8tZTiqO1BsAe4r4Dd+h9YtjBZLZwwPjiRpiCpELWkdE1BUAldj22C/ooHarHPf
+2bbpzJpJvLYfutb9UC+lUGFwQNRTraG3MQDHQk0mqFHpbaGE24bwt8+8Pn09zdxT
+d1yKCSkfRq4OLc6mxwKrsb3R4ipciE5LH7XtayeakSfYWQbGza8F993PHSFcXZzR
+YSgB6Ad/pwH/1IzJSO76
+=NCRj
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
