@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1LVSva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 13:51:30 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41800 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab1LVSv1 (ORCPT
+	id S1755532Ab1LVSwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 13:52:32 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59212 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab1LVSw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 13:51:27 -0500
-Date: Thu, 22 Dec 2011 18:50:59 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Alessandro Rubini <rubini@unipv.it>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alan@linux.intel.com, a.zummo@towertech.it,
-        alsa-devel@alsa-project.org, cjb@laptop.org, dan.j.williams@intel.com,
-        dmitry.torokhov@gmail.com, grant.likely@secretlab.ca, perex@perex.cz,
-        jassisinghbrar@gmail.com, julia@diku.dk, linus.walleij@linaro.org,
-        linux-fbdev@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, lethal@linux-sh.org,
-        Pawel.Moll@arm.com, rtc-linux@googlegroups.com,
-        spi-devel-general@lists.sourceforge.net, tiwai@suse.de,
-        vinod.koul@intel.com, wim@iguana.be
-Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
-	AMBA drivers
-Message-ID: <20111222185059.GA3551@n2100.arm.linux.org.uk>
-References: <20111206151541.GA13774@linaro.org> <1321961573-4562-1-git-send-email-dave.martin@linaro.org> <20111206155911.GA11902@mail.gnudd.com> <20111206161815.GD13769@linaro.org> <20111219132409.GB2031@linaro.org> <20111219213942.GM14542@n2100.arm.linux.org.uk> <20111222112125.GA2573@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222112125.GA2573@localhost>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 22 Dec 2011 13:52:27 -0500
+Subject: [PATCH] scsi: Fix unused variable warning in mpt2sas_scsih.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Dec 2011 00:51:53 +0600
+Message-ID: <1324579913.19018.6.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 11:21:25AM +0000, Dave Martin wrote:
-> On Mon, Dec 19, 2011 at 09:39:42PM +0000, Russell King - ARM Linux wrote:
-> > I have pulled it, I just haven't merged it in anywhere yet.
-> 
-> OK, great -- thanks.
-> 
-> I wasn't too familiar with the procedure, so I just wanted
-> to be sure that I hadn't done things wrong.
+ Fixes the following warning:
 
-FYI, I'll be pushing out an update to my tree Friday evening.
+drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function ‘_scsih_sas_broadcast_primative_event’:
+drivers/scsi/mpt2sas/mpt2sas_scsih.c:5729:40: warning: unused variable ‘event_data’ 
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index d570573..0301c5a 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -5726,7 +5726,6 @@ _scsih_sas_broadcast_primative_event(struct MPT2SAS_ADAPTER *ioc,
+ 	u32 termination_count;
+ 	u32 query_count;
+ 	Mpi2SCSITaskManagementReply_t *mpi_reply;
+-	Mpi2EventDataSasBroadcastPrimitive_t *event_data = fw_event->event_data;
+ 	u16 ioc_status;
+ 	unsigned long flags;
+ 	int r;
+@@ -5735,8 +5734,8 @@ _scsih_sas_broadcast_primative_event(struct MPT2SAS_ADAPTER *ioc,
+ 
+ 	mutex_lock(&ioc->tm_cmds.mutex);
+ 	dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: enter: phy number(%d), "
+-	    "width(%d)\n", ioc->name, __func__, event_data->PhyNum,
+-	     event_data->PortWidth));
++	    "width(%d)\n", ioc->name, __func__, fw_event->event_data->PhyNum,
++	     fw_event->event_data->PortWidth));
+ 
+ 	_scsih_block_io_all_device(ioc);
+ 
+
+
