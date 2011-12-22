@@ -1,87 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1LVW0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 17:26:21 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60232 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab1LVW0S convert rfc822-to-8bit (ORCPT
+	id S1756013Ab1LVW1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:27:12 -0500
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:33238 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab1LVW1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 17:26:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EF3AA74.1060801@redhat.com>
-References: <1324576939-23619-1-git-send-email-pbonzini@redhat.com>
- <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com>
- <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com>
- <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
- <4EF3AA74.1060801@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Dec 2011 14:25:56 -0800
-X-Google-Sender-Auth: nYdZbSg7Lw2hQKauVVtL16eJLL8
-Message-ID: <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
-        agk@redhat.com, jbottomley@parallels.com, mchristi@redhat.com,
-        msnitzer@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Dec 2011 17:27:09 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: [PATCH 1/2] cgroup: remove tasklist_lock from cgroup_attach_proc
+Date: Thu, 22 Dec 2011 14:26:55 -0800
+Message-Id: <1324592816-13792-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 2:08 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
-> I don't know.  But given the ways in which earlier versions broke during
-> testing, I wouldn't be able to tell before running many tests.  Which with
-> the Christmas break would easily mean a little less than 2 weeks.
+Since cgroup_attach_proc is protected by a threadgroup_lock, we
+no longer need a tasklist_lock to protect while_each_thread.
+To keep the complexity of the double-check locking in one place,
+I also moved the thread_group_leader check up into
+attach_task_by_pid.
 
-I don't think I'm ready to apply this as-is anyway, exactly because
-I'd worry about some distribution really depending on being able to
-eject disks by partition etc.
+While at it, also converted a couple of returns to gotos.
 
-I don't *think* anybody does something as crazy as giving actual block
-device ownership to people, but I don't know - and I could easily
-imagine that even if they don't give the block device to the user, the
-suid binary might do "eject /dev/sda1" etc. And one way to do that is
-to do the "door unlock" scsi command itself.
+The suggestion was made here:
 
-So at this point I'd much *much* rather see this as a "we merge it for
-3.3 and mark it for stable", so that we can at least get the testing
-in the git tree, rather than me taking what could potentially break
-peoples setups very late in the -rc series just before a release.
+https://lkml.org/lkml/2011/12/22/86
 
->> That's a completely independent bug that has been discussed several
->> times. We probably should just bite the bullet and fix it. EINVAL is
->> never the right return value (unless the per-ioctl arguments
->> themselves are invalid, not for bad ioctls).
->
-> Makes a lot of sense and I was wondering about it myself, but I'm not sure
-> stable would accept that.
+Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+---
+ kernel/cgroup.c |   52 +++++++++++++++++++++-------------------------------
+ 1 files changed, 21 insertions(+), 31 deletions(-)
 
-Again, I think it's something we should do during the merge window
-(early at that).
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1042b3c..032139d 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2102,21 +2102,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	if (retval)
+ 		goto out_free_group_list;
+ 
+-	/* prevent changes to the threadgroup list while we take a snapshot. */
+-	read_lock(&tasklist_lock);
+-	if (!thread_group_leader(leader)) {
+-		/*
+-		 * a race with de_thread from another thread's exec() may strip
+-		 * us of our leadership, making while_each_thread unsafe to use
+-		 * on this task. if this happens, there is no choice but to
+-		 * throw this task away and try again (from cgroup_procs_write);
+-		 * this is "double-double-toil-and-trouble-check locking".
+-		 */
+-		read_unlock(&tasklist_lock);
+-		retval = -EAGAIN;
+-		goto out_free_group_list;
+-	}
+-
+ 	tsk = leader;
+ 	i = 0;
+ 	do {
+@@ -2145,7 +2130,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	group_size = i;
+ 	tset.tc_array = group;
+ 	tset.tc_array_len = group_size;
+-	read_unlock(&tasklist_lock);
+ 
+ 	/* methods shouldn't be called if no task is actually migrating */
+ 	retval = 0;
+@@ -2247,18 +2231,12 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ 		tsk = find_task_by_vpid(pid);
+ 		if (!tsk) {
+ 			rcu_read_unlock();
+-			cgroup_unlock();
+-			return -ESRCH;
++			ret= -ESRCH;
++			goto out_unlock_cgroup;
+ 		}
+-		if (threadgroup) {
+-			/*
+-			 * RCU protects this access, since tsk was found in the
+-			 * tid map. a race with de_thread may cause group_leader
+-			 * to stop being the leader, but cgroup_attach_proc will
+-			 * detect it later.
+-			 */
++		/* we check later for a group_leader race with de_thread */
++		if (threadgroup)
+ 			tsk = tsk->group_leader;
+-		}
+ 		/*
+ 		 * even if we're attaching all tasks in the thread group, we
+ 		 * only need to check permissions on one of them.
+@@ -2268,8 +2246,8 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ 		    cred->euid != tcred->uid &&
+ 		    cred->euid != tcred->suid) {
+ 			rcu_read_unlock();
+-			cgroup_unlock();
+-			return -EACCES;
++			ret = -EACCES;
++			goto out_unlock_cgroup;
+ 		}
+ 		get_task_struct(tsk);
+ 		rcu_read_unlock();
+@@ -2283,14 +2261,26 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ 
+ 	threadgroup_lock(tsk);
+ 
+-	if (threadgroup)
++	if (threadgroup) {
++		if (!thread_group_leader(tsk)) {
++			/*
++			 * a race with de_thread from another thread's exec()
++			 * may strip us of our leadership, if this happens,
++			 * there is no choice but to throw this task away and
++			 * try again (from cgroup_procs_write); this is
++			 * "double-double-toil-and-trouble-check locking".
++			 */
++			ret = -EAGAIN;
++			goto out_unlock_threadgroup;
++		}
+ 		ret = cgroup_attach_proc(cgrp, tsk);
+-	else
++	} else
+ 		ret = cgroup_attach_task(cgrp, tsk);
+ 
++out_unlock_threadgroup:
+ 	threadgroup_unlock(tsk);
+-
+ 	put_task_struct(tsk);
++out_unlock_cgroup:
+ 	cgroup_unlock();
+ 	return ret;
+ }
+-- 
+1.7.3.1
 
-It really has come up several times, it just always comes up at the
-wrong moment. If you remind me after the 3.2 release, I'll make sure
-to "just do it", and we'll see if anything break.
-
-I doubt anything will, because ENOTTY really is the correct error
-return (to user space - for traditional reasons) for "no such ioctl".
-
-Inside the kernel we generally want to use ENOIOCTLCMD, which is much
-better named - and thus avoids the confusion that some people have
-about the ENOTTY name - and that also has the whole "let's just try
-another approach one then".
-
->> The EINVAL return comes from some people who didn't understand that
->> ENOTTY means "no such ioctl" despite the name.
->
-> I did. :)
-
-I suspect most people who have used Unix for a long time kind of take
-the "ENOTTY - no such ioctl" thing for granted and don't even think
-about it, but we do have a lot of people who write drivers etc and
-that started with Linux, and I can understand why they think "ENOTTY"
-is an odd name for a SCSI device driver to use.
-
-                Linus
