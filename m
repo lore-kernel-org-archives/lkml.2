@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab1LVBJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 20:09:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab1LVBJV (ORCPT
+	id S1754458Ab1LVBRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:17:23 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52688 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab1LVBRT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 20:09:21 -0500
-Date: Wed, 21 Dec 2011 17:09:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 2/2] mempool: fix first round failure behavior
-Message-Id: <20111221170919.f7d49fc6.akpm@linux-foundation.org>
-In-Reply-To: <20111222004629.GO9213@google.com>
-References: <20111222001800.GL9213@google.com>
-	<20111222001939.GM9213@google.com>
-	<20111222004629.GO9213@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Dec 2011 20:17:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF132EA.7000300@am.sony.com>
+References: <20111219025328.GA26249@oksana.dev.rtsoft.ru> <20111219121255.GA2086@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1112191110060.19949@chino.kir.corp.google.com>
+ <20111220145654.GA26881@oksana.dev.rtsoft.ru> <alpine.DEB.2.00.1112201322170.22077@chino.kir.corp.google.com>
+ <20111221002853.GA11504@oksana.dev.rtsoft.ru> <4EF132EA.7000300@am.sony.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 21 Dec 2011 20:16:58 -0500
+X-Google-Sender-Auth: BN-wAZsYXZcI94FoPy_bl1Z7hhk
+Message-ID: <CAHGf_=r8=aG=BZLTjmZtkW6gcdkK=GU8g=5L57Fspx_DaA7Czw@mail.gmail.com>
+Subject: Re: Android low memory killer vs. memory pressure notifications
+To: frank.rowand@am.sony.com
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Rik van Riel <riel@redhat.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, tbird20d@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 16:46:29 -0800
-Tejun Heo <tj@kernel.org> wrote:
+>> So for 2MB kernel that's about 20KB of an additional text... This seems
+>> affordable, especially as a trade-off for the things that cgroups may
+>> provide.
+>
+> A comment from http://lkml.indiana.edu/hypermail/linux/kernel/1102.1/00412.html:
+>
+> "I care about 5K. (But honestly, I don't actively hunt stuff less than
+> 10K in size, because there's too many of them to chase, currently)."
 
-> mempool modifies gfp_mask so that the backing allocator doesn't try
-> too hard or trigger warning message when there's pool to fall back on.
-> In addition, for the first try, it removes __GFP_WAIT and IO, so that
-> it doesn't trigger reclaim or wait when allocation can be fulfilled
-> from pool; however, when that allocation fails and pool is empty too,
-> it waits for the pool to be replenished before retrying.
-> 
-> Allocation which could have succeeded after a bit of reclaim has to
-> wait on the reserved items and it's not like mempool doesn't retry
-> with __GFP_WAIT and IO.  It just does that *after* someone returns an
-> element, pointlessly delaying things.
-> 
-> Fix it by retrying immediately if the first round of allocation
-> attempts w/o __GFP_WAIT and IO fails.
-
-If the pool is empty and the memory allocator is down into its
-emergency reserves then we have:
-
-Old behaviour: Wait for someone to return an item, then retry
-
-New behaviour: enable page reclaim in gfp_mask, retry a
-               single time then wait for someone to return an item.
+Hm, interesting. Because of, current memory cgroup notification was
+made by a request from Sony and CELinux. AFAIK, at least, Sony
+are already using cgroups.
 
 
-So what we can expect to see is that in this low-memory situation,
-mempool_alloc() will perform a lot more page reclaim, and more mempool
-items will be let loose into the kernel.
+>> The fact is, for desktop and server Linux, cgroups slowly becomes a
+>> mandatory thing. And the reason for this is that cgroups mechanism
+>> provides some very useful features (in an extensible way, like plugins),
+>> i.e. a way to manage and track processes and its resources -- which is the
+>> main purpose of cgroups.
+>
+> And for embedded and for real-time, some of us do not want cgroups to be
+> a mandatory thing.  We want it to remain configurable.  My personal
+> interest is in keeping the latency of certain critical paths (especially
+> in the scheduler) short and consistent.
 
-I'm not sure what the effects of this will be.  I can't immediately
-point at any bad ones.  Probably not much, as the mempool_alloc()
-caller will probably be doing other allocations, using the
-reclaim-permitting gfp_mask.
+As far as I observed, modern embedded system have both RT and no RT process.
+Java VM or user downloadable programs may need memory notification
+because users may download bad programs. in the other hand, rt
+processes are not downloadable and much tested by hardware vendor. So,
+I think you only need
+split process between under cgroups and not under cgroups.
 
-But I have painful memories of us (me and Jens, iirc) churning this
-code over and over again until it stopped causing problems.  Some were
-subtle and nasty.  Much dumpster diving into the pre-git changelogs
-should be done before changing it, lest we rediscover long-fixed
-problems :(
-
-
-I have a feeling that if we go for "New behaviour" then the
-implementation could be made simpler than this, but laziness
-is setting in.
-
-> That said, I still find it a bit unsettling that a GFP_ATOMIC
-> allocation which would otherwise succeed may fail when issued through
-> mempool.
-
-Spose so.  It would be strange to call mempool_alloc() with GFP_ATOMIC.
-Because "wait for an item to be returned" is the whole point of the
-thing.
-
-> Maybe the RTTD is clearing __GFP_NOMEMALLOC on retry if the
-> gfp requsted by the caller is !__GFP_WAIT && !__GFP_NOMEMALLOC?
-> 
-
-What the heck is an RTTD?
-
-> +	/*
-> +	 * We use gfp mask w/o __GFP_WAIT or IO for the first round.  If
-> +	 * alloc failed with that and @pool was empty, retry immediately.
-> +	 */
-> +	if (gfp_temp != gfp_mask) {
-> +		gfp_temp = gfp_mask;
-> +		spin_unlock_irqrestore(&pool->lock, flags);
-> +		goto repeat_alloc;
-> +	}
-> +
-
-Here, have a faster kernel ;)
-
---- a/mm/mempool.c~mempool-fix-first-round-failure-behavior-fix
-+++ a/mm/mempool.c
-@@ -227,8 +227,8 @@ repeat_alloc:
- 	 * original gfp mask.
- 	 */
- 	if (gfp_temp != gfp_mask) {
--		gfp_temp = gfp_mask;
- 		spin_unlock_irqrestore(&pool->lock, flags);
-+		gfp_temp = gfp_mask;
- 		goto repeat_alloc;
- 	}
- 
-_
-
+cgroups have zero or much likely zero overhead if the processes don't use it.
+Of course, feedback are welcome. I'm interesting your embedded usecase.
