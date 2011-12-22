@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab1LVAS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:18:28 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:32980 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754392Ab1LVAS0 (ORCPT
+	id S1754507Ab1LVATp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:19:45 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39036 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752593Ab1LVATo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:18:26 -0500
-Message-ID: <4EF2773E.4070308@fb.com>
-Date: Wed, 21 Dec 2011 16:18:06 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 21 Dec 2011 19:19:44 -0500
+Date: Wed, 21 Dec 2011 16:19:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mempool: fix first round failure behavior
+Message-ID: <20111222001939.GM9213@google.com>
+References: <20111222001800.GL9213@google.com>
 MIME-Version: 1.0
-To: <avagin@openvz.org>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] tracing, sched: Add a new tracepoint for sleeptime
-References: <1324404558-353-1-git-send-email-asharma@fb.com> <1324404558-353-3-git-send-email-asharma@fb.com> <4EF1B86D.9030809@openvz.org>
-In-Reply-To: <4EF1B86D.9030809@openvz.org>
-Content-Type: text/plain; charset="KOI8-R"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-21_08:2011-12-21,2011-12-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222001800.GL9213@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/11 2:43 AM, Andrey Vagin wrote:
+For the initial allocation, mempool passes modified gfp mask to the
+backing allocator so that it doesn't try too hard when there are
+reserved elements waiting in the pool; however, when that allocation
+fails and pool is empty too, it either waits for the pool to be
+replenished before retrying or fails if !__GFP_WAIT.
 
-> Arun, probably you have missed one of my comments.
-> block_start and sleep_start should be zeroized here.
->
-> tsk->se.statistics.block_start = 0;
-> tsk->se.statistics.sleep_start = 0;
->
-> The following program provokes this problem:
+* If the caller was calling in with GFP_ATOMIC, it never gets to try
+  emergency reserve.  Allocations which would have succeeded without
+  mempool may fail, which is just wrong.
 
-Yes - I overlooked the comment. Thanks for bringing it up (especially 
-the test program). Fixed in v3.
+* Allocation which could have succeeded after a bit of reclaim now has
+  to wait on the reserved items and it's not like mempool doesn't
+  retry with the original gfp mask.  It just does that *after* someone
+  returns an element, pointlessly delaying things.
 
-  -Arun
+Fix it by retrying immediately with the gfp mask requested by the
+caller if the first round of allocation attempts fails with modified
+mask.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@kernel.org
+---
+ mm/mempool.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+Index: work/mm/mempool.c
+===================================================================
+--- work.orig/mm/mempool.c
++++ work/mm/mempool.c
+@@ -221,14 +221,24 @@ repeat_alloc:
+ 		return element;
+ 	}
+ 
+-	/* We must not sleep in the GFP_ATOMIC case */
++	/*
++	 * We use modified gfp mask for the first round.  If alloc failed
++	 * with that and @pool was empty too, immediately retry with the
++	 * original gfp mask.
++	 */
++	if (gfp_temp != gfp_mask) {
++		gfp_temp = gfp_mask;
++		spin_unlock_irqrestore(&pool->lock, flags);
++		goto repeat_alloc;
++	}
++
++	/* We must not sleep if !__GFP_WAIT */
+ 	if (!(gfp_mask & __GFP_WAIT)) {
+ 		spin_unlock_irqrestore(&pool->lock, flags);
+ 		return NULL;
+ 	}
+ 
+ 	/* Let's wait for someone else to return an element to @pool */
+-	gfp_temp = gfp_mask;
+ 	init_wait(&wait);
+ 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
+ 
