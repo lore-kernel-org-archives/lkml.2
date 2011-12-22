@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab1LVXlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 18:41:50 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51994 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab1LVXlo (ORCPT
+	id S1756160Ab1LVXmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 18:42:04 -0500
+Received: from smtpq3.gn.mail.iss.as9143.net ([212.54.34.166]:44170 "EHLO
+	smtpq3.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756027Ab1LVXmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 18:41:44 -0500
-Date: Fri, 23 Dec 2011 08:41:35 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/6][RFC] virtio-blk: Change I/O path from request to BIO
-Message-ID: <20111222234135.GB7056@barrios-laptop.redhat.com>
-References: <1324429254-28383-1-git-send-email-minchan@kernel.org>
- <CAJSP0QW5wPYcHr02oNm8Y8=hsChEb5tJuO0ntPy9MO8EPuH=Qg@mail.gmail.com>
+	Thu, 22 Dec 2011 18:42:01 -0500
+X-Greylist: delayed 1404 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Dec 2011 18:42:01 EST
+Message-ID: <4EF3BACA.1080405@gmail.com>
+Date: Fri, 23 Dec 2011 00:18:34 +0100
+From: Rene Herman <rene.herman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111221 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJSP0QW5wPYcHr02oNm8Y8=hsChEb5tJuO0ntPy9MO8EPuH=Qg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andre Guedes <andre.guedes@openbossa.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+CC: linux-kernel@vger.kernel.org
+Subject: [bluetooth] linux-3.x regression (bisected)
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ziggo-spambar: ---
+X-Ziggo-spamscore: -3.6
+X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779
+X-Ziggo-Spam-Status: No
+X-Spam-Flag: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 12:57:40PM +0000, Stefan Hajnoczi wrote:
-> On Wed, Dec 21, 2011 at 1:00 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > This patch is follow-up of Christohp Hellwig's work
-> > [RFC: ->make_request support for virtio-blk].
-> > http://thread.gmane.org/gmane.linux.kernel/1199763
-> >
-> > Quote from hch
-> > "This patchset allows the virtio-blk driver to support much higher IOP
-> > rates which can be driven out of modern PCI-e flash devices.  At this
-> > point it really is just a RFC due to various issues."
-> 
-> Basic question to make sure I understood this series: does this patch
-> bypass the guest I/O scheduler (but then you added custom batching
-> code into virtio_blk.c)?
+Good day.
 
-Right.
+A while ago, my noname USB Bluetooth adapter stopped working, with from 
+that point on only "Bluetooth: hci0 command tx timeout" appearing in the 
+kernel messages.
 
-> 
-> If you're stumped by the performance perhaps compare blktraces of the
-> request approach vs the bio approach.  We're probably performing I/O
-> more CPU-efficiently but the I/O pattern itself is worse.
+I just now got around to looking at it and bisected this to commit 
+eead27da60df80a112d1ac3ea482226e9794c26b:
 
-You mean I/O scheduler have many techniques to do well in I/O pattern?
-That's what I want to discuss in this RFC.
+===
+Author: Andre Guedes <andre.guedes@openbossa.org>
+Date:   Thu Jun 30 19:20:55 2011 -0300
 
-I guess request layer have many techniques proved during long time
-to do well I/O but BIO-based drvier ignores them for just reducing locking
-overhead. Of course, we can add such techniques to BIO-batch driver like 
-custom-batch in this series. But it needs lots of work, is really duplication,
-and will have a problem on maintenance.
+     Bluetooth: Add lmp_host_le_capable() macro
 
-I would like to listen opinions whether this direction is good or bad.
+     Since we have the extended LMP features properly implemented, we
+     should check the LMP_HOST_LE bit to know if the host supports LE.
 
-> 
-> Stefan
+     Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
+     Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+===
 
--- 
-Kind regards,
-Minchan Kim
+while that commit cannot be reverted outright due to dependencies, 
+reverting it functionally fixes things for me. That is, Bluetooth works 
+again after applying (to linux-3.1.6):
+
+===
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index 56943ad..c7f794e 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -540,7 +540,7 @@ int hci_dev_open(__u16 dev)
+                 ret = __hci_request(hdev, hci_init_req, 0,
+ 
+msecs_to_jiffies(HCI_INIT_TIMEOUT));
+
+-               if (lmp_host_le_capable(hdev))
++               if (lmp_le_capable(hdev))
+                         ret = __hci_request(hdev, hci_le_init_req, 0,
+ 
+msecs_to_jiffies(HCI_INIT_TIMEOUT));
+===
+
+It seems that my adapter wasn't ready for the change. It is a:
+
+002 Device 002: ID 1131:1004 Integrated System Solution Corp. Bluetooth 
+Device
+
+If more specific information is wanted (to add adapter-specific quirk 
+handling, perhaps?) please be verbose on how to obtain it. I don't know 
+anything about Bluetooth
+
+Rene.
