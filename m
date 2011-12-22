@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab1LVQAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 11:00:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35097 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1LVQAu (ORCPT
+	id S1754616Ab1LVQCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 11:02:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35227 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab1LVQB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 11:00:50 -0500
-From: Richard Weinberger <rw@linutronix.de>
-To: linux-mtd@lists.infradead.org
-Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Richard Weinberger <rw@linutronix.de>
-Subject: [PATCH] [RFC] ubi: Make vid_hdr non-static
-Date: Thu, 22 Dec 2011 16:12:57 +0100
-Message-Id: <1324566777-1918-1-git-send-email-rw@linutronix.de>
-X-Mailer: git-send-email 1.7.7
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 22 Dec 2011 11:01:58 -0500
+Message-ID: <4EF35474.2010209@gmail.com>
+Date: Thu, 22 Dec 2011 10:01:56 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dong Aisheng <b29396@freescale.com>
+CC: devicetree-discuss@lists.ozlabs.org, shawn.guo@freescale.com,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/1] dt: reform for_each_property to for_each_property_of_node
+References: <1324556364-26188-1-git-send-email-b29396@freescale.com>
+In-Reply-To: <1324556364-26188-1-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to have vid_hdr static.
+On 12/22/2011 06:19 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Make this macro easier to use(do not need to pass properties, a node is
+> enough), also change to a more sensible name as for_each_child_of_node.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> ---
+> Changes v1->v2:
+> - Fix a typo error (micro->macro)
+> 
 
-Signed-off-by: Richard Weinberger <rw@linutronix.de>
----
- drivers/mtd/ubi/vtbl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied.
 
-diff --git a/drivers/mtd/ubi/vtbl.c b/drivers/mtd/ubi/vtbl.c
-index 9ad18da..890754c 100644
---- a/drivers/mtd/ubi/vtbl.c
-+++ b/drivers/mtd/ubi/vtbl.c
-@@ -306,7 +306,7 @@ static int create_vtbl(struct ubi_device *ubi, struct ubi_scan_info *si,
- 		       int copy, void *vtbl)
- {
- 	int err, tries = 0;
--	static struct ubi_vid_hdr *vid_hdr;
-+	struct ubi_vid_hdr *vid_hdr;
- 	struct ubi_scan_leb *new_seb;
- 
- 	ubi_msg("create volume table (copy #%d)", copy + 1);
--- 
-1.7.7
-
+Rob
