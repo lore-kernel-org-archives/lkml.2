@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1LVO7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 09:59:11 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34243 "EHLO arroyo.ext.ti.com"
+	id S1754515Ab1LVO7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 09:59:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:32820 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab1LVO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 09:58:57 -0500
+	id S1753701Ab1LVO6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 09:58:52 -0500
 From: Benoit Cousson <b-cousson@ti.com>
 To: <rob.herring@calxeda.com>, <tony@atomide.com>
 CC: <linux-omap@vger.kernel.org>, <akpm@linux-foundation.org>,
@@ -13,9 +13,9 @@ CC: <linux-omap@vger.kernel.org>, <akpm@linux-foundation.org>,
         <devicetree-discuss@lists.ozlabs.org>, <grant.likely@secretlab.ca>,
         <linux-i2c@vger.kernel.org>, <sameo@linux.intel.com>,
         <ben-linux@fluff.org>, Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH v4 12/12] ARM: OMAP2+: board-generic: Remove i2c static init
-Date: Thu, 22 Dec 2011 15:56:46 +0100
-Message-ID: <1324565806-31142-13-git-send-email-b-cousson@ti.com>
+Subject: [PATCH v4 09/12] arm/dts: omap4-panda: Add twl6030 and i2c EEPROM
+Date: Thu, 22 Dec 2011 15:56:43 +0100
+Message-ID: <1324565806-31142-10-git-send-email-b-cousson@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
 References: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
@@ -25,104 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This mainly reverts the commit that was adding the i2c static init.
+Update pandaboard dts file with required clock frequencies
+for the i2c client devices existing on pandaboard.
 
-Since the i2c and twl nodes are now present, there is no need
-for the static initialization anymore.
+Add the twl6030 node in i2c1 controller.
+
+This is the minimal support needed to boot OMAP4 boards
+without any crash.
+The support for all the features included in this MFD will be
+added later.
+
+Add a generic i2c EEPROM entry.
 
 Signed-off-by: Benoit Cousson <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arm/mach-omap2/board-generic.c |   48 +---------------------------------
- 1 files changed, 2 insertions(+), 46 deletions(-)
+ arch/arm/boot/dts/omap4-panda.dts |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 2529017..38f105d 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -15,7 +15,6 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/irqdomain.h>
--#include <linux/i2c/twl.h>
- 
- #include <mach/hardware.h>
- #include <asm/hardware/gic.h>
-@@ -36,34 +35,6 @@ static void __init omap_init_irq(void)
- 	of_irq_init(irq_match);
- }
- 
--/*
-- * XXX: Still needed to boot until the i2c & twl driver is adapted to
-- * device-tree
-- */
--#ifdef CONFIG_ARCH_OMAP4
--static struct twl4030_platform_data sdp4430_twldata = {
--	.irq_base	= TWL6030_IRQ_BASE,
--	.irq_end	= TWL6030_IRQ_END,
--};
--
--static void __init omap4_i2c_init(void)
--{
--	omap4_pmic_init("twl6030", &sdp4430_twldata);
--}
--#endif
--
--#ifdef CONFIG_ARCH_OMAP3
--static struct twl4030_platform_data beagle_twldata = {
--	.irq_base	= TWL4030_IRQ_BASE,
--	.irq_end	= TWL4030_IRQ_END,
--};
--
--static void __init omap3_i2c_init(void)
--{
--	omap3_pmic_init("twl4030", &beagle_twldata);
--}
--#endif
--
- static struct of_device_id omap_dt_match_table[] __initdata = {
- 	{ .compatible = "simple-bus", },
- 	{ .compatible = "ti,omap-infra", },
-@@ -78,21 +49,6 @@ static void __init omap_generic_init(void)
- 	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL);
- }
- 
--#ifdef CONFIG_ARCH_OMAP4
--static void __init omap4_init(void)
--{
--	omap4_i2c_init();
--	omap_generic_init();
--}
--#endif
--
--#ifdef CONFIG_ARCH_OMAP3
--static void __init omap3_init(void)
--{
--	omap3_i2c_init();
--	omap_generic_init();
--}
--#endif
- 
- #if defined(CONFIG_SOC_OMAP2420)
- static const char *omap242x_boards_compat[] __initdata = {
-@@ -145,7 +101,7 @@ DT_MACHINE_START(OMAP3_DT, "Generic OMAP3 (Flattened Device Tree)")
- 	.init_early	= omap3430_init_early,
- 	.init_irq	= omap_init_irq,
- 	.handle_irq	= omap3_intc_handle_irq,
--	.init_machine	= omap3_init,
-+	.init_machine	= omap_generic_init,
- 	.timer		= &omap3_timer,
- 	.dt_compat	= omap3_boards_compat,
- MACHINE_END
-@@ -164,7 +120,7 @@ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
- 	.init_early	= omap4430_init_early,
- 	.init_irq	= omap_init_irq,
- 	.handle_irq	= gic_handle_irq,
--	.init_machine	= omap4_init,
-+	.init_machine	= omap_generic_init,
- 	.timer		= &omap4_timer,
- 	.dt_compat	= omap4_boards_compat,
- MACHINE_END
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 9755ad5..29646dc 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -18,3 +18,37 @@
+ 		reg = <0x80000000 0x40000000>; /* 1 GB */
+ 	};
+ };
++
++&i2c1 {
++	clock-frequency = <400000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
++		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
++		interrupt-parent = <&gic>;
++	};
++};
++
++/include/ "twl6030.dtsi"
++
++&i2c2 {
++	clock-frequency = <400000>;
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++
++	/*
++	 * Display monitor features are burnt in their EEPROM as EDID data.
++	 * The EEPROM is connected as I2C slave device.
++	 */
++	eeprom@50 {
++		compatible = "ti,eeprom";
++		reg = <0x50>;
++	};
++};
++
++&i2c4 {
++	clock-frequency = <400000>;
++};
 -- 
 1.7.0.4
 
