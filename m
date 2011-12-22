@@ -1,18 +1,23 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752241Ab1LSD2A (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sun, 18 Dec 2011 22:28:00 -0500
-Received: from host84-106-static.185-82-b.business.telecomitalia.it ([82.185.106.84]:46912
-        "EHLO smtp.icmbarattoli.it" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1752117Ab1LSD17 (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 18 Dec 2011 22:27:59 -0500
-X-Greylist: delayed 913 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Dec 2011 22:27:59 EST
-Reply-To: <jefflinarm@hotmail.com>
-Message-ID: <093EDBA217344180B7CAA6769FA215AD@otswqyjs>
-From: "Jeff" <test@icmbarattoli.it>
-To: <lenatiger@ymail.com>
-Subject: cut the cost of gas detector ,your own design ----measurement software tech. group
-Date: Tue, 18 Dec 2018 11:08:59 +0800
+        id S1753976Ab1LVIaD (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Thu, 22 Dec 2011 03:30:03 -0500
+Received: from smtpf6.forptr.21cn.com ([59.36.102.42]:8241 "EHLO 21cn.com"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1753536Ab1LVIaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 22 Dec 2011 03:30:00 -0500
+HMM_SOURCE_IP: 10.27.2.8:43714.2069141155
+HMM_ATTACHE_NUM: 0000
+HMM_SOURCE_TYPE: SMTP
+0/X-Brightmail-Tracker: AAAAAA==
+1/X-Total-Score: 0:
+X-FILTER-SCORE: to=<linux-kernel@vger.kernel.orglinuxmail@tom.comlinuxmine@gmail.comlinux-ntfs-dev@lists.sourceforge.net>, score=<1324542578WB6nbQRRRRRxRR9RRoRx9oRRRHHRRRRRRRRRRRRRRRRR>  
+Reply-To: <xtay131415@126.com>
+Message-ID: <4030ACE14E19CD791BCFC7551E74E406@bcotccml>
+From: =?utf-8?B?5bygLueUnw==?= <qimingliu497@21cn.com>
+To: <linux-kernel@vger.kernel.org>, <linuxmail@tom.com>,
+        <linuxmine@gmail.com>, <linux-ntfs-dev@lists.sourceforge.net>
+Subject: 2011-12-22
+Date: Thu, 22 Dec 2011 16:28:35 +0800
 MIME-Version: 1.0
 Content-Type: text/plain;
         charset="utf-8"
@@ -20,43 +25,14 @@ Content-Transfer-Encoding: base64
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-OriginalArrivalTime: 19 Dec 2011 03:05:44.0787 (UTC) FILETIME=[196C4A30:01CCBDFB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-RGVhciBmcmllbmQsDQogDQpNYXliZSB5b3UgYXJlIGNvbmZ1c2VkIGluIHRoZSBjb3N0IG9mIHlv
-dXIgcHJvZHVjdChnYXMgZGV0ZWN0b3IgIG9yIG90aGVyIG1lYXN1cmVtZW50KSwNCnRoZSBsYWNr
-IG9mIGNvcmUgZGVzaWduaW5nIHRlYW0sIGFuZCB0aGUgaW5jb252ZW5pZW5jZSBvZiB5b3VyIGNs
-aWVudHMnIGN1c3RvbWl6YXRpb24gPyAgDQogDQpJZiB5b3UgYXJlIGluIHRoaXMgcHJlZGljYW1l
-bnQgLCBJdCB3b3VsZCBiZSBsdWNreSBmb3IgeW91IHRvIHNlZSB0aGlzIGVtYWlsLCANCm9yIHBs
-ZWFzZSBqdXN0IGlnbm9yZSB0aGlzIGVtYWlsIGFuZCBJIHdvdWxkIGFwb2xvZ2l6ZSBmb3IgeW91
-ciB2YWx1YWJsZSB0aW1lLg0KIA0KDQo8dGhlIHBpY3R1cmUgaXMgb25seSBmb3IgaWxsdXN0cmF0
-aW9uLG5vdCB0aGUgcmVhbCBwcm9kdWN0IHdlIGRlc2lnbmVkPg0KIA0KVG8gb3duIGFuIGV4cHJp
-ZW5jZWQgcmVzZWFyY2ggZGVwYXJ0bWVudCB3aXRob3V0IHByZXNzdXJlIQ0KVG8gY3JlYXRlIHlv
-dSBvd24gcHJvZHVjdCBhdCB0aGUgbG93ZXN0IGNvc3QgYW5kIHRoZSBmYXN0ZXN0IHNwZWVkIQ0K
-IA0KV2UgYXJlIGEgZ3JvdXAgb2YgZXhwcmllbmNlZCBlbmdpbmVlcnMgY29tcG9zZWQgb2YgRWxl
-Y3RyaWMsIFNvZnR3YXJlLCBTdHJ1Y3R1cmUsIA0Kd2hvIHVzZWQgdG8gYmUgZW5nYWdlZCBpbiBn
-YXMgZGV0ZWN0b3IgZGVzaWduLg0KIA0KSXQgd291bGQgYmUgbXVjaCBtb3JlIGNvbnZpbmllbnQg
-aWYgeW91IGhhdmUgYSBzaW1pbGFyIHByb2R1Y3QgY3VycmVudGx5LCBhbmQgd2Ugd2lsbCBkZXNp
-Z24gdGhlIHNvZnR3YXJlIGZvciB5b3UuDQp0aGVuIHlvdSBjb3VsZCBwcm9kdWNlIHRoZSBtYWlu
-Ym9hcmQgYnkgeW91cnNlbGYsIGFuZCBvZiBjb3Vyc2UgY3VzdG9taXplIHlvdXIgZnVuY3Rpb24s
-IGxvZ28sIGFuZCBldGMuDQogIA0KRWFzeSBjby13b3JraW5nOiANClRoZSBkZXNpZ25lZCBzb2Z0
-d2FyZSB3aWxsIGJlIHNlbnQgdGhyb3VnaCB3ZWIgdG8geW91Lg0KYW5kIHdlIHdpbGwgYWlkIHlv
-dSB0byBidXJuIHRoZSBzb2Z0IGNvZGUgdG8geW91ciBtYWNoaW5lLiANCllvdSBjYW4gdGVzdCB0
-aGUgZGVzaWduZWQgbWFjaGluZSBmaXJzdCx0aGVuIHBheSBmb3IgaXQgaWYgeW91IGFyZSBzYXRp
-c2ZpZWQuDQpVc3VhbGx5IHlvdSBldmVuIGRvbid0IGhhdmUgdG8gc2VuZCB5b3VyIG1hY2hpbmUg
-dG8gdXMsIGhhaGFoLg0KIA0KSXQgd291bGQgZ2l2ZSBhIHNpZ25pZmljYW50IGNoYW5nZSB0byB5
-b3VyIGNvbXBhbnkhDQogDQpJIHdvdWxkIGJlIHZlcnkgYXBwcmljYXRlZCBmb3IgeW91ciByZXBs
-eSwgd2FpdGluZy4uLi4NCg0Kb3IgYWRkIG1lIG9udG8geW91ciBza3lwZSBvciBNU04gZm9yIGRp
-cmVjdCBjb250YWN0LCBUaGFua3MuIA0KIA0KIA0KVGhhbmtzJlJlZ2FyZHMsDQpKZWZmDQogDQpR
-VGVjaC4gRGVzaWduIEdyb3VwDQogDQpTa3lwZTogamVmZi5saW5hcm0NCk1TTjogICBqZWZmbGlu
-YXJtQGhvdG1haWwuY29tDQogDQogIA0KPElmIHlvdSBjYW5ub3QgbWFrZSBkZWNpc2lvbiBhYm91
-dCB0aGlzIGFmZmFpciwgd291bGQgeW91IHBsZWFzZSBraW5kbHkgdHJhbnNtaXQgaXQgdG8gIHRo
-ZSByaWdodCBwZXJzb24gPw0KDQpJJ2QgYmUgYXBwcmljYWl0ZWQgZm9yIGl0J3MgZXNzZW50aWFs
-IHRvIGJvdGggb2YgdXMuIA0KDQpJZiB5b3UgYXJlIGludGVyZXN0ZWQsIHBsZWFzZSBkb24ndCBo
-ZXNpdGF0ZSB0byBjb250YWN0IHdpdGggbWUgZm9yIG1vcmUgZGV0YWlscy4NCg0KIEkgYW0gc3Vy
-ZSB5b3Ugd29uJ3QgYmUgZGlzYXBwb2ludGVkIT4NCg==
-
+ICAgDQoNCiAgICAgICAgICA2Li4u5Y2O5oSP56iO5Yqh5YWs5Y+45LiT5Lia5Luj55CG5YWo5Zu9
+5ZCE55yB5biCPD7mma4t6YCaLeeoji3lmIwsPD4NCg0KICDngrnmlbDlupUs6aqM6K+B5peg6Zeu
+6aKY5ZCO5LuY5qy+LDEwMCXmlL7lv4Mu5aaC5pyJ6ZyA5Y+v5p2l55S15rS96LCILi4uDQoNCiAg
+5bygYFI6MS4zLjQuMi44LjYuNi45LjUuNS45ICAgIFFROjkgMCA4IDEgOSA5IDUgOCA4DQoNCg0K
+DQoNCg0K
 
