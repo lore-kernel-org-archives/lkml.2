@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1LVM4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 07:56:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab1LVM4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 07:56:10 -0500
-Date: Thu, 22 Dec 2011 13:55:58 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 7/7] ftrace, perf: Add filter support for function trace
- event
-Message-ID: <20111222125558.GB1646@m.brq.redhat.com>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-8-git-send-email-jolsa@redhat.com>
- <20111221220756.GL17668@somewhere>
+	id S1755234Ab1LVM5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 07:57:45 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48395 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1LVM5l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 07:57:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221220756.GL17668@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1324429254-28383-1-git-send-email-minchan@kernel.org>
+References: <1324429254-28383-1-git-send-email-minchan@kernel.org>
+Date: Thu, 22 Dec 2011 12:57:40 +0000
+Message-ID: <CAJSP0QW5wPYcHr02oNm8Y8=hsChEb5tJuO0ntPy9MO8EPuH=Qg@mail.gmail.com>
+Subject: Re: [PATCH 0/6][RFC] virtio-blk: Change I/O path from request to BIO
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 11:07:58PM +0100, Frederic Weisbecker wrote:
-> On Wed, Dec 21, 2011 at 07:56:31PM +0100, Jiri Olsa wrote:
-> > Adding support to filter function trace event via perf
-> > interface. It is now possible to use filter interface
-> > in the perf tool like:
-> > 
-> >   perf record -e ftrace:function --filter="(ip == mm_*)" ls
-> > 
-> > The filter syntax is restricted to the the 'ip' field only,
-> > and following operators are accepted '==' '!=' '||', ending
-> > up with the filter strings like:
-> > 
-> >   "ip == f1 f2 ..." || "ip != f3 f4 ..." ...
-> 
-> Having the functions seperated like this sort of violates the
-> grammar of the filtering interface.
-> 
-> The typical way to do this would have been to stringify the
-> functions: ip == "f1 f2"
-> 
-> I feel a bit uncomfortable with "ip == f1 f2" scheme but perhaps
-> we can live with that. Especially as otherwise that would
-> require us to type "ip == \"f1 f2\"" for the whole filtering expression.
+On Wed, Dec 21, 2011 at 1:00 AM, Minchan Kim <minchan@kernel.org> wrote:
+> This patch is follow-up of Christohp Hellwig's work
+> [RFC: ->make_request support for virtio-blk].
+> http://thread.gmane.org/gmane.linux.kernel/1199763
+>
+> Quote from hch
+> "This patchset allows the virtio-blk driver to support much higher IOP
+> rates which can be driven out of modern PCI-e flash devices.  At this
+> point it really is just a RFC due to various issues."
 
-ugh, just realized there's a problem with this in the patch actually,
-and it's not working as expected. I'll send out new version soon.. 
+Basic question to make sure I understood this series: does this patch
+bypass the guest I/O scheduler (but then you added custom batching
+code into virtio_blk.c)?
 
-thanks,
-jirka
+If you're stumped by the performance perhaps compare blktraces of the
+request approach vs the bio approach.  We're probably performing I/O
+more CPU-efficiently but the I/O pattern itself is worse.
 
-> 
-> Thoughts?
+Stefan
