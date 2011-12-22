@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab1LVVKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:10:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40644 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab1LVVKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:10:49 -0500
-Date: Thu, 22 Dec 2011 16:10:29 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, paul@paulmenage.org,
-        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
-        devel@openvz.org, eric.dumazet@gmail.com, cgroups@vger.kernel.org
-Subject: Re: [PATCH v9 3/9] socket: initial cgroup code.
-Message-ID: <20111222211028.GB3916@redhat.com>
-References: <1323676029-5890-1-git-send-email-glommer@parallels.com>
- <1323676029-5890-4-git-send-email-glommer@parallels.com>
+	id S1755910Ab1LVVRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:17:49 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48925 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab1LVVRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 16:17:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323676029-5890-4-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1324550480-26308-1-git-send-email-alokc@nvidia.com>
+References: <1324550480-26308-1-git-send-email-alokc@nvidia.com>
+Date: Thu, 22 Dec 2011 13:17:46 -0800
+Message-ID: <CAOesGMire-13yiA9gVQYFWdTa6ZLJLbTW8qoRoPMRQ1ExavVUQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: tegra: Add delay before reset the controller
+From: Olof Johansson <olof@lixom.net>
+To: Alok Chauhan <alokc@nvidia.com>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@nvidia.com,
+        bones@secretlab.ca, paul.gortmaker@windriver.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, dgreid@google.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 11:47:03AM +0400, Glauber Costa wrote:
-> +
-> +static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
-> +void sock_update_memcg(struct sock *sk)
-> +{
-> +	/* A socket spends its whole life in the same cgroup */
-> +	if (sk->sk_cgrp) {
-> +		WARN_ON(1);
-> +		return;
-> +	}
-> +	if (static_branch(&memcg_socket_limit_enabled)) {
-> +		struct mem_cgroup *memcg;
-> +
-> +		BUG_ON(!sk->sk_prot->proto_cgroup);
-> +
-> +		rcu_read_lock();
-> +		memcg = mem_cgroup_from_task(current);
-> +		if (!mem_cgroup_is_root(memcg)) {
-> +			mem_cgroup_get(memcg);
-> +			sk->sk_cgrp = sk->sk_prot->proto_cgroup(memcg);
-> +		}
-> +		rcu_read_unlock();
-> +	}
-> +}
-> +EXPORT_SYMBOL(sock_update_memcg);
-> +
-> +void sock_release_memcg(struct sock *sk)
-> +{
-> +	if (static_branch(&memcg_socket_limit_enabled) && sk->sk_cgrp) {
-> +		struct mem_cgroup *memcg;
-> +		WARN_ON(!sk->sk_cgrp->memcg);
-> +		memcg = sk->sk_cgrp->memcg;
-> +		mem_cgroup_put(memcg);
-> +	}
-> +}
+Hi,
 
-Hi Glauber,
+(Adding linux-tegra and Dylan Reid who was debugging this before)
 
-I think for 'sock_release_memcg()', you want:
+On Thu, Dec 22, 2011 at 2:41 AM, Alok Chauhan <alokc@nvidia.com> wrote:
+> From: Alok Chauhan <alokc@nvidia.com>
+>
+> In NACK error condition, I2C controller violates
+> clock-to-data setup time before stop. In Software,
+> because of this reset of controller is happening
+> before I2C controller could complete STOP condition.
+>
+> Added worst case delay of 1 ms (assuming lowest
+> clock frequency will be 1 KHZ) before reset the
+> controller in case of NACK error.
 
-static inline sock_release_memcg(sk)
-{
-	if (static_branch())
-		__sock_release_memcg();
-}
+This change causes problems systems with some models of i2c TPMs, since
+the first transaction to them will always time out (TPM quirk), and the delay
+means that the tpm will have time to go back to sleep and thus timeout
+even on the retry. So you'll never make progress.
 
-And then re-define the current sock_release_memcg -> __sock_release_memcg().
-In that way the straight line path is a single no-op. As currently
-written, there is function call and then an immediate return.
-
-Thanks,
-
--Jason
+In other words: this patch will break some systems and thus shouldn't be
+applied.
 
 
-
+-Olof
