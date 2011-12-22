@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab1LVHV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 02:21:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59112 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab1LVHV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 02:21:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104935442"
-Subject: Re: [tip:sched/urgent] sched: Fix select_idle_sibling() regression
- in selecting an idle SMT sibling
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+	id S1752979Ab1LVHYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 02:24:41 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35187 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab1LVHYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 02:24:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111222014632.644264512@sbsiddha-desk.sc.intel.com>
+References: <20111222014514.410584964@sbsiddha-desk.sc.intel.com>
+	<20111222014632.644264512@sbsiddha-desk.sc.intel.com>
+Date: Wed, 21 Dec 2011 23:24:37 -0800
+X-Google-Sender-Auth: q6AYOMKrwkqKf5GBD-54HyiyBuo
+Message-ID: <CAE9FiQUeB-3uxJAMiHsz=uPWoFv5Hg1pVepz7aU6YtqOxMC-=Q@mail.gmail.com>
+Subject: Re: [patch 4/5] x86, x2apic: allow "nox2apic" to disable x2apic mode
+ setup by bios
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-In-Reply-To: <1324520161.17054.190.camel@debian>
-References: <1323978421.1984.244.camel@sbsiddha-desk.sc.intel.com>
-	 <tip-ab2789213d224202237292d78aaa0c386c7b28b2@git.kernel.org>
-	 <CAGjg+kEOkkjnQQJJyGQzGApV5asM5oqvRwEr2VkJy9G5gg1rxw@mail.gmail.com>
-	 <1324471944.10752.8.camel@twins>
-	 <1324496556.21294.11.camel@sbsiddha-desk.sc.intel.com>
-	 <1324517502.17054.174.camel@debian>
-	 <1324519393.21294.20.camel@sbsiddha-desk.sc.intel.com>
-	 <1324520161.17054.190.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Dec 2011 14:59:34 +0800
-Message-ID: <1324537174.17054.242.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+        flyboy@gmail.com
+Content-Type: multipart/mixed; boundary=20cf3040e98665a7dd04b4a93150
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 10:16 +0800, Alex,Shi wrote:
-> On Thu, 2011-12-22 at 10:03 +0800, Siddha, Suresh B wrote:
-> > On Wed, 2011-12-21 at 17:31 -0800, Shi, Alex wrote:
-> > > This patch partly fixed a performance regression that triggered by
-> > > 4dcfe1025b513c2c, but issue still exists.
-> > 
-> > So how much was the regression caused by the commit 4dcfe1025b513c2c and
-> > how much did we recover with this fix I posted. If we are talking about
-> > the regression caused by this single commit 4dcfe1025b513c2c, then I
-> > don't know of any other related fixes other than the recent fix we
-> > pushed upstream (ab2789213d224202237292d78aaa0c386c7b28b2).
-> 
-> A little complex for the whole thing. 
-> on 4 sockets EX machine, 3~5% hackbench thread regression due to 4dcfe
-> can be recovered by ab2789. 
-> 
-> But on 2 sockets SNB machine, 1024 clients loop netperf TCP-RR has about
-> 9% regression. and your patch seem recover 2~3%. 
+--20cf3040e98665a7dd04b4a93150
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Got the scheduler part from tip tree by command "git diff v3.2-rc6
-kernel/sched*" and apply it again 3.2-rc6. Peter's commit "Only queue
-remote wakeups when crossing cache boundaries" was included. But testing
-show no change for TCP-RR result.
+On Wed, Dec 21, 2011 at 5:45 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
 
-> 
-> And on a 2 sockets nhm, one of our private benchmark was impact much 20
-> +% regression. that benchmark just run 4 process, each of process open a
-> thread, and the thread tasks is to locate randomly pages and than read
-> from 4 times/write 1 time data into a page.  The ab2789 commit seems no
-> help our benchmark. 
-> 
-> 
-> 
-> 
+> @@ -1453,12 +1462,17 @@ static void disable_x2apic(void)
+> =A0 =A0 =A0 =A0if (msr & X2APIC_ENABLE) {
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0u32 x2apic_id =3D read_apic_id();
+>
+> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (x2apic_id > 255)
+> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 panic("Can not disable x2ap=
+ic, id: %08x\n", x2apic_id);
+> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (x2apic_id >=3D 255)
+> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 panic("Cannot disable x2api=
+c, id: %08x\n", x2apic_id);
 
+can not be applied cleanly.
 
+update it a little bit.
+
+need to use attached one to replace 4/5.
+
+Thanks
+
+Yinghai
+
+--20cf3040e98665a7dd04b4a93150
+Content-Type: text/x-patch; charset=US-ASCII; name="nox2apic_v10_4.patch"
+Content-Disposition: attachment; filename="nox2apic_v10_4.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gwhg3rl00
+
+U3ViamVjdDogW3BhdGNoIDQvNV0geDg2LCB4MmFwaWM6IGFsbG93ICJub3gyYXBpYyIgdG8gZGlz
+YWJsZSB4MmFwaWMgbW9kZSBzZXR1cCBieSBiaW9zCkZyb206IFlpbmdoYWkgTHUgPHlpbmdoYWlA
+a2VybmVsLm9yZz4KCkN1cnJlbnRseSAibm94MmFwaWMiIGJvb3QgcGFyYW1ldGVyIHdhcyBub3Qg
+ZW5hYmxpbmcgeDJhcGljIG1vZGUgaWYgdGhlIGNwdSwKa2VybmVsIGFyZSBhbGwgY2FwYWJsZSBv
+ZiBlbmFibGluZyB4MmFwaWMgbW9kZSBhbmQgdGhlIE9TIGhhbmRvdmVyCmhhcHBlbmVkIGluIHhh
+cGljIG1vZGUuCgpIb3dldmVyIElmIHRoZSBiaW9zIGVuYWJsZWQgeDJhcGljIHByaW9yIHRvIE9T
+IGhhbmRvdmVyLCB1c2luZyAibm94MmFwaWMiCmJvb3QgcGFyYW1ldGVyIGhhZCBubyBlZmZlY3Qu
+CgpJZiB0aGUgYm9vdCBjcHUncyBhcGljaWQgaXMgPCAyNTUsIGVuYWJsZSAibm94MmFwaWMiIGJv
+b3QgcGFyYW1ldGVyIHRvCmRpc2FibGUgdGhlIHgyYXBpYyBtb2RlIHNldHVwIGJ5IHRoZSBiaW9z
+LiBUaGlzIHdpbGwgZW5hYmxlIHRoZSBrZXJuZWwgdG8KZmFsbGJhY2sgdG8geGFwaWMgbW9kZSBh
+bmQgYnJpbmd1cCBvbmx5IHRoZSBjcHUncyB3aGljaCBoYXMgYXBpYy1pZCA8IDI1NS4KCi12Mjog
+Zml4IHBhdGNoIGVycm9yIGFuZCB0d28gY29tcGlsaW5nIHdhcm5pbmcKCW1ha2UgZGlzYWJsZV94
+MmFwaWMgdG8gYmUgX19pbml0CgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtl
+cm5lbC5vcmc+ClNpZ25lZC1vZmYtYnk6IFN1cmVzaCBTaWRkaGEgPHN1cmVzaC5iLnNpZGRoYUBp
+bnRlbC5jb20+Ci0tLQogYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5oIHwgICAgMSArCiBhcmNo
+L3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMgfCAgIDM3ICsrKysrKysrKysrKysrKysrKysrKysrKysr
+Ky0tLS0tLS0tLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjggaW5zZXJ0aW9ucygrKSwgMTAgZGVsZXRp
+b25zKC0pCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9hcGljL2FwaWMuYwo9PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMKKysr
+IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMKQEAgLTE0OCwxNSArMTQ4LDI0
+IEBAIGludCB4MmFwaWNfbW9kZTsKIC8qIHgyYXBpYyBlbmFibGVkIGJlZm9yZSBPUyBoYW5kb3Zl
+ciAqLwogaW50IHgyYXBpY19wcmVlbmFibGVkOwogc3RhdGljIGludCB4MmFwaWNfZGlzYWJsZWQ7
+CitzdGF0aWMgaW50IG5veDJhcGljOwogc3RhdGljIF9faW5pdCBpbnQgc2V0dXBfbm94MmFwaWMo
+Y2hhciAqc3RyKQogewogCWlmICh4MmFwaWNfZW5hYmxlZCgpKSB7Ci0JCXByX3dhcm5pbmcoIkJp
+b3MgYWxyZWFkeSBlbmFibGVkIHgyYXBpYywgIgotCQkJICAgImNhbid0IGVuZm9yY2Ugbm94MmFw
+aWMiKTsKLQkJcmV0dXJuIDA7Ci0JfQorCQlpbnQgYXBpY2lkID0gbmF0aXZlX2FwaWNfbXNyX3Jl
+YWQoQVBJQ19JRCk7CisKKwkJaWYgKGFwaWNpZCA+PSAyNTUpIHsKKwkJCXByX3dhcm5pbmcoIkFw
+aWNpZDogJTA4eCwgY2Fubm90IGVuZm9yY2Ugbm94MmFwaWNcbiIsCisJCQkJICAgYXBpY2lkKTsK
+KwkJCXJldHVybiAwOworCQl9CisKKwkJcHJfd2FybmluZygieDJhcGljIGFscmVhZHkgZW5hYmxl
+ZC4gd2lsbCBkaXNhYmxlIGl0XG4iKTsKKwl9IGVsc2UKKwkJc2V0dXBfY2xlYXJfY3B1X2NhcChY
+ODZfRkVBVFVSRV9YMkFQSUMpOworCisJbm94MmFwaWMgPSAxOwogCi0Jc2V0dXBfY2xlYXJfY3B1
+X2NhcChYODZfRkVBVFVSRV9YMkFQSUMpOwogCXJldHVybiAwOwogfQogZWFybHlfcGFyYW0oIm5v
+eDJhcGljIiwgc2V0dXBfbm94MmFwaWMpOwpAQCAtMTQ0Myw3ICsxNDUyLDcgQEAgc3RhdGljIGlu
+bGluZSB2b2lkIF9fZGlzYWJsZV94MmFwaWModTY0CiAJd3Jtc3JsKE1TUl9JQTMyX0FQSUNCQVNF
+LCBtc3IgJiB+WDJBUElDX0VOQUJMRSk7CiB9CiAKLXN0YXRpYyB2b2lkIGRpc2FibGVfeDJhcGlj
+KHZvaWQpCitzdGF0aWMgX19pbml0IHZvaWQgZGlzYWJsZV94MmFwaWModm9pZCkKIHsKIAl1NjQg
+bXNyOwogCkBAIC0xNDYwLDYgKzE0NjksMTEgQEAgc3RhdGljIHZvaWQgZGlzYWJsZV94MmFwaWMo
+dm9pZCkKIAkJcHJfaW5mbygiRGlzYWJsaW5nIHgyYXBpY1xuIik7CiAJCV9fZGlzYWJsZV94MmFw
+aWMobXNyKTsKIAorCQlpZiAobm94MmFwaWMpIHsKKwkJCWNsZWFyX2NwdV9jYXAoJmNwdV9kYXRh
+KDApLCBYODZfRkVBVFVSRV9YMkFQSUMpOworCQkJc2V0dXBfY2xlYXJfY3B1X2NhcChYODZfRkVB
+VFVSRV9YMkFQSUMpOworCQl9CisKIAkJeDJhcGljX2Rpc2FibGVkID0gMTsKIAkJeDJhcGljX21v
+ZGUgPSAwOwogCkBAIC0xNTM0LDEzICsxNTQ4LDE2IEBAIHZvaWQgX19pbml0IGVuYWJsZV9JUl94
+MmFwaWModm9pZCkKIAlsZWdhY3lfcGljLT5tYXNrX2FsbCgpOwogCW1hc2tfaW9hcGljX2VudHJp
+ZXMoKTsKIAorCWlmICh4MmFwaWNfcHJlZW5hYmxlZCAmJiBub3gyYXBpYykKKwkJZGlzYWJsZV94
+MmFwaWMoKTsKKwogCWlmIChkbWFyX3RhYmxlX2luaXRfcmV0KQogCQlyZXQgPSAtMTsKIAllbHNl
+CiAJCXJldCA9IGVuYWJsZV9JUigpOwogCiAJaWYgKCF4MmFwaWNfc3VwcG9ydGVkKCkpCi0JCWdv
+dG8gbm94MmFwaWM7CisJCWdvdG8gc2tpcF94MmFwaWM7CiAKIAlpZiAocmV0IDwgMCkgewogCQkv
+KiBJUiBpcyByZXF1aXJlZCBpZiB0aGVyZSBpcyBBUElDIElEID4gMjU1IGV2ZW4gd2hlbiBydW5u
+aW5nCkBAIC0xNTUwLDcgKzE1NjcsNyBAQCB2b2lkIF9faW5pdCBlbmFibGVfSVJfeDJhcGljKHZv
+aWQpCiAJCSAgICAhaHlwZXJ2aXNvcl94MmFwaWNfYXZhaWxhYmxlKCkpIHsKIAkJCWlmICh4MmFw
+aWNfcHJlZW5hYmxlZCkKIAkJCQlkaXNhYmxlX3gyYXBpYygpOwotCQkJZ290byBub3gyYXBpYzsK
+KwkJCWdvdG8gc2tpcF94MmFwaWM7CiAJCX0KIAkJLyoKIAkJICogd2l0aG91dCBJUiBhbGwgQ1BV
+cyBjYW4gYmUgYWRkcmVzc2VkIGJ5IElPQVBJQy9NU0kKQEAgLTE1NjEsNyArMTU3OCw3IEBAIHZv
+aWQgX19pbml0IGVuYWJsZV9JUl94MmFwaWModm9pZCkKIAogCWlmIChyZXQgPT0gSVJRX1JFTUFQ
+X1hBUElDX01PREUpIHsKIAkJcHJfaW5mbygieDJhcGljIG5vdCBlbmFibGVkLCBJUlEgcmVtYXBw
+aW5nIGlzIGluIHhhcGljIG1vZGVcbiIpOwotCQlnb3RvIG5veDJhcGljOworCQlnb3RvIHNraXBf
+eDJhcGljOwogCX0KIAogCXgyYXBpY19lbmFibGVkID0gMTsKQEAgLTE1NzIsNyArMTU4OSw3IEBA
+IHZvaWQgX19pbml0IGVuYWJsZV9JUl94MmFwaWModm9pZCkKIAkJcHJfaW5mbygiRW5hYmxlZCB4
+MmFwaWNcbiIpOwogCX0KIAotbm94MmFwaWM6Citza2lwX3gyYXBpYzoKIAlpZiAocmV0IDwgMCkg
+LyogSVIgZW5hYmxpbmcgZmFpbGVkICovCiAJCXJlc3RvcmVfaW9hcGljX2VudHJpZXMoKTsKIAls
+ZWdhY3lfcGljLT5yZXN0b3JlX21hc2soKTsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNs
+dWRlL2FzbS9hcGljLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5j
+bHVkZS9hc20vYXBpYy5oCisrKyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5o
+CkBAIC0yMTYsNiArMjE2LDcgQEAgc3RhdGljIGlubGluZSB2b2lkIHgyYXBpY19mb3JjZV9waHlz
+KHZvaQogewogfQogCisjZGVmaW5lCW5veDJhcGljCTAKICNkZWZpbmUJeDJhcGljX3ByZWVuYWJs
+ZWQgMAogI2RlZmluZQl4MmFwaWNfc3VwcG9ydGVkKCkJMAogI2VuZGlmCg==
+--20cf3040e98665a7dd04b4a93150--
