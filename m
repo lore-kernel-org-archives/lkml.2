@@ -1,56 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1LVDri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 22:47:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54429 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab1LVDre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 22:47:34 -0500
-Date: Wed, 21 Dec 2011 19:47:17 -0800
-From: Greg KH <gregkh@suse.de>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: RFC: android logger feedback request
-Message-ID: <20111222034717.GB14174@suse.de>
-References: <4EF264C3.6000104@am.sony.com>
- <20111221231956.GB23859@suse.de>
- <4EF27B85.9080801@am.sony.com>
- <20111222005114.GA22541@suse.de>
- <4EF288B4.1070601@am.sony.com>
- <20111222014718.GA13085@suse.de>
- <4EF29217.7040408@am.sony.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EF29217.7040408@am.sony.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754778Ab1LVDvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 22:51:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33256 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab1LVDvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 22:51:04 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=8xUFYJNJWbUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=wer3SAH9o4edcoTTCO4A:9 a=2RA5eKLPcfj46D1qi64A:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1324525862.5916.121.camel@gandalf.stny.rr.com>
+Subject: Re: Problem: plist_add undefined!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Monica Puig-Pey <puigpeym@unican.es>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 21 Dec 2011 22:51:02 -0500
+In-Reply-To: <4EF05465.7050507@unican.es>
+References: <4EF05465.7050507@unican.es>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 06:12:39PM -0800, Tim Bird wrote:
-> > Again, please see what we are already doing in the kernel and userspace,
-> > I think a lot of the above is already implemented.
+On Tue, 2011-12-20 at 10:24 +0100, Monica Puig-Pey wrote:
+> Hi there,
 > 
-> I don't know what systemd has got going on in user-space.  I'm looking
-> at a very recent kernel, and I see no support for multiple log channels,
-> or an optimized open/write path.
+> As I told in previous posts in this list I'm developing drivers for the
+> 
+> linux-rt kernel version in Ubuntu 10.04, based on 2.6.31 with rt_preempt 
+> patch.
+> 
+> Currently I'm studying how to use priority lists (linux/plist.h) in a 
+> module. I read some pages from the Linux Kernel Development book to 
+> learn how linked list work in the kernel.
+> 
+> I made and easy example, shown below, trying to put three elements, with 
+> their priorities, in a plist_head.
+> 
+> Then, I had two problems:
+> 
+> * First error:
+> 
+>    An error is produced when using the MACROs:
+>      - PLIST_HEAD_INIT(head, _lock)
+>      - PLIST_NODE_INIT(node, __prio)
 
-How is the existing syslog read path not "optimized"?  What kind of
-speed and numbers are we talking about here?
+Right, the macros are for static declarations. Either global variables
+or a variable marked as static:
 
-Oh, and you do know about the userspace printk tty driver, right?  What
-about using that combined with the existing syslog system call?
+struct plist_head myhead = PLIST_HEAD_INIT(myhead, mylock);
 
-systemd doesn't use it, but I know of a few embedded systems that are
-already using it today, and I think it might solve the android issues
-already.
+or
 
-thanks,
+int foo() {
+	static struct plist_head bar = PLIST_HEAD_INIT(bar, mylock);
 
-greg k-h
+	[...]
+}
+
+or
+
+struct foo bar = {
+	.zoop = PLIST_HEAD_INIT(bar.zoop, mylock),
+};
+
+
+> 
+>    it says :
+> 
+> 
+> /home/monica/Escritorio/plists/priolist.c: In function 'init_module': 
+> /home/monica/Escritorio/plists/priolist.c:67: error: expected expression 
+> before '.' token
+> 
+> 
+>    --> To solve this I used the functions:
+> 
+> 
+> - static inline void plist_head_init(struct plist_head *head, struct 
+> spinlock *lock)
+> 
+> - static inline void plist_node_init(struct plist_node *node, int prio)
+
+Right, for runtime code you must use these.
+
+
+> 
+>    But I still have the problem with the MACRO
+> 
+> 
+> 
+> 
+> * Second error, problem using plist_add:
+> 
+>    It says:
+> 
+> 
+> “WARNING: "plist_add" [/home/monica/Escritorio/plists/priolist.ko] 
+> undefined! ”
+
+Simple, plist_add() isn't exported to modules.
+
+Hmm, none of the plist functions are. I guess it wouldn't hurt to make
+them EXPORT_SYMBOL_GPL()
+
+Maybe we'll do that. Is this just for learning or are you planing on
+adding a real GPL module to Linux that uses plists. For learning, it may
+not be worth adding these symbols, but if you have a legit reason for
+modules to use plists, than I don't see any harm in exporting them.
+
+-- Steve
+
+> 
+>    I made the module GPL, I don't know what am I doing wrong.
+> 
+> Does anybody have an idea what is happening?
+> 
+> Thanks in advance for any help,
+> 
+> Cheers,
+> 
+
+
