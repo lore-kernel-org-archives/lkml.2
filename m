@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab1LVXsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 18:48:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab1LVXsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 18:48:37 -0500
-Date: Thu, 22 Dec 2011 23:48:30 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition
-	devices
-Message-ID: <20111222234830.GC31021@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-	security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-	jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
-References: <1324576939-23619-1-git-send-email-pbonzini@redhat.com> <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com> <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com> <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com> <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
+	id S1756177Ab1LVXzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 18:55:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62926 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1LVXzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 18:55:00 -0500
+Date: Thu, 22 Dec 2011 15:54:55 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
+        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
+ and fix blkcg percpu alloc deadlock
+Message-ID: <20111222235455.GT17084@google.com>
+References: <1324590326-10135-1-git-send-email-tj@kernel.org>
+ <20111222135925.de3221c8.akpm@linux-foundation.org>
+ <20111222220911.GK17084@google.com>
+ <20111222142058.41316ee0.akpm@linux-foundation.org>
+ <20111222224117.GL17084@google.com>
+ <20111222145426.5844df96.akpm@linux-foundation.org>
+ <20111222230047.GN17084@google.com>
+ <20111222151649.de57746f.akpm@linux-foundation.org>
+ <20111222232433.GQ17084@google.com>
+ <20111222154138.d6c583e3.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111222154138.d6c583e3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 02:25:56PM -0800, Linus Torvalds wrote:
-> I don't *think* anybody does something as crazy as giving actual block
-> device ownership to people, 
+Hello,
 
-That can happen when running virtual machines backed by logical volumes.
+On Thu, Dec 22, 2011 at 03:41:38PM -0800, Andrew Morton wrote:
+> All the code I'm looking at assumes that blkio_group.stats_cpu is
+> non-zero.  Won't the kerenl just go splat if that allocation failed?
+> 
+> If the code *does* correctly handle ->stats_cpu == NULL then we have
+> options.
 
-Say I am running a server that offers virtual machines to different
-people, and I allow those people to have root access within their own
-guest, but, naturally, I don't give them any access to other people's
-guests.
+I think it's supposed to just skip creating whole blk_group if percpu
+allocation fails, so ->stats_cpu of existing groups are guaranteed to
+be !%NULL.
 
-I pool my disks on the server into a Volume Group and create one simple
-Logical Volume per guest VM to hold its filesystem.
+> a) Give userspace a new procfs/debugfs file to start stats gathering
+>    on a particular cgroup/request_queue pair.  Allocate the stats
+>    memory in that.
+> 
+> b) Or allocate stats_cpu on the first call to blkio_read_stat_cpu()
+>    and return zeroes for this first call.
 
-Due to this bug, a root user inside one guest VM can see and modify the
-contents of other VMs that don't belong to them (and in some situations
-perhaps even take control of the host machine by modifying the host's
-LVM metadata).
+Hmmm... IIRC, the stats aren't exported per cgroup-request_queue pair,
+so reads are issued per cgroup.  We can't tell which request_queues
+userland is actually interested in.
 
-Alasdair
+> c) Or change the low-level code to do
+>    blkio_group.want_stats_cpu=true, then test that at the top level
+>    after we've determined that blkio_group.stats_cpu is NULL.
 
+Not following.  Where's the "top level"?
+
+> d) Or, worse, punt the allocation into a workqueue thread.
+
+I would much prefer using mempool to this.  They are essentially the
+same approach.
+
+Thanks.
+
+-- 
+tejun
