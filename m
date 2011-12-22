@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab1LVRHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:07:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34963 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab1LVRH2 (ORCPT
+	id S1755470Ab1LVRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:16:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52612 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1LVRQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 12:07:28 -0500
-Date: Thu, 22 Dec 2011 09:07:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Ben Hutchings <ben@decadent.org.uk>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: out-of-tree module shouldn't disable lockdep
-Message-ID: <20111222170723.GI17084@google.com>
-References: <20111222165952.GH17084@google.com>
+	Thu, 22 Dec 2011 12:16:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222165952.GH17084@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAFLxGvxQ0E+j1LHfN3fCMM_TVqV6QG3B=VQiy1FPGdn5senBDw@mail.gmail.com>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+ <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+ <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com> <CAFLxGvxQ0E+j1LHfN3fCMM_TVqV6QG3B=VQiy1FPGdn5senBDw@mail.gmail.com>
+From: Gaurav Saxena <grvsaxena419@gmail.com>
+Date: Thu, 22 Dec 2011 22:46:24 +0530
+Message-ID: <CAOh0hwPGzx64gt=ohbWQL96F28ZXEy_y4XF1YRHyKEctT1-sCg@mail.gmail.com>
+Subject: Re: Intercepting system calls
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 08:59:52AM -0800, Tejun Heo wrote:
-> Hello, guys.
-> 
-> 2449b8ba074 "module,bug: Add TAINT_OOT_MODULE flag for modules not
-> built in-tree" added TAINT_OOT_MODULE to mark kernel which has
-> out-of-tree module loaded, which might be a good idea but an
-> unfortunate side effect of tainting is that it disables lockdep.  So,
-> now, none of my test modules is watched by lockdep.  This is a bad bad
-> idea.  People use oot modules to write test code and disabling lockdep
-> for test codes is silly.  Can we please fix this?
+> It depends on your application.
+> Samba has vfs_recycle.
+> You can also write a fuse-filesystem.
+> Or use ptrace().
+>
+> Select your pain. ;)
+>
+I want to monitor whole / and its sub directories for unlink call, if
+there is any call I would save the file, would it be possible with
+FUSE? It would require remounting of file system ? I don't think
+ptrace would be of help as applications are not under my control.
+> --
+> Thanks,
+> //richard
 
-Ingo just told me it's already fixed and scheduled for upstream, so
-please forget about this thread.
 
-Thanks.
 
 -- 
-tejun
+Thanks and Regards ,
+Gaurav
