@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab1LVN3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 08:29:22 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:55888 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1LVN3T (ORCPT
+	id S1752252Ab1LVNgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 08:36:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39934 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab1LVNgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 08:29:19 -0500
-Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Dec 2011 08:26:30 -0500
-In-Reply-To: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1324560391.1964.8.camel@falcor>
-Mime-Version: 1.0
-x-cbid: 11122213-1780-0000-0000-000001D29377
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000242; HX=3.00000180; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00098310; UDB=6.00025448; UTC=2011-12-22
- 13:29:17
+	Thu, 22 Dec 2011 08:36:35 -0500
+MIME-Version: 1.0
+Date: Thu, 22 Dec 2011 21:36:34 +0800
+Message-ID: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
+Subject: [PATCH] mm: hugetlb: undo change to page mapcount in fault handler
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 12:54 +0200, Dmitry Kasatkin wrote:
-> When a file is truncated with truncate()/ftruncate() and then closed,
-> iversion is not updated. This patch uses ATTR_SIZE flag as an indication
-> to increment iversion.
-> 
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Page mapcount is changed only when it is folded into page table entry.
 
-Acked-by: Mimi Zohar <zohar@us.ibm.com> 
-(Stable should be cc'ed on this patch.)
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-thanks,
+--- a/mm/hugetlb.c	Tue Dec 20 21:26:30 2011
++++ b/mm/hugetlb.c	Thu Dec 22 21:29:42 2011
+@@ -2509,6 +2509,7 @@ static int hugetlb_no_page(struct mm_str
+ {
+ 	struct hstate *h = hstate_vma(vma);
+ 	int ret = VM_FAULT_SIGBUS;
++	int anon_rmap = 0;
+ 	pgoff_t idx;
+ 	unsigned long size;
+ 	struct page *page;
+@@ -2563,14 +2564,13 @@ retry:
+ 			spin_lock(&inode->i_lock);
+ 			inode->i_blocks += blocks_per_huge_page(h);
+ 			spin_unlock(&inode->i_lock);
+-			page_dup_rmap(page);
+ 		} else {
+ 			lock_page(page);
+ 			if (unlikely(anon_vma_prepare(vma))) {
+ 				ret = VM_FAULT_OOM;
+ 				goto backout_unlocked;
+ 			}
+-			hugepage_add_new_anon_rmap(page, vma, address);
++			anon_rmap = 1;
+ 		}
+ 	} else {
+ 		/*
+@@ -2583,7 +2583,6 @@ retry:
+ 			      VM_FAULT_SET_HINDEX(h - hstates);
+ 			goto backout_unlocked;
+ 		}
+-		page_dup_rmap(page);
+ 	}
 
-Mimi
+ 	/*
+@@ -2607,6 +2606,10 @@ retry:
+ 	if (!huge_pte_none(huge_ptep_get(ptep)))
+ 		goto backout;
 
-> ---
->  fs/attr.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/attr.c b/fs/attr.c
-> index 7ee7ba4..b8f55c4 100644
-> --- a/fs/attr.c
-> +++ b/fs/attr.c
-> @@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
->  			return -EPERM;
->  	}
-> 
-> +	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
-> +		if (attr->ia_size != inode->i_size)
-> +			inode_inc_iversion(inode);
-> +	}
-> +
->  	if ((ia_valid & ATTR_MODE)) {
->  		mode_t amode = attr->ia_mode;
->  		/* Flag setting protected by i_mutex */
-
-
++	if (anon_rmap)
++		hugepage_add_new_anon_rmap(page, vma, address);
++	else
++		page_dup_rmap(page);
+ 	new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
+ 				&& (vma->vm_flags & VM_SHARED)));
+ 	set_huge_pte_at(mm, address, ptep, new_pte);
