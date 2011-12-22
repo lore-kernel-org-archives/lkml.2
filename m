@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab1LVJOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 04:14:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58319 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab1LVJOS convert rfc822-to-8bit (ORCPT
+	id S1754935Ab1LVJTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:19:00 -0500
+Received: from mga14.intel.com ([143.182.124.37]:25177 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991Ab1LVJS5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 04:14:18 -0500
-Message-ID: <1324545242.24803.11.camel@twins>
-Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Dec 2011 10:14:02 +0100
-In-Reply-To: <20111222090352.GA11831@elte.hu>
-References: <20111221105739.798864333@chello.nl>
-	 <20111221111143.620776435@chello.nl>
-	 <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
-	 <20111222070212.GA9593@elte.hu> <1324543413.24803.7.camel@twins>
-	 <20111222090352.GA11831@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 22 Dec 2011 04:18:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="88433007"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Chris Wright <chrisw@sous-sol.org>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Thu, 22 Dec 2011 17:17:42 +0800
+Subject: [PATCH v2] intel-iommu: Add device info into list before doing
+ context mapping
+Thread-Topic: [PATCH v2] intel-iommu: Add device info into list before doing
+ context mapping
+Thread-Index: AczAiGvqkE33aB24TxWfj60400kzKw==
+Message-ID: <BC00F5384FCFC9499AF06F92E8B78A9E28907BAB30@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 10:03 +0100, Ingo Molnar wrote:
+Add device info into list before do context mapping, because device info will be used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats would not be called without this patch.
 
-> Could be made part of the locking self-tests - that way it does 
-> not add an extra config option! ;-)
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+---
+ drivers/iommu/intel-iommu.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-Fair chance it will blow up and disable lockdep for pretty much every
-console implementation out there, except 8250serial when used in
-conjunction with all patches in this thread.
-
-Maybe not the normal vga console, but I haven't tried on a machine that
-has a monitor attached yet (they're usually not on remote power switches
-and I'm too lazy to reach over and press reset).
-
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c index bdc447f..ccf347f 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2267,12 +2267,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-	ret = domain_context_mapping(domain, pdev, translation);
+-	if (ret) {
+-		free_devinfo_mem(info);
+-		return ret;
+-	}
+-
+ 	info->segment = pci_domain_nr(pdev->bus);
+ 	info->bus = pdev->bus->number;
+ 	info->devfn = pdev->devfn;
+@@ -2285,6 +2279,17 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+ 	pdev->dev.archdata.iommu = info;
+ 	spin_unlock_irqrestore(&device_domain_lock, flags);
+ 
++	ret = domain_context_mapping(domain, pdev, translation);
++	if (ret) {
++		spin_lock_irqsave(&device_domain_lock, flags);
++		list_del(&info->link);
++		list_del(&info->global);
++		pdev->dev.archdata.iommu = NULL;
++		spin_unlock_irqrestore(&device_domain_lock, flags);
++		free_devinfo_mem(info);
++		return ret;
++	}
++
+ 	return 0;
+ }
+ 
+--
+1.6.0.rc1
 
