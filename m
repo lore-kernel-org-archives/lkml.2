@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1LVQo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 11:44:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37261 "EHLO mx1.redhat.com"
+	id S1755456Ab1LVQpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 11:45:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60554 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab1LVQo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 11:44:27 -0500
-Date: Thu, 22 Dec 2011 17:39:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: + mempool-fix-first-round-failure-behavior.patch added to -mm
-	tree
-Message-ID: <20111222163900.GA1448@redhat.com>
+	id S1753195Ab1LVQpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 11:45:46 -0500
+Date: Thu, 22 Dec 2011 14:06:41 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/8] KVM: MMU: combine unsync and unsync_children
+Message-ID: <20111222160641.GA7125@amt.cnet>
+References: <4EEB19AF.5070501@linux.vnet.ibm.com>
+ <4EEB19D6.60101@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EEB19D6.60101@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Dec 16, 2011 at 06:13:42PM +0800, Xiao Guangrong wrote:
+> unsync is only used for the page of level == 1 and unsync_children is only
+> used in the upper page, so combine them to reduce the size of shadow page
+> structure
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  Documentation/virtual/kvm/mmu.txt |    5 ++-
+>  arch/x86/include/asm/kvm_host.h   |   14 +++++++++++-
+>  arch/x86/kvm/mmu.c                |   39 +++++++++++++++++++++++++-----------
+>  arch/x86/kvm/mmu_audit.c          |    6 ++--
+>  arch/x86/kvm/mmutrace.h           |    3 +-
+>  arch/x86/kvm/paging_tmpl.h        |    2 +-
+>  6 files changed, 48 insertions(+), 21 deletions(-)
+> 
+> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+> index 5dc972c..4a5fedd 100644
+> --- a/Documentation/virtual/kvm/mmu.txt
+> +++ b/Documentation/virtual/kvm/mmu.txt
+> @@ -205,14 +205,15 @@ Shadow pages contain the following information:
+>      this page's spt.  Otherwise, parent_ptes points at a data structure
+>      with a list of parent_ptes.
+>    unsync:
+> +    It is used when role.level == 1, only level 1 shadow pages can be unsync.
+>      If true, then the translations in this page may not match the guest's
+>      translation.  This is equivalent to the state of the tlb when a pte is
+>      changed but before the tlb entry is flushed.  Accordingly, unsync ptes
+>      are synchronized when the guest executes invlpg or flushes its tlb by
+>      other means.  Valid for leaf pages.
+>    unsync_children:
+> -    How many sptes in the page point at pages that are unsync (or have
+> -    unsynchronized children).
+> +    It is used when role.level > 1 and indicates how many sptes in the page
+> +    point at unsync pages or unsynchronized children.
+>    unsync_child_bitmap:
+>      A bitmap indicating which sptes in spt point (directly or indirectly) at
+>      pages that may be unsynchronized.  Used to quickly locate all unsychronized
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 52d6640..c0a89cd 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -233,9 +233,19 @@ struct kvm_mmu_page {
+>  	 * in this shadow page.
+>  	 */
+>  	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
+> -	bool unsync;
+>  	int root_count;          /* Currently serving as active root */
+> -	unsigned int unsync_children;
+> +
+> +	/*
+> +	 * If role.level == 1, unsync indicates whether the sp is
+> +	 * unsync, otherwise unsync_children indicates the number
+> +	 * of sptes which point at unsync sp or unsychronized children.
+> +	 * See sp_is_unsync() / sp_unsync_children_num.
+> +	 */
+> +	union {
+> +		bool unsync;
+> +		unsigned int unsync_children;
+> +	};
+> +
+>  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+>  	DECLARE_BITMAP(unsync_child_bitmap, 512);
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 2a2a9b4..6913a16 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -151,6 +151,21 @@ module_param(dbg, bool, 0644);
+> 
+>  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+> 
+> +static bool sp_is_unsync(struct kvm_mmu_page *sp)
+> +{
+> +	return sp->role.level == PT_PAGE_TABLE_LEVEL && sp->unsync;
+> +}
+> +
+> +static unsigned int sp_unsync_children_num(struct kvm_mmu_page *sp)
+> +{
+> +	unsigned int num = 0;
+> +
+> +	if (sp->role.level != PT_PAGE_TABLE_LEVEL)
+> +		num = sp->unsync_children;
+> +
+> +	return num;
+> +}
 
-> For the initial allocation, mempool passes modified gfp mask to the
-> backing allocator so that it doesn't try too hard when there are reserved
-> elements waiting in the pool; however, when that allocation fails and pool
-> is empty too, it either waits for the pool to be replenished before
-> retrying or fails if !__GFP_WAIT.
->
-> * If the caller was calling in with GFP_ATOMIC, it never gets to try
->   emergency reserve.  Allocations which would have succeeded without
->   mempool may fail, which is just wrong.
->
-> * Allocation which could have succeeded after a bit of reclaim now has
->   to wait on the reserved items and it's not like mempool doesn't retry
->   with the original gfp mask.  It just does that *after* someone returns
->   an element, pointlessly delaying things.
->
-> Fix it by retrying immediately with the gfp mask requested by the caller
-> if the first round of allocation attempts fails with modified mask.
-
-I can't even explain why this (simple!) logic looks confusing to me,
-with or without the patch. A couple of questions:
-
-	1. Why do we remove __GFP_WAIT unconditionally before the the
-	   very 1st allocation?
-
-	2. Why do we always restore it after io_schedule(), even if
-	   we have the reserved items?
-
-IOW, what do you think about the patch below instead?
-
-Oleg.
-
---- x/mm/mempool.c
-+++ x/mm/mempool.c
-@@ -212,10 +212,12 @@ void * mempool_alloc(mempool_t *pool, gf
- 	gfp_mask |= __GFP_NORETRY;	/* don't loop in __alloc_pages */
- 	gfp_mask |= __GFP_NOWARN;	/* failures are OK */
- 
--	gfp_temp = gfp_mask & ~(__GFP_WAIT|__GFP_IO);
--
- repeat_alloc:
- 
-+	gfp_temp = gfp_mask;
-+	if (pool->curr_nr)
-+		gfp_temp &= ~(__GFP_WAIT|__GFP_IO);
-+
- 	element = pool->alloc(gfp_temp, pool->pool_data);
- 	if (likely(element != NULL))
- 		return element;
-@@ -229,13 +231,15 @@ repeat_alloc:
- 	}
- 
- 	/* We must not sleep in the GFP_ATOMIC case */
--	if (!(gfp_mask & __GFP_WAIT)) {
-+	if (!(gfp_temp & __GFP_WAIT)) {
- 		spin_unlock_irqrestore(&pool->lock, flags);
-+		/* raced with another mempool_alloc? */
-+		if (gfp_mask & __GFP_WAIT)
-+			goto repeat_alloc;
- 		return NULL;
- 	}
- 
- 	/* Let's wait for someone else to return an element to @pool */
--	gfp_temp = gfp_mask;
- 	init_wait(&wait);
- 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
- 
+IIRC there are windows where unsync_children is not accurate. Have you 
+verified this function is not called inside one of those windows?
 
