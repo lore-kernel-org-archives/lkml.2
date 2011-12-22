@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab1LVRAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:00:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50014 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab1LVQ75 (ORCPT
+	id S1755461Ab1LVRFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:05:33 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46155 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab1LVRFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 11:59:57 -0500
-Date: Thu, 22 Dec 2011 08:59:52 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Ben Hutchings <ben@decadent.org.uk>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: out-of-tree module shouldn't disable lockdep
-Message-ID: <20111222165952.GH17084@google.com>
+	Thu, 22 Dec 2011 12:05:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+	<CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+	<CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+Date: Thu, 22 Dec 2011 18:05:30 +0100
+Message-ID: <CAFLxGvxQ0E+j1LHfN3fCMM_TVqV6QG3B=VQiy1FPGdn5senBDw@mail.gmail.com>
+Subject: Re: Intercepting system calls
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Gaurav Saxena <grvsaxena419@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On Thu, Dec 22, 2011 at 5:59 PM, Gaurav Saxena <grvsaxena419@gmail.com> wrote:
+> Hello Richard,
+> Thank you very much for your reply.
+>
+> On Thu, Dec 22, 2011 at 10:12 PM, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+>> On Thu, Dec 22, 2011 at 5:07 PM, Gaurav Saxena <grvsaxena419@gmail.com> wrote:
+>>> Hello all,
+>>>
+>>> I am writing an application for which I need to intercept some
+>>> filesystem system calls eg. unlink. I need unlink to call my code
+>>> before deleting abc so that I could probably prevent unlink . I would
+>>> like to implement this in a kernel module instead of modifying kernel
+>>> code itself. I would like to intercept system calls by replacing
+>>> system calls but I have not been able to find any method of doing that
+>>> in linux > 3.0. Please suggest some method of doing that.
+>>>
+>>
+>> Intercepting system calls is very bad, don't do it.
+> Oh. I will not do it then, could you suggest me something so that I
+> could prevent unlink on some file say using kernel support. I want to
+> save file on unlink how could I do that without kernel support, or how
+> could I do that using a kernel module.
+>>
 
-2449b8ba074 "module,bug: Add TAINT_OOT_MODULE flag for modules not
-built in-tree" added TAINT_OOT_MODULE to mark kernel which has
-out-of-tree module loaded, which might be a good idea but an
-unfortunate side effect of tainting is that it disables lockdep.  So,
-now, none of my test modules is watched by lockdep.  This is a bad bad
-idea.  People use oot modules to write test code and disabling lockdep
-for test codes is silly.  Can we please fix this?
+It depends on your application.
+Samba has vfs_recycle.
+You can also write a fuse-filesystem.
+Or use ptrace().
 
-Thanks.
+Select your pain. ;)
 
 -- 
-tejun
+Thanks,
+//richard
