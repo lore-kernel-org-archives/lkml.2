@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1LVL5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:57:44 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:53459 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab1LVL5m (ORCPT
+	id S1755237Ab1LVMDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 07:03:46 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38169 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab1LVMDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:57:42 -0500
-X-IronPort-AV: E=Sophos;i="4.71,392,1320624000"; 
-   d="scan'208";a="9631151"
-Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct xenbus_driver
- instantiation
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, "Jens Axboe" <axboe@kernel.dk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Thu, 22 Dec 2011 11:57:40 +0000
-In-Reply-To: <4EF327E2020000780006993E@nat28.tlf.novell.com>
-References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
-	 <1324547820.7877.71.camel@zakaz.uk.xensource.com>
-	 <4EF327E2020000780006993E@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+	Thu, 22 Dec 2011 07:03:43 -0500
+Date: Thu, 22 Dec 2011 13:03:26 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
+Message-ID: <20111222120326.GA3360@cherladcori01>
+References: <cover.1323739287.git.luto@amacapital.net>
+ <20111213032406.GA9604@netboy.at.omicron.at>
+ <1323747782.4078.144.camel@work-vm>
+ <CALCETrV8MWwv5ei=4FirhEMyKR5A6hkq4sGSmFqo=mCgopdgXg@mail.gmail.com>
+ <20111214074640.GB2180@netboy.at.omicron.at>
+ <1323881310.6805.41.camel@work-vm>
+ <20111214183025.GB2465@netboy.at.omicron.at>
+ <1323889666.6805.71.camel@work-vm>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323889666.6805.71.camel@work-vm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 11:51 +0000, Jan Beulich wrote:
-> >>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
-> >> The 'name', 'owner', and 'mod_name' members are redundant with the
-> >> identically named fields in the 'driver' sub-structure. Rather than
-> >> switching each instance to specify these fields explicitly, introduce
-> >> a macro to simplify this.
-> >> 
-> >> Eliminate further redundancy by allowing the drvname argument to
-> >> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
-> >> the ID table will be used for .driver.name).
+On Wed, Dec 14, 2011 at 11:07:46AM -0800, john stultz wrote:
+> On Wed, 2011-12-14 at 19:30 +0100, Richard Cochran wrote:
 > > 
-> > Any reason not to always use DRV_NAME here (which is generally a bit
-> > more specific e.g. "xen-foofront" rather than "foo") and rely on the id
-> > table for the shorter names used in xenstore?
+> > So, you agree on adding new syscalls as a performance tweek?
 > 
-> That would imply that DRV_NAME is always defined, but I don't
-> see this being the case.
+> Well, the patch that started this off was introducing a new vdso
+> function (which had no syscall equivalent) that provided the same data
+> as clock_gettime(CLOCK_THREAD_CPUTIME,...) but in ns format, because
+> that was a reasonable performance win.
 
-My mistake, I thought it was a Kbuild thing.
+I don't see anything CLOCK_THREAD_CPUTIME in the patches, but I do see
+CLOCK_REALTIME and CLOCK_MONOTONIC.
 
-Ian.
+How is this about thread CPU time? (I assumed it was about fast time
+stamps.)
 
+> I don't think what is being proposed is trying to limit its use cases.
+> The only limitation api wise was if we should return just nanoseconds or
+> something with the potential for sub-ns values.
 
+Yes, I do think new interfaces should anticipate sub-ns uses.
+
+> > I mean to define an interface that always returns TAI values, no matter
+> > what the clock device.
+> 
+> Maybe I'm still not understanding, but that seems more limited then what
+> is being proposed, at least in my mind. clock_gettime_ns() would still
+> take a clockid, so having a CLOCK_TAI would be a potential change in the
+> future.
+
+POSIX got the clock_gettime interface wrong, because you cannot tell
+the time with it. The POSIX interface will return the same time value
+for two consecutive seconds, due to leap seconds.
+
+IMHO, new interfaces should correct this mistake. So, a new interface
+providing UTC should also tell the user about leap seconds.
+
+Just my 2 cents,
+
+Richard
