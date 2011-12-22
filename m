@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1LVCT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:19:59 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37626 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab1LVCT4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:19:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111221170535.GB9213@google.com>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
- <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
- <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
- <20111220162315.GC10752@google.com> <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
- <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home>
- <20111221170535.GB9213@google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 21 Dec 2011 18:19:34 -0800
-X-Google-Sender-Auth: cL_XvVMp0Q_zj8MJgrAQbLv1NOw
-Message-ID: <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754691Ab1LVCUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:20:32 -0500
+Received: from [12.239.217.82] ([12.239.217.82]:9459 "EHLO venom.synaptics.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754667Ab1LVCU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:20:29 -0500
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 21:20:28 EST
+From: Christopher Heiny <cheiny@synaptics.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Christopher Heiny <cheiny@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: [RFC PATCH 00/11] input: Synaptics RMI4 Touchscreen Driver
+Date: Wed, 21 Dec 2011 18:09:51 -0800
+Message-Id: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 9:05 AM, Tejun Heo <tj@kernel.org> wrote:
->
-> machines.  (cc'ing arch) Does anyone have better insight here?  How
-> much more expensive are local irq save/restore compared to inc/dec'ing
-> preempt count on various archs?
+This patch implements a driver supporting Synaptics ClearPad and other
+touchscreen sensors that use the RMI4 protocol, as defined here:
 
-I think powerpc does sw irq disable, so it's pretty much the same.
+    http://www.synaptics.com/sites/default/files/511-000136-01-Rev-E-RMI4%20Intrfacing%20Guide.pdf
 
-However, on *most* architectures, if the stupid generic "disable
-interrupts and then do the op" is too expensive, they could easily
-just do an architecture-specific "safe" version. Especially if they
-only need to do cmpxchg and add.
+as well as successor documents that haven't made their way through to
+publication yet.
 
-Many architectures can do those safely with load-locked,
-store-conditional (ie atomic_add), and do so quickly. Sure, there are
-broken cases wher ethat is really slow (original alpha is an example
-of that), but I think it's fairly rare.
+This code represents a complete refactoring and rewrite of the previously
+submitted patches, and supersedes all those patches.  We believe that all
+outstanding issues arising from the previous submissions have been addressed.
+However, because of the quantity of new code, we are submitting this patch
+as an RFC and requesting feedback from the kernel community.
 
-So both arm (in v6+) and powerpc should be able to just use the
-"atomic_add" version, with no real downside.
 
-So I really suspect that we could just say: "make the irq-safe version
-be the *only* version", and no architecture will really care. Sure, it
-can be more expensive, but it usually isn't. Only when done badly and
-stupidly is it nasty.
+This patch is against the v2.6.38 tag of Linus' kernel tree, commit
+521cb40b0c44418a4fd36dc633f575813d59a43d.
 
-                  Linus
+
+Included in this patch are:
+    - full support for an RMI virtual bus as a standard kernel bus
+
+    - physical layer implementations for I2C and SPI
+
+    - function implementations for the following RMI4 functions:
+        * F01 device control
+        * F09 self test (aka BIST)
+        * F11 multifinger pointing
+        * F19 capacitive buttons
+        * F34 device reflash
+        * F54 analog data reporting
+
+    - character device access to the RMI4 register map via rmidev
+
+    - deletion of more legacy code and behavior
+
+The driver supports a system having one or more RMI sensors attached to it.
+Most devices have just a single touch sensor, but some have more than one.
+An example is the Fuse concept phone, which has 4 RMI sensors in it.
+
+Each sensor is presented as a device on the RMI logical bus (/sys/bus/rmi).
+Devices are named/numbered in the order they are discovered on the bus,
+starting with /sys/bus/rmi/devices/sensor00 for the first once, .../sensor01
+for the second one, and so on.
+
+Individual RMI functions are presented as child devices of the sensor device.
+For example, sensor00/fn01, sensor00/fn11, and so on.  Control of an RMI
+function's operating parameters is implemented via sysfs.
+
+For diagnostic purposes, the rmidev interface is provided.  This implements
+a character device (/dev/rmi0, and so on) that provides flat file access to
+the RMI4 register map.  For more information, see the file
+Documentation/input/rmidev.txt.
+
+
+Due to the large amount of code, we've broken this patch into 11 parts, as
+follows:
+    01 - header files and documenation
+    02 - core sensor and bus implementation
+    03 - physical layer drivers
+    04 - Kconfigs and Makefiles
+    05 - rmidev
+    06..11 - drivers for individual RMI functions
+
+
+Comments and other feedback on this driver are welcomed.
+
+Christopher Heiny and the Synaptics RMI4 driver team
+
+Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Cc: Joeri de Gram <j.de.gram@gmail.com>
+
+---
