@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab1LVF7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 00:59:01 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43339 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab1LVF67 (ORCPT
+	id S1753140Ab1LVGAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 01:00:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60604 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab1LVGAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 00:58:59 -0500
-Date: Thu, 22 Dec 2011 16:58:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>, Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kalle Valo <kvalo@qca.qualcomm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: linux-next: build failure after merge of the final tree (wireless
- tree related)
-Message-Id: <20111222165849.df5ea3e2997375de24f1490b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Thu, 22 Dec 2011 01:00:36 -0500
+Message-ID: <1324533632.2621.35.camel@edumazet-laptop>
+Subject: [PATCH] bridge: provide a mtu() method for fake_dst_ops
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris Boot <bootc@bootc.net>, David Miller <davem@davemloft.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Date: Thu, 22 Dec 2011 07:00:32 +0100
+In-Reply-To: <1324528656.2621.19.camel@edumazet-laptop>
+References: <4EF200BB.7000209@bootc.net>
+	 <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4EF2117F.6000803@bootc.net>
+	 <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4EF23BF2.4000601@bootc.net> <1324499332.2621.7.camel@edumazet-laptop>
+	 <1324500775.2621.9.camel@edumazet-laptop> <4EF2568C.6040006@bootc.net>
+	 <AEC29013-98F3-4A16-A88B-AD31C9E88EB8@bootc.net>
+	 <1324528656.2621.19.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__22_Dec_2011_16_58_49_+1100_YAObj.MuTJT6uYWE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Dec_2011_16_58_49_+1100_YAObj.MuTJT6uYWE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 618f9bc74a039da76 (net: Move mtu handling down to the protocol
+depended handlers) forgot the bridge netfilter case, adding a NULL
+dereference in ip_fragment().
 
-Hi ,
+Reported-by: Chris Boot <bootc@bootc.net>
+CC: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/bridge/br_netfilter.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index d6ec372..08757dc 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -114,12 +114,18 @@ static struct neighbour *fake_neigh_lookup(const struct dst_entry *dst, const vo
+ 	return NULL;
+ }
+ 
++static unsigned int fake_mtu(const struct dst_entry *dst)
++{
++	return dst->dev->mtu;
++}
++
+ static struct dst_ops fake_dst_ops = {
+ 	.family =		AF_INET,
+ 	.protocol =		cpu_to_be16(ETH_P_IP),
+ 	.update_pmtu =		fake_update_pmtu,
+ 	.cow_metrics =		fake_cow_metrics,
+ 	.neigh_lookup =		fake_neigh_lookup,
++	.mtu =			fake_mtu,
+ };
+ 
+ /*
 
-drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ')' before=
- 'KBUILD_MODNAME'
-drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: 'KBUILD_MODNAME' un=
-declared here (not in a function)
-drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ',' or ';'=
- before string constant
-drivers/net/wireless/ath/ath6kl/init.c:32:1: error: expected ')' before 'KB=
-UILD_MODNAME'
-drivers/net/wireless/ath/ath6kl/init.c:32:1: error: 'KBUILD_MODNAME' undecl=
-ared here (not in a function)
-drivers/net/wireless/ath/ath6kl/init.c:32:1: error: expected ',' or ';' bef=
-ore string constant
-drivers/net/wireless/ath/ath6kl/init.c:33:1: error: expected ')' before 'KB=
-UILD_MODNAME'
-drivers/net/wireless/ath/ath6kl/init.c:33:1: error: invalid initializer
-drivers/net/wireless/ath/ath6kl/init.c:33:1: error: expected ',' or ';' bef=
-ore string constant
-drivers/net/wireless/ath/ath6kl/init.c:34:1: error: expected ')' before 'KB=
-UILD_MODNAME'
-drivers/net/wireless/ath/ath6kl/init.c:34:1: error: invalid initializer
-drivers/net/wireless/ath/ath6kl/init.c:34:1: error: expected ',' or ';' bef=
-ore string constant
 
-I can't figure out what goes wrong here.  On the compile command line,
-KBUILD_MODNAME is not defined, but KBUILD_BASE_NAME is.
-
-However, reverting commit fde57764ef87 ("ath6kl: enable USB support")
-made the problem go away.  That commit caused the above two files to be
-built into two separate modules.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__22_Dec_2011_16_58_49_+1100_YAObj.MuTJT6uYWE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO8scZAAoJEECxmPOUX5FEVr4P/3nqrG7OJ7R92D0uTEzgD4uX
-664SYUGxK8yXjmIs6H5e1gYyeYg/2sj2xP4EKW+8NzHdmqXji27KIVexLsBLK1YZ
-OmFNQaBFSqfdpz09TrhPl23xM9SxJN1E4bmdLbg4xCYfq+5kVHGgSBFTXVeRHNpg
-QC5OXP2f5xpQ9VkjLJ4EZyRHdpjkP9IifRXfj0+jx7I/Go2AWWo8JyP31PllNQv2
-8OZcirzluLT0oYLChFVQu3oqHTd6UHBEFict5KMPVXLQByQrjBIu+wo9RIQ2+nsw
-ZiBiNZ9wmdXtMje5rh/I4nekvd79rz1nKwriB7odQFxypMpaFmXPACa0b3u2MQus
-W16Qq6qEFYAl4b3+CtJULpm1iDKEYJI7mt4jgsvgEc6y0foS5xvdvlsrYoYa1qOr
-xT6ZqrhiA1duOPtcaO2rJx9kge6E+Jf2XzgLagYHN8TQJkudjhTcGfwIQuZNio+2
-YosfeVIiVp86/chH/zfbQnQurbs9lx2Fqpnita2cKUQ+5oz9dickzCaFSNGSyOER
-/tPNo9vEaCoLxfKSvYASVGfdObDDe2XfwYmNo9ZP3qNH3j/bysp5a/VVCJ7big5b
-AiWfbIOcqBXaglSN9sbPTqkqFoPt7cS5dXKu+pbygpiP5NFeGuSetGJ9Y2Al131N
-bQC6TzBb2rXGvnGqFM+Y
-=0kbt
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Dec_2011_16_58_49_+1100_YAObj.MuTJT6uYWE--
