@@ -1,99 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab1LVEWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 23:22:54 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46826 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1LVEWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 23:22:50 -0500
+	id S1754744Ab1LVEft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 23:35:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:52581 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753191Ab1LVEfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 23:35:48 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Amit Shah <amit.shah@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio_net: fix refill related races
+In-Reply-To: <20111221090637.GA31592@redhat.com>
+References: <20111211144428.GB14381@redhat.com> <878vmioh10.fsf@rustcorp.com.au> <20111212115405.GB7946@redhat.com> <87iplltd0g.fsf@rustcorp.com.au> <20111220190908.GC25689@redhat.com> <20111220190946.GD10752@google.com> <20111220193055.GA26392@redhat.com> <20111220193154.GG10752@google.com> <20111220194518.GB26692@redhat.com> <87hb0udd2h.fsf@rustcorp.com.au> <20111221090637.GA31592@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 22 Dec 2011 14:23:26 +1030
+Message-ID: <87d3bhjm89.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP10ikqHFn41wc1HPsKHyaC7fe1WGC2eHqs-hdRaZ7XCTLw@mail.gmail.com>
-References: <4EF264C3.6000104@am.sony.com>
-	<20111221231956.GB23859@suse.de>
-	<4EF27B85.9080801@am.sony.com>
-	<20111222005114.GA22541@suse.de>
-	<4EF288B4.1070601@am.sony.com>
-	<20111222014718.GA13085@suse.de>
-	<4EF29217.7040408@am.sony.com>
-	<20111222034717.GB14174@suse.de>
-	<CAPXgP10ikqHFn41wc1HPsKHyaC7fe1WGC2eHqs-hdRaZ7XCTLw@mail.gmail.com>
-Date: Wed, 21 Dec 2011 20:22:49 -0800
-Message-ID: <CANqkERCcciVxybh=66K5xxzzGmgw=fg0vwmcitWZ1y=DTxxtOA@mail.gmail.com>
-Subject: Re: RFC: android logger feedback request
-From: Brian Swetland <swetland@google.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <gregkh@suse.de>, Tim Bird <tim.bird@am.sony.com>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 8:12 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->
-> We would like to have for the general Linux use case is a kmsg, that
-> supports structured data, but looks the same as it looks today to
-> current and legacy tools.
->
-> We would like to have every printk that does not start with a
-> KERN_CONT to create a record in the kmsg buffer. This record would
-> carry directly a timestamp, the log facility and the log level and a
-> reference to the usual human readable string.
->
-> The current kmsg prefixing of the timestamp would be a runtime switch,
-> and just added when the records are traversed, instead of the current
-> buffer printing.
->
-> In addition to this common data, every record can carry a
-> 'dictionary', which basically looks like a process environment, means
-> KEY=value pairs. The additional data can carry all the stuff that is
-> needed for structured logging and provides the base for machine
-> readable log information.
->
-> We don't want to separate multiple stores to avoid ordering problems
-> when the messages need to be merged from the multiple streams on the
-> receiver side.
->
-> I think this is theoretically all possible with the current kmsg,
-> without breaking anything. The current interfaces would iterate over
-> the record list and print out the human readable parts and skip the
-> metadata, instead of just copying a linear byte stream. To tools, it
-> could look the same as it is currently. It's just that the ring buffer
-> is not a byte- but a record-buffer.
->
-> Advanced tools could get a new interface or switch the old interface
-> to pipe out the structured data too.
->
-> In the systemd journal, we have an ASCII-like stream format that
-> carries out structured data and is binary data capable.
->
-> If we want to think about any next generation logging, I'm convinced,
-> we need to support records, structured data and binary data; anything
-> else is unlikely worth to change the current stuff.
+On Wed, 21 Dec 2011 11:06:37 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Wed, Dec 21, 2011 at 10:13:18AM +1030, Rusty Russell wrote:
+> > On Tue, 20 Dec 2011 21:45:19 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > On Tue, Dec 20, 2011 at 11:31:54AM -0800, Tejun Heo wrote:
+> > > > On Tue, Dec 20, 2011 at 09:30:55PM +0200, Michael S. Tsirkin wrote:
+> > > > > Hmm, in that case it looks like a nasty race could get
+> > > > > triggered, with try_fill_recv run on multiple CPUs in parallel,
+> > > > > corrupting the linked list within the vq.
+> > > > > 
+> > > > > Using the mutex as my patch did will fix that naturally, as well.
+> > > > 
+> > > > Don't know the code but just use nrt wq.  There's even a system one
+> > > > called system_nrq_wq.
+> > > > 
+> > > > Thanks.
+> > > 
+> > > We can, but we need the mutex for other reasons, anyway.
+> > 
+> > Well, here's the alternate approach.  What do you think?
+> 
+> It looks very clean, thanks. Some documentation suggestions below.
+> Also - Cc stable on this and the block patch?
 
-Any thoughts as to how one could allow N userspace agents to log to a
-single shared buffer without one agent, if buggy or malicious,
-spamming out all the other contents of the log?  This is one of the
-main reasons we maintain separate logs in Android today, and are
-likely to continue doing so until we figure out how resolve the issue.
+AFAICT we haven't seen this bug, and theoretical bugs don't get into
+-stable.
 
-Having everything in one unified log definitely has benefits (it
-certainly makes keeping everything ordered and reading everything back
-simpler), however we can't control third party applications (by
-design), so systems that require apps to "just don't do that" are not
-really solving that problem for us.
+> > Finding two wq issues makes you justifiably cautious, but it almost
+> > feels like giving up to simply wrap it in a lock.  The APIs are designed
+> > to let us do it without a lock; I was just using them wrong.
+> 
+> One thing I note is that this scheme works because there's a single
+> entity disabling/enabling napi and the refill thread.
+> So it's possible that Amit will need to add a lock and track NAPI
+> state anyway to make suspend work. But we'll see.
 
-Also, as I mentioned earlier, from a security standpoint it is highly
-desirable to be able to restrict which records certain readers can
-read.  Convincing third party app developers to not log sensitive or
-PII data remains a challenge -- providing the ability for filtered
-read access allows some mitigation (app can retrieve it's own logs for
-a bug report but can't sift through all logs looking for interesting
-tidbits).
+Fixed typo, documented the locking, queued for -next.
 
-Brian
+Thanks!
+Rusty.
+
+From: Rusty Russell <rusty@rustcorp.com.au>
+Subject: virtio_net: set/cancel work on ndo_open/ndo_stop
+
+Michael S. Tsirkin noticed that we could run the refill work after
+ndo_close, which can re-enable napi - we don't disable it until
+virtnet_remove.  This is clearly wrong, so move the workqueue control
+to ndo_open and ndo_stop (aka. virtnet_open and virtnet_close).
+
+One subtle point: virtnet_probe() could simply fail if it couldn't
+allocate a receive buffer, but that's less polite in virtnet_open() so
+we schedule a refill as we do in the normal receive path if we run out
+of memory.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ drivers/net/virtio_net.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -439,7 +439,13 @@ static int add_recvbuf_mergeable(struct 
+ 	return err;
+ }
+ 
+-/* Returns false if we couldn't fill entirely (OOM). */
++/*
++ * Returns false if we couldn't fill entirely (OOM).
++ *
++ * Normally run in the receive path, but can also be run from ndo_open
++ * before we're receiving packets, or from refill_work which is
++ * careful to disable receiving (using napi_disable).
++ */
+ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+ {
+ 	int err;
+@@ -719,6 +725,10 @@ static int virtnet_open(struct net_devic
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	/* Make sure we have some buffers: if oom use wq. */
++	if (!try_fill_recv(vi, GFP_KERNEL))
++		schedule_delayed_work(&vi->refill, 0);
++
+ 	virtnet_napi_enable(vi);
+ 	return 0;
+ }
+@@ -772,6 +782,8 @@ static int virtnet_close(struct net_devi
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	/* Make sure refill_work doesn't re-enable napi! */
++	cancel_delayed_work_sync(&vi->refill);
+ 	napi_disable(&vi->napi);
+ 
+ 	return 0;
+@@ -1082,7 +1094,6 @@ static int virtnet_probe(struct virtio_d
+ 
+ unregister:
+ 	unregister_netdev(dev);
+-	cancel_delayed_work_sync(&vi->refill);
+ free_vqs:
+ 	vdev->config->del_vqs(vdev);
+ free_stats:
+@@ -1121,9 +1132,7 @@ static void __devexit virtnet_remove(str
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-
+ 	unregister_netdev(vi->dev);
+-	cancel_delayed_work_sync(&vi->refill);
+ 
+ 	/* Free unused buffers in both send and recv, if any. */
+ 	free_unused_bufs(vi);
+
+
