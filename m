@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1LVFdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 00:33:19 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52143 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab1LVFdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 00:33:15 -0500
-Date: Thu, 22 Dec 2011 16:33:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: build warnings after merge of the final tree
-Message-Id: <20111222163304.26be6d0f5e514fefb078c0a6@canb.auug.org.au>
-In-Reply-To: <4EE8D305.8020407@zytor.com>
-References: <20111214181545.6e13bc954cb7ddce9086e861@canb.auug.org.au>
-	<1323880322.23971.33.camel@gandalf.stny.rr.com>
-	<4EE8D305.8020407@zytor.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__22_Dec_2011_16_33_04_+1100_t4Tvbnz4kJCvcKst"
+	id S1753021Ab1LVFeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 00:34:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52621 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250Ab1LVFeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 00:34:02 -0500
+Message-ID: <4EF2C1CB.4030103@cn.fujitsu.com>
+Date: Thu, 22 Dec 2011 13:36:11 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Mandeep Singh Baines <msb@chromium.org>
+CC: Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 2/4] cgroup: remove redundant get/put of task struct
+References: <1324527518-24461-1-git-send-email-msb@chromium.org> <1324527518-24461-2-git-send-email-msb@chromium.org>
+In-Reply-To: <1324527518-24461-2-git-send-email-msb@chromium.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-22 13:33:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-22 13:33:18,
+	Serialize complete at 2011-12-22 13:33:18
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Dec_2011_16_33_04_+1100_t4Tvbnz4kJCvcKst
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Mandeep Singh Baines wrote:
+> threadgroup_lock() guarantees that the target threadgroup will
+> remain stable - no new task will be added, no new PF_EXITING
+> will be set and exec won't happen.
+> 
+> Changes in V2:
+> * https://lkml.org/lkml/2011/12/20/369 (Tejun Heo)
+>   * Undo incorrect removal of get/put from attach_task_by_pid()
+> * Author
+>   * Remove a comment which is made stale by this change
+> 
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-Hi Peter,
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
-On Wed, 14 Dec 2011 08:47:01 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> On 12/14/2011 08:32 AM, Steven Rostedt wrote:
-> > On Wed, 2011-12-14 at 18:15 +1100, Stephen Rothwell wrote:
-> >=20
-> >> Maybe caused by commit d5e553d6e0a4 ("trace: Include <asm/asm-offsets.=
-h>
-> >> in trace_syscalls.c") from the tip tree.  These warnings may have been
-> >> here for a while as it is hard to catch the new ones among the flood.
-> >>
-> >=20
-> > hpa,
-> >=20
-> > Was this change only needed for x86? If so, could you put that into
-> > asm/ftrace.h instead?
-> >=20
->=20
-> Yes (on both accounts).  It was part of the syscall changes; I'll move
-> the include.
-
-Ping?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__22_Dec_2011_16_33_04_+1100_t4Tvbnz4kJCvcKst
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO8sEQAAoJEECxmPOUX5FEV/oP/iI+sI2uZzvXPxhT907a/jCa
-WNrIlfq/NWLFUaQ6km62qXiPkkSTLNDwlM+YWABXkf45SLR/oOVLntH673DV216P
-nSOms0qvfTifHpYF0yQRN43s8isL3PoxQKtbsPErhA5A1xjgOBO/SFlG26WlHZKd
-pKwkFLjkywRgrnLdKLh7rk6cApncL7Qv3I4kcrsOGtLLSnF6lDPuovMrVdalScEq
-ZyO68ZPfj1JQNqNd2MSwPSnKRpcmb499BKZExC/0GRrxUH1iLK3MGoRc85WzQbHd
-7fLSyj2bSx0qhC+L1Z3TpKwR8VIuAB6Q9c7FEaz4vjdG+WdTqq/YiQdxadGxnWGz
-MqBqYmkhn0lKy3kWol37KCBfx6E8T3skc+yIDvDINUL+7FXrMsE9MO/9rzQMsWK1
-JQuSO/rU0tx1uNk0aYNBGxOaSLFwcT0Uw4qyoBy5q//8X2EyjgbAlKCDchoDv37L
-A6c99AyXXnxFIgbMvzuFU4PwUD5WwsB3EOr3vLHdnd9CbAMYlDOMq+X5xuAG+vqs
-BXcDEVPkL8LQ5R+W557Z0cTmgwVm3NWj30f9S9h2yvl7ZhzuPagkbYL/p2FeekZY
-/UoZLSs9WcgSd7E5DvzpKhiDF1kxP6FnNFhwjIhwNTZopNOpu2/PvZiP9MpmFtzi
-J4llKVp8xALM40bAn2tG
-=R18X
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Dec_2011_16_33_04_+1100_t4Tvbnz4kJCvcKst--
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> ---
+>  kernel/cgroup.c |   11 ++---------
+>  1 files changed, 2 insertions(+), 9 deletions(-)
