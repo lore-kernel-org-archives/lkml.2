@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab1LVWVB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 17:21:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44916 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab1LVWU7 (ORCPT
+	id S1753717Ab1LVW0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:26:21 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60232 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab1LVW0S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 17:20:59 -0500
-Date: Thu, 22 Dec 2011 14:20:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-Id: <20111222142058.41316ee0.akpm@linux-foundation.org>
-In-Reply-To: <20111222220911.GK17084@google.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-	<20111222135925.de3221c8.akpm@linux-foundation.org>
-	<20111222220911.GK17084@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Dec 2011 17:26:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF3AA74.1060801@redhat.com>
+References: <1324576939-23619-1-git-send-email-pbonzini@redhat.com>
+ <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com>
+ <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com>
+ <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
+ <4EF3AA74.1060801@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Dec 2011 14:25:56 -0800
+X-Google-Sender-Auth: nYdZbSg7Lw2hQKauVVtL16eJLL8
+Message-ID: <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
+        agk@redhat.com, jbottomley@parallels.com, mchristi@redhat.com,
+        msnitzer@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 14:09:11 -0800
-Tejun Heo <tj@kernel.org> wrote:
+On Thu, Dec 22, 2011 at 2:08 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>
+> I don't know.  But given the ways in which earlier versions broke during
+> testing, I wouldn't be able to tell before running many tests.  Which with
+> the Christmas break would easily mean a little less than 2 weeks.
 
-> Hello,
-> 
-> On Thu, Dec 22, 2011 at 01:59:25PM -0800, Andrew Morton wrote:
-> > How about we just delete those statistics and then this patchset?
-> > 
-> > Or how about we change those statistics to not do percpu allocations,
-> > then delete this patchset?
-> 
-> I'm not against above both
+I don't think I'm ready to apply this as-is anyway, exactly because
+I'd worry about some distribution really depending on being able to
+eject disks by partition etc.
 
-Don't just consider my suggestions - please try to come up with your own
-alternatives too!  If all else fails then this patch is a last resort.
+I don't *think* anybody does something as crazy as giving actual block
+device ownership to people, but I don't know - and I could easily
+imagine that even if they don't give the block device to the user, the
+suid binary might do "eject /dev/sda1" etc. And one way to do that is
+to do the "door unlock" scsi command itself.
 
-> but apparently those percpu stats reduced
-> CPU overhead significantly.
+So at this point I'd much *much* rather see this as a "we merge it for
+3.3 and mark it for stable", so that we can at least get the testing
+in the git tree, rather than me taking what could potentially break
+peoples setups very late in the -rc series just before a release.
 
-Deleting them would save even more CPU.
+>> That's a completely independent bug that has been discussed several
+>> times. We probably should just bite the bullet and fix it. EINVAL is
+>> never the right return value (unless the per-ioctl arguments
+>> themselves are invalid, not for bad ioctls).
+>
+> Makes a lot of sense and I was wondering about it myself, but I'm not sure
+> stable would accept that.
 
-Or make them runtime or compile-time configurable, so only the
-developers see the impact.
+Again, I think it's something we should do during the merge window
+(early at that).
 
-Some specifics on which counters are causing the problems would help here.
+It really has come up several times, it just always comes up at the
+wrong moment. If you remind me after the 3.2 release, I'll make sure
+to "just do it", and we'll see if anything break.
 
-> > Or how about we fix the percpu memory allocation code so that it
-> > propagates the gfp flags, then delete this patchset?
-> 
-> Oh, no, this is gonna make things *way* more complex.  I tried.
+I doubt anything will, because ENOTTY really is the correct error
+return (to user space - for traditional reasons) for "no such ioctl".
 
-But there's a difference between fixing a problem and working around it.
+Inside the kernel we generally want to use ENOIOCTLCMD, which is much
+better named - and thus avoids the confusion that some people have
+about the ENOTTY name - and that also has the whole "let's just try
+another approach one then".
 
->  If
-> we're gonna have many more NOIO percpu users, which I don't think we
-> would or should, that might make sense but, for fringe cases,
-> extending mempool to cover percpu is a much better sized solution.
+>> The EINVAL return comes from some people who didn't understand that
+>> ENOTTY means "no such ioctl" despite the name.
+>
+> I did. :)
 
-I've long felt that we goofed with the gfp_flags thing and that it
-should be a field in the task_struct.  Now *that* would be a large
-patch!
+I suspect most people who have used Unix for a long time kind of take
+the "ENOTTY - no such ioctl" thing for granted and don't even think
+about it, but we do have a lot of people who write drivers etc and
+that started with Linux, and I can understand why they think "ENOTTY"
+is an odd name for a SCSI device driver to use.
 
-
+                Linus
