@@ -1,303 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1LVKoo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:44:44 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:34567 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698Ab1LVKom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:44:42 -0500
-Message-ID: <4EF309F0.90407@parallels.com>
-Date: Thu, 22 Dec 2011 14:44:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755175Ab1LVKuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:50:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40831 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752416Ab1LVKuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 05:50:04 -0500
+Date: Thu, 22 Dec 2011 10:50:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 1/3 v5] sound/soc/codecs: add LAPIS Semiconductor ML26124
+Message-ID: <20111222104959.GB4546@opensource.wolfsonmicro.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+ <20111220104047.GE2866@opensource.wolfsonmicro.com>
+ <CANKRQngonz+kV3e8tHjvjub-7Pp_5ejqk89Mk7c+Rop9J+_WvA@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <netdev@vger.kernel.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH] Partial revert "Basic kernel memory functionality for
- the Memory Controller"
-References: <1324543990-27784-1-git-send-email-glommer@parallels.com> <20111222104339.GA8833@tiehlicka.suse.cz>
-In-Reply-To: <20111222104339.GA8833@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANKRQngonz+kV3e8tHjvjub-7Pp_5ejqk89Mk7c+Rop9J+_WvA@mail.gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 02:43 PM, Michal Hocko wrote:
-> On Thu 22-12-11 12:53:10, Glauber Costa wrote:
->> This reverts commit e5671dfae59b165e2adfd4dfbdeab11ac8db5bda.
->>
->> After a follow up discussion with Michal, it was agreed it would
->> be better to leave the kmem controller with just the tcp files,
->> deferring the behavior of the other general memory.kmem.* files
->> for a later time, when more caches are controlled.
->
-> "Because generic kmem files are not used by tcp accounting and it is
-> not clear how other slab caches would fit into the scheme."
+On Thu, Dec 22, 2011 at 05:31:08PM +0900, Tomoya MORINAGA wrote:
+> 2011/12/20 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-Should I respin?
+> > How have you tested this code?
 
->>
->> We are reverting the original commit so we can track the reference.
->> Part of the patch is kept, because it was used by the later tcp
->> code. Conflicts are shown in the bottom. init/Kconfig is removed from
->> the revert entirely.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: Kirill A. Shutemov<kirill@shutemov.name>
->> CC: Paul Menage<paul@paulmenage.org>
->> CC: Greg Thelen<gthelen@google.com>
->> CC: Johannes Weiner<jweiner@redhat.com>
->> CC: Michal Hocko<mhocko@suse.cz>
->> CC: David S. Miller<davem@davemloft.net>
->
-> Acked-by: Michal Hocko<mhocko@suse.cz>
->
->>
->>
->> Conflicts:
->>
->> 	Documentation/cgroups/memory.txt
->> 	mm/memcontrol.c
->> ---
->>   Documentation/cgroups/memory.txt |   22 +--------
->>   mm/memcontrol.c                  |   93 +++-----------------------------------
->>   2 files changed, 8 insertions(+), 107 deletions(-)
->>
->> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->> index 6922b6c..4d8774f 100644
->> --- a/Documentation/cgroups/memory.txt
->> +++ b/Documentation/cgroups/memory.txt
->> @@ -44,9 +44,8 @@ Features:
->>    - oom-killer disable knob and oom-notifier
->>    - Root cgroup has no limit controls.
->>
->> - Hugepages is not under control yet. We just manage pages on LRU. To add more
->> - controls, we have to take care of performance. Kernel memory support is work
->> - in progress, and the current version provides basically functionality.
->> + Kernel memory support is work in progress, and the current version provides
->> + basically functionality. (See Section 2.7)
->>
->>   Brief summary of control files.
->>
->> @@ -57,11 +56,8 @@ Brief summary of control files.
->>   				 (See 5.5 for details)
->>    memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
->>   				 (See 5.5 for details)
->> - memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
->> -				 (See 2.7 for details)
->>    memory.limit_in_bytes		 # set/show limit of memory usage
->>    memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
->> - memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
->>    memory.failcnt			 # show the number of memory usage hits limits
->>    memory.memsw.failcnt		 # show the number of memory+Swap hits limits
->>    memory.max_usage_in_bytes	 # show max memory usage recorded
->> @@ -76,8 +72,6 @@ Brief summary of control files.
->>    memory.oom_control		 # set/show oom controls.
->>    memory.numa_stat		 # show the number of memory usage per numa node
->>
->> - memory.independent_kmem_limit	 # select whether or not kernel memory limits are
->> -				   independent of user limits
->>    memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
->>    memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
->>
->> @@ -271,21 +265,9 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
->>   different than user memory, since it can't be swapped out, which makes it
->>   possible to DoS the system by consuming too much of this precious resource.
->>
->> -Some kernel memory resources may be accounted and limited separately from the
->> -main "kmem" resource. For instance, a slab cache that is considered important
->> -enough to be limited separately may have its own knobs.
->> -
->>   Kernel memory limits are not imposed for the root cgroup. Usage for the root
->>   cgroup may or may not be accounted.
->>
->> -Memory limits as specified by the standard Memory Controller may or may not
->> -take kernel memory into consideration. This is achieved through the file
->> -memory.independent_kmem_limit. A Value different than 0 will allow for kernel
->> -memory to be controlled separately.
->> -
->> -When kernel memory limits are not independent, the limit values set in
->> -memory.kmem files are ignored.
->> -
->>   Currently no soft limit is implemented for kernel memory. It is future work
->>   to trigger slab reclaim when those limits are reached.
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 7266202..8cdc915 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -229,10 +229,6 @@ struct mem_cgroup {
->>   	 */
->>   	struct res_counter memsw;
->>   	/*
->> -	 * the counter to account for kmem usage.
->> -	 */
->> -	struct res_counter kmem;
->> -	/*
->>   	 * Per cgroup active and inactive list, similar to the
->>   	 * per zone LRU lists.
->>   	 */
->> @@ -283,11 +279,6 @@ struct mem_cgroup {
->>   	 */
->>   	unsigned long 	move_charge_at_immigrate;
->>   	/*
->> -	 * Should kernel memory limits be stabilished independently
->> -	 * from user memory ?
->> -	 */
->> -	int		kmem_independent_accounting;
->> -	/*
->>   	 * percpu counter.
->>   	 */
->>   	struct mem_cgroup_stat_cpu *stat;
->> @@ -359,14 +350,9 @@ enum charge_type {
->>   };
->>
->>   /* for encoding cft->private value on file */
->> -
->> -enum mem_type {
->> -	_MEM = 0,
->> -	_MEMSWAP,
->> -	_OOM_TYPE,
->> -	_KMEM,
->> -};
->> -
->> +#define _MEM			(0)
->> +#define _MEMSWAP		(1)
->> +#define _OOM_TYPE		(2)
->>   #define MEMFILE_PRIVATE(x, val)	(((x)<<  16) | (val))
->>   #define MEMFILE_TYPE(val)	(((val)>>  16)&  0xffff)
->>   #define MEMFILE_ATTR(val)	((val)&  0xffff)
->> @@ -3919,17 +3905,10 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
->>   	u64 val;
->>
->>   	if (!mem_cgroup_is_root(memcg)) {
->> -		val = 0;
->> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> -		if (!memcg->kmem_independent_accounting)
->> -			val = res_counter_read_u64(&memcg->kmem, RES_USAGE);
->> -#endif
->>   		if (!swap)
->> -			val += res_counter_read_u64(&memcg->res, RES_USAGE);
->> +			return res_counter_read_u64(&memcg->res, RES_USAGE);
->>   		else
->> -			val += res_counter_read_u64(&memcg->memsw, RES_USAGE);
->> -
->> -		return val;
->> +			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
->>   	}
->>
->>   	val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
->> @@ -3962,11 +3941,6 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
->>   		else
->>   			val = res_counter_read_u64(&memcg->memsw, name);
->>   		break;
->> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> -	case _KMEM:
->> -		val = res_counter_read_u64(&memcg->kmem, name);
->> -		break;
->> -#endif
->>   	default:
->>   		BUG();
->>   		break;
->> @@ -4696,59 +4670,8 @@ static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
->>   #endif /* CONFIG_NUMA */
->>
->>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> -static u64 kmem_limit_independent_read(struct cgroup *cgroup, struct cftype *cft)
->> -{
->> -	return mem_cgroup_from_cont(cgroup)->kmem_independent_accounting;
->> -}
->> -
->> -static int kmem_limit_independent_write(struct cgroup *cgroup, struct cftype *cft,
->> -					u64 val)
->> -{
->> -	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
->> -	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
->> -
->> -	val = !!val;
->> -
->> -	/*
->> -	 * This follows the same hierarchy restrictions than
->> -	 * mem_cgroup_hierarchy_write()
->> -	 */
->> -	if (!parent || !parent->use_hierarchy) {
->> -		if (list_empty(&cgroup->children))
->> -			memcg->kmem_independent_accounting = val;
->> -		else
->> -			return -EBUSY;
->> -	}
->> -	else
->> -		return -EINVAL;
->> -
->> -	return 0;
->> -}
->> -static struct cftype kmem_cgroup_files[] = {
->> -	{
->> -		.name = "independent_kmem_limit",
->> -		.read_u64 = kmem_limit_independent_read,
->> -		.write_u64 = kmem_limit_independent_write,
->> -	},
->> -	{
->> -		.name = "kmem.usage_in_bytes",
->> -		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
->> -		.read_u64 = mem_cgroup_read,
->> -	},
->> -	{
->> -		.name = "kmem.limit_in_bytes",
->> -		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
->> -		.read_u64 = mem_cgroup_read,
->> -	},
->> -};
->> -
->>   static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>   {
->> -	int ret = 0;
->> -
->> -	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
->> -			       ARRAY_SIZE(kmem_cgroup_files));
->> -
->>   	/*
->>   	 * Part of this would be better living in a separate allocation
->>   	 * function, leaving us with just the cgroup tree population work.
->> @@ -4756,9 +4679,7 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>   	 * is only initialized after cgroup creation. I found the less
->>   	 * cumbersome way to deal with it to defer it all to populate time
->>   	 */
->> -	if (!ret)
->> -		ret = mem_cgroup_sockets_init(cont, ss);
->> -	return ret;
->> +	return mem_cgroup_sockets_init(cont, ss);
->>   };
->>
->>   static void kmem_cgroup_destroy(struct cgroup_subsys *ss,
->> @@ -5092,7 +5013,6 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->>   	if (parent&&  parent->use_hierarchy) {
->>   		res_counter_init(&memcg->res,&parent->res);
->>   		res_counter_init(&memcg->memsw,&parent->memsw);
->> -		res_counter_init(&memcg->kmem,&parent->kmem);
->>   		/*
->>   		 * We increment refcnt of the parent to ensure that we can
->>   		 * safely access it on res_counter_charge/uncharge.
->> @@ -5103,7 +5023,6 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->>   	} else {
->>   		res_counter_init(&memcg->res, NULL);
->>   		res_counter_init(&memcg->memsw, NULL);
->> -		res_counter_init(&memcg->kmem, NULL);
->>   	}
->>   	memcg->last_scanned_child = 0;
->>   	memcg->last_scanned_node = MAX_NUMNODES;
->> --
->> 1.7.6.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe cgroups" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> No, I haven't tested at all. (Of course, I tested before ASoC.)
+> I'll test the new these drivers after you say "Roughly, how to use
+> ASoC framework is OK"
 
+Don't do this unless you really have to, and if for some reason it's
+needed or useful then indicate that this is what you're doing.  People
+shouldn't be finding issues on review that mean that the code will never
+run.  If the testing is very light that's fine but you need to make some
+effort to verify that things will work.
