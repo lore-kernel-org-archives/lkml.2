@@ -1,100 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab1LVL2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:28:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63094 "EHLO mx1.redhat.com"
+	id S1755264Ab1LVL2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:28:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21565 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161Ab1LVL2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:28:46 -0500
+	id S1752161Ab1LVL2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:28:50 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v6 00/11] virtio: s4 support
-Date: Thu, 22 Dec 2011 16:58:24 +0530
-Message-Id: <cover.1324553223.git.amit.shah@redhat.com>
+Subject: [PATCH v6 02/11] virtio: pci: add PM notification handlers for restore, freeze, thaw, poweroff
+Date: Thu, 22 Dec 2011 16:58:26 +0530
+Message-Id: <21f0f21bfc310bab9e47d1087a5e8dec5d525ab6.1324553223.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
+References: <cover.1324553223.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1324553223.git.amit.shah@redhat.com>
+References: <cover.1324553223.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Handle thaw, restore and freeze notifications from the PM core.  Expose
+these to individual virtio drivers that can quiesce and resume vq
+operations.  For drivers not implementing the thaw() method, use the
+restore method instead.
 
-These patches add support for S4 to virtio (pci) and all drivers.
+These functions also save device-specific data so that the device can be
+put in pre-suspend state after resume, and disable and enable the PCI
+device in the freeze and resume functions, respectively.
 
-For each driver, all vqs are removed before hibernation, and then
-re-created after restore.  Some driver-specific uninit and init work
-is also done in the freeze and restore functions.
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/virtio/virtio_pci.c |   94 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio.h      |    5 ++
+ 2 files changed, 97 insertions(+), 2 deletions(-)
 
-All the drivers in testing work fine:
-
-* virtio-blk is used for the only disk in the VM, IO works fine before
-  and after.  'dd if=/dev/zero of=/tmp/bigfile bs=1024 count=200000'
-  across S4 gives same sha1sum for the file in the guest as well as
-  one that's created without invoking S4.
-
-* virtio-console: port IO keeps working fine before and after.
-  * If a port is waiting for data from the host (blocking read(2)
-    call), this works fine in both the cases: host-side connection is
-    available or unavailable after resume.  In case the host-side
-    connection isn't available, the blocking call is terminated.  If
-    it is available, the call continues to remain in blocked state
-    till further data arrives.
-
-* virtio-net: ping remains active across S4.
-
-* virtio-balloon: Works fine before and after.  Forgets the ballooned
-  value across S4 (see details in commit log). Maintains ballooned
-  value on failed freeze.
-
-All of these tests are run in parallel.
-
-v6:
- - Based on top of block and net module remove race fix patches
-
-v5:
- - Enable virtio device after the driver-specific restore/thaw
-   callbacks are completed.
- - Balloon: Don't exit kthread on freeze.  It's already frozen by the
-   PM API before invoking the freeze callback, so exiting is pointless.
-
-v4:
- - Disable / enable napi across S4 (Michael S. Tsirkin)
- - Balloon: lots of improvements (I had neglected this driver thinking
-   it was a simple one, but this one needed the most thought!  Check
-   the commit log for patch 12 for details.)
- - Net, Blk: Reset device as the first operation on freeze
-
-v3:
- - Reset vqs before deleting them (Sasha Levin)
- - Flush block queue before freeze (Rusty)
- - Detach netdev before freeze (Michael S. Tsirkin)
-
-v2:
- - fix checkpatch errors/warnings
-
-Amit Shah (11):
-  virtio: pci: switch to new PM API
-  virtio: pci: add PM notification handlers for restore, freeze, thaw,
-    poweroff
-  virtio: console: Move vq and vq buf removal into separate functions
-  virtio: console: Add freeze and restore handlers to support S4
-  virtio: blk: Move vq initialization to separate function
-  virtio: blk: Add freeze, restore handlers to support S4
-  virtio: net: Move vq initialization into separate function
-  virtio: net: Move vq and vq buf removal into separate function
-  virtio: net: Add freeze, restore handlers to support S4
-  virtio: balloon: Move vq initialization into separate function
-  virtio: balloon: Add freeze, restore handlers to support S4
-
- drivers/block/virtio_blk.c      |   63 ++++++++++++++++++--
- drivers/char/virtio_console.c   |  126 ++++++++++++++++++++++++++++++---------
- drivers/net/virtio_net.c        |  113 ++++++++++++++++++++++++++--------
- drivers/virtio/virtio_balloon.c |   95 ++++++++++++++++++++++++------
- drivers/virtio/virtio_pci.c     |  106 +++++++++++++++++++++++++++++++-
- include/linux/virtio.h          |    5 ++
- 6 files changed, 426 insertions(+), 82 deletions(-)
-
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index 23e1532..63bf242 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -55,6 +55,10 @@ struct virtio_pci_device
+ 	unsigned msix_vectors;
+ 	/* Vectors allocated, excluding per-vq vectors if any */
+ 	unsigned msix_used_vectors;
++
++	/* Status saved during hibernate/restore */
++	u8 saved_status;
++
+ 	/* Whether we have vector per vq */
+ 	bool per_vq_vectors;
+ };
+@@ -726,9 +730,95 @@ static int virtio_pci_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static int virtio_pci_freeze(struct device *dev)
++{
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
++	struct virtio_driver *drv;
++	int ret;
++
++	drv = container_of(vp_dev->vdev.dev.driver,
++			   struct virtio_driver, driver);
++
++	ret = 0;
++	vp_dev->saved_status = vp_get_status(&vp_dev->vdev);
++	if (drv && drv->freeze)
++		ret = drv->freeze(&vp_dev->vdev);
++
++	if (!ret)
++		pci_disable_device(pci_dev);
++	return ret;
++}
++
++static int restore_common(struct device *dev)
++{
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
++	int ret;
++
++	ret = pci_enable_device(pci_dev);
++	if (ret)
++		return ret;
++	pci_set_master(pci_dev);
++	vp_finalize_features(&vp_dev->vdev);
++
++	return ret;
++}
++
++static int virtio_pci_thaw(struct device *dev)
++{
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
++	struct virtio_driver *drv;
++	int ret;
++
++	ret = restore_common(dev);
++	if (ret)
++		return ret;
++
++	drv = container_of(vp_dev->vdev.dev.driver,
++			   struct virtio_driver, driver);
++
++	if (drv && drv->thaw)
++		ret = drv->thaw(&vp_dev->vdev);
++	else if (drv && drv->restore)
++		ret = drv->restore(&vp_dev->vdev);
++
++	/* Finally, tell the device we're all set */
++	if (!ret)
++		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++
++	return ret;
++}
++
++static int virtio_pci_restore(struct device *dev)
++{
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
++	struct virtio_driver *drv;
++	int ret;
++
++	drv = container_of(vp_dev->vdev.dev.driver,
++			   struct virtio_driver, driver);
++
++	ret = restore_common(dev);
++	if (!ret && drv && drv->restore)
++		ret = drv->restore(&vp_dev->vdev);
++
++	/* Finally, tell the device we're all set */
++	if (!ret)
++		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
++
++	return ret;
++}
++
+ static const struct dev_pm_ops virtio_pci_pm_ops = {
+-	.suspend = virtio_pci_suspend,
+-	.resume  = virtio_pci_resume,
++	.suspend	= virtio_pci_suspend,
++	.resume		= virtio_pci_resume,
++	.freeze		= virtio_pci_freeze,
++	.thaw		= virtio_pci_thaw,
++	.restore	= virtio_pci_restore,
++	.poweroff	= virtio_pci_suspend,
+ };
+ #endif
+ 
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 4c069d8..92902ab 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -146,6 +146,11 @@ struct virtio_driver {
+ 	int (*probe)(struct virtio_device *dev);
+ 	void (*remove)(struct virtio_device *dev);
+ 	void (*config_changed)(struct virtio_device *dev);
++#ifdef CONFIG_PM
++	int (*freeze)(struct virtio_device *dev);
++	int (*thaw)(struct virtio_device *dev);
++	int (*restore)(struct virtio_device *dev);
++#endif
+ };
+ 
+ int register_virtio_driver(struct virtio_driver *drv);
 -- 
 1.7.7.4
 
