@@ -1,143 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab1LVSoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 13:44:20 -0500
-Received: from mail.tpi.com ([70.99.223.143]:3265 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab1LVSoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 13:44:19 -0500
-Message-ID: <4EF37A7A.2060504@canonical.com>
-Date: Thu, 22 Dec 2011 11:44:10 -0700
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S1755270Ab1LVSrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 13:47:19 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55938 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab1LVSrQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 13:47:16 -0500
+Date: Thu, 22 Dec 2011 10:47:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
+Message-ID: <20111222184710.GJ17084@google.com>
+References: <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
+ <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
+ <20111220162315.GC10752@google.com>
+ <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
+ <20111220202854.GH10752@google.com>
+ <alpine.DEB.2.00.1112210851230.9601@router.home>
+ <20111221170535.GB9213@google.com>
+ <alpine.DEB.2.00.1112220854440.31315@router.home>
+ <20111222160822.GE17084@google.com>
+ <alpine.DEB.2.00.1112221154380.11787@router.home>
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH 2/3] TPM: Close data_pending and data_buffer races
-References: <1323196162-2717-1-git-send-email-tim.gardner@canonical.com> <1323196162-2717-3-git-send-email-tim.gardner@canonical.com> <4EF0B9F8.9020305@linux.vnet.ibm.com> <4EF0E465.5060704@canonical.com> <4EF36C1F.6040409@linux.vnet.ibm.com>
-In-Reply-To: <4EF36C1F.6040409@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1112221154380.11787@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 10:42 AM, Rajiv Andrade wrote:
-> On 20-12-2011 17:39, Tim Gardner wrote:
->> On 12/20/2011 09:38 AM, Rajiv Andrade wrote:
->>> On 06/12/11 16:29, Tim Gardner wrote:
->>>> There is a race betwen tpm_read() and tpm_write where both
->>>> chip->data_pending
->>>> and chip->data_buffer can be changed by tpm_write() when tpm_read()
->>>> clears chip->data_pending, but before tpm_read() grabs the mutex.
->>>>
->>>> Protect changes to chip->data_pending and chip->data_buffer by
->>>> expanding
->>>> the scope of chip->buffer_mutex.
->>>>
->>>> Reported-by: Seth Forshee<seth.forshee@canonical.com>
->>>> Cc: Debora Velarde<debora@linux.vnet.ibm.com>
->>>> Cc: Rajiv Andrade<srajiv@linux.vnet.ibm.com>
->>>> Cc: Marcel Selhorst<m.selhorst@sirrix.com>
->>>> Cc: tpmdd-devel@lists.sourceforge.net
->>>> Cc: stable@vger.kernel.org
->>>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
->>>> ---
->>>> drivers/char/tpm/tpm.c | 17 +++++++++--------
->>>> 1 files changed, 9 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
->>>> index b366b34..70bf9e5 100644
->>>> --- a/drivers/char/tpm/tpm.c
->>>> +++ b/drivers/char/tpm/tpm.c
->>>> @@ -1074,12 +1074,15 @@ ssize_t tpm_write(struct file *file, const
->>>> char __user *buf,
->>>> struct tpm_chip *chip = file->private_data;
->>>> size_t in_size = size, out_size;
->>>>
->>>> + mutex_lock(&chip->buffer_mutex);
->>>> +
->>>> /* cannot perform a write until the read has cleared
->>>> either via tpm_read or a user_read_timer timeout */
->>>> - while (atomic_read(&chip->data_pending) != 0)
->>>> + while (atomic_read(&chip->data_pending) != 0) {
->>>> + mutex_unlock(&chip->buffer_mutex);
->>>> msleep(TPM_TIMEOUT);
->>>> -
->>>> - mutex_lock(&chip->buffer_mutex);
->>>> + mutex_lock(&chip->buffer_mutex);
->>>> + }
->>>>
->>>> if (in_size> TPM_BUFSIZE)
->>>> in_size = TPM_BUFSIZE;
->>>> @@ -1112,22 +1115,20 @@ ssize_t tpm_read(struct file *file, char
->>>> __user *buf,
->>>>
->>>> del_singleshot_timer_sync(&chip->user_read_timer);
->>>> flush_work_sync(&chip->work);
->>>> - ret_size = atomic_read(&chip->data_pending);
->>>> - atomic_set(&chip->data_pending, 0);
->>>> + mutex_lock(&chip->buffer_mutex);
->>>> + ret_size = atomic_xchg(&chip->data_pending, 0);
->>>> if (ret_size> 0) { /* relay data */
->>>> ssize_t orig_ret_size = ret_size;
->>>> if (size< ret_size)
->>>> ret_size = size;
->>>>
->>>> - mutex_lock(&chip->buffer_mutex);
->>>> rc = copy_to_user(buf, chip->data_buffer, ret_size);
->>>> memset(chip->data_buffer, 0, orig_ret_size);
->>>> if (rc)
->>>> ret_size = -EFAULT;
->>>
->>> What about just moving atomic_set(&chip->data_pending, 0); to here?
->>> If I'm not missing anything, this would be cleaner.
->>>
->>> Rajiv
->>
->> I'm not sure I agree. Moving just that statement doesn't close the
->> race. Perhaps you could send me your version of this patch so that its
->> clear what you are suggesting.
->>
->> rtg
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 6a8771f..6a37212b 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -1210,7 +1210,6 @@ ssize_t tpm_read(struct file *file, char __user *buf,
-> del_singleshot_timer_sync(&chip->user_read_timer);
-> flush_work_sync(&chip->work);
-> ret_size = atomic_read(&chip->data_pending);
-> - atomic_set(&chip->data_pending, 0);
-> if (ret_size> 0) { /* relay data */
-> if (size< ret_size)
-> ret_size = size;
-> @@ -1223,6 +1222,7 @@ ssize_t tpm_read(struct file *file, char __user *buf,
-> mutex_unlock(&chip->buffer_mutex);
-> } + atomic_set(&chip->data_pending, 0);
-> return ret_size;
-> }
->
-> If we reset chip->data_pending after the buffer was copied to userspace,
-> it's guaranteed that tpm_write() won't touch such buffer before tpm_read()
-> handles it, given it polls chip->data_pending first.
->
+On Thu, Dec 22, 2011 at 11:58:51AM -0600, Christoph Lameter wrote:
+> Subject: [percpu] Remove irqsafe_cpu_xxx variants
+> 
+> We simply say that regular this_cpu use must be safe regardless of preemption
+> and interrupt state. That has no material change for x86 and s390 implementations
+> of this_cpu operations. However, arches that do not provide their own implementation
+> for this_cpu operations will now get code generated that disables interrupts
+> instead of preemption.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-NAK - this patch makes it worse (if I'm reading your email client 
-garbled patch correctly). Now it races with tpm_write() as well as 
-timeout_work(). You cannot futz with chip->data_pending outside of the 
-exclusion zones. Consider what will happen if a user process just loops 
-doing reads. chip->data_pending gets cleared every time tpm_read() is 
-called, regardless of what tpm_write() or timeout_work() are doing at 
-the time.
+Applied to wq/for-3.3.
 
-tpm_read() / tpm_write() is a simple producer consumer model. Just use 
-mutexes in an uncomplicated way. There is no need for data_pending to be 
-atomic_t.
+Thanks.
 
-rtg
 -- 
-Tim Gardner tim.gardner@canonical.com
+tejun
