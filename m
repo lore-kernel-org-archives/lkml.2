@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1LVPPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 10:15:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab1LVPPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 10:15:33 -0500
-Date: Thu, 22 Dec 2011 10:15:30 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 2/2] mempool: fix first round failure behavior
-Message-ID: <20111222151529.GA1388@redhat.com>
-References: <20111222001800.GL9213@google.com>
- <20111222001939.GM9213@google.com>
- <20111222004629.GO9213@google.com>
- <20111221170919.f7d49fc6.akpm@linux-foundation.org>
- <20111222012312.GP9213@google.com>
+	id S1754347Ab1LVPPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 10:15:51 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:10697 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab1LVPPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 10:15:49 -0500
+X-SpamScore: -7
+X-BigFish: VPS-7(zz98dK4015Lzz1202hzz8275bh8275dhz2dh668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LWM2E5-01-05C-02
+X-M-MSG: 
+Date: Thu, 22 Dec 2011 16:15:40 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        <stable@kernel.org>
+Subject: [PATCH] oprofile, arm/sh: Fix oprofile_arch_exit() linkage issue
+Message-ID: <20111222151540.GB16765@erda.amd.com>
+References: <1324302373-30872-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111222012312.GP9213@google.com>
+In-Reply-To: <1324302373-30872-1-git-send-email-robert.richter@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 05:23:12PM -0800, Tejun Heo wrote:
-> Hello, Andrew.
-> 
-> On Wed, Dec 21, 2011 at 05:09:19PM -0800, Andrew Morton wrote:
-> > If the pool is empty and the memory allocator is down into its
-> > emergency reserves then we have:
-> > 
-> > Old behaviour: Wait for someone to return an item, then retry
-> > 
-> > New behaviour: enable page reclaim in gfp_mask, retry a
-> >                single time then wait for someone to return an item.
-> > 
-> > So what we can expect to see is that in this low-memory situation,
-> > mempool_alloc() will perform a lot more page reclaim, and more mempool
-> > items will be let loose into the kernel.
-> > 
-> > I'm not sure what the effects of this will be.  I can't immediately
-> > point at any bad ones.  Probably not much, as the mempool_alloc()
-> > caller will probably be doing other allocations, using the
-> > reclaim-permitting gfp_mask.
-> > 
-> > But I have painful memories of us (me and Jens, iirc) churning this
-> > code over and over again until it stopped causing problems.  Some were
-> > subtle and nasty.  Much dumpster diving into the pre-git changelogs
-> > should be done before changing it, lest we rediscover long-fixed
-> > problems :(
-> 
-> I see.  It just seemed like a weird behavior and looking at the commit
-> log, there was originally code to kick reclaim there, so the sequence
-> made sense - first try w/o reclaim, look at the mempool, kick reclaim
-> and retry w/ GFP_WAIT and then wait for someone else to free.  That
-> part was removed by 20a77776c24 "[PATCH] mempool: simplify alloc" back
-> in 05.  In the process, it also lost retry w/ reclaim before waiting
-> for mempool reserves.
-> 
-> I was trying to add percpu mempool and this bit me as percpu allocator
-> can't to NOIO and the above delayed retry logic ended up adding random
-> 5s delay (or until the next free).
-> 
+On 19.12.11 14:46:12, Robert Richter wrote:
+> please pull this one fix for 3.2.
 
-Tejun,
+Ingo, yet another fix. Please apply to tip/perf/urgent.
 
-For blkio to use these percpu mempool, I guess we shall have to change this
-notion that an allocated object from mempool is returned to the pool soon.
-We might not be returning these per cpu stat objects to mempool for a very
-long time (These will be returned to pool only when somebody deletes the
-cgroup).
+Thanks,
 
-Thanks
-Vivek
+-Robert
+
+
+
+>From a5ea1e51bb66c6081d081cd88d787f248e07d6af Mon Sep 17 00:00:00 2001
+From: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
+Date: Thu, 22 Dec 2011 15:36:56 +0200
+Subject: [PATCH] oprofile, arm/sh: Fix oprofile_arch_exit() linkage issue
+
+This change fixes a linking problem, which happens if oprofile is selected to
+be compiled as built-in:
+
+  `oprofile_arch_exit' referenced in section `.init.text' of
+  arch/arm/oprofile/built-in.o: defined in discarded section
+  `.exit.text' of arch/arm/oprofile/built-in.o
+
+The problem is appeared after commit 87121ca504, which introduced
+oprofile_arch_exit() calls from __init function. Note that the aforementioned
+commit has been backported to stable branches, and the problem is known to be
+reproduced at least with 3.0.13 and 3.1.5 kernels.
+
+Cc: stable@kernel.org # 3.0+
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/arm/oprofile/common.c |    2 +-
+ arch/sh/oprofile/common.c  |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index c074e66..4e0a371 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -116,7 +116,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	return oprofile_perf_init(ops);
+ }
+ 
+-void __exit oprofile_arch_exit(void)
++void oprofile_arch_exit(void)
+ {
+ 	oprofile_perf_exit();
+ }
+diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
+index b4c2d2b..e4dd5d5 100644
+--- a/arch/sh/oprofile/common.c
++++ b/arch/sh/oprofile/common.c
+@@ -49,7 +49,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	return oprofile_perf_init(ops);
+ }
+ 
+-void __exit oprofile_arch_exit(void)
++void oprofile_arch_exit(void)
+ {
+ 	oprofile_perf_exit();
+ 	kfree(sh_pmu_op_name);
+@@ -60,5 +60,5 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	ops->backtrace = sh_backtrace;
+ 	return -ENODEV;
+ }
+-void __exit oprofile_arch_exit(void) {}
++void oprofile_arch_exit(void) {}
+ #endif /* CONFIG_HW_PERF_EVENTS */
+-- 
+1.7.8
+
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
