@@ -1,117 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1LVBDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 20:03:55 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50994 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1LVBDx (ORCPT
+	id S1754527Ab1LVBFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:05:55 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34865 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1LVBFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 20:03:53 -0500
-Date: Thu, 22 Dec 2011 12:03:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Samuel Ortiz <samuel@sortiz.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>
-Subject: Re: linux-next: Tree for Dec 19 (nfc)
-Message-Id: <20111222120343.32afd5524db3cfe8b3876892@canb.auug.org.au>
-In-Reply-To: <4EF28D6A.7080505@xenotime.net>
-References: <20111219185556.f07c1f43e28cfd594aaa5fe0@canb.auug.org.au>
-	<4EEFA21B.5010305@xenotime.net>
-	<1324399181.5354.0.camel@sortiz-mobl>
-	<4EF23A1F.60803@xenotime.net>
-	<1324500160.5354.3.camel@sortiz-mobl>
-	<4EF2569D.1070806@xenotime.net>
-	<1324510522.5354.5.camel@sortiz-mobl>
-	<4EF28D6A.7080505@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__22_Dec_2011_12_03_43_+1100_O=Eoye=K3b+FTm5j"
+	Wed, 21 Dec 2011 20:05:50 -0500
+Date: Thu, 22 Dec 2011 10:05:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 0/6][RFC] virtio-blk: Change I/O path from request to BIO
+Message-ID: <20111222010538.GA9879@barrios-laptop.redhat.com>
+References: <1324429254-28383-1-git-send-email-minchan@kernel.org>
+ <20111221191117.GA27789@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221191117.GA27789@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Dec_2011_12_03_43_+1100_O=Eoye=K3b+FTm5j
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Vivek,
 
-Hi all,
+On Wed, Dec 21, 2011 at 02:11:17PM -0500, Vivek Goyal wrote:
+> On Wed, Dec 21, 2011 at 10:00:48AM +0900, Minchan Kim wrote:
+> > This patch is follow-up of Christohp Hellwig's work
+> > [RFC: ->make_request support for virtio-blk].
+> > http://thread.gmane.org/gmane.linux.kernel/1199763
+> > 
+> > Quote from hch
+> > "This patchset allows the virtio-blk driver to support much higher IOP
+> > rates which can be driven out of modern PCI-e flash devices.  At this
+> > point it really is just a RFC due to various issues."
+> > 
+> > I fixed race bug and add batch I/O for enhancing sequential I/O,
+> > FLUSH/FUA emulation.
+> > 
+> > I tested this patch on fusion I/O device by aio-stress.
+> > Result is following as.
+> > 
+> > Benchmark : aio-stress (64 thread, test file size 512M, 8K io per IO, O_DIRECT write)
+> > Environment: 8 socket - 8 core, 2533.372Hz, Fusion IO 320G storage
+> > Test repeated by 20 times
+> > Guest I/O scheduler : CFQ
+> > Host I/O scheduler : NOOP
+> 
+> May be using deadline or noop in guest is better to benchmark against
+> PCI-E based flash.
 
-On Wed, 21 Dec 2011 17:52:42 -0800 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> On 12/21/2011 03:35 PM, Samuel Ortiz wrote:
-> > On Wed, 2011-12-21 at 13:58 -0800, Randy Dunlap wrote:
-> >> On 12/21/2011 12:42 PM, Samuel Ortiz wrote:
-> >>> Hi Randy,
-> >>>
-> >>> On Wed, 2011-12-21 at 11:57 -0800, Randy Dunlap wrote:
-> >>>> On 12/20/2011 08:39 AM, Samuel Ortiz wrote:
-> >>>>> Hi Randy,
-> >>>>>
-> >>>>> On Mon, 2011-12-19 at 12:44 -0800, Randy Dunlap wrote:
-> >>>>>> On 12/18/2011 11:55 PM, Stephen Rothwell wrote:
-> >>>>>>> Hi all,
-> >>>>>>>
-> >>>>>>> Changes since 20111216:
-> >>>>>>
-> >>>>>>
-> >>>>>> (not new today, just not reported earlier)
-> >>>>> John applied my fix for this one. It should be fixed now.
-> >>>>
-> >>>> Hi Samuel,
-> >>>>
-> >>>> Is this supposed to be fixed in linux-next?
-> >>>> It still fails today (linux-next 20111221).
-> >>> Do you have a .config for me to look at ?
-> >>
-> >> Sure, one of several that failed is attached.
-> > Thanks, I just tried this one and it seems to work fine. What's your
-> > toolchain ?
-> > I'm using: gcc version 4.6.2 (Debian 4.6.2-4)
->=20
-> I'm using:
-> > gcc --version
-> gcc (GCC) 4.5.2
->=20
-> so maybe it is something that has been fixed in gcc...
->=20
-> Thanks for checking the config.
+Good suggestion.
+I tested it by deadline on guest side.
 
-Well, it would be interesting to know what tree Samuel was testing,
-because the fix commit was *not* in next-20111221 due to another error in
-the wireless-next tree ...
+The result is not good.
+Although gap is within noise, Batch BIO's random performance is regressed
+compared to CFQ. 
 
-That fix *should* be in today's linux-next since the fix for the other
-build problem is there.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+            Request                Batch BIO
 
---Signature=_Thu__22_Dec_2011_12_03_43_+1100_O=Eoye=K3b+FTm5j
-Content-Type: application/pgp-signature
+         (MB/s)  stddev          (MB/s)  stddev
+w        787.030 31.494 w        748.714 68.490
+rw       216.044 29.734 rw       216.977 40.635
+r        771.765 3.327  r        771.107 4.299
+rr       280.096 25.135 rr       258.067 43.916
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I did some small test for only Batch BIO with deadline and cfq.
+to see I/O scheduler's effect.
+I think result is very strange, deadline :149MB, CFQ : 87M
+Because Batio BIO patch uses make_request_fn instead of request_rfn.
+So I think we should not affect by I/O scheduler.(I mean we issue I/O 
+before I/O scheduler handles it)
 
-iQIcBAEBCAAGBQJO8oHvAAoJEECxmPOUX5FEB2AP/1YAWL3U+/qLoUTTmn8vTZyX
-0ow15ieiwVSbTjyVfsB2aI6mO2rB8p4ILW4eM7q1gX5xjdOFTyl0FfrY9Z14jqNw
-Gtp3jPY/BupfLm6Ed8sWP7nBswrg9117GUyepMZyT1h21cNty4f3tQKm+MGgsFi2
-l0HvC3UXR7/sMcLHhls9y9BtJyW9GEFdXnmqK7+c/BFSEKGVXD9ceHZBvFM1SDlt
-4y1anWIF9SLMjxS+t2Zk2f6APBTNdiqc0cwaf2aXnL5+EtSD9IQJmVUbFaxzsulx
-xluSO8oqwOr7yChLyizu3meWfwFa/licvTsvEtsI/OQ/VfzqAx8oGBH+xcHRsWVY
-NCuVGlCjHwXEDO3jSWjLOzFpRzFch4jF/b7bwC+vs9+2ABpRFIJEW9xCL90OVcWx
-ugJp6Bd/lj2qtuhUR/BBzzUJonV5j9peY1zOaw6DnKcBq0FCgaHzoQUNgv6w2zga
-4XvX9xlm+B+Cid7StLRZUKWHeermYWu0Otm9pzwq/dyxC6iNa8AgCdvmf0E9txiT
-BCHBe9mxe7VyRLtcPoKmXQBxl9KV7MEJ0LV64djkRxdlZj2k0JX9oYBBa5890dVS
-QzUoW5ybtRiFzj733p5hsVlFJ8fB7Dg3nDBJ50ALjgShkTBXg6K5T9yRtknEmLQJ
-Epe62lMLvA/idFNEfZlZ
-=8s3L
------END PGP SIGNATURE-----
+What do you think about it?
+Do I miss something?
 
---Signature=_Thu__22_Dec_2011_12_03_43_+1100_O=Eoye=K3b+FTm5j--
+
+1) deadline
+[root@RHEL-6 ~]# ./aio-stress -c 1 -t 1 -s 128 -r 8 -O -o 3 -d 512 /dev/vda
+num_thread 1
+adding stage random read
+starting with random read
+file size 128MB, record size 8KB, depth 512, ios per iteration 8
+max io_submit 8, buffer alignment set to 4KB
+threads 1 files 1 contexts 1 context offset 2MB verification off
+Running single thread version 
+random read on /dev/vda (149.40 MB/s) 128.00 MB in 0.86s
+thread 0 random read totals (149.22 MB/s) 128.00 MB in 0.86s
+
+
+2) cfq
+[root@RHEL-6 ~]# ./aio-stress -c 1 -t 1 -s 128 -r 8 -O -o 3 -d 512 /dev/vda
+num_thread 1
+adding stage random read
+starting with random read
+file size 128MB, record size 8KB, depth 512, ios per iteration 8
+max io_submit 8, buffer alignment set to 4KB
+threads 1 files 1 contexts 1 context offset 2MB verification off
+Running single thread version 
+random read on /dev/vda (87.21 MB/s) 128.00 MB in 1.47s
+thread 0 random read totals (87.15 MB/s) 128.00 MB in 1.47s
+
+
+> 
+> Thanks
+> Vivek
+
+-- 
+Kind regards,
+Minchan Kim
