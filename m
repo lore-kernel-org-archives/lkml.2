@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab1LVO63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 09:58:29 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:50781 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab1LVO6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 09:58:03 -0500
-Date: Thu, 22 Dec 2011 16:00:57 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH] fs/ext4: add missing ext4_resize_end
-Message-ID: <20111222150057.GA10845@dztty>
+	id S1752746Ab1LVO57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 09:57:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34162 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab1LVO5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 09:57:54 -0500
+From: Benoit Cousson <b-cousson@ti.com>
+To: <rob.herring@calxeda.com>, <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <grant.likely@secretlab.ca>,
+        <linux-i2c@vger.kernel.org>, <sameo@linux.intel.com>,
+        <ben-linux@fluff.org>, Benoit Cousson <b-cousson@ti.com>
+Subject: [PATCH v4 00/12] OMAP4: Add DT support for i2c and twl6030
+Date: Thu, 22 Dec 2011 15:56:34 +0100
+Message-ID: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Online resize ioctls 'EXT4_IOC_GROUP_EXTEND' and 'EXT4_IOC_GROUP_ADD'
-call ext4_resize_begin() to check permissions and to set the
-EXT4_RESIZING bit lock, they do their work and they must finish with
-ext4_resize_end() which calls clear_bit_unlock() to unlock and to
-avoid -EBUSY errors for the next resize operations.
+Hi Tony and Rob,
 
-This patch adds the missing ext4_resize_end() calls on error paths.
+Here is the updated version of the i2c + twl DT adaptation series.
 
-Patch tested.
+This update, compared to v3 [1], is fixing the twl-core build for non-OMAP
+platform.
+Per Olof's suggestion, adding the of.h include in the i2c driver to avoid
+problem in case on non-DT build.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/ext4/ioctl.c |   28 ++++++++++++++++++----------
- 1 files changed, 18 insertions(+), 10 deletions(-)
+Patches are based on for_3.3/2_dt_irq, to get the latest GIC binding,
+and are available here:
+git://gitorious.org/omap-pm/linux.git for_3.3/3_omap_dt_i2c_twl
 
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index a567968..ab25f57 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -182,19 +182,22 @@ setversion_out:
- 		if (err)
- 			return err;
- 
--		if (get_user(n_blocks_count, (__u32 __user *)arg))
--			return -EFAULT;
-+		if (get_user(n_blocks_count, (__u32 __user *)arg)) {
-+			err = -EFAULT;
-+			goto group_extend_out;
-+		}
- 
- 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
- 			ext4_msg(sb, KERN_ERR,
- 				 "Online resizing not supported with bigalloc");
--			return -EOPNOTSUPP;
-+			err = -EOPNOTSUPP;
-+			goto group_extend_out;
- 		}
- 
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
--			return err;
-+			goto group_extend_out;
- 
- 		err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
- 		if (EXT4_SB(sb)->s_journal) {
-@@ -204,9 +207,10 @@ setversion_out:
- 		}
- 		if (err == 0)
- 			err = err2;
-+
- 		mnt_drop_write(filp->f_path.mnt);
-+group_extend_out:
- 		ext4_resize_end(sb);
--
- 		return err;
- 	}
- 
-@@ -267,19 +271,22 @@ mext_out:
- 			return err;
- 
- 		if (copy_from_user(&input, (struct ext4_new_group_input __user *)arg,
--				sizeof(input)))
--			return -EFAULT;
-+				sizeof(input))) {
-+			err = -EFAULT;
-+			goto group_add_out;
-+		}
- 
- 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
- 			ext4_msg(sb, KERN_ERR,
- 				 "Online resizing not supported with bigalloc");
--			return -EOPNOTSUPP;
-+			err = -EOPNOTSUPP;
-+			goto group_add_out;
- 		}
- 
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
--			return err;
-+			goto group_add_out;
- 
- 		err = ext4_group_add(sb, &input);
- 		if (EXT4_SB(sb)->s_journal) {
-@@ -289,9 +296,10 @@ mext_out:
- 		}
- 		if (err == 0)
- 			err = err2;
-+
- 		mnt_drop_write(filp->f_path.mnt);
-+group_add_out:
- 		ext4_resize_end(sb);
--
- 		return err;
- 	}
- 
--- 
-1.7.1
+Tested on Beagle and sdp4430. Build tested for x86.
+
+Comments are welcome.
+
+Regards,
+Benoit
+
+[1] http://www.spinics.net/lists/linux-omap/msg62127.html
+
+Benoit Cousson (12):
+  ARM: OMAP2+: pm: Do not init statically the SR and voltage layer with DT
+  i2c: OMAP: Add DT support for i2c controller
+  mfd: twl-core: Add initial DT support for twl4030/twl6030
+  rtc: rtc-twl: Add DT support for RTC inside twl4030/twl6030
+  arm/dts: OMAP4: Add i2c controller nodes
+  arm/dts: OMAP3: Add i2c controller nodes
+  arm/dts: twl6030: Add DTS file for twl6030 PMIC
+  arm/dts: twl4030: Add DTS file for twl4030 PM + Audio IC
+  arm/dts: omap4-panda: Add twl6030 and i2c EEPROM
+  arm/dts: omap4-sdp: Add twl6030, i2c3 and i2c4 devices
+  arm/dts: omap3-beagle: Add twl4030 and i2c EEPROM
+  ARM: OMAP2+: board-generic: Remove i2c static init
+
+ Documentation/devicetree/bindings/i2c/omap-i2c.txt |   30 ++++++
+ .../devicetree/bindings/mfd/twl-familly.txt        |   47 +++++++++
+ Documentation/devicetree/bindings/rtc/twl-rtc.txt  |   12 +++
+ arch/arm/boot/dts/omap3-beagle.dts                 |   29 ++++++
+ arch/arm/boot/dts/omap3.dtsi                       |   21 ++++
+ arch/arm/boot/dts/omap4-panda.dts                  |   34 +++++++
+ arch/arm/boot/dts/omap4-sdp.dts                    |   53 ++++++++++
+ arch/arm/boot/dts/omap4.dtsi                       |   28 ++++++
+ arch/arm/boot/dts/twl4030.dtsi                     |   21 ++++
+ arch/arm/boot/dts/twl6030.dtsi                     |   22 ++++
+ arch/arm/mach-omap2/board-generic.c                |   48 +---------
+ arch/arm/mach-omap2/pm.c                           |    8 ++
+ drivers/i2c/busses/i2c-omap.c                      |  102 +++++++++++++-------
+ drivers/mfd/Kconfig                                |    1 +
+ drivers/mfd/twl-core.c                             |   51 ++++++++++-
+ drivers/rtc/rtc-twl.c                              |   10 ++-
+ 16 files changed, 433 insertions(+), 84 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/omap-i2c.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl-familly.txt
+ create mode 100644 Documentation/devicetree/bindings/rtc/twl-rtc.txt
+ create mode 100644 arch/arm/boot/dts/twl4030.dtsi
+ create mode 100644 arch/arm/boot/dts/twl6030.dtsi
+
