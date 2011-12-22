@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1LVWlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 17:41:07 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55649 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751249Ab1LVWlE (ORCPT
+	id S1755928Ab1LVWlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:41:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49795 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab1LVWlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 17:41:04 -0500
-X-Sasl-enc: /VOsrNwKFcrZLWV2egChXGSGwwbTy5ISlPEbs8Z2x/5o 1324593663
-Date: Thu, 22 Dec 2011 14:40:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Kurt Hackel <kurt.hackel@oracle.com>, sjenning@linux.vnet.ibm.com,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging
- foundation
-Message-ID: <20111222224059.GA16558@kroah.com>
-References: <20111222155050.GA21405@ca-server1.us.oracle.com>
- <20111222173129.GB28856@kroah.com>
- <1f76c37d-15d4-4c62-8c64-8293d3382b4a@default>
+	Thu, 22 Dec 2011 17:41:22 -0500
+Date: Thu, 22 Dec 2011 14:41:17 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
+        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
+ and fix blkcg percpu alloc deadlock
+Message-ID: <20111222224117.GL17084@google.com>
+References: <1324590326-10135-1-git-send-email-tj@kernel.org>
+ <20111222135925.de3221c8.akpm@linux-foundation.org>
+ <20111222220911.GK17084@google.com>
+ <20111222142058.41316ee0.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1f76c37d-15d4-4c62-8c64-8293d3382b4a@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111222142058.41316ee0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 02:06:26PM -0800, Dan Magenheimer wrote:
-> > From: Greg KH [mailto:greg@kroah.com]
+Hello, Andrew.
+
+On Thu, Dec 22, 2011 at 02:20:58PM -0800, Andrew Morton wrote:
+> Don't just consider my suggestions - please try to come up with your own
+> alternatives too!  If all else fails then this patch is a last resort.
+
+Umm... this is my alternative.
+
+> > but apparently those percpu stats reduced
+> > CPU overhead significantly.
 > 
-> Thanks for the quick response!
+> Deleting them would save even more CPU.
 > 
-> > Sent: Thursday, December 22, 2011 10:31 AM
-> > To: Dan Magenheimer
-> > Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org;
-> > Konrad Wilk; Kurt Hackel; sjenning@linux.vnet.ibm.com; Chris Mason
-> > Subject: Re: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging foundation
+> Or make them runtime or compile-time configurable, so only the
+> developers see the impact.
+> 
+> Some specifics on which counters are causing the problems would help here.
+
+These stats are userland visible and quite useful ones if blkcg is in
+use.  I don't really see how these can be removed.
+
+> > > Or how about we fix the percpu memory allocation code so that it
+> > > propagates the gfp flags, then delete this patchset?
 > > 
-> > On Thu, Dec 22, 2011 at 07:50:50AM -0800, Dan Magenheimer wrote:
-> > > >From 93c00028709a5d423de77a2fc24d32ec10eca443 Mon Sep 17 00:00:00 2001
-> > > From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > > Date: Wed, 21 Dec 2011 14:01:54 -0700
-> > > Subject: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging foundation
-> > 
-> > Why duplicate this in the email body?  That forces me to edit the
-> > patches and remove them, please use git send-email...
+> > Oh, no, this is gonna make things *way* more complex.  I tried.
 > 
-> OK, sorry, will do.  Still learning the git tools and my mutt
-> scripts use that line to create the subject line.  I'll try
-> git-send-email next time.
->  
-> > > Copy cluster subdirectory from ocfs2.  These files implement
-> > > the basic cluster discovery, mapping, heartbeat / keepalive, and
-> > > messaging ("o2net") that ramster requires for internode communication.
-> > > Note: there are NO ramster-specific changes yet; this commit
-> > > does NOT pass checkpatch since the copied source files do not.
-> > 
-> > Why are you copying the files, and not just exporting the symbols you
-> > need/want to use here?  Are you going to be able to properly track
-> > keeping this code in sync?
-> 
-> This particular part of ocfs2 has never been broken out for non-ocfs2
-> use before, some changes to the ocfs2 core cluster code is necessary
-> for ramster to use that code (see patch 3), and ramster is currently
-> incompatible with real ocfs2 anyway (requires !CONFIG_OCFS2_FS).  I will
-> definitely work with Joel Becker to see if these code interdependencies
-> can be merged before ramster could possibly be promoted out of staging but,
-> for now for staging, this seemed to be an expedient way to make
-> use of the ocfs2 core cluster code but still incorporate some required
-> ramster changes.  This way, also, I think it is not necessary to keep the
-> code in sync every release, but still allow for easy merging later.
-> 
-> > Same goes for your other patch in this series that copies code, why do
-> > that?
-> 
-> The other code copies are from drivers/staging/zcache.  The tmem.c/h
-> changes can definitely be shared between zcache and ramster (and
-> I've said before that the eventual destination tmem.c/h is the linux
-> lib directory).  The zcache.c changes are most likely mergeable but
-> I know that Seth Jennings and Nitin Gupta are working on some
-> other significant changes (including a new allocator which would
-> replace the lengthy zbud code and breaking zcache.c into many smaller
-> files), so thought it best to branch temporarily and merge later.
-> 
-> > Are there goals to eventually not have duplicated code?  If so,
-> > what are they, and why not mention them?
-> 
-> Sorry, you're right, I should have included the above paragraphs
-> in the commit comments.
+> But there's a difference between fixing a problem and working around it.
 
-Ok, that makes sense.
+Yeah, that was my first direction too.  The reason why percpu can't do
+NOIO is the same one why vmalloc can't do it.  It reaches pretty deep
+into page table code and I don't think doing all that churning is
+worthwhile or even desirable.  An altnernative approach would be
+implementing transparent front buffer to percpu allocator, which I
+*might* do if there really are more of these users, but I think
+keeping percpu allocator painful to use from reclaim context isn't
+such a bad idea.
 
-Can you ensure that the TODO file in this driver's directory says that
-you will remove the duplicated code from it before it can be merged into
-the main part of the kernel tree?
+There have been multiple requests for atomic allocation and they all
+have been successfully pushed back, but IMHO this is a valid one and I
+don't see a better way around the problem, so while I agree using
+mempool for this is a workaround, I think it is a right choice, for
+now, anyway.
 
-That, and fix up the other things mentioned and resend it and I'll be
-glad to queue it up.
+> > If we're gonna have many more NOIO percpu users, which I don't
+> > think we would or should, that might make sense but, for fringe
+> > cases, extending mempool to cover percpu is a much better sized
+> > solution.
+> 
+> I've long felt that we goofed with the gfp_flags thing and that it
+> should be a field in the task_struct.  Now *that* would be a large
+> patch!
 
-thanks,
+Yeah, some of PF_* flags already carry related role information.  I'm
+not too sure how much pushing the whole thing into task_struct would
+change tho.  We would need push/popping.  It could be simpler in some
+cases but in essence wouldn't we have just relocated the position of
+parameter?
 
-greg k-h
+Thanks.
+
+-- 
+tejun
