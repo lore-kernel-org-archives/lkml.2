@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1LVXll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 18:41:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46127 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab1LVXlj (ORCPT
+	id S1756141Ab1LVXlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 18:41:50 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51994 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945Ab1LVXlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 18:41:39 -0500
-Date: Thu, 22 Dec 2011 15:41:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-Id: <20111222154138.d6c583e3.akpm@linux-foundation.org>
-In-Reply-To: <20111222232433.GQ17084@google.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-	<20111222135925.de3221c8.akpm@linux-foundation.org>
-	<20111222220911.GK17084@google.com>
-	<20111222142058.41316ee0.akpm@linux-foundation.org>
-	<20111222224117.GL17084@google.com>
-	<20111222145426.5844df96.akpm@linux-foundation.org>
-	<20111222230047.GN17084@google.com>
-	<20111222151649.de57746f.akpm@linux-foundation.org>
-	<20111222232433.GQ17084@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Dec 2011 18:41:44 -0500
+Date: Fri, 23 Dec 2011 08:41:35 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/6][RFC] virtio-blk: Change I/O path from request to BIO
+Message-ID: <20111222234135.GB7056@barrios-laptop.redhat.com>
+References: <1324429254-28383-1-git-send-email-minchan@kernel.org>
+ <CAJSP0QW5wPYcHr02oNm8Y8=hsChEb5tJuO0ntPy9MO8EPuH=Qg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJSP0QW5wPYcHr02oNm8Y8=hsChEb5tJuO0ntPy9MO8EPuH=Qg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 15:24:33 -0800
-Tejun Heo <tj@kernel.org> wrote:
-
-> Hello,
+On Thu, Dec 22, 2011 at 12:57:40PM +0000, Stefan Hajnoczi wrote:
+> On Wed, Dec 21, 2011 at 1:00 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > This patch is follow-up of Christohp Hellwig's work
+> > [RFC: ->make_request support for virtio-blk].
+> > http://thread.gmane.org/gmane.linux.kernel/1199763
+> >
+> > Quote from hch
+> > "This patchset allows the virtio-blk driver to support much higher IOP
+> > rates which can be driven out of modern PCI-e flash devices.  At this
+> > point it really is just a RFC due to various issues."
 > 
-> On Thu, Dec 22, 2011 at 03:16:49PM -0800, Andrew Morton wrote:
-> > > The ones allocated in the last patch.  blk_group_cpu_stats.
-> > 
-> > What last patch.
-> > 
-> > I can find no occurence of "blk_group_cpu_stats" on linux-kernel or in
-> > the kernel tree.
+> Basic question to make sure I understood this series: does this patch
+> bypass the guest I/O scheduler (but then you added custom batching
+> code into virtio_blk.c)?
+
+Right.
+
 > 
-> Sorry it's blkio_group_stats_cpu.  It's in the seventh path in this
-> series.
+> If you're stumped by the performance perhaps compare blktraces of the
+> request approach vs the bio approach.  We're probably performing I/O
+> more CPU-efficiently but the I/O pattern itself is worse.
+
+You mean I/O scheduler have many techniques to do well in I/O pattern?
+That's what I want to discuss in this RFC.
+
+I guess request layer have many techniques proved during long time
+to do well I/O but BIO-based drvier ignores them for just reducing locking
+overhead. Of course, we can add such techniques to BIO-batch driver like 
+custom-batch in this series. But it needs lots of work, is really duplication,
+and will have a problem on maintenance.
+
+I would like to listen opinions whether this direction is good or bad.
+
 > 
-> > > The stats are per cgroup - request_queue pair.  We don't want to
-> > > allocate for all of them for each combination as there are
-> > > configurations with stupid number of request_queues and silly many
-> > > cgroups and #cgroups * #request_queue * #cpus can be huge.  So, we
-> > > want on-demand allocation.  While the stats are important, they are
-> > > not critical and allocations can be opportunistic.  If the allocation
-> > > fails this time, we can try it for the next time.
-> > 
-> > Without code to look at I am at a loss.
-> 
-> block/blk-cgroup.c blk-throttle.c cfq-iosched.c.  Have fun.
-> 
-> > request_queues are allocated in blk_alloc_queue_node(), which uses
-> > GFP_KERNEL (and also mysteriously takes a gfp_t arg).
-> 
-> Yeah, sure, we *can* allocate everything for every combination when
-> either request_queue or cgroup comes up.  That's the thing I tried to
-> explain in the above quoted paragraph.
-> 
+> Stefan
 
-All the code I'm looking at assumes that blkio_group.stats_cpu is
-non-zero.  Won't the kerenl just go splat if that allocation failed?
-
-If the code *does* correctly handle ->stats_cpu == NULL then we have
-options.
-
-a) Give userspace a new procfs/debugfs file to start stats gathering
-   on a particular cgroup/request_queue pair.  Allocate the stats
-   memory in that.
-
-b) Or allocate stats_cpu on the first call to blkio_read_stat_cpu()
-   and return zeroes for this first call.
-
-c) Or change the low-level code to do
-   blkio_group.want_stats_cpu=true, then test that at the top level
-   after we've determined that blkio_group.stats_cpu is NULL.
-
-d) Or, worse, punt the allocation into a workqueue thread.
-
-Note that all these option will permit us to use GFP_KERNEL, which is
-better.
-
-Note that a) and b) means that users get control over whether these
-stats are accumulated at all, so many won't incur needless memory and
-CPU consumption.
-
-I think I like b).  Fix the code so it doesn't oops when ->stats_cpu is
-NULL, then turn on stats gathering the first time someone tries to read
-the stats.
-
-(Someone appears to have misspelled "throttle" as "throtl" for no
-apparent reason about 1000 times.  Sigh.)
-
-
+-- 
+Kind regards,
+Minchan Kim
