@@ -1,44 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab1LVS7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 13:59:19 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:37056 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab1LVS7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 13:59:17 -0500
-Date: Thu, 22 Dec 2011 13:59:11 -0500 (EST)
-Message-Id: <20111222.135911.584309149966835644.davem@davemloft.net>
-To: bhelgaas@google.com
-Cc: James.Bottomley@hansenpartnership.com, linux-pci@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAErSpo7yoWOg8P1NAi70HJX=OMyO6XUwnUBxVq3P0YK87eP5tw@mail.gmail.com>
-References: <CAErSpo7d3hHeJU87zYo=yJoG3eqOZ4QggkOyNnu7xuJe8oG9Qg@mail.gmail.com>
-	<1318607132.3018.30.camel@dabdike.int.hansenpartnership.com>
-	<CAErSpo7yoWOg8P1NAi70HJX=OMyO6XUwnUBxVq3P0YK87eP5tw@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Dec 2011 10:59:15 -0800 (PST)
+	id S1754653Ab1LVTCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 14:02:04 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49192 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753113Ab1LVTCB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 14:02:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <000c01ccc098$6b6c6690$424533b0$@com.tw>
+References: <000c01ccc098$6b6c6690$424533b0$@com.tw>
+Date: Thu, 22 Dec 2011 11:02:00 -0800
+X-Google-Sender-Auth: DMBGgLXJJMPIyastJIoj4T9k3DQ
+Message-ID: <CANEJEGuKdj4dEh2-kyWovPC1TBiBbEot7f6pDVnzLGCf==Oc5g@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net/usb/asix: fixed asix_get_wol reported wrong
+ wol status issue
+From: Grant Grundler <grundler@chromium.org>
+To: "ASIX Allan Email [office]" <allan@asix.com.tw>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Freddy Xin <freddy@asix.com.tw>, Eugene <elubarsky@gmail.com>,
+        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Dec 2011 08:55:53 -0700
+On Thu, Dec 22, 2011 at 2:56 AM, ASIX Allan Email [office]
+<allan@asix.com.tw> wrote:
+> Dear David,
+>
+> This is my first time to submit the driver patch onto Linux kernel mainline source. Please correct me if anything is wrong on my submission way or email format. Thanks a lot for your great helps.
 
-> This series has been in linux-next for a while now (via Jesse's PCI
-> tree), so this would be a good time to try it out if you haven't
-> already.
-> 
-> I know ia64 has been exercised a bit (thanks, Tony), but I haven't
-> heard anything about arm, mips, parisc, powerpc, sparc, etc.
-> 
-> There is one outstanding bug fix for alpha that Jesse hasn't
-> integrated yet, but as far as I know, everything else is in good
-> shape.
+Hi Allan,
+Thanks for submitting the patch.  I can advise as well since this
+probably won't get applied due to how the email is "structured".
 
-I'll give it a quick test on sparc64 today.
+Your email which includes the patch needs to follow the "patch format"
+described in Documentation/SubmittingPatches (see linux source tree).
+
+Your email should have three main sections:
+1) commit log entry + signed-off-by lines followed by one line with
+"---" (and nothing else). This text summarizes *why* the patch is
+needed: what bug it fixes or feature it enables.
+2) optional comments/information about the testing of the patch (e.g.
+"tested on Samsung Chromebook" or other comments that do NOT belong in
+the commit log entry above. This section can be empty - not required.
+3) "diff -u" format patch (this is what "git diff" will produce).
+
+Do not append any other emails or additional text.
+
+thanks!
+grant
+
+>
+> ========
+> Fixed the asix_get_wol() routine reported wrong wol status issue.
+> This fix had been verified on x86 Linux kernel 3.0.0-12-generic system with AX88772A/AX88772/Belkin AX88178 USB dongles, and the wol function works fine (can be waked up by receiving the magic packets).
+>
+> Signed-off-by: Allan Chou <allan@asix.com.tw>
+> Tested-by: Allan Chou <allan@asix.com.tw>
+> ---
+> diff --uprN a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+> --- a/drivers/net/usb/asix.c    2011-12-15 14:01:49.000000000 +0800
+> +++ b/drivers/net/usb/asix.c    2011-12-22 18:20:39.000000000 +0800
+> @@ -36,7 +36,7 @@
+>  #include <linux/usb/usbnet.h>
+>  #include <linux/slab.h>
+>
+> -#define DRIVER_VERSION "08-Nov-2011"
+> +#define DRIVER_VERSION "22-Dec-2011"
+>  #define DRIVER_NAME "asix"
+>
+>  /* ASIX AX8817X based USB 2.0 Ethernet Devices */
+> @@ -689,6 +689,10 @@ asix_get_wol(struct net_device *net, str
+>        }
+>        wolinfo->supported = WAKE_PHY | WAKE_MAGIC;
+>        wolinfo->wolopts = 0;
+> +       if (opt & AX_MONITOR_LINK)
+> +               wolinfo->wolopts |= WAKE_PHY;
+> +       if (opt & AX_MONITOR_MAGIC)
+> +               wolinfo->wolopts |= WAKE_MAGIC;
+>  }
+>
+>  static int
+>
+>
+> ---
+> Best regards,
+> Allan Chou
+> Technical Support Division
+> ASIX Electronics Corporation
+> TEL: 886-3-5799500 ext.228
+> FAX: 886-3-5799558
+> E-mail: allan@asix.com.tw
+> http://www.asix.com.tw/
+>
+>
+> -----Original Message-----
+> From: allan [mailto:allan@asix.com.tw]
+> Sent: Saturday, December 17, 2011 10:36 AM
+> To: 'Grant Grundler'
+> Cc: 'Eugene'; 'netdev@vger.kernel.org'; 'Freddy Xin'; 'ASIX Louis [蘇威陸]'
+> Subject: RE: drivers/net/usb/asix: bug in asix_get_wol
+>
+> Dear Grant,
+>
+> I will double check this issue and submit the revised patch to Linux kernel mainline source next week. Thanks a lot for your great helps.
+>
+>
+> ---
+> Best regards,
+> Allan Chou
+> Technical Support Division
+> ASIX Electronics Corporation
+> TEL: 886-3-5799500 ext.228
+> FAX: 886-3-5799558
+> E-mail: allan@asix.com.tw
+> http://www.asix.com.tw/
+>
+> -----Original Message-----
+> From: grundler@google.com [mailto:grundler@google.com] On Behalf Of Grant Grundler
+> Sent: Saturday, December 17, 2011 6:16 AM
+> To: ASIX Allan Email [office]
+> Cc: Eugene; netdev@vger.kernel.org; Freddy Xin; ASIX Louis [蘇威陸]
+> Subject: Re: drivers/net/usb/asix: bug in asix_get_wol
+>
+> On Thu, Dec 15, 2011 at 9:15 PM, ASIX Allan Email [office]
+> <allan@asix.com.tw> wrote:
+>> Resend without attachment due to below email server error.
+> ...
+>> -----Original Message-----
+>> From: ASIX Allan Email [office] [mailto:allan@asix.com.tw]
+>> Sent: Friday, December 16, 2011 11:38 AM
+>> To: 'Grant Grundler'; 'Eugene'
+>> Cc: 'netdev@vger.kernel.org'; 'Freddy Xin'; ASIX Louis [蘇威陸]
+>> Subject: RE: drivers/net/usb/asix: bug in asix_get_wol
+>> Importance: High
+>>
+>> Dear Grant and Eugene,
+>>
+>> Please refer to the attached file and below statements to modify the
+>> asix_get_wol() routine and let us know if this suggestion can solve
+>> your issues or not? Thanks a lot.
+>
+> Allan,
+> Thanks for the response but it doesn't answer my previous question.
+> Let me ask the same question differently.
+>
+> Does WOL support in asix driver need more than the four lines of code?
+> Ie does MONITOR_MODE need to be enabled or anything like that?
+>
+>> ================
+>> static void
+>> asix_get_wol(struct net_device *net, struct ethtool_wolinfo *wolinfo)
+>> {
+>>        struct usbnet *dev = netdev_priv(net);
+>>        u8 opt;
+>>
+>>        if (asix_read_cmd(dev, AX_CMD_READ_MONITOR_MODE, 0, 0, 1, &opt) < 0) {
+>>                wolinfo->supported = 0;
+>>                wolinfo->wolopts = 0;
+>>                return;
+>>        }
+>>        wolinfo->supported = WAKE_PHY | WAKE_MAGIC;
+>>        wolinfo->wolopts = 0;
+>>        if (opt & AX_MONITOR_LINK)
+>>                wolinfo->wolopts |= WAKE_PHY;
+>>        if (opt & AX_MONITOR_MAGIC)
+>>                wolinfo->wolopts |= WAKE_MAGIC;
+>> }
+>
+> This looks remarkably similar to the code Eugene said enables WOL for
+> him (and it works). I not able to find any difference.
+>
+> If you believe it was a mistake to remove these four lines of code,
+> please submit a patch (See Documentation/SubmittingPatches)  to add
+> them back. You can add a "Tested-by: Eugene <elubarsky@gmail.com>"
+> line after your own "Signed-off-by:" in the patch.
+>
+> thanks!
+> grant
+>
+>
