@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1LVWJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 17:09:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1LVWJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 17:09:00 -0500
-Message-ID: <4EF3AA74.1060801@redhat.com>
-Date: Thu, 22 Dec 2011 23:08:52 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
+	id S1756084Ab1LVWJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:09:08 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:47488 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924Ab1LVWJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 17:09:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=uK8cskOWRlkyqC3vlWhL14Bt5AcHs/eB
+	3dMccPguy3brLz5v2rQ47e9pvlF10qRqQ9poerTaldtJmwCvd+RISGqrDXA14bBi
+	q4gIVZG3llWAdWYVstbm19Ao3EbPsD+SAUTxRKGejWkQ5lm7R4FLsi8Gejs6z/QW
+	oicdQcNBAz4=
+From: Junio C Hamano <gitster@pobox.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
-        agk@redhat.com, jbottomley@parallels.com, mchristi@redhat.com,
-        msnitzer@redhat.com
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition
- devices
-References: <1324576939-23619-1-git-send-email-pbonzini@redhat.com> <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com> <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com> <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
-In-Reply-To: <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patch] libata build fix for 3.2-rc
+References: <20111222202017.GA13208@havoc.gtf.org>
+ <CA+55aFycz+kScx671vQaLyHz6jyQUJ_ZB6MYx1scdHjX29R_0Q@mail.gmail.com>
+Date: Thu, 22 Dec 2011 14:09:00 -0800
+In-Reply-To: <CA+55aFycz+kScx671vQaLyHz6jyQUJ_ZB6MYx1scdHjX29R_0Q@mail.gmail.com> (Linus
+ Torvalds's message of "Thu, 22 Dec 2011 12:59:14 -0800")
+Message-ID: <7vk45ocl8j.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 8E47A450-2CE9-11E1-A306-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 09:52 PM, Linus Torvalds wrote:
-> On Thu, Dec 22, 2011 at 12:23 PM, Paolo Bonzini<pbonzini@redhat.com>  wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+
+> On Thu, Dec 22, 2011 at 12:20 PM, Jeff Garzik <jeff@garzik.org> wrote:
 >>
->> I disagree.  ENOTTY is perfect in all cases except the compat_ioctl (which
->> I'm not denying is ugly, but beautifying it would make everything else
->> ugly).
+>> A sparc build fix...
 >
-> No it's not.
+> Pulled..
 >
-> ENOTTTY isn't ever perfect. We should never have used it to begin with
-> inside the kernel.
+>> -----BEGIN PGP SIGNED MESSAGE-----
 >
-> Why would it make *anything* else uglier? Just return it, don't try to
-> change it anywhere. Does it break anything?
+> And these days it would actually be better if you just use git signed
+> tags instead, and ask me to pull them. You don't need to do anything
+> special per se (just "git tag -s" to create the signature, and then
+> "git push -tags" to push it out), it's only the merger who has to then
+> have a recent enough git version that pulling the tag will DTRT. And I
+> do.
 
-I don't know.  But given the ways in which earlier versions broke during 
-testing, I wouldn't be able to tell before running many tests.  Which 
-with the Christmas break would easily mean a little less than 2 weeks.
+"git push --tags" may be a bit too much. A lieutenant can just push that
+signed tag being requested to get pulled and nothing else. And after the
+integrator responds to the request, the signed tag can be removed from the
+publishing repository of the requestor to keep namespace clean and neat.
 
->> Secondarily, ENOIOCTLCMD is ultimately turned into EINVAL when the system
->> call returns (not ENOTTY).
+> See
+>   https://lkml.org/lkml/2011/12/14/543
 >
-> That's a completely independent bug that has been discussed several
-> times. We probably should just bite the bullet and fix it. EINVAL is
-> never the right return value (unless the per-ioctl arguments
-> themselves are invalid, not for bad ioctls).
+> that I sent to Ted about how it ends up looking - you can check out
+> that commit 2240a7bb479c with "git show" and "git cat-file commit" to
+> see how your signature would be archived and saved without actually
+> being bothersome when just looking at the history.
 
-Makes a lot of sense and I was wondering about it myself, but I'm not 
-sure stable would accept that.
+This falls into a shameless plug category, but at http://goo.gl/3OImV
+there is my write-up on the whole workflow.
 
-I understand that it's kind of backwards to commit as is and cleanup 
-later, but it's also backwards to force all distros and stable to 
-deviate from upstream for the sake of cleaning up.
+We would need to add some Porcelain support for third-party (as opposed to
+the integrator who is resonding to the pull request and verifies the
+signed tag himself) auditors, by the way.
 
-> The EINVAL return comes from some people who didn't understand that
-> ENOTTY means "no such ioctl" despite the name.
-
-I did. :)
-
-Paolo
