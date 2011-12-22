@@ -1,346 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1LVW1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 17:27:23 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:61775 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab1LVW1K (ORCPT
+	id S1753593Ab1LVWlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:41:07 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55649 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751249Ab1LVWlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 17:27:10 -0500
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: [PATCH 2/2] cgroup: remove extra calls to find_existing_css_set
-Date: Thu, 22 Dec 2011 14:26:56 -0800
-Message-Id: <1324592816-13792-2-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1324592816-13792-1-git-send-email-msb@chromium.org>
-References: <1324592816-13792-1-git-send-email-msb@chromium.org>
+	Thu, 22 Dec 2011 17:41:04 -0500
+X-Sasl-enc: /VOsrNwKFcrZLWV2egChXGSGwwbTy5ISlPEbs8Z2x/5o 1324593663
+Date: Thu, 22 Dec 2011 14:40:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Kurt Hackel <kurt.hackel@oracle.com>, sjenning@linux.vnet.ibm.com,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging
+ foundation
+Message-ID: <20111222224059.GA16558@kroah.com>
+References: <20111222155050.GA21405@ca-server1.us.oracle.com>
+ <20111222173129.GB28856@kroah.com>
+ <1f76c37d-15d4-4c62-8c64-8293d3382b4a@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1f76c37d-15d4-4c62-8c64-8293d3382b4a@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cgroup_attach_proc, we indirectly call find_existing_css_set 3
-times. It is an expensive call so we want to call it a minimum
-of times. This patch only calls it once and stores the result so
-that it can be used later on when we call cgroup_task_migrate.
+On Thu, Dec 22, 2011 at 02:06:26PM -0800, Dan Magenheimer wrote:
+> > From: Greg KH [mailto:greg@kroah.com]
+> 
+> Thanks for the quick response!
+> 
+> > Sent: Thursday, December 22, 2011 10:31 AM
+> > To: Dan Magenheimer
+> > Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org;
+> > Konrad Wilk; Kurt Hackel; sjenning@linux.vnet.ibm.com; Chris Mason
+> > Subject: Re: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging foundation
+> > 
+> > On Thu, Dec 22, 2011 at 07:50:50AM -0800, Dan Magenheimer wrote:
+> > > >From 93c00028709a5d423de77a2fc24d32ec10eca443 Mon Sep 17 00:00:00 2001
+> > > From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > > Date: Wed, 21 Dec 2011 14:01:54 -0700
+> > > Subject: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging foundation
+> > 
+> > Why duplicate this in the email body?  That forces me to edit the
+> > patches and remove them, please use git send-email...
+> 
+> OK, sorry, will do.  Still learning the git tools and my mutt
+> scripts use that line to create the subject line.  I'll try
+> git-send-email next time.
+>  
+> > > Copy cluster subdirectory from ocfs2.  These files implement
+> > > the basic cluster discovery, mapping, heartbeat / keepalive, and
+> > > messaging ("o2net") that ramster requires for internode communication.
+> > > Note: there are NO ramster-specific changes yet; this commit
+> > > does NOT pass checkpatch since the copied source files do not.
+> > 
+> > Why are you copying the files, and not just exporting the symbols you
+> > need/want to use here?  Are you going to be able to properly track
+> > keeping this code in sync?
+> 
+> This particular part of ocfs2 has never been broken out for non-ocfs2
+> use before, some changes to the ocfs2 core cluster code is necessary
+> for ramster to use that code (see patch 3), and ramster is currently
+> incompatible with real ocfs2 anyway (requires !CONFIG_OCFS2_FS).  I will
+> definitely work with Joel Becker to see if these code interdependencies
+> can be merged before ramster could possibly be promoted out of staging but,
+> for now for staging, this seemed to be an expedient way to make
+> use of the ocfs2 core cluster code but still incorporate some required
+> ramster changes.  This way, also, I think it is not necessary to keep the
+> code in sync every release, but still allow for easy merging later.
+> 
+> > Same goes for your other patch in this series that copies code, why do
+> > that?
+> 
+> The other code copies are from drivers/staging/zcache.  The tmem.c/h
+> changes can definitely be shared between zcache and ramster (and
+> I've said before that the eventual destination tmem.c/h is the linux
+> lib directory).  The zcache.c changes are most likely mergeable but
+> I know that Seth Jennings and Nitin Gupta are working on some
+> other significant changes (including a new allocator which would
+> replace the lengthy zbud code and breaking zcache.c into many smaller
+> files), so thought it best to branch temporarily and merge later.
+> 
+> > Are there goals to eventually not have duplicated code?  If so,
+> > what are they, and why not mention them?
+> 
+> Sorry, you're right, I should have included the above paragraphs
+> in the commit comments.
 
-This required modifying cgroup_task_migrate to take the new css_set
-(which we obtained from find_css_set) as a parameter. The nice side
-effect of this is that cgroup_task_migrate is now identical for
-cgroup_attach_task and cgroup_attach_proc. It also now returns a
-void since it can never fail.
+Ok, that makes sense.
 
-Changes in V3:
-* https://lkml.org/lkml/2011/12/22/13 (Li Zefan)
-  * Fixed earlier bug by creating a seperate patch to remove tasklist_lock
-Changes in V2:
-* https://lkml.org/lkml/2011/12/20/372 (Tejun Heo)
-  * Move find_css_set call into loop which creates the flex array
-* Author
-  * Kill css_set_refs and use group_size instead
-  * Fix an off-by-one error in counting css_set refs
-  * Add a retval check in out_list_teardown
+Can you ensure that the TODO file in this driver's directory says that
+you will remove the duplicated code from it before it can be merged into
+the main part of the kernel tree?
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org
-Cc: cgroups@vger.kernel.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Menage <paul@paulmenage.org>
----
- kernel/cgroup.c |  152 ++++++++++++-------------------------------------------
- 1 files changed, 32 insertions(+), 120 deletions(-)
+That, and fix up the other things mentioned and resend it and I'll be
+glad to queue it up.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 032139d..9eb486b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1763,6 +1763,7 @@ EXPORT_SYMBOL_GPL(cgroup_path);
- struct task_and_cgroup {
- 	struct task_struct	*task;
- 	struct cgroup		*cgrp;
-+	struct css_set		*cg;
- };
- 
- struct cgroup_taskset {
-@@ -1843,11 +1844,10 @@ EXPORT_SYMBOL_GPL(cgroup_taskset_size);
-  * will already exist. If not set, this function might sleep, and can fail with
-  * -ENOMEM. Must be called with cgroup_mutex and threadgroup locked.
-  */
--static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
--			       struct task_struct *tsk, bool guarantee)
-+static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
-+				struct task_struct *tsk, struct css_set *newcg)
- {
- 	struct css_set *oldcg;
--	struct css_set *newcg;
- 
- 	/*
- 	 * We are synchronized through threadgroup_lock() against PF_EXITING
-@@ -1857,23 +1857,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 	WARN_ON_ONCE(tsk->flags & PF_EXITING);
- 	oldcg = tsk->cgroups;
- 
--	/* locate or allocate a new css_set for this task. */
--	if (guarantee) {
--		/* we know the css_set we want already exists. */
--		struct cgroup_subsys_state *template[CGROUP_SUBSYS_COUNT];
--		read_lock(&css_set_lock);
--		newcg = find_existing_css_set(oldcg, cgrp, template);
--		BUG_ON(!newcg);
--		get_css_set(newcg);
--		read_unlock(&css_set_lock);
--	} else {
--		might_sleep();
--		/* find_css_set will give us newcg already referenced. */
--		newcg = find_css_set(oldcg, cgrp);
--		if (!newcg)
--			return -ENOMEM;
--	}
--
- 	task_lock(tsk);
- 	rcu_assign_pointer(tsk->cgroups, newcg);
- 	task_unlock(tsk);
-@@ -1892,7 +1875,6 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 	put_css_set(oldcg);
- 
- 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
--	return 0;
- }
- 
- /**
-@@ -1910,6 +1892,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 	struct cgroup *oldcgrp;
- 	struct cgroupfs_root *root = cgrp->root;
- 	struct cgroup_taskset tset = { };
-+	struct css_set *newcg;
- 
- 	/* @tsk either already exited or can't exit until the end */
- 	if (tsk->flags & PF_EXITING)
-@@ -1939,9 +1922,13 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 		}
- 	}
- 
--	retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, false);
--	if (retval)
-+	newcg = find_css_set(tsk->cgroups, cgrp);
-+	if (!newcg) {
-+		retval = -ENOMEM;
- 		goto out;
-+	}
-+
-+	cgroup_task_migrate(cgrp, oldcgrp, tsk, newcg);
- 
- 	for_each_subsys(root, ss) {
- 		if (ss->attach)
-@@ -1997,66 +1984,6 @@ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
- }
- EXPORT_SYMBOL_GPL(cgroup_attach_task_all);
- 
--/*
-- * cgroup_attach_proc works in two stages, the first of which prefetches all
-- * new css_sets needed (to make sure we have enough memory before committing
-- * to the move) and stores them in a list of entries of the following type.
-- * TODO: possible optimization: use css_set->rcu_head for chaining instead
-- */
--struct cg_list_entry {
--	struct css_set *cg;
--	struct list_head links;
--};
--
--static bool css_set_check_fetched(struct cgroup *cgrp,
--				  struct task_struct *tsk, struct css_set *cg,
--				  struct list_head *newcg_list)
--{
--	struct css_set *newcg;
--	struct cg_list_entry *cg_entry;
--	struct cgroup_subsys_state *template[CGROUP_SUBSYS_COUNT];
--
--	read_lock(&css_set_lock);
--	newcg = find_existing_css_set(cg, cgrp, template);
--	read_unlock(&css_set_lock);
--
--	/* doesn't exist at all? */
--	if (!newcg)
--		return false;
--	/* see if it's already in the list */
--	list_for_each_entry(cg_entry, newcg_list, links)
--		if (cg_entry->cg == newcg)
--			return true;
--
--	/* not found */
--	return false;
--}
--
--/*
-- * Find the new css_set and store it in the list in preparation for moving the
-- * given task to the given cgroup. Returns 0 or -ENOMEM.
-- */
--static int css_set_prefetch(struct cgroup *cgrp, struct css_set *cg,
--			    struct list_head *newcg_list)
--{
--	struct css_set *newcg;
--	struct cg_list_entry *cg_entry;
--
--	/* ensure a new css_set will exist for this thread */
--	newcg = find_css_set(cg, cgrp);
--	if (!newcg)
--		return -ENOMEM;
--	/* add it to the list */
--	cg_entry = kmalloc(sizeof(struct cg_list_entry), GFP_KERNEL);
--	if (!cg_entry) {
--		put_css_set(newcg);
--		return -ENOMEM;
--	}
--	cg_entry->cg = newcg;
--	list_add(&cg_entry->links, newcg_list);
--	return 0;
--}
--
- /**
-  * cgroup_attach_proc - attach all threads in a threadgroup to a cgroup
-  * @cgrp: the cgroup to attach to
-@@ -2070,20 +1997,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	int retval, i, group_size;
- 	struct cgroup_subsys *ss, *failed_ss = NULL;
- 	/* guaranteed to be initialized later, but the compiler needs this */
--	struct css_set *oldcg;
- 	struct cgroupfs_root *root = cgrp->root;
- 	/* threadgroup list cursor and array */
- 	struct task_struct *tsk;
- 	struct task_and_cgroup *tc;
- 	struct flex_array *group;
- 	struct cgroup_taskset tset = { };
--	/*
--	 * we need to make sure we have css_sets for all the tasks we're
--	 * going to move -before- we actually start moving them, so that in
--	 * case we get an ENOMEM we can bail out before making any changes.
--	 */
--	struct list_head newcg_list;
--	struct cg_list_entry *cg_entry, *temp_nobe;
- 
- 	/*
- 	 * step 0: in order to do expensive, possibly blocking operations for
-@@ -2091,6 +2010,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 * rcu or tasklist locked. instead, build an array of all threads in the
- 	 * group - group_rwsem prevents new threads from appearing, and if
- 	 * threads exit, this will just be an over-estimate.
-+	 *
-+	 * While creating the list, also make sure css_sets exist for all
-+	 * threads to be migrated. we use find_css_set, which allocates a new
-+	 * one if necessary.
- 	 */
- 	group_size = get_nr_threads(leader);
- 	/* flex_array supports very large thread-groups better than kmalloc. */
-@@ -2122,6 +2045,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		/* nothing to do if this task is already in the cgroup */
- 		if (ent.cgrp == cgrp)
- 			continue;
-+		ent.cg = find_css_set(tsk->cgroups, cgrp);
-+		if (!ent.cg) {
-+			retval = -ENOMEM;
-+			group_size = i;
-+			goto out_list_teardown;
-+		}
- 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
- 		BUG_ON(retval != 0);
- 		i++;
-@@ -2134,7 +2063,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	/* methods shouldn't be called if no task is actually migrating */
- 	retval = 0;
- 	if (!group_size)
--		goto out_free_group_list;
-+		goto out_list_teardown;
- 
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
-@@ -2150,34 +2079,18 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	}
- 
- 	/*
--	 * step 2: make sure css_sets exist for all threads to be migrated.
--	 * we use find_css_set, which allocates a new one if necessary.
--	 */
--	INIT_LIST_HEAD(&newcg_list);
--	for (i = 0; i < group_size; i++) {
--		tc = flex_array_get(group, i);
--		oldcg = tc->task->cgroups;
--
--		/* if we don't already have it in the list get a new one */
--		if (!css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list))
--			if (retval = css_set_prefetch(cgrp, oldcg, &newcg_list))
--				goto out_list_teardown;
--	}
--
--	/*
--	 * step 3: now that we're guaranteed success wrt the css_sets,
-+	 * step 2: now that we're guaranteed success wrt the css_sets,
- 	 * proceed to move all tasks to the new cgroup.  There are no
- 	 * failure cases after here, so this is the commit point.
- 	 */
- 	for (i = 0; i < group_size; i++) {
- 		tc = flex_array_get(group, i);
--		retval = cgroup_task_migrate(cgrp, tc->cgrp, tc->task, true);
--		BUG_ON(retval);
-+		cgroup_task_migrate(cgrp, tc->cgrp, tc->task, tc->cg);
- 	}
- 	/* nothing is sensitive to fork() after this point. */
- 
- 	/*
--	 * step 4: do subsystem attach callbacks.
-+	 * step 3: do subsystem attach callbacks.
- 	 */
- 	for_each_subsys(root, ss) {
- 		if (ss->attach)
-@@ -2185,20 +2098,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	}
- 
- 	/*
--	 * step 5: success! and cleanup
-+	 * step 4: success! and cleanup
- 	 */
- 	synchronize_rcu();
- 	cgroup_wakeup_rmdir_waiter(cgrp);
- 	retval = 0;
--out_list_teardown:
--	/* clean up the list of prefetched css_sets. */
--	list_for_each_entry_safe(cg_entry, temp_nobe, &newcg_list, links) {
--		list_del(&cg_entry->links);
--		put_css_set(cg_entry->cg);
--		kfree(cg_entry);
--	}
- out_cancel_attach:
--	/* same deal as in cgroup_attach_task */
- 	if (retval) {
- 		for_each_subsys(root, ss) {
- 			if (ss == failed_ss)
-@@ -2207,6 +2112,13 @@ out_cancel_attach:
- 				ss->cancel_attach(ss, cgrp, &tset);
- 		}
- 	}
-+out_list_teardown:
-+	if (retval) {
-+		for (i = 0; i < group_size; i++) {
-+			tc = flex_array_get(group, i);
-+			put_css_set(tc->cg);
-+		}
-+	}
- out_free_group_list:
- 	flex_array_free(group);
- 	return retval;
--- 
-1.7.3.1
+thanks,
 
+greg k-h
