@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab1LVCPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:15:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20246 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab1LVCPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:15:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="89154844"
-Subject: Re: [tip:sched/urgent] sched: Fix select_idle_sibling() regression
- in selecting an idle SMT sibling
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-In-Reply-To: <1324519393.21294.20.camel@sbsiddha-desk.sc.intel.com>
-References: <1323978421.1984.244.camel@sbsiddha-desk.sc.intel.com>
-	 <tip-ab2789213d224202237292d78aaa0c386c7b28b2@git.kernel.org>
-	 <CAGjg+kEOkkjnQQJJyGQzGApV5asM5oqvRwEr2VkJy9G5gg1rxw@mail.gmail.com>
-	 <1324471944.10752.8.camel@twins>
-	 <1324496556.21294.11.camel@sbsiddha-desk.sc.intel.com>
-	 <1324517502.17054.174.camel@debian>
-	 <1324519393.21294.20.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Dec 2011 10:16:01 +0800
-Message-ID: <1324520161.17054.190.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754478Ab1LVCT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:19:59 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37626 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab1LVCT4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:19:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111221170535.GB9213@google.com>
+References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
+ <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
+ <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
+ <20111220162315.GC10752@google.com> <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
+ <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home>
+ <20111221170535.GB9213@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 21 Dec 2011 18:19:34 -0800
+X-Google-Sender-Auth: cL_XvVMp0Q_zj8MJgrAQbLv1NOw
+Message-ID: <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
+Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-22 at 10:03 +0800, Siddha, Suresh B wrote:
-> On Wed, 2011-12-21 at 17:31 -0800, Shi, Alex wrote:
-> > This patch partly fixed a performance regression that triggered by
-> > 4dcfe1025b513c2c, but issue still exists.
-> 
-> So how much was the regression caused by the commit 4dcfe1025b513c2c and
-> how much did we recover with this fix I posted. If we are talking about
-> the regression caused by this single commit 4dcfe1025b513c2c, then I
-> don't know of any other related fixes other than the recent fix we
-> pushed upstream (ab2789213d224202237292d78aaa0c386c7b28b2).
+On Wed, Dec 21, 2011 at 9:05 AM, Tejun Heo <tj@kernel.org> wrote:
+>
+> machines.  (cc'ing arch) Does anyone have better insight here?  How
+> much more expensive are local irq save/restore compared to inc/dec'ing
+> preempt count on various archs?
 
-A little complex for the whole thing. 
-on 4 sockets EX machine, 3~5% hackbench thread regression due to 4dcfe
-can be recovered by ab2789. 
+I think powerpc does sw irq disable, so it's pretty much the same.
 
-But on 2 sockets SNB machine, 1024 clients loop netperf TCP-RR has about
-9% regression. and your patch seem recover 2~3%. 
+However, on *most* architectures, if the stupid generic "disable
+interrupts and then do the op" is too expensive, they could easily
+just do an architecture-specific "safe" version. Especially if they
+only need to do cmpxchg and add.
 
-And on a 2 sockets nhm, one of our private benchmark was impact much 20
-+% regression. that benchmark just run 4 process, each of process open a
-thread, and the thread tasks is to locate randomly pages and than read
-from 4 times/write 1 time data into a page.  The ab2789 commit seems no
-help our benchmark. 
+Many architectures can do those safely with load-locked,
+store-conditional (ie atomic_add), and do so quickly. Sure, there are
+broken cases wher ethat is really slow (original alpha is an example
+of that), but I think it's fairly rare.
 
+So both arm (in v6+) and powerpc should be able to just use the
+"atomic_add" version, with no real downside.
 
+So I really suspect that we could just say: "make the irq-safe version
+be the *only* version", and no architecture will really care. Sure, it
+can be more expensive, but it usually isn't. Only when done badly and
+stupidly is it nasty.
 
-
-
+                  Linus
