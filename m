@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab1LVRud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 12:50:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63814 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab1LVRua (ORCPT
+	id S1755515Ab1LVRwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 12:52:37 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:62090 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab1LVRwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 12:50:30 -0500
-Date: Thu, 22 Dec 2011 09:50:20 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: signedness bug in cma3000_thread_irq()
-Message-ID: <20111222175020.GC21103@core.coreip.homeip.net>
-References: <1323672566-16738-1-git-send-email-xi.wang@gmail.com>
- <12775.1323916035@turing-police.cc.vt.edu>
- <ECD4A42B-AC97-417B-99CA-3856B5DAFAC6@gmail.com>
- <3797.1323919260@turing-police.cc.vt.edu>
- <F920F5EE-FA61-4FFC-948C-97D6834823B6@gmail.com>
+	Thu, 22 Dec 2011 12:52:35 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F920F5EE-FA61-4FFC-948C-97D6834823B6@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Message-ID: <20211.28256.111279.27933@quad.stoffel.home>
+Date: Thu, 22 Dec 2011 12:52:32 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Gaurav Saxena <grvsaxena419@gmail.com>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Intercepting system calls
+In-Reply-To: <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+	<CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+	<CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 15, 2011 at 05:17:02PM -0500, Xi Wang wrote:
-> On Dec 14, 2011, at 10:21 PM, Valdis.Kletnieks@vt.edu wrote:
-> > No, the variable that used to be a u8 - was it 8 bits wide for a reason?
-> 
-> The return value of CMA3000_READ?  I don't see any particular reason.  
-> 
+>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
 
-The data returned by CMA3000_READ() is a byte, so that's the reason (and
-I am guessing here) that the author used u8 to store the result,
-forgetting that the range was extended to report error conditions.
+>> Intercepting system calls is very bad, don't do it.
 
--- 
-Dmitry
+Gaurav> Oh. I will not do it then, could you suggest me something so
+Gaurav> that I could prevent unlink on some file say using kernel
+Gaurav> support. I want to save file on unlink how could I do that
+Gaurav> without kernel support, or how could I do that using a kernel
+Gaurav> module.
+
+Write a FUSE module to mount the filesystem through, inside your FUSE
+module you can intercept the unlink/truncate/write calls and decide
+what you want to have happen.
+
+John
