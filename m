@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab1LVVwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:52:55 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:40754 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755993Ab1LVVwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:52:53 -0500
-Date: Thu, 22 Dec 2011 22:52:46 +0100
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: linux-kernel mlist <linux-kernel@vger.kernel.org>
-Cc: stable@kernel.org, netdev@vger.kernel.org
-Subject: Re: 3.0.12 - unregister_pernet_gen_subsys hogging whole system
-Message-ID: <20111222215246.GA2694@nik-comp.lan>
-References: <20111222151908.GA11020@pcnci.linuxbox.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
-Content-Disposition: inline
-In-Reply-To: <20111222151908.GA11020@pcnci.linuxbox.cz>
-"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 5923722 records (last update: 20111222)
-X-Spam-Score: N/A (trusted relay)
+	id S1756023Ab1LVV73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:59:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44797 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab1LVV70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 16:59:26 -0500
+Date: Thu, 22 Dec 2011 13:59:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
+        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
+ fix blkcg percpu alloc deadlock
+Message-Id: <20111222135925.de3221c8.akpm@linux-foundation.org>
+In-Reply-To: <1324590326-10135-1-git-send-email-tj@kernel.org>
+References: <1324590326-10135-1-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 22 Dec 2011 13:45:19 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This patchset implements mempool for percpu memory and use it to solve
+> allocation deadlock problem in block cgroup paths.  Percpu memory
+> allocator can't be called from memory reclaim path, mostly because its
+> on-demand chunk filling hooks into vmalloc area management, which in
+> turn hooks into arch pagetable code.
+> 
+> This usually isn't a problem but block cgroup code wants to do
+> opportunistic percpu allocation to track statistics in IO issue path.
+> Currently, it directly calls alloc_percpu() from IO path triggering
+> lockdep warning and falling into deadlocks under the right conditions.
+> 
+> This patchset adds percpu mempool which supports async refilling and
+> uses that as allocation buffer to solve the above problem.  It solves
+> the problem for the next merge window but I'm not sure about what to
+> do about this window and -stable.  The mempool updates seems a bit too
+> invasive.  Maybe implement a stripped down allocation buffer in
+> block-cgroup?
 
-> after updating one of our servers to 3.0.12 kernel, it became painfully s=
-low (actually
-> it's almost unusable).
->=20
-> trying perf top, I see following:
->=20
->             27465.00 - 59.8% : unregister_pernet_gen_subsys
->              3144.00 -  6.8% : __start_notes
->              1211.00 -  2.6% : swiotlb_sync_sg
->              1155.00 -  2.5% : swiotlb_unmap_sg_attrs
->               621.00 -  1.4% : pci_pm_init
->               565.00 -  1.2% : swiotlb_map_sg_attrs
->               503.00 -  1.1% : cgroup_attach_task
-
-crap, I was using too old perf binary - that might be reason why I wasn't a=
-ble
-to find any evidence of unregister_pernet_gen_subsys for 3.x kernels :)
-I switched to 3.0.13 now (and actual perf) and it seems better..
-Should the problem reappear, I'll report it..
-sorry for the fuzz..
-n.
+This is taking the kernel in exactly the wrong direction.  More code,
+more complexity.  Let's think of an alternative which takes us in the
+right direction.
 
 
->=20
-> I wasn't too successfull trying to find something related, so I'd like to=
- ask,
-> which subsystem might be calling unregister_pernet_gen_subsys and why?
-> I guess this is certaingly a bug... Could somebody please have a look at =
-this?
-> I'll provide all debugging information I can if needed..
->=20
-> thanks a lot in advance
->=20
-> with best regards
->=20
-> nik
->=20
-> --=20
-> -------------------------------------
-> Ing. Nikola CIPRICH
-> LinuxBox.cz, s.r.o.
-> 28. rijna 168, 709 01 Ostrava
->=20
-> tel.:   +420 596 603 142
-> fax:    +420 596 621 273
-> mobil:  +420 777 093 799
-> www.linuxbox.cz
->=20
-> mobil servis: +420 737 238 656
-> email servis: servis@linuxbox.cz
-> -------------------------------------
+How about we just delete those statistics and then this patchset?
+
+Or how about we change those statistics to not do percpu allocations,
+then delete this patchset?
+
+Or how about we fix the percpu memory allocation code so that it
+propagates the gfp flags, then delete this patchset?
 
 
+All of those things would simplify and/or improve the kernel.  Whereas
+this patchset complicates the kernel while working around known
+shortcomings.
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7zpq4ACgkQ3xdJJrLygV5nLQCgzNe8REKERQOqm5Ib1A/1h++j
-ccgAoJXmhf3bRgoVy6QCgCtGIMzBQq+2
-=cpBN
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
