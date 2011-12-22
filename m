@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1LVKHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:07:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56658 "EHLO mx1.redhat.com"
+	id S1755084Ab1LVKJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:09:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21865 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029Ab1LVKHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:07:03 -0500
-Message-ID: <4EF30136.2060100@redhat.com>
-Date: Thu, 22 Dec 2011 12:06:46 +0200
+	id S1752691Ab1LVKJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 05:09:06 -0500
+Message-ID: <4EF301B1.1020102@redhat.com>
+Date: Thu, 22 Dec 2011 12:08:49 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
@@ -27,24 +27,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 12/15/2011 09:42 PM, Eric B Munson wrote:
-> Now that we have a flag that will tell the guest it was suspended, create an
-> interface for that communication using a KVM ioctl.
 >  
 > +4.64 KVMCLOCK_GUEST_PAUSED
 > +
 > +Capability: basic
-> +Architechtures: Any that implement pvclocks (currently x86 only)
-> +Type: vcpu ioctl
-> +Parameters: None
-> +Returns: 0 on success, -1 on error
-> +
-> +This signals to the host kernel that the specified guest is being paused by
-> +userspace.  The host will set a flag in the pvclock structure that is checked
-> +from the soft lockup watchdog.
-> +
 
-This can be called during unpause, yes? The documentation should reflect
-that.  I'm thinking of the SIGCONT handler here.
+Capability: basic means that this ioctl is available on any Linux
+version that has KVM (apart from 2.6.2[01], before the ABI was
+stabilized).  You need to define a new KVM_CAP, document it, and have
+KVM_CHECK_EXTENSION acknowledge it, see the other ioctls for examples.
 
 -- 
 error compiling committee.c: too many arguments to function
