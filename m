@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1LVHCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 02:02:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60385 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab1LVHCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 02:02:31 -0500
-Date: Thu, 22 Dec 2011 07:02:15 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
- online CPUs
-Message-ID: <20111222070214.GK23916@ZenIV.linux.org.uk>
-References: <4EF0654B.4060904@linux.vnet.ibm.com>
- <4EF06C9B.4010703@linux.vnet.ibm.com>
- <4EF084A4.3000106@linux.vnet.ibm.com>
- <20111220140628.GD23916@ZenIV.linux.org.uk>
- <4EF09D34.1060607@linux.vnet.ibm.com>
- <20111220175919.GE23916@ZenIV.linux.org.uk>
- <4EF0DE04.6030604@linux.vnet.ibm.com>
- <20111220195806.GF23916@ZenIV.linux.org.uk>
- <4EF24C71.6000609@linux.vnet.ibm.com>
- <20111221141229.7f691c43.akpm@linux-foundation.org>
+	id S1752686Ab1LVHEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 02:04:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41372 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751542Ab1LVHEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 02:04:07 -0500
+Date: Thu, 22 Dec 2011 08:02:12 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
+Message-ID: <20111222070212.GA9593@elte.hu>
+References: <20111221105739.798864333@chello.nl>
+ <20111221111143.620776435@chello.nl>
+ <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111221141229.7f691c43.akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 02:12:29PM -0800, Andrew Morton wrote:
-> off-topic, but the lockdep stuff in include/linux/lglock.h
-> (LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
 
-Um?  See ..._lock_init(); it's used there.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> > + DEFINE_SPINLOCK(name##_cpu_lock);					\
-> > + cpumask_t name##_cpus __read_mostly;					\
-> >   DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
-> >   DEFINE_LGLOCK_LOCKDEP(name);						\
-> >  									\
+> On Wed, Dec 21, 2011 at 2:57 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> >
+> > +#ifdef CONFIG_PRINTK_DEBUG
+> > +void printk_init(void)
+> > +{
+> > +       struct rq *rq;
+> > +       unsigned long flags;
+> > +
+> > +       local_irq_save(flags);
+> > +       rq = this_rq();
+> > +       raw_spin_lock(&rq->lock);
+> > +       printk(KERN_DEBUG "printk: echo echo echo..\n");
+> > +       raw_spin_unlock(&rq->lock);
+> > +       local_irq_restore(flags);
 > 
-> also off-topic: we can't define a static lglock with this macro.
+> Ok, I can't really say that I think this is worth a config option like this.
+> 
+> Maybe an example module or something?
+> 
+> And I don't know *why*, but my immediate reaction to the 
+> message was that it either should be serious and say what it 
+> tested ("printk() works under rq lock"), or it should say 
+> "Bork bork bork". "echo echo echo" sounds just stupid.
 
-True...  I don't like the general STL feel of that code, TBH.  The only
-thing that stops me from putting all that stuff into a struct and
-getting rid of those macros from hell is that we'd need to use alloc_percpu()
-and that means extra overhead, potentially quite painful on the "local"
-side of those.  May be worth experimenting with later, but not at this
-point in cycle...
+We could perhaps use the standard mike test message:
 
-Anyway, to Linus it goes.
+  printk: Tap, tap, is this thing on?
+
+Thanks,
+
+	Ingo
