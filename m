@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab1LVPgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 10:36:50 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:56622
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752427Ab1LVPgs (ORCPT
+	id S1753989Ab1LVPic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 10:38:32 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41441 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab1LVPi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 10:36:48 -0500
-X-SpamScore: -13
-X-BigFish: VPS-13(zz1432N98dK4015Lzz1202hzzz2dh668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LWM3D6-01-1UL-02
-X-M-MSG: 
-Date: Thu, 22 Dec 2011 16:36:10 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/4] perf, x86: Implement AMD IBS
-Message-ID: <20111222153610.GC16765@erda.amd.com>
-References: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
+	Thu, 22 Dec 2011 10:38:29 -0500
+Date: Thu, 22 Dec 2011 07:38:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 3/4] cgroup: only need to check oldcgrp==newgrp once
+Message-ID: <20111222153822.GB17084@google.com>
+References: <1324527518-24461-1-git-send-email-msb@chromium.org>
+ <1324527518-24461-3-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323968199-9326-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1324527518-24461-3-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-On 15.12.11 17:56:35, Robert Richter wrote:
-> Changes for V4 (only patch #3 modified):
+On Wed, Dec 21, 2011 at 08:18:37PM -0800, Mandeep Singh Baines wrote:
+> In cgroup_attach_proc it is now sufficient to only check that
+> oldcgrp==newcgrp once. Now that we are using threadgroup_lock()
+> during the migrations, oldcgrp will not change.
 > 
->     * removed userland implementation from patch set, will post it as
->       separate patch series
->     * fix returned number of handled nmis in perf_ibs_handle_irq()
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
 
-> Robert Richter (4):
->   perf, x86: Implement IBS event configuration
->   perf, x86: Implement IBS interrupt handler
->   perf, x86: Implement IBS pmu control ops
->   perf, x86: Implement 64 bit counter support for IBS
-> 
->  arch/x86/include/asm/msr-index.h         |    5 +
->  arch/x86/include/asm/perf_event.h        |    2 +
->  arch/x86/kernel/cpu/perf_event_amd_ibs.c |  438 +++++++++++++++++++++++++++++-
->  3 files changed, 438 insertions(+), 7 deletions(-)
+Applied 1-3 to cgroup/for-3.3.  I edited out mention of check_fetched
+rename in the commit description of the first patch and applied
+Acked-by from Li to all three.  Li, let's stick to ack/nack.
 
-Assuming that there is agreement about the perf tool ibs
-implementation, could you consider to apply the (kernel) patches? Not
-sure what Arnaldo's plan is for the userland. It would be great to
-have both ready for 3.3.
-
-(Even if Peter is on vacation or so, except the fix in
-perf_ibs_handle_irq() the kernel patches are unchanged and Peter
-already agreed to apply them.)
-
-Thanks,
-
--Robert
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+tejun
