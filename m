@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1LVAqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:46:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59028 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab1LVAqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:46:34 -0500
-Date: Wed, 21 Dec 2011 16:46:29 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH UPDATED 2/2] mempool: fix first round failure behavior
-Message-ID: <20111222004629.GO9213@google.com>
-References: <20111222001800.GL9213@google.com>
- <20111222001939.GM9213@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222001939.GM9213@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754601Ab1LVAtT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:49:19 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:54860 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754102Ab1LVAtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 19:49:14 -0500
+Message-ID: <1324514820.30527.148.camel@work-vm>
+Subject: Re: RFC: android logger feedback request
+From: john stultz <johnstul@us.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Tim Bird <tim.bird@am.sony.com>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>
+Date: Wed, 21 Dec 2011 16:47:00 -0800
+In-Reply-To: <20111222002719.GA18361@suse.de>
+References: <4EF264C3.6000104@am.sony.com> <20111221231956.GB23859@suse.de>
+	 <1324513091.30527.139.camel@work-vm> <20111222002719.GA18361@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11122200-5930-0000-0000-0000036A3695
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mempool modifies gfp_mask so that the backing allocator doesn't try
-too hard or trigger warning message when there's pool to fall back on.
-In addition, for the first try, it removes __GFP_WAIT and IO, so that
-it doesn't trigger reclaim or wait when allocation can be fulfilled
-from pool; however, when that allocation fails and pool is empty too,
-it waits for the pool to be replenished before retrying.
+On Wed, 2011-12-21 at 16:27 -0800, Greg KH wrote:
+> On Wed, Dec 21, 2011 at 04:18:11PM -0800, john stultz wrote:
+> > On Wed, 2011-12-21 at 15:19 -0800, Greg KH wrote:
+> > > What way is it superior?  Again, why not extend syslog?  Why not "fix"
+> > > syslog if this really is a superior thing?  How does this tie into Kay
+> > > and Lennard's proposal for work in this area?
+> > 
+> > There is also some overlap functionality wise with pstore as well, as I
+> > believe the logger is used as a known location in memory where messages
+> > can be fetched from after a kernel panic or crash.
+> 
+> That sounds like a major overlap, can't pstore be used for this
+> functionality today instead of the logger code?
 
-Allocation which could have succeeded after a bit of reclaim has to
-wait on the reserved items and it's not like mempool doesn't retry
-with __GFP_WAIT and IO.  It just does that *after* someone returns an
-element, pointlessly delaying things.
+It may be able to suffice for some portion of the functionality, it was
+suggested that we consider doing something like try to make logger use
+pstore as a backend.  I'm not really familiar with pstore, but I don't
+know if its able to preserve messages from userland, so it may not
+really be sufficient in of itself.
 
-Fix it by retrying immediately if the first round of allocation
-attempts w/o __GFP_WAIT and IO fails.
+Also, if I understand correctly, logger also is able to store messages
+from hardware modems or other hardware that run their own micro-os in a
+central location. This may be closer to the pstore mce bits, but its not
+clear yet to me how much overlap is there.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-The code hasn't changed.  Only the description and comment are
-updated.  It doesn't affect anything regarding emergency pool.  It
-just changes when the first retry happens.
+But I've not yet really spent too much time looking at logger yet, so I
+can't really comment too strongly here. Just wanted to make sure folks
+have looked at all the other similar work.
 
-That said, I still find it a bit unsettling that a GFP_ATOMIC
-allocation which would otherwise succeed may fail when issued through
-mempool.  Maybe the RTTD is clearing __GFP_NOMEMALLOC on retry if the
-gfp requsted by the caller is !__GFP_WAIT && !__GFP_NOMEMALLOC?
+thanks
+-john
 
-Thanks.
-
- mm/mempool.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-Index: work/mm/mempool.c
-===================================================================
---- work.orig/mm/mempool.c
-+++ work/mm/mempool.c
-@@ -221,14 +221,23 @@ repeat_alloc:
- 		return element;
- 	}
- 
--	/* We must not sleep in the GFP_ATOMIC case */
-+	/*
-+	 * We use gfp mask w/o __GFP_WAIT or IO for the first round.  If
-+	 * alloc failed with that and @pool was empty, retry immediately.
-+	 */
-+	if (gfp_temp != gfp_mask) {
-+		gfp_temp = gfp_mask;
-+		spin_unlock_irqrestore(&pool->lock, flags);
-+		goto repeat_alloc;
-+	}
-+
-+	/* We must not sleep if !__GFP_WAIT */
- 	if (!(gfp_mask & __GFP_WAIT)) {
- 		spin_unlock_irqrestore(&pool->lock, flags);
- 		return NULL;
- 	}
- 
- 	/* Let's wait for someone else to return an element to @pool */
--	gfp_temp = gfp_mask;
- 	init_wait(&wait);
- 	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
- 
