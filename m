@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab1LVVpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:45:38 -0500
+	id S1756047Ab1LVVpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:45:47 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:37320 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab1LVVpf (ORCPT
+	with ESMTP id S1753454Ab1LVVpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:45:35 -0500
+	Thu, 22 Dec 2011 16:45:39 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org, avi@redhat.com, nate@cpanel.net,
         cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
         vgoyal@redhat.com
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/7] mempool: fix and document synchronization and memory barrier usage
-Date: Thu, 22 Dec 2011 13:45:20 -0800
-Message-Id: <1324590326-10135-2-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/7] mempool: fix first round failure behavior
+Date: Thu, 22 Dec 2011 13:45:22 -0800
+Message-Id: <1324590326-10135-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1324590326-10135-1-git-send-email-tj@kernel.org>
 References: <1324590326-10135-1-git-send-email-tj@kernel.org>
@@ -25,158 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mempool_alloc/free() use undocumented smp_mb()'s.  The code is
-slightly broken and misleading.
+mempool modifies gfp_mask so that the backing allocator doesn't try
+too hard or trigger warning message when there's pool to fall back on.
+In addition, for the first try, it removes __GFP_WAIT and IO, so that
+it doesn't trigger reclaim or wait when allocation can be fulfilled
+from pool; however, when that allocation fails and pool is empty too,
+it waits for the pool to be replenished before retrying.
 
-The lockless part is in mempool_free().  It wants to determine whether
-the item being freed needs to be returned to the pool or backing
-allocator without grabbing pool->lock.  Two things need to be
-guaranteed for correct operation.
+Allocation which could have succeeded after a bit of reclaim has to
+wait on the reserved items and it's not like mempool doesn't retry
+with __GFP_WAIT and IO.  It just does that *after* someone returns an
+element, pointlessly delaying things.
 
-1. pool->curr_nr + #allocated should never dip below pool->min_nr.
-2. Waiters shouldn't be left dangling.
-
-For #1, The only necessary condition is that curr_nr visible at free
-is from after the allocation of the element being freed (details in
-the comment).  For most cases, this is true without any barrier but
-there can be fringe cases where the allocated pointer is passed to the
-freeing task without going through memory barriers.  To cover this
-case, wmb is necessary before returning from allocation and rmb is
-necessary before reading curr_nr.  IOW,
-
-	ALLOCATING TASK			FREEING TASK
-
-	update pool state after alloc;
-	wmb();
-	pass pointer to freeing task;
-					read pointer;
-					rmb();
-					read pool state to free;
-
-The current code doesn't have wmb after pool update during allocation
-and may theoretically, on machines where unlock doesn't behave as full
-wmb, lead to pool depletion and deadlock.  smp_wmb() needs to be added
-after successful allocation from reserved elements and smp_mb() in
-mempool_free() can be replaced with smp_rmb().
-
-For #2, the waiter needs to add itself to waitqueue and then check the
-wait condition and the waker needs to update the wait condition and
-then wake up.  Because waitqueue operations always go through full
-spinlock synchronization, there is no need for extra memory barriers.
-
-Furthermore, mempool_alloc() is already holding pool->lock when it
-decides that it needs to wait.  There is no reason to do unlock - add
-waitqueue - test condition again.  It can simply add itself to
-waitqueue while holding pool->lock and then unlock and sleep.
-
-This patch adds smp_wmb() after successful allocation from reserved
-pool, replaces smp_mb() in mempool_free() with smp_rmb() and extend
-pool->lock over waitqueue addition.  More importantly, it explains
-what memory barriers do and how the lockless testing is correct.
-
--v2: Oleg pointed out that unlock doesn't imply wmb.  Added explicit
-     smp_wmb() after successful allocation from reserved pool and
-     updated comments accordingly.
+Fix it by retrying immediately if the first round of allocation
+attempts w/o __GFP_WAIT and IO fails.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
 ---
- mm/mempool.c |   61 +++++++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 48 insertions(+), 13 deletions(-)
+ mm/mempool.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/mm/mempool.c b/mm/mempool.c
-index e73641b..11f0d0a 100644
+index e3a802a..6326cc6 100644
 --- a/mm/mempool.c
 +++ b/mm/mempool.c
-@@ -224,28 +224,31 @@ repeat_alloc:
- 	if (likely(pool->curr_nr)) {
- 		element = remove_element(pool);
- 		spin_unlock_irqrestore(&pool->lock, flags);
-+		/* paired with rmb in mempool_free(), read comment there */
-+		smp_wmb();
+@@ -221,14 +221,23 @@ repeat_alloc:
  		return element;
  	}
--	spin_unlock_irqrestore(&pool->lock, flags);
  
- 	/* We must not sleep in the GFP_ATOMIC case */
--	if (!(gfp_mask & __GFP_WAIT))
-+	if (!(gfp_mask & __GFP_WAIT)) {
+-	/* We must not sleep in the GFP_ATOMIC case */
++	/*
++	 * We use gfp mask w/o __GFP_WAIT or IO for the first round.  If
++	 * alloc failed with that and @pool was empty, retry immediately.
++	 */
++	if (gfp_temp != gfp_mask) {
++		gfp_temp = gfp_mask;
 +		spin_unlock_irqrestore(&pool->lock, flags);
- 		return NULL;
++		goto repeat_alloc;
 +	}
++
++	/* We must not sleep if !__GFP_WAIT */
+ 	if (!(gfp_mask & __GFP_WAIT)) {
+ 		spin_unlock_irqrestore(&pool->lock, flags);
+ 		return NULL;
+ 	}
  
--	/* Now start performing page reclaim */
-+	/* Let's wait for someone else to return an element to @pool */
- 	gfp_temp = gfp_mask;
+ 	/* Let's wait for someone else to return an element to @pool */
+-	gfp_temp = gfp_mask;
  	init_wait(&wait);
  	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
--	smp_mb();
--	if (!pool->curr_nr) {
--		/*
--		 * FIXME: this should be io_schedule().  The timeout is there
--		 * as a workaround for some DM problems in 2.6.18.
--		 */
--		io_schedule_timeout(5*HZ);
--	}
--	finish_wait(&pool->wait, &wait);
  
-+	spin_unlock_irqrestore(&pool->lock, flags);
-+
-+	/*
-+	 * FIXME: this should be io_schedule().  The timeout is there as a
-+	 * workaround for some DM problems in 2.6.18.
-+	 */
-+	io_schedule_timeout(5*HZ);
-+
-+	finish_wait(&pool->wait, &wait);
- 	goto repeat_alloc;
- }
- EXPORT_SYMBOL(mempool_alloc);
-@@ -265,7 +268,39 @@ void mempool_free(void *element, mempool_t *pool)
- 	if (unlikely(element == NULL))
- 		return;
- 
--	smp_mb();
-+	/*
-+	 * Paired with the wmb in mempool_alloc().  The preceding read is
-+	 * for @element and the following @pool->curr_nr.  This ensures
-+	 * that the visible value of @pool->curr_nr is from after the
-+	 * allocation of @element.  This is necessary for fringe cases
-+	 * where @element was passed to this task without going through
-+	 * barriers.
-+	 *
-+	 * For example, assume @p is %NULL at the beginning and one task
-+	 * performs "p = mempool_alloc(...);" while another task is doing
-+	 * "while (!p) cpu_relax(); mempool_free(p, ...);".  This function
-+	 * may end up using curr_nr value which is from before allocation
-+	 * of @p without the following rmb.
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * For correctness, we need a test which is guaranteed to trigger
-+	 * if curr_nr + #allocated == min_nr.  Testing curr_nr < min_nr
-+	 * without locking achieves that and refilling as soon as possible
-+	 * is desirable.
-+	 *
-+	 * Because curr_nr visible here is always a value after the
-+	 * allocation of @element, any task which decremented curr_nr below
-+	 * min_nr is guaranteed to see curr_nr < min_nr unless curr_nr gets
-+	 * incremented to min_nr afterwards.  If curr_nr gets incremented
-+	 * to min_nr after the allocation of @element, the elements
-+	 * allocated after that are subject to the same guarantee.
-+	 *
-+	 * Waiters happen iff curr_nr is 0 and the above guarantee also
-+	 * ensures that there will be frees which return elements to the
-+	 * pool waking up the waiters.
-+	 */
- 	if (pool->curr_nr < pool->min_nr) {
- 		spin_lock_irqsave(&pool->lock, flags);
- 		if (pool->curr_nr < pool->min_nr) {
 -- 
 1.7.3.1
 
