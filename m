@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab1LVAMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 19:12:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51891 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab1LVAMP (ORCPT
+	id S1754210Ab1LVAOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 19:14:43 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:43887 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab1LVAOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 19:12:15 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=7CHv9HGwdLwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=q9Lo21TjUDtVh7s2V8kA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1324512732.5916.111.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/7] ftrace: Change filter/notrace set functions to
- return exit code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Date: Wed, 21 Dec 2011 19:12:12 -0500
-In-Reply-To: <1324493791-5688-2-git-send-email-jolsa@redhat.com>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
-	 <1324493791-5688-1-git-send-email-jolsa@redhat.com>
-	 <1324493791-5688-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 21 Dec 2011 19:14:41 -0500
+X-Auth-Info: zGRQzWs6rZqqL2y0se8Te08afHsSHYQxEOcceI2GuR8=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org,
+        "Artem S. Tashkinov" <t.artem@mailcity.com>,
+        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [resend PATCH for 3.2] procfs: do not confuse jiffies with cputime64_t
+References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
+	<m21usavwi0.fsf_-_@igel.home>
+	<20111212124333.GC14720@tiehlicka.suse.cz>
+	<m2wra2uedy.fsf_-_@igel.home>
+	<20111212131218.GD14720@tiehlicka.suse.cz>
+	<20111221100334.GD27137@tiehlicka.suse.cz>
+	<20111221115919.6beac46f.akpm@linux-foundation.org>
+	<m28vm5pjrl.fsf@igel.home>
+	<20111221155624.1555d8a4.akpm@linux-foundation.org>
+X-Yow: Okay, BARBRA STREISAND, I recognize you now!!  Also EFREM ZIMBALIST,
+ JUNIOR!!  And BEAUMONT NEWHALL!!  Everybody into th' BATHROOM!
+Date: Thu, 22 Dec 2011 01:14:39 +0100
+In-Reply-To: <20111221155624.1555d8a4.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Wed, 21 Dec 2011 15:56:24 -0800")
+Message-ID: <m2zkelo428.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 19:56 +0100, Jiri Olsa wrote:
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index b79ab33..7eb702f 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -2912,8 +2912,11 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
->  	mutex_lock(&ftrace_regex_lock);
->  	if (reset)
->  		ftrace_filter_reset(hash);
-> -	if (buf)
-> -		ftrace_match_records(hash, buf, len);
-> +	if (buf &&
-> +	    !ftrace_match_records(hash, buf, len)) {
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-I'm fine with this patch, but the above line break is ugly. Put that on
-one line, and it still is < 80 characters.
+> On Thu, 22 Dec 2011 00:50:06 +0100
+> Andreas Schwab <schwab@linux-m68k.org> wrote:
+>
+>> Andrew Morton <akpm@linux-foundation.org> writes:
+>> 
+>> > From: Andreas Schwab <schwab@linux-m68k.org>
+>> > Subject: procfs: do not confuse jiffies with cputime64_t
+>> >
+>> > get_{idle,iowait}_time are supposed to return cputime64_t values, not
+>> > jiffies.  Add usecs_to_cputime64 for this.
+>> 
+>> For most architectures (which use the asm-generic/cputime.h) jiffies use
+>> the same unit as cputime64_t values, but ia64, powerpc and s390 make
+>> them different.
+>> 
+>
+> OK, but
+>
+> a) what effect does this problem have upon users of the kernel?
 
-I could just take this patch and fix the above. No need to make a new
-patch set for this one fix.
+get_idle_time returns the value in the wrong unit.
 
--- Steve
+> b) which kernel version(s) are affected?
 
-> +		ret = -EINVAL;
-> +		goto out_regex_unlock;
-> +	}
->  
->  	mutex_lock(&ftrace_lock);
->  	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
-> @@ -2923,6 +2926,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
->  
->  	mutex_unlock(&ftrace_lock);
->  
-> + out_regex_unlock:
->  	mutex_unlock(&ftrace_regex_lock);
->  
->  	free_ftrace_hash(hash);
+get_idle_time got broken in 2a95ea6c0d129b4568fb64e1deda16ceb20e6636.
 
+$ git tag --contains a25cac5198d4ff2842ccca63b423962848ad24b2
+v3.2-rc1
+v3.2-rc2
+v3.2-rc3
+v3.2-rc4
+v3.2-rc5
+v3.2-rc6
 
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
