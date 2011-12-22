@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1LVCUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:20:40 -0500
+	id S1754852Ab1LVCWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:22:50 -0500
 Received: from [12.239.217.82] ([12.239.217.82]:9459 "EHLO venom.synaptics.com"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754590Ab1LVCUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:20:36 -0500
+	id S1754695Ab1LVCUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:20:39 -0500
 X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 21:20:28 EST
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -16,9 +16,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Joerie de Gram <j.de.gram@gmail.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 5/11] input: rmidev character driver for RMI4 sensors
-Date: Wed, 21 Dec 2011 18:09:56 -0800
-Message-Id: <1324519802-23894-6-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 9/11] input: RMI F34 - firmware reflash
+Date: Wed, 21 Dec 2011 18:10:00 -0800
+Message-Id: <1324519802-23894-10-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
 References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
@@ -33,18 +33,17 @@ Cc: Linus Walleij <linus.walleij@stericsson.com>
 Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 Cc: Joeri de Gram <j.de.gram@gmail.com>
 
-
 ---
 
- drivers/input/rmi4/rmi_dev.c |  446 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 446 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f34.c |  962 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 962 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_dev.c b/drivers/input/rmi4/rmi_dev.c
+diff --git a/drivers/input/rmi4/rmi_f34.c b/drivers/input/rmi4/rmi_f34.c
 new file mode 100644
-index 0000000..a7299cb
+index 0000000..99dd759
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_dev.c
-@@ -0,0 +1,446 @@
++++ b/drivers/input/rmi4/rmi_f34.c
+@@ -0,0 +1,962 @@
 +/*
 + * Copyright (c) 2011 Synaptics Incorporated
 + *
@@ -62,432 +61,948 @@ index 0000000..a7299cb
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
-+
-+#include <linux/fs.h>
-+#include <linux/delay.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/syscalls.h>
-+
++#include <linux/kernel.h>
++#include <linux/mutex.h>
 +#include <linux/rmi.h>
++#include <linux/slab.h>
++#include <linux/version.h>
 +#include "rmi_driver.h"
 +
-+#define CHAR_DEVICE_NAME "rmi"
-+#define DEVICE_CLASS_NAME "rmidev"
++/* define fn $34 commands */
++#define WRITE_FW_BLOCK            0x2
++#define ERASE_ALL                 0x3
++#define READ_CONFIG_BLOCK         0x5
++#define WRITE_CONFIG_BLOCK        0x6
++#define ERASE_CONFIG              0x7
++#define ENABLE_FLASH_PROG         0xf
 +
-+#define RMI_CHAR_DEV_TMPBUF_SZ 128
-+#define RMI_REG_ADDR_PAGE_SELECT 0xFF
-+#define REG_ADDR_LIMIT 0xFFFF
++#define STATUS_IN_PROGRESS        0xff
++#define STATUS_IDLE		  0x80
 +
-+struct rmidev_data {
-+	/* mutex for file operation*/
-+	struct mutex file_mutex;
-+	/* main char dev structure */
-+	struct cdev main_dev;
++#define PDT_START_SCAN_LOCATION	0x00e9
++#define PDT_END_SCAN_LOCATION	0x0005
 +
-+	/* pointer to the corresponding RMI4 device.  We use this to do */
-+	/* read, write, etc. */
-+	struct rmi_device *rmi_dev;
-+	/* reference count */
-+	int ref_count;
++#define BLK_SZ_OFF	3
++#define IMG_BLK_CNT_OFF	5
++#define CFG_BLK_CNT_OFF	7
 +
-+	struct class *device_class;
++#define BLK_NUM_OFF 2
++
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 32)
++#define KERNEL_VERSION_ABOVE_2_6_32 1
++#endif
++
++/* data specific to fn $34 that needs to be kept around */
++struct rmi_fn_34_data {
++	unsigned char status;
++	unsigned char cmd;
++	unsigned short bootloaderid;
++	unsigned short blocksize;
++	unsigned short imageblockcount;
++	unsigned short configblockcount;
++	unsigned short blocknum;
++	bool inflashprogmode;
++	struct mutex attn_mutex;
 +};
 +
-+/*store dynamically allocated major number of char device*/
-+static int rmidev_major_num;
++static ssize_t rmi_fn_34_status_show(struct device *dev,
++				     struct device_attribute *attr, char *buf);
 +
 +
-+static struct class *rmidev_device_class;
++static ssize_t rmi_fn_34_status_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count);
++
++static ssize_t rmi_fn_34_cmd_show(struct device *dev,
++				  struct device_attribute *attr, char *buf);
++
++static ssize_t rmi_fn_34_cmd_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t count);
++
++#ifdef KERNEL_VERSION_ABOVE_2_6_32
++static ssize_t rmi_fn_34_data_read(struct file *data_file, struct kobject *kobj,
++				   struct bin_attribute *attributes,
++				   char *buf, loff_t pos, size_t count);
++
++static ssize_t rmi_fn_34_data_write(struct file *data_file,
++				    struct kobject *kobj,
++				    struct bin_attribute *attributes, char *buf,
++				    loff_t pos, size_t count);
++#else
++static ssize_t rmi_fn_34_data_read(struct kobject *kobj,
++				   struct bin_attribute *attributes,
++				   char *buf, loff_t pos, size_t count);
++
++static ssize_t rmi_fn_34_data_write(struct kobject *kobj,
++				    struct bin_attribute *attributes, char *buf,
++				    loff_t pos, size_t count);
++#endif
++
++static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf);
++
++static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t count);
++
++static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf);
++
++static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
++					      struct device_attribute *attr,
++					      char *buf);
++
++static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
++					       struct device_attribute *attr,
++					       char *buf);
++
++static ssize_t rmi_fn_34_blocknum_show(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf);
++
++static ssize_t rmi_fn_34_blocknum_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count);
++
++static ssize_t rmi_fn_34_rescanPDT_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count);
 +
 +
-+/* file operations for RMI char device */
++static inline int rmi_f34_alloc_memory(struct rmi_function_container *fc);
 +
-+/*
-+ * rmidev_llseek: - use to setup register address
-+ *
-+ * @filp: file structure for seek
-+ * @off: offset
-+ *       if whence == SEEK_SET,
-+ *       high 16 bits: page address
-+ *       low 16 bits: register address
-+ *
-+ *       if whence == SEEK_CUR,
-+ *       offset from current position
-+ *
-+ *       if whence == SEEK_END,
-+ *       offset from END(0xFFFF)
-+ *
-+ * @whence: SEEK_SET , SEEK_CUR or SEEK_END
-+ */
-+static loff_t rmidev_llseek(struct file *filp, loff_t off, int whence)
++static inline void rmi_f34_free_memory(struct rmi_function_container *fc);
++
++static inline int rmi_f34_initialize(struct rmi_function_container *fc);
++
++static int rmi_f34_config(struct rmi_function_container *fc);
++
++static int rmi_f34_reset(struct rmi_function_container *fc);
++
++static inline int rmi_f34_create_sysfs(struct rmi_function_container *fc);
++
++
++
++static struct device_attribute attrs[] = {
++	__ATTR(status, RMI_RW_ATTR,
++	       rmi_fn_34_status_show, rmi_fn_34_status_store),
++
++	/* Also, sysfs will need to have a file set up to distinguish
++	 * between commands - like Config write/read, Image write/verify. */
++	__ATTR(cmd, RMI_RW_ATTR,
++	       rmi_fn_34_cmd_show, rmi_fn_34_cmd_store),
++	__ATTR(bootloaderid, RMI_RW_ATTR,
++	       rmi_fn_34_bootloaderid_show, rmi_fn_34_bootloaderid_store),
++	__ATTR(blocksize, RMI_RO_ATTR,
++	       rmi_fn_34_blocksize_show, rmi_store_error),
++	__ATTR(imageblockcount, RMI_RO_ATTR,
++	       rmi_fn_34_imageblockcount_show, rmi_store_error),
++	__ATTR(configblockcount, RMI_RO_ATTR,
++	       rmi_fn_34_configblockcount_show, rmi_store_error),
++	__ATTR(blocknum, RMI_RW_ATTR,
++	       rmi_fn_34_blocknum_show, rmi_fn_34_blocknum_store),
++	__ATTR(rescanPDT, RMI_WO_ATTR,
++	       rmi_show_error, rmi_fn_34_rescanPDT_store)
++};
++
++struct bin_attribute dev_attr_data = {
++	.attr = {
++		 .name = "data",
++		 .mode = 0666},
++	.size = 0,
++	.read = rmi_fn_34_data_read,
++	.write = rmi_fn_34_data_write,
++};
++
++
++static int rmi_f34_init(struct rmi_function_container *fc)
 +{
-+	loff_t newpos;
-+	struct rmidev_data *data = filp->private_data;
++	int retval;
 +
-+	if (IS_ERR(data)) {
-+		pr_err("%s: pointer of char device is invalid", __func__);
-+		return -EBADF;
-+	}
++	dev_info(&fc->dev, "Intializing f34 values.");
 +
-+	mutex_lock(&(data->file_mutex));
-+
-+	switch (whence) {
-+	case SEEK_SET:
-+		newpos = off;
-+		break;
-+
-+	case SEEK_CUR:
-+		newpos = filp->f_pos + off;
-+		break;
-+
-+	case SEEK_END:
-+		newpos = REG_ADDR_LIMIT + off;
-+		break;
-+
-+	default:		/* can't happen */
-+		newpos = -EINVAL;
-+		goto clean_up;
-+	}
-+
-+	if (newpos < 0 || newpos > REG_ADDR_LIMIT) {
-+		dev_err(&data->rmi_dev->dev, "newpos 0x%04x is invalid.\n",
-+			(unsigned int)newpos);
-+		newpos = -EINVAL;
-+		goto clean_up;
-+	}
-+
-+	filp->f_pos = newpos;
-+
-+clean_up:
-+	mutex_unlock(&(data->file_mutex));
-+	return newpos;
-+}
-+
-+/*
-+ *  rmidev_read: - use to read data from RMI stream
-+ *
-+ *  @filp: file structure for read
-+ *  @buf: user-level buffer pointer
-+ *
-+ *  @count: number of byte read
-+ *  @f_pos: offset (starting register address)
-+ *
-+ *	@return number of bytes read into user buffer (buf) if succeeds
-+ *          negative number if error occurs.
-+ */
-+static ssize_t rmidev_read(struct file *filp, char __user *buf,
-+		size_t count, loff_t *f_pos)
-+{
-+	struct rmidev_data *data = filp->private_data;
-+	ssize_t retval  = 0;
-+	unsigned char tmpbuf[count+1];
-+
-+	/* limit offset to REG_ADDR_LIMIT-1 */
-+	if (count > (REG_ADDR_LIMIT - *f_pos))
-+		count = REG_ADDR_LIMIT - *f_pos;
-+
-+	if (count == 0)
-+		return 0;
-+
-+	if (IS_ERR(data)) {
-+		pr_err("%s: pointer of char device is invalid", __func__);
-+		return -EBADF;
-+	}
-+
-+	mutex_lock(&(data->file_mutex));
-+
-+	retval = rmi_read_block(data->rmi_dev, *f_pos, tmpbuf, count);
-+
++	/* init instance data, fill in values and create any sysfs files */
++	retval = rmi_f34_alloc_memory(fc);
 +	if (retval < 0)
-+		goto clean_up;
-+	else
-+		*f_pos += retval;
++		goto exit_free_data;
 +
-+	if (copy_to_user(buf, tmpbuf, count))
-+		retval = -EFAULT;
++	retval = rmi_f34_initialize(fc);
++	if (retval < 0)
++		goto exit_free_data;
 +
-+clean_up:
-+
-+	mutex_unlock(&(data->file_mutex));
-+
-+	return retval;
-+}
-+
-+/*
-+ * rmidev_write: - use to write data into RMI stream
-+ *
-+ * @filep : file structure for write
-+ * @buf: user-level buffer pointer contains data to be written
-+ * @count: number of byte be be written
-+ * @f_pos: offset (starting register address)
-+ *
-+ * @return number of bytes written from user buffer (buf) if succeeds
-+ *         negative number if error occurs.
-+ */
-+static ssize_t rmidev_write(struct file *filp, const char __user *buf,
-+		size_t count, loff_t *f_pos)
-+{
-+	struct rmidev_data *data = filp->private_data;
-+	ssize_t retval  = 0;
-+	unsigned char tmpbuf[count+1];
-+
-+	/* limit offset to REG_ADDR_LIMIT-1 */
-+	if (count > (REG_ADDR_LIMIT - *f_pos))
-+		count = REG_ADDR_LIMIT - *f_pos;
-+
-+	if (count == 0)
-+		return 0;
-+
-+	if (IS_ERR(data)) {
-+		pr_err("%s: pointer of char device is invalid", __func__);
-+		return -EBADF;
-+	}
-+
-+	if (copy_from_user(tmpbuf, buf, count))
-+		return -EFAULT;
-+
-+	mutex_lock(&(data->file_mutex));
-+
-+	retval = rmi_write_block(data->rmi_dev, *f_pos, tmpbuf, count);
-+
-+	if (retval >= 0)
-+		*f_pos += count;
-+
-+	mutex_unlock(&(data->file_mutex));
-+
-+	return retval;
-+}
-+
-+/*
-+ * rmidev_open: - get a new handle for from RMI stream
-+ * @inp : inode struture
-+ * @filp: file structure for read/write
-+ *
-+ * @return 0 if succeeds
-+ */
-+static int rmidev_open(struct inode *inp, struct file *filp)
-+{
-+	struct rmidev_data *data = container_of(inp->i_cdev,
-+			struct rmidev_data, main_dev);
-+	int retval = 0;
-+
-+	filp->private_data = data;
-+
-+	if (!data->rmi_dev)
-+		return -EACCES;
-+
-+	mutex_lock(&(data->file_mutex));
-+	if (data->ref_count < 1)
-+		data->ref_count++;
-+	else
-+		retval = -EACCES;
-+
-+	mutex_unlock(&(data->file_mutex));
-+
-+	return retval;
-+}
-+
-+/*
-+ *  rmidev_release: - release an existing handle
-+ *  @inp: inode structure
-+ *  @filp: file structure for read/write
-+ *
-+ *  @return 0 if succeeds
-+ */
-+static int rmidev_release(struct inode *inp, struct file *filp)
-+{
-+	struct rmidev_data *data = container_of(inp->i_cdev,
-+			struct rmidev_data, main_dev);
-+
-+	if (!data->rmi_dev)
-+		return -EACCES;
-+
-+	mutex_lock(&(data->file_mutex));
-+
-+	data->ref_count--;
-+	if (data->ref_count < 0)
-+		data->ref_count = 0;
-+
-+	mutex_unlock(&(data->file_mutex));
++	retval = rmi_f34_create_sysfs(fc);
++	if (retval < 0)
++		goto exit_free_data;
 +
 +	return 0;
++
++exit_free_data:
++	rmi_f34_free_memory(fc);
++
++	return retval;
 +}
 +
-+static const struct file_operations rmidev_fops = {
-+	.owner =    THIS_MODULE,
-+	.llseek =   rmidev_llseek,
-+	.read =     rmidev_read,
-+	.write =    rmidev_write,
-+	.open =     rmidev_open,
-+	.release =  rmidev_release,
-+};
-+
-+/*
-+ * rmi_char_dev_clean_up - release memory or unregister driver
-+ * @rmi_char_dev: rmi_char_dev structure
-+ *
-+ */
-+static void rmidev_device_cleanup(struct rmidev_data *data)
++static inline int rmi_f34_alloc_memory(struct rmi_function_container *fc)
 +{
-+	dev_t devno;
++	struct rmi_fn_34_data *f34;
 +
-+	/* Get rid of our char dev entries */
-+	if (data) {
-+		devno = data->main_dev.dev;
-+
-+		if (data->device_class)
-+			device_destroy(data->device_class, devno);
-+
-+		cdev_del(&data->main_dev);
-+		kfree(data);
-+
-+		/* cleanup_module is never called if registering failed */
-+		unregister_chrdev_region(devno, 1);
-+		pr_debug("%s: rmidev device is removed\n", __func__);
-+	}
-+}
-+
-+/*
-+ * rmi_char_devnode - return device permission
-+ *
-+ * @dev: char device structure
-+ * @mode: file permission
-+ *
-+ */
-+static char *rmi_char_devnode(struct device *dev, mode_t *mode)
-+{
-+	if (!mode)
-+		return NULL;
-+	/**mode = 0666*/
-+	*mode = (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-+
-+	return kasprintf(GFP_KERNEL, "rmi/%s", dev_name(dev));
-+}
-+
-+static int rmidev_init_device(struct rmi_char_device *cd)
-+{
-+	struct rmi_device *rmi_dev = cd->rmi_dev;
-+	struct rmidev_data *data;
-+	dev_t dev_no;
-+	int retval;
-+	struct device *device_ptr;
-+
-+	if (rmidev_major_num) {
-+		dev_no = MKDEV(rmidev_major_num, cd->rmi_dev->number);
-+		retval = register_chrdev_region(dev_no, 1, CHAR_DEVICE_NAME);
-+	} else {
-+		retval = alloc_chrdev_region(&dev_no, 0, 1, CHAR_DEVICE_NAME);
-+		/* let kernel allocate a major for us */
-+		rmidev_major_num = MAJOR(dev_no);
-+		dev_info(&rmi_dev->dev, "Major number of rmidev: %d\n",
-+				 rmidev_major_num);
-+	}
-+	if (retval < 0) {
-+		dev_err(&rmi_dev->dev,
-+			"Failed to get minor dev number %d, code %d.\n",
-+			cd->rmi_dev->number, retval);
-+		return retval;
-+	} else
-+		dev_info(&rmi_dev->dev, "Allocated rmidev %d %d.\n",
-+			 MAJOR(dev_no), MINOR(dev_no));
-+
-+	data = kzalloc(sizeof(struct rmidev_data), GFP_KERNEL);
-+	if (!data) {
-+		dev_err(&rmi_dev->dev, "Failed to allocate rmidev_data.\n");
-+		/* unregister the char device region */
-+		__unregister_chrdev(rmidev_major_num, MINOR(dev_no), 1,
-+				CHAR_DEVICE_NAME);
++	f34 = kzalloc(sizeof(struct rmi_fn_34_data), GFP_KERNEL);
++	if (!f34) {
++		dev_err(&fc->dev, "Failed to allocate rmi_fn_34_data.\n");
 +		return -ENOMEM;
 +	}
++	fc->data = f34;
 +
-+	mutex_init(&data->file_mutex);
++	return 0;
++}
 +
-+	data->rmi_dev = cd->rmi_dev;
-+	cd->data = data;
++static inline void rmi_f34_free_memory(struct rmi_function_container *fc)
++{
++	kfree(fc->data);
++	fc->data = NULL;
++}
 +
-+	cdev_init(&data->main_dev, &rmidev_fops);
++static inline int rmi_f34_initialize(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct rmi_device_platform_data *pdata;
++	int retval = 0;
++	struct rmi_fn_34_data *f34 = fc->data;
++	u16 query_base_addr;
++	u16 control_base_addr;
++	unsigned char buf[2];
 +
-+	retval = cdev_add(&data->main_dev, dev_no, 1);
-+	if (retval) {
-+		dev_err(&cd->rmi_dev->dev, "Error %d adding rmi_char_dev.\n",
-+			retval);
-+		rmidev_device_cleanup(data);
++	pdata = to_rmi_platform_data(rmi_dev);
++	dev_dbg(&fc->dev, "Initializing F34 values for %s.\n",
++		pdata->sensor_name);
++
++	mutex_init(&f34->attn_mutex);
++
++	/* get the Bootloader ID and Block Size. */
++	query_base_addr = fc->fd.query_base_addr;
++	control_base_addr = fc->fd.control_base_addr;
++
++	retval = rmi_read_block(fc->rmi_dev, query_base_addr, buf,
++			ARRAY_SIZE(buf));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read bootloaderid from 0x%04x.\n",
++			query_base_addr);
 +		return retval;
 +	}
 +
-+	dev_set_name(&cd->dev, "rmidev%d", MINOR(dev_no));
-+	data->device_class = rmidev_device_class;
-+	device_ptr = device_create(
-+			data->device_class,
-+			NULL, dev_no, NULL,
-+			CHAR_DEVICE_NAME"%d",
-+			MINOR(dev_no));
++	batohs(&f34->bootloaderid, buf);
 +
-+	if (IS_ERR(device_ptr)) {
-+		dev_err(&cd->rmi_dev->dev, "Failed to create rmi device.\n");
-+		rmidev_device_cleanup(data);
++	retval = rmi_read_block(fc->rmi_dev, query_base_addr + BLK_SZ_OFF, buf,
++			ARRAY_SIZE(buf));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read block size from 0x%04x, "
++			"error=%d.\n", query_base_addr + BLK_SZ_OFF, retval);
++		return retval;
++	}
++	batohs(&f34->blocksize, buf);
++
++	/* Get firmware image block count and store it in the instance data */
++	retval = rmi_read_block(fc->rmi_dev, query_base_addr + IMG_BLK_CNT_OFF,
++			buf, ARRAY_SIZE(buf));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Couldn't read image block count from 0x%x, "
++			"error=%d.\n", query_base_addr + IMG_BLK_CNT_OFF,
++			retval);
++		return retval;
++	}
++	batohs(&f34->imageblockcount, buf);
++
++	/* Get config block count and store it in the instance data */
++	retval = rmi_read_block(fc->rmi_dev, query_base_addr + 7, buf,
++			ARRAY_SIZE(buf));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Couldn't read config block count from 0x%x, "
++			"error=%d.\n", query_base_addr + CFG_BLK_CNT_OFF,
++			retval);
++		return retval;
++	}
++	batohs(&f34->configblockcount, buf);
++
++	return 0;
++}
++
++static inline int rmi_f34_create_sysfs(struct rmi_function_container *fc)
++{
++	int attr_count = 0;
++	int rc;
++
++	dev_dbg(&fc->dev, "Creating sysfs files.");
++
++	/* We need a sysfs file for the image/config block to write or read.
++	 * Set up sysfs bin file for binary data block. Since the image is
++	 * already in our format there is no need to convert the data for
++	 * endianess. */
++	rc = sysfs_create_bin_file(&fc->dev.kobj,
++				&dev_attr_data);
++	if (rc < 0) {
++		dev_err(&fc->dev, "Failed to create sysfs file for F34 data "
++		     "(error = %d).\n", rc);
 +		return -ENODEV;
++	}
++
++	/* Set up sysfs device attributes. */
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
++		if (sysfs_create_file
++		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
++			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
++			     attrs[attr_count].attr.name);
++			rc = -ENODEV;
++			goto err_remove_sysfs;
++		}
++	}
++
++	return 0;
++
++err_remove_sysfs:
++	sysfs_remove_bin_file(&fc->dev.kobj, &dev_attr_data);
++
++	for (attr_count--; attr_count >= 0; attr_count--)
++		sysfs_remove_file(&fc->dev.kobj,
++				  &attrs[attr_count].attr);
++	return rc;
++}
++
++static int rmi_f34_config(struct rmi_function_container *fc)
++{
++	/* for this function we should do nothing here */
++	return 0;
++}
++
++
++static int rmi_f34_reset(struct rmi_function_container *fc)
++{
++	struct  rmi_fn_34_data  *instance_data = fc->data;
++
++	instance_data->status = ECONNRESET;
++
++	return 0;
++}
++
++static void rmi_f34_remove(struct rmi_function_container *fc)
++{
++	int attr_count;
++
++	sysfs_remove_bin_file(&fc->dev.kobj,
++						  &dev_attr_data);
++
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
++		sysfs_remove_file(&fc->dev.kobj,
++				  &attrs[attr_count].attr);
++
++	rmi_f34_free_memory(fc);
++}
++
++static int f34_read_status(struct rmi_function_container *fc)
++{
++	struct rmi_fn_34_data *instance_data = fc->data;
++	u16 data_base_addr = fc->fd.data_base_addr;
++	u8 status;
++	int retval;
++
++	if (instance_data->status == ECONNRESET)
++		return instance_data->status;
++
++	/* Read the Fn $34 status from F34_Flash_Data3 to see the previous
++	 * commands status. F34_Flash_Data3 will be the address after the
++	 * 2 block number registers plus blocksize Data registers.
++	 *  inform user space - through a sysfs param. */
++	retval = rmi_read(fc->rmi_dev,
++			  data_base_addr + instance_data->blocksize +
++			  BLK_NUM_OFF, &status);
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read status from 0x%x\n",
++		       data_base_addr + instance_data->blocksize + BLK_NUM_OFF);
++		status = 0xff;	/* failure */
++	}
++
++	/* set a sysfs value that the user mode can read - only
++	 * upper 4 bits are the status. successful is $80, anything
++	 * else is failure */
++	instance_data->status = status & 0xf0;
++
++	/* put mode into Flash Prog Mode when we successfully do
++	 * an Enable Flash Prog cmd. */
++	if ((instance_data->status == STATUS_IDLE) &&
++		(instance_data->cmd == ENABLE_FLASH_PROG))
++		instance_data->inflashprogmode = true;
++
++	return retval;
++}
++
++int rmi_f34_attention(struct rmi_function_container *fc, u8 *irq_bits)
++{
++	int retval;
++	struct rmi_fn_34_data *data = fc->data;
++
++	mutex_lock(&data->attn_mutex);
++	retval = f34_read_status(fc);
++	mutex_unlock(&data->attn_mutex);
++	return retval;
++}
++
++static struct rmi_function_handler function_handler = {
++	.func = 0x34,
++	.init = rmi_f34_init,
++	.config = rmi_f34_config,
++	.reset = rmi_f34_reset,
++	.attention = rmi_f34_attention,
++	.remove = rmi_f34_remove
++};
++
++static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->bootloaderid);
++}
++
++static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf,
++					size_t count)
++{
++	int error;
++	unsigned long val;
++	unsigned char data[2];
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	u16 data_base_addr;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	/* need to convert the string data to an actual value */
++	error = strict_strtoul(buf, 10, &val);
++
++	if (error)
++		return error;
++
++	instance_data->bootloaderid = val;
++
++	/* Write the Bootloader ID key data back to the first two Block
++	 * Data registers (F34_Flash_Data2.0 and F34_Flash_Data2.1). */
++	hstoba(data, (unsigned short)val);
++	data_base_addr = fc->fd.data_base_addr;
++
++	error = rmi_write_block(fc->rmi_dev,
++				data_base_addr + BLK_NUM_OFF,
++				data,
++				ARRAY_SIZE(data));
++
++	if (error < 0) {
++		dev_err(dev, "%s : Could not write bootloader id to 0x%x\n",
++		       __func__, data_base_addr + BLK_NUM_OFF);
++		return error;
++	}
++
++	return count;
++}
++
++static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->blocksize);
++}
++
++static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->imageblockcount);
++}
++
++static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->configblockcount);
++}
++
++static ssize_t rmi_fn_34_status_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	int retval;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	mutex_lock(&instance_data->attn_mutex);
++	retval = f34_read_status(fc);
++	mutex_unlock(&instance_data->attn_mutex);
++
++	if (retval < 0)
++		return retval;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->status);
++}
++
++
++static ssize_t rmi_fn_34_status_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	instance_data->status = 0;
++
++	return 0;
++}
++
++
++static ssize_t rmi_fn_34_cmd_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->cmd);
++}
++
++static ssize_t rmi_fn_34_cmd_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf,
++				size_t count)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	unsigned long val;
++	u16 data_base_addr;
++	int error;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++	data_base_addr = fc->fd.data_base_addr;
++
++	/* need to convert the string data to an actual value */
++	error = strict_strtoul(buf, 10, &val);
++	if (error)
++		return error;
++
++	/* make sure we are in Flash Prog mode for all cmds except the
++	 * Enable Flash Programming cmd - otherwise we are in error */
++	if ((val != ENABLE_FLASH_PROG) && !instance_data->inflashprogmode) {
++		dev_err(dev, "%s: CANNOT SEND CMD %d TO SENSOR - "
++			"NOT IN FLASH PROG MODE\n"
++			, __func__, data_base_addr);
++		return -EINVAL;
++	}
++
++	instance_data->cmd = val;
++
++	/* Validate command value and (if necessary) write it to the command
++	 * register.
++	 */
++	switch (instance_data->cmd) {
++	case ENABLE_FLASH_PROG:
++	case ERASE_ALL:
++	case ERASE_CONFIG:
++	case WRITE_FW_BLOCK:
++	case READ_CONFIG_BLOCK:
++	case WRITE_CONFIG_BLOCK:
++		/* Reset the status to indicate we are in progress on a cmd. */
++		/* The status will change when the ATTN interrupt happens
++		   and the status of the cmd that was issued is read from
++		   the F34_Flash_Data3 register - result should be 0x80 for
++		   success - any other value indicates an error */
++
++		/* Issue the command to the device. */
++		error = rmi_write(fc->rmi_dev,
++				data_base_addr + instance_data->blocksize +
++				BLK_NUM_OFF, instance_data->cmd);
++
++		if (error < 0) {
++			dev_err(dev, "%s: Could not write command 0x%02x "
++				"to 0x%04x\n", __func__, instance_data->cmd,
++				data_base_addr + instance_data->blocksize +
++				BLK_NUM_OFF);
++			return error;
++		}
++
++		if (instance_data->cmd == ENABLE_FLASH_PROG)
++			instance_data->inflashprogmode = true;
++
++		/* set status to indicate we are in progress */
++		instance_data->status = STATUS_IN_PROGRESS;
++		break;
++	default:
++		dev_dbg(dev, "%s: RMI4 function $34 - "
++				"unknown command 0x%02lx.\n", __func__, val);
++		count = -EINVAL;
++		break;
++	}
++
++	return count;
++}
++
++static ssize_t rmi_fn_34_blocknum_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->blocknum);
++}
++
++static ssize_t rmi_fn_34_blocknum_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf,
++					size_t count)
++{
++	int error;
++	unsigned long val;
++	unsigned char data[2];
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	u16 data_base_addr;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++	data_base_addr = fc->fd.data_base_addr;
++
++	/* need to convert the string data to an actual value */
++	error = strict_strtoul(buf, 10, &val);
++
++	if (error)
++		return error;
++
++	instance_data->blocknum = val;
++
++	/* Write the Block Number data back to the first two Block
++	 * Data registers (F34_Flash_Data_0 and F34_Flash_Data_1). */
++	hstoba(data, (unsigned short)val);
++
++	error = rmi_write_block(fc->rmi_dev,
++				data_base_addr,
++				data,
++				ARRAY_SIZE(data));
++
++	if (error < 0) {
++		dev_err(dev, "%s : Could not write block number %u to 0x%x\n",
++		       __func__, instance_data->blocknum, data_base_addr);
++		return error;
++	}
++
++	return count;
++}
++
++static ssize_t rmi_fn_34_rescanPDT_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	struct rmi_device *rmi_dev;
++	struct rmi_driver_data *driver_data;
++	struct pdt_entry pdt_entry;
++	bool fn01found = false;
++	bool fn34found = false;
++	unsigned int rescan;
++	int irq_count = 0;
++	int retval = 0;
++	int i;
++
++	/* Rescan of the PDT is needed since issuing the Flash Enable cmd
++	 * the device registers for Fn$01 and Fn$34 moving around because
++	 * of the change from Bootloader mode to Flash Programming mode
++	 * may change to a different PDT with only Fn$01 and Fn$34 that
++	 * could have addresses for query, control, data, command registers
++	 * that differ from the PDT scan done at device initialization. */
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++	rmi_dev = fc->rmi_dev;
++	driver_data = rmi_get_driverdata(rmi_dev);
++
++	/* Make sure we are only in Flash Programming mode  - DON'T
++	 * ALLOW THIS IN UI MODE. */
++	if (instance_data->cmd != ENABLE_FLASH_PROG) {
++		dev_err(dev, "%s: NOT IN FLASH PROG MODE - CAN'T RESCAN PDT.\n"
++				, __func__);
++		return -EINVAL;
++	}
++
++	/* The only good value to write to this is 1, we allow 0, but with
++	 * no effect (this is consistent with the way the command bit works. */
++	if (sscanf(buf, "%u", &rescan) != 1)
++		return -EINVAL;
++	if (rescan < 0 || rescan > 1)
++		return -EINVAL;
++
++	/* 0 has no effect, so we skip it entirely. */
++	if (rescan) {
++		/* rescan the PDT - filling in Fn01 and Fn34 addresses -
++		 * this is only temporary - the device will need to be reset
++		 * to return the PDT to the normal values. */
++
++		/* mini-parse the PDT - we only have to get Fn$01 and Fn$34 and
++		   since we are Flash Programming mode we only have page 0. */
++		for (i = PDT_START_SCAN_LOCATION; i >= PDT_END_SCAN_LOCATION;
++			i -= sizeof(pdt_entry)) {
++			retval = rmi_read_block(rmi_dev, i, (u8 *)&pdt_entry,
++					       sizeof(pdt_entry));
++			if (retval != sizeof(pdt_entry)) {
++				dev_err(dev, "%s: err frm rmi_read_block pdt "
++					"entry data from PDT, "
++					"error = %d.", __func__, retval);
++				return retval;
++			}
++
++			if ((pdt_entry.function_number == 0x00) ||
++				(pdt_entry.function_number == 0xff))
++				break;
++
++			dev_dbg(dev, "%s: Found F%.2X\n",
++				__func__, pdt_entry.function_number);
++
++			/* f01 found - just fill in the new addresses in
++			 * the existing fc. */
++			if (pdt_entry.function_number == 0x01) {
++				struct rmi_function_container *f01_fc =
++					driver_data->f01_container;
++				fn01found = true;
++				f01_fc->fd.query_base_addr =
++					pdt_entry.query_base_addr;
++				f01_fc->fd.command_base_addr =
++				  pdt_entry.command_base_addr;
++				f01_fc->fd.control_base_addr =
++				  pdt_entry.control_base_addr;
++				f01_fc->fd.data_base_addr =
++				  pdt_entry.data_base_addr;
++				f01_fc->fd.function_number =
++				  pdt_entry.function_number;
++				f01_fc->fd.interrupt_source_count =
++				  pdt_entry.interrupt_source_count;
++				f01_fc->num_of_irqs =
++				  pdt_entry.interrupt_source_count;
++				f01_fc->irq_pos = irq_count;
++
++				irq_count += f01_fc->num_of_irqs;
++
++				if (fn34found)
++					break;
++			}
++
++			/* f34 found - just fill in the new addresses in
++			 * the existing fc. */
++			if (pdt_entry.function_number == 0x34) {
++				fn34found = true;
++				fc->fd.query_base_addr =
++				  pdt_entry.query_base_addr;
++				fc->fd.command_base_addr =
++				  pdt_entry.command_base_addr;
++				fc->fd.control_base_addr =
++				  pdt_entry.control_base_addr;
++				fc->fd.data_base_addr =
++				  pdt_entry.data_base_addr;
++				fc->fd.function_number =
++				  pdt_entry.function_number;
++				fc->fd.interrupt_source_count =
++				  pdt_entry.interrupt_source_count;
++				fc->num_of_irqs =
++				  pdt_entry.interrupt_source_count;
++				fc->irq_pos = irq_count;
++
++				irq_count += fc->num_of_irqs;
++
++				if (fn01found)
++					break;
++			}
++
++		}
++
++		if (!fn01found || !fn34found) {
++			dev_err(dev, "%s: failed to find fn$01 or fn$34 trying "
++				"to do rescan PDT.\n"
++				, __func__);
++			return -EINVAL;
++		}
++	}
++
++	return count;
++}
++
++#ifdef KERNEL_VERSION_ABOVE_2_6_32
++static ssize_t rmi_fn_34_data_read(struct file *data_file,
++				struct kobject *kobj,
++				struct bin_attribute *attributes,
++				char *buf,
++				loff_t pos,
++				size_t count)
++#else
++static ssize_t rmi_fn_34_data_read(struct kobject *kobj,
++				struct bin_attribute *attributes,
++				char *buf,
++				loff_t pos,
++				size_t count)
++#endif
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	u16 data_base_addr;
++	int error;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	data_base_addr = fc->fd.data_base_addr;
++
++	if (count != instance_data->blocksize) {
++		dev_err(dev,
++			"%s : Incorrect F34 block size %d. "
++			"Expected size %d.\n",
++			__func__, count, instance_data->blocksize);
++		return -EINVAL;
++	}
++
++	/* Read the data from flash into buf.  The app layer will be blocked
++	 * at reading from the sysfs file.  When we return the count (or
++	 * error if we fail) the app will resume. */
++	error = rmi_read_block(fc->rmi_dev, data_base_addr + BLK_NUM_OFF,
++			(unsigned char *)buf, count);
++
++	if (error < 0) {
++		dev_err(dev, "%s : Could not read data from 0x%04x\n",
++		       __func__, data_base_addr + BLK_NUM_OFF);
++		return error;
++	}
++
++	return count;
++}
++
++#ifdef KERNEL_VERSION_ABOVE_2_6_32
++static ssize_t rmi_fn_34_data_write(struct file *data_file,
++				struct kobject *kobj,
++				struct bin_attribute *attributes,
++				char *buf,
++				loff_t pos,
++				size_t count)
++#else
++static ssize_t rmi_fn_34_data_write(struct kobject *kobj,
++				struct bin_attribute *attributes,
++				char *buf,
++				loff_t pos,
++				size_t count)
++#endif
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct rmi_function_container *fc;
++	struct rmi_fn_34_data *instance_data;
++	u16 data_base_addr;
++	int error;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	data_base_addr = fc->fd.data_base_addr;
++
++	/* Write the data from buf to flash. The app layer will be
++	 * blocked at writing to the sysfs file.  When we return the
++	 * count (or error if we fail) the app will resume. */
++
++	if (count != instance_data->blocksize) {
++		dev_err(dev,
++			"%s : Incorrect F34 block size %d. "
++			"Expected size %d.\n",
++			__func__, count, instance_data->blocksize);
++		return -EINVAL;
++	}
++
++	/* Write the data block - only if the count is non-zero  */
++	if (count) {
++		error = rmi_write_block(fc->rmi_dev,
++				data_base_addr + BLK_NUM_OFF,
++				(unsigned char *)buf,
++				count);
++
++		if (error < 0) {
++			dev_err(dev, "%s : Could not write block data "
++				"to 0x%x\n", __func__,
++				data_base_addr + BLK_NUM_OFF);
++			return error;
++		}
++	}
++
++	return count;
++}
++
++static int __init rmi_f34_module_init(void)
++{
++	int error;
++
++	error = rmi_register_function_driver(&function_handler);
++	if (error < 0) {
++		pr_err("%s : register failed !\n", __func__);
++		return error;
 +	}
 +
 +	return 0;
 +}
 +
-+static void rmidev_remove_device(struct rmi_char_device *cd)
++static void rmi_f34_module_exit(void)
 +{
-+	struct rmidev_data *data;
-+
-+	dev_dbg(&cd->dev, "%s: removing an rmidev device.\n", __func__);
-+	if (!cd)
-+		return;
-+
-+	data = cd->data;
-+	if (data)
-+		rmidev_device_cleanup(data);
++	rmi_unregister_function_driver(&function_handler);
 +}
 +
-+static struct rmi_char_driver rmidev_driver = {
-+	.driver = {
-+		.name = "rmidev",
-+		.owner = THIS_MODULE,
-+	},
++module_init(rmi_f34_module_init);
++module_exit(rmi_f34_module_exit);
 +
-+	.init = rmidev_init_device,
-+	.remove = rmidev_remove_device,
-+};
-+
-+static int __init rmidev_init(void)
-+{
-+
-+	pr_debug("%s: rmi_dev initialization.\n", __func__);
-+
-+	/* create device node */
-+	rmidev_device_class = class_create(THIS_MODULE, DEVICE_CLASS_NAME);
-+
-+	if (IS_ERR(rmidev_device_class)) {
-+		pr_err("%s: ERROR - Failed to create /dev/%s.\n", __func__,
-+			CHAR_DEVICE_NAME);
-+		return -ENODEV;
-+	}
-+	/* setup permission */
-+	rmidev_device_class->devnode = rmi_char_devnode;
-+
-+	return rmi_register_character_driver(&rmidev_driver);
-+}
-+
-+static void __exit rmidev_exit(void)
-+{
-+	pr_debug("%s: exiting.\n", __func__);
-+	rmi_unregister_character_driver(&rmidev_driver);
-+	class_unregister(rmidev_device_class);
-+	class_destroy(rmidev_device_class);
-+}
-+
-+module_init(rmidev_init);
-+module_exit(rmidev_exit);
-+
-+MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
-+MODULE_DESCRIPTION("RMI4 Char Device");
++MODULE_AUTHOR("William Manson <wmanson@synaptics.com");
++MODULE_DESCRIPTION("RMI F34 module");
 +MODULE_LICENSE("GPL");
++
