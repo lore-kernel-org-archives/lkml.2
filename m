@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab1LVK7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:59:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40324 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149Ab1LVK7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:59:40 -0500
-Date: Thu, 22 Dec 2011 11:59:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, cgroups@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH] Partial revert "Basic kernel memory functionality for
- the Memory Controller"
-Message-ID: <20111222105937.GC8833@tiehlicka.suse.cz>
-References: <1324543990-27784-1-git-send-email-glommer@parallels.com>
- <20111222104339.GA8833@tiehlicka.suse.cz>
- <4EF309F0.90407@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EF309F0.90407@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755214Ab1LVLFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:05:43 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42215 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753567Ab1LVLFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 06:05:39 -0500
+Message-ID: <1324551934.2153.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] prefetch() not declared in net/ipv4/route.c on s390x
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dan =?ISO-8859-1?Q?Hor=E1k?= <dan@danny.cz>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 22 Dec 2011 12:05:34 +0100
+In-Reply-To: <1324551056-28486-1-git-send-email-dan@danny.cz>
+References: <1324551056-28486-1-git-send-email-dan@danny.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-12-11 14:44:00, Glauber Costa wrote:
-> On 12/22/2011 02:43 PM, Michal Hocko wrote:
-> >On Thu 22-12-11 12:53:10, Glauber Costa wrote:
-> >>This reverts commit e5671dfae59b165e2adfd4dfbdeab11ac8db5bda.
-> >>
-> >>After a follow up discussion with Michal, it was agreed it would
-> >>be better to leave the kmem controller with just the tcp files,
-> >>deferring the behavior of the other general memory.kmem.* files
-> >>for a later time, when more caches are controlled.
-> >
-> >"Because generic kmem files are not used by tcp accounting and it is
-> >not clear how other slab caches would fit into the scheme."
-> 
-> Should I respin?
+Le jeudi 22 décembre 2011 à 11:50 +0100, Dan Horák a écrit :
+> The recent commit (9f28a2fc0bd77511f649c0a788c7bf9a5fd04edb) to route.c
+> breaks build on s390x because it leaves prefetch() undeclared.
 
-Yes, please
-[...]
+Yes, Stephen posted a patch few hours ago.
 
 Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
+
