@@ -1,132 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab1LVHYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 02:24:41 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35187 "EHLO
+	id S1753340Ab1LVHZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 02:25:56 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56271 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab1LVHYi (ORCPT
+	with ESMTP id S1752806Ab1LVHZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 02:24:38 -0500
+	Thu, 22 Dec 2011 02:25:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111222014632.644264512@sbsiddha-desk.sc.intel.com>
-References: <20111222014514.410584964@sbsiddha-desk.sc.intel.com>
-	<20111222014632.644264512@sbsiddha-desk.sc.intel.com>
-Date: Wed, 21 Dec 2011 23:24:37 -0800
-X-Google-Sender-Auth: q6AYOMKrwkqKf5GBD-54HyiyBuo
-Message-ID: <CAE9FiQUeB-3uxJAMiHsz=uPWoFv5Hg1pVepz7aU6YtqOxMC-=Q@mail.gmail.com>
-Subject: Re: [patch 4/5] x86, x2apic: allow "nox2apic" to disable x2apic mode
- setup by bios
+In-Reply-To: <1324518840.21294.14.camel@sbsiddha-desk.sc.intel.com>
+References: <1324083546-1003-1-git-send-email-yinghai@kernel.org>
+	<1324363882.2286.23.camel@sbsiddha-mobl2>
+	<CAE9FiQU__U0CCiyzF9kDC1Z=PUEoTe1Jm-M97EbCO440Vm9P_A@mail.gmail.com>
+	<CAE9FiQXodjK=GRO2ut4fGS=wXBc59+rov-BVKXhDGK8vJVBHhQ@mail.gmail.com>
+	<1324518840.21294.14.camel@sbsiddha-desk.sc.intel.com>
+Date: Wed, 21 Dec 2011 23:25:53 -0800
+X-Google-Sender-Auth: WSZgUuhZtl8iwy9jCFfFSWKzhlU
+Message-ID: <CAE9FiQWqs4uwPz6bUw6WB56Z-kjC-gnN7t-LYbKWxpcgkHLfFA@mail.gmail.com>
+Subject: Re: [PATCH -v8] x86: Disable x2apic if nox2apic is specified or
+ intr-remap can not be enabled
 From: Yinghai Lu <yinghai@kernel.org>
 To: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        flyboy@gmail.com
-Content-Type: multipart/mixed; boundary=20cf3040e98665a7dd04b4a93150
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3040e98665a7dd04b4a93150
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Dec 21, 2011 at 5:45 PM, Suresh Siddha
+On Wed, Dec 21, 2011 at 5:54 PM, Suresh Siddha
 <suresh.b.siddha@intel.com> wrote:
-
-> @@ -1453,12 +1462,17 @@ static void disable_x2apic(void)
-> =A0 =A0 =A0 =A0if (msr & X2APIC_ENABLE) {
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0u32 x2apic_id =3D read_apic_id();
+> On Tue, 2011-12-20 at 18:24 -0800, Yinghai Lu wrote:
+>> put your updated version as v9.
+>>
+>> like to let ingo or hpa or thomas to decide v8 or v9 to be used.
+>>
+>>         Changes:
+>>                  1. clear x2apic cpu features
+>>                  2. disable x2apic later instead of check_x2apic()
 >
-> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (x2apic_id > 255)
-> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 panic("Can not disable x2ap=
-ic, id: %08x\n", x2apic_id);
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (x2apic_id >=3D 255)
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 panic("Cannot disable x2api=
-c, id: %08x\n", x2apic_id);
+> Yinghai, It is not the question of just cleanup. changing the apic mode
+> has to follow some sequence.
+>
+> Anyways, I have done all the changes and other minor cleanups. Also
+> split up your patch into multiple patches and posted it now.
+>
+> Please let me know if you see any issue.
 
-can not be applied cleanly.
+updated 4/5 for some minor problem with applying and compiling.
 
-update it a little bit.
-
-need to use attached one to replace 4/5.
+Please check that.
 
 Thanks
 
 Yinghai
-
---20cf3040e98665a7dd04b4a93150
-Content-Type: text/x-patch; charset=US-ASCII; name="nox2apic_v10_4.patch"
-Content-Disposition: attachment; filename="nox2apic_v10_4.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gwhg3rl00
-
-U3ViamVjdDogW3BhdGNoIDQvNV0geDg2LCB4MmFwaWM6IGFsbG93ICJub3gyYXBpYyIgdG8gZGlz
-YWJsZSB4MmFwaWMgbW9kZSBzZXR1cCBieSBiaW9zCkZyb206IFlpbmdoYWkgTHUgPHlpbmdoYWlA
-a2VybmVsLm9yZz4KCkN1cnJlbnRseSAibm94MmFwaWMiIGJvb3QgcGFyYW1ldGVyIHdhcyBub3Qg
-ZW5hYmxpbmcgeDJhcGljIG1vZGUgaWYgdGhlIGNwdSwKa2VybmVsIGFyZSBhbGwgY2FwYWJsZSBv
-ZiBlbmFibGluZyB4MmFwaWMgbW9kZSBhbmQgdGhlIE9TIGhhbmRvdmVyCmhhcHBlbmVkIGluIHhh
-cGljIG1vZGUuCgpIb3dldmVyIElmIHRoZSBiaW9zIGVuYWJsZWQgeDJhcGljIHByaW9yIHRvIE9T
-IGhhbmRvdmVyLCB1c2luZyAibm94MmFwaWMiCmJvb3QgcGFyYW1ldGVyIGhhZCBubyBlZmZlY3Qu
-CgpJZiB0aGUgYm9vdCBjcHUncyBhcGljaWQgaXMgPCAyNTUsIGVuYWJsZSAibm94MmFwaWMiIGJv
-b3QgcGFyYW1ldGVyIHRvCmRpc2FibGUgdGhlIHgyYXBpYyBtb2RlIHNldHVwIGJ5IHRoZSBiaW9z
-LiBUaGlzIHdpbGwgZW5hYmxlIHRoZSBrZXJuZWwgdG8KZmFsbGJhY2sgdG8geGFwaWMgbW9kZSBh
-bmQgYnJpbmd1cCBvbmx5IHRoZSBjcHUncyB3aGljaCBoYXMgYXBpYy1pZCA8IDI1NS4KCi12Mjog
-Zml4IHBhdGNoIGVycm9yIGFuZCB0d28gY29tcGlsaW5nIHdhcm5pbmcKCW1ha2UgZGlzYWJsZV94
-MmFwaWMgdG8gYmUgX19pbml0CgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtl
-cm5lbC5vcmc+ClNpZ25lZC1vZmYtYnk6IFN1cmVzaCBTaWRkaGEgPHN1cmVzaC5iLnNpZGRoYUBp
-bnRlbC5jb20+Ci0tLQogYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5oIHwgICAgMSArCiBhcmNo
-L3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMgfCAgIDM3ICsrKysrKysrKysrKysrKysrKysrKysrKysr
-Ky0tLS0tLS0tLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjggaW5zZXJ0aW9ucygrKSwgMTAgZGVsZXRp
-b25zKC0pCgpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9hcGljL2FwaWMuYwo9PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMKKysr
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9hcGljLmMKQEAgLTE0OCwxNSArMTQ4LDI0
-IEBAIGludCB4MmFwaWNfbW9kZTsKIC8qIHgyYXBpYyBlbmFibGVkIGJlZm9yZSBPUyBoYW5kb3Zl
-ciAqLwogaW50IHgyYXBpY19wcmVlbmFibGVkOwogc3RhdGljIGludCB4MmFwaWNfZGlzYWJsZWQ7
-CitzdGF0aWMgaW50IG5veDJhcGljOwogc3RhdGljIF9faW5pdCBpbnQgc2V0dXBfbm94MmFwaWMo
-Y2hhciAqc3RyKQogewogCWlmICh4MmFwaWNfZW5hYmxlZCgpKSB7Ci0JCXByX3dhcm5pbmcoIkJp
-b3MgYWxyZWFkeSBlbmFibGVkIHgyYXBpYywgIgotCQkJICAgImNhbid0IGVuZm9yY2Ugbm94MmFw
-aWMiKTsKLQkJcmV0dXJuIDA7Ci0JfQorCQlpbnQgYXBpY2lkID0gbmF0aXZlX2FwaWNfbXNyX3Jl
-YWQoQVBJQ19JRCk7CisKKwkJaWYgKGFwaWNpZCA+PSAyNTUpIHsKKwkJCXByX3dhcm5pbmcoIkFw
-aWNpZDogJTA4eCwgY2Fubm90IGVuZm9yY2Ugbm94MmFwaWNcbiIsCisJCQkJICAgYXBpY2lkKTsK
-KwkJCXJldHVybiAwOworCQl9CisKKwkJcHJfd2FybmluZygieDJhcGljIGFscmVhZHkgZW5hYmxl
-ZC4gd2lsbCBkaXNhYmxlIGl0XG4iKTsKKwl9IGVsc2UKKwkJc2V0dXBfY2xlYXJfY3B1X2NhcChY
-ODZfRkVBVFVSRV9YMkFQSUMpOworCisJbm94MmFwaWMgPSAxOwogCi0Jc2V0dXBfY2xlYXJfY3B1
-X2NhcChYODZfRkVBVFVSRV9YMkFQSUMpOwogCXJldHVybiAwOwogfQogZWFybHlfcGFyYW0oIm5v
-eDJhcGljIiwgc2V0dXBfbm94MmFwaWMpOwpAQCAtMTQ0Myw3ICsxNDUyLDcgQEAgc3RhdGljIGlu
-bGluZSB2b2lkIF9fZGlzYWJsZV94MmFwaWModTY0CiAJd3Jtc3JsKE1TUl9JQTMyX0FQSUNCQVNF
-LCBtc3IgJiB+WDJBUElDX0VOQUJMRSk7CiB9CiAKLXN0YXRpYyB2b2lkIGRpc2FibGVfeDJhcGlj
-KHZvaWQpCitzdGF0aWMgX19pbml0IHZvaWQgZGlzYWJsZV94MmFwaWModm9pZCkKIHsKIAl1NjQg
-bXNyOwogCkBAIC0xNDYwLDYgKzE0NjksMTEgQEAgc3RhdGljIHZvaWQgZGlzYWJsZV94MmFwaWMo
-dm9pZCkKIAkJcHJfaW5mbygiRGlzYWJsaW5nIHgyYXBpY1xuIik7CiAJCV9fZGlzYWJsZV94MmFw
-aWMobXNyKTsKIAorCQlpZiAobm94MmFwaWMpIHsKKwkJCWNsZWFyX2NwdV9jYXAoJmNwdV9kYXRh
-KDApLCBYODZfRkVBVFVSRV9YMkFQSUMpOworCQkJc2V0dXBfY2xlYXJfY3B1X2NhcChYODZfRkVB
-VFVSRV9YMkFQSUMpOworCQl9CisKIAkJeDJhcGljX2Rpc2FibGVkID0gMTsKIAkJeDJhcGljX21v
-ZGUgPSAwOwogCkBAIC0xNTM0LDEzICsxNTQ4LDE2IEBAIHZvaWQgX19pbml0IGVuYWJsZV9JUl94
-MmFwaWModm9pZCkKIAlsZWdhY3lfcGljLT5tYXNrX2FsbCgpOwogCW1hc2tfaW9hcGljX2VudHJp
-ZXMoKTsKIAorCWlmICh4MmFwaWNfcHJlZW5hYmxlZCAmJiBub3gyYXBpYykKKwkJZGlzYWJsZV94
-MmFwaWMoKTsKKwogCWlmIChkbWFyX3RhYmxlX2luaXRfcmV0KQogCQlyZXQgPSAtMTsKIAllbHNl
-CiAJCXJldCA9IGVuYWJsZV9JUigpOwogCiAJaWYgKCF4MmFwaWNfc3VwcG9ydGVkKCkpCi0JCWdv
-dG8gbm94MmFwaWM7CisJCWdvdG8gc2tpcF94MmFwaWM7CiAKIAlpZiAocmV0IDwgMCkgewogCQkv
-KiBJUiBpcyByZXF1aXJlZCBpZiB0aGVyZSBpcyBBUElDIElEID4gMjU1IGV2ZW4gd2hlbiBydW5u
-aW5nCkBAIC0xNTUwLDcgKzE1NjcsNyBAQCB2b2lkIF9faW5pdCBlbmFibGVfSVJfeDJhcGljKHZv
-aWQpCiAJCSAgICAhaHlwZXJ2aXNvcl94MmFwaWNfYXZhaWxhYmxlKCkpIHsKIAkJCWlmICh4MmFw
-aWNfcHJlZW5hYmxlZCkKIAkJCQlkaXNhYmxlX3gyYXBpYygpOwotCQkJZ290byBub3gyYXBpYzsK
-KwkJCWdvdG8gc2tpcF94MmFwaWM7CiAJCX0KIAkJLyoKIAkJICogd2l0aG91dCBJUiBhbGwgQ1BV
-cyBjYW4gYmUgYWRkcmVzc2VkIGJ5IElPQVBJQy9NU0kKQEAgLTE1NjEsNyArMTU3OCw3IEBAIHZv
-aWQgX19pbml0IGVuYWJsZV9JUl94MmFwaWModm9pZCkKIAogCWlmIChyZXQgPT0gSVJRX1JFTUFQ
-X1hBUElDX01PREUpIHsKIAkJcHJfaW5mbygieDJhcGljIG5vdCBlbmFibGVkLCBJUlEgcmVtYXBw
-aW5nIGlzIGluIHhhcGljIG1vZGVcbiIpOwotCQlnb3RvIG5veDJhcGljOworCQlnb3RvIHNraXBf
-eDJhcGljOwogCX0KIAogCXgyYXBpY19lbmFibGVkID0gMTsKQEAgLTE1NzIsNyArMTU4OSw3IEBA
-IHZvaWQgX19pbml0IGVuYWJsZV9JUl94MmFwaWModm9pZCkKIAkJcHJfaW5mbygiRW5hYmxlZCB4
-MmFwaWNcbiIpOwogCX0KIAotbm94MmFwaWM6Citza2lwX3gyYXBpYzoKIAlpZiAocmV0IDwgMCkg
-LyogSVIgZW5hYmxpbmcgZmFpbGVkICovCiAJCXJlc3RvcmVfaW9hcGljX2VudHJpZXMoKTsKIAls
-ZWdhY3lfcGljLT5yZXN0b3JlX21hc2soKTsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNs
-dWRlL2FzbS9hcGljLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5j
-bHVkZS9hc20vYXBpYy5oCisrKyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYXBpYy5o
-CkBAIC0yMTYsNiArMjE2LDcgQEAgc3RhdGljIGlubGluZSB2b2lkIHgyYXBpY19mb3JjZV9waHlz
-KHZvaQogewogfQogCisjZGVmaW5lCW5veDJhcGljCTAKICNkZWZpbmUJeDJhcGljX3ByZWVuYWJs
-ZWQgMAogI2RlZmluZQl4MmFwaWNfc3VwcG9ydGVkKCkJMAogI2VuZGlmCg==
---20cf3040e98665a7dd04b4a93150--
