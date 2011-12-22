@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1LVBut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 20:50:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51536 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab1LVBuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 20:50:46 -0500
-Date: Wed, 21 Dec 2011 17:49:55 -0800
-From: Greg KH <gregkh@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Tim Bird <tim.bird@am.sony.com>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: RFC: android logger feedback request
-Message-ID: <20111222014955.GB13085@suse.de>
-References: <4EF264C3.6000104@am.sony.com>
- <20111221231956.GB23859@suse.de>
- <4EF27B85.9080801@am.sony.com>
- <20111222122026.3a0fae36@notabene.brown>
+	id S1754621Ab1LVByu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 20:54:50 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36117 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab1LVBys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 20:54:48 -0500
+Date: Thu, 22 Dec 2011 02:54:42 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: tip-bot for Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        pjt@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:sched/core] sched: Fix cgroup movement of forking process
+Message-ID: <20111222015440.GM17668@somewhere>
+References: <20111215143655.662676b0.nishimura@mxp.nes.nec.co.jp>
+ <tip-4fc420c91f53e0a9f95665c6b14a1983716081e7@git.kernel.org>
+ <20111221172632.GD9213@google.com>
+ <20111221173733.GF9213@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111222122026.3a0fae36@notabene.brown>
+In-Reply-To: <20111221173733.GF9213@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 12:20:26PM +1100, NeilBrown wrote:
-> On Wed, 21 Dec 2011 16:36:21 -0800 Tim Bird <tim.bird@am.sony.com> wrote:
+On Wed, Dec 21, 2011 at 09:37:33AM -0800, Tejun Heo wrote:
+> (cc'ing Frederic)
 > 
-> > On 12/21/2011 03:19 PM, Greg KH wrote:
-> > > That all describes the current code, but you haven't described what's
-> > > wrong with the existing syslog interface that requires this new driver
-> > > to be written.  And why can't the existing interface be fixed to address
-> > > these (potential) shortcomings?
+> On Wed, Dec 21, 2011 at 09:26:32AM -0800, Tejun Heo wrote:
+> > Hello, guys.
 > > 
-> > 
-> > >> One specific question I have is where is the most appropriate
-> > >> place for this code to live, in the kernel source tree?
-> > >> Other embedded systems might want to use this system (it
-> > >> is simpler than syslog, and superior in some ways), so I don't
-> > >> think it should remain in an android-specific directory.
+> > On Wed, Dec 21, 2011 at 03:44:14AM -0800, tip-bot for Daisuke Nishimura wrote:
+> > > sched: Fix cgroup movement of forking process
 > > > 
-> > > What way is it superior?
+> > > There is a small race between task_fork_fair() and sched_move_task(),
+> > > which is trying to move the parent.
+> > > 
+> > >         task_fork_fair()                 sched_move_task()
+> > > --------------------------------+---------------------------------
+> > >   cfs_rq = task_cfs_rq(current)
+> > >     -> cfs_rq is the "old" one.
+> > >   curr = cfs_rq->curr
+> > >     -> curr is set to the parent.
+> > >                                     task_rq_lock()
+> > >                                     dequeue_task()
+> > >                                       ->parent.se.vruntime -= (old)cfs_rq->min_vruntime
+> > >                                     enqueue_task()
+> > >                                       ->parent.se.vruntime += (new)cfs_rq->min_vruntime
+> > >                                     task_rq_unlock()
+> > >   raw_spin_lock_irqsave(rq->lock)
+> > >   se->vruntime = curr->vruntime
+> > >     -> vruntime of the child is set to that of the parent
+> > >        which has already been updated by sched_move_task().
+> > >   se->vruntime -= (old)cfs_rq->min_vruntime.
+> > >   raw_spin_unlock_irqrestore(rq->lock)
+> > > 
+> > > As a result, vruntime of the child becomes far bigger than expected,
+> > > if (new)cfs_rq->min_vruntime >> (old)cfs_rq->min_vruntime.
+> > > 
+> > > This patch fixes this problem by setting "cfs_rq" and "curr" after
+> > > holding the rq->lock.
 > > 
-> > Here are some ways that this code is superior to syslog:
+> > The race shouldn't happen with threadgroup locking scheduled to be
+> > merged for the coming merge window.  sched_fork() and cgroup migration
+> > become exclusive and won't happen concurrently.  Would still make
+> > sense for -stable tho.
 > 
-> It is certainly nice and simple.  It really looks more like a filesystem than
-> a char device though...  though they aren't really files so much as lossy
-> pipes.  I don't think that's a problem though, lots of things in filesystems
-> don't behave exactly like files.
+> I retract that.  sched_move_task() can also be called from
+> cgroup_exit() which is outside of threadgroup locking.
 > 
-> If you created a 'logbuf' filesystem that used libfs to provide a single
-> directory in which privileged processes could create files then you wouldn't
-> need the kernel to "know" the allowed logs: radio, events, main, system.
-> The size could be set by ftruncate() (by privileged used again) rather than
-> being hardcoded.
-> 
-> You would defined 'read' and 'write' much like you currently do to create a list of
-> datagrams in a circular buffer and replace the ioctls by more standard
-> interfaces:
-> 
-> LOGGER_GET_LOG_BUG_SIZE would use 'stat' and the st_blocks field
-> LOGGER_GET_LOG_LEN would use 'stat' and the st_size field
-> LOGGER_GET_NEXT_ENTRY_LEN could use the FIONREAD ioctl
-> LOGGER_FLUSH_LOG could use ftruncate
-> 
-> The result would be much the same amount of code, but an interface which has
-> fewer details hard-coded and is generally more versatile and accessible.
+> Frederic, so, it seems we actually have race conditions here.  I
+> really wish cgroup made sure that things like this can't happen even
+> if we pay a bit of overhead in relatively cold paths.  I could be
+> being unrealistic tho.  Any ideas?
 
-But, almost all of this is already in the syslog system call today,
-right?  So why create a new user api for something we have?
+Hmm, I'm a bit confused about the issue. But doesn't this patch fix the issue?
 
-greg k-h
+Also the parent can't be calling sched_fork() and cgroup_exit() at
+the same time.
+
+Or am I missing something?
