@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab1LVO7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 09:59:00 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab1LVO6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 09:58:47 -0500
+	id S1754672Ab1LVO7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 09:59:17 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:32839 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754295Ab1LVO7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 09:59:12 -0500
 From: Benoit Cousson <b-cousson@ti.com>
 To: <rob.herring@calxeda.com>, <tony@atomide.com>
 CC: <linux-omap@vger.kernel.org>, <akpm@linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <grant.likely@secretlab.ca>,
         <linux-i2c@vger.kernel.org>, <sameo@linux.intel.com>,
-        <ben-linux@fluff.org>, Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH v4 07/12] arm/dts: twl6030: Add DTS file for twl6030 PMIC
-Date: Thu, 22 Dec 2011 15:56:41 +0100
-Message-ID: <1324565806-31142-8-git-send-email-b-cousson@ti.com>
+        <ben-linux@fluff.org>, Benoit Cousson <b-cousson@ti.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH v4 04/12] rtc: rtc-twl: Add DT support for RTC inside twl4030/twl6030
+Date: Thu, 22 Dec 2011 15:56:38 +0100
+Message-ID: <1324565806-31142-5-git-send-email-b-cousson@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
 References: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
@@ -26,63 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a dedicated DTS file for the twl6030 Power IC.
-This chip is a big SoC that will be reused in a lot of various
-OMAP4+ boards.
-
-Note: This file is supposed to be included in a board DTS that will
-create the twl node in order to allow the &twl reference to work.
-
-Exmaple:
-...
-&i2c1 {
-    twl: twl@48 {
-        reg = <0x48>;
-        interrupts = <0 7 4>;
-        interrupt-controller;
-        interrupt-parent = <&gic>;
-    };
-};
-
-/include/ "twl6030.dtsi"
-...
+Add the DT support for the TI rtc-twl present in the twl4030
+and twl6030 devices.
 
 Signed-off-by: Benoit Cousson <b-cousson@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 ---
- arch/arm/boot/dts/twl6030.dtsi |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/twl6030.dtsi
+ Documentation/devicetree/bindings/rtc/twl-rtc.txt |   12 ++++++++++++
+ drivers/rtc/rtc-twl.c                             |   10 ++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/rtc/twl-rtc.txt
 
-diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+diff --git a/Documentation/devicetree/bindings/rtc/twl-rtc.txt b/Documentation/devicetree/bindings/rtc/twl-rtc.txt
 new file mode 100644
-index 0000000..b7b4e5e
+index 0000000..596e0c9
 --- /dev/null
-+++ b/arch/arm/boot/dts/twl6030.dtsi
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++++ b/Documentation/devicetree/bindings/rtc/twl-rtc.txt
+@@ -0,0 +1,12 @@
++* TI twl RTC
 +
-+/*
-+ * Integrated Power Management Chip
-+ * http://www.ti.com/lit/ds/symlink/twl6030.pdf
-+ */
-+&twl {
-+	compatible = "ti,twl6030";
-+	interrupt-controller;
-+	#interrupt-cells = <1>;
++The TWL family (twl4030/6030) contains a RTC.
 +
-+	rtc {
-+		compatible = "ti,twl4030-rtc";
-+		interrupts = <11>;
-+	};
++Required properties:
++- compatible : Should be twl4030-rtc
++
++Examples:
++
++rtc@0 {
++    compatible = "ti,twl4030-rtc";
 +};
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index 20687d5..d43b4f6 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -550,6 +550,11 @@ static int twl_rtc_resume(struct platform_device *pdev)
+ #define twl_rtc_resume  NULL
+ #endif
+ 
++static const struct of_device_id twl_rtc_of_match[] = {
++	{.compatible = "ti,twl4030-rtc", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, twl_rtc_of_match);
+ MODULE_ALIAS("platform:twl_rtc");
+ 
+ static struct platform_driver twl4030rtc_driver = {
+@@ -559,8 +564,9 @@ static struct platform_driver twl4030rtc_driver = {
+ 	.suspend	= twl_rtc_suspend,
+ 	.resume		= twl_rtc_resume,
+ 	.driver		= {
+-		.owner	= THIS_MODULE,
+-		.name	= "twl_rtc",
++		.owner		= THIS_MODULE,
++		.name		= "twl_rtc",
++		.of_match_table = twl_rtc_of_match,
+ 	},
+ };
+ 
 -- 
 1.7.0.4
 
