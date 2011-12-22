@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab1LVKR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 05:17:57 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51254 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753422Ab1LVKRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 05:17:54 -0500
-Date: Thu, 22 Dec 2011 11:15:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
-Message-ID: <20111222101556.GA12976@elte.hu>
-References: <20111221105739.798864333@chello.nl>
- <20111221111143.620776435@chello.nl>
- <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
- <20111222070212.GA9593@elte.hu>
- <1324543413.24803.7.camel@twins>
- <20111222090352.GA11831@elte.hu>
- <1324545242.24803.11.camel@twins>
+	id S1755013Ab1LVKSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 05:18:46 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:44638 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab1LVKSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 05:18:42 -0500
+X-Auth-Info: 2+XT+DMe5829EN11amvTAHyt/XHepAYXHTn2or/3Ygg=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org,
+        "Artem S. Tashkinov" <t.artem@mailcity.com>,
+        Dave Jones <davej@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [resend PATCH for 3.2] procfs: do not confuse jiffies with cputime64_t
+References: <m28vmi7ip3.fsf@igel.home> <201112120922.13633.arnd@arndb.de>
+	<m21usavwi0.fsf_-_@igel.home>
+	<20111212124333.GC14720@tiehlicka.suse.cz>
+	<m2wra2uedy.fsf_-_@igel.home>
+	<20111212131218.GD14720@tiehlicka.suse.cz>
+	<20111221100334.GD27137@tiehlicka.suse.cz>
+	<20111221115919.6beac46f.akpm@linux-foundation.org>
+	<m28vm5pjrl.fsf@igel.home>
+	<20111221155624.1555d8a4.akpm@linux-foundation.org>
+	<m2zkelo428.fsf@igel.home>
+	<20111221161944.ec1c49f9.akpm@linux-foundation.org>
+X-Yow: A KAISER ROLL?!  What good is a Kaiser Roll without a little
+ COLE SLAW on the SIDE?
+Date: Thu, 22 Dec 2011 11:18:36 +0100
+In-Reply-To: <20111221161944.ec1c49f9.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Wed, 21 Dec 2011 16:19:44 -0800")
+Message-ID: <m2wr9o52pv.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324545242.24803.11.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 22 Dec 2011 01:14:39 +0100
+> Andreas Schwab <schwab@linux-m68k.org> wrote:
+>
+>> > a) what effect does this problem have upon users of the kernel?
+>> 
+>> get_idle_time returns the value in the wrong unit.
+>
+> So the "idle" fields in /proc/stat are wrong.
+>
+> We're getting there!  Now, in what way are they wrong?
 
-> On Thu, 2011-12-22 at 10:03 +0100, Ingo Molnar wrote:
-> 
-> > Could be made part of the locking self-tests - that way it 
-> > does not add an extra config option! ;-)
-> 
-> Fair chance it will blow up and disable lockdep for pretty 
-> much every console implementation out there, except 8250serial 
-> when used in conjunction with all patches in this thread.
+They use the wrong unit, off by the factor between jiffies and cputime.
 
-If it blows up without being fixed then it's not a good idea.
+> How could a kernel maintainer recognise that this patch is needed?
 
-> Maybe not the normal vga console, but I haven't tried on a 
-> machine that has a monitor attached yet (they're usually not 
-> on remote power switches and I'm too lazy to reach over and 
-> press reset).
+By running the kernel on one of the architectures that are affected (did
+I already say that on most architectures jiffies and cputime are
+equivalent?).
 
-The VGA console does not require a monitor attached.
+Andreas.
 
-Thanks,
-
-	Ingo
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
