@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1LVGvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 01:51:40 -0500
-Received: from mga03.intel.com ([143.182.124.21]:37668 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab1LVGvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 01:51:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="49654465"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH v3 3/3] ata: add ata port hibernate callbacks
-Date: Thu, 22 Dec 2011 14:50:49 +0800
-Message-Id: <1324536649-5796-4-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1324536649-5796-1-git-send-email-ming.m.lin@intel.com>
-References: <1324536649-5796-1-git-send-email-ming.m.lin@intel.com>
+	id S1752400Ab1LVHCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 02:02:34 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60385 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1LVHCb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 02:02:31 -0500
+Date: Thu, 22 Dec 2011 07:02:15 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        mc@linux.vnet.ibm.com, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, david@fromorbit.com,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] VFS: br_write_lock locks on possible CPUs other than
+ online CPUs
+Message-ID: <20111222070214.GK23916@ZenIV.linux.org.uk>
+References: <4EF0654B.4060904@linux.vnet.ibm.com>
+ <4EF06C9B.4010703@linux.vnet.ibm.com>
+ <4EF084A4.3000106@linux.vnet.ibm.com>
+ <20111220140628.GD23916@ZenIV.linux.org.uk>
+ <4EF09D34.1060607@linux.vnet.ibm.com>
+ <20111220175919.GE23916@ZenIV.linux.org.uk>
+ <4EF0DE04.6030604@linux.vnet.ibm.com>
+ <20111220195806.GF23916@ZenIV.linux.org.uk>
+ <4EF24C71.6000609@linux.vnet.ibm.com>
+ <20111221141229.7f691c43.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111221141229.7f691c43.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/ata/libata-core.c |   40 ++++++++++++++++++++++++++++++++++++----
- 1 files changed, 36 insertions(+), 4 deletions(-)
+On Wed, Dec 21, 2011 at 02:12:29PM -0800, Andrew Morton wrote:
+> off-topic, but the lockdep stuff in include/linux/lglock.h
+> (LOCKDEP_INIT_MAP and DEFINE_LGLOCK_LOCKDEP) appears to be dead code.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 84aa741..8fbcad2 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5281,12 +5281,24 @@ static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 
- #define to_ata_port(d) container_of(d, struct ata_port, tdev)
- 
--static int ata_port_suspend_common(struct device *dev)
-+static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
- {
- 	struct ata_port *ap = to_ata_port(dev);
-+	unsigned int ehi_flags = ATA_EHI_QUIET;
- 	int rc;
- 
--	rc = ata_port_request_pm(ap, PMSG_SUSPEND, 0, ATA_EHI_QUIET, 1);
-+	/*
-+	 * On some hardware, device fails to respond after spun down
-+	 * for suspend.  As the device won't be used before being
-+	 * resumed, we don't need to touch the device.  Ask EH to skip
-+	 * the usual stuff and proceed directly to suspend.
-+	 *
-+	 * http://thread.gmane.org/gmane.linux.ide/46764
-+	 */
-+	if (mesg.event == PM_EVENT_SUSPEND)
-+		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
-+
-+	rc = ata_port_request_pm(ap, mesg, 0, ehi_flags, 1);
- 	return rc;
- }
- 
-@@ -5295,7 +5307,23 @@ static int ata_port_suspend(struct device *dev)
- 	if (pm_runtime_suspended(dev))
- 		return 0;
- 
--	return ata_port_suspend_common(dev);
-+	return ata_port_suspend_common(dev, PMSG_SUSPEND);
-+}
-+
-+static int ata_port_do_freeze(struct device *dev)
-+{
-+	if (pm_runtime_suspended(dev))
-+		pm_runtime_resume(dev);
-+
-+	return ata_port_suspend_common(dev, PMSG_FREEZE);
-+}
-+
-+static int ata_port_poweroff(struct device *dev)
-+{
-+	if (pm_runtime_suspended(dev))
-+		return 0;
-+
-+	return ata_port_suspend_common(dev, PMSG_HIBERNATE);
- }
- 
- static int ata_port_resume_common(struct device *dev)
-@@ -5330,8 +5358,12 @@ static int ata_port_runtime_idle(struct device *dev)
- static const struct dev_pm_ops ata_port_pm_ops = {
- 	.suspend = ata_port_suspend,
- 	.resume = ata_port_resume,
-+	.freeze = ata_port_do_freeze,
-+	.thaw = ata_port_resume,
-+	.poweroff = ata_port_poweroff,
-+	.restore = ata_port_resume,
- 
--	.runtime_suspend = ata_port_suspend_common,
-+	.runtime_suspend = ata_port_suspend,
- 	.runtime_resume = ata_port_resume_common,
- 	.runtime_idle = ata_port_runtime_idle,
- };
--- 
-1.7.2.5
+Um?  See ..._lock_init(); it's used there.
 
+> > + DEFINE_SPINLOCK(name##_cpu_lock);					\
+> > + cpumask_t name##_cpus __read_mostly;					\
+> >   DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
+> >   DEFINE_LGLOCK_LOCKDEP(name);						\
+> >  									\
+> 
+> also off-topic: we can't define a static lglock with this macro.
+
+True...  I don't like the general STL feel of that code, TBH.  The only
+thing that stops me from putting all that stuff into a struct and
+getting rid of those macros from hell is that we'd need to use alloc_percpu()
+and that means extra overhead, potentially quite painful on the "local"
+side of those.  May be worth experimenting with later, but not at this
+point in cycle...
+
+Anyway, to Linus it goes.
