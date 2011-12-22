@@ -1,33 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1LVVwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:52:17 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38042 "EHLO ogre.sisk.pl"
+	id S1756039Ab1LVVwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 16:52:55 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:40754 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab1LVVwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:52:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Subject: Re: runtime PM + legacy PM
-Date: Thu, 22 Dec 2011 22:55:22 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc6+; KDE/4.6.0; x86_64; ; )
-References: <CABUK1ahQ2yYzaezGc=vDYPrL4ejQgC+9oNtvLeFNJRFf9wAGLw@mail.gmail.com>
-In-Reply-To: <CABUK1ahQ2yYzaezGc=vDYPrL4ejQgC+9oNtvLeFNJRFf9wAGLw@mail.gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
+	id S1755993Ab1LVVwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 16:52:53 -0500
+Date: Thu, 22 Dec 2011 22:52:46 +0100
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: linux-kernel mlist <linux-kernel@vger.kernel.org>
+Cc: stable@kernel.org, netdev@vger.kernel.org
+Subject: Re: 3.0.12 - unregister_pernet_gen_subsys hogging whole system
+Message-ID: <20111222215246.GA2694@nik-comp.lan>
+References: <20111222151908.GA11020@pcnci.linuxbox.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112222255.22288.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+In-Reply-To: <20111222151908.GA11020@pcnci.linuxbox.cz>
+"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 5923722 records (last update: 20111222)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 22, 2011, you wrote:
-> Is there a need for the legacy PM to be enabled when device/drivers
-> run-time PM is supported ?
 
-What do you mean by "legacy PM"?
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rafael
+> after updating one of our servers to 3.0.12 kernel, it became painfully s=
+low (actually
+> it's almost unusable).
+>=20
+> trying perf top, I see following:
+>=20
+>             27465.00 - 59.8% : unregister_pernet_gen_subsys
+>              3144.00 -  6.8% : __start_notes
+>              1211.00 -  2.6% : swiotlb_sync_sg
+>              1155.00 -  2.5% : swiotlb_unmap_sg_attrs
+>               621.00 -  1.4% : pci_pm_init
+>               565.00 -  1.2% : swiotlb_map_sg_attrs
+>               503.00 -  1.1% : cgroup_attach_task
+
+crap, I was using too old perf binary - that might be reason why I wasn't a=
+ble
+to find any evidence of unregister_pernet_gen_subsys for 3.x kernels :)
+I switched to 3.0.13 now (and actual perf) and it seems better..
+Should the problem reappear, I'll report it..
+sorry for the fuzz..
+n.
+
+
+>=20
+> I wasn't too successfull trying to find something related, so I'd like to=
+ ask,
+> which subsystem might be calling unregister_pernet_gen_subsys and why?
+> I guess this is certaingly a bug... Could somebody please have a look at =
+this?
+> I'll provide all debugging information I can if needed..
+>=20
+> thanks a lot in advance
+>=20
+> with best regards
+>=20
+> nik
+>=20
+> --=20
+> -------------------------------------
+> Ing. Nikola CIPRICH
+> LinuxBox.cz, s.r.o.
+> 28. rijna 168, 709 01 Ostrava
+>=20
+> tel.:   +420 596 603 142
+> fax:    +420 596 621 273
+> mobil:  +420 777 093 799
+> www.linuxbox.cz
+>=20
+> mobil servis: +420 737 238 656
+> email servis: servis@linuxbox.cz
+> -------------------------------------
+
+
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7zpq4ACgkQ3xdJJrLygV5nLQCgzNe8REKERQOqm5Ib1A/1h++j
+ccgAoJXmhf3bRgoVy6QCgCtGIMzBQq+2
+=cpBN
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
