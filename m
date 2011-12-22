@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1LVENU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 23:13:20 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46734 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753098Ab1LVENR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 23:13:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111222034717.GB14174@suse.de>
-References: <4EF264C3.6000104@am.sony.com> <20111221231956.GB23859@suse.de>
- <4EF27B85.9080801@am.sony.com> <20111222005114.GA22541@suse.de>
- <4EF288B4.1070601@am.sony.com> <20111222014718.GA13085@suse.de>
- <4EF29217.7040408@am.sony.com> <20111222034717.GB14174@suse.de>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 22 Dec 2011 05:12:55 +0100
-Message-ID: <CAPXgP10ikqHFn41wc1HPsKHyaC7fe1WGC2eHqs-hdRaZ7XCTLw@mail.gmail.com>
-Subject: Re: RFC: android logger feedback request
-To: Greg KH <gregkh@suse.de>
-Cc: Tim Bird <tim.bird@am.sony.com>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754789Ab1LVESx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 23:18:53 -0500
+Received: from mail-gy0-f202.google.com ([209.85.160.202]:44218 "EHLO
+	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab1LVESt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 23:18:49 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: [PATCH 3/4] cgroup: only need to check oldcgrp==newgrp once
+Date: Wed, 21 Dec 2011 20:18:37 -0800
+Message-Id: <1324527518-24461-3-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1324527518-24461-1-git-send-email-msb@chromium.org>
+References: <1324527518-24461-1-git-send-email-msb@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:47, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Dec 21, 2011 at 06:12:39PM -0800, Tim Bird wrote:
->> > Again, please see what we are already doing in the kernel and userspace,
->> > I think a lot of the above is already implemented.
->>
->> I don't know what systemd has got going on in user-space.  I'm looking
->> at a very recent kernel, and I see no support for multiple log channels,
->> or an optimized open/write path.
->
-> How is the existing syslog read path not "optimized"?  What kind of
-> speed and numbers are we talking about here?
->
-> Oh, and you do know about the userspace printk tty driver, right?  What
-> about using that combined with the existing syslog system call?
->
-> systemd doesn't use it, but I know of a few embedded systems that are
-> already using it today, and I think it might solve the android issues
-> already.
+In cgroup_attach_proc it is now sufficient to only check that
+oldcgrp==newcgrp once. Now that we are using threadgroup_lock()
+during the migrations, oldcgrp will not change.
 
-We would like to have for the general Linux use case is a kmsg, that
-supports structured data, but looks the same as it looks today to
-current and legacy tools.
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+---
+ kernel/cgroup.c |   22 ++++++----------------
+ 1 files changed, 6 insertions(+), 16 deletions(-)
 
-We would like to have every printk that does not start with a
-KERN_CONT to create a record in the kmsg buffer. This record would
-carry directly a timestamp, the log facility and the log level and a
-reference to the usual human readable string.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a85a700..1042b3c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2067,7 +2067,7 @@ static int css_set_prefetch(struct cgroup *cgrp, struct css_set *cg,
+  */
+ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ {
+-	int retval, i, group_size, nr_migrating_tasks;
++	int retval, i, group_size;
+ 	struct cgroup_subsys *ss, *failed_ss = NULL;
+ 	/* guaranteed to be initialized later, but the compiler needs this */
+ 	struct css_set *oldcg;
+@@ -2118,7 +2118,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	}
+ 
+ 	tsk = leader;
+-	i = nr_migrating_tasks = 0;
++	i = 0;
+ 	do {
+ 		struct task_and_cgroup ent;
+ 
+@@ -2134,11 +2134,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		 */
+ 		ent.task = tsk;
+ 		ent.cgrp = task_cgroup_from_root(tsk, root);
++		/* nothing to do if this task is already in the cgroup */
++		if (ent.cgrp == cgrp)
++			continue;
+ 		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+ 		BUG_ON(retval != 0);
+ 		i++;
+-		if (ent.cgrp != cgrp)
+-			nr_migrating_tasks++;
+ 	} while_each_thread(leader, tsk);
+ 	/* remember the number of threads in the array for later. */
+ 	group_size = i;
+@@ -2148,7 +2149,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 
+ 	/* methods shouldn't be called if no task is actually migrating */
+ 	retval = 0;
+-	if (!nr_migrating_tasks)
++	if (!group_size)
+ 		goto out_free_group_list;
+ 
+ 	/*
+@@ -2171,14 +2172,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	INIT_LIST_HEAD(&newcg_list);
+ 	for (i = 0; i < group_size; i++) {
+ 		tc = flex_array_get(group, i);
+-		/* nothing to do if this task is already in the cgroup */
+-		if (tc->cgrp == cgrp)
+-			continue;
+-		/*
+-		 * get old css_set pointer. threadgroup is locked so this is
+-		 * safe against concurrent cgroup_exit() changing this to
+-		 * init_css_set.
+-		 */
+ 		oldcg = tc->task->cgroups;
+ 
+ 		/* if we don't already have it in the list get a new one */
+@@ -2194,9 +2187,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	 */
+ 	for (i = 0; i < group_size; i++) {
+ 		tc = flex_array_get(group, i);
+-		/* leave current thread as it is if it's already there */
+-		if (tc->cgrp == cgrp)
+-			continue;
+ 		retval = cgroup_task_migrate(cgrp, tc->cgrp, tc->task, true);
+ 		BUG_ON(retval);
+ 	}
+-- 
+1.7.3.1
 
-The current kmsg prefixing of the timestamp would be a runtime switch,
-and just added when the records are traversed, instead of the current
-buffer printing.
-
-In addition to this common data, every record can carry a
-'dictionary', which basically looks like a process environment, means
-KEY=value pairs. The additional data can carry all the stuff that is
-needed for structured logging and provides the base for machine
-readable log information.
-
-We don't want to separate multiple stores to avoid ordering problems
-when the messages need to be merged from the multiple streams on the
-receiver side.
-
-I think this is theoretically all possible with the current kmsg,
-without breaking anything. The current interfaces would iterate over
-the record list and print out the human readable parts and skip the
-metadata, instead of just copying a linear byte stream. To tools, it
-could look the same as it is currently. It's just that the ring buffer
-is not a byte- but a record-buffer.
-
-Advanced tools could get a new interface or switch the old interface
-to pipe out the structured data too.
-
-In the systemd journal, we have an ASCII-like stream format that
-carries out structured data and is binary data capable.
-
-If we want to think about any next generation logging, I'm convinced,
-we need to support records, structured data and binary data; anything
-else is unlikely worth to change the current stuff.
-
-Kay
