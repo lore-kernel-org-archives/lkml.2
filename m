@@ -1,168 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab1LVCOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:14:21 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:51383 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab1LVCOS (ORCPT
+	id S1754629Ab1LVCOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:14:33 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:2155
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752935Ab1LVCO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:14:18 -0500
-Message-ID: <4EF29276.5050309@gmail.com>
-Date: Wed, 21 Dec 2011 21:14:14 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 21 Dec 2011 21:14:27 -0500
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2dI9371I103dK1432N98dKzz1202hzzz2fh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4EF2926F.1080403@am.sony.com>
+Date: Wed, 21 Dec 2011 18:14:07 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-To: Yasunori Goto <y-goto@jp.fujitsu.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-References: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com>
-In-Reply-To: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: NeilBrown <neilb@suse.de>
+CC: Greg KH <gregkh@suse.de>, linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: RFC: android logger feedback request
+References: <4EF264C3.6000104@am.sony.com>	<20111221231956.GB23859@suse.de>	<4EF27B85.9080801@am.sony.com> <20111222122026.3a0fae36@notabene.brown>
+In-Reply-To: <20111222122026.3a0fae36@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/21/11 7:42 PM), Yasunori Goto wrote:
->
-> Hello
->
-> I found TASK_DEAD task is able to be woken up in special condition.
-> I would like to report this bug. Please check it.
->
-> Here is the sequence how it occurs.
->
-> ----------------------------------+-----------------------------
->                                    |
->             CPU A                  |             CPU B
-> ----------------------------------+-----------------------------
-> TASK A calls exit()....
->
-> do_exit()
->
->    exit_mm()
->      down_read(mm->mmap_sem);
->
->      rwsem_down_failed_common()
->
->        set TASK_UNINTERRUPTIBLE
->        set waiter.task<= task A
->        list_add to sem->wait_list
->             :
->        raw_spin_unlock_irq()
->        (I/O interruption occured)
->
->                                        __rwsem_do_wake(mmap_sem)
->
->                                          list_del(&waiter->list);
->                                          waiter->task = NULL
->                                          wake_up_process(task A)
->                                            try_to_wake_up()
->                                               (task is still
->                                                 TASK_UNINTERRUPTIBLE)
->                                                p->on_rq is still 1.)
->
->                                                ttwu_do_wakeup()
->                                                   (*A)
->                                                     :
->       (I/O interruption handler finished)
->
->        if (!waiter.task)
->            schedule() is not called
->            due to waiter.task is NULL.
->
->        tsk->state = TASK_RUNNING
->
->            :
->                                                check_preempt_curr();
->                                                    :
->    task->state = TASK_DEAD
->                                                (*B)
->                                          <---    set TASK_RUNNING (*C)
->
->
->
->       schedule()
->       (exit task is running again)
->       BUG_ON() is called!
-> --------------------------------------------------------
->
->
-> You probably think that execution time between (*A) and (*B) is very short,
-> because the interruption is disabled, and setting TASK_RUNNING at (*C)
-> must be executed before setting TASK_DEAD.
->
->
-> HOWEVER, if SMI is interrupted between (*A) and (*B),
-> (*C) is able to execute AFTER setting TASK_DEAD!
-> Then, exited task is scheduled again, and BUG_ON() is called....
->
-> This is very bad senario.
-> But, I suppose this phenomenon is able to occur on a guest system of
-> virtual machine too.
->
-> Please fix it.
->
-> I suppose task->pi_lock should be held when task->state is changed to
-> TASK_DEAD like the following patch (not tested yet).
-> Because try_to_wake_up() hold it before checking task state.
->
->
-> Thanks,
->
-> ----
-> Signed-off-by: Yasunori Goto<y-goto@jp.fujitsu.com>
->
-> ---
->   kernel/exit.c |    3 +++
->   1 file changed, 3 insertions(+)
->
-> Index: linux-3.2-rc4/kernel/exit.c
-> ===================================================================
-> --- linux-3.2-rc4.orig/kernel/exit.c
-> +++ linux-3.2-rc4/kernel/exit.c
-> @@ -1038,8 +1038,11 @@ NORET_TYPE void do_exit(long code)
->
->   	preempt_disable();
->   	exit_rcu();
-> +
-> +	spin_lock(&tsk->pi_lock, flags);
->   	/* causes final put_task_struct in finish_task_switch(). */
->   	tsk->state = TASK_DEAD;
-> +	spin_unlock(&tsk->pi_lock, flags);
->   	schedule();
->   	BUG();
->   	/* Avoid "noreturn function does return".  */
+On 12/21/2011 05:20 PM, NeilBrown wrote:
+> It is certainly nice and simple.  It really looks more like a filesystem than
+> a char device though...  though they aren't really files so much as lossy
+> pipes.  I don't think that's a problem though, lots of things in filesystems
+> don't behave exactly like files.
+> 
+> If you created a 'logbuf' filesystem that used libfs to provide a single
+> directory in which privileged processes could create files then you wouldn't
+> need the kernel to "know" the allowed logs: radio, events, main, system.
+> The size could be set by ftruncate() (by privileged used again) rather than
+> being hardcoded.
+> 
+> You would defined 'read' and 'write' much like you currently do to create a list of
+> datagrams in a circular buffer and replace the ioctls by more standard
+> interfaces:
+> 
+> LOGGER_GET_LOG_BUG_SIZE would use 'stat' and the st_blocks field
+> LOGGER_GET_LOG_LEN would use 'stat' and the st_size field
+> LOGGER_GET_NEXT_ENTRY_LEN could use the FIONREAD ioctl
+> LOGGER_FLUSH_LOG could use ftruncate
+> 
+> The result would be much the same amount of code, but an interface which has
+> fewer details hard-coded and is generally more versatile and accessible.
 
-I doubt it is not only TASK_DEAD issue, it is rwsem fundamental issue.
-Because of, a lot of place assume "current->state = newstate" is safe
-and don't need any synchronization. So, I'm worry about to lost 
-TASK_UNINTERRUPTIBLE can make catastrophe like TASK_DEAD.
+This is a very interesting suggestion.  I think it would be good to
+create a prototype of this and see how it affects the user-space code
+as well as what the kernel-side issues would be (and to check whether
+this would change any of the current logger semantics).
 
-How about following patch? anyway, rwsem_down_failed_common() is 
-definitely slowpath. so killing micro optimization is not so much
-problem, I guess.
+It would also have the side effect of allowing runtime modification of
+the buffer size, though I'm not sure whether that's useful or not.
 
+Thanks!
+ -- Tim
 
-
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 410aa11..e2a0c9a 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -208,9 +208,9 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
-
-         /* wait to be given the lock */
-         for (;;) {
-+               schedule();
-                 if (!waiter.task)
-                         break;
--               schedule();
-                 set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-         }
-
-
-
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
