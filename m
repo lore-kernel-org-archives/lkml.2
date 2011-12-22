@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1LVLKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 06:10:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51582 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755176Ab1LVLKh (ORCPT
+	id S1755225Ab1LVLPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 06:15:42 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36524 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab1LVLPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 06:10:37 -0500
-Date: Thu, 22 Dec 2011 11:10:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 1/7 v2] ARM: OMAP1: ams-delta: register latch
- dependent devices later
-Message-ID: <20111222111032.GK4546@opensource.wolfsonmicro.com>
-References: <201112200028.32947.jkrzyszt@tis.icnet.pl>
- <201112212051.13113.jkrzyszt@tis.icnet.pl>
- <20111221200728.GG24444@atomide.com>
- <201112221139.16317.jkrzyszt@tis.icnet.pl>
- <4EF30F9C.7030708@bitmer.com>
+	Thu, 22 Dec 2011 06:15:40 -0500
+Message-ID: <4EF3114C.6020406@linux.vnet.ibm.com>
+Date: Thu, 22 Dec 2011 16:45:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EF30F9C.7030708@bitmer.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Mickler <florian@mickler.org>, davem@davemloft.net,
+        "pavel@ucw.cz" <pavel@ucw.cz>, Chris Ball <cjb@laptop.org>,
+        manuel.lauss@googlemail.com, Udo Steinberg <udo@hypervisor.org>
+Subject: Re: [Resend] 3.2-rc6+: Reported regressions from 3.0 and 3.1
+References: <201112210054.46995.rjw@sisk.pl>
+In-Reply-To: <201112210054.46995.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11122201-1396-0000-0000-0000006E707C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 01:08:12PM +0200, Jarkko Nikula wrote:
-> On 12/22/2011 12:39 PM, Janusz Krzysztofik wrote:
+On 12/21/2011 05:24 AM, Rafael J. Wysocki wrote:
 
-Guys *please* delete irrelevant context from mails.  I wasn't reading
-any of the rest of it since nothing about the subject line says anything
-about anything relevant and there was no content anywhere near the start
-of the actual mails.  I only saw this because Jarkko did trim the
-context.
+> [Evidently, vger has blocked the previous attempts to post this message
+> for some reason.  I wonder why?]
+> 
+> This message contains a list of some regressions from 3.0 and 3.1
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
+> 
+> If you know of any other unresolved regressions from 3.0 and 3.1, please let us
+> know either and we'll add them to the list.  Also, please let us know if any of
+> the entries below are invalid.
+> 
+> The entries below are simplified and the statistics are not present due to the
+> continuing Bugzilla outage.
+> 
+> 
+> Subject    : 3.2-rc2: regression after hibernate: lots of warnings, broken 
+> system
+> Submitter  : Pavel Machek <pavel@ucw.cz>
+> Date       : 2011-11-24 15:40
+> Message-ID : 20111124154014.GA2153@elf.ucw.cz
+> References : http://marc.info/?l=linux-kernel&m=132214929818015&w=2
+> 
 
-> >Jarkko, Mark or Liam, care to ack this change, moving the Amstrad Delta
-> >sound card registration to late_initcall?
 
-> Unfortunately I haven't had time to look at the series but I'm fine
-> with sound/soc/omap/ams-delta.c change.
+This one looks a bit similar to the one reported at
+http://thread.gmane.org/gmane.linux.kernel/1230509/ which is fixed by
+commit 29495aa04a30c21565243c5b9c028510446d242c.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+ 
+
+Regards,
+Srivatsa S. Bhat
+
