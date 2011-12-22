@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab1LVT6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 14:58:10 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55631 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab1LVT6I (ORCPT
+	id S1755744Ab1LVUBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 15:01:13 -0500
+Received: from mail-ey0-f194.google.com ([209.85.215.194]:54697 "EHLO
+	mail-ey0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1LVUBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 14:58:08 -0500
-Date: Thu, 22 Dec 2011 19:58:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Thu, 22 Dec 2011 15:01:10 -0500
+Message-ID: <1324584060.4222.15.camel@hp>
+Subject: [PATCH]sched: stop hrtick timer if running task is switching from
+ fair scheduling class to another
+From: Kirill Tkhai <kirill.tkhai@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Subject: [sigh] binder shite is back ;-/
-Message-ID: <20111222195807.GP23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Fri, 23 Dec 2011 00:01:00 +0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-3+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thesis: binder is a true example of what "Enterprise Quality" means.
-Nothing good, that is.
+[PATCH]sched: stop hrtick timer if running task is switching from fair
+scheduling class to another
 
-Exhibit 1:
-in their ->mmap() they have
-        if (proc->buffer) {
-                ret = -EBUSY;
-                failure_string = "already mapped";
-                goto err_already_mapped;
-        }
+We have to stop hrtick timer to avoid excess interrupt. Not-fair tasks
+are not interested in fair's hrtick. RT class uses its own fixed
+timeslice (in case of RR), which doesn't depend on current value of hrtick
+timer.
 
-        area = get_vm_area(vma->vm_end - vma->vm_start, VM_IOREMAP);
-        if (area == NULL) {
-                ret = -ENOMEM;
-                failure_string = "get_vm_area";
-                goto err_get_vm_area_failed;
-        }  
-        proc->buffer = area->addr;
+Kernel tree/version/git: next-20111216
 
-Note that there's nothing stopping two processes from doing mmap() on the
-same file at the same time.
+This is resending, nobody answered me in previous time.
 
-Exhibit 2: while proc->files is set to the ->files of whoever does mmap(),
-proc->tsk is set to task_struct of whoever does open().  Then
-task_get_unused_fd_flags() does expand ->files after having checked
-rlimit on ->tsk.
+Signed-off-by: Kirill Tkhai <kirill.tkhai@gmail.com>
+---
 
-Exhibit 3:
-        if (vma)
-                mm = NULL;
-        else   
-                mm = get_task_mm(proc->tsk);    
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 211cdc5..7733ba7 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -368,7 +368,7 @@ static struct rq *this_rq_lock(void)
+  * rq->lock.
+  */
+ 
+-static void hrtick_clear(struct rq *rq)
++void hrtick_clear(struct rq *rq)
+ {
+ 	if (hrtimer_active(&rq->hrtick_timer))
+ 		hrtimer_cancel(&rq->hrtick_timer);
+@@ -480,10 +480,6 @@ static void init_rq_hrtick(struct rq *rq)
+ 	rq->hrtick_timer.function = hrtick;
+ }
+ #else	/* CONFIG_SCHED_HRTICK */
+-static inline void hrtick_clear(struct rq *rq)
+-{
+-}
+-
+ static inline void init_rq_hrtick(struct rq *rq)
+ {
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a4d2b7a..b083a91 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5271,6 +5271,13 @@ static void switched_from_fair(struct rq *rq,
+struct task_struct *p)
+ 		place_entity(cfs_rq, se, 0);
+ 		se->vruntime -= cfs_rq->min_vruntime;
+ 	}
++
++	/*
++	 * Other scheduling classes are not interested in fair's hrtick timer.
++	 */
++	if (task_current(rq, p) && sched_feat(HRTICK))
++		hrtick_clear(rq);
++
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index d8d3613..f3c177c 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -936,6 +936,8 @@ static inline int hrtick_enabled(struct rq *rq)
+ 	return hrtimer_is_hres_active(&rq->hrtick_timer);
+ }
+ 
++void hrtick_clear(struct rq *rq);
++
+ void hrtick_start(struct rq *rq, u64 delay);
+ 
+ #else
+@@ -945,6 +947,10 @@ static inline int hrtick_enabled(struct rq *rq)
+ 	return 0;
+ }
+ 
++static inline void hrtick_clear(struct rq *rq)
++{
++}
++
+ #endif /* CONFIG_SCHED_HRTICK */
+ 
+ #ifdef CONFIG_SMP
 
-        if (mm) {
-                down_write(&mm->mmap_sem);
-                vma = proc->vma;
-        }
-Note that proc->vma is created by whoever had done mmap(), _not_ whoever
-had done open().  Not to mention that there's no reason why either task would
-still have the original ->mm...
 
-Exhibit 4: mmap that thing and then fork().  Leaving aside the joy of
-getting stack dumps in your face, it will succeed.  And then when you
-unmap that thing in child (or child exits, for that matter) you'll get
-proc->vma = NULL.  On a live one.
 
-Exhibit 5: while we are at it, mmap one and then munmap its middle.
 
-As far as I can see, the basic attitude in that code is "surely, nobody
-will do anything unexpected to poor li'l me".  As far as I can tell,
-manipulations of descriptor tables suffer the same kind of braindamage,
-etc.
+
+
