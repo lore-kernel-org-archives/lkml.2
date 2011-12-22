@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1LVCUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:20:52 -0500
+	id S1754788Ab1LVCU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:20:57 -0500
 Received: from [12.239.217.82] ([12.239.217.82]:9459 "EHLO venom.synaptics.com"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754603Ab1LVCUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:20:47 -0500
+	id S1754764Ab1LVCUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:20:52 -0500
 X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 21:20:28 EST
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -16,9 +16,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Joerie de Gram <j.de.gram@gmail.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 8/11] input: RMI4 F54 - analog data reporting
-Date: Wed, 21 Dec 2011 18:09:59 -0800
-Message-Id: <1324519802-23894-9-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 11/11] input: RMI4 F11 - multifinger pointing
+Date: Wed, 21 Dec 2011 18:10:02 -0800
+Message-Id: <1324519802-23894-12-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
 References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
@@ -35,18 +35,18 @@ Cc: Joeri de Gram <j.de.gram@gmail.com>
 
 ---
 
- drivers/input/rmi4/rmi_f54.c | 1506 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 1506 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f11.c | 1860 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1860 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_f54.c b/drivers/input/rmi4/rmi_f54.c
+diff --git a/drivers/input/rmi4/rmi_f11.c b/drivers/input/rmi4/rmi_f11.c
 new file mode 100644
-index 0000000..5119184
+index 0000000..9516995
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_f54.c
-@@ -0,0 +1,1506 @@
-+
++++ b/drivers/input/rmi4/rmi_f11.c
+@@ -0,0 +1,1860 @@
 +/*
 + * Copyright (c) 2011 Synaptics Incorporated
++ * Copyright (c) 2011 Unixphere
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -62,502 +62,1375 @@ index 0000000..5119184
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
-+#include <linux/hrtimer.h>
++
 +#include <linux/kernel.h>
-+#include <linux/rmi.h>
 +#include <linux/slab.h>
-+#include <linux/version.h>
++#include <linux/input.h>
++#include <linux/rmi.h>
++
++#define RESUME_REZERO (1 && defined(CONFIG_PM))
++#if RESUME_REZERO
 +#include <linux/delay.h>
-+#include "rmi_driver.h"
-+/* Set this to 1 for raw hex dump of returned data. */
-+#define RAW_HEX 0
-+/* Set this to 1 for human readable dump of returned data. */
-+#define HUMAN_READABLE 0
-+/* The watchdog timer can be useful when debugging certain firmware related
-+ * issues.
++#define DEFAULT_REZERO_WAIT_MS	40
++#endif
++
++#define F11_MAX_NUM_OF_SENSORS		8
++#define F11_MAX_NUM_OF_FINGERS		10
++#define F11_MAX_NUM_OF_TOUCH_SHAPES	16
++
++#define F11_REL_POS_MIN		-128
++#define F11_REL_POS_MAX		127
++
++#define F11_FINGER_STATE_MASK	0x03
++#define F11_FINGER_STATE_SIZE	0x02
++#define F11_FINGER_STATE_MASK_N(i) \
++		(F11_FINGER_STATE_MASK << (i%4 * F11_FINGER_STATE_SIZE))
++
++#define F11_FINGER_STATE_VAL_N(f_state, i) \
++		(f_state >> (i%4 * F11_FINGER_STATE_SIZE))
++
++#define F11_CTRL_SENSOR_MAX_X_POS_OFFSET	6
++#define F11_CTRL_SENSOR_MAX_Y_POS_OFFSET	8
++
++#define F11_CEIL(x, y) (((x) + ((y)-1)) / (y))
++
++/* By default, we'll support two fingers if we can't figure out how many we
++ * really need to handle.
 + */
-+#define F54_WATCHDOG 1
++#define DEFAULT_NR_OF_FINGERS 2
++#define DEFAULT_XY_MAX 9999
++#define DEFAULT_MAX_ABS_MT_PRESSURE 255
++#define DEFAULT_MAX_ABS_MT_TOUCH 15
++#define DEFAULT_MAX_ABS_MT_ORIENTATION 1
++#define DEFAULT_MIN_ABS_MT_TRACKING_ID 1
++#define DEFAULT_MAX_ABS_MT_TRACKING_ID 10
++#define MAX_LEN 256
 +
-+#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 32)
-+#define KERNEL_VERSION_ABOVE_2_6_32 1
-+#endif
++static ssize_t f11_flip_show(struct device *dev,
++				   struct device_attribute *attr, char *buf);
 +
-+/* define fn $54 commands */
-+#define GET_REPORT                1
-+#define FORCE_CAL                 2
++static ssize_t f11_flip_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t count);
 +
-+/* status */
-+#define BUSY 1
-+#define IDLE 0
++static ssize_t f11_clip_show(struct device *dev,
++				   struct device_attribute *attr, char *buf);
 +
-+/* Offsets for data */
-+#define RMI_F54_REPORT_DATA_OFFSET	3
-+#define RMI_F54_FIFO_OFFSET		1
-+#define RMI_F54_NUM_TX_OFFSET		1
-+#define RMI_F54_NUM_RX_OFFSET		0
++static ssize_t f11_clip_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t count);
 +
-+/* Fixed sizes of reports */
-+#define RMI_54_FULL_RAW_CAP_MIN_MAX_SIZE 4
-+#define RMI_54_HIGH_RESISTANCE_SIZE 6
-+
-+/* definitions for F54 Query Registers in ultra-portable unionstruct form */
-+struct f54_ad_query {
-+	/* query 0 */
-+	u8 number_of_receiver_electrodes;
-+
-+	/* query 1 */
-+	u8 number_of_transmitter_electrodes;
-+
-+	union {
-+		struct {
-+			/* query2 */
-+			u8 f54_ad_query2_b0__1:2;
-+			u8 has_baseline:1;
-+			u8 has_image8:1;
-+			u8 f54_ad_query2_b4__5:2;
-+			u8 has_image16:1;
-+			u8 f54_ad_query2_b7:1;
-+		};
-+		u8 f54_ad_query2;
-+	};
-+
-+	/* query 3.0 and 3.1 */
-+	u16 clock_rate;
-+
-+	/* query 4 */
-+	u8 touch_controller_family;
-+
-+	/* query 5 */
-+	union {
-+		struct {
-+			u8 has_pixel_touch_threshold_adjustment:1;
-+			u8 f54_ad_query5_b1__7:7;
-+		};
-+		u8 f54_ad_query5;
-+	};
-+
-+	/* query 6 */
-+	union {
-+		struct {
-+		u8 has_sensor_assignment:1;
-+		u8 has_interference_metric:1;
-+		u8 has_sense_frequency_control:1;
-+		u8 has_firmware_noise_mitigation:1;
-+		u8 f54_ad_query6_b4:1;
-+		u8 has_two_byte_report_rate:1;
-+		u8 has_one_byte_report_rate:1;
-+		u8 has_relaxation_control:1;
-+		};
-+		u8 f54_ad_query6;
-+	};
-+
-+	/* query 7 */
-+	union {
-+		struct {
-+			u8 curve_compensation_mode:2;
-+			u8 f54_ad_query7_b2__7:6;
-+		};
-+		u8 f54_ad_query7;
-+	};
-+
-+	/* query 8 */
-+	union {
-+		struct {
-+		u8 f54_ad_query2_b0:1;
-+		u8 has_iir_filter:1;
-+		u8 has_cmn_removal:1;
-+		u8 has_cmn_maximum:1;
-+		u8 has_pixel_threshold_hysteresis:1;
-+		u8 has_edge_compensation:1;
-+		u8 has_perf_frequency_noisecontrol:1;
-+		u8 f54_ad_query8_b7:1;
-+		};
-+		u8 f54_ad_query8;
-+	};
-+
-+	u8 f54_ad_query9;
-+	u8 f54_ad_query10;
-+	u8 f54_ad_query11;
-+
-+	/* query 12 */
-+	union {
-+		struct {
-+			u8 number_of_sensing_frequencies:4;
-+			u8 f54_ad_query12_b4__7:4;
-+		};
-+		u8 f54_ad_query12;
-+	};
-+};
-+
-+/* define report types */
-+enum f54_report_types {
-+	/* The numbering should follow automatically, here for clarity */
-+	F54_8BIT_IMAGE = 1,
-+	F54_16BIT_IMAGE = 2,
-+	F54_RAW_16BIT_IMAGE = 3,
-+	F54_HIGH_RESISTANCE = 4,
-+	F54_TX_TO_TX_SHORT = 5,
-+	F54_RX_TO_RX1 = 7,
-+	F54_TRUE_BASELINE = 9,
-+	F54_FULL_RAW_CAP_MIN_MAX = 13,
-+	F54_RX_OPENS1 = 14,
-+	F54_TX_OPEN = 15,
-+	F54_TX_TO_GROUND = 16,
-+	F54_RX_TO_RX2 = 17,
-+	F54_RX_OPENS2 = 18,
-+	F54_FULL_RAW_CAP = 19,
-+	F54_FULL_RAW_CAP_RX_COUPLING_COMP = 20
-+};
-+
-+/* data specific to fn $54 that needs to be kept around */
-+struct rmi_fn_54_data {
-+	struct f54_ad_query query;
-+	u8 cmd;
-+	enum f54_report_types report_type;
-+	u16 fifoindex;
-+	signed char status;
-+	bool no_auto_cal;
-+	/*
-+	 * May need to do something to make sure this reflects what is currently
-+	 * in data.
-+	 */
-+	unsigned int report_size;
-+	unsigned char *report_data;
-+	unsigned int bufsize;
-+	struct mutex data_mutex;
-+	struct lock_class_key data_key;
-+	struct mutex status_mutex;
-+	struct lock_class_key status_key;
-+#if F54_WATCHDOG
-+	struct hrtimer watchdog;
-+#endif
-+	struct rmi_function_container *fc;
-+	struct work_struct work;
-+};
-+
-+/* sysfs functions */
-+static ssize_t rmi_fn_54_report_type_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_report_type_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_54_get_report_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_54_force_cal_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_54_status_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
-+
-+
-+static ssize_t rmi_fn_54_status_store(struct device *dev,
-+				  struct device_attribute *attr,
-+				  const char *buf, size_t count);
-+
-+#ifdef KERNEL_VERSION_ABOVE_2_6_32
-+static ssize_t rmi_fn_54_data_read(struct file *data_file, struct kobject *kobj,
-+#else
-+static ssize_t rmi_fn_54_data_read(struct kobject *kobj,
-+#endif
-+					struct bin_attribute *attributes,
-+					char *buf, loff_t pos, size_t count);
-+
-+static ssize_t rmi_fn_54_num_rx_electrodes_show(struct device *dev,
++static ssize_t f11_offset_show(struct device *dev,
 +				     struct device_attribute *attr, char *buf);
 +
-+static ssize_t rmi_fn_54_num_tx_electrodes_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++static ssize_t f11_offset_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t count);
 +
-+static ssize_t rmi_fn_54_has_image16_show(struct device *dev,
++static ssize_t f11_swap_show(struct device *dev,
++				   struct device_attribute *attr, char *buf);
++
++static ssize_t f11_swap_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t count);
++
++static ssize_t f11_relreport_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf);
++
++static ssize_t f11_relreport_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count);
++
++static ssize_t f11_maxPos_show(struct device *dev,
 +				     struct device_attribute *attr, char *buf);
 +
-+static ssize_t rmi_fn_54_has_image8_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++static ssize_t f11_rezero_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count);
 +
-+static ssize_t rmi_fn_54_has_baseline_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++#if RESUME_REZERO
++static ssize_t f11_rezeroOnResume_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf);
 +
-+static ssize_t rmi_fn_54_clock_rate_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++static ssize_t f11_rezeroOnResume_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count);
++static ssize_t f11_rezeroWait_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf);
 +
-+
-+static ssize_t rmi_fn_54_touch_controller_family_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
-+
-+
-+static ssize_t rmi_fn_54_has_pixel_touch_threshold_adjustment_show(
-+		struct device *dev, struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_sensor_assignment_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_interference_metric_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_sense_frequency_control_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_firmware_noise_mitigation_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_two_byte_report_rate_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_one_byte_report_rate_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_relaxation_control_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_curve_compensation_mode_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_iir_filter_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_cmn_removal_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_cmn_maximum_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_pixel_threshold_hysteresis_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_edge_compensation_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_has_perf_frequency_noisecontrol_show(
-+		struct device *dev, struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_number_of_sensing_frequencies_show(struct device *dev,
-+			struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_no_auto_cal_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_no_auto_cal_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_54_fifoindex_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_54_fifoindex_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count);
++static ssize_t f11_rezeroWait_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count);
++#endif
 +
 +
-+static inline int rmi_f54_alloc_memory(struct rmi_function_container *fc);
++static inline void rmi_f11_free_memory(struct rmi_function_container *fc);
 +
-+static inline void rmi_f54_free_memory(struct rmi_function_container *fc);
++static inline int rmi_f11_initialize(struct rmi_function_container *fc);
 +
-+static inline int rmi_f54_initialize(struct rmi_function_container *fc);
++static inline int rmi_f11_create_sysfs(struct rmi_function_container *fc);
 +
-+static int rmi_f54_config(struct rmi_function_container *fc);
++static int rmi_f11_config(struct rmi_function_container *fc);
 +
-+static int rmi_f54_reset(struct rmi_function_container *fc);
++static int rmi_f11_reset(struct rmi_function_container *fc);
 +
-+static inline int rmi_f54_create_sysfs(struct rmi_function_container *fc);
++static inline int rmi_f11_register_devices(struct rmi_function_container *fc);
++
++static inline void rmi_f11_free_devices(struct rmi_function_container *fc);
 +
 +
 +static struct device_attribute attrs[] = {
-+	__ATTR(report_type, RMI_RW_ATTR,
-+		rmi_fn_54_report_type_show, rmi_fn_54_report_type_store),
-+	__ATTR(get_report, RMI_WO_ATTR,
-+		rmi_show_error, rmi_fn_54_get_report_store),
-+	__ATTR(force_cal, RMI_WO_ATTR,
-+		   rmi_show_error, rmi_fn_54_force_cal_store),
-+	__ATTR(status, RMI_RW_ATTR,
-+		rmi_fn_54_status_show, rmi_fn_54_status_store),
-+	__ATTR(num_rx_electrodes, RMI_RO_ATTR,
-+		rmi_fn_54_num_rx_electrodes_show, rmi_store_error),
-+	__ATTR(num_tx_electrodes, RMI_RO_ATTR,
-+		rmi_fn_54_num_tx_electrodes_show, rmi_store_error),
-+	__ATTR(has_image16, RMI_RO_ATTR,
-+		rmi_fn_54_has_image16_show, rmi_store_error),
-+	__ATTR(has_image8, RMI_RO_ATTR,
-+		rmi_fn_54_has_image8_show, rmi_store_error),
-+	__ATTR(has_baseline, RMI_RO_ATTR,
-+		rmi_fn_54_has_baseline_show, rmi_store_error),
-+	__ATTR(clock_rate, RMI_RO_ATTR,
-+		rmi_fn_54_clock_rate_show, rmi_store_error),
-+	__ATTR(touch_controller_family, RMI_RO_ATTR,
-+		rmi_fn_54_touch_controller_family_show, rmi_store_error),
-+	__ATTR(has_pixel_touch_threshold_adjustment, RMI_RO_ATTR,
-+		rmi_fn_54_has_pixel_touch_threshold_adjustment_show
-+							, rmi_store_error),
-+	__ATTR(has_sensor_assignment, RMI_RO_ATTR,
-+		rmi_fn_54_has_sensor_assignment_show, rmi_store_error),
-+	__ATTR(has_interference_metric, RMI_RO_ATTR,
-+		rmi_fn_54_has_interference_metric_show, rmi_store_error),
-+	__ATTR(has_sense_frequency_control, RMI_RO_ATTR,
-+		rmi_fn_54_has_sense_frequency_control_show, rmi_store_error),
-+	__ATTR(has_firmware_noise_mitigation, RMI_RO_ATTR,
-+		rmi_fn_54_has_firmware_noise_mitigation_show, rmi_store_error),
-+	__ATTR(has_two_byte_report_rate, RMI_RO_ATTR,
-+		rmi_fn_54_has_two_byte_report_rate_show, rmi_store_error),
-+	__ATTR(has_one_byte_report_rate, RMI_RO_ATTR,
-+		rmi_fn_54_has_one_byte_report_rate_show, rmi_store_error),
-+	__ATTR(has_relaxation_control, RMI_RO_ATTR,
-+		rmi_fn_54_has_relaxation_control_show, rmi_store_error),
-+	__ATTR(curve_compensation_mode, RMI_RO_ATTR,
-+		rmi_fn_54_curve_compensation_mode_show, rmi_store_error),
-+	__ATTR(has_iir_filter, RMI_RO_ATTR,
-+		rmi_fn_54_has_iir_filter_show, rmi_store_error),
-+	__ATTR(has_cmn_removal, RMI_RO_ATTR,
-+		rmi_fn_54_has_cmn_removal_show, rmi_store_error),
-+	__ATTR(has_cmn_maximum, RMI_RO_ATTR,
-+		rmi_fn_54_has_cmn_maximum_show, rmi_store_error),
-+	__ATTR(has_pixel_threshold_hysteresis, RMI_RO_ATTR,
-+		rmi_fn_54_has_pixel_threshold_hysteresis_show, rmi_store_error),
-+	__ATTR(has_edge_compensation, RMI_RO_ATTR,
-+		rmi_fn_54_has_edge_compensation_show, rmi_store_error),
-+	__ATTR(has_perf_frequency_noisecontrol, RMI_RO_ATTR,
-+	      rmi_fn_54_has_perf_frequency_noisecontrol_show, rmi_store_error),
-+	__ATTR(number_of_sensing_frequencies, RMI_RO_ATTR,
-+		rmi_fn_54_number_of_sensing_frequencies_show, rmi_store_error),
-+	__ATTR(no_auto_cal, RMI_RW_ATTR,
-+		rmi_fn_54_no_auto_cal_show, rmi_fn_54_no_auto_cal_store),
-+	__ATTR(fifoindex, RMI_RW_ATTR,
-+		rmi_fn_54_fifoindex_show, rmi_fn_54_fifoindex_store),
-+};
-+
-+struct bin_attribute dev_rep_data = {
-+	.attr = {
-+		 .name = "rep_data",
-+		 .mode = RMI_RO_ATTR},
-+	.size = 0,
-+	.read = rmi_fn_54_data_read,
-+};
-+
-+#if F54_WATCHDOG
-+static enum hrtimer_restart clear_status(struct hrtimer *timer);
-+
-+static void clear_status_worker(struct work_struct *work);
++	__ATTR(flip, RMI_RW_ATTR, f11_flip_show, f11_flip_store),
++	__ATTR(clip, RMI_RW_ATTR, f11_clip_show, f11_clip_store),
++	__ATTR(offset, RMI_RW_ATTR, f11_offset_show, f11_offset_store),
++	__ATTR(swap, RMI_RW_ATTR, f11_swap_show, f11_swap_store),
++	__ATTR(relreport, RMI_RW_ATTR, f11_relreport_show, f11_relreport_store),
++	__ATTR(maxPos, RMI_RO_ATTR, f11_maxPos_show, rmi_store_error),
++#if RESUME_REZERO
++	__ATTR(rezeroOnResume, RMI_RW_ATTR, f11_rezeroOnResume_show,
++		f11_rezeroOnResume_store),
++	__ATTR(rezeroWait, RMI_RW_ATTR, f11_rezeroWait_show,
++		f11_rezeroWait_store),
 +#endif
++	__ATTR(rezero, RMI_WO_ATTR, rmi_show_error, f11_rezero_store)
++};
 +
 +
++union f11_2d_commands {
++	struct {
++		u8 rezero:1;
++	};
++	u8 reg;
++};
 +
-+static int rmi_f54_init(struct rmi_function_container *fc)
++struct f11_2d_device_query {
++	union {
++		struct {
++			u8 nbr_of_sensors:3;
++			u8 has_query9:1;
++			u8 has_query11:1;
++		};
++		u8 f11_2d_query0;
++	};
++
++	union {
++		struct {
++			u8 has_z_tuning:1;
++			u8 has_pos_interpolation_tuning:1;
++			u8 has_w_tuning:1;
++			u8 has_pitch_info:1;
++			u8 has_default_finger_width:1;
++			u8 has_segmentation_aggressiveness:1;
++			u8 has_tx_rw_clip:1;
++			u8 has_drumming_correction:1;
++		};
++		u8 f11_2d_query11;
++	};
++};
++
++union f11_2d_query9 {
++	struct {
++		u8 has_pen:1;
++		u8 has_proximity:1;
++		u8 has_palm_det_sensitivity:1;
++		u8 has_suppress_on_palm_detect:1;
++		u8 has_two_pen_thresholds:1;
++		u8 has_contact_geometry:1;
++	};
++	u8 reg;
++};
++
++struct f11_2d_sensor_query {
++	union {
++		struct {
++			/* query1 */
++			u8 number_of_fingers:3;
++			u8 has_rel:1;
++			u8 has_abs:1;
++			u8 has_gestures:1;
++			u8 has_sensitivity_adjust:1;
++			u8 configurable:1;
++			/* query2 */
++			u8 num_of_x_electrodes:7;
++			/* query3 */
++			u8 num_of_y_electrodes:7;
++			/* query4 */
++			u8 max_electrodes:7;
++		};
++		u8 f11_2d_query1__4[4];
++	};
++
++	union {
++		struct {
++			u8 abs_data_size:3;
++			u8 has_anchored_finger:1;
++			u8 has_adj_hyst:1;
++			u8 has_dribble:1;
++		};
++		u8 f11_2d_query5;
++	};
++
++	u8 f11_2d_query6;
++
++	union {
++		struct {
++			u8 has_single_tap:1;
++			u8 has_tap_n_hold:1;
++			u8 has_double_tap:1;
++			u8 has_early_tap:1;
++			u8 has_flick:1;
++			u8 has_press:1;
++			u8 has_pinch:1;
++			u8 padding:1;
++
++			u8 has_palm_det:1;
++			u8 has_rotate:1;
++			u8 has_touch_shapes:1;
++			u8 has_scroll_zones:1;
++			u8 has_individual_scroll_zones:1;
++			u8 has_multi_finger_scroll:1;
++		};
++		u8 f11_2d_query7__8[2];
++	};
++
++	/* Empty */
++	union f11_2d_query9 *query9;
++
++	union {
++		struct {
++			u8 nbr_touch_shapes:5;
++		};
++		u8 f11_2d_query10;
++	};
++};
++
++union f11_2d_ctrl10 {
++	struct {
++		u8 single_tap_int_enable:1;
++		u8 tap_n_hold_int_enable:1;
++		u8 double_tap_int_enable:1;
++		u8 early_tap_int_enable:1;
++		u8 flick_int_enable:1;
++		u8 press_int_enable:1;
++		u8 pinch_int_enable:1;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl11 {
++	struct {
++		u8 palm_detect_int_enable:1;
++		u8 rotate_int_enable:1;
++		u8 touch_shape_int_enable:1;
++		u8 scroll_zone_int_enable:1;
++		u8 multi_finger_scroll_int_enable:1;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl12 {
++	struct {
++		u8 sensor_map:7;
++		u8 xy_sel:1;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl14 {
++	struct {
++		u8 sens_adjustment:5;
++		u8 hyst_adjustment:3;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl15 {
++	struct {
++		u8 max_tap_time:8;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl16 {
++	struct {
++		u8 min_press_time:8;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl17 {
++	struct {
++		u8 max_tap_distance:8;
++	};
++	u8 reg;
++};
++
++union f11_2d_ctrl18_19 {
++	struct {
++		u8 min_flick_distance:8;
++		u8 min_flick_speed:8;
++	};
++	u8 reg[2];
++};
++
++union f11_2d_ctrl20_21 {
++	struct {
++		u8 pen_detect_enable:1;
++		u8 pen_jitter_filter_enable:1;
++		u8 ctrl20_reserved:6;
++		u8 pen_z_threshold:8;
++	};
++	u8 reg[2];
++};
++
++struct  f11_2d_ctrl {
++
++	union {
++		struct {
++			/* F11_2D_Ctrl0 */
++			u8 reporting_mode:3;
++			u8 abs_pos_filt:1;
++			u8 rel_pos_filt:1;
++			u8 rel_ballistics:1;
++			u8 dribble:1;
++			u8 report_beyond_clip:1;
++			/* F11_2D_Ctrl1 */
++			u8 palm_detect_thres:4;
++			u8 motion_sensitivity:2;
++			u8 man_track_en:1;
++			u8 man_tracked_finger:1;
++			/* F11_2D_Ctrl2 and 3 */
++			u8 delta_x_threshold:8;
++			u8 delta_y_threshold:8;
++			/* F11_2D_Ctrl4 and 5 */
++			u8 velocity:8;
++			u8 acceleration:8;
++			/* F11_2D_Ctrl6 thru 9 */
++			u16 sensor_max_x_pos:12;
++			u8 ctrl7_reserved:4;
++			u16 sensor_max_y_pos:12;
++			u8 ctrl9_reserved:4;
++		};
++		u8 ctrl0_9[10];
++	};
++
++	union f11_2d_ctrl10		*ctrl10;
++	union f11_2d_ctrl11		*ctrl11;
++	union f11_2d_ctrl12		*ctrl12;
++	u8				ctrl12_size;
++	union f11_2d_ctrl14		*ctrl14;
++	union f11_2d_ctrl15		*ctrl15;
++	union f11_2d_ctrl16		*ctrl16;
++	union f11_2d_ctrl17		*ctrl17;
++	union f11_2d_ctrl18_19		*ctrl18_19;
++	union f11_2d_ctrl20_21		*ctrl20_21;
++};
++
++struct f11_2d_data_0 {
++	u8 finger_n;
++};
++
++struct f11_2d_data_1_5 {
++	u8 x_msb;
++	u8 y_msb;
++	u8 x_lsb:4;
++	u8 y_lsb:4;
++	u8 w_y:4;
++	u8 w_x:4;
++	u8 z;
++};
++
++struct f11_2d_data_6_7 {
++	s8 delta_x;
++	s8 delta_y;
++};
++
++struct f11_2d_data_8 {
++	u8 single_tap:1;
++	u8 tap_and_hold:1;
++	u8 double_tap:1;
++	u8 early_tap:1;
++	u8 flick:1;
++	u8 press:1;
++	u8 pinch:1;
++};
++
++struct f11_2d_data_9 {
++	u8 palm_detect:1;
++	u8 rotate:1;
++	u8 shape:1;
++	u8 scrollzone:1;
++	u8 finger_count:3;
++};
++
++struct f11_2d_data_10 {
++	u8 pinch_motion;
++};
++
++struct f11_2d_data_10_12 {
++	u8 x_flick_dist;
++	u8 y_flick_dist;
++	u8 flick_time;
++};
++
++struct f11_2d_data_11_12 {
++	u8 motion;
++	u8 finger_separation;
++};
++
++struct f11_2d_data_13 {
++	u8 shape_n;
++};
++
++struct f11_2d_data_14_15 {
++	u8 horizontal;
++	u8 vertical;
++};
++
++struct f11_2d_data_14_17 {
++	u8 x_low;
++	u8 y_right;
++	u8 x_upper;
++	u8 y_left;
++};
++
++struct f11_2d_data {
++	const struct f11_2d_data_0	*f_state;
++	const struct f11_2d_data_1_5	*abs_pos;
++	const struct f11_2d_data_6_7	*rel_pos;
++	const struct f11_2d_data_8	*gest_1;
++	const struct f11_2d_data_9	*gest_2;
++	const struct f11_2d_data_10	*pinch;
++	const struct f11_2d_data_10_12	*flick;
++	const struct f11_2d_data_11_12	*rotate;
++	const struct f11_2d_data_13	*shapes;
++	const struct f11_2d_data_14_15	*multi_scroll;
++	const struct f11_2d_data_14_17	*scroll_zones;
++};
++
++struct f11_2d_sensor {
++	struct rmi_f11_2d_axis_alignment axis_align;
++	struct f11_2d_sensor_query sens_query;
++	struct f11_2d_data data;
++	u16 max_x;
++	u16 max_y;
++	u8 nbr_fingers;
++	u8 finger_tracker[F11_MAX_NUM_OF_FINGERS];
++	u8 *data_pkt;
++	int pkt_size;
++	u8 sensor_index;
++	char input_name[MAX_LEN];
++	char input_phys[MAX_LEN];
++	struct input_dev *input;
++	struct input_dev *mouse_input;
++};
++
++struct f11_data {
++	struct f11_2d_device_query dev_query;
++	struct f11_2d_ctrl dev_controls;
++#if	RESUME_REZERO
++	u16 rezero_wait_ms;
++	bool rezero_on_resume;
++#endif
++	struct f11_2d_sensor sensors[F11_MAX_NUM_OF_SENSORS];
++};
++
++enum finger_state_values {
++	F11_NO_FINGER	= 0x00,
++	F11_PRESENT	= 0x01,
++	F11_INACCURATE	= 0x02,
++	F11_RESERVED	= 0x03
++};
++
++static void rmi_f11_rel_pos_report(struct f11_2d_sensor *sensor, u8 n_finger)
 +{
-+	int retval = 0;
++	struct f11_2d_data *data = &sensor->data;
++	struct rmi_f11_2d_axis_alignment *axis_align = &sensor->axis_align;
++	s8 x, y;
++	s8 temp;
 +
-+	dev_info(&fc->dev, "Intializing F54.");
++	x = data->rel_pos[n_finger].delta_x;
++	y = data->rel_pos[n_finger].delta_y;
 +
-+	retval = rmi_f54_alloc_memory(fc);
-+	if (retval < 0)
-+		goto error_exit;
++	x = min(F11_REL_POS_MAX, max(F11_REL_POS_MIN, (int)x));
++	y = min(F11_REL_POS_MAX, max(F11_REL_POS_MIN, (int)y));
 +
-+	retval = rmi_f54_initialize(fc);
-+	if (retval < 0)
-+		goto error_exit;
++	if (axis_align->swap_axes) {
++		temp = x;
++		x = y;
++		y = temp;
++	}
++	if (axis_align->flip_x)
++		x = min(F11_REL_POS_MAX, -x);
++	if (axis_align->flip_y)
++		y = min(F11_REL_POS_MAX, -y);
 +
-+	retval = rmi_f54_create_sysfs(fc);
-+	if (retval < 0)
-+		goto error_exit;
-+
-+	return retval;
-+
-+error_exit:
-+	rmi_f54_free_memory(fc);
-+
-+	return retval;
++	if (x || y) {
++		input_report_rel(sensor->input, REL_X, x);
++		input_report_rel(sensor->input, REL_Y, y);
++		input_report_rel(sensor->mouse_input, REL_X, x);
++		input_report_rel(sensor->mouse_input, REL_Y, y);
++	}
++	input_sync(sensor->mouse_input);
 +}
 +
-+
-+
-+static inline int rmi_f54_alloc_memory(struct rmi_function_container *fc)
++static void rmi_f11_abs_pos_report(struct f11_2d_sensor *sensor,
++					u8 finger_state, u8 n_finger)
 +{
-+	struct rmi_fn_54_data *f54;
++	struct f11_2d_data *data = &sensor->data;
++	struct rmi_f11_2d_axis_alignment *axis_align = &sensor->axis_align;
++	int prev_state = sensor->finger_tracker[n_finger];
++	int x, y, z;
++	int w_x, w_y, w_max, w_min, orient;
++	int temp;
 +
-+	f54 = kzalloc(sizeof(struct rmi_fn_54_data), GFP_KERNEL);
-+	if (!f54) {
-+		dev_err(&fc->dev, "Failed to allocate rmi_fn_54_data.\n");
-+		return -ENOMEM;
++	if (prev_state && !finger_state) {
++		/* this is a release */
++		x = y = z = w_max = w_min = orient = 0;
++	} else if (!prev_state && !finger_state) {
++		/* nothing to report */
++		return;
++	} else {
++		x = ((data->abs_pos[n_finger].x_msb << 4) |
++			data->abs_pos[n_finger].x_lsb);
++		y = ((data->abs_pos[n_finger].y_msb << 4) |
++			data->abs_pos[n_finger].y_lsb);
++		z = data->abs_pos[n_finger].z;
++		w_x = data->abs_pos[n_finger].w_x;
++		w_y = data->abs_pos[n_finger].w_y;
++		w_max = max(w_x, w_y);
++		w_min = min(w_x, w_y);
++
++		if (axis_align->swap_axes) {
++			temp = x;
++			x = y;
++			y = temp;
++			temp = w_x;
++			w_x = w_y;
++			w_y = temp;
++		}
++
++		orient = w_x > w_y ? 1 : 0;
++
++		if (axis_align->flip_x)
++			x = max(sensor->max_x - x, 0);
++
++		if (axis_align->flip_y)
++			y = max(sensor->max_y - y, 0);
++
++		/*
++		** here checking if X offset or y offset are specified is
++		**  redundant.  We just add the offsets or, clip the values
++		**
++		** note: offsets need to be done before clipping occurs,
++		** or we could get funny values that are outside
++		** clipping boundaries.
++		*/
++		x += axis_align->offset_X;
++		y += axis_align->offset_Y;
++		x =  max(axis_align->clip_X_low, x);
++		y =  max(axis_align->clip_Y_low, y);
++		if (axis_align->clip_X_high)
++			x = min(axis_align->clip_X_high, x);
++		if (axis_align->clip_Y_high)
++			y =  min(axis_align->clip_Y_high, y);
++
 +	}
-+	fc->data = f54;
++
++	pr_debug("%s: f_state[%d]:%d - x:%d y:%d z:%d w_max:%d w_min:%d\n",
++		__func__, n_finger, finger_state, x, y, z, w_max, w_min);
++
++
++#ifdef ABS_MT_PRESSURE
++	input_report_abs(sensor->input, ABS_MT_PRESSURE, z);
++#endif
++	input_report_abs(sensor->input, ABS_MT_TOUCH_MAJOR, w_max);
++	input_report_abs(sensor->input, ABS_MT_TOUCH_MINOR, w_min);
++	input_report_abs(sensor->input, ABS_MT_ORIENTATION, orient);
++	input_report_abs(sensor->input, ABS_MT_POSITION_X, x);
++	input_report_abs(sensor->input, ABS_MT_POSITION_Y, y);
++	input_report_abs(sensor->input, ABS_MT_TRACKING_ID, n_finger);
++
++	/* MT sync between fingers */
++	input_mt_sync(sensor->input);
++	sensor->finger_tracker[n_finger] = finger_state;
++}
++
++static void rmi_f11_finger_handler(struct f11_2d_sensor *sensor)
++{
++	const struct f11_2d_data_0 *f_state = sensor->data.f_state;
++	u8 finger_state;
++	u8 finger_pressed_count;
++	u8 i;
++
++	for (i = 0, finger_pressed_count = 0; i < sensor->nbr_fingers; i++) {
++		/* Possible of having 4 fingers per f_statet register */
++		finger_state = (f_state[i >> 2].finger_n &
++					F11_FINGER_STATE_MASK_N(i));
++		finger_state = F11_FINGER_STATE_VAL_N(finger_state, i);
++
++		if (finger_state == F11_RESERVED) {
++			pr_err("%s: Invalid finger state[%d]:0x%02x.", __func__,
++					i, finger_state);
++			continue;
++		} else if ((finger_state == F11_PRESENT) ||
++				(finger_state == F11_INACCURATE)) {
++			finger_pressed_count++;
++		}
++
++		if (sensor->data.abs_pos)
++			rmi_f11_abs_pos_report(sensor, finger_state, i);
++
++		if (sensor->data.rel_pos)
++			rmi_f11_rel_pos_report(sensor, i);
++	}
++	input_report_key(sensor->input, BTN_TOUCH, finger_pressed_count);
++	input_sync(sensor->input);
++}
++
++static inline int f11_2d_construct_data(struct f11_2d_sensor *sensor)
++{
++	struct f11_2d_sensor_query *query = &sensor->sens_query;
++	struct f11_2d_data *data = &sensor->data;
++	int i;
++
++	sensor->nbr_fingers = (query->number_of_fingers == 5 ? 10 :
++				query->number_of_fingers + 1);
++
++	sensor->pkt_size = F11_CEIL(sensor->nbr_fingers, 4);
++
++	if (query->has_abs)
++		sensor->pkt_size += (sensor->nbr_fingers * 5);
++
++	if (query->has_rel)
++		sensor->pkt_size +=  (sensor->nbr_fingers * 2);
++
++	/* Check if F11_2D_Query7 is non-zero */
++	if (query->f11_2d_query7__8[0])
++		sensor->pkt_size += sizeof(u8);
++
++	/* Check if F11_2D_Query7 or F11_2D_Query8 is non-zero */
++	if (query->f11_2d_query7__8[0] || query->f11_2d_query7__8[1])
++		sensor->pkt_size += sizeof(u8);
++
++	if (query->has_pinch || query->has_flick || query->has_rotate) {
++		sensor->pkt_size += 3;
++		if (!query->has_flick)
++			sensor->pkt_size--;
++		if (!query->has_rotate)
++			sensor->pkt_size--;
++	}
++
++	if (query->has_touch_shapes)
++		sensor->pkt_size += F11_CEIL(query->nbr_touch_shapes + 1, 8);
++
++	sensor->data_pkt = kzalloc(sensor->pkt_size, GFP_KERNEL);
++	if (!sensor->data_pkt)
++		return -ENOMEM;
++
++	data->f_state = (struct f11_2d_data_0 *)sensor->data_pkt;
++	i = F11_CEIL(sensor->nbr_fingers, 4);
++
++	if (query->has_abs) {
++		data->abs_pos = (struct f11_2d_data_1_5 *)
++				&sensor->data_pkt[i];
++		i += (sensor->nbr_fingers * 5);
++	}
++
++	if (query->has_rel) {
++		data->rel_pos = (struct f11_2d_data_6_7 *)
++				&sensor->data_pkt[i];
++		i += (sensor->nbr_fingers * 2);
++	}
++
++	if (query->f11_2d_query7__8[0]) {
++		data->gest_1 = (struct f11_2d_data_8 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (query->f11_2d_query7__8[0] || query->f11_2d_query7__8[1]) {
++		data->gest_2 = (struct f11_2d_data_9 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (query->has_pinch) {
++		data->pinch = (struct f11_2d_data_10 *)&sensor->data_pkt[i];
++		i++;
++	}
++
++	if (query->has_flick) {
++		if (query->has_pinch) {
++			data->flick = (struct f11_2d_data_10_12 *)data->pinch;
++			i += 2;
++		} else {
++			data->flick = (struct f11_2d_data_10_12 *)
++					&sensor->data_pkt[i];
++			i += 3;
++		}
++	}
++
++	if (query->has_rotate) {
++		if (query->has_flick) {
++			data->rotate = (struct f11_2d_data_11_12 *)
++					(data->flick + 1);
++		} else {
++			data->rotate = (struct f11_2d_data_11_12 *)
++					&sensor->data_pkt[i];
++			i += 2;
++		}
++	}
++
++	if (query->has_touch_shapes)
++		data->shapes = (struct f11_2d_data_13 *)&sensor->data_pkt[i];
 +
 +	return 0;
 +}
 +
-+
-+static inline void rmi_f54_free_memory(struct rmi_function_container *fc)
++static void f11_free_control_regs(struct f11_2d_ctrl *ctrl)
 +{
-+	struct rmi_fn_54_data *f54 = fc->data;
++	kfree(ctrl->ctrl10);
++	kfree(ctrl->ctrl11);
++	kfree(ctrl->ctrl14);
++	kfree(ctrl->ctrl15);
++	kfree(ctrl->ctrl16);
++	kfree(ctrl->ctrl17);
++	kfree(ctrl->ctrl18_19);
++	kfree(ctrl->ctrl20_21);
++	ctrl->ctrl10 = NULL;
++	ctrl->ctrl11 = NULL;
++	ctrl->ctrl14 = NULL;
++	ctrl->ctrl15 = NULL;
++	ctrl->ctrl16 = NULL;
++	ctrl->ctrl17 = NULL;
++	ctrl->ctrl18_19 = NULL;
++	ctrl->ctrl20_21 = NULL;
++}
 +
-+	if (f54) {
-+		kfree(f54->report_data);
-+		kfree(f54);
++static int f11_read_control_regs(struct rmi_device *rmi_dev,
++					   struct f11_2d_ctrl *ctrl,
++					   int ctrl_base_addr) {
++	int read_address = ctrl_base_addr;
++	int error = 0;
++
++	error = rmi_read_block(rmi_dev, read_address, ctrl->ctrl0_9,
++		sizeof(ctrl->ctrl0_9));
++	if (error < 0) {
++		dev_err(&rmi_dev->dev,
++			"Failed to read F11 ctrl0, code: %d.\n", error);
++		return error;
++	}
++	read_address = read_address + sizeof(ctrl->ctrl0_9);
++
++	if (ctrl->ctrl10) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl10->reg, sizeof(union f11_2d_ctrl10));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl10, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl10);
++	}
++
++	if (ctrl->ctrl11) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl11->reg, sizeof(union f11_2d_ctrl11));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl11, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl11);
++	}
++
++	if (ctrl->ctrl14) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl14->reg, sizeof(union f11_2d_ctrl14));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl14, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl14);
++	}
++
++	if (ctrl->ctrl15) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl15->reg, sizeof(union f11_2d_ctrl15));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl15, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl15);
++	}
++
++	if (ctrl->ctrl16) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl16->reg, sizeof(union f11_2d_ctrl16));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl16, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl16);
++	}
++
++	if (ctrl->ctrl17) {
++		error = rmi_read_block(rmi_dev, read_address,
++			&ctrl->ctrl17->reg, sizeof(union f11_2d_ctrl17));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl17, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl17);
++	}
++
++	if (ctrl->ctrl18_19) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl18_19->reg, sizeof(union f11_2d_ctrl18_19));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl18_19, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl18_19);
++	}
++
++	if (ctrl->ctrl20_21) {
++		error = rmi_read_block(rmi_dev, read_address,
++			ctrl->ctrl20_21->reg, sizeof(union f11_2d_ctrl20_21));
++		if (error < 0) {
++			dev_err(&rmi_dev->dev,
++				"Failed to read F11 ctrl20_21, code: %d.\n",
++				error);
++			return error;
++		}
++		read_address = read_address + sizeof(union f11_2d_ctrl20_21);
++	}
++
++	return 0;
++}
++
++static int f11_allocate_control_regs(struct rmi_device *rmi_dev,
++				struct f11_2d_device_query *device_query,
++				struct f11_2d_sensor_query *sensor_query,
++				struct f11_2d_ctrl *ctrl,
++				int ctrl_base_addr) {
++	int error = 0;
++
++	if (sensor_query->f11_2d_query7__8[0]) {
++		ctrl->ctrl10 = kzalloc(sizeof(union f11_2d_ctrl10),
++				       GFP_KERNEL);
++		if (!ctrl->ctrl10) {
++			error = -ENOMEM;
++			goto error_exit;
++		}
++	}
++
++	if (sensor_query->f11_2d_query7__8[1]) {
++		ctrl->ctrl11 = kzalloc(sizeof(union f11_2d_ctrl11),
++				       GFP_KERNEL);
++		if (!ctrl->ctrl11) {
++			error = -ENOMEM;
++			goto error_exit;
++		}
++	}
++
++	if (device_query->has_query9 && sensor_query->query9->has_pen) {
++		ctrl->ctrl20_21 = kzalloc(sizeof(union f11_2d_ctrl20_21),
++					  GFP_KERNEL);
++		if (!ctrl->ctrl20_21) {
++			error = -ENOMEM;
++			goto error_exit;
++		}
++	}
++
++	return f11_read_control_regs(rmi_dev, ctrl, ctrl_base_addr);
++
++error_exit:
++	f11_free_control_regs(ctrl);
++	return error;
++}
++
++static inline int f11_write_control_regs(struct rmi_device *rmi_dev,
++					struct f11_2d_sensor_query *query,
++					struct f11_2d_ctrl *ctrl,
++					int ctrl_base_addr)
++{
++	int write_address = ctrl_base_addr;
++	int error;
++
++	error = rmi_write_block(rmi_dev, write_address,
++				ctrl->ctrl0_9, sizeof(ctrl->ctrl0_9));
++	if (error < 0)
++		return error;
++	write_address += sizeof(ctrl->ctrl0_9);
++
++	if (ctrl->ctrl10) {
++		error = rmi_write_block(rmi_dev, write_address,
++					&ctrl->ctrl10->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl11) {
++		error = rmi_write_block(rmi_dev, write_address,
++					&ctrl->ctrl11->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl12 && ctrl->ctrl12_size && query->configurable) {
++		if (ctrl->ctrl12_size > query->max_electrodes) {
++			dev_err(&rmi_dev->dev,
++				"%s: invalid cfg size:%d, should be < %d.\n",
++				__func__, ctrl->ctrl12_size,
++				query->max_electrodes);
++			return -EINVAL;
++		}
++		error = rmi_write_block(rmi_dev, write_address,
++						&ctrl->ctrl12->reg,
++						ctrl->ctrl12_size);
++		if (error < 0)
++			return error;
++		write_address += ctrl->ctrl12_size;
++	}
++
++	if (ctrl->ctrl14) {
++		error = rmi_write_block(rmi_dev, write_address,
++				&ctrl->ctrl14->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl15) {
++		error = rmi_write_block(rmi_dev, write_address,
++				&ctrl->ctrl15->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl16) {
++		error = rmi_write_block(rmi_dev, write_address,
++				&ctrl->ctrl16->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl17) {
++		error = rmi_write_block(rmi_dev, write_address,
++				&ctrl->ctrl17->reg, 1);
++		if (error < 0)
++			return error;
++		write_address++;
++	}
++
++	if (ctrl->ctrl18_19) {
++		error = rmi_write_block(rmi_dev, write_address,
++			ctrl->ctrl18_19->reg, sizeof(union f11_2d_ctrl18_19));
++		if (error < 0)
++			return error;
++		write_address += sizeof(union f11_2d_ctrl18_19);
++	}
++
++	if (ctrl->ctrl20_21) {
++		error = rmi_write_block(rmi_dev, write_address,
++					ctrl->ctrl20_21->reg,
++					sizeof(union f11_2d_ctrl20_21));
++		if (error < 0)
++			return error;
++		write_address += sizeof(union f11_2d_ctrl20_21);
++	}
++
++	return 0;
++}
++
++static inline int rmi_f11_get_query_parameters(struct rmi_device *rmi_dev,
++			struct f11_2d_sensor_query *query, u8 query_base_addr)
++{
++	int query_size;
++	int rc;
++
++	rc = rmi_read_block(rmi_dev, query_base_addr, query->f11_2d_query1__4,
++					sizeof(query->f11_2d_query1__4));
++	if (rc < 0)
++		return rc;
++	query_size = rc;
++
++	if (query->has_abs) {
++		rc = rmi_read(rmi_dev, query_base_addr + query_size,
++					&query->f11_2d_query5);
++		if (rc < 0)
++			return rc;
++		query_size++;
++	}
++
++	if (query->has_rel) {
++		rc = rmi_read(rmi_dev, query_base_addr + query_size,
++					&query->f11_2d_query6);
++		if (rc < 0)
++			return rc;
++		query_size++;
++	}
++
++	if (query->has_gestures) {
++		rc = rmi_read_block(rmi_dev, query_base_addr + query_size,
++					query->f11_2d_query7__8,
++					sizeof(query->f11_2d_query7__8));
++		if (rc < 0)
++			return rc;
++		query_size += sizeof(query->f11_2d_query7__8);
++	}
++
++	if (query->has_touch_shapes) {
++		rc = rmi_read(rmi_dev, query_base_addr + query_size,
++					&query->f11_2d_query10);
++		if (rc < 0)
++			return rc;
++		query_size++;
++	}
++
++	return query_size;
++}
++
++/* This operation is done in a number of places, so we have a handy routine
++ * for it.
++ */
++static void f11_set_abs_params(struct rmi_function_container *fc, int index)
++{
++	struct f11_data *instance_data =  fc->data;
++	struct input_dev *input = instance_data->sensors[index].input;
++	int device_x_max =
++		instance_data->dev_controls.sensor_max_x_pos;
++	int device_y_max =
++		instance_data->dev_controls.sensor_max_y_pos;
++	int x_min, x_max, y_min, y_max;
++
++	if (instance_data->sensors[index].axis_align.swap_axes) {
++		int temp = device_x_max;
++		device_x_max = device_y_max;
++		device_y_max = temp;
++	}
++
++	/* Use the max X and max Y read from the device, or the clip values,
++	 * whichever is stricter.
++	 */
++	x_min = instance_data->sensors[index].axis_align.clip_X_low;
++	if (instance_data->sensors[index].axis_align.clip_X_high)
++		x_max = min((int) device_x_max,
++			instance_data->sensors[index].axis_align.clip_X_high);
++	else
++		x_max = device_x_max;
++
++	y_min = instance_data->sensors[index].axis_align.clip_Y_low;
++	if (instance_data->sensors[index].axis_align.clip_Y_high)
++		y_max = min((int) device_y_max,
++			instance_data->sensors[index].axis_align.clip_Y_high);
++	else
++		y_max = device_y_max;
++
++	dev_dbg(&fc->dev, "Set ranges X=[%d..%d] Y=[%d..%d].",
++			x_min, x_max, y_min, y_max);
++
++#ifdef ABS_MT_PRESSURE
++		input_set_abs_params(input, ABS_MT_PRESSURE, 0,
++				DEFAULT_MAX_ABS_MT_PRESSURE, 0, 0);
++#endif
++		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR,
++				0, DEFAULT_MAX_ABS_MT_TOUCH, 0, 0);
++		input_set_abs_params(input, ABS_MT_TOUCH_MINOR,
++				0, DEFAULT_MAX_ABS_MT_TOUCH, 0, 0);
++		input_set_abs_params(input, ABS_MT_ORIENTATION,
++				0, DEFAULT_MAX_ABS_MT_ORIENTATION, 0, 0);
++		input_set_abs_params(input, ABS_MT_TRACKING_ID,
++				DEFAULT_MIN_ABS_MT_TRACKING_ID,
++				DEFAULT_MAX_ABS_MT_TRACKING_ID, 0, 0);
++		/* TODO get max_x_pos (and y) from control registers. */
++		input_set_abs_params(input, ABS_MT_POSITION_X,
++				x_min, x_max, 0, 0);
++		input_set_abs_params(input, ABS_MT_POSITION_Y,
++				y_min, y_max, 0, 0);
++}
++
++
++static int rmi_f11_init(struct rmi_function_container *fc)
++{
++	int rc;
++
++	rc = rmi_f11_initialize(fc);
++	if (rc < 0)
++		goto err_free_data;
++
++	rc = rmi_f11_register_devices(fc);
++	if (rc < 0)
++		goto err_free_data;
++
++	rc = rmi_f11_create_sysfs(fc);
++	if (rc < 0)
++		goto err_free_data;
++
++	return 0;
++
++err_free_data:
++	rmi_f11_free_memory(fc);
++
++	return rc;
++}
++
++
++static inline void rmi_f11_free_memory(struct rmi_function_container *fc)
++{
++	struct f11_data *f11 = fc->data;
++
++	if (f11) {
++		f11_free_control_regs(&f11->dev_controls);
++		kfree(f11);
 +		fc->data = NULL;
 +	}
 +}
 +
 +
-+static inline int rmi_f54_initialize(struct rmi_function_container *fc)
++static inline int rmi_f11_initialize(struct rmi_function_container *fc)
 +{
-+	struct rmi_fn_54_data *instance_data = fc->data;
-+	int retval = 0;
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct rmi_device_platform_data *pdata;
++	struct f11_data *f11;
++	u8 query_offset;
++	u8 query_base_addr;
++	u8 control_base_addr;
++	u16 max_x_pos, max_y_pos, temp;
++	int rc;
++	int i;
 +
-+	instance_data->fc = fc;
++	pdata = to_rmi_platform_data(rmi_dev);
++	dev_dbg(&fc->dev, "Initializing F11 values for %s.\n",
++		 pdata->sensor_name);
 +
-+#if F54_WATCHDOG
-+	/* Set up watchdog timer to catch unanswered get_report commands */
-+	hrtimer_init(&instance_data->watchdog, CLOCK_MONOTONIC,
-+							HRTIMER_MODE_REL);
-+	instance_data->watchdog.function = clear_status;
++	/*
++	** init instance data, fill in values and create any sysfs files
++	*/
++	f11 = kzalloc(sizeof(struct f11_data), GFP_KERNEL);
++	if (!f11)
++		return -ENOMEM;
 +
-+	/* work function to do unlocking */
-+	INIT_WORK(&instance_data->work, clear_status_worker);
++	fc->data = f11;
++#if	RESUME_REZERO
++	f11->rezero_on_resume = true;
++	f11->rezero_wait_ms = DEFAULT_REZERO_WAIT_MS;
 +#endif
 +
-+	/* Read F54 Query Data */
-+	retval = rmi_read_block(fc->rmi_dev, fc->fd.query_base_addr,
-+		(u8 *)&instance_data->query, sizeof(instance_data->query));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Could not read query registers"
-+			" from 0x%04x\n", fc->fd.query_base_addr);
-+		return retval;
++	query_base_addr = fc->fd.query_base_addr;
++	control_base_addr = fc->fd.control_base_addr;
++
++	rc = rmi_read(rmi_dev, query_base_addr, &f11->dev_query.f11_2d_query0);
++	if (rc < 0)
++		return rc;
++
++	query_offset = (query_base_addr + 1);
++	/* Increase with one since number of sensors is zero based */
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		f11->sensors[i].sensor_index = i;
++
++		rc = rmi_f11_get_query_parameters(rmi_dev,
++					&f11->sensors[i].sens_query,
++					query_offset);
++		if (rc < 0)
++			return rc;
++		query_offset += rc;
++		rc = f11_allocate_control_regs(rmi_dev,
++				&f11->dev_query, &f11->sensors[i].sens_query,
++				&f11->dev_controls, control_base_addr);
++		if (rc < 0) {
++			dev_err(&fc->dev,
++				"Failed to initialize F11 control params.\n");
++			return rc;
++		}
++
++		f11->sensors[i].axis_align = pdata->axis_align;
++
++		rc = rmi_read_block(rmi_dev,
++			control_base_addr + F11_CTRL_SENSOR_MAX_X_POS_OFFSET,
++			(u8 *)&max_x_pos, sizeof(max_x_pos));
++		if (rc < 0)
++			return rc;
++
++		rc = rmi_read_block(rmi_dev,
++			control_base_addr + F11_CTRL_SENSOR_MAX_Y_POS_OFFSET,
++			(u8 *)&max_y_pos, sizeof(max_y_pos));
++		if (rc < 0)
++			return rc;
++
++		if (pdata->axis_align.swap_axes) {
++			temp = max_x_pos;
++			max_x_pos = max_y_pos;
++			max_y_pos = temp;
++		}
++		f11->sensors[i].max_x = max_x_pos;
++		f11->sensors[i].max_y = max_y_pos;
++
++		rc = f11_2d_construct_data(&f11->sensors[i]);
++		if (rc < 0)
++			return rc;
 +	}
-+
-+	__mutex_init(&instance_data->data_mutex, "data_mutex",
-+		     &instance_data->data_key);
-+
-+	__mutex_init(&instance_data->status_mutex, "status_mutex",
-+		     &instance_data->status_key);
-+
-+	instance_data->status = IDLE;
 +
 +	return 0;
 +}
 +
 +
-+static inline int rmi_f54_create_sysfs(struct rmi_function_container *fc)
++static inline int rmi_f11_register_devices(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *f11 = fc->data;
++	struct input_dev *input_dev;
++	struct input_dev *input_dev_mouse;
++	int sensors_itertd = 0;
++	int i;
++	int rc;
++
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		sensors_itertd = i;
++		input_dev = input_allocate_device();
++		if (!input_dev) {
++			rc = -ENOMEM;
++			goto error_unregister;
++		}
++
++		f11->sensors[i].input = input_dev;
++		/* TODO how to modify the dev name and
++		* phys name for input device */
++		sprintf(f11->sensors[i].input_name, "%sfn%02x",
++			dev_name(&rmi_dev->dev), fc->fd.function_number);
++		input_dev->name = f11->sensors[i].input_name;
++		sprintf(f11->sensors[i].input_phys, "%s/input0",
++			input_dev->name);
++		input_dev->phys = f11->sensors[i].input_phys;
++		input_dev->dev.parent = &rmi_dev->dev;
++		input_set_drvdata(input_dev, f11);
++
++		set_bit(EV_SYN, input_dev->evbit);
++		set_bit(EV_KEY, input_dev->evbit);
++		set_bit(EV_ABS, input_dev->evbit);
++
++		f11_set_abs_params(fc, i);
++
++		dev_dbg(&fc->dev, "%s: Sensor %d hasRel %d.\n",
++			__func__, i, f11->sensors[i].sens_query.has_rel);
++		if (f11->sensors[i].sens_query.has_rel) {
++			set_bit(EV_REL, input_dev->evbit);
++			set_bit(REL_X, input_dev->relbit);
++			set_bit(REL_Y, input_dev->relbit);
++		}
++		rc = input_register_device(input_dev);
++		if (rc < 0) {
++			input_free_device(input_dev);
++			f11->sensors[i].input = NULL;
++			goto error_unregister;
++		}
++
++		if (f11->sensors[i].sens_query.has_rel) {
++			/*create input device for mouse events  */
++			input_dev_mouse = input_allocate_device();
++			if (!input_dev_mouse) {
++				rc = -ENOMEM;
++				goto error_unregister;
++			}
++
++			f11->sensors[i].mouse_input = input_dev_mouse;
++			input_dev_mouse->name = "rmi_mouse";
++			input_dev_mouse->phys = "rmi_f11/input0";
++
++			input_dev_mouse->id.vendor  = 0x18d1;
++			input_dev_mouse->id.product = 0x0210;
++			input_dev_mouse->id.version = 0x0100;
++
++			set_bit(EV_REL, input_dev_mouse->evbit);
++			set_bit(REL_X, input_dev_mouse->relbit);
++			set_bit(REL_Y, input_dev_mouse->relbit);
++
++			set_bit(BTN_MOUSE, input_dev_mouse->evbit);
++			/* Register device's buttons and keys */
++			set_bit(EV_KEY, input_dev_mouse->evbit);
++			set_bit(BTN_LEFT, input_dev_mouse->keybit);
++			set_bit(BTN_MIDDLE, input_dev_mouse->keybit);
++			set_bit(BTN_RIGHT, input_dev_mouse->keybit);
++
++			rc = input_register_device(input_dev_mouse);
++			if (rc < 0) {
++				input_free_device(input_dev_mouse);
++				f11->sensors[i].mouse_input = NULL;
++				goto error_unregister;
++			}
++
++			set_bit(BTN_RIGHT, input_dev_mouse->keybit);
++		}
++
++	}
++
++	return 0;
++
++error_unregister:
++	for (; sensors_itertd > 0; sensors_itertd--) {
++		if (f11->sensors[sensors_itertd].input) {
++			if (f11->sensors[sensors_itertd].mouse_input) {
++				input_unregister_device(
++				   f11->sensors[sensors_itertd].mouse_input);
++				f11->sensors[sensors_itertd].mouse_input = NULL;
++			}
++			input_unregister_device(f11->sensors[i].input);
++			f11->sensors[i].input = NULL;
++		}
++	}
++
++	return rc;
++}
++
++
++static void rmi_f11_free_devices(struct rmi_function_container *fc)
++{
++	struct f11_data *f11 = fc->data;
++	int i;
++
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		if (f11->sensors[i].input)
++			input_unregister_device(f11->sensors[i].input);
++		if (f11->sensors[i].sens_query.has_rel &&
++				f11->sensors[i].mouse_input)
++			input_unregister_device(f11->sensors[i].mouse_input);
++	}
++}
++
++
++
++static inline int rmi_f11_create_sysfs(struct rmi_function_container *fc)
 +{
 +	int attr_count = 0;
 +	int rc;
 +
-+	dev_dbg(&fc->dev, "Creating sysfs files.");
-+
-+	/* Binary sysfs file to report the data back */
-+	rc = sysfs_create_bin_file(&fc->dev.kobj, &dev_rep_data);
-+	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to create sysfs file for F54 data "
-+					"(error = %d).\n", rc);
-+		return -ENODEV;
-+	}
-+
++	dev_dbg(&fc->dev, "Creating sysfs files.\n");
 +	/* Set up sysfs device attributes. */
 +	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
 +		if (sysfs_create_file
 +		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
-+			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
-+			     attrs[attr_count].attr.name);
++			dev_err(&fc->dev,
++				"Failed to create sysfs file for %s.",
++				attrs[attr_count].attr.name);
 +			rc = -ENODEV;
 +			goto err_remove_sysfs;
 +		}
@@ -566,963 +1439,129 @@ index 0000000..5119184
 +	return 0;
 +
 +err_remove_sysfs:
-+	sysfs_remove_bin_file(&fc->dev.kobj, &dev_rep_data);
-+
 +	for (attr_count--; attr_count >= 0; attr_count--)
 +		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+
++						  &attrs[attr_count].attr);
 +	return rc;
-+}
 +
-+
-+static int rmi_f54_config(struct rmi_function_container *fc)
-+{
-+	/*we shouldn't do anything here.
-+	 * (reset should write a 1 to a "beenreset" sysfs file)
-+     */
-+	return 0;
 +}
 +
 +
 +
-+static int rmi_f54_reset(struct rmi_function_container *fc)
++static int rmi_f11_config(struct rmi_function_container *fc)
 +{
-+	struct rmi_fn_54_data *data = fc->data;
-+	struct rmi_driver *driver = fc->rmi_dev->driver;
++	struct f11_data *f11 = fc->data;
++	int i;
++	int rc;
 +
-+#if F54_WATCHDOG
-+	hrtimer_cancel(&data->watchdog);
-+#endif
-+
-+	mutex_lock(&data->status_mutex);
-+	if (driver->restore_irq_mask) {
-+		dev_dbg(&fc->dev, "Restoring interupts!\n");
-+		driver->restore_irq_mask(fc->rmi_dev);
-+	} else {
-+		dev_err(&fc->dev, "No way to restore interrupts!\n");
++	for (i = 0; i < (f11->dev_query.nbr_of_sensors + 1); i++) {
++		rc = f11_write_control_regs(fc->rmi_dev,
++				   &f11->sensors[i].sens_query,
++				   &f11->dev_controls,
++				   fc->fd.query_base_addr);
++		if (rc < 0)
++			return rc;
 +	}
-+	data->status = -ECONNRESET;
-+	mutex_unlock(&data->status_mutex);
 +
 +	return 0;
 +}
 +
 +
 +
-+static void rmi_f54_remove(struct rmi_function_container *fc)
++static int rmi_f11_reset(struct rmi_function_container *fc)
 +{
-+	struct rmi_fn_54_data *data = fc->data;
-+	int attr_count = 0;
-+
-+	dev_info(&fc->dev, "Removing F54.");
-+
-+	#if F54_WATCHDOG
-+	/* Stop timer */
-+	hrtimer_cancel(&data->watchdog);
-+	#endif
-+
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
-+		sysfs_remove_file(&fc->dev.kobj, &attrs[attr_count].attr);
-+
-+	sysfs_remove_bin_file(&fc->dev.kobj, &dev_rep_data);
-+
-+	rmi_f54_free_memory(fc);
-+}
-+
-+
-+static void set_report_size(struct rmi_fn_54_data *data)
-+{
-+	u8 rx = data->query.number_of_receiver_electrodes;
-+	u8 tx = data->query.number_of_transmitter_electrodes;
-+	switch (data->report_type) {
-+	case F54_8BIT_IMAGE:
-+		data->report_size = rx * tx;
-+		break;
-+	case F54_16BIT_IMAGE:
-+	case F54_RAW_16BIT_IMAGE:
-+	case F54_TRUE_BASELINE:
-+	case F54_FULL_RAW_CAP:
-+	case F54_FULL_RAW_CAP_RX_COUPLING_COMP:
-+		data->report_size = 2 * rx * tx;
-+		break;
-+	case F54_HIGH_RESISTANCE:
-+		data->report_size = RMI_54_HIGH_RESISTANCE_SIZE;
-+		break;
-+	case F54_FULL_RAW_CAP_MIN_MAX:
-+		data->report_size = RMI_54_FULL_RAW_CAP_MIN_MAX_SIZE;
-+		break;
-+	case F54_TX_TO_TX_SHORT:
-+	case F54_TX_OPEN:
-+	case F54_TX_TO_GROUND:
-+		data->report_size =  (tx + 7) / 8;
-+		break;
-+	case F54_RX_TO_RX1:
-+	case F54_RX_OPENS1:
-+		if (rx < tx)
-+			data->report_size = 2 * rx * rx;
-+		else
-+			data->report_size = 2 * rx * tx;
-+		break;
-+	case F54_RX_TO_RX2:
-+	case F54_RX_OPENS2:
-+		if (rx <= tx)
-+			data->report_size = 0;
-+		else
-+			data->report_size = 2 * rx * (rx - tx);
-+		break;
-+	default:
-+		data->report_size = 0;
-+	}
-+}
-+
-+int rmi_f54_attention(struct rmi_function_container *fc, u8 *irq_bits)
-+{
-+	struct rmi_driver *driver = fc->rmi_dev->driver;
-+	char fifo[2];
-+	struct rmi_fn_54_data *data = fc->data;
-+	int error = 0;
-+
-+	set_report_size(data);
-+	if (data->report_size == 0) {
-+		dev_err(&fc->dev, "Invalid report type set in %s. "
-+				"This should never happen.\n", __func__);
-+		error = -EINVAL;
-+		goto error_exit;
-+	}
-+	/*
-+	 * We need to ensure the buffer is big enough. A Buffer size of 0 means
-+	 * that the buffer has not been allocated.
-+	 */
-+	if (data->bufsize < data->report_size) {
-+		mutex_lock(&data->data_mutex);
-+		if (data->bufsize > 0)
-+			kfree(data->report_data);
-+		data->report_data = kzalloc(data->report_size, GFP_KERNEL);
-+		if (!data->report_data) {
-+			dev_err(&fc->dev, "Failed to allocate report_data.\n");
-+			error = -ENOMEM;
-+			data->bufsize = 0;
-+			mutex_unlock(&data->data_mutex);
-+			goto error_exit;
-+		}
-+		data->bufsize = data->report_size;
-+		mutex_unlock(&data->data_mutex);
-+	}
-+	dev_vdbg(&fc->dev, "F54 Interrupt handler is running.\nSize: %d\n",
-+		 data->report_size);
-+	/* Write 0 to fifohi and fifolo. */
-+	fifo[0] = 0;
-+	fifo[1] = 0;
-+	error = rmi_write_block(fc->rmi_dev, fc->fd.data_base_addr
-+				+ RMI_F54_FIFO_OFFSET, fifo,	sizeof(fifo));
-+	if (error < 0)
-+		dev_err(&fc->dev, "Failed to write fifo to zero!\n");
-+	else
-+		error = rmi_read_block(fc->rmi_dev,
-+			fc->fd.data_base_addr + RMI_F54_REPORT_DATA_OFFSET,
-+			data->report_data, data->report_size);
-+	if (error < 0)
-+		dev_err(&fc->dev, "F54 data read failed. Code: %d.\n", error);
-+	else if (error != data->report_size) {
-+		error = -EINVAL;
-+		goto error_exit;
-+	}
-+#if RAW_HEX
-+	int l;
-+	/* Debugging: Print out the file in hex. */
-+	pr_info("Report data (raw hex):\n");
-+	for (l = 0; l < data->report_size; l += 2) {
-+		pr_info("%03d: 0x%02x%02x\n", l/2,
-+			data->report_data[l+1], data->report_data[l]);
-+	}
-+#endif
-+#if HUMAN_READABLE
-+	/* Debugging: Print out file in human understandable image */
-+	switch (data->report_type) {
-+	case F54_16BIT_IMAGE:
-+	case F54_RAW_16BIT_IMAGE:
-+	case F54_TRUE_BASELINE:
-+	case F54_FULL_RAW_CAP:
-+	case F54_FULL_RAW_CAP_RX_COUPLING_COMP:
-+		pr_info("Report data (Image):\n");
-+		int i, j, k;
-+		char c[2];
-+		short s;
-+		k = 0;
-+		for (i = 0; i < data->query.number_of_transmitter_electrodes;
-+									i++) {
-+			for (j = 0; j <
-+			     data->query.number_of_receiver_electrodes; j++) {
-+				c[0] = data->report_data[k];
-+				c[1] = data->report_data[k+1];
-+				memcpy(&s, &c, 2);
-+				if (s < -64)
-+					printk(".");
-+				else if (s < 0)
-+					printk("-");
-+				else if (s > 64)
-+					printk("*");
-+				else if (s > 0)
-+					printk("+");
-+				else
-+					printk("0");
-+				k += 2;
-+			}
-+			pr_info("\n");
-+		}
-+		pr_info("EOF\n");
-+		break;
-+	default:
-+		pr_info("Report type %d debug image not supported",
-+							data->report_type);
-+	}
-+#endif
-+	error = IDLE;
-+error_exit:
-+	mutex_lock(&data->status_mutex);
-+	/* Turn back on other interupts, if it
-+	 * appears that we turned them off. */
-+	if (driver->restore_irq_mask) {
-+		dev_dbg(&fc->dev, "Restoring interupts!\n");
-+		driver->restore_irq_mask(fc->rmi_dev);
-+	} else {
-+		dev_err(&fc->dev, "No way to restore interrupts!\n");
-+	}
-+	data->status = error;
-+	mutex_unlock(&data->status_mutex);
-+	return data->status;
-+}
-+
-+
-+#if F54_WATCHDOG
-+static void clear_status_worker(struct work_struct *work)
-+{
-+	struct rmi_fn_54_data *data = container_of(work,
-+					struct rmi_fn_54_data, work);
-+	struct rmi_function_container *fc = data->fc;
-+	struct rmi_driver *driver = fc->rmi_dev->driver;
-+	char command;
-+	int result;
-+
-+	mutex_lock(&data->status_mutex);
-+	if (data->status == BUSY) {
-+		pr_debug("F54 Timout Occured: Determining status.\n");
-+		result = rmi_read_block(fc->rmi_dev, fc->fd.command_base_addr,
-+								&command, 1);
-+		if (result < 0) {
-+			dev_err(&fc->dev, "Could not read get_report register "
-+				"from 0x%04x\n", fc->fd.command_base_addr);
-+			data->status = -ETIMEDOUT;
-+		} else {
-+			if (command & GET_REPORT) {
-+				dev_warn(&fc->dev, "Report type unsupported!");
-+				data->status = -EINVAL;
-+			} else {
-+				data->status = -ETIMEDOUT;
-+			}
-+		}
-+		if (driver->restore_irq_mask) {
-+			dev_dbg(&fc->dev, "Restoring interupts!\n");
-+			driver->restore_irq_mask(fc->rmi_dev);
-+		} else {
-+			dev_err(&fc->dev, "No way to restore interrupts!\n");
-+		}
-+	}
-+	mutex_unlock(&data->status_mutex);
-+}
-+
-+static enum hrtimer_restart clear_status(struct hrtimer *timer)
-+{
-+	struct rmi_fn_54_data *data = container_of(timer,
-+					struct rmi_fn_54_data, watchdog);
-+	schedule_work(&(data->work));
-+	return HRTIMER_NORESTART;
-+}
-+#endif
-+
-+/* Check if report_type is valid */
-+static bool is_report_type_valid(enum f54_report_types reptype)
-+{
-+	/* Basic checks on report_type to ensure we write a valid type
-+	 * to the sensor.
-+	 * TODO: Check Query3 to see if some specific reports are
-+	 * available. This is currently listed as a reserved register.
-+	 */
-+	switch (reptype) {
-+	case F54_8BIT_IMAGE:
-+	case F54_16BIT_IMAGE:
-+	case F54_RAW_16BIT_IMAGE:
-+	case F54_HIGH_RESISTANCE:
-+	case F54_TX_TO_TX_SHORT:
-+	case F54_RX_TO_RX1:
-+	case F54_TRUE_BASELINE:
-+	case F54_FULL_RAW_CAP_MIN_MAX:
-+	case F54_RX_OPENS1:
-+	case F54_TX_OPEN:
-+	case F54_TX_TO_GROUND:
-+	case F54_RX_TO_RX2:
-+	case F54_RX_OPENS2:
-+	case F54_FULL_RAW_CAP:
-+	case F54_FULL_RAW_CAP_RX_COUPLING_COMP:
-+		return true;
-+		break;
-+	default:
-+		return false;
-+	}
-+}
-+
-+/* SYSFS file show/store functions */
-+static ssize_t rmi_fn_54_report_type_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->report_type);
-+}
-+
-+static ssize_t rmi_fn_54_report_type_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count) {
-+	int result;
-+	unsigned long val;
-+	unsigned char data;
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	/* need to convert the string data to an actual value */
-+	result = strict_strtoul(buf, 10, &val);
-+	if (result)
-+		return result;
-+	if (!is_report_type_valid(val)) {
-+		dev_err(dev, "%s : Report type %d is invalid.\n",
-+					__func__, (u8) val);
-+		return -EINVAL;
-+	}
-+	mutex_lock(&instance_data->status_mutex);
-+	if (instance_data->status != BUSY) {
-+		instance_data->report_type = (enum f54_report_types)val;
-+		data = (char)val;
-+		/* Write the Report Type back to the first Block
-+		 * Data registers (F54_AD_Data0). */
-+		result =
-+		    rmi_write_block(fc->rmi_dev, fc->fd.data_base_addr,
-+								&data, 1);
-+		mutex_unlock(&instance_data->status_mutex);
-+		if (result < 0) {
-+			dev_err(dev, "%s : Could not write report type to"
-+				" 0x%x\n", __func__, fc->fd.data_base_addr);
-+			return result;
-+		}
-+		return count;
-+	} else {
-+		dev_err(dev, "%s : Report type cannot be changed in the middle"
-+				" of command.\n", __func__);
-+		mutex_unlock(&instance_data->status_mutex);
-+		return -EINVAL;
-+	}
-+}
-+
-+static ssize_t rmi_fn_54_get_report_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count) {
-+	unsigned long val;
-+	int error, result;
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+	struct rmi_driver *driver;
-+	u8 command;
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	driver = fc->rmi_dev->driver;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+	if (error)
-+		return error;
-+	/* Do nothing if not set to 1. This prevents accidental commands. */
-+	if (val != 1)
-+		return count;
-+	command = (unsigned char)GET_REPORT;
-+	/* Basic checks on report_type to ensure we write a valid type
-+	 * to the sensor.
-+	 * TODO: Check Query3 to see if some specific reports are
-+	 * available. This is currently listed as a reserved register.
-+	 */
-+	if (!is_report_type_valid(instance_data->report_type)) {
-+		dev_err(dev, "%s : Report type %d is invalid.\n",
-+				__func__, instance_data->report_type);
-+		return -EINVAL;
-+	}
-+	mutex_lock(&instance_data->status_mutex);
-+	if (instance_data->status != IDLE) {
-+		if (instance_data->status != BUSY) {
-+			dev_err(dev, "F54 status is in an abnormal state: 0x%x",
-+							instance_data->status);
-+		}
-+		mutex_unlock(&instance_data->status_mutex);
-+		return count;
-+	}
-+	/* Store interrupts */
-+	/* Do not exit if we fail to turn off interupts. We are likely
-+	 * to still get useful data. The report data can, however, be
-+	 * corrupted, and there may be unexpected behavior.
-+	 */
-+	dev_dbg(dev, "Storing and overriding interupts\n");
-+	if (driver->store_irq_mask)
-+		driver->store_irq_mask(fc->rmi_dev,
-+					fc->irq_mask);
-+	else
-+		dev_err(dev, "No way to store interupts!\n");
-+	instance_data->status = BUSY;
-+
-+	/* small delay to avoid race condition in firmare. This value is a bit
-+	 * higher than absolutely necessary. Should be removed once issue is
-+	 * resolved in firmware. */
-+
-+	mdelay(2);
-+
-+	/* Write the command to the command register */
-+	result = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
-+						&command, 1);
-+	mutex_unlock(&instance_data->status_mutex);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write command to 0x%x\n",
-+				__func__, fc->fd.command_base_addr);
-+		return result;
-+	}
-+#if F54_WATCHDOG
-+	/* start watchdog timer */
-+	hrtimer_start(&instance_data->watchdog, ktime_set(1, 0),
-+							HRTIMER_MODE_REL);
-+#endif
-+	return count;
-+}
-+
-+
-+static ssize_t rmi_fn_54_force_cal_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count) {
-+	unsigned long val;
-+	int error, result;
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+	struct rmi_driver *driver;
-+	u8 command;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	driver = fc->rmi_dev->driver;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+	if (error)
-+		return error;
-+	/* Do nothing if not set to 1. This prevents accidental commands. */
-+	if (val != 1)
-+		return count;
-+
-+	command = (unsigned char)FORCE_CAL;
-+
-+	if (instance_data->status == BUSY)
-+		return -EBUSY;
-+	/* Write the command to the command register */
-+	result = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
-+						&command, 1);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write command to 0x%x\n",
-+				__func__, fc->fd.command_base_addr);
-+		return result;
-+	}
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_54_status_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%d\n", instance_data->status);
-+}
-+
-+
-+
-+static ssize_t rmi_fn_54_status_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	mutex_lock(&instance_data->status_mutex);
-+	/* any write to status resets it */
-+	instance_data->status = 0;
-+	mutex_unlock(&instance_data->status_mutex);
-+
++	/* we do nothing here */
 +	return 0;
 +}
 +
 +
-+static ssize_t rmi_fn_54_num_rx_electrodes_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+				data->query.number_of_receiver_electrodes);
-+}
-+
-+static ssize_t rmi_fn_54_num_tx_electrodes_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.number_of_transmitter_electrodes);
-+}
-+
-+static ssize_t rmi_fn_54_has_image16_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_image16);
-+}
-+
-+static ssize_t rmi_fn_54_has_image8_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_image8);
-+}
-+
-+static ssize_t rmi_fn_54_has_baseline_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_baseline);
-+}
-+
-+static ssize_t rmi_fn_54_clock_rate_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.clock_rate);
-+}
-+
-+
-+static ssize_t rmi_fn_54_touch_controller_family_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.touch_controller_family);
-+}
-+
-+
-+static ssize_t rmi_fn_54_has_pixel_touch_threshold_adjustment_show(
-+		struct device *dev, struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_pixel_touch_threshold_adjustment);
-+}
-+
-+static ssize_t rmi_fn_54_has_sensor_assignment_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_sensor_assignment);
-+}
-+
-+static ssize_t rmi_fn_54_has_interference_metric_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_interference_metric);
-+}
-+
-+static ssize_t rmi_fn_54_has_sense_frequency_control_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_sense_frequency_control);
-+}
-+
-+static ssize_t rmi_fn_54_has_firmware_noise_mitigation_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_firmware_noise_mitigation);
-+}
-+
-+static ssize_t rmi_fn_54_has_two_byte_report_rate_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_two_byte_report_rate);
-+}
-+
-+static ssize_t rmi_fn_54_has_one_byte_report_rate_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_one_byte_report_rate);
-+}
-+
-+static ssize_t rmi_fn_54_has_relaxation_control_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_relaxation_control);
-+}
-+
-+static ssize_t rmi_fn_54_curve_compensation_mode_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.curve_compensation_mode);
-+}
-+
-+static ssize_t rmi_fn_54_has_iir_filter_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_iir_filter);
-+}
-+
-+static ssize_t rmi_fn_54_has_cmn_removal_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_cmn_removal);
-+}
-+
-+static ssize_t rmi_fn_54_has_cmn_maximum_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_cmn_maximum);
-+}
-+
-+static ssize_t rmi_fn_54_has_pixel_threshold_hysteresis_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_pixel_threshold_hysteresis);
-+}
-+
-+static ssize_t rmi_fn_54_has_edge_compensation_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_edge_compensation);
-+}
-+
-+static ssize_t rmi_fn_54_has_perf_frequency_noisecontrol_show(
-+		struct device *dev, struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.has_perf_frequency_noisecontrol);
-+}
-+
-+static ssize_t rmi_fn_54_number_of_sensing_frequencies_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.number_of_sensing_frequencies);
-+}
-+
-+
-+static ssize_t rmi_fn_54_no_auto_cal_show(struct device *dev,
-+				struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+				instance_data->no_auto_cal ? 1 : 0);
-+}
-+
-+static ssize_t rmi_fn_54_no_auto_cal_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count) {
-+	int result;
-+	unsigned long val;
-+	unsigned char data;
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	/* need to convert the string data to an actual value */
-+	result = strict_strtoul(buf, 10, &val);
-+
-+	/* if an error occured, return it */
-+	if (result)
-+		return result;
-+	/* Do nothing if not 0 or 1. This prevents accidental commands. */
-+	if (val > 1)
-+		return count;
-+	/* Read current control values */
-+	result =
-+	    rmi_read_block(fc->rmi_dev, fc->fd.control_base_addr, &data, 1);
-+
-+	/* if the current control registers are already set as we want them, do
-+	 * nothing to them */
-+	if ((data & 1) == val)
-+		return count;
-+	/* Write the control back to the control register (F54_AD_Ctrl0)
-+	 * Ignores everything but bit 0 */
-+	data = (data & ~1) | (val & 0x01); /* bit mask for lowest bit */
-+	result =
-+	    rmi_write_block(fc->rmi_dev, fc->fd.control_base_addr, &data, 1);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write control to 0x%x\n",
-+		       __func__, fc->fd.control_base_addr);
-+		return result;
++int rmi_f11_attention(struct rmi_function_container *fc, u8 *irq_bits)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *f11 = fc->data;
++	u8 data_base_addr = fc->fd.data_base_addr;
++	int data_base_addr_offset = 0;
++	int error;
++	int i;
++
++	for (i = 0; i < f11->dev_query.nbr_of_sensors + 1; i++) {
++		error = rmi_read_block(rmi_dev,
++				data_base_addr + data_base_addr_offset,
++				f11->sensors[i].data_pkt,
++				f11->sensors[i].pkt_size);
++		if (error < 0)
++			return error;
++
++		rmi_f11_finger_handler(&f11->sensors[i]);
++		data_base_addr_offset += f11->sensors[i].pkt_size;
 +	}
-+	/* update our internal representation iff the write succeeds */
-+	instance_data->no_auto_cal = (val == 1);
-+	return count;
++
++	return 0;
 +}
 +
-+static ssize_t rmi_fn_54_fifoindex_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf) {
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+	struct rmi_driver *driver;
-+	unsigned char temp_buf[2];
-+	int retval;
++#if RESUME_REZERO
++static int rmi_f11_resume(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct f11_data *data = fc->data;
++	/* Command register always reads as 0, so we can just use a local. */
++	union f11_2d_commands commands = {};
++	int retval = 0;
 +
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	driver = fc->rmi_dev->driver;
++	dev_dbg(&fc->dev, "Resuming...\n");
++	if (!data->rezero_on_resume)
++		return 0;
 +
-+	/* Read fifoindex from device */
-+	retval = rmi_read_block(fc->rmi_dev,
-+				fc->fd.data_base_addr + RMI_F54_FIFO_OFFSET,
-+				temp_buf, ARRAY_SIZE(temp_buf));
++	if (data->rezero_wait_ms)
++		mdelay(data->rezero_wait_ms);
 +
++	commands.rezero = 1;
++	retval = rmi_write_block(rmi_dev, fc->fd.command_base_addr,
++			&commands.reg, sizeof(commands.reg));
 +	if (retval < 0) {
-+		dev_err(dev, "Could not read fifoindex from 0x%04x\n",
-+		       fc->fd.data_base_addr + RMI_F54_FIFO_OFFSET);
++		dev_err(&rmi_dev->dev, "%s: failed to issue rezero command, "
++			"error = %d.", __func__, retval);
 +		return retval;
 +	}
-+	batohs(&instance_data->fifoindex, temp_buf);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->fifoindex);
-+}
 +
-+static ssize_t rmi_fn_54_fifoindex_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf,
-+					size_t count)
++	return retval;
++}
++#endif /* RESUME_REZERO */
++
++
++static void rmi_f11_remove(struct rmi_function_container *fc)
 +{
-+	int error;
-+	unsigned long val;
-+	unsigned char data[2];
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
++	int attr_count = 0;
 +
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+
-+	if (error)
-+		return error;
-+
-+	instance_data->fifoindex = val;
-+
-+	/* Write the FifoIndex back to the first data registers. */
-+	hstoba(data, (unsigned short)val);
-+
-+	error = rmi_write_block(fc->rmi_dev,
-+				fc->fd.data_base_addr + RMI_F54_FIFO_OFFSET,
-+				data,
-+				ARRAY_SIZE(data));
-+
-+	if (error < 0) {
-+		dev_err(dev, "%s : Could not write fifoindex to 0x%x\n",
-+		       __func__, fc->fd.data_base_addr + RMI_F54_FIFO_OFFSET);
-+		return error;
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
++		sysfs_remove_file(&fc->dev.kobj,
++				  &attrs[attr_count].attr);
 +	}
-+	return count;
++
++	rmi_f11_free_devices(fc);
++
++	rmi_f11_free_memory(fc);
++
 +}
-+
-+/* Provide access to last report */
-+#ifdef KERNEL_VERSION_ABOVE_2_6_32
-+static ssize_t rmi_fn_54_data_read(struct file *data_file, struct kobject *kobj,
-+#else
-+static ssize_t rmi_fn_54_data_read(struct kobject *kobj,
-+#endif
-+				struct bin_attribute *attributes,
-+				char *buf, loff_t pos, size_t count)
-+{
-+	struct device *dev;
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_54_data *instance_data;
-+
-+	dev = container_of(kobj, struct device, kobj);
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	mutex_lock(&instance_data->data_mutex);
-+	if (count < instance_data->report_size) {
-+		dev_err(dev,
-+			"%s: F54 report size too large for buffer: %d."
-+				" Need at least: %d for Report type: %d.\n",
-+			__func__, count, instance_data->report_size,
-+			instance_data->report_type);
-+		mutex_unlock(&instance_data->data_mutex);
-+		return -EINVAL;
-+	}
-+	if (instance_data->report_data) {
-+		/* Copy data from instance_data to buffer */
-+		memcpy(buf, instance_data->report_data,
-+					instance_data->report_size);
-+		mutex_unlock(&instance_data->data_mutex);
-+		dev_dbg(dev, "%s: Presumably successful.", __func__);
-+		return instance_data->report_size;
-+	} else {
-+		dev_err(dev, "%s: F54 report_data does not exist!\n", __func__);
-+		mutex_unlock(&instance_data->data_mutex);
-+		return -EINVAL;
-+	}
-+}
-+
 +
 +static struct rmi_function_handler function_handler = {
-+	.func = 0x54,
-+	.init = rmi_f54_init,
-+	.config = rmi_f54_config,
-+	.reset = rmi_f54_reset,
-+	.attention = rmi_f54_attention,
-+	.remove = rmi_f54_remove
++	.func = 0x11,
++	.init = rmi_f11_init,
++	.config = rmi_f11_config,
++	.reset = rmi_f11_reset,
++	.attention = rmi_f11_attention,
++	.remove = rmi_f11_remove
++#if	RESUME_REZERO
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	,
++	.late_resume = rmi_f11_resume
++#else
++	.resume = rmi_f11_resume
++#endif  /* CONFIG_HAS_EARLYSUSPEND */
++#endif
 +};
 +
-+static int __init rmi_f54_module_init(void)
++static int __init rmi_f11_module_init(void)
 +{
 +	int error;
 +
@@ -1531,22 +1570,337 @@ index 0000000..5119184
 +		pr_err("%s: register failed!\n", __func__);
 +		return error;
 +	}
++
 +	return 0;
 +}
 +
-+static void rmi_f54_module_exit(void)
++static void __exit rmi_f11_module_exit(void)
 +{
-+	/* There is no function handler specific data to be freed here.
-+	 * Function container specific data will be freed as part of the
-+	 * unregistration process.
-+	 */
 +	rmi_unregister_function_driver(&function_handler);
 +}
 +
-+module_init(rmi_f54_module_init);
-+module_exit(rmi_f54_module_exit);
++static ssize_t f11_maxPos_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *data;
 +
-+MODULE_AUTHOR("Daniel Rosenberg <daniel.rosenberg@synaptics.com>");
-+MODULE_DESCRIPTION("RMI F54 module");
++	fc = to_rmi_function_container(dev);
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u %u\n",
++			data->sensors[0].max_x, data->sensors[0].max_y);
++}
++
++static ssize_t f11_flip_show(struct device *dev,
++				   struct device_attribute *attr,
++				   char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *data;
++
++	fc = to_rmi_function_container(dev);
++	data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u %u\n",
++			data->sensors[0].axis_align.flip_x,
++			data->sensors[0].axis_align.flip_y);
++}
++
++static ssize_t f11_flip_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf,
++				    size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	unsigned int new_X, new_Y;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++
++	if (sscanf(buf, "%u %u", &new_X, &new_Y) != 2)
++		return -EINVAL;
++	if (new_X < 0 || new_X > 1 || new_Y < 0 || new_Y > 1)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.flip_x = new_X;
++	instance_data->sensors[0].axis_align.flip_y = new_Y;
++
++	return count;
++}
++
++static ssize_t f11_swap_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->sensors[0].axis_align.swap_axes);
++}
++
++static ssize_t f11_swap_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	unsigned int newSwap;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++
++	if (sscanf(buf, "%u", &newSwap) != 1)
++		return -EINVAL;
++	if (newSwap < 0 || newSwap > 1)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.swap_axes = newSwap;
++
++	f11_set_abs_params(fc, 0);
++
++	return count;
++}
++
++static ssize_t f11_relreport_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->
++			sensors[0].axis_align.rel_report_enabled);
++}
++
++static ssize_t f11_relreport_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf,
++					 size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	unsigned int new_value;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++
++	if (sscanf(buf, "%u", &new_value) != 1)
++		return -EINVAL;
++	if (new_value < 0 || new_value > 1)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.rel_report_enabled = new_value;
++
++	return count;
++}
++
++static ssize_t f11_offset_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%d %d\n",
++			instance_data->sensors[0].axis_align.offset_X,
++			instance_data->sensors[0].axis_align.offset_Y);
++}
++
++static ssize_t f11_offset_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf,
++				      size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	int new_X, new_Y;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++
++	if (sscanf(buf, "%d %d", &new_X, &new_Y) != 2)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.offset_X = new_X;
++	instance_data->sensors[0].axis_align.offset_Y = new_Y;
++
++	return count;
++}
++
++static ssize_t f11_clip_show(struct device *dev,
++				   struct device_attribute *attr,
++				   char *buf)
++{
++
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u %u %u %u\n",
++			instance_data->sensors[0].axis_align.clip_X_low,
++			instance_data->sensors[0].axis_align.clip_X_high,
++			instance_data->sensors[0].axis_align.clip_Y_low,
++			instance_data->sensors[0].axis_align.clip_Y_high);
++}
++
++static ssize_t f11_clip_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf,
++				    size_t count)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++	unsigned int new_X_low, new_X_high, new_Y_low, new_Y_high;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	if (sscanf(buf, "%u %u %u %u",
++		   &new_X_low, &new_X_high, &new_Y_low, &new_Y_high) != 4)
++		return -EINVAL;
++	if (new_X_low < 0 || new_X_low >= new_X_high || new_Y_low < 0
++	    || new_Y_low >= new_Y_high)
++		return -EINVAL;
++	instance_data->sensors[0].axis_align.clip_X_low = new_X_low;
++	instance_data->sensors[0].axis_align.clip_X_high = new_X_high;
++	instance_data->sensors[0].axis_align.clip_Y_low = new_Y_low;
++	instance_data->sensors[0].axis_align.clip_Y_high = new_Y_high;
++
++	/*
++	** for now, we assume this is sensor index 0
++	*/
++	f11_set_abs_params(fc, 0);
++
++	return count;
++}
++
++static ssize_t f11_rezero_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct rmi_function_container *fc = NULL;
++	unsigned int rezero;
++	int retval = 0;
++	/* Command register always reads as 0, so we can just use a local. */
++	union f11_2d_commands commands = {};
++
++	fc = to_rmi_function_container(dev);
++
++	if (sscanf(buf, "%u", &rezero) != 1)
++		return -EINVAL;
++	if (rezero < 0 || rezero > 1)
++		return -EINVAL;
++
++	/* Per spec, 0 has no effect, so we skip it entirely. */
++	if (rezero) {
++		commands.rezero = 1;
++		retval = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
++				&commands.reg, sizeof(commands.reg));
++		if (retval < 0) {
++			dev_err(dev, "%s: failed to issue rezero command, "
++				"error = %d.", __func__, retval);
++			return retval;
++		}
++	}
++
++	return count;
++}
++
++#if RESUME_REZERO
++static ssize_t f11_rezeroOnResume_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct rmi_function_container *fc = NULL;
++	unsigned int newValue;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	if (sscanf(buf, "%u", &newValue) != 1)
++		return -EINVAL;
++	if (newValue < 0 || newValue > 1) {
++		dev_err(dev, "rezeroOnResume must be either 1 or 0.\n");
++		return -EINVAL;
++	}
++
++	instance_data->rezero_on_resume = (newValue != 0);
++
++	return count;
++}
++
++static ssize_t f11_rezeroOnResume_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->rezero_on_resume);
++}
++
++static ssize_t f11_rezeroWait_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct rmi_function_container *fc = NULL;
++	unsigned int newValue;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	if (sscanf(buf, "%u", &newValue) != 1)
++		return -EINVAL;
++	if (newValue < 0) {
++		dev_err(dev, "rezeroWait must be 0 or greater.\n");
++		return -EINVAL;
++	}
++
++	instance_data->rezero_wait_ms = (newValue != 0);
++
++	return count;
++}
++
++static ssize_t f11_rezeroWait_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct rmi_function_container *fc;
++	struct f11_data *instance_data;
++
++	fc = to_rmi_function_container(dev);
++	instance_data = fc->data;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n",
++			instance_data->rezero_wait_ms);
++}
++#endif
++
++module_init(rmi_f11_module_init);
++module_exit(rmi_f11_module_exit);
++
++MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com");
++MODULE_DESCRIPTION("RMI F11 module");
 +MODULE_LICENSE("GPL");
 +
