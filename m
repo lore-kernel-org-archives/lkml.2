@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1LVI72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 03:59:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58157 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab1LVI7Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 03:59:25 -0500
-Message-ID: <1324544352.24803.9.camel@twins>
-Subject: Re: Subject: [PATCH 2/2] priority System V Semaphores
-From: Peter Zijlstra <peterz@infradead.org>
-To: raz ben yehuda <raziebe@gmail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lior Brafman <LBrafman@manz.com>,
-        Torsten Scherer <TScherer@manz.com>,
-        Rasty Slutsker <RSlutsker@manz.com>
-Date: Thu, 22 Dec 2011 09:59:12 +0100
-In-Reply-To: <1324500515.5467.18.camel@raz>
-References: <1324419795.20886.3.camel@raz>
-	 <4EF2261F.4050002@colorfullife.com> <1324500515.5467.18.camel@raz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754867Ab1LVJF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:05:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59937 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753670Ab1LVJFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 04:05:53 -0500
+Date: Thu, 22 Dec 2011 10:03:52 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        akpm@linux-foundation.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 6/7] printk: Poke printk extra hard
+Message-ID: <20111222090352.GA11831@elte.hu>
+References: <20111221105739.798864333@chello.nl>
+ <20111221111143.620776435@chello.nl>
+ <CA+55aFw_rQbOho8WojeiD3YZtzud99CAXZCzqoKNF1HRGXgnZA@mail.gmail.com>
+ <20111222070212.GA9593@elte.hu>
+ <1324543413.24803.7.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324543413.24803.7.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 22:48 +0200, raz ben yehuda wrote:
-> Vxworks is the use case. And there are plenty of companies with
-> vxWorks software and in i believe they will migrate sooner or later to
-> PreemptRT.  My current company uses old wrapper software that implements
-> vxWorks semaphores as system V semaphores. vxWorks semaphores have a priority
-> feature which is widely used.
-> I will probably change it some time in the future to posix semaphores , but posix 
-> semaphores are implemented in glibc with futexes and atomic ops and i rather 
-> mess with kernel and not glibc. funny , but true. glibc is harder. 
 
-Semaphores are a fscking trainwreck for real-time programming. Don't use
-them, full stop. If you do, you're doing it wrong, it's really that
-simple.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Use PI mutexes, which are already fully supported in glibc, no extra
-patching needed.
+> On Thu, 2011-12-22 at 08:02 +0100, Ingo Molnar wrote:
+> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > 
+> > > On Wed, Dec 21, 2011 at 2:57 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > >
+> > > >
+> > > > +#ifdef CONFIG_PRINTK_DEBUG
+> > > > +void printk_init(void)
+> > > > +{
+> > > > +       struct rq *rq;
+> > > > +       unsigned long flags;
+> > > > +
+> > > > +       local_irq_save(flags);
+> > > > +       rq = this_rq();
+> > > > +       raw_spin_lock(&rq->lock);
+> > > > +       printk(KERN_DEBUG "printk: echo echo echo..\n");
+> > > > +       raw_spin_unlock(&rq->lock);
+> > > > +       local_irq_restore(flags);
+> > > 
+> > > Ok, I can't really say that I think this is worth a config option like this.
+> > > 
+> > > Maybe an example module or something?
+> 
+> I really really really don't want to expose struct rq to 
+> modules, that's just asking for trouble. But yeah, I know what 
+> you mean with not being worth the config option, but then, I 
+> thought I might as well post it, it can't be more horrible 
+> than the sem patch, can it ;-)
 
-Full NAK for any and all priority fudging for any semaphore
-implementation.
+Could be made part of the locking self-tests - that way it does 
+not add an extra config option! ;-)
+
+Thanks,
+
+	Ingo
