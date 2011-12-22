@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab1LVJfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 04:35:41 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52316 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab1LVJfi (ORCPT
+	id S1755073Ab1LVJos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 04:44:48 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40078 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab1LVJop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 04:35:38 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4EF2F9EB.7000006@jp.fujitsu.com>
-Date: Thu, 22 Dec 2011 18:35:39 +0900
-From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	Thu, 22 Dec 2011 04:44:45 -0500
+Date: Thu, 22 Dec 2011 10:44:39 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 4/4] cgroup: remove extra calls to find_existing_css_set
+Message-ID: <20111222094437.GO17668@somewhere>
+References: <1324527518-24461-1-git-send-email-msb@chromium.org>
+ <1324527518-24461-4-git-send-email-msb@chromium.org>
+ <4EF2C536.7070408@cn.fujitsu.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm: mmap system call does not return EOVERFLOW
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF2C536.7070408@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the system call mmap(), if the value of "offset" plus "length"
-exceeds the offset maximum of "off_t", the error EOVERFLOW should be
-returned.
+On Thu, Dec 22, 2011 at 01:50:46PM +0800, Li Zefan wrote:
+> > @@ -2091,6 +2010,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+> >  	 * rcu or tasklist locked. instead, build an array of all threads in the
+> >  	 * group - group_rwsem prevents new threads from appearing, and if
+> >  	 * threads exit, this will just be an over-estimate.
+> > +	 *
+> > +	 * While creating the list, also make sure css_sets exist for all
+> > +	 * threads to be migrated. we use find_css_set, which allocates a new
+> > +	 * one if necessary.
+> >  	 */
+> >  	group_size = get_nr_threads(leader);
+> >  	/* flex_array supports very large thread-groups better than kmalloc. */
+> > @@ -2137,6 +2060,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+> >  		/* nothing to do if this task is already in the cgroup */
+> >  		if (ent.cgrp == cgrp)
+> >  			continue;
+> > +		ent.cg = find_css_set(tsk->cgroups, cgrp);
+> 
+> unfortunately This won't work, because we are holding tasklist_lock.
 
-------------------------------------------------------------------------
-void *mmap(void *addr, size_t length, int prot, int flags,
-       	   int fd, off_t offset)
-------------------------------------------------------------------------
+I believe we can remove tasklist_lock now (in a seperate patch).
 
-Here is the detail how EOVERFLOW is returned:
+It was there in order to protect while_each_thread() against exec but
+now we have threadgroup_lock().
 
-The argument "offset" is shifted right by PAGE_SHIFT bits
-in sys_mmap(mmap systemcall).
-
-------------------------------------------------------------------------
-sys_mmap(unsigned long addr, unsigned long len,
-	unsigned long prot, unsigned long flags,
-	unsigned long fd, unsigned long off)
-{
-	error = sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
-}
-------------------------------------------------------------------------
-
-In sys_mmap_pgoff(addr, len, prot, flags, fd, pgoff), do_mmap_pgoff()
-is called as follows:
-
-------------------------------------------------------------------------
-sys_mmap_pgoff(unsigned long addr, unsigned long len,
-		unsigned long prot, unsigned long flags,
-		unsigned long fd, unsigned long pgoff)
-{
-	retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
-}
-------------------------------------------------------------------------
-
-In do_mmap_pgoff(file, addr, len, prot, flags, pgoff),
-the code path which returns with the error EOVERFLOW exists already.
-
-------------------------------------------------------------------------
-do_mmap_pgoff(struct file *file, unsigned long addr,
-		unsigned long len, unsigned long prot,
-		unsigned long flags, unsigned long pgoff)
-{
-	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-		return -EOVERFLOW;
-}
-------------------------------------------------------------------------
-
-However, in this case, giving off=0xfffffffffffff000 and
-len=0xfffffffffffff000 on x86_64 arch, EOVERFLOW is not
-returned. It is because the argument, "off" and "len" are shifted right
-by PAGE_SHIFT bits and thus the condition "(pgoff + (len >> PAGE_SHIFT)) < pgoff"
-never becomes true.
-
-To fix this bug, it is necessary to compare "off" plus "len"
-with "off" by units of "off_t". The patch is here:
-
-Signed-off-by: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
----
- mm/mmap.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index eae90af..e74e736 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -948,6 +948,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
-        vm_flags_t vm_flags;
-        int error;
-        unsigned long reqprot = prot;
-+       off_t off = pgoff << PAGE_SHIFT;
+I think we only need to use rcu_read_lock() to protect against concurrent
+removal in exit.
  
-        /*
-         * Does the application expect PROT_READ to imply PROT_EXEC?
-@@ -971,7 +972,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
-                return -ENOMEM;
- 
-        /* offset overflow? */
--       if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-+       if ((off + len) < off)
-                return -EOVERFLOW;
- 
-        /* Too many mappings? */
--- 
-1.7.7.4
----
-
+> > +		if (!ent.cg) {
+> > +			retval = -ENOMEM;
+> > +			group_size = i;
+> > +			goto out_list_teardown;
+> > +		}
+> >  		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+> >  		BUG_ON(retval != 0);
+> >  		i++;
