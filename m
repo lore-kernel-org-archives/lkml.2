@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1LVV73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 16:59:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44797 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab1LVV70 (ORCPT
+	id S1755990Ab1LVWCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 17:02:35 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:38488 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab1LVWCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 16:59:26 -0500
-Date: Thu, 22 Dec 2011 13:59:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-Id: <20111222135925.de3221c8.akpm@linux-foundation.org>
-In-Reply-To: <1324590326-10135-1-git-send-email-tj@kernel.org>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 22 Dec 2011 17:02:32 -0500
+Date: Thu, 22 Dec 2011 17:02:27 -0500 (EST)
+Message-Id: <20111222.170227.1906514601375643135.davem@davemloft.net>
+To: bhelgaas@google.com
+Cc: James.Bottomley@hansenpartnership.com, linux-pci@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbarnes@virtuousgeek.org
+Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111222.145629.505018474228371646.davem@davemloft.net>
+References: <20111222.135911.584309149966835644.davem@davemloft.net>
+	<20111222.141537.1513319029738355747.davem@davemloft.net>
+	<20111222.145629.505018474228371646.davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 22 Dec 2011 14:02:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 13:45:19 -0800
-Tejun Heo <tj@kernel.org> wrote:
+From: David Miller <davem@davemloft.net>
+Date: Thu, 22 Dec 2011 14:56:29 -0500 (EST)
 
-> This patchset implements mempool for percpu memory and use it to solve
-> allocation deadlock problem in block cgroup paths.  Percpu memory
-> allocator can't be called from memory reclaim path, mostly because its
-> on-demand chunk filling hooks into vmalloc area management, which in
-> turn hooks into arch pagetable code.
-> 
-> This usually isn't a problem but block cgroup code wants to do
-> opportunistic percpu allocation to track statistics in IO issue path.
-> Currently, it directly calls alloc_percpu() from IO path triggering
-> lockdep warning and falling into deadlocks under the right conditions.
-> 
-> This patchset adds percpu mempool which supports async refilling and
-> uses that as allocation buffer to solve the above problem.  It solves
-> the problem for the next merge window but I'm not sure about what to
-> do about this window and -stable.  The mempool updates seems a bit too
-> invasive.  Maybe implement a stripped down allocation buffer in
-> block-cgroup?
+> In my case arch_setup_msi_irqs() is failing simply because MSI has
+> not been enabled on these PCI host bridges.  It should, and I'm
+> trying to figure out if this is some strange interaction with the
+> new resource code.
 
-This is taking the kernel in exactly the wrong direction.  More code,
-more complexity.  Let's think of an alternative which takes us in the
-right direction.
+It wasn't a problem with the resource changes, it's a sparc64 problem
+that only triggers on more recent systems.
 
-
-How about we just delete those statistics and then this patchset?
-
-Or how about we change those statistics to not do percpu allocations,
-then delete this patchset?
-
-Or how about we fix the percpu memory allocation code so that it
-propagates the gfp flags, then delete this patchset?
-
-
-All of those things would simplify and/or improve the kernel.  Whereas
-this patchset complicates the kernel while working around known
-shortcomings.
-
-
+The MSI SYSFS error handling is, of course, still needing to be fixed.
