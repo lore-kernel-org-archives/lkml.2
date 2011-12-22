@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab1LVSQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 13:16:28 -0500
-Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:62843 "EHLO
-	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab1LVSQ0 convert rfc822-to-8bit (ORCPT
+	id S1752367Ab1LVSWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 13:22:50 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27880 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1LVSWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 13:16:26 -0500
-X-Greylist: delayed 3654 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Dec 2011 13:16:25 EST
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 22 Dec 2011 11:15:06 -0600
-Subject: Driver core support for early platform devices
-Thread-Topic: Driver core support for early platform devices
-Thread-Index: AczAzUETYsXq7yfmQBKD5IrICl66oA==
-Message-ID: <0282FD61-7E73-45CE-8EC8-32BF411C7619@boeing.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Dec 2011 13:22:46 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+bkF4bBBJ8f75IIlswgn2r
+Date: Thu, 22 Dec 2011 10:22:40 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Vladimir Zapolskiy <vz@mleia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:OMAP SUPPORT" <linux-omap@vger.kernel.org>,
+        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 01/10] arm: omap4: fix kconfig warning
+Message-ID: <20111222182240.GN24444@atomide.com>
+References: <1324341747-5922-1-git-send-email-felipe.contreras@gmail.com>
+ <1324341747-5922-2-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324341747-5922-2-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Felipe Contreras <felipe.contreras@gmail.com> [111219 16:11]:
+> warning: (ARCH_OMAP4 && ARCH_VEXPRESS_CA9X4) selects ARM_ERRATA_720789 which has unmet direct dependencies (CPU_V7 && SMP)
 
-I'm tinkering with some improvements to the way that OpenPIC/MPIC are
-detected and loaded on PowerPC platforms, and it seems like I am trying
-to use the driver model before it is fully initialized.
+Thanks applying into fixes-non-critical-part3.
 
-In particular, it seems like it should be possible to simply declare an
-OpenPIC in the device-tree and have it automatically bound to a platform
-driver declaring the right OpenFirmware match strings.
-
-Unfortunately, it needs to be bound by init_IRQ() time, while the driver
-model does not get initialized until much later (after the scheduler is
-up and running).
-
-As far as I can tell, there seem to be 2 possible approaches to making
-that possible:
-
-(1) Split the driver-model initialization into "early" and "late" phases
-    so that drivers can be registered and devices probed very early on
-    and then replay the necessary scheduler-dependent things after the
-    system is mostly started up (IE: devtmpfs, etc).
-
-(2) Create a separate mini-platform-driver-model which can create and
-    probe platform devices early on and then automatically register them
-    properly on the platform_bus once the driver model comes up.
-
-Do you think this is the right approach?  Is there any existing work
-being done to support either model?
-
-Thanks for your help!
-
-Cheers,
-Kyle Moffett
-
---
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
-
+Tony
