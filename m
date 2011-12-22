@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab1LVQgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 11:36:09 -0500
-Received: from icf.org.ru ([91.193.237.1]:39234 "EHLO icf.org.ru"
+	id S1755413Ab1LVQgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 11:36:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33914 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab1LVQgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 11:36:00 -0500
-Date: Thu, 22 Dec 2011 20:35:57 +0400 (MSK)
-From: Georgiewskiy Yuriy <bottleman@icf.org.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.0.14-rt31
-In-Reply-To: <1324571011.5916.141.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.DEB.2.02.1112222031390.22183@icf.org.ru>
-References: <1324525237.5916.114.camel@gandalf.stny.rr.com>   <alpine.DEB.2.02.1112221759480.6601@icf.org.ru>  <1324565048.5916.139.camel@gandalf.stny.rr.com>  <alpine.DEB.2.02.1112221926460.15997@icf.org.ru> <1324571011.5916.141.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755231Ab1LVQgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 11:36:07 -0500
+Date: Thu, 22 Dec 2011 17:36:04 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: hugetlb: undo change to page mapcount in fault
+ handler
+Message-ID: <20111222163604.GB14983@tiehlicka.suse.cz>
+References: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1050998036-351594291-1324571757=:22183"
-X-Daemon-Classification: INNOCENT
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Dec 22 20:35:58 2011
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Improbability: 1 in 278963 chance of being spa
-X-DSPAM-Probability: 0.0000(0)
-X-DSPAM-Signature: 4ef35c6e21161734214772
-X-DSPAM-Factors: 27,
-	On+Thu, 0.00010,
-	ru+#+#+#+org, 0.00010,
-	On+#+2011, 0.00010,
-	*MAILER-DAEMON+Thu, 0.00010,
-	Thu+#+#+#+at, 0.00010,
-	*From+#+Thu, 0.00010,
-	*From+MAILER-DAEMON, 0.00010,
-	*From+#+#+Dec, 0.00011,
-	*MAILER-DAEMON+#+Dec, 0.00011,
-	wrote+#+#+2011, 0.00013,
-	org+#+#+#+icf, 0.00017,
-	IT+Service, 0.00017,
-	Service+Ltd, 0.00018,
-	IT+#+Ltd, 0.00018,
-	C+#+#+#+Regards, 0.00019,
-	C+#+#+Best, 0.00019,
-	C+#+With, 0.00019,
-	Thu+#+#+22, 0.00020,
-	4872+#+#+#+4872, 0.00020,
-	4872+#+#+#+4872, 0.00020,
-	On+#+#+#+11, 0.00020,
-	fax+#+4872, 0.00021,
-	4872+#+#+7, 0.00021,
-	4872+#+#+7, 0.00021,
-	The+#+#+#+be, 0.00021,
-	On+2011, 0.00021,
-	On+2011, 0.00021
-X-Bounce-ID: icf.org.ru
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu 22-12-11 21:36:34, Hillf Danton wrote:
+> Page mapcount is changed only when it is folded into page table entry.
 
----1050998036-351594291-1324571757=:22183
-Content-Type: TEXT/PLAIN; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
+The changelog is rather cryptic. What about something like:
 
-On 2011-12-22 11:23 -0500, Steven Rostedt wrote Georgiewskiy Yuriy:
+Page mapcount should be updated only if we are sure that the page ends
+up in the page table otherwise we would leak if we couldn't COW due to
+reservations or if idx is out of bounds.
 
-SR>On Thu, 2011-12-22 at 19:29 +0400, Georgiewskiy Yuriy wrote:
-SR>> On 2011-12-22 09:44 -0500, Steven Rostedt wrote Georgiewskiy Yuriy:
-SR>> 
-SR>> Hi, config in attachment.
-SR>> 
-SR>
-SR>I didn't reproduce it. Does it happen all the time? Do you always get
-SR>that strange backtrace. If you get something saner, could you print that
-SR>out. Could you also send me your full dmesg.
+The patch itself looks correct.
 
-Yes, it happend all the time periodicaly, seems then i put some load like 
-compilation or something like this, i send dmesg a bit later, may be 
-somethink else what i can do to resolve this?
+> 
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-C уважением                       With Best Regards
-Георгиевский Юрий.                Georgiewskiy Yuriy
-+7 4872 711666                    +7 4872 711666
-факс +7 4872 711143               fax +7 4872 711143
-Компания ООО "Ай Ти Сервис"       IT Service Ltd
-http://nkoort.ru                  http://nkoort.ru
-JID: GHhost@icf.org.ru            JID: GHhost@icf.org.ru
-YG129-RIPE                        YG129-RIPE
----1050998036-351594291-1324571757=:22183--
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks
+> ---
+> 
+> --- a/mm/hugetlb.c	Tue Dec 20 21:26:30 2011
+> +++ b/mm/hugetlb.c	Thu Dec 22 21:29:42 2011
+> @@ -2509,6 +2509,7 @@ static int hugetlb_no_page(struct mm_str
+>  {
+>  	struct hstate *h = hstate_vma(vma);
+>  	int ret = VM_FAULT_SIGBUS;
+> +	int anon_rmap = 0;
+>  	pgoff_t idx;
+>  	unsigned long size;
+>  	struct page *page;
+> @@ -2563,14 +2564,13 @@ retry:
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_blocks += blocks_per_huge_page(h);
+>  			spin_unlock(&inode->i_lock);
+> -			page_dup_rmap(page);
+>  		} else {
+>  			lock_page(page);
+>  			if (unlikely(anon_vma_prepare(vma))) {
+>  				ret = VM_FAULT_OOM;
+>  				goto backout_unlocked;
+>  			}
+> -			hugepage_add_new_anon_rmap(page, vma, address);
+> +			anon_rmap = 1;
+>  		}
+>  	} else {
+>  		/*
+> @@ -2583,7 +2583,6 @@ retry:
+>  			      VM_FAULT_SET_HINDEX(h - hstates);
+>  			goto backout_unlocked;
+>  		}
+> -		page_dup_rmap(page);
+>  	}
+> 
+>  	/*
+> @@ -2607,6 +2606,10 @@ retry:
+>  	if (!huge_pte_none(huge_ptep_get(ptep)))
+>  		goto backout;
+> 
+> +	if (anon_rmap)
+> +		hugepage_add_new_anon_rmap(page, vma, address);
+> +	else
+> +		page_dup_rmap(page);
+>  	new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
+>  				&& (vma->vm_flags & VM_SHARED)));
+>  	set_huge_pte_at(mm, address, ptep, new_pte);
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
