@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab1LVPwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 10:52:43 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:27328 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab1LVPwl (ORCPT
+	id S1755102Ab1LVPwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 10:52:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59585 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab1LVPwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 10:52:41 -0500
-Date: Thu, 22 Dec 2011 07:52:32 -0800
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
-        kurt.hackel@oracle.com, sjenning@linux.vnet.ibm.com,
-        chris.mason@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH V2 6/6] drivers/staging/ramster: enable as staging driver
-Message-ID: <20111222155232.GA21503@ca-server1.us.oracle.com>
+	Thu, 22 Dec 2011 10:52:42 -0500
+Message-ID: <4EF35243.9030600@gmail.com>
+Date: Thu, 22 Dec 2011 23:52:35 +0800
+From: "nai.xia" <nai.xia@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4EF35242.0110,ss=1,re=0.000,fgs=0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Brian Gerst <brgerst@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question about missing "cld" in x86 string assembly code
+References: <201112172258.24221.nai.xia@gmail.com> <CAMzpN2inHxaSnaYaYXZ4Ya3rK+MWXqR6dN5NVNZy3=OvP04uQA@mail.gmail.com> <CA+55aFzyEgDUSaNVQ1Nw5SBNd36Cvb-KrVdc1MYj+oRJt8xWgg@mail.gmail.com>
+In-Reply-To: <CA+55aFzyEgDUSaNVQ1Nw5SBNd36Cvb-KrVdc1MYj+oRJt8xWgg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 602fdd6e4a3e7d14e52ca417897c066b47bab25c Mon Sep 17 00:00:00 2001
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Date: Wed, 21 Dec 2011 14:02:03 -0700
-Subject: [PATCH V2 6/6] drivers/staging/ramster: enable as staging driver
 
-Enable build of ramster as a staging driver
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+On 2011年12月18日 02:39, Linus Torvalds wrote:
+> On Sat, Dec 17, 2011 at 9:08 AM, Brian Gerst<brgerst@gmail.com>  wrote:
+>>
+>> The i386 ELF ABI states "The direction flag must be set to the
+>> ‘‘forward’’ (that is, zero) direction before entry and upon exit from
+>> a function."  Therefore it can be assumed to be clear, unless
+>> explicitly set.
+>
+> The exception, of course, being bootup, fault and interrupt handlers,
+> and after we've called out to foreign code (ie BIOS).
 
----
+Yeah, I think I see these cld's now. Thanks for the answers!
 
- drivers/staging/Kconfig  |    2 ++
- drivers/staging/Makefile |    1 +
- 2 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 06c9081..28819c3 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -150,4 +150,6 @@ source "drivers/staging/mei/Kconfig"
- 
- source "drivers/staging/nvec/Kconfig"
- 
-+source "drivers/staging/ramster/Kconfig"
-+
- endif # STAGING
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index f3c5e33..f1e6ec0 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -66,3 +66,4 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)	+= ste_rmi4/
- obj-$(CONFIG_DRM_PSB)		+= gma500/
- obj-$(CONFIG_INTEL_MEI)		+= mei/
- obj-$(CONFIG_MFD_NVEC)		+= nvec/
-+obj-$(CONFIG_RAMSTER)		+= ramster/
--- 
-1.7.1
-
+Nai
+>
+> So there *are* a few cld's sprinkled around, they are just fairly rare.
+>
+>                      Linus
