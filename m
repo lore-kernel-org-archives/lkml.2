@@ -1,141 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1LVEft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 23:35:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:52581 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191Ab1LVEfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 23:35:48 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Amit Shah <amit.shah@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio_net: fix refill related races
-In-Reply-To: <20111221090637.GA31592@redhat.com>
-References: <20111211144428.GB14381@redhat.com> <878vmioh10.fsf@rustcorp.com.au> <20111212115405.GB7946@redhat.com> <87iplltd0g.fsf@rustcorp.com.au> <20111220190908.GC25689@redhat.com> <20111220190946.GD10752@google.com> <20111220193055.GA26392@redhat.com> <20111220193154.GG10752@google.com> <20111220194518.GB26692@redhat.com> <87hb0udd2h.fsf@rustcorp.com.au> <20111221090637.GA31592@redhat.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 22 Dec 2011 14:23:26 +1030
-Message-ID: <87d3bhjm89.fsf@rustcorp.com.au>
+	id S1754741Ab1LVEg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 23:36:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65231 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab1LVEgY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 23:36:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20111222034953.GC14174@suse.de>
+References: <4EF264C3.6000104@am.sony.com> <20111221231956.GB23859@suse.de>
+ <4EF27B85.9080801@am.sony.com> <20111222122026.3a0fae36@notabene.brown>
+ <CANqkERC+mdSGxk4tiU7+dbauSXqqANN+Z+TTb_pVXoPq+k=rJg@mail.gmail.com> <20111222034953.GC14174@suse.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 22 Dec 2011 05:36:02 +0100
+Message-ID: <CAPXgP13T1vTJjQvzhPLt48_8P5LNKgyVSQxvFtjXmVPX0pH=yQ@mail.gmail.com>
+Subject: Re: RFC: android logger feedback request
+To: Greg KH <gregkh@suse.de>
+Cc: Brian Swetland <swetland@google.com>, NeilBrown <neilb@suse.de>,
+        Tim Bird <tim.bird@am.sony.com>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 11:06:37 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Wed, Dec 21, 2011 at 10:13:18AM +1030, Rusty Russell wrote:
-> > On Tue, 20 Dec 2011 21:45:19 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > On Tue, Dec 20, 2011 at 11:31:54AM -0800, Tejun Heo wrote:
-> > > > On Tue, Dec 20, 2011 at 09:30:55PM +0200, Michael S. Tsirkin wrote:
-> > > > > Hmm, in that case it looks like a nasty race could get
-> > > > > triggered, with try_fill_recv run on multiple CPUs in parallel,
-> > > > > corrupting the linked list within the vq.
-> > > > > 
-> > > > > Using the mutex as my patch did will fix that naturally, as well.
-> > > > 
-> > > > Don't know the code but just use nrt wq.  There's even a system one
-> > > > called system_nrq_wq.
-> > > > 
-> > > > Thanks.
-> > > 
-> > > We can, but we need the mutex for other reasons, anyway.
-> > 
-> > Well, here's the alternate approach.  What do you think?
-> 
-> It looks very clean, thanks. Some documentation suggestions below.
-> Also - Cc stable on this and the block patch?
+On Thu, Dec 22, 2011 at 04:49, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Dec 21, 2011 at 06:34:08PM -0800, Brian Swetland wrote:
+>> The goals behind the logger driver have been:
+>> - keep userland and kernel logging separate (so that spammy userland
+>> logging doesn't make us lose critical kernel logs or the other way
+>> round)
+>
+> Wouldn't a simple userspace daemon solve this, writing the data to a
+> ramfs file?
 
-AFAICT we haven't seen this bug, and theoretical bugs don't get into
--stable.
+That's what the systemd journal does in /run when /var is not writable
+or the /var/log/journal directory does not exist. All just lands on a
+tmpfs until the next reboot. The journal database just acts as a
+ringbuffer on a filesystem.
 
-> > Finding two wq issues makes you justifiably cautious, but it almost
-> > feels like giving up to simply wrap it in a lock.  The APIs are designed
-> > to let us do it without a lock; I was just using them wrong.
-> 
-> One thing I note is that this scheme works because there's a single
-> entity disabling/enabling napi and the refill thread.
-> So it's possible that Amit will need to add a lock and track NAPI
-> state anyway to make suspend work. But we'll see.
+>> - make log writing very inexpensive -- avoid having to pass messages
+>> between processes (more critical on ARM9 platforms where this implied
+>> extra cache flushing), avoid having to make several syscalls to write
+>> a log message (getting time of day, etc), and so on
+>
+> ramfs?
 
-Fixed typo, documented the locking, queued for -next.
+The receiver gets almost all of this from the socket with
+SCM_TIMESTAP, and SCM_CREDENTIALS. Needed stuff can be added in a
+similar way. This is trusted, reliable and pretty cheap to retrieve
+data.
 
-Thanks!
-Rusty.
+>> - make log writing reliable -- don't trust userland to report its
+>> timestamp, PID, or to correctly format the datagrams, etc
+>
+> existing userspace printk tty driver?
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Subject: virtio_net: set/cancel work on ndo_open/ndo_stop
+Sockets provide all that today already in a trusted way.
 
-Michael S. Tsirkin noticed that we could run the refill work after
-ndo_close, which can re-enable napi - we don't disable it until
-virtnet_remove.  This is clearly wrong, so move the workqueue control
-to ndo_open and ndo_stop (aka. virtnet_open and virtnet_close).
+>> - allow a log watching process (logcat) to easily pull data from all
+>> logs at once
+>
+> what do you mean by "at once"?
 
-One subtle point: virtnet_probe() could simply fail if it couldn't
-allocate a receive buffer, but that's less polite in virtnet_open() so
-we schedule a refill as we do in the normal receive path if we run out
-of memory.
+/proc/kmsg provides that today, which is basically just a file wrapper
+around the kernel's (misleadingly named) syslog() call.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/net/virtio_net.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+>> - avoid committing a vast amount of memory to logging
+>
+> memory where, in code or in the data being logged?
+>
+>> - try to prevent clients from spamming each other out of log space
+>> (only successful on a coarse granularity right now with the
+>> main/system/radio/events logs)
+>> - ensure logs are not lost at the moment an app crashes
+>
+> Which logs?
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -439,7 +439,13 @@ static int add_recvbuf_mergeable(struct 
- 	return err;
- }
- 
--/* Returns false if we couldn't fill entirely (OOM). */
-+/*
-+ * Returns false if we couldn't fill entirely (OOM).
-+ *
-+ * Normally run in the receive path, but can also be run from ndo_open
-+ * before we're receiving packets, or from refill_work which is
-+ * careful to disable receiving (using napi_disable).
-+ */
- static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
- {
- 	int err;
-@@ -719,6 +725,10 @@ static int virtnet_open(struct net_devic
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
-+	/* Make sure we have some buffers: if oom use wq. */
-+	if (!try_fill_recv(vi, GFP_KERNEL))
-+		schedule_delayed_work(&vi->refill, 0);
-+
- 	virtnet_napi_enable(vi);
- 	return 0;
- }
-@@ -772,6 +782,8 @@ static int virtnet_close(struct net_devi
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
-+	/* Make sure refill_work doesn't re-enable napi! */
-+	cancel_delayed_work_sync(&vi->refill);
- 	napi_disable(&vi->napi);
- 
- 	return 0;
-@@ -1082,7 +1094,6 @@ static int virtnet_probe(struct virtio_d
- 
- unregister:
- 	unregister_netdev(dev);
--	cancel_delayed_work_sync(&vi->refill);
- free_vqs:
- 	vdev->config->del_vqs(vdev);
- free_stats:
-@@ -1121,9 +1132,7 @@ static void __devexit virtnet_remove(str
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
--
- 	unregister_netdev(vi->dev);
--	cancel_delayed_work_sync(&vi->refill);
- 
- 	/* Free unused buffers in both send and recv, if any. */
- 	free_unused_bufs(vi);
+Things need rate limits and quota based on the remaining buffer or
+disk space. The systemd journal maintains a separate journal for every
+login-uid, so every logged in user gets his own journal database,
+which can not overflow the systems database or the databases of the
+other users.
 
+Every user can log to the journal, but only the journal daemon can
+write to the databases. The user can directly read back its own
+journal database, but not write it.
 
+>> On one hand, having each app (per PID) be able to create their own
+>> logs up to a specified size limit could be really useful and is
+>> something we've kicked around -- for one it would allow us to avoid
+>> the ever present request from userspace developers to increase the log
+>> size because of too much log spam ("reduce log spam" never seems to be
+>> an answer that makes them happy) -- but we haven't come up with a
+>> reasonable plan for dealing with "well if we allow 16KB of log per app
+>> and the user installs 100 apps, they may be pinning up to 1.6MB of ram
+>> worst case", and so on.
+>
+> I think the userspace printk and syslog might already handle most of
+> this today.  Tim, care to look into that and see if it does or not?
+
+It's very simple what we have here in the kernel, and if syslog
+facility prefixes are used, it can probably replace most of the
+Android log solution just fine. We can not really protect one store to
+flush the entire buffer though, that's what the 4 separated stores can
+easily provide.
+
+But as mentioned, I think we want the ability to work with structured
+data, which both kernel tools are incapable of.
+
+Kay
