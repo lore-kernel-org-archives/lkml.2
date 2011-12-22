@@ -1,57 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab1LVCCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:02:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40392 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab1LVCCE (ORCPT
+	id S1754553Ab1LVCOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:14:21 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:51383 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab1LVCOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:02:04 -0500
-Date: Wed, 21 Dec 2011 18:01:57 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: tip-bot for Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        pjt@google.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:sched/core] sched: Fix cgroup movement of forking process
-Message-ID: <20111222020157.GR9213@google.com>
-References: <20111215143655.662676b0.nishimura@mxp.nes.nec.co.jp>
- <tip-4fc420c91f53e0a9f95665c6b14a1983716081e7@git.kernel.org>
- <20111221172632.GD9213@google.com>
- <20111221173733.GF9213@google.com>
- <20111222015440.GM17668@somewhere>
+	Wed, 21 Dec 2011 21:14:18 -0500
+Message-ID: <4EF29276.5050309@gmail.com>
+Date: Wed, 21 Dec 2011 21:14:14 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222015440.GM17668@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yasunori Goto <y-goto@jp.fujitsu.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
+References: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com>
+In-Reply-To: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+(12/21/11 7:42 PM), Yasunori Goto wrote:
+>
+> Hello
+>
+> I found TASK_DEAD task is able to be woken up in special condition.
+> I would like to report this bug. Please check it.
+>
+> Here is the sequence how it occurs.
+>
+> ----------------------------------+-----------------------------
+>                                    |
+>             CPU A                  |             CPU B
+> ----------------------------------+-----------------------------
+> TASK A calls exit()....
+>
+> do_exit()
+>
+>    exit_mm()
+>      down_read(mm->mmap_sem);
+>
+>      rwsem_down_failed_common()
+>
+>        set TASK_UNINTERRUPTIBLE
+>        set waiter.task<= task A
+>        list_add to sem->wait_list
+>             :
+>        raw_spin_unlock_irq()
+>        (I/O interruption occured)
+>
+>                                        __rwsem_do_wake(mmap_sem)
+>
+>                                          list_del(&waiter->list);
+>                                          waiter->task = NULL
+>                                          wake_up_process(task A)
+>                                            try_to_wake_up()
+>                                               (task is still
+>                                                 TASK_UNINTERRUPTIBLE)
+>                                                p->on_rq is still 1.)
+>
+>                                                ttwu_do_wakeup()
+>                                                   (*A)
+>                                                     :
+>       (I/O interruption handler finished)
+>
+>        if (!waiter.task)
+>            schedule() is not called
+>            due to waiter.task is NULL.
+>
+>        tsk->state = TASK_RUNNING
+>
+>            :
+>                                                check_preempt_curr();
+>                                                    :
+>    task->state = TASK_DEAD
+>                                                (*B)
+>                                          <---    set TASK_RUNNING (*C)
+>
+>
+>
+>       schedule()
+>       (exit task is running again)
+>       BUG_ON() is called!
+> --------------------------------------------------------
+>
+>
+> You probably think that execution time between (*A) and (*B) is very short,
+> because the interruption is disabled, and setting TASK_RUNNING at (*C)
+> must be executed before setting TASK_DEAD.
+>
+>
+> HOWEVER, if SMI is interrupted between (*A) and (*B),
+> (*C) is able to execute AFTER setting TASK_DEAD!
+> Then, exited task is scheduled again, and BUG_ON() is called....
+>
+> This is very bad senario.
+> But, I suppose this phenomenon is able to occur on a guest system of
+> virtual machine too.
+>
+> Please fix it.
+>
+> I suppose task->pi_lock should be held when task->state is changed to
+> TASK_DEAD like the following patch (not tested yet).
+> Because try_to_wake_up() hold it before checking task state.
+>
+>
+> Thanks,
+>
+> ----
+> Signed-off-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+>
+> ---
+>   kernel/exit.c |    3 +++
+>   1 file changed, 3 insertions(+)
+>
+> Index: linux-3.2-rc4/kernel/exit.c
+> ===================================================================
+> --- linux-3.2-rc4.orig/kernel/exit.c
+> +++ linux-3.2-rc4/kernel/exit.c
+> @@ -1038,8 +1038,11 @@ NORET_TYPE void do_exit(long code)
+>
+>   	preempt_disable();
+>   	exit_rcu();
+> +
+> +	spin_lock(&tsk->pi_lock, flags);
+>   	/* causes final put_task_struct in finish_task_switch(). */
+>   	tsk->state = TASK_DEAD;
+> +	spin_unlock(&tsk->pi_lock, flags);
+>   	schedule();
+>   	BUG();
+>   	/* Avoid "noreturn function does return".  */
 
-On Thu, Dec 22, 2011 at 02:54:42AM +0100, Frederic Weisbecker wrote:
-> > Frederic, so, it seems we actually have race conditions here.  I
-> > really wish cgroup made sure that things like this can't happen even
-> > if we pay a bit of overhead in relatively cold paths.  I could be
-> > being unrealistic tho.  Any ideas?
-> 
-> Hmm, I'm a bit confused about the issue. But doesn't this patch fix the issue?
+I doubt it is not only TASK_DEAD issue, it is rwsem fundamental issue.
+Because of, a lot of place assume "current->state = newstate" is safe
+and don't need any synchronization. So, I'm worry about to lost 
+TASK_UNINTERRUPTIBLE can make catastrophe like TASK_DEAD.
 
-Yeah, I was just saying it would be nice if we don't have to fix the
-issue.
+How about following patch? anyway, rwsem_down_failed_common() is 
+definitely slowpath. so killing micro optimization is not so much
+problem, I guess.
 
-> Also the parent can't be calling sched_fork() and cgroup_exit() at
-> the same time.
 
-Hmmm... so this one can't happen anymore but there are races involving
-cgroup_exit() which doesn't have anything to do with threadgroup lock
-(Dalsuke has more patches), so this doesn't really matter.  Let's
-forget about this thread.
 
-Thanks.
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 410aa11..e2a0c9a 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -208,9 +208,9 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
 
--- 
-tejun
+         /* wait to be given the lock */
+         for (;;) {
++               schedule();
+                 if (!waiter.task)
+                         break;
+-               schedule();
+                 set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+         }
+
+
+
+
