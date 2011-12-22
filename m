@@ -1,228 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1LVCXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Dec 2011 21:23:09 -0500
-Received: from [12.239.217.82] ([12.239.217.82]:9459 "EHLO venom.synaptics.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754668Ab1LVCUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Dec 2011 21:20:30 -0500
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Dec 2011 21:20:28 EST
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 4/11] input: RMI4 KConfigs and Makefiles.
-Date: Wed, 21 Dec 2011 18:09:55 -0800
-Message-Id: <1324519802-23894-5-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
-References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
+	id S1754676Ab1LVCa4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Dec 2011 21:30:56 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34691 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1LVCax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Dec 2011 21:30:53 -0500
+Date: Thu, 22 Dec 2011 13:30:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jochen Friedrich <jochen@scram.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the mfd tree with the rr tree
+Message-Id: <20111222133045.cb50cc6322a87655f8c75d25@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__22_Dec_2011_13_30_45_+1100_tiIX5gaasWXV6Zgu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+--Signature=_Thu__22_Dec_2011_13_30_45_+1100_tiIX5gaasWXV6Zgu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Cc: Joeri de Gram <j.de.gram@gmail.com>
+Hi Samuel,
 
+Today's linux-next merge of the mfd tree got a conflict in
+scripts/mod/file2alias.c between commits f5385e2664e7 ("modpost: use a
+table rather than a giant if/else statement") and c89845fbf083 ("modpost:
+use linker section to generate table") from the rr tree and commit
+6837bbf06393 ("ARM: sa11x0: Implement autoloading of codec and codec
+pdata for mcp bus") from the mfd tree.
 
----
+I fixed it up (see below - the rest of the change to this file from the
+mfd tree is removed) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- drivers/input/Kconfig       |    2 +
- drivers/input/Makefile      |    2 +
- drivers/input/rmi4/Kconfig  |  116 +++++++++++++++++++++++++++++++++++++++++++
- drivers/input/rmi4/Makefile |   30 +++++++++++
- 4 files changed, 150 insertions(+), 0 deletions(-)
+diff --cc scripts/mod/file2alias.c
+index c1057bd,e8c7eb1..0000000
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@@ -821,8 -773,16 +821,18 @@@ static int do_spi_entry(const char *fil
+ =20
+  	return 1;
+  }
+ +ADD_TO_DEVTABLE("spi", struct spi_device_id, do_spi_entry);
+ =20
++ /* Looks like: mcp:S */
++ static int do_mcp_entry(const char *filename, struct mcp_device_id *id,
++ 			char *alias)
++ {
++ 	sprintf(alias, MCP_MODULE_PREFIX "%s", id->name);
++=20
++ 	return 1;
++ }
+++ADD_TO_DEVTABLE("mcp", struct mcp_device_id, do_mcp_entry);
++=20
+  static const struct dmifield {
+  	const char *prefix;
+  	int field;
 
-diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-index 1903c0f..0cdd8a5 100644
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -185,6 +185,8 @@ source "drivers/input/touchscreen/Kconfig"
- 
- source "drivers/input/misc/Kconfig"
- 
-+source "drivers/input/rmi4/Kconfig"
-+
- endif
- 
- menu "Hardware I/O ports"
-diff --git a/drivers/input/Makefile b/drivers/input/Makefile
-index 09614ce..18383b9 100644
---- a/drivers/input/Makefile
-+++ b/drivers/input/Makefile
-@@ -23,6 +23,8 @@ obj-$(CONFIG_INPUT_TABLET)	+= tablet/
- obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
- obj-$(CONFIG_INPUT_MISC)	+= misc/
- 
-+obj-y += rmi4/
-+
- obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
- 
- obj-$(CONFIG_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
-diff --git a/drivers/input/rmi4/Kconfig b/drivers/input/rmi4/Kconfig
-new file mode 100644
-index 0000000..06a6a07
---- /dev/null
-+++ b/drivers/input/rmi4/Kconfig
-@@ -0,0 +1,116 @@
-+#
-+# RMI4 configuration
-+#
-+config RMI4_BUS
-+	bool "Synaptics RMI4 bus support"
-+	help
-+	  Say Y here if you want to support the Synaptics RMI4 bus.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as
-+	  a loadable module.
-+
-+config RMI4_I2C
-+	bool "RMI4 I2C Support"
-+	depends on RMI4_BUS && I2C
-+	help
-+	  Say Y here if you want to support RMI4 devices connected to an I2C
-+	  bus.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_SPI
-+	bool "RMI4 SPI Support"
-+	depends on RMI4_BUS && SPI
-+	help
-+	  Say Y here if you want to support RMI4 devices connected to an SPI
-+	  bus.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_GENERIC
-+	bool "RMI4 Generic driver"
-+	depends on RMI4_BUS
-+	help
-+	  Say Y here if you want to support generic RMI4 devices.
-+
-+	  This is pretty much required if you want to do anything useful with
-+	  your RMI device.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_F09
-+	tristate "RMI4 Function 09 (self testing)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 09.
-+
-+	  Function 09 provides self testing for touchscreens and touchpads.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f09.
-+
-+config RMI4_F11
-+	tristate "RMI4 Function 11 (2D pointing)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 11.
-+
-+	  Function 11 provides 2D multifinger pointing for touchscreens and
-+	  touchpads.  For sensors that support relative pointing, F11 also
-+	  provides mouse input.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f11.
-+
-+config RMI4_F19
-+	tristate "RMI4 Function 19 (0D pointing)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 19.
-+
-+	  Function 19 provides support for capacitive buttons for sensors
-+	  that implement capacitive buttons.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f19.
-+
-+config RMI4_F34
-+	tristate "RMI4 Function 34 (device reflash)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 34.
-+
-+	  Function 34 provides firmware upgrade capability for your sensor.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f34.
-+
-+config RMI4_F54
-+	tristate "RMI4 Function 54 (analog diagnostics)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 54.
-+
-+	  Function 54 provides access to various diagnostic features in
-+	  certain RMI4 touch sensors.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f54.
-+
-+config RMI4_DEV
-+	tristate "Synaptics direct RMI device support (rmidev)"
-+	depends on GPIO_SYSFS && (RMI4_I2C || RMI4_SPI)
-+	help
-+	  Say Y here to add support for rmidev.
-+
-+	  The rmidev feature implements a character device providing access
-+	  to RMI4 sensor register maps.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-dev.
-diff --git a/drivers/input/rmi4/Makefile b/drivers/input/rmi4/Makefile
-new file mode 100644
-index 0000000..be0c54b
---- /dev/null
-+++ b/drivers/input/rmi4/Makefile
-@@ -0,0 +1,30 @@
-+obj-$(CONFIG_RMI4_BUS) += rmi_bus.o
-+obj-$(CONFIG_RMI4_I2C) += rmi_i2c.o
-+obj-$(CONFIG_RMI4_SPI) += rmi_spi.o
-+obj-$(CONFIG_RMI4_GENERIC) += rmi_driver.o rmi_f01.o
-+obj-$(CONFIG_RMI4_F09) += rmi_f09.o
-+obj-$(CONFIG_RMI4_F11) += rmi_f11.o
-+obj-$(CONFIG_RMI4_F19) += rmi_f19.o
-+obj-$(CONFIG_RMI4_F34) += rmi_f34.o
-+obj-$(CONFIG_RMI4_F54) += rmi_f54.o
-+obj-$(CONFIG_RMI4_DEV) += rmi_dev.o
-+
-+ifeq ($(KERNELRELEASE),)
-+
-+# KERNELDIR ?= /home/<AndroidKernelDirectory>
-+PWD := $(shell pwd)
-+
-+.PHONY: build clean
-+
-+build:
-+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-+
-+clean:
-+	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c
-+else
-+
-+$(info Building with KERNELRELEASE = ${KERNELRELEASE})
-+obj-m :=    rmi_dev.o
-+
-+endif
-+
+--Signature=_Thu__22_Dec_2011_13_30_45_+1100_tiIX5gaasWXV6Zgu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO8pZVAAoJEECxmPOUX5FEOZMP/1CW8yDHAxCCxNdop00fp+bV
+JBqGP2V9cuOFYLGdss6GqV7Su9YQhLpJ/D6JA+oq9s2nBC34GkY6iCT9uJj5XoYW
+Y4OR5Cj+det+gOYbNBGENZ5WHYz3aGn1J5gcVwvnFTpYxbQgrBtjLnhKQgWLsSff
+OaDOrcMUBrzCY6m/rUJtAzlAS7n71PHzC3fC10Xubgnti14FQmyk/m67+npAGXt5
+e6tOrYZwL5ljFExQghaHrD5nG7sw2V7UXwZVrz8w8tz1oqMvBOnpqrG0umdcbTMT
+YL3FsJj2b7YJFFkbbRD9EsrD8r2ZfzmBz8TMZe5PbHEcnZRPxH3NE/6uvwiqN2Y8
+5PQwHT2O1octD7HIV67mnV6ax4J8F+M0nAEAzS5jz18/ts1SaM72zdvLNgMpMw95
+SSSIqt337dBURbbkOEGYeV8+q6tIz3qN57YoUfUy8w7P7PRWAL3cJoWOW5j23ZGe
+Uv04BQ2ChIKooDVHH32RugHwfNQnG03Nnen+kylQzwjLljAkvVaQfWAux/IOntqb
+7DzxF6JUuF2NNckdENLN2Q3iWm5ZjHRIpitLN002XEMVvChwRdzbXRo+8om0Tyfn
+rn5wP2QMdAaTOcGxbGnYpxYAzPj7oaeunlIz/Dx+eCnnFmGbGzRP8ZhDHAJ/BSU0
+iaFpaSsxTosAnbTCBAQ6
+=0Z4G
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__22_Dec_2011_13_30_45_+1100_tiIX5gaasWXV6Zgu--
