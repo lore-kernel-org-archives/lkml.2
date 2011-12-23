@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1LWOri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 09:47:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab1LWOrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 09:47:37 -0500
-Date: Fri, 23 Dec 2011 09:46:47 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+	id S1757317Ab1LWOun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 09:50:43 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58080 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1LWOul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 09:50:41 -0500
+Date: Fri, 23 Dec 2011 14:50:14 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "John Stoffel" <john@stoffel.org>
+Cc: Gaurav Saxena <grvsaxena419@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-ID: <20111223144647.GA16818@redhat.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
- <20111222135925.de3221c8.akpm@linux-foundation.org>
- <20111222220911.GK17084@google.com>
- <20111222142058.41316ee0.akpm@linux-foundation.org>
- <20111223014043.GC12738@redhat.com>
- <20111222175834.66559c8b.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222175834.66559c8b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: Intercepting system calls
+Message-ID: <20111223145014.4bb74f30@pyx>
+In-Reply-To: <20211.28256.111279.27933@quad.stoffel.home>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+	<CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+	<CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+	<20211.28256.111279.27933@quad.stoffel.home>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i386-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 05:58:34PM -0800, Andrew Morton wrote:
-> On Thu, 22 Dec 2011 20:40:43 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > That's why the need of per cpu data structures to make stat collection
-> > lockless.
-> 
-> btw, (and this is a common refrain): was there any reason for avoiding
-> using percpu_counters here?
+> Write a FUSE module to mount the filesystem through, inside your FUSE
+> module you can intercept the unlink/truncate/write calls and decide
+> what you want to have happen.
 
-IIUC, per cpu counters also call alloc_percpu() during initialization.
+Using fanotify and/or a custom security module (or selinux rules) might
+well also be a cleaner way to do it, depending what is actually intended.
 
-int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
-                          struct lock_class_key *key)
-{
-        raw_spin_lock_init(&fbc->lock);
-        lockdep_set_class(&fbc->lock, key);
-        fbc->count = amount;
-        fbc->counters = alloc_percpu(s32);
-....
-....
-}
-
-So they are no good either for allocation and initialization in IO path.
-
-Thanks
-Vivek
+Trying to do stuff like archive 'old versions' isn't just about unlink
+however because many programs update the inplace file rather than
+unlink/replace.
