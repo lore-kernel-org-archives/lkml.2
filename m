@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab1LWRRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:17:50 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56106 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab1LWRRs (ORCPT
+	id S1757528Ab1LWRUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:20:10 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39530 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496Ab1LWRUH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:17:48 -0500
-Date: Fri, 23 Dec 2011 15:18:19 -0200
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mount: enable use MS_RDONLY with MS_BIND
-Message-ID: <20111223171819.GB5287@joana>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <1324660497-23100-1-git-send-email-padovan@profusion.mobi>
+	Fri, 23 Dec 2011 12:20:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324660497-23100-1-git-send-email-padovan@profusion.mobi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAB2ybb-+VTR=V1hwhF1GKxgkhTrssZ1JVOwcP6spO5O3AXqivA@mail.gmail.com>
+References: <1324283611-18344-1-git-send-email-sumit.semwal@ti.com>
+	<20111220193117.GD3883@phenom.ffwll.local>
+	<CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
+	<CAB2ybb-+VTR=V1hwhF1GKxgkhTrssZ1JVOwcP6spO5O3AXqivA@mail.gmail.com>
+Date: Fri, 23 Dec 2011 11:20:06 -0600
+X-Google-Sender-Auth: QYTbgEfspOqUty45pjb8rxuikGs
+Message-ID: <CAF6AEGs-Xgi_kmz5oag76=4v20RP5PfAM2-pyt_PyvWizgdW8Q@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC v3 0/2] Introduce DMA buffer sharing mechanism
+From: Rob Clark <rob@ti.com>
+To: "Semwal, Sumit" <sumit.semwal@ti.com>
+Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, m.szyprowski@samsung.com,
+        t.stanislaws@samsung.com, patches@linaro.org, daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I put Lennart's email wrong. Fixing it.
+On Fri, Dec 23, 2011 at 4:08 AM, Semwal, Sumit <sumit.semwal@ti.com> wrote:
+> On Wed, Dec 21, 2011 at 1:50 AM, Dave Airlie <airlied@gmail.com> wrote:
+> <snip>
+>>>
+>>> I think this is a really good v1 version of dma_buf. It contains all the
+>>> required bits (with well-specified semantics in the doc patch) to
+>>> implement some basic use-cases and start fleshing out the integration with
+>>> various subsystem (like drm and v4l). All the things still under
+>>> discussion like
+>>> - userspace mmap support
+>>> - more advanced (and more strictly specified) coherency models
+>>> - and shared infrastructure for implementing exporters
+>>> are imo much clearer once we have a few example drivers at hand and a
+>>> better understanding of some of the insane corner cases we need to be able
+>>> to handle.
+>>>
+>>> And I think any risk that the resulting clarifications will break a basic
+>>> use-case is really minimal, so I think it'd be great if this could go into
+>>> 3.3 (maybe as some kind of staging/experimental infrastructure).
+>>>
+>>> Hence for both patches:
+>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>
+>> Yeah I'm with Daniel, I like this one, I can definitely build the drm
+>> buffer sharing layer on top of this.
+>>
+>> How do we see this getting merged? I'm quite happy to push it to Linus
+>> if we don't have an identified path, though it could go via a Linaro
+>> tree as well.
+>>
+>> so feel free to add:
+>> Reviewed-by: Dave Airlie <airlied@redhat.com>
+> Thanks Daniel and Dave!
+>
+> I guess we can start with staging for 3.3, and see how it shapes up. I
+> will post the latest patch version pretty soon.
 
-* Gustavo F. Padovan <padovan@profusion.mobi> [2011-12-23 15:14:56 -0200]:
+not sure about staging, but could make sense to mark as experimental.
 
-> From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> 
-> This allow creation of read-only bind mounts in a single mount() call,
-> instead of two.
-> 
-> Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-> ---
->  fs/namespace.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 5c07af8..c08c150 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1743,7 +1743,7 @@ static int do_change_type(struct path *path, int flag)
->   * do loopback mount.
->   */
->  static int do_loopback(struct path *path, char *old_name,
-> -				int recurse)
-> +						unsigned long flags)
->  {
->  	LIST_HEAD(umount_list);
->  	struct path old_path;
-> @@ -1769,7 +1769,7 @@ static int do_loopback(struct path *path, char *old_name,
->  		goto out2;
->  
->  	err = -ENOMEM;
-> -	if (recurse)
-> +	if (flags & MS_REC)
->  		mnt = copy_tree(old_path.mnt, old_path.dentry, 0);
->  	else
->  		mnt = clone_mnt(old_path.mnt, old_path.dentry, 0);
-> @@ -1782,7 +1782,12 @@ static int do_loopback(struct path *path, char *old_name,
->  		br_write_lock(&vfsmount_lock);
->  		umount_tree(mnt, 0, &umount_list);
->  		br_write_unlock(&vfsmount_lock);
-> +		goto out2;
->  	}
-> +
-> +	if (flags & MS_RDONLY)
-> +		path->mnt->mnt_flags |= MNT_READONLY;
-> +
->  out2:
->  	unlock_mount(path);
->  	release_mounts(&umount_list);
-> @@ -2338,7 +2343,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
->  		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
->  				    data_page);
->  	else if (flags & MS_BIND)
-> -		retval = do_loopback(&path, dev_name, flags & MS_REC);
-> +		retval = do_loopback(&path, dev_name, flags);
->  	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
->  		retval = do_change_type(&path, flags);
->  	else if (flags & MS_MOVE)
-> -- 
-> 1.7.6.4
-> 
+> Arnd, Dave: do you have any preference on the path it takes to get
+> merged? In my mind, Linaro tree might make more sense, but I would
+> leave it upto you gentlemen.
 
-	Gustavo
+Looks like Dave is making some progress on drm usage of buffer sharing
+between gpu's.. if that is ready to go in at the same time, it might
+be a bit logistically simpler for him to put dmabuf in the same pull
+req.  I don't have strong preference one way or another, so do what is
+collectively simpler ;-)
+
+BR,
+-R
+
+>>
+>> Dave.
+> Best regards,
+> ~Sumit.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
