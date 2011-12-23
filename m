@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab1LWM2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 07:28:11 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:65440 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab1LWM2A (ORCPT
+	id S1756834Ab1LWM2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 07:28:06 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32027 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915Ab1LWM2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Dec 2011 07:28:00 -0500
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 23 Dec 2011 13:27:20 +0100
+Date: Fri, 23 Dec 2011 13:27:19 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 01/14] common: dma-mapping: introduce alloc_attrs and
- free_attrs methods
-In-reply-to: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 00/14] DMA-mapping framework redesign preparation
 To: linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -30,46 +28,163 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Message-id: <1324643253-3024-2-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.7.3
-References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce new generic alloc and free methods with attributes argument.
+Hello eveyone,
 
-Existing alloc_coherent and free_coherent can be implemented on top of the
-new calls with NULL attributes argument. Later also dma_alloc_non_coherent
-can be implemented using DMA_ATTR_NONCOHERENT attribute as well as
-dma_alloc_writecombine with separate DMA_ATTR_WRITECOMBINE attribute.
+On Linaro Memory Management meeting in Budapest (May 2011) we have
+discussed about the design of DMA mapping framework. We tried to
+identify the drawbacks and limitations as well as to provide some a
+solution for them. The discussion was mainly about ARM architecture, but
+some of the conclusions need to be applied to cross-architecture code.
 
-This way the drivers will get more generic, platform independent way of
-allocating dma buffers with specific parameters.
+The first issue we identified is the fact that on some platform (again,
+mainly ARM) there are several functions for allocating DMA buffers:
+dma_alloc_coherent, dma_alloc_writecombine and dma_alloc_noncoherent
+(not functional now). For each of them there is a match dma_free_*
+function. This gives us quite a lot of functions in the public API and
+complicates things when we need to have several different
+implementations for different devices selected in runtime (if IOMMU
+controller is available only for a few devices in the system). Also the
+drivers which use less common variants are less portable because of the
+lacks of dma_alloc_writecombine on other architectures.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/dma-mapping.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+The solution we found is to introduce a new public dma mapping functions
+with additional attributes argument: dma_alloc_attrs and
+dma_free_attrs(). This way all different kinds of architecture specific
+buffer mappings can be hidden behind the attributes without the need of
+creating several versions of dma_alloc_ function.
 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index e13117c..8cc7f95 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -13,6 +13,12 @@ struct dma_map_ops {
- 				dma_addr_t *dma_handle, gfp_t gfp);
- 	void (*free_coherent)(struct device *dev, size_t size,
- 			      void *vaddr, dma_addr_t dma_handle);
-+	void* (*alloc)(struct device *dev, size_t size,
-+				dma_addr_t *dma_handle, gfp_t gfp,
-+				struct dma_attrs *attrs);
-+	void (*free)(struct device *dev, size_t size,
-+			      void *vaddr, dma_addr_t dma_handle,
-+			      struct dma_attrs *attrs);
- 	dma_addr_t (*map_page)(struct device *dev, struct page *page,
- 			       unsigned long offset, size_t size,
- 			       enum dma_data_direction dir,
+dma_alloc_coherent() can be wrapped on top of new dma_alloc_attrs() with
+NULL attrs parameter. dma_alloc_writecombine and dma_alloc_noncoherent
+can be implemented as a simple wrappers which sets attributes to
+DMA_ATTRS_WRITECOMBINE or DMA_ATTRS_NON_CONSISTENT respectively. These
+new attributes will be implemented only on the architectures that really
+support them, the others will simply ignore them defaulting to the
+dma_alloc_coherent equivalent.
+
+The next step in dma mapping framework update is the introduction of
+dma_mmap/dma_mmap_attrs() function. There are a number of drivers
+(mainly V4L2 and ALSA) that only exports the DMA buffers to user space.
+Creating a userspace mapping with correct page attributes is not an easy
+task for the driver. Also the DMA-mapping framework is the only place
+where the complete information about the allocated pages is available,
+especially if the implementation uses IOMMU controller to provide a
+contiguous buffer in DMA address space which is scattered in physical
+memory space.
+
+Usually these drivers don't touch the buffer data at all, so the mapping
+in kernel virtual address space is not needed. We can introduce
+DMA_ATTRIB_NO_KERNEL_MAPPING attribute which lets kernel to skip/ignore
+creation of kernel virtual mapping. This way we can save previous
+vmalloc area and simply some mapping operation on a few architectures.
+
+This patch series is a preparation for the above changes in the public
+dma mapping API. The main goal is to modify dma_map_ops structure and
+let all users to use for implementation of the new public funtions.
+
+The proof-of-concept patches for ARM architecture have been already
+posted a few times and now they are working resonably well. They perform
+conversion to dma_map_ops based implementation and add support for
+generic IOMMU-based dma mapping implementation. To get them merged we
+first need to get acceptance for the changes in the common,
+cross-architecture structures. More information about these patches can
+be found in the following threads:
+
+http://www.spinics.net/lists/linux-mm/msg19856.html
+http://www.spinics.net/lists/linux-mm/msg21241.html
+http://lists.linaro.org/pipermail/linaro-mm-sig/2011-September/000571.html
+http://lists.linaro.org/pipermail/linaro-mm-sig/2011-September/000577.html
+http://www.spinics.net/lists/linux-mm/msg25490.html
+
+The patches are prepared on top of Linux Kernel v3.2-rc6. I would
+appreciate any comments and help with getting this patch series into
+linux-next tree.
+
+The idea apllied in this patch set have been also presented during the
+Kernel Summit 2011 and ELC-E 2011 in Prague, in the presentation 'ARM
+DMA-Mapping Framework Redesign and IOMMU integration'.
+
+I'm really sorry if I missed any of the relevant architecture mailing
+lists. I've did my best to include everyone. Feel free to forward this
+patchset to all interested developers and maintainers. I've already feel
+like a nasty spammer.
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Patch summary:
+
+Andrzej Pietrasiewicz (9):
+  X86: adapt for dma_map_ops changes
+  MIPS: adapt for dma_map_ops changes
+  PowerPC: adapt for dma_map_ops changes
+  IA64: adapt for dma_map_ops changes
+  SPARC: adapt for dma_map_ops changes
+  Alpha: adapt for dma_map_ops changes
+  SH: adapt for dma_map_ops changes
+  Microblaze: adapt for dma_map_ops changes
+  Unicore32: adapt for dma_map_ops changes
+
+Marek Szyprowski (5):
+  common: dma-mapping: introduce alloc_attrs and free_attrs methods
+  common: dma-mapping: remove old alloc_coherent and free_coherent
+    methods
+  common: dma-mapping: introduce mmap method
+  common: DMA-mapping: add WRITE_COMBINE attribute
+  common: DMA-mapping: add NON-CONSISTENT attribute
+
+ Documentation/DMA-attributes.txt          |   19 +++++++++++++++++++
+ arch/alpha/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/alpha/kernel/pci-noop.c              |   10 ++++++----
+ arch/alpha/kernel/pci_iommu.c             |   10 ++++++----
+ arch/ia64/hp/common/sba_iommu.c           |   11 ++++++-----
+ arch/ia64/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/ia64/kernel/pci-swiotlb.c            |    9 +++++----
+ arch/ia64/sn/pci/pci_dma.c                |    9 +++++----
+ arch/microblaze/include/asm/dma-mapping.h |   18 ++++++++++++------
+ arch/microblaze/kernel/dma.c              |   10 ++++++----
+ arch/mips/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/mips/mm/dma-default.c                |    8 ++++----
+ arch/powerpc/include/asm/dma-mapping.h    |   24 ++++++++++++++++--------
+ arch/powerpc/kernel/dma-iommu.c           |   10 ++++++----
+ arch/powerpc/kernel/dma-swiotlb.c         |    4 ++--
+ arch/powerpc/kernel/dma.c                 |   10 ++++++----
+ arch/powerpc/kernel/ibmebus.c             |   10 ++++++----
+ arch/powerpc/platforms/cell/iommu.c       |   16 +++++++++-------
+ arch/powerpc/platforms/ps3/system-bus.c   |   13 +++++++------
+ arch/sh/include/asm/dma-mapping.h         |   28 ++++++++++++++++++----------
+ arch/sh/kernel/dma-nommu.c                |    4 ++--
+ arch/sh/mm/consistent.c                   |    6 ++++--
+ arch/sparc/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/sparc/kernel/iommu.c                 |   10 ++++++----
+ arch/sparc/kernel/ioport.c                |   18 ++++++++++--------
+ arch/sparc/kernel/pci_sun4v.c             |    9 +++++----
+ arch/unicore32/include/asm/dma-mapping.h  |   18 ++++++++++++------
+ arch/unicore32/mm/dma-swiotlb.c           |    4 ++--
+ arch/x86/include/asm/dma-mapping.h        |   26 ++++++++++++++++----------
+ arch/x86/kernel/amd_gart_64.c             |   11 ++++++-----
+ arch/x86/kernel/pci-calgary_64.c          |    9 +++++----
+ arch/x86/kernel/pci-dma.c                 |    3 ++-
+ arch/x86/kernel/pci-nommu.c               |    6 +++---
+ arch/x86/kernel/pci-swiotlb.c             |   12 +++++++-----
+ arch/x86/xen/pci-swiotlb-xen.c            |    4 ++--
+ drivers/iommu/amd_iommu.c                 |   10 ++++++----
+ drivers/iommu/intel-iommu.c               |    9 +++++----
+ drivers/xen/swiotlb-xen.c                 |    5 +++--
+ include/linux/dma-attrs.h                 |    2 ++
+ include/linux/dma-mapping.h               |   13 +++++++++----
+ include/linux/swiotlb.h                   |    6 ++++--
+ include/xen/swiotlb-xen.h                 |    6 ++++--
+ lib/swiotlb.c                             |    5 +++--
+ 43 files changed, 305 insertions(+), 182 deletions(-)
+
 -- 
 1.7.1.569.g6f426
 
