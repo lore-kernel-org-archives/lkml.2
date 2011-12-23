@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab1LWFo6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 00:44:58 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:40419 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750718Ab1LWFo4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 00:44:56 -0500
+	id S1753656Ab1LWGCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 01:02:43 -0500
+Received: from rose.urlnameserver.com ([199.168.186.150]:58947 "EHLO
+	rose.urlnameserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1LWGCk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 01:02:40 -0500
+From: "Tanitiim Muzigi" <jinglejingleplus@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: jinglejingleplus@gmail.com
+Date: Fri, 23 Dec 2011 03:08:06 +0200
+Subject: reklam muziginiz (jingle) ile ilgili
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGt9Ae_zVmhBmmtfyKrqC4EyBgAAO1RWdK_UhY-1RLfOSQ@mail.gmail.com>
-References: <1324283611-18344-1-git-send-email-sumit.semwal@ti.com>
- <20111220193117.GD3883@phenom.ffwll.local> <CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
- <CAF6AEGt9Ae_zVmhBmmtfyKrqC4EyBgAAO1RWdK_UhY-1RLfOSQ@mail.gmail.com>
-From: "Semwal, Sumit" <sumit.semwal@ti.com>
-Date: Fri, 23 Dec 2011 11:14:34 +0530
-Message-ID: <CAB2ybb-CN9-APAqGBjm7tzHDfpuih0vN2Wry1_RqxujxVOy=OA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v3 0/2] Introduce DMA buffer sharing mechanism
-To: Rob Clark <rob@ti.com>
-Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com,
-        t.stanislaws@samsung.com, patches@linaro.org, daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-9
 Content-Transfer-Encoding: 8BIT
+X-Mailer: aspNetEmail ver 3.6.0.77
+Message-ID: <COMPUTER28c717d13ae94cddb832a01427367b2e@computer>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - rose.urlnameserver.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - gmail.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 3:56 AM, Rob Clark <rob@ti.com> wrote:
-> On Tue, Dec 20, 2011 at 2:20 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>>
-<snip>
->>>
->>> I think this is a really good v1 version of dma_buf. It contains all the
->>> required bits (with well-specified semantics in the doc patch) to
->>> implement some basic use-cases and start fleshing out the integration with
->>> various subsystem (like drm and v4l). All the things still under
->>> discussion like
->>> - userspace mmap support
->>> - more advanced (and more strictly specified) coherency models
->>> - and shared infrastructure for implementing exporters
->>> are imo much clearer once we have a few example drivers at hand and a
->>> better understanding of some of the insane corner cases we need to be able
->>> to handle.
->>>
->>> And I think any risk that the resulting clarifications will break a basic
->>> use-case is really minimal, so I think it'd be great if this could go into
->>> 3.3 (maybe as some kind of staging/experimental infrastructure).
->>>
->>> Hence for both patches:
->>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>
->> Yeah I'm with Daniel, I like this one, I can definitely build the drm
->> buffer sharing layer on top of this.
->>
->> How do we see this getting merged? I'm quite happy to push it to Linus
->> if we don't have an identified path, though it could go via a Linaro
->> tree as well.
->>
->> so feel free to add:
->> Reviewed-by: Dave Airlie <airlied@redhat.com>
->
-> fwiw, patches to share buffers between drm and v4l2 are here:
->
-> https://github.com/robclark/kernel-omap4/commits/drmplane-dmabuf
->
-> (need a bit of cleanup before the vb2 patches are submitted.. but that
-> is unrelated to the dmabuf patches)
->
-> so,
->
-> Reviewed-and-Tested-by: Rob Clark <rob.clark@linaro.org>
-Thanks Daniel, Dave, and Rob!
-BR,
-Sumit.
->
->> Dave.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-media" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ Merhaba,
+
+    ben reklam müzikleri hazýrlamakta olan þirketlerin sanatçýsý Okan Akdeniz.
+
+    Reklam mÜziklerinde kendi giriþimlerimin olmasý adýna size reklam müziði
+
+    dediðimiz kurumsal jingle hazýrladým.
+
+     Ajans olmadýðýmýz için rakam oldukça uygun. Amacým zaten her
+
+    konuda olduðu gibi aracýlarýn reklamlarýnýn olmasý ve gerçek emek harcayan
+
+    mutfaðýndaki kiþilerin bilinmemesi durumunu aþýp kendi sunumumu yapmak.
+
+    Müzisyen ekibimle birlikte birçok büyük þirketlere reklam müziklerini biz
+
+    hazýrlamaktayýz. Ama pek bilinmeyiz. efe raký, ankamol, abalýoðlu, havan
+
+    erkek giyim kc göksu alýþveriþ merkezi, PTT, Pamukkale Otobüs Þirketi gibi
+
+    bir çok yere reklam müziklerini ben hazýrladým.
+
+    Nerelerde kullanabilirsiniz?
+
+     * Radyo ve TV en yaygýn olaný
+
+     * Þirket telefonu bekleme müziði olarak
+
+     * Fuar standlarda
+
+     * Web sayfanýzda ingilizce ve türkçe ayrý ayrý yapýlan reklam müzikleriyle
+
+    daha kýsa versiyonu
+
+     * tanýtým cd lerinizde hem ingilizce hem türkçe
+
+     * Þirket çalýþanlarýnýzýn cep telefonlarýnda telefon sesi olarak
+
+    Dahasý sizin yaratýcýlýðýnýza kalmýþ.
+
+     Neden gerekli?
+
+     Çünkü müzik unutulmaz görsel reklam ve broþurler yok olur gider. Pirelli,
+
+    saray saray saray, eti eti eti...Nasýl? hemen aklýnýza geldi melodisi.
+
+    Yýllar öncesinden olmasýna raðmen... Daha fazla bu konuda söze gerek yok
+
+    sanýrým.
+
+     Lütfen daha geniþ bilgi için http://www.jingleplus.com da reklam müzikleri
+
+    bölümünden referanslarýma bakýn. Yani bu iþte neredeyse 10 yýldýr varým.
+
+    Ayrýca sanatçýlara beste satmaktayým. En son Rafet El Roman ýn sevdim ama
+
+    sonu yoktu adlý þarkýsýnýn bestecisiyim. Size özel hazýrlamýþ olduðum 2
+
+    örnek demo ücretsizdir. Dinlemenizi istiyorum. Beðenirseniz alýrsýnýz.
+
+    Ýstediðiniz deðiþiklikleri size hazýrlar hatta 1 senelikte her türlü
+
+    reklam müziðinize seslendirmelerinizi de ücretsiz yaparým. Bunun yanýnda
+
+    yeni örnek isterseniz ve benimle çalýþmak
+
+    isterseniz telefonumuz 05353725885 .Bana en azýndan olumlu ya da olumsuz
+
+    cevap yazarsanýz çok memnun olurum.
+
+     Ýyi çalýþmalar ve bol kazançlý günler dilerim.
+
+     Ve not: Reklam müziklerimi beðeneceðinize eminim. Ayrýca dilerseniz
+
+    ingilizce olarakta seslendirilebileceðini bilmenizi istiyorum. ( web
+
+    sayfasý ve yurt dýþý tanýtým CD leri için)
+
+    
+
+     http://www.jingleplus.com
+
+        
+
+     Halkla iliþkiler Pazarlama
+
+     Ahmet Odabaþý
+
+     Cep: 0535 372 58 85
+
+    diðer iletiþim adresi :ahmetodabasi@yahoo.com.tr
+
+
+
+
+
+
+
