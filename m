@@ -1,93 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab1LWOyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 09:54:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27611 "EHLO mx1.redhat.com"
+	id S1757328Ab1LWO7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 09:59:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757339Ab1LWOyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 09:54:00 -0500
-Message-ID: <4EF48CE4.3000104@redhat.com>
-Date: Fri, 23 Dec 2011 15:15:00 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752547Ab1LWO7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 09:59:05 -0500
+Date: Fri, 23 Dec 2011 09:58:56 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
+ fix blkcg percpu alloc deadlock
+Message-ID: <20111223145856.GB16818@redhat.com>
+References: <20111222224117.GL17084@google.com>
+ <20111222145426.5844df96.akpm@linux-foundation.org>
+ <20111222230047.GN17084@google.com>
+ <20111222151649.de57746f.akpm@linux-foundation.org>
+ <20111222232433.GQ17084@google.com>
+ <20111222154138.d6c583e3.akpm@linux-foundation.org>
+ <20111223012112.GB12738@redhat.com>
+ <20111222173820.3461be5d.akpm@linux-foundation.org>
+ <20111223025411.GD12738@redhat.com>
+ <20111222191144.78aec23a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition
- devices
-References: <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com> <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com> <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com> <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com> <20111222234830.GC31021@agk-dp.fab.redhat.com> <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com> <20111223062649.GD21994@1wt.eu> <CA+55aFxnOwkquH8tirqJnM_KTcavAejY8drL11jy2S+2PXmZuw@mail.gmail.com>
-In-Reply-To: <CA+55aFxnOwkquH8tirqJnM_KTcavAejY8drL11jy2S+2PXmZuw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222191144.78aec23a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2011 10:22 AM, Linus Torvalds wrote:
-> On Thu, Dec 22, 2011 at 10:26 PM, Willy Tarreau<w@1wt.eu>  wrote:
->>
->> Call me dumb, but why would someone use "eject" on a non-physically
->> ejectable device such as a memory stick ?
->
-> Perhaps because that's the operation that works everywhere and is the
-> simplest one?
+On Thu, Dec 22, 2011 at 07:11:44PM -0800, Andrew Morton wrote:
+> On Thu, 22 Dec 2011 21:54:11 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> > On Thu, Dec 22, 2011 at 05:38:20PM -0800, Andrew Morton wrote:
+> > > On Thu, 22 Dec 2011 20:21:12 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > 
+> > > > On Thu, Dec 22, 2011 at 03:41:38PM -0800, Andrew Morton wrote:
+> > > > > 
+> > > > > If the code *does* correctly handle ->stats_cpu == NULL then we have
+> > > > > options.
+> > > > > 
+> > > > > a) Give userspace a new procfs/debugfs file to start stats gathering
+> > > > >    on a particular cgroup/request_queue pair.  Allocate the stats
+> > > > >    memory in that.
+> > > > > 
+> > > > > b) Or allocate stats_cpu on the first call to blkio_read_stat_cpu()
+> > > > >    and return zeroes for this first call.
+> > > > 
+> > > > But the purpose of stats is that they are gathered even if somebody
+> > > > has not read them even once?
+> > > 
+> > > That's not a useful way of using stats.  The normal usage would be to
+> > > record the stats then start the workload then monitor how the stats
+> > > have changed as work proceeds.
+> > 
+> > I have atleast one example "iostat" which does not follow this. Its
+> > first report shows the total stats since the system boot and each 
+> > subsequent report covers time since previous report. With stats being
+> > available since the cgroup creation time, one can think of extending
+> > iostat tool to display per IO cgroup stats too.
+> 
+> If that's useful (dubious) then it can be addressed by creating the
+> stats when a device is bound to the cgroup (below).
+> 
+> > Also we have a knob "reset_stats" to reset all the stats to zero. So
+> > one can first reset stats, starts workload and then monitor it (if one
+> > does not like stats since the cgroup creation time).
+> > 
+> > > 
+> > > > So if I create a cgroup and put some
+> > > > task into it which does some IO, I think stat collection should start
+> > > > immediately without user taking any action.
+> > > 
+> > > If you really want to know the stats since cgroup creation then trigger
+> > > the stats initialisation from userspace when creating the blkio_cgroup.
+> > 
+> > These per cpu stats are per cgroup per device. So if a workload in a
+> > cgroup is doing IO to 4 devices, we allocate 4 percpu stat areas for
+> > stats. So at cgroup creation time we just don't know how many of these
+> > to create and also it does not cover the case of device hotplug after
+> > cgroup creation.
+> 
+> Mark the cgroup as "needing stats" then allocate the stats (if needed)
+> when a device is bound to the cgroup.  Rather than on first I/O.
 
-But does it actually do anything?  For me, "eject /dev/sdf1" does 
-nothing beyond unmounting the disk.  Yes, it sends a CDROMEJECT ioctl 
-which becomes a start/stop unit SCSI command, but it has no effect on 
-the USB stick I tried.
+This will work for the throttling case where a user has to specifically
+put throttling rules for each device and that can be considered as binding
+device to the cgroup. In that case we will not be collecting the stats
+for which there are no rules for the device. I guess I can live with that.
 
-I tried it on a card reader, and indeed it started reporting "no medium 
-found" after ejecting.
+But it still does not work for the case of CFQ where there might not
+be any user initiated device binding to cgroup. User might just specify
+a cgroup weight (like task ioprio) and binding to device is automatically
+created on first IO to the device from the cgroup. User does not initiate
+any specific binding.
 
-And actually there it fixes a potential data corruption.  Because yes, 
-most USB sticks and cards have one partition.  But if you had two, 
-"eject /dev/sdf1" would unmount one partition and CDROMEJECT the whole 
-card.  Which means the other partition is left unclean.  (Invoked with 
-"eject /dev/sdb", eject at least tries to go through the partitions and 
-unmounts all of them.  Not bulletproof, but almost there).
+> 
+> > > 
+> > > > Forcing the user to first
+> > > > read a stat before the collection starts is kind of odd to me.
+> > > 
+> > > Well one could add a separate stats_enable knob.  Doing it
+> > > automatically from read() would be for approximate-back-compatibility
+> > > with existing behaviour.
+> > > 
+> > > Plus (again) this way we also avoid burdening non-stats-users with the
+> > > overhead of stats.
+> > 
+> > Even if we do that we have the problem with hoplugged device. Assume a
+> > cgroup created, stats enabled now a new devices shows up and some task
+> > in the group does IO on that device. Now we need to create percpu data
+> > area for that cgroup-device pair dynamically in IO path and we are back
+> > to the same problem. 
+> 
+> Why do the allocation during I/O?  Can't it be done in the hotplug handler?
+> 
 
-So "eject /dev/sdb1" on USB sticks is just an unmount.  On card readers 
-it will indeed be affected by the patch.  But the actual eject operation 
-that it does after unmounting ought to fail.  It hasn't so far?  Just 
-another instance of the bug I'm fixing.
+Even if we can do it in hotplug handler it will be very wasteful of
+memory. So if there are 100 IO cgroups in the system, upon every block
+device hotplug, we will allocate per cpu memory for all the 100 cgroups,
+irrespective of the fact whether they are doing IO to the device or not.
 
-> Just look at the icon on your desktop - it probably has "Eject" above
-> the silly "Safely remove drive" when you right-click it. It has for
-> me.
+Now expand this to a system with 100 cgroups and 100 Luns. 10000
+allocations for no reason. (Even if we do it for cgroups needing stats,
+does not help much). Current scheme allocates memory for the group
+only if a sepcific cgroup is doing IO to a specific block device. 
 
-Assuming you're using GNOME3, for USB sticks the "Eject" button unmounts 
-the volume, but it leaves the /dev/ files in place.  "Safely remove 
-drive" unmounts the volume and also does what udisks calls "detach".  It 
-sends a start/stop unit SCSI command (same as CDROMEJECT and the eject 
-command) and then unplugs the device via sysfs.  To be precise, it also 
-sends a cache flush, just in case the disk reported itself as 
-writethrough but wasn't, so it is actually safer than eject.
-
-But udisks never sends SCSI commands to partition devices, because 
-udisks knows the distinction between disk and partition.  Even on an 
-unpatched kernel, "udisks --detach /dev/sdf1" fails with "Detach failed: 
-Device is not a drive".  In general, I looked at the source code for 
-this throughout the GNOME stack (both GNOME2 and GNOME3), and everywhere 
-they distinguish between "drive" and "volume" objects.  Eject maps to a 
-method on the volume's eject method, while "safely remove drive" maps to 
-the drive's stop method.
-
-So, no, nothing I tried to do on USB sticks from a recent desktop 
-environment will break with the patch.
-
-Before udisks, HAL had "unmount" and "eject".  With or without the 
-patch, on USB sticks they act the same.  They unmount the volume and 
-leave /dev/ files in place.
-
-> So yes, I claim that "eject" is actually the *natural* thing to do
-> before you physically remove the medium, because it works across
-> different media.
-
-If you talk about ejecting the disk, yeah, "safely remove drive" is just 
-paranoia.  But if you talk about ejecting a partition from the 
-command-line, then no, not at all.
-
-Paolo
+Thanks
+Vivek
