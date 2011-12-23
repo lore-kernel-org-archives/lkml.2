@@ -1,103 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab1LWVxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 16:53:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50740 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab1LWVxa (ORCPT
+	id S1757931Ab1LWVxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 16:53:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57937 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757886Ab1LWVx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 16:53:30 -0500
+	Fri, 23 Dec 2011 16:53:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Nelson Elhage <nelhage@nelhage.com>,
-        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 00/15] perf/core improvements and fixes
-Date: Fri, 23 Dec 2011 19:53:03 -0200
-Message-Id: <1324677198-5191-1-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/15] perf tools: Look up thread names for system wide profiling
+Date: Fri, 23 Dec 2011 19:53:06 -0200
+Message-Id: <1324677198-5191-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1324677198-5191-1-git-send-email-acme@infradead.org>
+References: <1324677198-5191-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: David Ahern <dsahern@gmail.com>
 
-        Please consider pulling from:
+This handles multithreaded processes with named threads when doing
+system wide profiling: the comm for each thread is looked up allowing
+them to be different from the thread group leader.
 
-git://github.com/acmel/linux.git perf/core
+v2:
+- fixed sizeof arg to perf_event__get_comm_tgid
 
-Regards,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1324578603-12762-3-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/event.c |   75 +++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 53 insertions(+), 22 deletions(-)
 
-- Arnaldo
-
-David Ahern (3):
-  perf tools: Fix comm for processes with named threads
-  perf tools: Look up thread names for system wide profiling
-  perf script: look up thread using tid instead of pid
-
-Ingo Molnar (1):
-  perf tools: Fix truncated annotation
-
-Namhyung Kim (1):
-  perf report: Fix usage string
-
-Nelson Elhage (2):
-  perf: builtin-record: Provide advice if mmap'ing fails with EPERM.
-  perf: builtin-record: Document and check that mmap_pages must be a power of two.
-
-Robert Richter (8):
-  perf tools: Improve macros for struct feature_ops
-  perf tools: Continue processing header on unknown features
-  perf tools: Fix out-of-bound access to struct perf_session
-  perf tools: Moving code in some files
-  perf report: Accept fifos as input file
-  perf tools: Unify handling of features when writing feature section
-  perf tools: Use for_each_set_bit() to iterate over feature flags
-  perf script: Add generic perl handler to process events
-
- tools/perf/Documentation/perf-annotate.txt         |    2 +-
- tools/perf/Documentation/perf-buildid-list.txt     |    2 +-
- tools/perf/Documentation/perf-evlist.txt           |    2 +-
- tools/perf/Documentation/perf-kmem.txt             |    2 +-
- tools/perf/Documentation/perf-lock.txt             |    2 +-
- tools/perf/Documentation/perf-record.txt           |    2 +-
- tools/perf/Documentation/perf-report.txt           |    2 +-
- tools/perf/Documentation/perf-sched.txt            |    2 +-
- tools/perf/Documentation/perf-script.txt           |    2 +-
- tools/perf/Documentation/perf-timechart.txt        |    2 +-
- tools/perf/builtin-annotate.c                      |    3 +-
- tools/perf/builtin-buildid-list.c                  |   53 +-
- tools/perf/builtin-evlist.c                        |    2 +-
- tools/perf/builtin-kmem.c                          |    2 +-
- tools/perf/builtin-lock.c                          |    2 +-
- tools/perf/builtin-record.c                        |   19 +-
- tools/perf/builtin-report.c                        |   15 +-
- tools/perf/builtin-sched.c                         |    2 +-
- tools/perf/builtin-script.c                        |    6 +-
- tools/perf/builtin-timechart.c                     |    4 +-
- tools/perf/util/annotate.c                         |    2 +-
- tools/perf/util/event.c                            |  112 +++-
- tools/perf/util/evlist.c                           |    2 +
- tools/perf/util/header.c                           |  663 +++++++++-----------
- tools/perf/util/header.h                           |    6 +-
- tools/perf/util/include/linux/bitops.h             |  118 ++++
- .../perf/util/scripting-engines/trace-event-perl.c |   73 ++-
- tools/perf/util/session.c                          |   15 +-
- tools/perf/util/session.h                          |    2 +-
- tools/perf/util/util.h                             |   11 +
- 30 files changed, 676 insertions(+), 456 deletions(-)
-
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index a578726..73ddaf0 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -43,37 +43,27 @@ static struct perf_sample synth_sample = {
+ 	.period	   = 1,
+ };
+ 
+-static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+-					 union perf_event *event, pid_t pid,
+-					 int full, perf_event__handler_t process,
+-					 struct machine *machine)
++static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+ {
+ 	char filename[PATH_MAX];
+ 	char bf[BUFSIZ];
+ 	FILE *fp;
+ 	size_t size = 0;
+-	DIR *tasks;
+-	struct dirent dirent, *next;
+-	pid_t tgid = 0;
++	pid_t tgid = -1;
+ 
+ 	snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
+ 
+ 	fp = fopen(filename, "r");
+ 	if (fp == NULL) {
+-out_race:
+-		/*
+-		 * We raced with a task exiting - just return:
+-		 */
+ 		pr_debug("couldn't open %s\n", filename);
+ 		return 0;
+ 	}
+ 
+-	memset(&event->comm, 0, sizeof(event->comm));
+-
+-	while (!event->comm.comm[0] || !event->comm.pid) {
++	while (!comm[0] || (tgid < 0)) {
+ 		if (fgets(bf, sizeof(bf), fp) == NULL) {
+-			pr_warning("couldn't get COMM and pgid, malformed %s\n", filename);
+-			goto out;
++			pr_warning("couldn't get COMM and pgid, malformed %s\n",
++				   filename);
++			break;
+ 		}
+ 
+ 		if (memcmp(bf, "Name:", 5) == 0) {
+@@ -81,16 +71,46 @@ out_race:
+ 			while (*name && isspace(*name))
+ 				++name;
+ 			size = strlen(name) - 1;
+-			memcpy(event->comm.comm, name, size++);
++			if (size >= len)
++				size = len - 1;
++			memcpy(comm, name, size);
++
+ 		} else if (memcmp(bf, "Tgid:", 5) == 0) {
+ 			char *tgids = bf + 5;
+ 			while (*tgids && isspace(*tgids))
+ 				++tgids;
+-			tgid = event->comm.pid = atoi(tgids);
++			tgid = atoi(tgids);
+ 		}
+ 	}
+ 
++	fclose(fp);
++
++	return tgid;
++}
++
++static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
++					 union perf_event *event, pid_t pid,
++					 int full,
++					 perf_event__handler_t process,
++					 struct machine *machine)
++{
++	char filename[PATH_MAX];
++	size_t size;
++	DIR *tasks;
++	struct dirent dirent, *next;
++	pid_t tgid;
++
++	memset(&event->comm, 0, sizeof(event->comm));
++
++	tgid = perf_event__get_comm_tgid(pid, event->comm.comm,
++					 sizeof(event->comm.comm));
++	if (tgid < 0)
++		goto out;
++
++	event->comm.pid = tgid;
+ 	event->comm.header.type = PERF_RECORD_COMM;
++
++	size = strlen(event->comm.comm) + 1;
+ 	size = ALIGN(size, sizeof(u64));
+ 	memset(event->comm.comm + size, 0, machine->id_hdr_size);
+ 	event->comm.header.size = (sizeof(event->comm) -
+@@ -106,8 +126,10 @@ out_race:
+ 	snprintf(filename, sizeof(filename), "/proc/%d/task", pid);
+ 
+ 	tasks = opendir(filename);
+-	if (tasks == NULL)
+-		goto out_race;
++	if (tasks == NULL) {
++		pr_debug("couldn't open %s\n", filename);
++		return 0;
++	}
+ 
+ 	while (!readdir_r(tasks, &dirent, &next) && next) {
+ 		char *end;
+@@ -115,6 +137,17 @@ out_race:
+ 		if (*end)
+ 			continue;
+ 
++		/* already have tgid; jut want to update the comm */
++		(void) perf_event__get_comm_tgid(pid, event->comm.comm,
++					 sizeof(event->comm.comm));
++
++		size = strlen(event->comm.comm) + 1;
++		size = ALIGN(size, sizeof(u64));
++		memset(event->comm.comm + size, 0, machine->id_hdr_size);
++		event->comm.header.size = (sizeof(event->comm) -
++					  (sizeof(event->comm.comm) - size) +
++					  machine->id_hdr_size);
++
+ 		event->comm.tid = pid;
+ 
+ 		process(tool, event, &synth_sample, machine);
+@@ -122,8 +155,6 @@ out_race:
+ 
+ 	closedir(tasks);
+ out:
+-	fclose(fp);
+-
+ 	return tgid;
+ }
+ 
 -- 
 1.7.8.rc0.35.gee6df
 
