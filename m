@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab1LWNui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 08:50:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46367 "EHLO mx2.suse.de"
+	id S1757267Ab1LWNzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 08:55:44 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53813 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757211Ab1LWNuf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 08:50:35 -0500
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=windows-1252
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20111220202711.GD6830@alea.gnuu.de>
-Date: Fri, 23 Dec 2011 14:50:33 +0100
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C3B4A5C9-0AE0-49C8-A349-879ADDA01804@suse.de>
-References: <20111107194838.GA23558@alea.gnuu.de> <20111220202711.GD6830@alea.gnuu.de>
-To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
-X-Mailer: Apple Mail (2.1084)
+	id S1757236Ab1LWNzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 08:55:42 -0500
+Date: Fri, 23 Dec 2011 14:53:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
+ samples
+Message-ID: <20111223135340.GB21382@elte.hu>
+References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
+ <1323969824-9711-5-git-send-email-robert.richter@amd.com>
+ <20111223103329.GC4749@elte.hu>
+ <20111223111958.GE16765@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111223111958.GE16765@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 20.12.2011, at 21:27, Jörg Sommer wrote:
+* Robert Richter <robert.richter@amd.com> wrote:
 
-> Hello Alexander,
+> > Also, could you quote example output of "perf script report 
+> > ibs"?
 > 
-> Jörg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
->>  CHK     include/linux/version.h
->>  HOSTCC  scripts/mod/modpost.o
->>  CHK     include/generated/utsrelease.h
->>  UPD     include/generated/utsrelease.h
->>  HOSTLD  scripts/mod/modpost
->>  GEN     include/generated/bounds.h
->>  CC      arch/powerpc/kernel/asm-offsets.s
->> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function ‘compute_tlbie_rb’:
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error: ‘HPTE_V_SECONDARY’ undeclared (first use in this function)
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note: each undeclared identifier is reported only once for each function it appears in
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error: ‘HPTE_V_1TB_SEG’ undeclared (first use in this function)
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error: ‘HPTE_V_LARGE’ undeclared (first use in this function)
->> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warning: right shift count >= width of type [enabled by default]
->> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
->> make[2]: *** [prepare0] Fehler 2
->> make[1]: *** [deb-pkg] Fehler 2
->> make: *** [deb-pkg] Fehler 2
-> 
-> I'm so sorry to have to report a new bug in one of your patches. It was
-> covered by the one above. I've picked the commit for it from your git
-> repository and now, the kernel build fails with this error:
-> 
->  BOOTCC  arch/powerpc/boot/fdt_strerror.o
->  BOOTAR  arch/powerpc/boot/wrapper.a
->  WRAP    arch/powerpc/boot/zImage.pmac
->  WRAP    arch/powerpc/boot/zImage.coff
-> ERROR: "kvmppc_h_pr" [arch/powerpc/kvm/kvm.ko] undefined!
-> make[3]: *** [__modpost] Fehler 1
-> make[2]: *** [modules] Fehler 2
-> make[2]: *** Warte auf noch nicht beendete Prozesse...
->  WRAP    arch/powerpc/boot/zImage.miboot
-> make[1]: *** [deb-pkg] Fehler 2
-> make: *** [deb-pkg] Fehler 2
+> IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x0000000000444780 IBS2:0x000000041af26780
+> IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x00007f5efb44e3b2 IBS2:0x000000042fcff3b2
+> IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065273 IBS2:0x0000000001065273
+> IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff811a6320 IBS2:0x00000000011a6320
+> IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065255 IBS2:0x0000000001065255
+> IBS_FETCH sample on cpu7	IBS0: 0x00170004186a186a IBS1: 0x00007fbf0c687ca0 IBS2:0x000000041d345ca0
+> IBS_FETCH sample on cpu7	IBS0: 0x00170003186a186a IBS1: 0x000000000043bb80 IBS2:0x000000041c351b80
+> IBS_FETCH sample on cpu7	IBS0: 0x01370003186a186a IBS1: 0xffffffff813d5790 IBS2:0x00000000013d5790
+> IBS_FETCH sample on cpu7	IBS0: 0x00030001186a186a IBS1: 0xffffffff8102bd00 IBS2:0x00000000013d5d00
 
-This is odd. kvmppc_h_pr shouldn't be accessed when not in book3s_64_pr mode:
+That does not look very usable to users. So why should we merge 
+this new ABI in its incomplete form with no complete usecase? 
+Being usable is clearly not outside the scope of a new feature 
+...
 
-#ifdef CONFIG_KVM_BOOK3S_64_PR
-                        if (kvmppc_h_pr(vcpu, cmd) == EMULATE_DONE) {
-                                r = RESUME_GUEST;
-                                break;
-                        }
-#endif
+Integrating it into perf report should not be *that* hard, 
+you've done most of the hard work already. But without that step 
+we just don't know how complete and usable the whole thing is.
 
-Could you please send me your .config?
+Thanks,
 
-
-Alex
-
+	Ingo
