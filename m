@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab1LWDYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 22:24:25 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59483 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1LWDYV (ORCPT
+	id S1756336Ab1LWDZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 22:25:33 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63892 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab1LWDZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 22:24:21 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-In-Reply-To: <4EF1B85F.7060105@redhat.com>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Fri, 23 Dec 2011 08:50:04 +0530
-Message-ID: <877h1o9dp7.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11122303-3864-0000-0000-000000A2384C
+	Thu, 22 Dec 2011 22:25:30 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH v2] cgroup: Remove task_lock() from cgroup_post_fork()
+Date: Fri, 23 Dec 2011 04:25:23 +0100
+Message-Id: <1324610723-30080-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 12:43:43 +0200, Avi Kivity <avi@redhat.com> wrote:
-> On 12/21/2011 12:39 PM, Nikunj A Dadhania wrote:
-> > On Mon, 19 Dec 2011 12:23:26 +0100, Ingo Molnar <mingo@elte.hu> wrote:
-> > > 
-> > > * Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com> wrote:
-> > > 
-> > > So could we please approach this from the benchmarked workload 
-> > > angle first? The highest improvement is in ebizzy:
-> > > 
-> > > >     ebizzy 2vm (improved 15 times, i.e. 1520%)
-> > > 
-> > > What's behind this huge speedup? Does ebizzy use user-space 
-> > > spinlocks perhaps? Could we do something on the user-space side 
-> > > to get a similar speedup?
-> > > 
-> > This is from the perf run on the host:
-> >
-> > Baseline:
-> >
-> > 16.22%         qemu-kvm  [kvm_intel]    [k] free_kvm_area
-> >  8.27%         qemu-kvm  [kvm]          [k] start_apic_timer
-> >  7.53%         qemu-kvm  [kvm]          [k] kvm_put_guest_fpu
-> >
-> > Gang:
-> >
-> > 24.44%         qemu-kvm  [kvm_intel]    [k] free_kvm_area
-> > 13.42%         qemu-kvm  [kvm]          [k] start_apic_timer 
-> >  9.91%         qemu-kvm  [kvm]          [k] kvm_put_guest_fpu
-> >
-> > Ingo, Avi, I am not getting anything obvious from this. Any ideas?
-> >
+cgroup_post_fork() is protected between threadgroup_change_begin()
+and threadgroup_change_end() against concurrent changes of the
+child's css_set in cgroup_task_migrate(). Also the child can't
+exit and call cgroup_exit() at this stage, this means it's css_set
+can't be changed with init_css_set concurrently.
 
-Here some interesting perf reports from inside the guest:
+For these reasons, we don't need to hold task_lock() on the child
+because it's css_set can only remain stable in this place.
 
-Baseline:
-  29.79%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_others
-  18.70%   ebizzy  libc-2.12.so        [.] __GI_memcpy
-   7.23%   ebizzy  [kernel.kallsyms]   [k] get_page_from_freelist
-   5.38%   ebizzy  [kernel.kallsyms]   [k] __do_page_fault
-   4.50%   ebizzy  [kernel.kallsyms]   [k] ____pagevec_lru_add
-   3.58%   ebizzy  [kernel.kallsyms]   [k] default_send_IPI_mask_logical
-   3.26%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_single
-   2.82%   ebizzy  [kernel.kallsyms]   [k] handle_pte_fault
-   2.16%   ebizzy  [kernel.kallsyms]   [k] kunmap_atomic
-   2.10%   ebizzy  [kernel.kallsyms]   [k] _spin_unlock_irqrestore
-   1.90%   ebizzy  [kernel.kallsyms]   [k] down_read_trylock
-   1.65%   ebizzy  [kernel.kallsyms]   [k] __mem_cgroup_commit_charge.clone.4
-   1.60%   ebizzy  [kernel.kallsyms]   [k] up_read
-   1.24%   ebizzy  [kernel.kallsyms]   [k] __alloc_pages_nodemask
+Let's remove the lock there.
 
-Gang:
-  22.53%   ebizzy  libc-2.12.so       [.] __GI_memcpy
-   9.73%   ebizzy  [kernel.kallsyms]  [k] ____pagevec_lru_add
-   8.22%   ebizzy  [kernel.kallsyms]  [k] get_page_from_freelist
-   7.80%   ebizzy  [kernel.kallsyms]  [k] default_send_IPI_mask_logical
-   7.68%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_others
-   6.22%   ebizzy  [kernel.kallsyms]  [k] __do_page_fault
-   5.54%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_single
-   4.44%   ebizzy  [kernel.kallsyms]  [k] _spin_unlock_irqrestore
-   2.90%   ebizzy  [kernel.kallsyms]  [k] kunmap_atomic
-   2.78%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge.clone.4
-   2.76%   ebizzy  [kernel.kallsyms]  [k] handle_pte_fault
-   2.16%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_uncharge_common
-   1.59%   ebizzy  [kernel.kallsyms]  [k] down_read_trylock
-   1.43%   ebizzy  [kernel.kallsyms]  [k] up_read
+v2: Update comment to explain that we are safe against
+cgroup_exit()
 
-I see the main difference between both the reports is:
-native_flush_tlb_others.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Containers <containers@lists.linux-foundation.org>
+Cc: Cgroups <cgroups@vger.kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+---
+ kernel/cgroup.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
-Regards
-Nikunj
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1042b3c..0ccfc25 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4593,10 +4593,19 @@ void cgroup_post_fork(struct task_struct *child)
+ {
+ 	if (use_task_css_set_links) {
+ 		write_lock(&css_set_lock);
+-		task_lock(child);
+-		if (list_empty(&child->cg_list))
++		if (list_empty(&child->cg_list)) {
++			/*
++			 * It's safe to use child->cgroups without task_lock()
++			 * here because we are protected through
++			 * threadgroup_change_begin() against concurrent
++			 * css_set change in cgroup_task_migrate(). Also
++			 * the task can't exit at that point until
++			 * wake_up_new_task() is called, so we are protected
++			 * against cgroup_exit() setting child->cgroup to
++			 * init_css_set.
++			 */
+ 			list_add(&child->cg_list, &child->cgroups->tasks);
+-		task_unlock(child);
++		}
+ 		write_unlock(&css_set_lock);
+ 	}
+ }
+-- 
+1.7.5.4
 
