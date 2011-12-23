@@ -1,164 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab1LWKUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 05:20:34 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:17512 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751481Ab1LWKUb (ORCPT
+	id S1756567Ab1LWKVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 05:21:10 -0500
+Received: from mga03.intel.com ([143.182.124.21]:65430 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751481Ab1LWKVI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 05:20:31 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EAG1V9E55LbVv/2dsb2JhbABEhQ+nJoEGgXIBAQUjDwEjIxAIAQIYAgImAgIUJQMhE61YkUkTgRyJSjNjBJUBkkk
-Date: Fri, 23 Dec 2011 21:20:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: nowhere <nowhere@hakkenden.ath.cx>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-Message-ID: <20111223102027.GB12731@dastard>
-References: <1324437036.4677.5.camel@hakkenden.homenet>
- <20111221095249.GA28474@tiehlicka.suse.cz>
- <20111221225512.GG23662@dastard>
- <1324630880.562.6.camel@rybalov.eng.ttk.net>
+	Fri, 23 Dec 2011 05:21:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="50054896"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "jeremy.fitzhardinge@citrix.com" <jeremy.fitzhardinge@citrix.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+Subject: RE: [Xen-devel] Linux 3.1.0 Xen RAS rebase
+Thread-Topic: [Xen-devel] Linux 3.1.0 Xen RAS rebase
+Thread-Index: AQHMwR/TW8DpiUUASEeT9gUPm1anxpXo9axggABAbOA=
+Date: Fri, 23 Dec 2011 10:20:26 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923359662@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233587C7@SHSMSX101.ccr.corp.intel.com>
+ <20111223030608.GB7218@andromeda.dapyr.net>
+ <DE8DF0795D48FD4CA783C40EC8292335943F@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335943F@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1324630880.562.6.camel@rybalov.eng.ttk.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 01:01:20PM +0400, nowhere wrote:
-> В Чт., 22/12/2011 в 09:55 +1100, Dave Chinner пишет:
-> > On Wed, Dec 21, 2011 at 10:52:49AM +0100, Michal Hocko wrote:
-> > > [Let's CC linux-mm]
-> > > 
-> > > On Wed 21-12-11 07:10:36, Nikolay S. wrote:
-> > > > Hello,
-> > > > 
-> > > > I'm using 3.2-rc5 on a machine, which atm does almost nothing except
-> > > > file system operations and network i/o (i.e. file server). And there is
-> > > > a problem with kswapd.
-> > > 
-> > > What kind of filesystem do you use?
-> > > 
-> > > > 
-> > > > I'm playing with dd:
-> > > > dd if=/some/big/file of=/dev/null bs=8M
-> > > > 
-> > > > I.e. I'm filling page cache.
-> > > > 
-> > > > So when the machine is just rebooted, kswapd during this operation is
-> > > > almost idle, just 5-8 percent according to top.
-> > > > 
-> > > > After ~5 days of uptime (5 days,  2:10), the same operation demands ~70%
-> > > > for kswapd:
-> > > > 
-> > > >   PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
-> > > >   420 root      R   70  0.0  22:09.60    0 kswapd0
-> > > > 17717 nowhere   D   27  0.2   0:01.81  10m dd
-> > > > 
-> > > > In fact, kswapd cpu usage on this operation steadily increases over
-> > > > time.
-> > > > 
-> > > > Also read performance degrades over time. After reboot:
-> > > > dd if=/some/big/file of=/dev/null bs=8M
-> > > > 1019+1 records in
-> > > > 1019+1 records out
-> > > > 8553494018 bytes (8.6 GB) copied, 16.211 s, 528 MB/s
-> > > > 
-> > > > After ~5 days uptime:
-> > > > dd if=/some/big/file of=/dev/null bs=8M
-> > > > 1019+1 records in
-> > > > 1019+1 records out
-> > > > 8553494018 bytes (8.6 GB) copied, 29.0507 s, 294 MB/s
-> > > > 
-> > > > Whereas raw disk sequential read performance stays the same:
-> > > > dd if=/some/big/file of=/dev/null bs=8M iflag=direct
-> > > > 1019+1 records in
-> > > > 1019+1 records out
-> > > > 8553494018 bytes (8.6 GB) copied, 14.7286 s, 581 MB/s
-> > > > 
-> > > > Also after dropping caches, situation somehow improves, but not to the
-> > > > state of freshly restarted system:
-> > > >   PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
-> > > >   420 root      S   39  0.0  23:31.17    0 kswapd0
-> > > > 19829 nowhere   D   24  0.2   0:02.72 7764 dd
-> > > > 
-> > > > perf shows:
-> > > > 
-> > > >     31.24%  kswapd0  [kernel.kallsyms]  [k] _raw_spin_lock
-> > > >     26.19%  kswapd0  [kernel.kallsyms]  [k] shrink_slab
-> > > >     16.28%  kswapd0  [kernel.kallsyms]  [k] prune_super
-> > > >      6.55%  kswapd0  [kernel.kallsyms]  [k] grab_super_passive
-> > > >      5.35%  kswapd0  [kernel.kallsyms]  [k] down_read_trylock
-> > > >      4.03%  kswapd0  [kernel.kallsyms]  [k] up_read
-> > > >      2.31%  kswapd0  [kernel.kallsyms]  [k] put_super
-> > > >      1.81%  kswapd0  [kernel.kallsyms]  [k] drop_super
-> > > >      0.99%  kswapd0  [kernel.kallsyms]  [k] __put_super
-> > > >      0.25%  kswapd0  [kernel.kallsyms]  [k] __isolate_lru_page
-> > > >      0.23%  kswapd0  [kernel.kallsyms]  [k] free_pcppages_bulk
-> > > >      0.19%  kswapd0  [r8169]            [k] rtl8169_interrupt
-> > > >      0.15%  kswapd0  [kernel.kallsyms]  [k] twa_interrupt
-> > > 
-> > > Quite a lot of time spent shrinking slab (dcache I guess) and a lot of
-> > > spin lock contention.
-> > 
-> > That's just scanning superblocks, not apparently doing anything
-> > useful like shrinking dentries or inodes attached to each sb. i.e.
-> > the shrinkers are being called an awful lot and basically have
-> > nothing to do. I'd be suspecting a problem higher up in the stack to
-> > do with how shrink_slab is operating or being called.
-> > 
-> > I'd suggest gathering event traces for mm_shrink_slab_start/
-> > mm_shrink_slab_end to try to see how the shrinkers are being
-> > driven...
-> > 
-> > Cheers,
-> > 
-> > Dave.
+Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+>> On Thu, Dec 22, 2011 at 09:57:55AM +0000, Liu, Jinsong wrote:
+>>> Recently we did dom0 Xen RAS rebase work.
+>> 
+>> Hey Liu,
+>> 
+>> Thank you for posting this. Couple of questions:
+>>  1). How does one test these patches?
 > 
-> I have recompiled kernel with tracers, and today the problem is visible
-> again. So here is the trace for mm_shrink_slab_start (it is HUGE):
+> These patches include mce, cpu online/offline, cpu hotadd, memory
+> hotadd. 
+> Testing method of these features are
+> 1. mce: a normal way is to inject error through EINJ user interface,
+> and getting mcelog at dom0 side 
+> 2. cpu online/offline: by echoing sysfs/.../xen_pcpu user interface,
+> and getting result at sysfs/.../xen_pcpu 
+> 3. cpu hotadd: Intel has some new server, by pressing a button can
+> add cpu. We can verify cpu hotadd by sysfs/.../xen_pcpu interface 
+> 4. memory hotadd: also by pressing a button to add memory, and can
+> verify memory hotadd by 'xl info' 
 > 
->          kswapd0   421 [000] 103976.627873: mm_shrink_slab_start: prune_super+0x0 0xffff88011b00d300: objects to shrink 12 gfp_flags GFP_KERNELGFP_NOTRACK pgs_scanned 32 lru_pgs 942483 cache items 1500 delt
->          kswapd0   421 [000] 103976.627882: mm_shrink_slab_start: prune_super+0x0 0xffff88011a20ab00: objects to shrink 267 gfp_flags GFP_KERNELGFP_NOTRACK pgs_scanned 32 lru_pgs 942483 cache items 5300 del
+>>  2). Please CC LKML and also the ACPI maintainer - since a majority
+>>      of this also touch their tree. And the memory hotadd maintainer
+>>      as well.
+> 
+> OK, cc
+> LKML
+> ACPI maintainer: len.brown@intel.com
+> memory hotadd maintianer: I'm not sure who is maintainer, but I will
+> cc yakui.zhao@intel.com and len.brown@intel.com 
 
-And possibly useless in this form. I need to see the
-mm_shrink_slab_start/mm_shrink_slab_end events interleaved so I can
-see exactly how much work each shrinker call is doing, and the start
-events are truncated so not all the info I need is present.
+Will also cc Tony Luck and Andi Kleen, mce maintainers.
 
-Perhaps you should install trace-cmd.
+> 
+> I'll re-send the patches later, cc above people.
+> 
+>>  3). Can any of this code (like the MCE) leverage the existing
+>>      generic code?
+> 
+> Basically no, for mce, xen implement mce logic at hypervisor,
+> at dom0 side, it only add mcelog interface to get log from hypervisor
+> and transfer to kernel mcelog format. 
+> 
+>>  4). Have you guys talked with Len Brown (the ACPI maintainer)
+>>      about some of this code and how to make it fit within his
+>>      goals?
+> 
+> Not yet, but will.
+> 
+> Thanks,
+> Jinsong
+> 
+>> 
+>> Thanks!
+>>> 
+>>> Basically it rebased from Jeremy's pvops (2.6.32), to Konrad's pvops
+>>> (3.1.0, branch "devel/acpi-cpufreq.v3") patch 1: for mcelog logic
+>>> patch 2: for dom0 vmce patch 3: for cpu sysfs and cpu online/offline
+>>> patch 4: for cpu hotadd
+>>> patch 5: for memory hotadd prepare work
+>>> patch 6: for memory hotadd
+>>> patch 7: for cpu hotadd prepare work
+>>> patch 8: complement cpu hotadd lacked at Konrad's tree
+>>> patch 9: update PM logic
+>>> patch 10: upate cpu online/offline logic
+>>> 
+>>> 
+>>> Thanks,
+>>> Jinsong
+>>> _______________________________________________
+>>> Xen-devel mailing list
+>>> Xen-devel@lists.xensource.com
+>>> http://lists.xensource.com/xen-devel
 
-$ trace-cmd record -e mm_shrink_slab*
-(wait 30s, then ^C)
-$ trace-cmd report > shrink.trace
-
-And then compress and attach the trace file or put up on the web
-somewhere for me ot download if it's too large for email...
-
-As it is, there's ~940k pages in the LRU, and shrink_slab is being
-called after 32, 95, 8, 8, 32 and 32 pages on the LRU have been
-scanned. That seems like the shrinkers are being called rather too
-often.
-
-The end traces indicate the shrinker caches aren't able to free
-anything. So it looks like the vmscan code has got itself in a
-situation where it is not scanning many pages between shrinker
-callouts, and the shrinkers scan but can't make any progress. Looks
-like a vmscan balancing problem right now, not anything to do with
-the shrinker code. A better trace will confirm that.
-
-FWIW, if you use trace-cmd, it might be worthwhile collecting all the
-vmscan trace events too, as that might help the VM folk understand
-the problem without needing to ask you for more info.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
