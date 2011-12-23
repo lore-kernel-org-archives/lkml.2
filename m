@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1LWAhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 19:37:22 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:58056 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752126Ab1LWAhQ (ORCPT
+	id S1756194Ab1LWAmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 19:42:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62531 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab1LWAmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 19:37:16 -0500
-Message-ID: <4EF3DB45.30401@xenotime.net>
-Date: Thu, 22 Dec 2011 17:37:09 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 22 Dec 2011 19:42:52 -0500
+Date: Thu, 22 Dec 2011 16:42:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-ide@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: linux-next: Tree for Dec 21
+Message-ID: <20111223004244.GU17084@google.com>
+References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
+ <20111221151503.4d78f94f.akpm@linux-foundation.org>
+ <20111222150836.af172886.akpm@linux-foundation.org>
+ <20111222232036.GP17084@google.com>
+ <20111222152427.c944c747.akpm@linux-foundation.org>
+ <20111222233843.GR17084@google.com>
+ <20111222154427.89b245c7.akpm@linux-foundation.org>
+ <20111222234639.GS17084@google.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 22 (netdev/stmmac)
-References: <20111222172039.dc704e5bbfc3d91a844897b3@canb.auug.org.au>
-In-Reply-To: <20111222172039.dc704e5bbfc3d91a844897b3@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222234639.GS17084@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2011 10:20 PM, Stephen Rothwell wrote:
-> Hi all,
+On Thu, Dec 22, 2011 at 03:46:39PM -0800, Tejun Heo wrote:
+> On Thu, Dec 22, 2011 at 03:44:27PM -0800, Andrew Morton wrote:
+> > > Weird, I can't reproduce the problem on block/for-3.3/core.  Trying
+> > > linux-next... hmmm, it works there too.
+> > 
+> > This machine is next to my desk, about 50 yards from your cube ;)
 > 
-> This will probably be the last linux-next tree until the new year (unless
-> I get exceedingly bored :-)).
+> Heh, physical access feels like such distant concept.  :)
+> 
+> I'll test with the config and if I still can't reproduce it, play with
+> your machine.
 
-goody :)
+Couldn't reproduce it on block/for-3.3 or next & you were already
+gone.  Is anyone else seeing this?
 
-
-WARNING: modpost: missing MODULE_LICENSE() in drivers/net/ethernet/stmicro/stmmac/stmmac.o
-see include/linux/module.h for more information
-
-
+Thanks.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+tejun
