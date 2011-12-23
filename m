@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab1LWJWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 04:22:47 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53143 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab1LWJWp (ORCPT
+	id S1756197Ab1LWJXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 04:23:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58035 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab1LWJWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 04:22:45 -0500
+	Fri, 23 Dec 2011 04:22:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvxEn6gVnHM6kWdFjpv2RBDUnjSGCjuNF3Fz9ihhFNLmdg@mail.gmail.com>
-References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
- <1162.1324625149@jrobl> <CAOh0hwNZCL0hEAb-ny5-KrB6N1uZjg9Wngzv_5XBMRCHqcxd7A@mail.gmail.com>
- <CAFLxGvxEn6gVnHM6kWdFjpv2RBDUnjSGCjuNF3Fz9ihhFNLmdg@mail.gmail.com>
-From: Gaurav Saxena <grvsaxena419@gmail.com>
-Date: Fri, 23 Dec 2011 14:52:14 +0530
-Message-ID: <CAOh0hwPDAa0_0ESh8RNRuTTk8uMbdpZ=zZOfJ1-UfMQkVViMeg@mail.gmail.com>
-Subject: Re: Intercepting system calls
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, linux-kernel@vger.kernel.org
+In-Reply-To: <20111223062649.GD21994@1wt.eu>
+References: <1324576939-23619-3-git-send-email-pbonzini@redhat.com>
+ <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com>
+ <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com>
+ <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
+ <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
+ <20111222234830.GC31021@agk-dp.fab.redhat.com> <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com>
+ <20111223062649.GD21994@1wt.eu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 23 Dec 2011 01:22:24 -0800
+X-Google-Sender-Auth: nmUA0eeMd92YQO7PohVRtNXIjjE
+Message-ID: <CA+55aFxnOwkquH8tirqJnM_KTcavAejY8drL11jy2S+2PXmZuw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices
+To: Willy Tarreau <w@1wt.eu>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
+        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Richard
-
-On Fri, Dec 23, 2011 at 2:46 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Fri, Dec 23, 2011 at 10:08 AM, Gaurav Saxena <grvsaxena419@gmail.com> wrote:
->> Ok I have seen details of KPROBES, I think it will suit to my
->> requirements, I just wanted to know a few things,
->> Can I use probes to prevent unlink of certain files? Also is
->> CONFIG_KPROBES set to "y" on linux kernels available with distros like
->> ubuntu?
+On Thu, Dec 22, 2011 at 10:26 PM, Willy Tarreau <w@1wt.eu> wrote:
 >
-> Kprobes allow you to instrument the kernel.
-> AFAIK it enabled by most distros.
-Can I use probes to return immediately ie. without execution of
-original system call. For example I put a entry probe on unlink and
-then on the probe return value unlink code is executed or not. Is that
-possible ?
-Also can I call a userspace function from kernel code? Would that be insecure ?
->
-> --
-> Thanks,
-> //richard
+> Call me dumb, but why would someone use "eject" on a non-physically
+> ejectable device such as a memory stick ?
 
+Perhaps because that's the operation that works everywhere and is the
+simplest one?
 
+Just look at the icon on your desktop - it probably has "Eject" above
+the silly "Safely remove drive" when you right-click it. It has for
+me.
 
--- 
-Thanks and Regards ,
-Gaurav
+And I've taught myself (and my wife) to always eject media before
+removing them. I don't "unmount" them, because then for cdroms I need
+to first unmount them and then eject them. Or I'd need to do different
+operations for different devices. Both of which are just stupid.
+
+So yes, I claim that "eject" is actually the *natural* thing to do
+before you physically remove the medium, because it works across
+different media.
+
+But more importantly, we don't break what works. So what the f&^k was
+the point of even asking? THAT was the "dumb" thing here.
+
+                                    Linus
