@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1LWG1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 01:27:10 -0500
-Received: from 1wt.eu ([62.212.114.60]:45041 "EHLO 1wt.eu"
+	id S1753625Ab1LWGjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 01:39:16 -0500
+Received: from asix.com.tw ([113.196.140.82]:50594 "EHLO asix.com.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab1LWG1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 01:27:07 -0500
-Date: Fri, 23 Dec 2011 07:26:49 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices
-Message-ID: <20111223062649.GD21994@1wt.eu>
-References: <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com> <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com> <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com> <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com> <20111222234830.GC31021@agk-dp.fab.redhat.com> <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1751515Ab1LWGjP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 01:39:15 -0500
+From: "allan" <allan@asix.com.tw>
+To: <davem@davemloft.net>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'Freddy Xin'" <freddy@asix.com.tw>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Eugene'" <elubarsky@gmail.com>,
+        "=?utf-8?Q?'ASIX_Louis_=5B=E8=98=87=E5=A8=81=E9=99=B8=5D'?=" 
+	<louis@asix.com.tw>
+Subject: [PATCH v2] drivers/net/usb/asix: fixed asix_get_wol reported wrong wol status issue
+Date: Fri, 23 Dec 2011 14:38:51 +0800
+Message-ID: <005001ccc13d$8c9850e0$a5c8f2a0$@com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Priority: 1 (Highest)
+X-MSMail-Priority: High
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AczBPYhAF7QIiFH4T+iduZtxrZDECw==
+Importance: High
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:07:46PM -0800, Linus Torvalds wrote:
-> For example, I just traced it, and "eject /dev/sdb1" does a CDROMEJECT
-> ioctl when used as the root user. I haven't tested the patch, but just
-> reading it, I'd expect it to break that.
-> 
-> And that's the *natural* way to eject a mounted device. Look at the
-> USB memory sticks you have. They are almost all partitioned to have
-> one partition, and that one partition doesn't cover the whole device.
-> And it's that one partition you use to interact with it - it's what
-> you mount, and what you eject.
+Fixed the asix_get_wol() routine reported wrong wol status issue. 
 
-Call me dumb, but why would someone use "eject" on a non-physically
-ejectable device such as a memory stick ? I use it on CDs, I've used
-it on Sun floppy drives, but USB memory stick ??? After the umount,
-I just have to pull it from the plug and that's all. I don't catch
-what an eject command can bring me on top of that :-/
+Signed-off-by: Allan Chou <allan@asix.com.tw>
+Tested-by: Eugene <elubarsky@gmail.com>; Allan Chou <allan@asix.com.tw>
+---
+This fix had been verified on x86 Linux kernel 3.0.0-12-generic system with AX88772A/AX88772/Belkin AX88178 USB dongles, and the wol function works fine (can be waked up by receiving the magic packets).
 
-Willy
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+--- a/drivers/net/usb/asix.c	2011-12-15 14:01:49.000000000 +0800
++++ b/drivers/net/usb/asix.c	2011-12-22 18:20:39.000000000 +0800
+@@ -36,7 +36,7 @@
+ #include <linux/usb/usbnet.h>
+ #include <linux/slab.h>
+ 
+-#define DRIVER_VERSION "08-Nov-2011"
++#define DRIVER_VERSION "22-Dec-2011"
+ #define DRIVER_NAME "asix"
+ 
+ /* ASIX AX8817X based USB 2.0 Ethernet Devices */
+@@ -689,6 +689,10 @@ asix_get_wol(struct net_device *net, str
+ 	}
+ 	wolinfo->supported = WAKE_PHY | WAKE_MAGIC;
+ 	wolinfo->wolopts = 0;
++	if (opt & AX_MONITOR_LINK)
++		wolinfo->wolopts |= WAKE_PHY;
++	if (opt & AX_MONITOR_MAGIC)
++		wolinfo->wolopts |= WAKE_MAGIC;
+ }
+ 
+ static int
+
+
 
