@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1LWLin (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 06:38:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab1LWLim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 06:38:42 -0500
-Date: Fri, 23 Dec 2011 09:03:11 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com, levinsasha928@gmail.com
-Subject: Re: [PATCH v3 0/2] kvm: Lock down device assignment
-Message-ID: <20111223110311.GC24308@amt.cnet>
-References: <20111221045636.5773.11289.stgit@bling.home>
+	id S1756776Ab1LWLjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 06:39:23 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40836 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab1LWLjT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 06:39:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111221045636.5773.11289.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1324638633-25230-1-git-send-email-jack@suse.cz>
+References: <1324638633-25230-1-git-send-email-jack@suse.cz>
+Date: Fri, 23 Dec 2011 20:39:17 +0900
+Message-ID: <CAKYAXd83vzH7j0H1HyvFz=ue8bGxFD5vPfyyN=Spj46dqmO5Tw@mail.gmail.com>
+Subject: Re: [PATCH] udf: Mark LVID buffer as uptodate before marking it dirty
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 09:58:57PM -0700, Alex Williamson wrote:
-> v2: Update API documentation for each patch
-> v3: Incorporate Sasha's comments: kobject path, separate func, and CONFIG_SYSFS
-> 
-> Two patches to try to better secure the device assignment ioctl.
-> This firt patch makes KVM_DEV_ASSIGN_ENABLE_IOMMU a mandatory
-> option when assigning a device.  I don't believe we have any
-> users of this option, so I think we can skip any deprecation
-> period, especially since it's existence is rather dangerous.
-> 
-> The second patch introduces some file permission checking that Avi
-> suggested.  If a user has been granted read/write permission to
-> the PCI sysfs BAR resource files, this is a good indication that
-> they have access to the device.  We can't call sys_faccessat
-> directly (not exported), but the important bits are self contained
-> enough to include directly.  This still works with sudo and libvirt
-> usage, the latter already grants qemu permission to these files.
-> Thanks,
-> 
-> Alex
-> 
+2011/12/23 Jan Kara <jack@suse.cz>:
+> When we hit EIO while writing LVID, the buffer uptodate bit is cleared.
+> This then results in an anoying warning from mark_buffer_dirty() when we
+> write the buffer again. So just set uptodate flag unconditionally.
+>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
 > ---
-> 
-> Alex Williamson (2):
->       kvm: Device assignment permission checks
->       kvm: Remove ability to assign a device without iommu support
-
-Applied, thanks.
-
+Hi. Jan.
+looks good to me !!.
+Thanks.
