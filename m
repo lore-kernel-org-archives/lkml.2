@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab1LWUK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 15:10:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53336 "EHLO
+	id S1757686Ab1LWULl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 15:11:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53346 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab1LWUK4 (ORCPT
+	with ESMTP id S1752985Ab1LWULk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 15:10:56 -0500
-Date: Fri, 23 Dec 2011 12:10:42 -0800
+	Fri, 23 Dec 2011 15:11:40 -0500
+Date: Fri, 23 Dec 2011 12:11:28 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-e8524b2f43ab6747518aef81c709d104c478b1cd@git.kernel.org>
+Message-ID: <tip-a35fd28256e7736cc84af8931a16224f0bfaaf6c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         yinghai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         yinghai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <20111222014632.484984298@sbsiddha-desk.sc.intel.com>
-References: <20111222014632.484984298@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <20111222014632.540896503@sbsiddha-desk.sc.intel.com>
+References: <20111222014632.540896503@sbsiddha-desk.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, apic: Add probe() for apic_flat
-Git-Commit-ID: e8524b2f43ab6747518aef81c709d104c478b1cd
+Subject: [tip:x86/apic] x86, acpi:
+  Skip acpi x2apic entries if the x2apic feature is not present
+Git-Commit-ID: a35fd28256e7736cc84af8931a16224f0bfaaf6c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,59 +30,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Dec 2011 12:10:48 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Dec 2011 12:11:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8524b2f43ab6747518aef81c709d104c478b1cd
-Gitweb:     http://git.kernel.org/tip/e8524b2f43ab6747518aef81c709d104c478b1cd
+Commit-ID:  a35fd28256e7736cc84af8931a16224f0bfaaf6c
+Gitweb:     http://git.kernel.org/tip/a35fd28256e7736cc84af8931a16224f0bfaaf6c
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Wed, 21 Dec 2011 17:45:15 -0800
+AuthorDate: Wed, 21 Dec 2011 17:45:16 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 23 Dec 2011 11:00:45 -0800
+CommitDate: Fri, 23 Dec 2011 11:00:50 -0800
 
-x86, apic: Add probe() for apic_flat
+x86, acpi: Skip acpi x2apic entries if the x2apic feature is not present
 
-Currently we start with the default apic_flat mode and switch to some other
-apic model depending on the apic drivers acpi_madt_oem_check() routines and
-later followed by the apic drivers probe() routines.
-
-Once we selected non flat mode there was no case where we fall back to
-flat mode again.
-
-Upcoming changes allow bios-enabled x2apic mode to be disabled by the OS
-if interrupt-remapping etc is not setup properly by the bios.
-
-We now has a case for the apic to fall back to legacy flat mode during
-apic driver probe() seqeuence. Add a simple flat_probe() which allows
-the apic_flat mode to be the last fallback option.
+If the x2apic feature is not present (either the cpu is not capable of it
+or the user has disabled the feature using boot-parameter etc), ignore the
+x2apic MADT and SRAT entries provided by the ACPI tables.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/20111222014632.484984298@sbsiddha-desk.sc.intel.com
+Link: http://lkml.kernel.org/r/20111222014632.540896503@sbsiddha-desk.sc.intel.com
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/apic/apic_flat_64.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   10 ++++++++--
+ arch/x86/mm/srat.c          |    7 ++++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index 57c1f41..8c3cdde 100644
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -171,9 +171,14 @@ static int flat_phys_pkg_id(int initial_apic_id, int index_msb)
- 	return initial_apic_id >> index_msb;
- }
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 4558f0d..ce664f3 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -219,6 +219,8 @@ static int __init
+ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
+ {
+ 	struct acpi_madt_local_x2apic *processor = NULL;
++	int apic_id;
++	u8 enabled;
  
-+static int flat_probe(void)
-+{
-+	return 1;
-+}
-+
- static struct apic apic_flat =  {
- 	.name				= "flat",
--	.probe				= NULL,
-+	.probe				= flat_probe,
- 	.acpi_madt_oem_check		= flat_acpi_madt_oem_check,
- 	.apic_id_registered		= flat_apic_id_registered,
+ 	processor = (struct acpi_madt_local_x2apic *)header;
  
+@@ -227,6 +229,8 @@ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
+ 
+ 	acpi_table_print_madt_entry(header);
+ 
++	apic_id = processor->local_apic_id;
++	enabled = processor->lapic_flags & ACPI_MADT_ENABLED;
+ #ifdef CONFIG_X86_X2APIC
+ 	/*
+ 	 * We need to register disabled CPU as well to permit
+@@ -235,8 +239,10 @@ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
+ 	 * to not preallocating memory for all NR_CPUS
+ 	 * when we use CPU hotplug.
+ 	 */
+-	acpi_register_lapic(processor->local_apic_id,	/* APIC ID */
+-			    processor->lapic_flags & ACPI_MADT_ENABLED);
++	if (!cpu_has_x2apic && (apic_id >= 0xff) && enabled)
++		printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
++	else
++		acpi_register_lapic(apic_id, enabled);
+ #else
+ 	printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
+ #endif
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 81dbfde..fd61b3f 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -69,6 +69,12 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+ 		return;
+ 	pxm = pa->proximity_domain;
++	apic_id = pa->apic_id;
++	if (!cpu_has_x2apic && (apic_id >= 0xff)) {
++		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
++			 pxm, apic_id);
++		return;
++	}
+ 	node = setup_node(pxm);
+ 	if (node < 0) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+@@ -76,7 +82,6 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 		return;
+ 	}
+ 
+-	apic_id = pa->apic_id;
+ 	if (apic_id >= MAX_LOCAL_APIC) {
+ 		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+ 		return;
