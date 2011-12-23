@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab1LWNLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 08:11:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44179 "EHLO mx2.suse.de"
+	id S1757051Ab1LWNMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 08:12:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42041 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754133Ab1LWNLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 08:11:45 -0500
-Date: Fri, 23 Dec 2011 14:11:39 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Anders Johansson <ajohansson@novell.com>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: possible ERESTARTNOHAND leak into userspace
-Message-ID: <20111223131139.GA26157@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754133Ab1LWNMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 08:12:20 -0500
+Date: Fri, 23 Dec 2011 08:11:49 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, tj@kernel.org, john@calva.com,
+        trond.myklebust@netapp.com, marek.belisko@gmail.com,
+        awilliam@redhat.com
+Subject: Re: [PATCH] sunrpc/nfs: don't allow TASK_KILLABLE sleeps to block
+ the freezer
+Message-ID: <20111223081149.7fdbcaa1@tlielax.poochiereds.net>
+In-Reply-To: <201112012252.13568.rjw@sisk.pl>
+References: <1322775223-19115-1-git-send-email-jlayton@redhat.com>
+	<201112012252.13568.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-this has already been discussed few years back with reports that select
-returned with ERESTARTNOHAND in multi-threaded applications
-(http://forum.soft32.com/linux/PATCH-select-fix-sys_select-leak-ERESTARTNOHAND-userspace-ftopict338572.html)
+On Thu, 1 Dec 2011 22:52:13 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Dave has come up with a possible explanation of the race but there was
-no further follow up with a conclusion.
+> On Thursday, December 01, 2011, Jeff Layton wrote:
+> > Allow the freezer to skip wait_on_bit_killable sleeps in the sunrpc
+> > layer. This should allow suspend and hibernate events to proceed, even
+> > when there are RPC's pending on the wire.
+> > 
+> > Also, wrap the TASK_KILLABLE sleeps in NFS layer in freezer_do_not_count
+> > and freezer_count calls. This allows the freezer to skip tasks that are
+> > sleeping while looping on EJUKEBOX or NFS4ERR_DELAY sorts of errors.
+> > 
+> > Rafael, I've gone ahead and combined the two patches into one here
+> > and rebased this on top of the pm-freezer branch. Let me know if you'd
+> > prefer to keep it as two patches.
+> 
+> One patch is just fine for me, applied to linux-pm/linux-next.
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
-Just for reference:
-        Thread_A				Thread_B
-	CPU0					CPU1
-						syscall_XYZ
-core_sys_select				
-  ret = -ERESTARTNOHAND;
-  if (signal_pending(current))
-     					do_notify_resume
-     					  do_signal (clear signal pending)
-  return ret;
-return from syscall
-no pending signal
-return ERESTARTNOHAND
+-------------------[snip]----------------
 
-The race window is rather small and hard to trigger but we have seen
-reports where people really saw select returning ERESTARTNOHAND (on
-2.6.16 based kernel - x86_64).
-I am not able to reproduce that myself neither with .16 kernel nor with
-the current vanilla so I am not sure whether the problem has been fixed
-already. But I do not see what prevents the race with vanilla.
+> > +
+> > +/* Like schedule_timeout_killable(), but should not block the freezer. */
+> > +#define freezable_schedule_timeout_killable(timeout)			\
+> > +({									\
+> > +	freezer_do_not_count();						\
+> > +	schedule_timeout_killable(timeout);				\
+> > +	freezer_count();						\
+> > +})
+> > +
 
-Is the issue real and fixable?
 
-Thanks
+Whoops...I just noticed a problem with this patch.
+
+freezable_schedule_timeout_killable does not return the return code
+from schedule_timeout_killable. Would you prefer for me to respin this
+patch, or send a new patch on top of this one that just fixes that bug?
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jeff Layton <jlayton@redhat.com>
