@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab1LWWee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 17:34:34 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39334 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab1LWWed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 17:34:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH] sunrpc/nfs: don't allow TASK_KILLABLE sleeps to block the freezer
-Date: Fri, 23 Dec 2011 23:37:40 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, tj@kernel.org, john@calva.com,
-        trond.myklebust@netapp.com, marek.belisko@gmail.com,
-        awilliam@redhat.com
-References: <1322775223-19115-1-git-send-email-jlayton@redhat.com> <201112012252.13568.rjw@sisk.pl> <20111223081149.7fdbcaa1@tlielax.poochiereds.net>
-In-Reply-To: <20111223081149.7fdbcaa1@tlielax.poochiereds.net>
+	id S1757924Ab1LWWqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 17:46:35 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50161 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab1LWWqd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 17:46:33 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112232337.40363.rjw@sisk.pl>
+In-Reply-To: <4EF48CE4.3000104@redhat.com>
+References: <1324576939-23619-3-git-send-email-pbonzini@redhat.com>
+ <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com>
+ <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com>
+ <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com>
+ <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com>
+ <20111222234830.GC31021@agk-dp.fab.redhat.com> <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com>
+ <20111223062649.GD21994@1wt.eu> <CA+55aFxnOwkquH8tirqJnM_KTcavAejY8drL11jy2S+2PXmZuw@mail.gmail.com>
+ <4EF48CE4.3000104@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 23 Dec 2011 14:46:11 -0800
+X-Google-Sender-Auth: Ac9LEp597VgQ7l5Yeohex1wORhk
+Message-ID: <CA+55aFy=7wGzQv76dirJ=ZjeNdbKVKDRCLA323orsE13GcKvwQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
+        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 23, 2011, Jeff Layton wrote:
-> On Thu, 1 Dec 2011 22:52:13 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Thursday, December 01, 2011, Jeff Layton wrote:
-> > > Allow the freezer to skip wait_on_bit_killable sleeps in the sunrpc
-> > > layer. This should allow suspend and hibernate events to proceed, even
-> > > when there are RPC's pending on the wire.
-> > > 
-> > > Also, wrap the TASK_KILLABLE sleeps in NFS layer in freezer_do_not_count
-> > > and freezer_count calls. This allows the freezer to skip tasks that are
-> > > sleeping while looping on EJUKEBOX or NFS4ERR_DELAY sorts of errors.
-> > > 
-> > > Rafael, I've gone ahead and combined the two patches into one here
-> > > and rebased this on top of the pm-freezer branch. Let me know if you'd
-> > > prefer to keep it as two patches.
-> > 
-> > One patch is just fine for me, applied to linux-pm/linux-next.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > 
-> 
-> -------------------[snip]----------------
-> 
-> > > +
-> > > +/* Like schedule_timeout_killable(), but should not block the freezer. */
-> > > +#define freezable_schedule_timeout_killable(timeout)			\
-> > > +({									\
-> > > +	freezer_do_not_count();						\
-> > > +	schedule_timeout_killable(timeout);				\
-> > > +	freezer_count();						\
-> > > +})
-> > > +
-> 
-> 
-> Whoops...I just noticed a problem with this patch.
-> 
-> freezable_schedule_timeout_killable does not return the return code
-> from schedule_timeout_killable. Would you prefer for me to respin this
-> patch, or send a new patch on top of this one that just fixes that bug?
+On Fri, Dec 23, 2011 at 6:15 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>
+> But does it actually do anything?  For me, "eject /dev/sdf1" does nothing
+> beyond unmounting the disk.  Yes, it sends a CDROMEJECT ioctl which becomes
+> a start/stop unit SCSI command, but it has no effect on the USB stick I
+> tried.
 
-Please send a new fix patch on top of it.
+Guys, you are TOTALLY MISSING THE POINT.
 
-Thanks,
-Rafael
+The point is that the patch-series is damned dangerous. You have no
+clue at all what it will do on various different distributions and
+with various different hardware.
+
+What's so hard to understand about this? Applying it at this point in
+the release cycle with basically *zero* testing would be crazy. I gave
+you just one example of where real people do ioctl's on a partition,
+and where the behavior of the kernel clearly changes as a result.
+
+The fact is, partitions are what most user interactions see. Suddenly
+totally changing things and saying "you can't do that on a partition"
+when clearly people *have* been doing that on partitions isn't
+something we can do without serious testing.
+
+No amount of "it didn't change in the one situation I tested" is going
+to change that. What about somebody running their own distro (there's
+this Russian distro maker who regularly finds regressions that nobody
+else has ever seen)? What about somebody upgrading kernels on a
+five-year-old user space (== pretty much any of the "enterprise"
+distros)? What about other random hardware than just the USB disk
+example that I gave?
+
+It sounds like people didn't even *think* of the potential issues this
+patch can bring. I'd absolutely be insane to apply them for -rc7.
+
+             Linus
