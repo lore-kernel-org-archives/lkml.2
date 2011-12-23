@@ -1,144 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1LWBOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 20:14:22 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34512 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753755Ab1LWBOV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 20:14:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111222150057.GA10845@dztty>
-References: <20111222150057.GA10845@dztty>
-Date: Fri, 23 Dec 2011 09:14:20 +0800
-Message-ID: <CAGBYx2YgN_iqcKOfAwzH_t63us+ECgxcNMEsaRz0j5aoY5tORw@mail.gmail.com>
-Subject: Re: [PATCH] fs/ext4: add missing ext4_resize_end
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756217Ab1LWBRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 20:17:40 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36556 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753755Ab1LWBRg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 20:17:36 -0500
+Subject: Re: [patch 1/2]scsi: scsi_run_queue() doesn't use local list to
+ handle starved sdev
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        "Ted Ts'o" <tytso@mit.edu>, "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+In-Reply-To: <1324600851.22361.475.camel@sli10-conroe>
+References: <1324523412.22361.471.camel@sli10-conroe>
+	 <1324578449.9709.15.camel@dabdike.int.hansenpartnership.com>
+	 <1324600851.22361.475.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Dec 2011 19:17:25 -0600
+Message-ID: <1324603045.9282.2.camel@dabdike.cust.hotspot.t-mobile.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
+On Fri, 2011-12-23 at 08:40 +0800, Shaohua Li wrote:
+> On Thu, 2011-12-22 at 18:27 +0000, James Bottomley wrote:
+> > On Thu, 2011-12-22 at 11:10 +0800, Shaohua Li wrote:
+> > > scsi_run_queue() picks off all sdev from host starved_list to a local list,
+> > > then handle them. If there are multiple threads running scsi_run_queue(),
+> > > the starved_list will get messed. This is quite common, because request
+> > > rq_affinity is on by default.
+> > > 
+> > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > > ---
+> > >  drivers/scsi/scsi_lib.c |   21 ++++++++++++++-------
+> > >  1 file changed, 14 insertions(+), 7 deletions(-)
+> > > 
+> > > Index: linux/drivers/scsi/scsi_lib.c
+> > > ===================================================================
+> > > --- linux.orig/drivers/scsi/scsi_lib.c	2011-12-21 16:56:23.000000000 +0800
+> > > +++ linux/drivers/scsi/scsi_lib.c	2011-12-22 09:33:09.000000000 +0800
+> > > @@ -401,9 +401,8 @@ static inline int scsi_host_is_busy(stru
+> > >   */
+> > >  static void scsi_run_queue(struct request_queue *q)
+> > >  {
+> > > -	struct scsi_device *sdev = q->queuedata;
+> > > +	struct scsi_device *sdev = q->queuedata, *head_sdev = NULL;
+> > >  	struct Scsi_Host *shost;
+> > > -	LIST_HEAD(starved_list);
+> > >  	unsigned long flags;
+> > >  
+> > >  	/* if the device is dead, sdev will be NULL, so no queue to run */
+> > > @@ -415,9 +414,8 @@ static void scsi_run_queue(struct reques
+> > >  		scsi_single_lun_run(sdev);
+> > >  
+> > >  	spin_lock_irqsave(shost->host_lock, flags);
+> > > -	list_splice_init(&shost->starved_list, &starved_list);
+> > >  
+> > > -	while (!list_empty(&starved_list)) {
+> > > +	while (!list_empty(&shost->starved_list)) {
+> > 
+> > The original reason for working from a copy instead of the original list
+> > was that the device can end up back on the starved list because of a
+> > variety of conditions in the HBA and so this would cause the loop not to
+> > exit, so this piece of the patch doesn't look right to me.
+> +               /*
+> +                * the head sdev is no longer starved and removed from the
+> +                * starved list, select a new sdev as head.
+> +                */
+> +               if (head_sdev == sdev && list_empty(&sdev->starved_entry))
+> +                       head_sdev = NULL;
+> I had this in the loop, which is to guarantee the loop will exit if a
+> device is removed from the starved list.
 
-The patch looks good.   I have to update the new resize patch too.
+And the non-head sdevs? which can also get put back onto the list
 
-Yongqiang.
+What's the reason for not just traversing the list once using list
+splice?
 
-On Thu, Dec 22, 2011 at 11:00 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> Online resize ioctls 'EXT4_IOC_GROUP_EXTEND' and 'EXT4_IOC_GROUP_ADD'
-> call ext4_resize_begin() to check permissions and to set the
-> EXT4_RESIZING bit lock, they do their work and they must finish with
-> ext4_resize_end() which calls clear_bit_unlock() to unlock and to
-> avoid -EBUSY errors for the next resize operations.
->
-> This patch adds the missing ext4_resize_end() calls on error paths.
->
-> Patch tested.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> ---
->  fs/ext4/ioctl.c |   28 ++++++++++++++++++----------
->  1 files changed, 18 insertions(+), 10 deletions(-)
->
-> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-> index a567968..ab25f57 100644
-> --- a/fs/ext4/ioctl.c
-> +++ b/fs/ext4/ioctl.c
-> @@ -182,19 +182,22 @@ setversion_out:
->                if (err)
->                        return err;
->
-> -               if (get_user(n_blocks_count, (__u32 __user *)arg))
-> -                       return -EFAULT;
-> +               if (get_user(n_blocks_count, (__u32 __user *)arg)) {
-> +                       err = -EFAULT;
-> +                       goto group_extend_out;
-> +               }
->
->                if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
->                               EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
->                        ext4_msg(sb, KERN_ERR,
->                                 "Online resizing not supported with bigalloc");
-> -                       return -EOPNOTSUPP;
-> +                       err = -EOPNOTSUPP;
-> +                       goto group_extend_out;
->                }
->
->                err = mnt_want_write(filp->f_path.mnt);
->                if (err)
-> -                       return err;
-> +                       goto group_extend_out;
->
->                err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
->                if (EXT4_SB(sb)->s_journal) {
-> @@ -204,9 +207,10 @@ setversion_out:
->                }
->                if (err == 0)
->                        err = err2;
-> +
->                mnt_drop_write(filp->f_path.mnt);
-> +group_extend_out:
->                ext4_resize_end(sb);
-> -
->                return err;
->        }
->
-> @@ -267,19 +271,22 @@ mext_out:
->                        return err;
->
->                if (copy_from_user(&input, (struct ext4_new_group_input __user *)arg,
-> -                               sizeof(input)))
-> -                       return -EFAULT;
-> +                               sizeof(input))) {
-> +                       err = -EFAULT;
-> +                       goto group_add_out;
-> +               }
->
->                if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
->                               EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
->                        ext4_msg(sb, KERN_ERR,
->                                 "Online resizing not supported with bigalloc");
-> -                       return -EOPNOTSUPP;
-> +                       err = -EOPNOTSUPP;
-> +                       goto group_add_out;
->                }
->
->                err = mnt_want_write(filp->f_path.mnt);
->                if (err)
-> -                       return err;
-> +                       goto group_add_out;
->
->                err = ext4_group_add(sb, &input);
->                if (EXT4_SB(sb)->s_journal) {
-> @@ -289,9 +296,10 @@ mext_out:
->                }
->                if (err == 0)
->                        err = err2;
-> +
->                mnt_drop_write(filp->f_path.mnt);
-> +group_add_out:
->                ext4_resize_end(sb);
-> -
->                return err;
->        }
->
-> --
-> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Basically, the changelog doesn't seem to explain what you're doing and
+the logic looks flawed.
+
+James
 
 
-
--- 
-Best Wishes
-Yongqiang Yang
