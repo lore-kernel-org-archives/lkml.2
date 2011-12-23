@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab1LWB6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 20:58:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49571 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1LWB6H convert rfc822-to-8bit (ORCPT
+	id S1753659Ab1LWCL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 21:11:56 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45119 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1LWCLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 20:58:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="89599943"
-From: "Zhang, MingmingX" <mingmingx.zhang@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: [patch] intel_idle: Delete meaningless local_irq_disable() call in
- intel_idle.c.
-Thread-Topic: [patch] intel_idle: Delete meaningless local_irq_disable()
- call in intel_idle.c.
-Thread-Index: AczBFjcRDOo6L3jXTgmGTWkdu/X0vg==
-Date: Fri, 23 Dec 2011 01:57:29 +0000
-Message-ID: <25CAFE86FAAED24C90F0AC30DBE9995381BD@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: Cegq EDlW EEaF ETyv FQ0w G+tj HnQD IWWb JOvz MFR0 Mvrz
- NCfj NzGP N6BF Ps2X
- Q5au;2;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHkAYQBuAG0AaQBuAF8AegBoAGEAbgBnAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{1C985E25-1B80-491E-A66C-4C1EDAA6711A};bQBpAG4AZwBtAGkAbgBnAHgALgB6AGgAYQBuAGcAQABpAG4AdABlAGwALgBjAG8AbQA=;Fri,
- 23 Dec 2011 01:57:24
- GMT;WwBwAGEAdABjAGgAXQAgAGkAbgB0AGUAbABfAGkAZABsAGUAOgAgAEQAZQBsAGUAdABlACAAbQBlAGEAbgBpAG4AZwBsAGUAcwBzACAAbABvAGMAYQBsAF8AaQByAHEAXwBkAGkAcwBhAGIAbABlACgAKQAgAGMAYQBsAGwAIABpAG4AIABpAG4AdABlAGwAXwBpAGQAbABlAC4AYwAuAA==
-x-cr-puzzleid: {1C985E25-1B80-491E-A66C-4C1EDAA6711A}
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Dec 2011 21:11:52 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6568"; a="149427904"
+Message-ID: <4EF3E35F.6090502@codeaurora.org>
+Date: Thu, 22 Dec 2011 18:11:43 -0800
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, srostedt@redhat.com,
+        khilman@ti.com, linux-arm-msm@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Very sparse and high interrupt map with SPARSE_IRQ
+References: <4EEA6435.5040207@codeaurora.org> <4EEA8192.7050306@gmail.com>
+In-Reply-To: <4EEA8192.7050306@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: mzha38X <mingmingx.zhang@intel.com>
+On 12/15/2011 3:24 PM, Rob Herring wrote:
+> Have you looked at irq_domain (kernel/irq/irqdomain.c). This is meant to
+> support complex mappings like this. Although in its current form it
+> needs some work to support this. Is there no sub-grouping of interrupts
+> at all?
+>
+> The hwirq # is stored in irq_data, so converting from Linux irq to hwirq
+> # is O(1). Going the other way is implemented per domain and would
+> depend on the implementation of .to_irq.
 
-intel_idle.c is a bit misleading in a sense that local_irq_disable,it
-actually does nothing. Real irq disable happens earlier in process_32.c:cpu_idle.
-Basically, cpuidle_state->enter is called, cpu irq is disabled.
-cpuidle_state->enter would turn on irq when exiting.
+Thanks for the advice. The chip driver houses a number of devices shared 
+over a SPMI bus. The SPMI bus supports up to 16 slave IDs, and each 
+slave can have 256 devices. Each device can have up to 8 interrupts.
 
-intel_idle doesn't follow this assumption. Although it doesn't
-cause real issue, it misleads developers. Below patch deletes
-the calling to local_irq_disable() at entry.
+So this is pretty easy to support with irq_domains if we treat all 32768 
+interrupts as one domain and allow the chip driver to own the entire 
+32768 block of interrupts. Each translation is merely a O(1) calculation 
+as you mentioned. And with SPARSE_IRQ, we only allocate the interrupts 
+we use on the bus, and so there's very little cost associated with the 
+large number of interrupts.
 
-Signed-off-by: mzha38X <mingmingx.zhang@intel.com>
----
- drivers/idle/intel_idle.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Were you thinking of supporting these sub-groups (eg. group of devices) 
+in separate irq_domains? I'm somewhat curious if there's future work 
+planned around this area. As it currently stands, it seems like this 
+would only complicate things.
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 5d2f8e1..28f0394 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -247,8 +247,6 @@ static int intel_idle(struct cpuidle_device *dev,
- 
- 	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
- 
--	local_irq_disable();
--
- 	/*
- 	 * leave_mm() to avoid costly and often unnecessary wakeups
- 	 * for flushing the user TLB's associated with the active mm.
+There is one issue that needs to be resolved in order to support even 
+one irq_domain with this configuration. The problem is that we allocate 
+irq_descs dynamically based on Device Tree information, and so 
+irq_domain_add() needs to be modified to support this. In fact, there's 
+even a comment in the function regarding this limitation. There's two 
+problems with the implementation of irq_domain_add() for my usage:
+
+1. It assumes irq_descs are already allocated. In my case, I would like 
+to add the irq_domain at init time through of_irq_init(). But the actual 
+descriptors are not allocated until much later.
+
+2. It assumes that every hw_irq is available within the range of 
+interrupts the domain manages, which is not true in my case. In my case, 
+they are truly sparse.
+
+Thus I am proposing we have a more simple irq_domain_add() function that 
+solely adds the irq_domain to the list. Then we can create registration 
+interface that does the extra initialization for the irq_data of each 
+specified hw_irq. What do you think about this? I can submit a patch if 
+others think this is reasonable.
+
+Thanks,
+Mike
+
 -- 
-1.7.1
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
