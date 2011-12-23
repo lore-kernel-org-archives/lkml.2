@@ -1,56 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab1LWEHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 23:07:13 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46706 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab1LWEHJ (ORCPT
+	id S1756397Ab1LWELi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 23:11:38 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40451 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab1LWELh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 23:07:09 -0500
-Message-ID: <4EF3FE64.4070102@linux.vnet.ibm.com>
-Date: Fri, 23 Dec 2011 12:07:00 +0800
+	Thu, 22 Dec 2011 23:11:37 -0500
+Message-ID: <4EF3FF6A.8030505@linux.vnet.ibm.com>
+Date: Fri, 23 Dec 2011 12:11:22 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 8/8] KVM: MMU: remove PT64_SECOND_AVAIL_BITS_SHIFT
-References: <4EEB19AF.5070501@linux.vnet.ibm.com> <4EEB1AFB.1090806@linux.vnet.ibm.com> <4EEDC396.8090600@redhat.com>
-In-Reply-To: <4EEDC396.8090600@redhat.com>
+Subject: Re: [PATCH 1/8] KVM: MMU: combine unsync and unsync_children
+References: <4EEB19AF.5070501@linux.vnet.ibm.com> <4EEB19D6.60101@linux.vnet.ibm.com> <20111222160641.GA7125@amt.cnet>
+In-Reply-To: <20111222160641.GA7125@amt.cnet>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 11122304-9574-0000-0000-000000A2E77E
+x-cbid: 11122304-2674-0000-0000-000002BB66DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2011 06:42 PM, Avi Kivity wrote:
+On 12/23/2011 12:06 AM, Marcelo Tosatti wrote:
 
-> On 12/16/2011 12:18 PM, Xiao Guangrong wrote:
->> It is not used, remove it
+> On Fri, Dec 16, 2011 at 06:13:42PM +0800, Xiao Guangrong wrote:
+>> unsync is only used for the page of level == 1 and unsync_children is only
+>> used in the upper page, so combine them to reduce the size of shadow page
+>> structure
 >>
 >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 >> ---
->>  arch/x86/kvm/mmu.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>  Documentation/virtual/kvm/mmu.txt |    5 ++-
+>>  arch/x86/include/asm/kvm_host.h   |   14 +++++++++++-
+>>  arch/x86/kvm/mmu.c                |   39 +++++++++++++++++++++++++-----------
+>>  arch/x86/kvm/mmu_audit.c          |    6 ++--
+>>  arch/x86/kvm/mmutrace.h           |    3 +-
+>>  arch/x86/kvm/paging_tmpl.h        |    2 +-
+>>  6 files changed, 48 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
+>> index 5dc972c..4a5fedd 100644
+>> --- a/Documentation/virtual/kvm/mmu.txt
+>> +++ b/Documentation/virtual/kvm/mmu.txt
+>> @@ -205,14 +205,15 @@ Shadow pages contain the following information:
+>>      this page's spt.  Otherwise, parent_ptes points at a data structure
+>>      with a list of parent_ptes.
+>>    unsync:
+>> +    It is used when role.level == 1, only level 1 shadow pages can be unsync.
+>>      If true, then the translations in this page may not match the guest's
+>>      translation.  This is equivalent to the state of the tlb when a pte is
+>>      changed but before the tlb entry is flushed.  Accordingly, unsync ptes
+>>      are synchronized when the guest executes invlpg or flushes its tlb by
+>>      other means.  Valid for leaf pages.
+>>    unsync_children:
+>> -    How many sptes in the page point at pages that are unsync (or have
+>> -    unsynchronized children).
+>> +    It is used when role.level > 1 and indicates how many sptes in the page
+>> +    point at unsync pages or unsynchronized children.
+>>    unsync_child_bitmap:
+>>      A bitmap indicating which sptes in spt point (directly or indirectly) at
+>>      pages that may be unsynchronized.  Used to quickly locate all unsychronized
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 52d6640..c0a89cd 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -233,9 +233,19 @@ struct kvm_mmu_page {
+>>  	 * in this shadow page.
+>>  	 */
+>>  	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
+>> -	bool unsync;
+>>  	int root_count;          /* Currently serving as active root */
+>> -	unsigned int unsync_children;
+>> +
+>> +	/*
+>> +	 * If role.level == 1, unsync indicates whether the sp is
+>> +	 * unsync, otherwise unsync_children indicates the number
+>> +	 * of sptes which point at unsync sp or unsychronized children.
+>> +	 * See sp_is_unsync() / sp_unsync_children_num.
+>> +	 */
+>> +	union {
+>> +		bool unsync;
+>> +		unsigned int unsync_children;
+>> +	};
+>> +
+>>  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+>>  	DECLARE_BITMAP(unsync_child_bitmap, 512);
 >>
 >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 5d0f0e3..234a32e 100644
+>> index 2a2a9b4..6913a16 100644
 >> --- a/arch/x86/kvm/mmu.c
 >> +++ b/arch/x86/kvm/mmu.c
->> @@ -91,7 +91,6 @@ module_param(dbg, bool, 0644);
->>  #define PTE_PREFETCH_NUM		8
+>> @@ -151,6 +151,21 @@ module_param(dbg, bool, 0644);
 >>
->>  #define PT_FIRST_AVAIL_BITS_SHIFT 9
->> -#define PT64_SECOND_AVAIL_BITS_SHIFT 52
+>>  #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
 >>
->>
+>> +static bool sp_is_unsync(struct kvm_mmu_page *sp)
+>> +{
+>> +	return sp->role.level == PT_PAGE_TABLE_LEVEL && sp->unsync;
+>> +}
+>> +
+>> +static unsigned int sp_unsync_children_num(struct kvm_mmu_page *sp)
+>> +{
+>> +	unsigned int num = 0;
+>> +
+>> +	if (sp->role.level != PT_PAGE_TABLE_LEVEL)
+>> +		num = sp->unsync_children;
+>> +
+>> +	return num;
+>> +}
 > 
-> Don't see a reason to drop it, we may use it some day.
+> IIRC there are windows where unsync_children is not accurate. Have you 
+> verified this function is not called inside one of those windows?
 > 
 
 
-Anyway, it is not used in currently code, I do not have strong opinion on it :)
-Please ignore it if you do not like.
+Actually, this function is only used to see whether the sp has unsync children
+in current code.
+
+And this patch did not change the logic, it just use sp_unsync_children_num
+instead of using sp->unsync_children directly.
 
