@@ -1,123 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab1LWQRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 11:17:13 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:7146
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754184Ab1LWQRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 11:17:11 -0500
-X-SpamScore: -16
-X-BigFish: VPS-16(zz936eK1432N98dK4015Lzz1202hzz8275bh8275dhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LWNZWI-02-6Y0-02
-X-M-MSG: 
-Date: Fri, 23 Dec 2011 17:17:01 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
- samples
-Message-ID: <20111223161701.GF16765@erda.amd.com>
-References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
- <1323969824-9711-5-git-send-email-robert.richter@amd.com>
- <20111223103329.GC4749@elte.hu>
- <20111223111958.GE16765@erda.amd.com>
- <20111223135340.GB21382@elte.hu>
- <1324649698.24803.55.camel@twins>
- <20111223144040.GB2297@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111223144040.GB2297@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1757433Ab1LWQTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 11:19:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42223 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753557Ab1LWQTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 11:19:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="89790074"
+Subject: Re: [PATCH] intel_mid_dma: remove legacy pm interface
+From: Vinod Koul <vinod.koul@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20111215223225.10295.40514.stgit@bob.linux.org.uk>
+References: <20111215223225.10295.40514.stgit@bob.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Dec 2011 21:49:14 +0530
+Message-ID: <1324657154.1633.21.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.12.11 15:40:40, Ingo Molnar wrote:
+On Thu, 2011-12-15 at 22:32 +0000, Alan Cox wrote:
+> From: Kristen Carlson Accardi <kristen@linux.intel.com>
 > 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+> Drivers should not support both legacy pm and new framework.
+Not really.
+
+I am using this driver in our system where we go to D0i3 aka
+runtime_suspend when DMA is idle.
+Also we goto D3/S3 aka when traditional suspend is invoked.
+
+So we need both.
 > 
-> > On Fri, 2011-12-23 at 14:53 +0100, Ingo Molnar wrote:
-> > > * Robert Richter <robert.richter@amd.com> wrote:
-> > > 
-> > > > > Also, could you quote example output of "perf script report 
-> > > > > ibs"?
-> > > > 
-> > > > IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x0000000000444780 IBS2:0x000000041af26780
-> > > > IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x00007f5efb44e3b2 IBS2:0x000000042fcff3b2
-> > > > IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065273 IBS2:0x0000000001065273
-> > > > IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff811a6320 IBS2:0x00000000011a6320
-> > > > IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065255 IBS2:0x0000000001065255
-> > > > IBS_FETCH sample on cpu7	IBS0: 0x00170004186a186a IBS1: 0x00007fbf0c687ca0 IBS2:0x000000041d345ca0
-> > > > IBS_FETCH sample on cpu7	IBS0: 0x00170003186a186a IBS1: 0x000000000043bb80 IBS2:0x000000041c351b80
-> > > > IBS_FETCH sample on cpu7	IBS0: 0x01370003186a186a IBS1: 0xffffffff813d5790 IBS2:0x00000000013d5790
-> > > > IBS_FETCH sample on cpu7	IBS0: 0x00030001186a186a IBS1: 0xffffffff8102bd00 IBS2:0x00000000013d5d00
-> > > 
-> > > That does not look very usable to users. So why should we merge 
-> > > this new ABI in its incomplete form with no complete usecase? 
-> > > Being usable is clearly not outside the scope of a new feature 
-> > > ...
+> Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+>  drivers/dma/intel_mid_dma.c      |   12 +++++++-----
+>  drivers/dma/intel_mid_dma_regs.h |    2 +-
+>  2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> 
+> diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+> index 01929ed..d67cecf 100644
+> --- a/drivers/dma/intel_mid_dma.c
+> +++ b/drivers/dma/intel_mid_dma.c
+> @@ -868,7 +868,7 @@ static int intel_mid_dma_alloc_chan_resources(struct dma_chan *chan)
+>  	pm_runtime_get_sync(&mid->pdev->dev);
+>  
+>  	if (mid->state == SUSPENDED) {
+> -		if (dma_resume(mid->pdev)) {
+> +		if (dma_resume(&mid->pdev->dev)) {
+>  			pr_err("ERR_MDMA: resume failed");
+>  			return -EFAULT;
+>  		}
+> @@ -1337,8 +1337,9 @@ static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
+>  *
+>  * This function is called by OS when a power event occurs
+>  */
+> -int dma_suspend(struct pci_dev *pci, pm_message_t state)
+> +int dma_suspend(struct device *dev)
+>  {
+> +	struct pci_dev *pci = to_pci_dev(dev);
+>  	int i;
+>  	struct middma_device *device = pci_get_drvdata(pci);
+>  	pr_debug("MDMA: dma_suspend called\n");
+> @@ -1362,8 +1363,9 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
+>  *
+>  * This function is called by OS when a power event occurs
+>  */
+> -int dma_resume(struct pci_dev *pci)
+> +int dma_resume(struct device *dev)
+>  {
+> +	struct pci_dev *pci = to_pci_dev(dev);
+>  	int ret;
+>  	struct middma_device *device = pci_get_drvdata(pci);
+>  
+> @@ -1429,6 +1431,8 @@ static const struct dev_pm_ops intel_mid_dma_pm = {
+>  	.runtime_suspend = dma_runtime_suspend,
+>  	.runtime_resume = dma_runtime_resume,
+>  	.runtime_idle = dma_runtime_idle,
+> +	.suspend = dma_suspend,
+> +	.resume = dma_resume,
+>  };
+>  
+>  static struct pci_driver intel_mid_dma_pci_driver = {
+> @@ -1437,8 +1441,6 @@ static struct pci_driver intel_mid_dma_pci_driver = {
+>  	.probe		=	intel_mid_dma_probe,
+>  	.remove		=	__devexit_p(intel_mid_dma_remove),
+>  #ifdef CONFIG_PM
+> -	.suspend = dma_suspend,
+> -	.resume = dma_resume,
+>  	.driver = {
+>  		.pm = &intel_mid_dma_pm,
+>  	},
+> diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
+> index c6de919..c83d35b 100644
+> --- a/drivers/dma/intel_mid_dma_regs.h
+> +++ b/drivers/dma/intel_mid_dma_regs.h
+> @@ -296,6 +296,6 @@ static inline struct intel_mid_dma_slave *to_intel_mid_dma_slave
+>  }
+>  
+> 
+> -int dma_resume(struct pci_dev *pci);
+> +int dma_resume(struct device *dev);
+>  
+>  #endif /*__INTEL_MID_DMAC_REGS_H__*/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So is it not useful to pull ibs data with native perf tools to
-userspace? Is it not useful to have a dump of the raw data too? Is it
-not useful to have perf script support that allows user to easy
-implement their own script to parse the data they are interested in?
-IBS is for experienced users, even I don't know *everything* about
-what this data can be used for, but I know people who know it. And
-they want to get this data out of the kernel, using the perf_event
-syscall. Maybe they also improve the perf tool with their knowledge.
-
-Oprofile also has support for IBS in a very raw way, and there are
-users for it. Remember, there are also plans to rewrite the oprofile
-daemon to use perf_event. If there isn't any confidence that
-perf_event will get the same features so it can be used for this,
-people might better stick with that what they have.
-
-> > > Integrating it into perf report should not be *that* hard, 
-> > > you've done most of the hard work already. But without that 
-> > > step we just don't know how complete and usable the whole 
-> > > thing is.
-
-We don't need a feature complete (which features?) implementation to
-see use cases for this. AFAIK there is no doubt anymore about the
-user/kernel interface implementation. So your argument is
-questionable. If you look at other kernel features (also other perf
-features) and how they got in, most of them are not perfect in the
-beginning.
-
-We also should give others the opportunity to actually use IBS, to
-give feedback, to improve the tools, to work with it. Most of the
-current patches wont change anymore, the code is ready. As long as the
-code is not in the repostitory it is much harder for people to work
-with it. They usually don't deal with some patches flying around.
-
-We waste our time with reposting, reviewing (people seem to no longer
-do this, because they are tiered), rebasing it, testing it. Do you
-fear we stop working to improve the code as soon as you applied the
-patches?  Have you ever had this feeling in the past? We invest a high
-amount of time in all this, please let us know if this is not worth
-the effort. Almost 2 years ago I posted my first IBS patches for
-perf...
-
-And, is the kernel ever ready? There is no completion at all. There is
-an onging development in small steps. I don't see why you demand this
-100%-fits-for-all-usecases solution, that you also don't know much
-about. There isn't one, and there wont be any. Relax your position
-that everything must be there in the beginning.
-
-To me these are reasons enough to merge it.
-
-Thanks,
-
--Robert
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+~Vinod
 
