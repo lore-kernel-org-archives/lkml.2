@@ -1,178 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1LVOQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 09:16:04 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39635 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab1LVOP6 (ORCPT
+	id S1752718Ab1LVOYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 09:24:12 -0500
+Received: from eastrmfepo101.cox.net ([68.230.241.213]:58562 "EHLO
+	eastrmfepo101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab1LVOYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 09:15:58 -0500
-Message-ID: <1324563353.2153.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference in
- ipv6_select_ident
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Boot <bootc@bootc.net>, David Miller <davem@davemloft.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Date: Thu, 22 Dec 2011 15:15:53 +0100
-In-Reply-To: <4EF300B2.3050903@bootc.net>
-References: <4EF200BB.7000209@bootc.net>
-	   <1324484956.2301.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	   <4EF2117F.6000803@bootc.net>
-	   <1324488984.2301.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	   <1324490401.2301.46.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	   <4EF23BF2.4000601@bootc.net> <1324499332.2621.7.camel@edumazet-laptop>
-	  <1324500775.2621.9.camel@edumazet-laptop> <4EF2568C.6040006@bootc.net>
-	  <AEC29013-98F3-4A16-A88B-AD31C9E88EB8@bootc.net>
-	 <1324528656.2621.19.camel@edumazet-laptop> <4EF300B2.3050903@bootc.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 22 Dec 2011 09:24:10 -0500
+X-CT-Class: Confirmed
+X-CT-Score: 6.00
+X-CT-RefID: str=0001.0A020202.4EF33D87.0199,ss=1,re=0.000,pt=F_5163247,fgs=0
+X-CT-Spam: 1
+X-Authority-Analysis: v=1.1 cv=xZ0IfZp1qocGLlQbKHUgH7d1CbqFTnA6tCdoZ3AJUC0=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=pmmJzn9lv_AA:10 a=kkpj74WWH24A:10
+ a=Cfj4BQAnxiAA:10 a=FVjZWJw6JIKUZSux6OgcyA==:17 a=N2tZB_vlNSqhOrDYJs0A:9
+ a=Ft8UYL4EG9YA:10 a=PlEgLZ5pJJg83J1Q:21 a=pu_tvKHHRqQg9fK4:21
+ a=FVjZWJw6JIKUZSux6OgcyA==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=alo800@cox.net
+Reply-To: <chv12@bitscn.net>
+From: "Chevron Texaco & Co" <info@chv.com>
+Subject: Re
+Date: Thu, 22 Dec 2011 22:24:06 -0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20111222142408.ICFY24648.eastrmfepo101.cox.net@eastrmimpo209.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 22 décembre 2011 à 10:04 +0000, Chris Boot a écrit :
-
-> Eric,
-> 
-> So far so good. I've had this running for several hours this morning 
-> with more of the prodding that would normally have crashed it, both IPv4 
-> and IPv6, and it's holding up well.
-> 
-
-Thanks for testing.
-
-Here is the official patch then (the .mtu() bit belongs to a separate
-patch)
-
-[PATCH] net: introduce DST_NOPEER dst flag
-
-Chris Boot reported crashes occurring in ipv6_select_ident().
-
-[  461.457562] RIP: 0010:[<ffffffff812dde61>]  [<ffffffff812dde61>] 
-ipv6_select_ident+0x31/0xa7
-
-[  461.578229] Call Trace:
-[  461.580742] <IRQ>
-[  461.582870]  [<ffffffff812efa7f>] ? udp6_ufo_fragment+0x124/0x1a2
-[  461.589054]  [<ffffffff812dbfe0>] ? ipv6_gso_segment+0xc0/0x155
-[  461.595140]  [<ffffffff812700c6>] ? skb_gso_segment+0x208/0x28b
-[  461.601198]  [<ffffffffa03f236b>] ? ipv6_confirm+0x146/0x15e 
-[nf_conntrack_ipv6]
-[  461.608786]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.614227]  [<ffffffff81271d64>] ? dev_hard_start_xmit+0x357/0x543
-[  461.620659]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.626440]  [<ffffffffa0379745>] ? br_parse_ip_options+0x19a/0x19a 
-[bridge]
-[  461.633581]  [<ffffffff812722ff>] ? dev_queue_xmit+0x3af/0x459
-[  461.639577]  [<ffffffffa03747d2>] ? br_dev_queue_push_xmit+0x72/0x76 
-[bridge]
-[  461.646887]  [<ffffffffa03791e3>] ? br_nf_post_routing+0x17d/0x18f 
-[bridge]
-[  461.653997]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.659473]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.665485]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.671234]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.677299]  [<ffffffffa0379215>] ? 
-nf_bridge_update_protocol+0x20/0x20 [bridge]
-[  461.684891]  [<ffffffffa03bb0e5>] ? nf_ct_zone+0xa/0x17 [nf_conntrack]
-[  461.691520]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.697572]  [<ffffffffa0374812>] ? NF_HOOK.constprop.8+0x3c/0x56 
-[bridge]
-[  461.704616]  [<ffffffffa0379031>] ? 
-nf_bridge_push_encap_header+0x1c/0x26 [bridge]
-[  461.712329]  [<ffffffffa037929f>] ? br_nf_forward_finish+0x8a/0x95 
-[bridge]
-[  461.719490]  [<ffffffffa037900a>] ? 
-nf_bridge_pull_encap_header+0x1c/0x27 [bridge]
-[  461.727223]  [<ffffffffa0379974>] ? br_nf_forward_ip+0x1c0/0x1d4 [bridge]
-[  461.734292]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.739758]  [<ffffffffa03748cc>] ? __br_deliver+0xa0/0xa0 [bridge]
-[  461.746203]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.751950]  [<ffffffffa03748cc>] ? __br_deliver+0xa0/0xa0 [bridge]
-[  461.758378]  [<ffffffffa037533a>] ? NF_HOOK.constprop.4+0x56/0x56 
-[bridge]
-
-This is caused by bridge netfilter special dst_entry (fake_rtable), a
-special shared entry, where attaching an inetpeer makes no sense.
-
-Problem is present since commit 87c48fa3b46 (ipv6: make fragment
-identifications less predictable)
-
-Introduce DST_NOPEER dst flag and make sure ipv6_select_ident() and
-__ip_select_ident() fallback to the 'no peer attached' handling.
-
-Reported-by: Chris Boot <bootc@bootc.net>
-Tested-by: Chris Boot <bootc@bootc.net>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- include/net/dst.h         |    1 +
- net/bridge/br_netfilter.c |    2 +-
- net/ipv4/route.c          |    4 ++--
- net/ipv6/ip6_output.c     |    2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 6faec1a..75766b4 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -53,6 +53,7 @@ struct dst_entry {
- #define DST_NOHASH		0x0008
- #define DST_NOCACHE		0x0010
- #define DST_NOCOUNT		0x0020
-+#define DST_NOPEER		0x0040
- 
- 	short			error;
- 	short			obsolete;
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index d6ec372..5693e5f 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -141,7 +141,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
- 	rt->dst.dev = br->dev;
- 	rt->dst.path = &rt->dst;
- 	dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
--	rt->dst.flags	= DST_NOXFRM;
-+	rt->dst.flags	= DST_NOXFRM | DST_NOPEER;
- 	rt->dst.ops = &fake_dst_ops;
- }
- 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 252c512..a5004f1 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1366,7 +1366,7 @@ void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more)
- {
- 	struct rtable *rt = (struct rtable *) dst;
- 
--	if (rt) {
-+	if (rt && !(rt->dst.flags & DST_NOPEER)) {
- 		if (rt->peer == NULL)
- 			rt_bind_peer(rt, rt->rt_dst, 1);
- 
-@@ -1377,7 +1377,7 @@ void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more)
- 			iph->id = htons(inet_getid(rt->peer, more));
- 			return;
- 		}
--	} else
-+	} else if (!rt)
- 		printk(KERN_DEBUG "rt_bind_peer(0) @%p\n",
- 		       __builtin_return_address(0));
- 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 84d0bd5..ec56271 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -603,7 +603,7 @@ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- 	static atomic_t ipv6_fragmentation_id;
- 	int old, new;
- 
--	if (rt) {
-+	if (rt && !(rt->dst.flags & DST_NOPEER)) {
- 		struct inet_peer *peer;
- 
- 		if (!rt->rt6i_peer)
-
-
+You have been selected in the on-going chevron texaco award that was held successfully. in this view you are to collect the sum of one million pounds. you are
+a grand winner.grant number. (CT-222-6747,FGN/P-900-56).Kindly fill the below datas.
+Full Names,
+Full Addresss,
+Sex,
+Phone Number,
+Occupation,
+Nationality,
+Age,
+Country.
+Contact claims agent with below info.
+Clark Page
+Thanks Sharon Johnson 
+Promo Announcer
