@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab1LWKtt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 05:49:49 -0500
-Received: from mga14.intel.com ([143.182.124.37]:44228 "EHLO mga14.intel.com"
+	id S1756698Ab1LWKxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 05:53:45 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42779 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756680Ab1LWKtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 05:49:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="88892784"
-Date: Fri, 23 Dec 2011 18:49:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Curt Wohlgemuth <curtw@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [GIT PULL] writeback tracing fix for 3.2-rc7
-Message-ID: <20111223104943.GA5639@localhost>
+	id S1756635Ab1LWKxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 05:53:40 -0500
+Date: Fri, 23 Dec 2011 11:51:28 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: Mathieu Desnoyers <compudj@krystal.dyndns.org>, Greg KH <greg@kroah.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <20111223105128.GF4749@elte.hu>
+References: <1322780830.4699.62.camel@twins>
+ <20111201231751.GA4961@kroah.com>
+ <20111205141749.GC28866@elte.hu>
+ <20111206214446.GD1247@kroah.com>
+ <20111208052354.GC9485@elte.hu>
+ <20111208232709.GA19820@kroah.com>
+ <20111219104915.GA19861@elte.hu>
+ <20111219153053.GA21548@Krystal>
+ <20111220110813.GA19105@elte.hu>
+ <4EF10237.8040700@am.sony.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EF10237.8040700@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Here's one trivial writeback tracing fix with signed tag
+* Frank Rowand <frank.rowand@am.sony.com> wrote:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git
+> On 12/20/11 03:08, Ingo Molnar wrote:
+> > 
+> > (Cc:-ing Arnaldo on this as well.)
+> > 
+> > * Mathieu Desnoyers <compudj@krystal.dyndns.org> wrote:
+> > 
+> 
+> < snip >
+> 
+> > I think your concentration on ABIs is missing a very fundamental 
+> > property of instrumentation:
+> > 
+> >   the life-time and persistence of instrumentation data is 
+> >   typically very short ('days' is already an exception - typical 
+> >   is minutes, at most hours), and for that reason we havent been 
+> >   getting much pressure from users to maintain a perf.data ABI - 
+> >   but we are doing it nevertheless.
+> > 
+> > Instrumentation is fundamentally about the 'here and now' and so 
+> > it fundamentally differs from things like backup formats and 
+> > database formats. An ABI does not hurt and we are maintaining 
+> > it, but you are overrating its importance significantly.
+> 
+> Just to provide visibility to a different use case...
+> 
+> The life time of my data is typically weeks, months, or years 
+> (though I am not likely to re-process year old raw data).
 
- * [new tag]         writeback -> writeback
+I'm not saying that it's absolutely never done: for example 
+monitoring/logging on a production box and evaluating events 
+only once per month would certainly qualify.
+
+I just say that the overwhelming majority of usecases utilize 
+traces on a short time-span and that we must keep the common 
+usecase in mind when supporting not so common usecases.
+
+It's the same deal as with -rt: compared to the 'normal' usage 
+of Linux -rt is somewhat of a special case - yet it's still 
+something very much worth doing, as long as the main usecase is 
+always kept in mind.
 
 Thanks,
-Fengguang
----
 
-The following changes since commit 384703b8e6cd4c8ef08512e596024e028c91c339:
-
-  Linux 3.2-rc6 (2011-12-16 18:36:26 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git writeback-for-linus
-
-Wu Fengguang (1):
-      writeback: show writeback reason with __print_symbolic
-
- fs/fs-writeback.c                |   11 -----------
- include/trace/events/writeback.h |   15 +++++++++++++--
- 2 files changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index ac86f8b..517f211 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -47,17 +47,6 @@ struct wb_writeback_work {
- 	struct completion *done;	/* set if the caller waits */
- };
- 
--const char *wb_reason_name[] = {
--	[WB_REASON_BACKGROUND]		= "background",
--	[WB_REASON_TRY_TO_FREE_PAGES]	= "try_to_free_pages",
--	[WB_REASON_SYNC]		= "sync",
--	[WB_REASON_PERIODIC]		= "periodic",
--	[WB_REASON_LAPTOP_TIMER]	= "laptop_timer",
--	[WB_REASON_FREE_MORE_MEM]	= "free_more_memory",
--	[WB_REASON_FS_FREE_SPACE]	= "fs_free_space",
--	[WB_REASON_FORKER_THREAD]	= "forker_thread"
--};
--
- /*
-  * Include the creation of the trace points after defining the
-  * wb_writeback_work structure so that the definition remains local to this
-diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
-index b99caa8..99d1d0d 100644
---- a/include/trace/events/writeback.h
-+++ b/include/trace/events/writeback.h
-@@ -21,6 +21,16 @@
- 		{I_REFERENCED,		"I_REFERENCED"}		\
- 	)
- 
-+#define WB_WORK_REASON							\
-+		{WB_REASON_BACKGROUND,		"background"},		\
-+		{WB_REASON_TRY_TO_FREE_PAGES,	"try_to_free_pages"},	\
-+		{WB_REASON_SYNC,		"sync"},		\
-+		{WB_REASON_PERIODIC,		"periodic"},		\
-+		{WB_REASON_LAPTOP_TIMER,	"laptop_timer"},	\
-+		{WB_REASON_FREE_MORE_MEM,	"free_more_memory"},	\
-+		{WB_REASON_FS_FREE_SPACE,	"fs_free_space"},	\
-+		{WB_REASON_FORKER_THREAD,	"forker_thread"}
-+
- struct wb_writeback_work;
- 
- DECLARE_EVENT_CLASS(writeback_work_class,
-@@ -55,7 +65,7 @@ DECLARE_EVENT_CLASS(writeback_work_class,
- 		  __entry->for_kupdate,
- 		  __entry->range_cyclic,
- 		  __entry->for_background,
--		  wb_reason_name[__entry->reason]
-+		  __print_symbolic(__entry->reason, WB_WORK_REASON)
- 	)
- );
- #define DEFINE_WRITEBACK_WORK_EVENT(name) \
-@@ -184,7 +194,8 @@ TRACE_EVENT(writeback_queue_io,
- 		__entry->older,	/* older_than_this in jiffies */
- 		__entry->age,	/* older_than_this in relative milliseconds */
- 		__entry->moved,
--		wb_reason_name[__entry->reason])
-+		__print_symbolic(__entry->reason, WB_WORK_REASON)
-+	)
- );
- 
- TRACE_EVENT(global_dirty_state,
+	Ingo
