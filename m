@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab1LWTIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 14:08:30 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43863 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753655Ab1LWTI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 14:08:28 -0500
-Date: Fri, 23 Dec 2011 11:08:19 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nai Xia <nai.xia@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
- own LRU
-In-Reply-To: <20111220095544.GP3487@suse.de>
-Message-ID: <alpine.LSU.2.00.1112231039030.17640@eggly.anvils>
-References: <1323877293-15401-1-git-send-email-mgorman@suse.de> <1323877293-15401-12-git-send-email-mgorman@suse.de> <20111217160822.GA10064@barrios-laptop.redhat.com> <20111219132615.GL3487@suse.de> <20111220071026.GA19025@barrios-laptop.redhat.com>
- <20111220095544.GP3487@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757660Ab1LWTlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 14:41:06 -0500
+Received: from mail.snarked.org ([67.43.172.250]:36781 "EHLO mail.snarked.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757644Ab1LWTlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 14:41:04 -0500
+X-Envelope-From: <newsserv> (mail.snarked.org)
+To: linux-kernel@vger.kernel.org
+From: "D. Stussy" <spam+newsgroups@bde-arc.ampr.org>
+Newsgroups: linux.kernel
+Subject: Re: Possible logic bug in SATA driver. [Follow-up]
+Date: Fri, 23 Dec 2011 11:41:02 -0800
+Message-ID: <jd2lgd$648$1@snarked.org>
+References: <i9S0p-6Tc-3@gated-at.bofh.it>
+Reply-To: "D. Stussy" <replies+newsgroups@kd6lvw.ampr.org>
+X-No-Archive: Yes
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1478
+X-Priority: 3
+X-Newsreader: Microsoft Outlook Express 6.00.2800.1478
+X-MSMail-Priority: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, Mel, I've had to revert this patch (and its two little children)
-from my 3.2.0-rc6-next-20111222 testing: you really do need a page flag
-(or substitute) for your "immediate" lru.
+"D. Stussy" <spam+newsgroups@bde-arc.ampr.org> wrote in message
+news:i9S0p-6Tc-3@gated-at.bofh.it...
+> Syslog:
+> kernel: ata1: illegal qc_active transition (3fffffff->fffffffe)
 
-How else can a del_page_from_lru[_list]() know whether to decrement
-the count of the immediate or the inactive list?  page_lru() says to
-decrement the count of the inactive list, so in due course that wraps
-to a gigantic number, and then page reclaim livelocks trying to wring
-pages out of an empty list.  It's the memcg case I've been hitting,
-but presumably the same happens with global counts.
+I found this message in the SATA driver, in libata.c
 
-There is another such accounting bug in -next, been there longer and
-not so easy to hit: I'm fairly sure it will turn out to be memcg
-misaccounting a THPage somewhere, I'll have a look around shortly.
+It has gotten worse in 3.1.6.  I have downgraded to 3.0.14 and have yet to
+see it.  Therefore, I suspect one of the changes in the 3.1 series is at
+falt, but haven't been able to identify which change yet.  For some reason,
+it only happens to my primary disk (/dev/sda) despite having an second,
+identical disk mounted on /dev/sdb.
 
-Hugh
+> When this happens, the filesystem on the offending disk is auto-remounted
+> as read-only.  Is this an indication of a bug in the ext4 filesystem or
+in
+> the SATA driver?
+>
+> I am seeing this bug with a 3.1.5 kernel compiled from source about every
+> 3-4 days.  Soft rebooting does not work; a hard reset is required.
+>
+> System:  AMD Opteron 4184 stepping 01 (6-core) 2.8GHz (2794.027 MHz)
+64-bit
+> MB:  Supermicro H8SCM-F / 32GB ECC Ram
+> HD:  ATA-8: ST32000644NS, SN11, max UDMA/133
+>      3907029168 sectors, multi 16: LBA48 NCQ (depth 31/32)
+>      (1.81 TB) SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+>      Write Protect is off / Mode Sense: 00 3a 00 00
+>      Write cache: enabled, read cache: enabled, doesn't support DPO or
+FUA
 
-p.s. Immediate?  Isn't that an odd name for a list of pages which are
-not immediately freeable?  Maybe Rik's launder/laundry name would be
-better: pages which are currently being cleaned.
+
