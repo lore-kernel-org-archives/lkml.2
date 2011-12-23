@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1LWA3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 19:29:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38195 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab1LWA3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 19:29:52 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the final tree (pm tree related)
-Date: Fri, 23 Dec 2011 01:32:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20111222162846.51beb2e1b6b5c6ff2378ad33@canb.auug.org.au>
-In-Reply-To: <20111222162846.51beb2e1b6b5c6ff2378ad33@canb.auug.org.au>
+	id S1756209Ab1LWAaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 19:30:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49696 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149Ab1LWAaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 19:30:04 -0500
+Date: Thu, 22 Dec 2011 16:29:44 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 2/2] cgroup: remove extra calls to find_existing_css_set
+Message-ID: <20111223002944.GK13529@google.com>
+References: <1324592816-13792-1-git-send-email-msb@chromium.org>
+ <1324592816-13792-2-git-send-email-msb@chromium.org>
+ <20111222231203.GO17084@google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112230132.58765.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222231203.GO17084@google.com>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 22, 2011, Stephen Rothwell wrote:
-> Hi ,
+Tejun Heo (tj@kernel.org) wrote:
+> On Thu, Dec 22, 2011 at 02:26:56PM -0800, Mandeep Singh Baines wrote:
+> > +out_list_teardown:
+> > +	if (retval) {
+> > +		for (i = 0; i < group_size; i++) {
+> > +			tc = flex_array_get(group, i);
+> > +			put_css_set(tc->cg);
+> > +		}
+> > +	}
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
+> Don't we need to put them even after success?
 > 
-> drivers/base/bus.o: In function `dev_pm_qos_add_ancestor_request':
-> bus.c:(.text+0x4c0): multiple definition of `dev_pm_qos_add_ancestor_request'
-> drivers/base/core.o:core.c:(.text+0x8ec): first defined here
-> drivers/base/dd.o: In function `dev_pm_qos_add_ancestor_request':
-> dd.c:(.text+0x418): multiple definition of `dev_pm_qos_add_ancestor_request'
-> drivers/base/core.o:core.c:(.text+0x8ec): first defined here
-> kernel/sysctl_binary.o: In function `dev_pm_qos_add_ancestor_request':
-> sysctl_binary.c:(.text+0x124): multiple definition of `dev_pm_qos_add_ancestor_request'
-> 
-> Caused by commit 513dcbda6199 ("PM / QoS: Introduce
-> dev_pm_qos_add_ancestor_request()") from the pm tree.
-> 
-> Please build with and without config options that protect new code ... :-(
 
-My bad, sorry.
+On success, we need to keep a reference for each thread in the threadgroup.
 
-This issue should be fixed in my linux-next branch now.
-
-Thanks,
-Rafael
+> -- 
+> tejun
