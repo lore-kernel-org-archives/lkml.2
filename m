@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab1LWMUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 07:20:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58213 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab1LWMUp (ORCPT
+	id S1756808Ab1LWM04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 07:26:56 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:35382 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753915Ab1LWM0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 07:20:45 -0500
+	Fri, 23 Dec 2011 07:26:53 -0500
+X-IronPort-AV: E=Sophos;i="4.71,398,1320620400"; 
+   d="scan'208";a="136607699"
+Date: Fri, 23 Dec 2011 13:26:49 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Lars-Peter Clausen <lars@metafoo.de>
+cc: Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, linux-kernel@vger.kernel.org,
+        cocci@diku.dk, mmarek@suse.cz
+Subject: Re: [Cocci] [PATCH 2/2] coccinelle: Add patch for replacing open-coded
+ IS_ERR_OR_NULL
+In-Reply-To: <4EF471ED.1030902@metafoo.de>
+Message-ID: <alpine.DEB.2.02.1112231325040.1834@localhost6.localdomain6>
+References: <1324301063-16117-1-git-send-email-lars@metafoo.de> <1324301063-16117-2-git-send-email-lars@metafoo.de> <alpine.DEB.2.02.1112202321220.1933@hadrien> <4EF1C7D3.7080301@metafoo.de> <alpine.DEB.2.02.1112211308290.1826@localhost6.localdomain6>
+ <4EF471ED.1030902@metafoo.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <015301ccc15f$053e61d0$0fbb2570$%szyprowski@samsung.com>
-References: <1323871214-25435-1-git-send-email-ming.lei@canonical.com>
-	<1323871214-25435-5-git-send-email-ming.lei@canonical.com>
-	<010501ccc08c$1c7b7870$55726950$%szyprowski@samsung.com>
-	<CACVXFVOqMmakPW-aAdp005RDLuV5oc6-JfjQHr-2bFRzZi2zDQ@mail.gmail.com>
-	<015201ccc156$033f73a0$09be5ae0$%szyprowski@samsung.com>
-	<CACVXFVNdczv=tu7VG24766myCnGDRWAjkthbdfMwTGzTwFCoBA@mail.gmail.com>
-	<015301ccc15f$053e61d0$0fbb2570$%szyprowski@samsung.com>
-Date: Fri, 23 Dec 2011 20:20:43 +0800
-Message-ID: <CACVXFVMrRTS7TUtj7bqCWeF4zx11yT6mOq4syOkZv=Ejoo0LMw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 4/8] media: videobuf2: introduce VIDEOBUF2_PAGE memops
-From: Ming Lei <ming.lei@canonical.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Pawel Osciak <p.osciak@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Fri, Dec 23, 2011 at 6:38 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
-> On Friday, December 23, 2011 10:51 AM Ming Lei wrote:
->
->> On Fri, Dec 23, 2011 at 5:34 PM, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
+
+On Fri, 23 Dec 2011, Lars-Peter Clausen wrote:
+
+> On 12/21/2011 01:10 PM, Julia Lawall wrote:
+>> On Wed, 21 Dec 2011, Lars-Peter Clausen wrote:
 >>
->> >> For example, on ARM, there is very limited kernel virtual address space reserved
->> >> for DMA coherent buffer mapping, the default size is about 2M if I
->> >> don't remember mistakenly.
->> >
->> > It can be easily increased for particular boards, there is no problem with this.
+>>> On 12/20/2011 11:24 PM, Julia Lawall wrote:
+>>>> For this one, I made quite a number of changes, some of which required
+>>>> fixing a bug in Coccinelle...  I will try to release the bug fix
+>>>> shortly. In general, though, I have added ... between the two tests.  I
+>>>> also got rid of the focus on ifs in the org and report rules.
+>>>>
+>>>
+>>> Ok, thanks. Was the removing of the ifs in related to the Coccinelle
+>>> bug? I
+>>> always get an error if I start a match with a conditional.
 >>
->> It is not easily to increase it because there is very limited space reserved for
->> this purpose, see Documentation/arm/memory.txt. Also looks like it is
->> not configurable.
->
-> It is really not a big issue to increase it by a few MBytes.
-
-IMO, the extra few MBytes are not helpful for the issue at all, considered the
-kernel virtual memory address fragmentation problem, you know there is only
-several MBytes DMA coherent virtual address space on ARM.
-
->
->> >> > I understand that there might be some speed issues with coherent (uncached)
->> >> > userspace mappings, but I would solve it in completely different way. The interface
->> >>
->> >> Also there is poor performance inside kernel space, see [1]
->> >
->> > Your driver doesn't access video data inside kernel space, so this is also not an issue.
+>> Not at all.  The bug was that a patterm like:
 >>
->> Why not introduce it so that other drivers(include face detection) can
->> benefit with it? :-)
->
-> We can get back into this once a driver which really benefits from comes.
-
-In fact, streaming DMA is more widespread used than coherent DMA in
-kernel, so why can't videobuf2 support streaming dma? :-)
-
-You know under some situation, coherent DMA buffer is very slower than
-other buffer to be accessed by CPU.
-
->
->> >> >
->> >> > Your current implementation also abuses the design and api of videobuf2 memory
->> >> > allocators. If the allocator needs to return a custom structure to the driver
->> >>
->> >> I think returning vaddr is enough.
->> >>
->> >> > you should use cookie method. vaddr is intended to provide only a pointer to
->> >> > kernel virtual mapping, but you pass a struct page * there.
->> >>
->> >> No, __get_free_pages returns virtual address instead of 'struct page *'.
->> >
->> > Then you MUST use cookie for it. vaddr method should return kernel virtual address
->> > to the buffer video data. Some parts of videobuf2 relies on this - it is used by file
->> > io emulator (read(), write() calls) and mmap equivalent for non-mmu systems.
->> >
->> > Manual casting in the driver is also a bad idea, that's why there are helper functions
+>>  @depends on patch@
+>>  expression x;
+>>  @@
+>>  - IS_ERR(x)
+>>  + IS_ERR_OR_NULL(x)
+>>    || ...
+>>  - || x == NULL
 >>
->> I don't see any casts are needed. The dma address can be got from vaddr with
->> dma_map_* easily in drivers, see the usage on patch 8/8(media: video: introduce
->> omap4 face detection module driver).
->
-> Sorry, but I won't accept such driver/allocator which abuses the defined API. I've already
-> pointed what vaddr method is used for.
-
-Sorry, could you describe the abuse problem in a bit detail?
-
->
->> > defined for both dma_contig and dma_sg allocators: vb2_dma_contig_plane_dma_addr() and
->> > vb2_dma_sg_plane_desc().
+>> thought that it should be applied in two ways, giving an error about a
+>> double transformation of the IS_ERR call.
 >>
->> These two helpers are not needed and won't be provided by VIDEOBUF2_PAGE memops.
+>> Could you reproduce the example that caused problems?
 >
-> I gave the example. Your allocator should have something similar.
+> Hm, I can reproduce it anymore, even with my original patch, must have been
+> caused by some other error I had in the semantic patch at that time.
 
-I don't think the two helper are required for the VIDEOBUF2_PAGE memops, why
-can't driver handle DMA mapping directly?
+OK, should do you want to resubmit the semantic patch that I sent you? 
+The version of Coccinelle you have does not perfectly support it, but it 
+should just cause failures on a few files.  The problem is only with the 
+patch case, when there is the possibility to mak two calls to 
+IS_ERR_OR_NULL in a single test expression, which doesn't happen 
+very often.
 
-
-thanks,
---
-Ming Lei
+julia
