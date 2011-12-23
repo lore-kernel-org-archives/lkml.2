@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1LWLPQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 06:15:16 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3650 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1LWLPM convert rfc822-to-8bit (ORCPT
+	id S1756728Ab1LWLPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 06:15:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54581 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754211Ab1LWLPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 06:15:12 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 23 Dec 2011 03:15:11 -0800
-From: Alok Chauhan <alokc@nvidia.com>
-To: Olof Johansson <olof@lixom.net>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "bones@secretlab.ca" <bones@secretlab.ca>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dgreid@google.com" <dgreid@google.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Date: Fri, 23 Dec 2011 16:45:05 +0530
-Subject: RE: [PATCH] i2c: tegra: Add delay before reset the controller
-Thread-Topic: [PATCH] i2c: tegra: Add delay before reset the controller
-Thread-Index: AczA9ZxzAn/Jn73iT+SgJWUzkwqrWAAbiW6g
-Message-ID: <7A0BFCFE3DA5CD47B0FB7984326F201A134F2CCC73@BGMAIL01.nvidia.com>
-References: <1324550480-26308-1-git-send-email-alokc@nvidia.com>
- <CAOesGMire-13yiA9gVQYFWdTa6ZLJLbTW8qoRoPMRQ1ExavVUQ@mail.gmail.com>
-In-Reply-To: <CAOesGMire-13yiA9gVQYFWdTa6ZLJLbTW8qoRoPMRQ1ExavVUQ@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Fri, 23 Dec 2011 06:15:42 -0500
+Date: Fri, 23 Dec 2011 11:15:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: AnilKumar Ch <anilkumar@ti.com>
+Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, nsekhar@ti.com
+Subject: Re: [PATCH 2/2] TPS65217: Add tps65217 regulator driver
+Message-ID: <20111223111538.GE2834@opensource.wolfsonmicro.com>
+References: <1324617696-14350-1-git-send-email-anilkumar@ti.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324617696-14350-1-git-send-email-anilkumar@ti.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 23, 2011 at 10:51:36AM +0530, AnilKumar Ch wrote:
 
-(Adding Laxman Dewangan)
+Again there really ought to be some opportunity for code sharing here.
 
->This change causes problems systems with some models of i2c TPMs, since the first transaction to them will always time out (TPM quirk), and the delay means that the tpm will have time to go back to sleep and thus timeout >even on the retry. So you'll never make progress.
-Working on this.
+> +	help
+> +	  This driver supports TPS65217 voltage regulator chips. TPS65217 provides
+> +	  three step-down converters and four general-purpose LDO voltage regulators.
+> +	  It supports software based voltage control for different voltage domains
 
--Alok
+This needs word wrapping.
 
+> +/* Supported voltage values for regulators (in milliVolts) */
+> +static const u16 VDCDC1_VSEL_table[] = {
+> +	900, 925, 950, 975,
+> +	1000, 1025, 1050, 1075,
+> +	1100, 1125, 1150, 1175,
+> +	1200, 1225, 1250, 1275,
+> +	1300, 1325, 1350, 1375,
+> +	1400, 1425, 1450, 1475,
+> +	1500, 1550, 1600, 1650,
+> +	1700, 1750, 1800,
+> +};
 
------Original Message-----
-From: Olof Johansson [mailto:olof@lixom.net] 
-Sent: Friday, December 23, 2011 2:48 AM
-To: Alok Chauhan
-Cc: khali@linux-fr.org; ben-linux@fluff.org; Stephen Warren; bones@secretlab.ca; paul.gortmaker@windriver.com; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; dgreid@google.com
-Subject: Re: [PATCH] i2c: tegra: Add delay before reset the controller
+You should replace all these vsel tables with calculations in the code,
+they're all regular steps and some of the tables are getting a bit
+large.
 
-Hi,
+> +static inline int tps65217_pmic_read(struct tps65217_pmic *tps, u8 reg)
+> +{
+> +	u8 val;
+> +	int err;
+> +
+> +	err = tps->mfd->read_dev(tps->mfd, reg, 1, &val);
+> +	if (err)
+> +		return err;
+> +
+> +	return val;
+> +}
 
-(Adding linux-tegra and Dylan Reid who was debugging this before)
+There's no way stuff like this should be open coded in each driver using
+the MFD, basic register I/O stuff should be implemented in a single
+place in the MFD core driver.  All this I/O code should be there.
 
-On Thu, Dec 22, 2011 at 2:41 AM, Alok Chauhan <alokc@nvidia.com> wrote:
-> From: Alok Chauhan <alokc@nvidia.com>
->
-> In NACK error condition, I2C controller violates clock-to-data setup 
-> time before stop. In Software, because of this reset of controller is 
-> happening before I2C controller could complete STOP condition.
->
-> Added worst case delay of 1 ms (assuming lowest clock frequency will 
-> be 1 KHZ) before reset the controller in case of NACK error.
+> +static int tps65217_pmic_reg_read(struct tps65217_pmic *tps, u8 reg)
+> +{
+> +	int data;
+> +
+> +	mutex_lock(&tps->io_lock);
+> +
+> +	data = tps65217_pmic_read(tps, reg);
+> +	if (data < 0)
+> +		dev_err(tps->mfd->dev, "Read from reg 0x%x failed\n", reg);
+> +
+> +	mutex_unlock(&tps->io_lock);
+> +	return data;
+> +}
 
-This change causes problems systems with some models of i2c TPMs, since the first transaction to them will always time out (TPM quirk), and the delay means that the tpm will have time to go back to sleep and thus timeout even on the retry. So you'll never make progress.
+Three levels of read and write functions seems excessive...
 
-In other words: this patch will break some systems and thus shouldn't be applied.
+> +	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
+> +		return -EINVAL;
+> +
+> +	switch (dcdc) {
+> +	case TPS65217_DCDC_1:
+> +		mask = TPS65217_ENABLE_DC1_EN;
+> +		break;
+> +	case TPS65217_DCDC_2:
+> +		mask = TPS65217_ENABLE_DC2_EN;
+> +		break;
+> +	case TPS65217_DCDC_3:
+> +		mask = TPS65217_ENABLE_DC3_EN;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
 
+You may as well just use the switch statements to check if the
+regulators are supported given the way this is coded.  Though it would
+be even better to just have an array with the per regulator data which
+you look up (or use shifting to work out the bit if that's possible).
 
--Olof
+> +	/* password protected register write level 1 setting */
+> +	tps->wp_level = TPS65217_PROTECT_L1;
+> +
+> +	return tps65217_pmic_set_bits(tps, TPS65217_REG_ENABLE, mask);
+
+This looks like there's an abstraction problem somewhere along the line
+- wp_level is a member of the struct but it's basically being used as a
+parameter.  Indeed perhaps the write function ought to just do this all
+by itself.
+
+> +	/* password protected register write level 1 setting */
+> +	tps->wp_level = TPS65217_PROTECT_L1;
+
+You should use these constants consistently through the driver, in other
+places you're using magic numbers directly.
+
+> +	for (vsel = 0; vsel < tps->info[dcdc]->table_len; vsel++) {
+> +		int mV = tps->info[dcdc]->table[vsel];
+> +		int uV = mV * 1000;
+> +
+> +		/* Break at the first in-range value */
+> +		if (min_uV <= uV && uV <= max_uV)
+> +			break;
+> +	}
+
+If you are going to use a table you should implement set_voltage_sel()
+which will do the table walk for you, but like I say you should just be
+using a calculation.
+
+> +	tps = kzalloc(sizeof(*tps), GFP_KERNEL);
+> +	if (!tps)
+> +		return -ENOMEM;
+
+Use devm_kzalloc().
