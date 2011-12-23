@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab1LWMGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 07:06:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40913 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1LWMGS convert rfc822-to-8bit (ORCPT
+	id S1756801Ab1LWMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 07:20:26 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38452 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754020Ab1LWMUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 07:06:18 -0500
-Message-ID: <1324641960.24803.50.camel@twins>
-Subject: Re: [rfc] disable scheduler warnings during oopses.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 23 Dec 2011 13:06:00 +0100
-In-Reply-To: <20111223101917.GA4749@elte.hu>
-References: <20111222213929.GA4722@redhat.com>
-	 <20111223101917.GA4749@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 23 Dec 2011 07:20:24 -0500
+Message-ID: <4EF471ED.1030902@metafoo.de>
+Date: Fri, 23 Dec 2011 13:19:57 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, linux-kernel@vger.kernel.org,
+        cocci@diku.dk, mmarek@suse.cz
+Subject: Re: [Cocci] [PATCH 2/2] coccinelle: Add patch for replacing open-coded
+ IS_ERR_OR_NULL
+References: <1324301063-16117-1-git-send-email-lars@metafoo.de> <1324301063-16117-2-git-send-email-lars@metafoo.de> <alpine.DEB.2.02.1112202321220.1933@hadrien> <4EF1C7D3.7080301@metafoo.de> <alpine.DEB.2.02.1112211308290.1826@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1112211308290.1826@localhost6.localdomain6>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-23 at 11:19 +0100, Ingo Molnar wrote:
-> * Dave Jones <davej@redhat.com> wrote:
+On 12/21/2011 01:10 PM, Julia Lawall wrote:
+> On Wed, 21 Dec 2011, Lars-Peter Clausen wrote:
 > 
-> > The panic-on-framebuffer code seems to cause a schedule
-> > to occur during an oops. This causes a bunch of extra
-> > spew as can be seen in https://bugzilla.redhat.com/attachment.cgi?id=549230
-> > 
-> > Would this (untested) patch be sufficient here, or does the drm
-> > code need rearchitecting to not perform allocations during panic ?
-> > 
-> > Signed-off-by: Dave Jones <davej@redhat.com>
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index d6b149c..627f788 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -4321,6 +4321,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
-> >  {
-> >  	struct pt_regs *regs = get_irq_regs();
-> >  
-> > +	if (oops_in_progress)
-> > +		return;
-> > +
-> >  	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
-> >  		prev->comm, prev->pid, preempt_count());
-> >  
+>> On 12/20/2011 11:24 PM, Julia Lawall wrote:
+>>> For this one, I made quite a number of changes, some of which required
+>>> fixing a bug in Coccinelle...  I will try to release the bug fix
+>>> shortly. In general, though, I have added ... between the two tests.  I
+>>> also got rid of the focus on ifs in the org and report rules.
+>>>
+>>
+>> Ok, thanks. Was the removing of the ifs in related to the Coccinelle
+>> bug? I
+>> always get an error if I start a match with a conditional.
 > 
-> Doing that makes sense - if an oops in going on we don't want to 
-> produce recursive messages. Note that scheduler code has been 
-> moved to kernel/sched/, so i've changed the patch accordingly.
+> Not at all.  The bug was that a patterm like:
+> 
+>  @depends on patch@
+>  expression x;
+>  @@
+>  - IS_ERR(x)
+>  + IS_ERR_OR_NULL(x)
+>    || ...
+>  - || x == NULL
+> 
+> thought that it should be applied in two ways, giving an error about a
+> double transformation of the IS_ERR call.
+> 
+> Could you reproduce the example that caused problems?
 
-Urgh I would actually argue against merging this. What the KSM console
-does is horridly wrong, and simply papering over it doesn't help its
-cause. Its up there with USB-Serial console on wrongness.
+Hm, I can reproduce it anymore, even with my original patch, must have been
+caused by some other error I had in the semantic patch at that time.
 
-> Note that despite that, the DRM code *definitely* needs to be 
-> fixed to not allocate and schedule while printing on the 
-> framebuffer in KMS mode ...
-
-For sure, its plain insane and completely unreliable.
+- Lars
