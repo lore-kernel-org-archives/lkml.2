@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab1LWRKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:10:10 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60285 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab1LWRKI (ORCPT
+	id S1757509Ab1LWRM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:12:58 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:36338 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754050Ab1LWRM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:10:08 -0500
+	Fri, 23 Dec 2011 12:12:56 -0500
+Date: Fri, 23 Dec 2011 12:12:53 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: [RELEASE] LTTng 2.0 prerelease bundle 20111223
+Message-ID: <20111223171253.GA9469@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <CAB2ybb_XcwLd8fx+vvditt+MUq2L2+WmsUpxH-gBKsbrVk7jGA@mail.gmail.com>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
-	<CAF6AEGtOjO6Z6yfHz-ZGz3+NuEMH2M-8=20U6+-xt-gv9XtzaQ@mail.gmail.com>
-	<20111220171437.GC3883@phenom.ffwll.local>
-	<201112211727.17104.arnd@arndb.de>
-	<CAB2ybb_XcwLd8fx+vvditt+MUq2L2+WmsUpxH-gBKsbrVk7jGA@mail.gmail.com>
-Date: Fri, 23 Dec 2011 11:10:07 -0600
-Message-ID: <CAF6AEGtGR0-vtfrP4i++kBxb2wGgGzv2MDu-K3CjmhEBXQyDnA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-From: Rob Clark <robdclark@gmail.com>
-To: "Semwal, Sumit" <sumit.semwal@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Vetter <daniel@ffwll.ch>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:07:10 up 394 days, 22:10,  6 users,  load average: 0.08, 0.05,
+	0.06
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 4:00 AM, Semwal, Sumit <sumit.semwal@ti.com> wrote:
-> On Wed, Dec 21, 2011 at 10:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 20 December 2011, Daniel Vetter wrote:
->>> > I'm thinking for a first version, we can get enough mileage out of it by saying:
->>> > 1) only exporter can mmap to userspace
->>> > 2) only importers that do not need CPU access to buffer..
->
-> Thanks Rob - and the exporter can do the mmap outside of dma-buf
-> usage, right?
+LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
+full system tracing solution toolchain. It is composed of several
+components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming. LTTng is open source software.
 
-Yes
+New Features:
 
-> I mean, we don't need to provide an mmap to dma_buf()
-> and restrict it to exporter, when the exporter has more 'control' of
-> the buffer anyways.
+- LTTng 2.0 kernel modules build against a vanilla or distribution
+  kernel, without need for additional patches,
+- Tracepoints, detailed syscall tracing (fast strace replacement),
+  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
+  probing (kprobes) and function call/return tracing (kretprobes support),
+- Have the ability to attach "context" information to events in the
+  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
+  All the extra information fields to be collected with events are
+  optional, specified on a per-tracing-session basis (except for
+  timestamp and event id, which are mandatory).
+- Allows non-root users part of the "tracing" group to perform kernel
+  and userspace tracing.
+- Allows multiple tracing sessions to be active concurrently, each with
+  its own instrumentation set.
+- Integrated interface for both kernel and userspace tracing,
+- Produces CTF (Common Trace Format) natively,
+  (http://www.efficios.com/ctf)
 
-No, if it is only for the exporter, it really doesn't need to be in
-dmabuf (ie. the exporter already knows how he is)
+You can get a the current release "bundle" (recommanded set of packages)
+at the following URL:
 
-BR,
--R
+http://lttng.org/bundles/
 
->>
-> BR,
-> ~Sumit.
+Project website: http://lttng.org
+Download link: http://lttng.org/lttng2.0
+(please refer to the README files for installation instructions and
+lttng-tools doc/quickstart.txt for usage information)
+
+Main changes since the last bundle:
+
+- Fixed lttng-sessiond file/directory creation rights handling.
+- Fixed 32-bit clock source overflow in lttng-ust.
+
+Happy holidays!
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
