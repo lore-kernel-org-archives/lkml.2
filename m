@@ -1,76 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab1LWOPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 09:15:31 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60922 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab1LWOPZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 09:15:25 -0500
+	id S1757286Ab1LWO0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 09:26:12 -0500
+Received: from mail.tpi.com ([70.99.223.143]:1392 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754198Ab1LWO0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 09:26:09 -0500
+Message-ID: <4EF48F64.4010509@canonical.com>
+Date: Fri, 23 Dec 2011 07:25:40 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <87ty4ss0z4.fsf@prochyra.name>
-References: <87ty4ss0z4.fsf@prochyra.name>
-Date: Fri, 23 Dec 2011 15:15:23 +0100
-Message-ID: <CAHR064h7a=RQq=p1J+gKpC5_6ow8ChUFFkC39HwtmerHaMksjw@mail.gmail.com>
-Subject: Re: [PATCH] Platform: samsung-laptop: add DMI information for Samsung
- N150 Plus
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Andrzej Prochyra <andrzej@prochyra.name>
-Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net
+Subject: Re: [PATCH 2/3] TPM: Close data_pending and data_buffer races
+References: <1323196162-2717-1-git-send-email-tim.gardner@canonical.com> <1323196162-2717-3-git-send-email-tim.gardner@canonical.com> <4EF0B9F8.9020305@linux.vnet.ibm.com> <4EF0E465.5060704@canonical.com> <4EF36C1F.6040409@linux.vnet.ibm.com> <4EF37A7A.2060504@canonical.com> <4EF38CBD.3080302@linux.vnet.ibm.com>
+In-Reply-To: <4EF38CBD.3080302@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 11:19 PM, Andrzej Prochyra
-<andrzej@prochyra.name> wrote:
-> From: Andrzej Prochyra <andrzej@prochyra.name>
+On 12/22/2011 01:02 PM, Rajiv Andrade wrote:
 >
-> Adds DMI information for Samsung N150 Plus which identifies itself as
-> "N150P" so that the driver loads and the 'acpi_backlight=vendor'
-> parameter does not need to be used in order for backlight control to
-> work.
+> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
 >
-> Signed-off-by: Andrzej Prochyra <andrzej@prochyra.name>
-> ---
->  drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
+> On 22-12-2011 16:44, Tim Gardner wrote:
+>> On 12/22/2011 10:42 AM, Rajiv Andrade wrote:
+>>> On 20-12-2011 17:39, Tim Gardner wrote:
+>>>> On 12/20/2011 09:38 AM, Rajiv Andrade wrote:
+>>>>> On 06/12/11 16:29, Tim Gardner wrote:
+>>>>>> There is a race betwen tpm_read() and tpm_write where both
+>>>>>> chip->data_pending
+>>>>>> and chip->data_buffer can be changed by tpm_write() when tpm_read()
+>>>>>> clears chip->data_pending, but before tpm_read() grabs the mutex.
+>>>>>>
+>>>>>> Protect changes to chip->data_pending and chip->data_buffer by
+>>>>>> expanding
+>>>>>> the scope of chip->buffer_mutex.
+>>>>>>
+>>>>>> Reported-by: Seth Forshee<seth.forshee@canonical.com>
+>>>>>> Cc: Debora Velarde<debora@linux.vnet.ibm.com>
+>>>>>> Cc: Rajiv Andrade<srajiv@linux.vnet.ibm.com>
+>>>>>> Cc: Marcel Selhorst<m.selhorst@sirrix.com>
+>>>>>> Cc: tpmdd-devel@lists.sourceforge.net
+>>>>>> Cc: stable@vger.kernel.org
+>>>>>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
+>>>>>> ---
+>>>>>> drivers/char/tpm/tpm.c | 17 +++++++++--------
+>>>>>> 1 files changed, 9 insertions(+), 8 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+>>>>>> index b366b34..70bf9e5 100644
+>>>>>> --- a/drivers/char/tpm/tpm.c
+>>>>>> +++ b/drivers/char/tpm/tpm.c
+>>>>>> @@ -1074,12 +1074,15 @@ ssize_t tpm_write(struct file *file, const
+>>>>>> char __user *buf,
+>>>>>> struct tpm_chip *chip = file->private_data;
+>>>>>> size_t in_size = size, out_size;
+>>>>>>
+>>>>>> + mutex_lock(&chip->buffer_mutex);
+>>>>>> +
+>>>>>> /* cannot perform a write until the read has cleared
+>>>>>> either via tpm_read or a user_read_timer timeout */
+>>>>>> - while (atomic_read(&chip->data_pending) != 0)
+>>>>>> + while (atomic_read(&chip->data_pending) != 0) {
+>>>>>> + mutex_unlock(&chip->buffer_mutex);
+>>>>>> msleep(TPM_TIMEOUT);
+>>>>>> -
+>>>>>> - mutex_lock(&chip->buffer_mutex);
+>>>>>> + mutex_lock(&chip->buffer_mutex);
+>>>>>> + }
+>>>>>>
+>>>>>> if (in_size> TPM_BUFSIZE)
+>>>>>> in_size = TPM_BUFSIZE;
+>>>>>> @@ -1112,22 +1115,20 @@ ssize_t tpm_read(struct file *file, char
+>>>>>> __user *buf,
+>>>>>>
+>>>>>> del_singleshot_timer_sync(&chip->user_read_timer);
+>>>>>> flush_work_sync(&chip->work);
+>>>>>> - ret_size = atomic_read(&chip->data_pending);
+>>>>>> - atomic_set(&chip->data_pending, 0);
+>>>>>> + mutex_lock(&chip->buffer_mutex);
+>>>>>> + ret_size = atomic_xchg(&chip->data_pending, 0);
+>>>>>> if (ret_size> 0) { /* relay data */
+>>>>>> ssize_t orig_ret_size = ret_size;
+>>>>>> if (size< ret_size)
+>>>>>> ret_size = size;
+>>>>>>
+>>>>>> - mutex_lock(&chip->buffer_mutex);
+>>>>>> rc = copy_to_user(buf, chip->data_buffer, ret_size);
+>>>>>> memset(chip->data_buffer, 0, orig_ret_size);
+>>>>>> if (rc)
+>>>>>> ret_size = -EFAULT;
+>>>>>
+>>>>> What about just moving atomic_set(&chip->data_pending, 0); to here?
+>>>>> If I'm not missing anything, this would be cleaner.
+>>>>>
+>>>>> Rajiv
+>>>>
+>>>> I'm not sure I agree. Moving just that statement doesn't close the
+>>>> race. Perhaps you could send me your version of this patch so that its
+>>>> clear what you are suggesting.
+>>>>
+>>>> rtg
+>>> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+>>> index 6a8771f..6a37212b 100644
+>>> --- a/drivers/char/tpm/tpm.c
+>>> +++ b/drivers/char/tpm/tpm.c
+>>> @@ -1210,7 +1210,6 @@ ssize_t tpm_read(struct file *file, char __user
+>>> *buf,
+>>> del_singleshot_timer_sync(&chip->user_read_timer);
+>>> flush_work_sync(&chip->work);
+>>> ret_size = atomic_read(&chip->data_pending);
+>>> - atomic_set(&chip->data_pending, 0);
+>>> if (ret_size> 0) { /* relay data */
+>>> if (size< ret_size)
+>>> ret_size = size;
+>>> @@ -1223,6 +1222,7 @@ ssize_t tpm_read(struct file *file, char __user
+>>> *buf,
+>>> mutex_unlock(&chip->buffer_mutex);
+>>> } + atomic_set(&chip->data_pending, 0);
+>>> return ret_size;
+>>> }
+>>>
+>>> If we reset chip->data_pending after the buffer was copied to userspace,
+>>> it's guaranteed that tpm_write() won't touch such buffer before
+>>> tpm_read()
+>>> handles it, given it polls chip->data_pending first.
+>>>
+>>
+>> NAK - this patch makes it worse (if I'm reading your email client
+>> garbled patch correctly). Now it races with tpm_write() as well as
+>> timeout_work(). You cannot futz with chip->data_pending outside of the
+>> exclusion zones. Consider what will happen if a user process just
+>> loops doing reads. chip->data_pending gets cleared every time
+>> tpm_read() is called, regardless of what tpm_write() or timeout_work()
+>> are doing at the time.
 >
-> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-> index 09e26bf..e3a496a 100644
-> --- a/drivers/platform/x86/samsung-laptop.c
-> +++ b/drivers/platform/x86/samsung-laptop.c
-> @@ -780,6 +780,16 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
->                },
->                .callback = dmi_check_cb,
->        },
-> +       {
-> +               .ident = "N150P",
-> +               .matches = {
-> +                       DMI_MATCH(DMI_SYS_VENDOR,
-> +                                       "SAMSUNG ELECTRONICS CO., LTD."),
-> +                       DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-> +                       DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-> +               },
-> +               .callback = dmi_check_cb,
-> +       },
->        { },
->  };
->  MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
-> --
-> 1.7.4.1
+> Not sure how it's displaying for you, but your mail client is eating all
+> whitespaces when sending. Look back here what I said:
+>
+> http://marc.info/?l=tpmdd-devel&m=132439922903276&w=2
+>
 
-Hi,
-On top of what is based this patch ?
-Could you try https://github.com/iksaif/platform-drivers-x86/tree/samsung-laptop
-or https://github.com/iksaif/samsung-laptop-dkms ?
-Are both ACPI and VGA backlight non-fonctional ? What's in
-/sys/class/backlight/ ?
-Thanks
+You're right. I'm not sure whats going on with my Thunderbird client, 
+but it appears to be a change in behavior. I've been using this specific 
+instance since Ubuntu 10.04 was released.
 
+> It's inside the mutex region.
+>
 
+Actually, the patch you sent (https://lkml.org/lkml/2011/12/22/257) is 
+_outside_ the mutex area, but I got your drift.
+
+Even clearing chip->data_pending _inside_ the mutex area, I'm not sure 
+it closes all of the race windows. I think its still possible to race 
+with mod_timer() and del_singleshot_timer_sync(). Therein lies my point, 
+if the exclusion code is not _obviously_ correct for something this 
+simple, then its probably not. I think my patch is the correct approach.
+
+> This would require another fix though. tpm_write() doesn't check
+> tpm_transmit return code (and it should).
+> In case it returns an error (< 0), chip->data_pending would remain the
+> same forever with that change.
+>
+
+This observation is also correct, but not relevant to the exclusion 
+races. It deserves a separate patch.
+
+<snip>
 -- 
-Corentin Chary
-http://xf.iksaif.net
+Tim Gardner tim.gardner@canonical.com
