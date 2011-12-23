@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab1LWQzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 11:55:15 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:21693 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754428Ab1LWQzM (ORCPT
+	id S1757493Ab1LWRET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:04:19 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53164 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab1LWREQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 11:55:12 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Y8xxJWkVM1nxetqF_0mFidYgLVhBGKuuVF6vY4i_zlM9c1h
- BN746wUYfjNZT0dpFoV0qz6fAH2CMQPb6NyWExcGqRj05pm0v5wfiBzAwIZ4
- jetUMILalph.ht6.LG5Uo..wQjvtQ7MXEnIblIENNcIEwHxH5B1ndJQGuiY2
- UuKm4RD5Qqjxi.IYIE5C8LwY7_euk.16mboy.wIjbyipusnsGNyZ4ZJH2NYo
- y1ihnJejABKLwn5r.Neaf9BcI9aGKBIIJ_h2Au6CRDsl4L2GkojbrSZTS5z2
- _saNsjeCx9BPk.ZWk2qTInVeWLTYMjwkBhTux125wkBckjxl6N07Ay_ggJfk
- Z25iUo7_gpnYC1WF9u4DSGK8fAvouV66GOxMWGTbtYMjXmg--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 23 Dec 2011 10:55:08 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-In-Reply-To: <CA+55aFzY_6QYVyjAmP+w8D0Xy1Pq++XEUaBJRcCN9SbDE-pOhw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112231031001.3482@router.home>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain> <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com> <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com> <20111220162315.GC10752@google.com>
- <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com> <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home> <20111221170535.GB9213@google.com> <alpine.DEB.2.00.1112220854440.31315@router.home>
- <20111222160822.GE17084@google.com> <alpine.DEB.2.00.1112221154380.11787@router.home> <CA+55aFzY_6QYVyjAmP+w8D0Xy1Pq++XEUaBJRcCN9SbDE-pOhw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 23 Dec 2011 12:04:16 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20212.37458.896503.997111@quad.stoffel.home>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+ <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+ <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+ <20211.28256.111279.27933@quad.stoffel.home> <CAOh0hwPeveaEaNv_mjNVLM36JSbObX4n5y1jC_Yp5MwdBA0Sxw@mail.gmail.com>
+ <20212.37458.896503.997111@quad.stoffel.home>
+From: Gaurav Saxena <grvsaxena419@gmail.com>
+Date: Fri, 23 Dec 2011 22:33:45 +0530
+Message-ID: <CAOh0hwOO3iMmP5kKUvN6cexHU0dUPra1qD-_UCP_4_qSVx7Euw@mail.gmail.com>
+Subject: Re: Intercepting system calls
+To: John Stoffel <john@stoffel.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011, Linus Torvalds wrote:
+Hello all , thanks for your reply.
 
-> As far as I can tell, there are just a couple of users of that
-> horrible interface, it really isn't worth it. Just remove it and
-> opencode it. They are actually broken on x86 ('xadd' only exists if
-> CONFIG_X86_XADD is on - i386 didn't have it), and while most people
-> probably don't care (i386? What's that?), I note that the x86
-> add_return stuff doesn't take that into account.
+On Fri, Dec 23, 2011 at 8:08 PM, John Stoffel <john@stoffel.org> wrote:
+>>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
+>
+> Gaurav> Hello John,
+> Gaurav> On Thu, Dec 22, 2011 at 11:22 PM, John Stoffel <john@stoffel.org> wrote:
+>>>>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
+>>>
+>>>>> Intercepting system calls is very bad, don't do it.
+>>>
+> Gaurav> Oh. I will not do it then, could you suggest me something so
+> Gaurav> that I could prevent unlink on some file say using kernel
+> Gaurav> support. I want to save file on unlink how could I do that
+> Gaurav> without kernel support, or how could I do that using a kernel
+> Gaurav> module.
+>>>
+>>> Write a FUSE module to mount the filesystem through, inside your FUSE
+>>> module you can intercept the unlink/truncate/write calls and decide
+>>> what you want to have happen.
+>
+> Gaurav> I would like to write it differently for each type of filesystem ?
+> Gaurav> Because what operations to call after my function depends on this.
+> Gaurav> Also Can I mount "/" in this way ?
+>
+> Sounds like you really want to use inotify() then, but intercepting
+> calls to write/truncate/unlink isn't going to be easy to handle across
+> a large spectrum of filesystems without a bunch of hacking.
+>
+> Maybe if you can explain your requirements more clearly, with an
+> example of what you're trying to accomplish, then people could help
+> you more.
+>
+> Also, it might be more appropriate to talk to the 'fs-devel' mailing
+> list.  I think it's on kernel.org, but not sure.
+>
+> John
+>
 
-There is an #ifndef CONFIG_M386 around the implementation of these for
-x86. Use on i386 will not generate an xadd instructions but fallback to a
-generic implementation.
+I am trying to write an application which would create a backup for
+the system so that it could be restored as it is. For example I create
+a backup using my application. I just do nothing at time of backup so
+it would be fast. Now whenever I see any deletion I would save that
+file so that I could restore it. Also I would like to see for
+modification/rename. I cannot do this using inotify as I would be
+notified after actual deletion/write. I don't want to use SELinux
+because I want to implement this on existing installed system. I was
+earlier thinking of replacing system calls for open/unlink with my
+custom calls which will call my functions before actual work and then
+I would decide what to do I would also want to reject unlink request
+for some of the files. But as I now know that its not working in
+linux>3.0 . I had also seen dazuko which is not supporting linux>3.0
+yet. Also there used to be a redirfs which used to work earlier but
+the latest kernel is not supported yet. So I asked this question so
+that I could get some solution/method of doing this.
+I will try finding fs-devel list.
+Thanks to you all for your help.
 
-The add_return stuff was already available with the earlier per cpu apis
-(local_t and percpu) that this_cpu replaces and is still available through
-the atomic operations.
 
-If one wants to exploit the per cpu atomicity then one may want to know
-what the result was. Inspecting the value is not possible later in the
-execution path if there are potential races on the processor through
-preemption as well as interrupts. The _return variants also avoid
-additional load instructions and thereby reduce code path size.
+-- 
+Thanks and Regards ,
+Gaurav
