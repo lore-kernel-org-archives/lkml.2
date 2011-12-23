@@ -1,107 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab1LWHvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 02:51:49 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:64455 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab1LWHvr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
-	Fri, 23 Dec 2011 02:51:47 -0500
-Message-Id: <4EF441580200007800069B38@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 23 Dec 2011 07:52:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Arnaud Lacombe" <lacombar@gmail.com>
-Cc: <akpm@linux-foundation.org>, "Michal Marek" <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] consolidate WARN_...ONCE() static variables
-References: <4EF3609D0200007800069A30@nat28.tlf.novell.com>
- <CACqU3MWahjXy3q6AqDARCfPx5r3WF+uoHXZA6mkkpNKDjWcSMA@mail.gmail.com>
-In-Reply-To: <CACqU3MWahjXy3q6AqDARCfPx5r3WF+uoHXZA6mkkpNKDjWcSMA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753895Ab1LWHxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 02:53:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37274 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab1LWHxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 02:53:17 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-49-4ef43366b2f2
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: use kstrtoul
+Date: Fri, 23 Dec 2011 16:53:10 +0900
+Message-id: <000201ccc147$ea6750e0$bf35f2a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: AczBR+oXPwnGCLhoS6iseIPO38PalQ==
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.12.11 at 18:13, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> On Thu, Dec 22, 2011 at 10:53 AM, Jan Beulich <JBeulich@suse.com> wrote:
->> Due to the alignment of following variables, these typically consume
->> more than just the single byte that 'bool' requires, and as there are
->> a few hundred instances, the cache pollution (not so much the waste of
->> memory) sums op. Put these variables into their own section, outside
->> of half way frequently used memory range.
->>
-> how does this relates to kbuild exactly ? I see you did not even CC'ed LKML.
+The usage of simple_strtoul or strict_strtoul is not preferred. Thus,
+kstrtoul should be used.
 
-In touching include/asm-generic/vmlinux.lds.h (and not touching
-anything outside include/asm-generic/).
+This patch also fixes checkpatch error as follows:
+ERROR: space required after that ',' (ctx:VxV)
 
-And I wasn't aware that any subsystem change needs to go to lkml too;
-adding that list now.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/backlight.c |    6 +++---
+ drivers/video/backlight/lcd.c       |   26 ++++++++++----------------
+ 2 files changed, 13 insertions(+), 19 deletions(-)
 
-> btw, it might be interesting to have numbers backing this change :)
-
-Sort of difficult, as this (obviously) varies by configuration. But as
-stated, it's generally a few hundred instances. Additionally, I find it
-odd that any small and obvious (at least I view is as such, and it
-should have been coded this way from the beginning) improvement
-is being asked to be backed by precise numbers.
-
-The one thing I wasn't sure about was whether this shouldn't be done
-in a more abstract way, to allow use in other places as well. But such
-abstraction can certainly be added incrementally.
-
-Jan
-
->> --- 3.2-rc6/include/asm-generic/bug.h
->> +++ 3.2-rc6-warn-once-flag-cold/include/asm-generic/bug.h
->> @@ -134,7 +134,7 @@ extern void warn_slowpath_null(const cha
->>  #endif
->>
->>  #define WARN_ON_ONCE(condition)        ({                              \
->> -       static bool __warned;                                   \
->> +       static bool __section(.data.unlikely) __warned;         \
->>        int __ret_warn_once = !!(condition);                    \
->>                                                                \
->>        if (unlikely(__ret_warn_once))                          \
->> @@ -144,7 +144,7 @@ extern void warn_slowpath_null(const cha
->>  })
->>
->>  #define WARN_ONCE(condition, format...)        ({                      \
->> -       static bool __warned;                                   \
->> +       static bool __section(.data.unlikely) __warned;         \
->>        int __ret_warn_once = !!(condition);                    \
->>                                                                \
->>        if (unlikely(__ret_warn_once))                          \
->> @@ -154,7 +154,7 @@ extern void warn_slowpath_null(const cha
->>  })
->>
->>  #define WARN_TAINT_ONCE(condition, taint, format...)   ({      \
->> -       static bool __warned;                                   \
->> +       static bool __section(.data.unlikely) __warned;         \
->>        int __ret_warn_once = !!(condition);                    \
->>                                                                \
->>        if (unlikely(__ret_warn_once))                          \
->> --- 3.2-rc6/include/asm-generic/vmlinux.lds.h
->> +++ 3.2-rc6-warn-once-flag-cold/include/asm-generic/vmlinux.lds.h
->> @@ -167,6 +167,7 @@
->>        CPU_KEEP(exit.data)                                             \
->>        MEM_KEEP(init.data)                                             \
->>        MEM_KEEP(exit.data)                                             \
->> +       *(.data.unlikely)                                               \
->>        STRUCT_ALIGN();                                                 \
->>        *(__tracepoints)                                                \
->>        /* implement dynamic printk debug */                            \
->>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
->> the body of a message to majordomo@vger.kernel.org 
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html 
-
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index 7363c1b..bf5b1ec 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -102,7 +102,7 @@ static void backlight_generate_event(struct backlight_device *bd,
+ }
+ 
+ static ssize_t backlight_show_power(struct device *dev,
+-		struct device_attribute *attr,char *buf)
++		struct device_attribute *attr, char *buf)
+ {
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 
+@@ -116,7 +116,7 @@ static ssize_t backlight_store_power(struct device *dev,
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 	unsigned long power;
+ 
+-	rc = strict_strtoul(buf, 0, &power);
++	rc = kstrtoul(buf, 0, &power);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -150,7 +150,7 @@ static ssize_t backlight_store_brightness(struct device *dev,
+ 	struct backlight_device *bd = to_backlight_device(dev);
+ 	unsigned long brightness;
+ 
+-	rc = strict_strtoul(buf, 0, &brightness);
++	rc = kstrtoul(buf, 0, &brightness);
+ 	if (rc)
+ 		return rc;
+ 
+diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
+index 71a11ca..79c1b0d 100644
+--- a/drivers/video/backlight/lcd.c
++++ b/drivers/video/backlight/lcd.c
+@@ -97,19 +97,16 @@ static ssize_t lcd_store_power(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	int rc = -ENXIO;
+-	char *endp;
+ 	struct lcd_device *ld = to_lcd_device(dev);
+-	int power = simple_strtoul(buf, &endp, 0);
+-	size_t size = endp - buf;
++	unsigned long power;
+ 
+-	if (isspace(*endp))
+-		size++;
+-	if (size != count)
+-		return -EINVAL;
++	rc = kstrtoul(buf, 0, &power);
++	if (rc)
++		return rc;
+ 
+ 	mutex_lock(&ld->ops_lock);
+ 	if (ld->ops && ld->ops->set_power) {
+-		pr_debug("lcd: set power to %d\n", power);
++		pr_debug("lcd: set power to %lu\n", power);
+ 		ld->ops->set_power(ld, power);
+ 		rc = count;
+ 	}
+@@ -136,19 +133,16 @@ static ssize_t lcd_store_contrast(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	int rc = -ENXIO;
+-	char *endp;
+ 	struct lcd_device *ld = to_lcd_device(dev);
+-	int contrast = simple_strtoul(buf, &endp, 0);
+-	size_t size = endp - buf;
++	unsigned long contrast;
+ 
+-	if (isspace(*endp))
+-		size++;
+-	if (size != count)
+-		return -EINVAL;
++	rc = kstrtoul(buf, 0, &contrast);
++	if (rc)
++		return rc;
+ 
+ 	mutex_lock(&ld->ops_lock);
+ 	if (ld->ops && ld->ops->set_contrast) {
+-		pr_debug("lcd: set contrast to %d\n", contrast);
++		pr_debug("lcd: set contrast to %lu\n", contrast);
+ 		ld->ops->set_contrast(ld, contrast);
+ 		rc = count;
+ 	}
+-- 
+1.7.1
 
 
