@@ -1,39 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab1LWE05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 23:26:57 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59064 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751403Ab1LWE0z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 23:26:55 -0500
+	id S1756447Ab1LWE6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 23:58:17 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34369 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab1LWE6N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 23:58:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <b177a0ce5b62188ba37f1c243d9fe792375c5fa3.1324613334.git.joe@perches.com>
-References: <b177a0ce5b62188ba37f1c243d9fe792375c5fa3.1324613334.git.joe@perches.com>
-From: Chris Snook <chris.snook@gmail.com>
-Date: Thu, 22 Dec 2011 20:26:33 -0800
-Message-ID: <CAMXMK6snujDQYe69soY9hZuSORrv0OpSf6OKiYwNcd33xJaKeA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] alx: Coalesce long formats
-To: Joe Perches <joe@perches.com>
-Cc: Cloud Ren <cjren@qca.qualcomm.com>, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
-        ath9k-devel <ath9k-devel@qualcomm.com>,
-        Xiong Huang <xiong@qca.qualcomm.com>, Jay Cliburn <jcliburn@gmail.com>,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CANFwon3hXH-1PQi1XZsxjFFDQ4Z0X25db87rJYG_4DF2ZXGLeQ@mail.gmail.com>
+References: <CANFwon3hXH-1PQi1XZsxjFFDQ4Z0X25db87rJYG_4DF2ZXGLeQ@mail.gmail.com>
+Date: Fri, 23 Dec 2011 13:58:12 +0900
+Message-ID: <CABiHV1ROEiCD-dMER+MTPQKgKTgEj2_ynCJ3XOd_YwPA-xQySQ@mail.gmail.com>
+Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111218 release
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 8:16 PM, Joe Perches <joe@perches.com> wrote:
-> format strings broken into multiple bits are harder to grep.
+On Sun, Dec 18, 2011 at 9:11 PM, Hui Zhu <teawater@gmail.com> wrote:
+> KGTP is a realtime and lightweight Linux Kernel debugger and tracer.
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/ethernet/atheros/alx/alc_cb.c   |    3 +-
->  drivers/net/ethernet/atheros/alx/alf_cb.c   |    3 +-
->  drivers/net/ethernet/atheros/alx/alx_main.c |   54 ++++++++++----------------
->  3 files changed, 23 insertions(+), 37 deletions(-)
+> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+> current machine or remote machine (see
+> https://code.google.com/p/kgtp/wiki/HOWTO#Make_GDB_connect_to_gtp) can
+> debug and trace Linux through GDB tracepoint without stopping the
+> Linux Kernel.
+> And even if the board doesn't have GDB on it and doesn't have
+> interface for remote debug. It can debug the Linux Kernel using
+> offline debug (See
+> https://code.google.com/p/kgtp/wiki/HOWTO#Offline_debug).
+> And it can work with Android (See
+> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
+> Now, it supports X86-32, X86-64, MIPS and ARM.
+>
+> Now, KGTP 20111218 release.
+> You can get the package for it from
+> http://kgtp.googlecode.com/files/kgtp_20111218.tar.bz2
+> or
+> svn co https://kgtp.googlecode.com/svn/tags/20111218
+>
+> The change of this release is:
+> Add gtp_rb to be the new frame buffer to make trace record speed up
+> and more friendly to the older version Linux kernel.
+> Rename gtp.patch to gtp_for_review.patch.
+> Add Linux Kernel patch gtp_3.0_to_upstream.patch(3.0 to upstream),
+> gtp_2.6.39.patch(2.6.39), gtp_2.6.33_to_2.6.38.patch(2.6.33 to 2.6.38)
+> and gtp_older_to_2.6.32.patch(older to 2.6.32).
+Thank you for your upgrade work for the compatibility among various
+linux version.
+I am testing normally on evaluation board based on ARM cortex using
+the latest Linux.
+> Then you can include KGTP in your Kernel source tree.
+> Add special trace state variable $gtp_version to show the version of KGTP.
+> Fix some build errors of gtp_for_review.patch.
+> Fix some build errors in ARM.
+> Update doc.
+> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
+>
+> According to the comments of Christoph. Â I make a patch for Linux
+> Kernel and make it looks OK with checkpatch.pl. Â The file
+> gtp_for_review.patch is include in the source of KGTP code.
+I have one question about KGTP.
+Previously, GDB Tracepoints for linux Linux kernel 2.6.19 is developed
+by Jim Blandy
+of Cygnus. He also presented to share this practical approach at FOSDEM 2007.
+If you can, Can you explain the difference(e.g: merits, demerits, and
+so on) between
+GDB Tracepoint of Jim  and KGTP by you?
 
-Acked-by: Chris Snook <chris.snook@gmail.com>
+>
+> Thanks,
+> Hui
+
+
+
+-- 
+Best regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+Homepage: http://leemgs.fedorapeople.org
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info atÂ  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ atÂ  http://www.tux.org/lkml/
