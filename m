@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab1LWE6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 23:58:17 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34369 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab1LWE6N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 23:58:13 -0500
+	id S1753479Ab1LWFQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 00:16:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:37231 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1LWFQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 00:16:45 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: [RESENDx2] [PULL] virtio: fix barriers for virtio-mmio
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 23 Dec 2011 15:46:17 +1030
+Message-ID: <8739cbkgv2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CANFwon3hXH-1PQi1XZsxjFFDQ4Z0X25db87rJYG_4DF2ZXGLeQ@mail.gmail.com>
-References: <CANFwon3hXH-1PQi1XZsxjFFDQ4Z0X25db87rJYG_4DF2ZXGLeQ@mail.gmail.com>
-Date: Fri, 23 Dec 2011 13:58:12 +0900
-Message-ID: <CABiHV1ROEiCD-dMER+MTPQKgKTgEj2_ynCJ3XOd_YwPA-xQySQ@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111218 release
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 9:11 PM, Hui Zhu <teawater@gmail.com> wrote:
-> KGTP is a realtime and lightweight Linux Kernel debugger and tracer.
->
-> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
-> current machine or remote machine (see
-> https://code.google.com/p/kgtp/wiki/HOWTO#Make_GDB_connect_to_gtp) can
-> debug and trace Linux through GDB tracepoint without stopping the
-> Linux Kernel.
-> And even if the board doesn't have GDB on it and doesn't have
-> interface for remote debug. It can debug the Linux Kernel using
-> offline debug (See
-> https://code.google.com/p/kgtp/wiki/HOWTO#Offline_debug).
-> And it can work with Android (See
-> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
-> Now, it supports X86-32, X86-64, MIPS and ARM.
->
-> Now, KGTP 20111218 release.
-> You can get the package for it from
-> http://kgtp.googlecode.com/files/kgtp_20111218.tar.bz2
-> or
-> svn co https://kgtp.googlecode.com/svn/tags/20111218
->
-> The change of this release is:
-> Add gtp_rb to be the new frame buffer to make trace record speed up
-> and more friendly to the older version Linux kernel.
-> Rename gtp.patch to gtp_for_review.patch.
-> Add Linux Kernel patch gtp_3.0_to_upstream.patch(3.0 to upstream),
-> gtp_2.6.39.patch(2.6.39), gtp_2.6.33_to_2.6.38.patch(2.6.33 to 2.6.38)
-> and gtp_older_to_2.6.32.patch(older to 2.6.32).
-Thank you for your upgrade work for the compatibility among various
-linux version.
-I am testing normally on evaluation board based on ARM cortex using
-the latest Linux.
-> Then you can include KGTP in your Kernel source tree.
-> Add special trace state variable $gtp_version to show the version of KGTP.
-> Fix some build errors of gtp_for_review.patch.
-> Fix some build errors in ARM.
-> Update doc.
-> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
->
-> According to the comments of Christoph.  I make a patch for Linux
-> Kernel and make it looks OK with checkpatch.pl.  The file
-> gtp_for_review.patch is include in the source of KGTP code.
-I have one question about KGTP.
-Previously, GDB Tracepoints for linux Linux kernel 2.6.19 is developed
-by Jim Blandy
-of Cygnus. He also presented to share this practical approach at FOSDEM 2007.
-If you can, Can you explain the difference(e.g: merits, demerits, and
-so on) between
-GDB Tracepoint of Jim  and KGTP by you?
+This one as a signed tag on github, in case the inline patch was
+the reason you dropped this.
 
->
-> Thanks,
-> Hui
+virtio-mmio in new 3.2, and they found a corruption bug.  Please apply.
 
+ * [new tag]         rusty@rustcorp.com.au -> rusty@rustcorp.com.au
+The following changes since commit b3b1b70e62a603f473619dbebc3b3d23f535e6f8:
 
+  Merge branch 'usb-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2011-12-22 12:59:47 -0800)
 
--- 
-Best regards,
-Geunsik Lim ( Samsung Electronics )
-Blog : http://blog.naver.com/invain/
-Homepage: http://leemgs.fedorapeople.org
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+are available in the git repository at:
+
+  git://github.com/rustyrussell/linux.git master
+
+Rusty Russell (1):
+      virtio: harsher barriers for virtio-mmio.
+
+ drivers/lguest/lguest_device.c |    8 +++++---
+ drivers/s390/kvm/kvm_virtio.c  |    2 +-
+ drivers/virtio/virtio_mmio.c   |    7 ++++---
+ drivers/virtio/virtio_pci.c    |    4 ++--
+ drivers/virtio/virtio_ring.c   |   34 +++++++++++++++++++++-------------
+ include/linux/virtio_ring.h    |    1 +
+ tools/virtio/linux/virtio.h    |    1 +
+ tools/virtio/virtio_test.c     |    3 ++-
+ 8 files changed, 37 insertions(+), 23 deletions(-)
+
+commit ef3a731beb9a030e552945a734dc898b5525e2f7
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Fri Dec 23 15:07:56 2011 +1030
+
+    virtio: harsher barriers for virtio-mmio.
+    
+    We were cheating with our barriers; using the smp ones rather than the
+    real device ones.  That was fine, until virtio-mmio came along, which
+    could be talking to a real device (a non-SMP CPU).
+    
+    Unfortunately, just putting back the real barriers (reverting
+    d57ed95d) causes a performance regression on virtio-pci.  In
+    particular, Amos reports netbench's TCP_RR over virtio_net CPU
+    utilization increased up to 35% while throughput went down by up to
+    14%.
+    
+    By comparison, this branch is in the noise.
+    
+    Reference: https://lkml.org/lkml/2011/12/11/22
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+ drivers/lguest/lguest_device.c |    8 +++++---
+ drivers/s390/kvm/kvm_virtio.c  |    2 +-
+ drivers/virtio/virtio_mmio.c   |    7 ++++---
+ drivers/virtio/virtio_pci.c    |    4 ++--
+ drivers/virtio/virtio_ring.c   |   34 +++++++++++++++++++++-------------
+ include/linux/virtio_ring.h    |    1 +
+ tools/virtio/linux/virtio.h    |    1 +
+ tools/virtio/virtio_test.c     |    3 ++-
+ 8 files changed, 37 insertions(+), 23 deletions(-)
