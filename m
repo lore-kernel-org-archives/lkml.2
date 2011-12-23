@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab1LWRM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:12:58 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:36338 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754050Ab1LWRM4 (ORCPT
+	id S1757520Ab1LWRRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:17:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56106 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab1LWRRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:12:56 -0500
-Date: Fri, 23 Dec 2011 12:12:53 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: [RELEASE] LTTng 2.0 prerelease bundle 20111223
-Message-ID: <20111223171253.GA9469@Krystal>
+	Fri, 23 Dec 2011 12:17:48 -0500
+Date: Fri, 23 Dec 2011 15:18:19 -0200
+From: Gustavo Padovan <padovan@profusion.mobi>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mount: enable use MS_RDONLY with MS_BIND
+Message-ID: <20111223171819.GB5287@joana>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <1324660497-23100-1-git-send-email-padovan@profusion.mobi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:07:10 up 394 days, 22:10,  6 users,  load average: 0.08, 0.05,
-	0.06
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1324660497-23100-1-git-send-email-padovan@profusion.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
+So I put Lennart's email wrong. Fixing it.
 
-New Features:
+* Gustavo F. Padovan <padovan@profusion.mobi> [2011-12-23 15:14:56 -0200]:
 
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches,
-- Tracepoints, detailed syscall tracing (fast strace replacement),
-  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
-  probing (kprobes) and function call/return tracing (kretprobes support),
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
-- Integrated interface for both kernel and userspace tracing,
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
+> From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+> 
+> This allow creation of read-only bind mounts in a single mount() call,
+> instead of two.
+> 
+> Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+> ---
+>  fs/namespace.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 5c07af8..c08c150 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1743,7 +1743,7 @@ static int do_change_type(struct path *path, int flag)
+>   * do loopback mount.
+>   */
+>  static int do_loopback(struct path *path, char *old_name,
+> -				int recurse)
+> +						unsigned long flags)
+>  {
+>  	LIST_HEAD(umount_list);
+>  	struct path old_path;
+> @@ -1769,7 +1769,7 @@ static int do_loopback(struct path *path, char *old_name,
+>  		goto out2;
+>  
+>  	err = -ENOMEM;
+> -	if (recurse)
+> +	if (flags & MS_REC)
+>  		mnt = copy_tree(old_path.mnt, old_path.dentry, 0);
+>  	else
+>  		mnt = clone_mnt(old_path.mnt, old_path.dentry, 0);
+> @@ -1782,7 +1782,12 @@ static int do_loopback(struct path *path, char *old_name,
+>  		br_write_lock(&vfsmount_lock);
+>  		umount_tree(mnt, 0, &umount_list);
+>  		br_write_unlock(&vfsmount_lock);
+> +		goto out2;
+>  	}
+> +
+> +	if (flags & MS_RDONLY)
+> +		path->mnt->mnt_flags |= MNT_READONLY;
+> +
+>  out2:
+>  	unlock_mount(path);
+>  	release_mounts(&umount_list);
+> @@ -2338,7 +2343,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+>  		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+>  				    data_page);
+>  	else if (flags & MS_BIND)
+> -		retval = do_loopback(&path, dev_name, flags & MS_REC);
+> +		retval = do_loopback(&path, dev_name, flags);
+>  	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+>  		retval = do_change_type(&path, flags);
+>  	else if (flags & MS_MOVE)
+> -- 
+> 1.7.6.4
+> 
 
-You can get a the current release "bundle" (recommanded set of packages)
-at the following URL:
-
-http://lttng.org/bundles/
-
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-(please refer to the README files for installation instructions and
-lttng-tools doc/quickstart.txt for usage information)
-
-Main changes since the last bundle:
-
-- Fixed lttng-sessiond file/directory creation rights handling.
-- Fixed 32-bit clock source overflow in lttng-ust.
-
-Happy holidays!
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+	Gustavo
