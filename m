@@ -1,118 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab1LWBLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 20:11:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47074 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab1LWBLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 20:11:31 -0500
-Date: Thu, 22 Dec 2011 17:14:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-Id: <20111222171432.e429c041.akpm@linux-foundation.org>
-In-Reply-To: <20111222235455.GT17084@google.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-	<20111222135925.de3221c8.akpm@linux-foundation.org>
-	<20111222220911.GK17084@google.com>
-	<20111222142058.41316ee0.akpm@linux-foundation.org>
-	<20111222224117.GL17084@google.com>
-	<20111222145426.5844df96.akpm@linux-foundation.org>
-	<20111222230047.GN17084@google.com>
-	<20111222151649.de57746f.akpm@linux-foundation.org>
-	<20111222232433.GQ17084@google.com>
-	<20111222154138.d6c583e3.akpm@linux-foundation.org>
-	<20111222235455.GT17084@google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756205Ab1LWBOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 20:14:22 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34512 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753755Ab1LWBOV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 20:14:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111222150057.GA10845@dztty>
+References: <20111222150057.GA10845@dztty>
+Date: Fri, 23 Dec 2011 09:14:20 +0800
+Message-ID: <CAGBYx2YgN_iqcKOfAwzH_t63us+ECgxcNMEsaRz0j5aoY5tORw@mail.gmail.com>
+Subject: Re: [PATCH] fs/ext4: add missing ext4_resize_end
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 15:54:55 -0800 Tejun Heo <tj@kernel.org> wrote:
+Thanks.
 
-> Hello,
-> 
-> On Thu, Dec 22, 2011 at 03:41:38PM -0800, Andrew Morton wrote:
-> > All the code I'm looking at assumes that blkio_group.stats_cpu is
-> > non-zero.  Won't the kerenl just go splat if that allocation failed?
-> > 
-> > If the code *does* correctly handle ->stats_cpu == NULL then we have
-> > options.
-> 
-> I think it's supposed to just skip creating whole blk_group if percpu
-> allocation fails, so ->stats_cpu of existing groups are guaranteed to
-> be !%NULL.
+The patch looks good.   I have to update the new resize patch too.
 
-What is the role of ->elevator_set_req_fn()?  And when is it called?
+Yongqiang.
 
-It seems that we allocate the blkio_group within the
-elevator_set_req_fn() context?
+On Thu, Dec 22, 2011 at 11:00 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> Online resize ioctls 'EXT4_IOC_GROUP_EXTEND' and 'EXT4_IOC_GROUP_ADD'
+> call ext4_resize_begin() to check permissions and to set the
+> EXT4_RESIZING bit lock, they do their work and they must finish with
+> ext4_resize_end() which calls clear_bit_unlock() to unlock and to
+> avoid -EBUSY errors for the next resize operations.
+>
+> This patch adds the missing ext4_resize_end() calls on error paths.
+>
+> Patch tested.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> ---
+>  fs/ext4/ioctl.c |   28 ++++++++++++++++++----------
+>  1 files changed, 18 insertions(+), 10 deletions(-)
+>
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index a567968..ab25f57 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -182,19 +182,22 @@ setversion_out:
+>                if (err)
+>                        return err;
+>
+> -               if (get_user(n_blocks_count, (__u32 __user *)arg))
+> -                       return -EFAULT;
+> +               if (get_user(n_blocks_count, (__u32 __user *)arg)) {
+> +                       err = -EFAULT;
+> +                       goto group_extend_out;
+> +               }
+>
+>                if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+>                               EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+>                        ext4_msg(sb, KERN_ERR,
+>                                 "Online resizing not supported with bigalloc");
+> -                       return -EOPNOTSUPP;
+> +                       err = -EOPNOTSUPP;
+> +                       goto group_extend_out;
+>                }
+>
+>                err = mnt_want_write(filp->f_path.mnt);
+>                if (err)
+> -                       return err;
+> +                       goto group_extend_out;
+>
+>                err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
+>                if (EXT4_SB(sb)->s_journal) {
+> @@ -204,9 +207,10 @@ setversion_out:
+>                }
+>                if (err == 0)
+>                        err = err2;
+> +
+>                mnt_drop_write(filp->f_path.mnt);
+> +group_extend_out:
+>                ext4_resize_end(sb);
+> -
+>                return err;
+>        }
+>
+> @@ -267,19 +271,22 @@ mext_out:
+>                        return err;
+>
+>                if (copy_from_user(&input, (struct ext4_new_group_input __user *)arg,
+> -                               sizeof(input)))
+> -                       return -EFAULT;
+> +                               sizeof(input))) {
+> +                       err = -EFAULT;
+> +                       goto group_add_out;
+> +               }
+>
+>                if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+>                               EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+>                        ext4_msg(sb, KERN_ERR,
+>                                 "Online resizing not supported with bigalloc");
+> -                       return -EOPNOTSUPP;
+> +                       err = -EOPNOTSUPP;
+> +                       goto group_add_out;
+>                }
+>
+>                err = mnt_want_write(filp->f_path.mnt);
+>                if (err)
+> -                       return err;
+> +                       goto group_add_out;
+>
+>                err = ext4_group_add(sb, &input);
+>                if (EXT4_SB(sb)->s_journal) {
+> @@ -289,9 +296,10 @@ mext_out:
+>                }
+>                if (err == 0)
+>                        err = err2;
+> +
+>                mnt_drop_write(filp->f_path.mnt);
+> +group_add_out:
+>                ext4_resize_end(sb);
+> -
+>                return err;
+>        }
+>
+> --
+> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-(Your stack trace in the "block: fix deadlock through percpu allocation
-in blk-cgroup" changelog is some unuseful ACPI thing.  It would be
-better if it were to show the offending trace into the block code).
-
-> > a) Give userspace a new procfs/debugfs file to start stats gathering
-> >    on a particular cgroup/request_queue pair.  Allocate the stats
-> >    memory in that.
-> > 
-> > b) Or allocate stats_cpu on the first call to blkio_read_stat_cpu()
-> >    and return zeroes for this first call.
-> 
-> Hmmm... IIRC, the stats aren't exported per cgroup-request_queue pair,
-> so reads are issued per cgroup.  We can't tell which request_queues
-> userland is actually interested in.
-
-Doesn't matter.  The stats are allocated on a per-blkio_group basis. 
-blkio_read_stat_cpu() is passed the blkio_group.  Populate ->stats_cpu
-there.
-
-Advantages:
-
-- performs allocation with the more reliable GPF_KERNEL
-
-- avoids burdening users with the space and CPU overhead when they're
-  not using the stats 
-
-- avoids adding more code into the mempool code.
-
-> > c) Or change the low-level code to do
-> >    blkio_group.want_stats_cpu=true, then test that at the top level
-> >    after we've determined that blkio_group.stats_cpu is NULL.
-> 
-> Not following.  Where's the "top level"?
-
-Somewhere appropriate where we can use GFP_KERNEL.  ie: the correct
-context for percpu_alloc().
 
 
-Separately...
-
-Mixing mempools and percpu_alloc() in the proposed fashion seems a
-pretty poor fit.  mempools are for high-frequency low-level allocations
-which have key characteristics: there are typically a finite number of
-elements in flight and we *know* that elements are being freed in a
-timely manner.
-
-This doesn't fit with percpu_alloc(), which is a very heavyweight
-operation requiring GFP_KERNEL and it doesn't fit with
-blkio_group_stats_cpu because blkio_group_stats_cpu does not have the
-"freed in a timely manner" behaviour.
-
-To resolve these things you've added the workqueue to keep the pool
-populated, which turns percpu_mempool into a quite different concept
-which happens to borrow some mempool code (not necessarily a bad thing).
-This will result in some memory wastage, keeping that pool full.
-
-More significantly, it's pretty unreliable: if the allocations outpace
-the kernel thread's ability to refill the pool, all we can do is to
-wait for the kernel thread to do some work.  But we're holding
-low-level locks while doing that wait, which will block the kernel
-thread.  Deadlock.
+-- 
+Best Wishes
+Yongqiang Yang
