@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab1LWCZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 21:25:52 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57586 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab1LWCZu convert rfc822-to-8bit (ORCPT
+	id S1754247Ab1LWC16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 21:27:58 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50935 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab1LWC14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 21:25:50 -0500
+	Thu, 22 Dec 2011 21:27:56 -0500
+Date: Fri, 23 Dec 2011 03:27:45 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 1/3] cgroup: remove tasklist_lock from cgroup_attach_proc
+Message-ID: <20111223022742.GA28309@somewhere.redhat.com>
+References: <1324601873-20773-1-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <20111222190359.GF604@animx.eu.org>
-References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
- <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
- <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com> <20111222190359.GF604@animx.eu.org>
-From: Gaurav Saxena <grvsaxena419@gmail.com>
-Date: Fri, 23 Dec 2011 07:55:18 +0530
-Message-ID: <CAOh0hwOJ7F8JPFtnO1CnUiLcBtx=V9WEjVLJ7c0+t4j57s07Og@mail.gmail.com>
-Subject: Re: Intercepting system calls
-To: wakko@animx.eu.org, Gaurav Saxena <grvsaxena419@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324601873-20773-1-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wakko
+On Thu, Dec 22, 2011 at 04:57:51PM -0800, Mandeep Singh Baines wrote:
+> Since cgroup_attach_proc is protected by a threadgroup_lock, we
+> no longer need a tasklist_lock to protect while_each_thread.
+> To keep the complexity of the double-check locking in one place,
+> I also moved the thread_group_leader check up into
+> attach_task_by_pid.
+> 
+> While at it, also converted a couple of returns to gotos.
+> 
+> The suggestion was made here:
+> 
+> https://lkml.org/lkml/2011/12/22/86
+> 
+> Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> ---
+>  kernel/cgroup.c |   52 +++++++++++++++++++++-------------------------------
+>  1 files changed, 21 insertions(+), 31 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 1042b3c..032139d 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2102,21 +2102,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  	if (retval)
+>  		goto out_free_group_list;
+>  
+> -	/* prevent changes to the threadgroup list while we take a snapshot. */
+> -	read_lock(&tasklist_lock);
+> -	if (!thread_group_leader(leader)) {
+> -		/*
+> -		 * a race with de_thread from another thread's exec() may strip
+> -		 * us of our leadership, making while_each_thread unsafe to use
+> -		 * on this task. if this happens, there is no choice but to
+> -		 * throw this task away and try again (from cgroup_procs_write);
+> -		 * this is "double-double-toil-and-trouble-check locking".
+> -		 */
+> -		read_unlock(&tasklist_lock);
+> -		retval = -EAGAIN;
+> -		goto out_free_group_list;
+> -	}
+> -
+>  	tsk = leader;
+>  	i = 0;
+>  	do {
+> @@ -2145,7 +2130,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  	group_size = i;
+>  	tset.tc_array = group;
+>  	tset.tc_array_len = group_size;
+> -	read_unlock(&tasklist_lock);
 
-On Fri, Dec 23, 2011 at 12:33 AM, Wakko Warner <wakko@animx.eu.org> wrote:
-> Gaurav Saxena wrote:
->> Oh. I will not do it then, could you suggest me something so that I
->> could prevent unlink on some file say using kernel support. I want to
->> save file on unlink how could I do that without kernel support, or how
->> could I do that using a kernel module.
->
-> I wrote a library that can be loaded in userspace that does this.  It's not
-> very polished, but it works for me.  I use it for rsync when I want files
-> "deleted" but not from the filesystem.  It creates a .deleted directory in
-> the $PWD.
-> If you're interested, I can send it to you.  I have it working on i386 and
-> amd64.
-Yes I am a lot interested I would customize it to suit my purposes.
-Does it work on linux >3.0
->
-> --
->  Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
->  million bugs.
+You still need rcu_read_lock()/rcu_read_unlock() around
+	do {
 
+	} while_each_thread()
 
-
--- 
-Thanks and Regards ,
-Gaurav
+because threadgroup_lock() doesn't lock the part that remove a thread from
+its group on exit.
