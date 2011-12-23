@@ -1,84 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab1LWCL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 21:11:56 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45119 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1LWCLw (ORCPT
+	id S1754138Ab1LWCNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 21:13:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56988 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab1LWCNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 21:11:52 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6568"; a="149427904"
-Message-ID: <4EF3E35F.6090502@codeaurora.org>
-Date: Thu, 22 Dec 2011 18:11:43 -0800
-From: Michael Bohan <mbohan@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 22 Dec 2011 21:13:49 -0500
+Date: Thu, 22 Dec 2011 18:13:33 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 2/3] cgroup: remove double-checking locking from
+ attach_task_by_pid
+Message-ID: <20111223021333.GM13529@google.com>
+References: <1324601873-20773-1-git-send-email-msb@chromium.org>
+ <1324601873-20773-2-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, srostedt@redhat.com,
-        khilman@ti.com, linux-arm-msm@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Very sparse and high interrupt map with SPARSE_IRQ
-References: <4EEA6435.5040207@codeaurora.org> <4EEA8192.7050306@gmail.com>
-In-Reply-To: <4EEA8192.7050306@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324601873-20773-2-git-send-email-msb@chromium.org>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2011 3:24 PM, Rob Herring wrote:
-> Have you looked at irq_domain (kernel/irq/irqdomain.c). This is meant to
-> support complex mappings like this. Although in its current form it
-> needs some work to support this. Is there no sub-grouping of interrupts
-> at all?
->
-> The hwirq # is stored in irq_data, so converting from Linux irq to hwirq
-> # is O(1). Going the other way is implemented per domain and would
-> depend on the implementation of .to_irq.
+This is not going to work. Will fix up and resend. Need to goto
+the top as suggested by Tejun.
 
-Thanks for the advice. The chip driver houses a number of devices shared 
-over a SPMI bus. The SPMI bus supports up to 16 slave IDs, and each 
-slave can have 256 devices. Each device can have up to 8 interrupts.
-
-So this is pretty easy to support with irq_domains if we treat all 32768 
-interrupts as one domain and allow the chip driver to own the entire 
-32768 block of interrupts. Each translation is merely a O(1) calculation 
-as you mentioned. And with SPARSE_IRQ, we only allocate the interrupts 
-we use on the bus, and so there's very little cost associated with the 
-large number of interrupts.
-
-Were you thinking of supporting these sub-groups (eg. group of devices) 
-in separate irq_domains? I'm somewhat curious if there's future work 
-planned around this area. As it currently stands, it seems like this 
-would only complicate things.
-
-There is one issue that needs to be resolved in order to support even 
-one irq_domain with this configuration. The problem is that we allocate 
-irq_descs dynamically based on Device Tree information, and so 
-irq_domain_add() needs to be modified to support this. In fact, there's 
-even a comment in the function regarding this limitation. There's two 
-problems with the implementation of irq_domain_add() for my usage:
-
-1. It assumes irq_descs are already allocated. In my case, I would like 
-to add the irq_domain at init time through of_irq_init(). But the actual 
-descriptors are not allocated until much later.
-
-2. It assumes that every hw_irq is available within the range of 
-interrupts the domain manages, which is not true in my case. In my case, 
-they are truly sparse.
-
-Thus I am proposing we have a more simple irq_domain_add() function that 
-solely adds the irq_domain to the list. Then we can create registration 
-interface that does the extra initialization for the irq_data of each 
-specified hw_irq. What do you think about this? I can submit a patch if 
-others think this is reasonable.
-
-Thanks,
-Mike
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Mandeep Singh Baines (msb@chromium.org) wrote:
+> By reading group_leader after taking the threadgroup_lock, we can
+> avoid the double-check locking. This removes the return of
+> -EAGAIN so we can cleanup cgroup_procs_write at the same time.
+> 
+> The suggestion was made here:
+> 
+> https://lkml.org/lkml/2011/12/22/371
+> 
+> Suggested-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> ---
+>  kernel/cgroup.c |   40 ++++++----------------------------------
+>  1 files changed, 6 insertions(+), 34 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 032139d..a5f7d1b 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2234,9 +2234,6 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+>  			ret= -ESRCH;
+>  			goto out_unlock_cgroup;
+>  		}
+> -		/* we check later for a group_leader race with de_thread */
+> -		if (threadgroup)
+> -			tsk = tsk->group_leader;
+>  		/*
+>  		 * even if we're attaching all tasks in the thread group, we
+>  		 * only need to check permissions on one of them.
+> @@ -2252,33 +2249,17 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+>  		get_task_struct(tsk);
+>  		rcu_read_unlock();
+>  	} else {
+> -		if (threadgroup)
+> -			tsk = current->group_leader;
+> -		else
+> -			tsk = current;
+> +		tsk = current;
+>  		get_task_struct(tsk);
+>  	}
+>  
+>  	threadgroup_lock(tsk);
+> -
+> -	if (threadgroup) {
+> -		if (!thread_group_leader(tsk)) {
+> -			/*
+> -			 * a race with de_thread from another thread's exec()
+> -			 * may strip us of our leadership, if this happens,
+> -			 * there is no choice but to throw this task away and
+> -			 * try again (from cgroup_procs_write); this is
+> -			 * "double-double-toil-and-trouble-check locking".
+> -			 */
+> -			ret = -EAGAIN;
+> -			goto out_unlock_threadgroup;
+> -		}
+> -		ret = cgroup_attach_proc(cgrp, tsk);
+> -	} else
+> +	if (threadgroup)
+> +		ret = cgroup_attach_proc(cgrp, tsk->group_leader);
+> +	else
+>  		ret = cgroup_attach_task(cgrp, tsk);
+> -
+> -out_unlock_threadgroup:
+>  	threadgroup_unlock(tsk);
+> +
+>  	put_task_struct(tsk);
+>  out_unlock_cgroup:
+>  	cgroup_unlock();
+> @@ -2292,16 +2273,7 @@ static int cgroup_tasks_write(struct cgroup *cgrp, struct cftype *cft, u64 pid)
+>  
+>  static int cgroup_procs_write(struct cgroup *cgrp, struct cftype *cft, u64 tgid)
+>  {
+> -	int ret;
+> -	do {
+> -		/*
+> -		 * attach_proc fails with -EAGAIN if threadgroup leadership
+> -		 * changes in the middle of the operation, in which case we need
+> -		 * to find the task_struct for the new leader and start over.
+> -		 */
+> -		ret = attach_task_by_pid(cgrp, tgid, true);
+> -	} while (ret == -EAGAIN);
+> -	return ret;
+> +	return attach_task_by_pid(cgrp, tgid, true);
+>  }
+>  
+>  /**
+> -- 
+> 1.7.3.1
+> 
