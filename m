@@ -1,186 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab1LWVxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 16:53:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57937 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757886Ab1LWVx2 (ORCPT
+	id S1757921Ab1LWVxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 16:53:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50709 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab1LWVx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 16:53:28 -0500
+	Fri, 23 Dec 2011 16:53:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/15] perf tools: Look up thread names for system wide profiling
-Date: Fri, 23 Dec 2011 19:53:06 -0200
-Message-Id: <1324677198-5191-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/15] perf report: Fix usage string
+Date: Fri, 23 Dec 2011 19:53:04 -0200
+Message-Id: <1324677198-5191-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1324677198-5191-1-git-send-email-acme@infradead.org>
 References: <1324677198-5191-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-This handles multithreaded processes with named threads when doing
-system wide profiling: the comm for each thread is looked up allowing
-them to be different from the thread group leader.
+perf report does not take a command from command line.
 
-v2:
-- fixed sizeof arg to perf_event__get_comm_tgid
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1324578603-12762-3-git-send-email-dsahern@gmail.com
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1323703017-6060-8-git-send-email-namhyung@gmail.com
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c |   75 +++++++++++++++++++++++++++++++++--------------
- 1 files changed, 53 insertions(+), 22 deletions(-)
+ tools/perf/builtin-report.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index a578726..73ddaf0 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -43,37 +43,27 @@ static struct perf_sample synth_sample = {
- 	.period	   = 1,
- };
- 
--static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
--					 union perf_event *event, pid_t pid,
--					 int full, perf_event__handler_t process,
--					 struct machine *machine)
-+static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index b2654c9..9051f6b 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -432,7 +432,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
  {
- 	char filename[PATH_MAX];
- 	char bf[BUFSIZ];
- 	FILE *fp;
- 	size_t size = 0;
--	DIR *tasks;
--	struct dirent dirent, *next;
--	pid_t tgid = 0;
-+	pid_t tgid = -1;
- 
- 	snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
- 
- 	fp = fopen(filename, "r");
- 	if (fp == NULL) {
--out_race:
--		/*
--		 * We raced with a task exiting - just return:
--		 */
- 		pr_debug("couldn't open %s\n", filename);
- 		return 0;
- 	}
- 
--	memset(&event->comm, 0, sizeof(event->comm));
--
--	while (!event->comm.comm[0] || !event->comm.pid) {
-+	while (!comm[0] || (tgid < 0)) {
- 		if (fgets(bf, sizeof(bf), fp) == NULL) {
--			pr_warning("couldn't get COMM and pgid, malformed %s\n", filename);
--			goto out;
-+			pr_warning("couldn't get COMM and pgid, malformed %s\n",
-+				   filename);
-+			break;
- 		}
- 
- 		if (memcmp(bf, "Name:", 5) == 0) {
-@@ -81,16 +71,46 @@ out_race:
- 			while (*name && isspace(*name))
- 				++name;
- 			size = strlen(name) - 1;
--			memcpy(event->comm.comm, name, size++);
-+			if (size >= len)
-+				size = len - 1;
-+			memcpy(comm, name, size);
-+
- 		} else if (memcmp(bf, "Tgid:", 5) == 0) {
- 			char *tgids = bf + 5;
- 			while (*tgids && isspace(*tgids))
- 				++tgids;
--			tgid = event->comm.pid = atoi(tgids);
-+			tgid = atoi(tgids);
- 		}
- 	}
- 
-+	fclose(fp);
-+
-+	return tgid;
-+}
-+
-+static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
-+					 union perf_event *event, pid_t pid,
-+					 int full,
-+					 perf_event__handler_t process,
-+					 struct machine *machine)
-+{
-+	char filename[PATH_MAX];
-+	size_t size;
-+	DIR *tasks;
-+	struct dirent dirent, *next;
-+	pid_t tgid;
-+
-+	memset(&event->comm, 0, sizeof(event->comm));
-+
-+	tgid = perf_event__get_comm_tgid(pid, event->comm.comm,
-+					 sizeof(event->comm.comm));
-+	if (tgid < 0)
-+		goto out;
-+
-+	event->comm.pid = tgid;
- 	event->comm.header.type = PERF_RECORD_COMM;
-+
-+	size = strlen(event->comm.comm) + 1;
- 	size = ALIGN(size, sizeof(u64));
- 	memset(event->comm.comm + size, 0, machine->id_hdr_size);
- 	event->comm.header.size = (sizeof(event->comm) -
-@@ -106,8 +126,10 @@ out_race:
- 	snprintf(filename, sizeof(filename), "/proc/%d/task", pid);
- 
- 	tasks = opendir(filename);
--	if (tasks == NULL)
--		goto out_race;
-+	if (tasks == NULL) {
-+		pr_debug("couldn't open %s\n", filename);
-+		return 0;
-+	}
- 
- 	while (!readdir_r(tasks, &dirent, &next) && next) {
- 		char *end;
-@@ -115,6 +137,17 @@ out_race:
- 		if (*end)
- 			continue;
- 
-+		/* already have tgid; jut want to update the comm */
-+		(void) perf_event__get_comm_tgid(pid, event->comm.comm,
-+					 sizeof(event->comm.comm));
-+
-+		size = strlen(event->comm.comm) + 1;
-+		size = ALIGN(size, sizeof(u64));
-+		memset(event->comm.comm + size, 0, machine->id_hdr_size);
-+		event->comm.header.size = (sizeof(event->comm) -
-+					  (sizeof(event->comm.comm) - size) +
-+					  machine->id_hdr_size);
-+
- 		event->comm.tid = pid;
- 
- 		process(tool, event, &synth_sample, machine);
-@@ -122,8 +155,6 @@ out_race:
- 
- 	closedir(tasks);
- out:
--	fclose(fp);
--
- 	return tgid;
- }
- 
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+-		"perf report [<options>] <command>",
++		"perf report [<options>]",
+ 		NULL
+ 	};
+ 	struct perf_report report = {
 -- 
 1.7.8.rc0.35.gee6df
 
